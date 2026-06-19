@@ -1,5 +1,6 @@
 #pragma once
 
+#include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "input/Input.hpp"
 #include "render/VirtualScreen.hpp"
@@ -17,6 +18,7 @@ public:
     void run();
 
 private:
+    void loadContent();
     void processFrame();
     void drawDebugOverlay() const;
 
@@ -31,6 +33,7 @@ private:
     WindowGuard window_;
     VirtualScreen screen_;
     ResourceManager resources_;
+    content::ContentDatabase content_;
     AppContext context_;
     Input input_;
     StateStack stack_;

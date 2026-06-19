@@ -124,7 +124,52 @@ drive letters, and `..` traversal; all data/save file access goes through it.
 ## 6. Testing strategy
 
 Unit tests cover **pure** logic only (no window/GPU/audio): viewport math, state
-stack ordering/transitions, input resolution, path sanitizing — and in later
-milestones danger, scoring, generation, JSON validators, save round-trips.
-Anything needing raylib is validated by running the app (human-in-the-loop where
-visual/feel is involved).
+stack ordering/transitions, input resolution, path sanitizing, content
+validation/loading — and in later milestones danger, scoring, generation, save
+round-trips. Anything needing raylib is validated by running the app
+(human-in-the-loop where visual/feel is involved). Tests get the shipped content
+path via the `CRYSTAL_TEST_DATA_DIR` compile definition so they validate the
+real JSON.
+
+## 7. Content data model (Milestone 2)
+
+Content lives in JSON under `data/` and is loaded by `src/content/` (raylib-free,
+so it is unit-testable headlessly). At startup `Application` loads it into a
+`ContentDatabase` stored in `AppContext`; CMake copies `data/` next to the exe.
+
+### File format
+
+Each file is a versioned wrapper around a named array:
+
+```json
+{ "version": 1, "skills": [ { "id": "strike", "name": "Strike", ... } ] }
+```
+
+`version` must equal the supported schema version (currently `1`). Files:
+`skills.json`, `classes.json`, `enemies.json`, `items.json`. (`bosses.json` and
+`dungeon_themes.json` arrive with their owning milestones — M7 and M4.)
+
+| Type   | Required fields | Notable optional fields |
+|--------|-----------------|-------------------------|
+| skill  | `id`, `name`, `category`, `target` | `element`, `power`≥0, `mpCost`≥0, `description` |
+| class  | `id`, `name`, `baseStats`{hp≥1,attack,magic,defense,speed} | `role`, `growth`{floats}, `startingSkills`[skill ids] |
+| enemy  | `id`, `name`, `stats`{…} | `tier`(normal/elite), `tags`[fast/magic/armored/poison], `skills`[ids], `xpReward`, `goldReward` |
+| item   | `id`, `name`, `type`(consumable/equipment/relic/scroll) | `slot`, `rarity`, `value`, `effect`, `effectAmount`, `statBonus`, `grantsSkill`, `description` |
+
+Enums (string values): `Element`, `SkillCategory`, `SkillTarget`, `EnemyTag`,
+`EnemyTier`, `ItemType`, `EquipSlot`, `Rarity`, `ConsumableEffect`.
+
+### Validation rules
+
+- Loading **never throws to the caller and never crashes**; problems are
+  appended to a `LoadReport` (`{source, context, message}`), and the game runs
+  in a degraded state if content is missing.
+- Per field: presence, JSON type, numeric range, and known enum value.
+- Per entry: a bad entry is skipped (its errors reported) but does not discard
+  the valid entries around it. Duplicate ids are rejected.
+- Semantic rules: scrolls must set `grantsSkill`; equipment/relics need a real
+  `slot`.
+- Cross-references: skill ids in `startingSkills`, enemy `skills`, and scroll
+  `grantsSkill` must exist.
+- Bumping `version` or changing field meaning is a **public-schema change** —
+  requires human approval (see `CLAUDE.md`).

@@ -1,7 +1,10 @@
 #include "core/Application.hpp"
 
+#include <filesystem>
 #include <memory>
 
+#include "content/ContentLoader.hpp"
+#include "content/LoadReport.hpp"
 #include "core/GameConfig.hpp"
 #include "core/Log.hpp"
 #include "input/InputMap.hpp"
@@ -9,6 +12,25 @@
 #include "states/TitleState.hpp"
 
 namespace cd {
+
+namespace {
+
+// Resolves the content directory: prefer a "data" folder next to the executable
+// (CMake copies it there), then fall back to the working directory.
+std::filesystem::path resolveDataDir() {
+    namespace fs = std::filesystem;
+    const char* appDir = GetApplicationDirectory();
+    if (appDir != nullptr) {
+        fs::path candidate = fs::path(appDir) / "data";
+        std::error_code ec;
+        if (fs::exists(candidate, ec) && !ec) {
+            return candidate;
+        }
+    }
+    return fs::path("data");
+}
+
+}  // namespace
 
 Application::WindowGuard::WindowGuard() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
@@ -24,13 +46,35 @@ Application::Application()
     : window_(),
       screen_(config::kVirtualWidth, config::kVirtualHeight),
       resources_(),
-      context_{resources_, config::kVirtualWidth, config::kVirtualHeight},
+      content_(),
+      context_{resources_, content_, config::kVirtualWidth, config::kVirtualHeight},
       input_(),
       stack_(),
       debugOverlay_(true) {
+    loadContent();
     stack_.pushState(std::make_unique<TitleState>(stack_, context_));
     stack_.applyPending();
     log::info("Crystal Dungeons initialized");
+}
+
+void Application::loadContent() {
+    const std::filesystem::path dataDir = resolveDataDir();
+    content::LoadReport report;
+    const bool ok = content::loadAll(dataDir, content_, report);
+    if (ok) {
+        log::info(TextFormat("Content loaded: %d classes, %d skills, %d enemies, %d items",
+                             static_cast<int>(content_.classCount()),
+                             static_cast<int>(content_.skillCount()),
+                             static_cast<int>(content_.enemyCount()),
+                             static_cast<int>(content_.itemCount())));
+    } else {
+        // The game still runs (degraded). Surface every issue for the human.
+        log::warn(TextFormat("Content loaded with %d issue(s) from '%s':",
+                             static_cast<int>(report.errorCount()), dataDir.string().c_str()));
+        for (const auto& e : report.errors()) {
+            log::warn("  " + e.source + ": " + e.context + ": " + e.message);
+        }
+    }
 }
 
 void Application::run() {

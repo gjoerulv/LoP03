@@ -3,6 +3,7 @@
 #include <cmath>
 #include <memory>
 
+#include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/Log.hpp"
 #include "input/Input.hpp"
@@ -60,7 +61,13 @@ void TitleState::render() {
     DrawText(quitPrompt, w / 2 - MeasureText(quitPrompt, 10) / 2, 168, 10,
              Color{150, 150, 170, 255});
 
-    const char* milestone = "Milestone 1 - Foundation";
+    const content::ContentDatabase& db = context_.content;
+    DrawText(TextFormat("Content: %d classes  %d skills  %d enemies  %d items",
+                        static_cast<int>(db.classCount()), static_cast<int>(db.skillCount()),
+                        static_cast<int>(db.enemyCount()), static_cast<int>(db.itemCount())),
+             6, h - 28, 10, Color{120, 140, 120, 255});
+
+    const char* milestone = "Milestone 2 - Core Data Model";
     DrawText(milestone, 6, h - 16, 10, Color{120, 120, 140, 255});
 }
 
