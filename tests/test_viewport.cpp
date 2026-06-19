@@ -37,10 +37,13 @@ TEST_CASE("viewport: too-tall window letterboxes (bars top/bottom)", "[viewport]
 
 TEST_CASE("viewport: result is centered and within window bounds", "[viewport]") {
     const auto vp = computeViewport(900, 700, 426, 240);
-    REQUIRE(vp.x >= 0.0f);
-    REQUIRE(vp.y >= 0.0f);
-    REQUIRE(vp.x + vp.width <= Approx(900.0f));
-    REQUIRE(vp.y + vp.height <= Approx(700.0f));
+    // This window is width-limited: the image fills horizontally and is
+    // letterboxed vertically. Comparisons use tolerances because the scale
+    // (900/426) is not exactly representable in float.
+    REQUIRE(vp.x == Approx(0.0f).margin(0.01));
+    REQUIRE(vp.y > 0.0f);
+    REQUIRE(vp.width == Approx(900.0f));
+    REQUIRE(vp.height < 700.0f);
     // Centered: equal bars on opposite sides.
     REQUIRE(2.0f * vp.x + vp.width == Approx(900.0f));
     REQUIRE(2.0f * vp.y + vp.height == Approx(700.0f));
