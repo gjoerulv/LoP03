@@ -24,7 +24,7 @@ Catch2 test setup; basic README/build instructions.
 
 Implemented:
 - FetchContent for raylib `6.0`, Catch2 `v3.15.1`, nlohmann/json `v3.12.0`
-  (pinned), with high warnings on project code only and GCC<9 `stdc++fs` handling.
+  (pinned), built with MSVC / C++20, high warnings on project code only.
 - `cd::Application` game loop + window + 426×240 virtual screen with
   aspect-preserved scaling and y-flip correction.
 - `StateStack` with queued transitions and transparent states; `TitleState` +

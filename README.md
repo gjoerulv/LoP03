@@ -13,13 +13,13 @@ existing game.
 
 ## Requirements
 
-- **CMake ≥ 3.20**
-- A **C++20** compiler: MSVC (Visual Studio 2022), GCC 11+, or Clang 13+.
-  - ⚠️ GCC 8.x (e.g. the compiler bundled with older CodeBlocks) is from 2018,
-    predates C++20, and **cannot reliably build this project**. Install a modern
-    toolchain — see [Toolchain notes](#toolchain-notes).
+- **Visual Studio 2022 or newer** with the **"Desktop development with C++"**
+  workload (provides the MSVC compiler plus a bundled CMake and Ninja). This
+  project is built with **MSVC / C++20**; MinGW and other GCC toolchains are not
+  supported.
+- **CMake ≥ 3.20** (the Visual Studio–bundled CMake is fine).
 - **Internet access on the first configure only** — dependencies are downloaded
-  and built once, then cached under `build/_deps`.
+  and built once, then cached under `build-msvc/_deps`.
 
 Dependencies (fetched and pinned automatically by CMake; nothing to install
 manually):
@@ -32,34 +32,41 @@ manually):
 
 ## Build & run
 
-Pick the generator that matches your toolchain.
-
-### Visual Studio 2022 (MSVC) — recommended on Windows
-
-```powershell
-cmake -S . -B build -G "Visual Studio 17 2022"
-cmake --build build --config Debug
-ctest --test-dir build -C Debug --output-on-failure
-.\build\Debug\CrystalDungeons.exe
-```
-
-### Ninja
+Build from the **Visual Studio developer environment** so the MSVC compiler
+(`cl`) and the bundled CMake/Ninja are on `PATH`. Either open a **"Developer
+PowerShell for VS"** / **"Developer Command Prompt for VS"**, or run
+`vcvars64.bat` in a normal shell first (adjust the edition in the path):
 
 ```powershell
-cmake -S . -B build -G "Ninja"
-cmake --build build
-ctest --test-dir build --output-on-failure
-.\build\CrystalDungeons.exe
+& "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 ```
 
-### MinGW Makefiles (GCC)
+### Ninja (recommended)
 
 ```powershell
-cmake -S . -B build -G "MinGW Makefiles"
-cmake --build build
-ctest --test-dir build --output-on-failure
-.\build\CrystalDungeons.exe
+cmake -S . -B build-msvc -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+cmake --build build-msvc
+ctest --test-dir build-msvc --output-on-failure
+.\build-msvc\CrystalDungeons.exe
 ```
+
+`-DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl` forces MSVC, so no other compiler
+that happens to be on `PATH` can be picked up by mistake.
+
+### Visual Studio generator (alternative)
+
+Use the generator that matches your installed Visual Studio (e.g.
+`"Visual Studio 17 2022"`, or a newer version):
+
+```powershell
+cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
+cmake --build build-msvc --config Debug
+ctest --test-dir build-msvc -C Debug --output-on-failure
+.\build-msvc\Debug\CrystalDungeons.exe
+```
+
+The first configure compiles the dependencies once (slower), then caches them in
+`build-msvc/_deps` for fast subsequent builds.
 
 ## Controls (Milestone 1 demo)
 
@@ -82,7 +89,7 @@ aspect-preserving letterbox/pillarbox bars.
 | `CRYSTAL_WARNINGS_AS_ERRORS`    | `OFF`   | Treat project warnings as errors     |
 | `CRYSTAL_ENABLE_DEBUG_OVERLAY`  | `ON`    | Compile the runtime debug overlay (F1) |
 
-Example: `cmake -S . -B build -G "Ninja" -DCRYSTAL_WARNINGS_AS_ERRORS=ON`
+Example: `cmake -S . -B build-msvc -G Ninja -DCMAKE_CXX_COMPILER=cl -DCRYSTAL_WARNINGS_AS_ERRORS=ON`
 
 ## Project layout
 
@@ -99,20 +106,6 @@ data/        JSON content (Milestone 2+)
 assets/      textures/audio/fonts (later milestones)
 docs/        design + technical + milestone docs (source of truth)
 ```
-
-## Toolchain notes
-
-If `cmake --build` fails with errors about `-std=c++2a`, `std::filesystem`, or
-unsupported C++20 features, your compiler is too old. Options on Windows:
-
-- **Visual Studio 2022 Build Tools** (free): install the *Desktop development
-  with C++* workload, then use the `Visual Studio 17 2022` generator above.
-- **Modern MinGW-w64**: [w64devkit](https://github.com/skeeto/w64devkit) or
-  MSYS2 (`pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake
-  mingw-w64-ucrt-x86_64-ninja`), GCC 13+.
-- **LLVM/Clang** 13+ with the Ninja generator.
-
-Verify your compiler version with `g++ --version` / `cl`.
 
 ## Documentation
 

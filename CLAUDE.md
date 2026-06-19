@@ -122,22 +122,25 @@ Primary target:
 
 ## Build and Test Expectations
 
-Prefer an out-of-source build.
+Prefer an out-of-source build. Build with **MSVC** (Visual Studio 2022 or newer)
+from a Visual Studio developer environment — run `vcvars64.bat`, or use a
+"Developer PowerShell/Command Prompt for VS", so `cl` and the bundled CMake/Ninja
+are on `PATH`. MinGW/GCC toolchains are not supported.
 
 Typical commands, adjust only if the project structure requires it:
 
 ```powershell
-cmake -S . -B build -G "Ninja"
-cmake --build build
-ctest --test-dir build --output-on-failure
+cmake -S . -B build-msvc -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+cmake --build build-msvc
+ctest --test-dir build-msvc --output-on-failure
 ```
 
-If using Visual Studio generator:
+If using the Visual Studio generator (match your installed VS version):
 
 ```powershell
-cmake -S . -B build
-cmake --build build --config Debug
-ctest --test-dir build -C Debug --output-on-failure
+cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
+cmake --build build-msvc --config Debug
+ctest --test-dir build-msvc -C Debug --output-on-failure
 ```
 
 Do not claim “build passes” unless the build command was actually run and completed successfully.
@@ -563,10 +566,10 @@ When manual validation is needed, provide a checklist like this:
 Please run:
 
 ```powershell
-cmake -S . -B build -G "Ninja"
-cmake --build build
-ctest --test-dir build --output-on-failure
-.\build\CrystalDungeons.exe
+cmake -S . -B build-msvc -G Ninja -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+cmake --build build-msvc
+ctest --test-dir build-msvc --output-on-failure
+.\build-msvc\CrystalDungeons.exe
 ````
 
 Check:

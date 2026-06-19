@@ -52,44 +52,48 @@ Adding/removing/bumping any dependency requires human approval (see CLAUDE.md).
 
 ## Build & test commands
 
-Preferred (modern toolchain; pick the generator you actually have):
+Build with **MSVC** from the Visual Studio developer environment: run
+`vcvars64.bat` (or open a "Developer PowerShell/Command Prompt for VS") so `cl`
+and the bundled CMake/Ninja are on `PATH`. **Do not use MinGW/GCC.**
+
+Ninja (preferred):
 
 ```powershell
-# Ninja (if installed)
-cmake -S . -B build -G "Ninja"
-cmake --build build
-ctest --test-dir build --output-on-failure
-.\build\CrystalDungeons.exe
-
-# Visual Studio (MSVC)
-cmake -S . -B build -G "Visual Studio 17 2022"
-cmake --build build --config Debug
-ctest --test-dir build -C Debug --output-on-failure
-.\build\Debug\CrystalDungeons.exe
-
-# MinGW Makefiles (GCC)
-cmake -S . -B build -G "MinGW Makefiles"
-cmake --build build
-ctest --test-dir build --output-on-failure
-.\build\CrystalDungeons.exe
+cmake -S . -B build-msvc -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+cmake --build build-msvc
+ctest --test-dir build-msvc --output-on-failure
+.\build-msvc\CrystalDungeons.exe
 ```
 
-First configure downloads + compiles raylib/Catch2 — it is slow once, then cached
-in `build/_deps`. Network is required for the **first** configure only.
+Visual Studio generator (alternative; match your installed VS version):
+
+```powershell
+cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
+cmake --build build-msvc --config Debug
+ctest --test-dir build-msvc -C Debug --output-on-failure
+.\build-msvc\Debug\CrystalDungeons.exe
+```
+
+`-DCMAKE_*_COMPILER=cl` forces MSVC so a stray compiler on `PATH` can't be picked
+up by mistake (that is what broke the first build attempt). First configure
+downloads + compiles raylib/Catch2 — slow once, then cached in `build-msvc/_deps`.
+Network is required for the **first** configure only.
 
 CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
 `-DCRYSTAL_WARNINGS_AS_ERRORS=OFF` (default OFF),
-`-DCRYSTAL_ENABLE_DEBUG_OVERLAY=ON` (default ON in Debug).
+`-DCRYSTAL_ENABLE_DEBUG_OVERLAY=ON` (default ON).
 
 ## Gotchas (read these before you waste an hour)
 
-1. **Toolchain age.** The machine that bootstrapped this project had only
-   **MinGW GCC 8.1.0 (2018)**, which predates C++20 and cannot reliably build the
-   project. If the build fails with C++20/`-std=c++2a` errors, it's the compiler,
-   not the code. Recommend: VS 2022 Build Tools (MSVC), or modern MinGW-w64
-   (w64devkit / MSYS2 UCRT64 GCC 13+), or LLVM Clang. Verify with `g++ --version`.
-2. **`std::filesystem` on GCC < 9** needs `-lstdc++fs`. CMake handles this
-   conditionally; don't remove that block unless the minimum compiler is GCC 9+.
+1. **Build with MSVC only.** This project is built with **MSVC / C++20** from a
+   Visual Studio developer environment. Do **not** use MinGW/GCC — a stray MinGW
+   `g++` on `PATH` is exactly what broke the first build attempt. Always pass
+   `-DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl` so the right compiler is used,
+   and confirm with `where cl`. No C++17 downgrade, no GCC 8.1 workarounds.
+2. **Initialize the VS environment first.** `cl` and the bundled Ninja are not on
+   a normal shell's `PATH`; run `vcvars64.bat` (or use a "Developer PowerShell/
+   Command Prompt for VS") before CMake, or configure can't find the compiler or
+   generator.
 3. **raylib + window required for GPU calls.** `LoadTexture`, `LoadFont`,
    `LoadRenderTexture`, audio init etc. need an initialized window/device. Keep
    that logic out of unit tests — tests must run headless. Put pure logic
@@ -140,9 +144,10 @@ Milestones: 1 Foundation · 2 Data model · 3 Town shell · 4 Dungeon gen ·
 
 ## Verification checklist (before claiming done)
 
-- [ ] `cmake -S . -B build -G ...` configured without error.
-- [ ] `cmake --build build` compiled with no project warnings (deps may warn).
-- [ ] `ctest --test-dir build --output-on-failure` — all green.
+- [ ] From a VS developer shell: `cmake -S . -B build-msvc -G Ninja
+      -DCMAKE_CXX_COMPILER=cl ...` configured without error.
+- [ ] `cmake --build build-msvc` compiled with no project warnings (deps may warn).
+- [ ] `ctest --test-dir build-msvc --output-on-failure` — all green.
 - [ ] App launches, window opens at correct aspect, scales cleanly, no crash on
       exit. (Human-validated if I can't see it.)
 - [ ] Milestone's listed deliverables all present.

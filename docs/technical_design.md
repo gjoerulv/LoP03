@@ -11,12 +11,14 @@
 
 ### Compiler baseline
 
-Targets **C++20** as supported by **GCC 11+ / Clang 13+ / MSVC 19.3+ (VS 2022)**.
-Code avoids bleeding-edge features (`<format>`, modules, heavy ranges/concepts)
-for portability. `std::filesystem`, `std::optional`, `std::string_view`,
-structured bindings, etc. are used freely. On GCC < 9 the build links
-`stdc++fs` automatically. **Note:** GCC 8.x (2018) cannot reliably build this
-project — use a modern toolchain.
+Built with **MSVC / C++20** (Visual Studio 2022 or newer) as the supported
+toolchain — see the README for the exact build routine. Code avoids
+bleeding-edge features (`<format>`, modules, heavy ranges/concepts) and stays
+free of Windows-only APIs, so it remains portable to other modern C++20
+compilers (recent GCC/Clang) should a non-Windows target ever be added — but
+**MSVC is the only supported build path**. MinGW and GCC 8.x toolchains are not
+supported and must not be used. `std::filesystem`, `std::optional`,
+`std::string_view`, structured bindings, etc. are used freely.
 
 ## 2. Repository layout
 

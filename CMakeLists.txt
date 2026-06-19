@@ -57,11 +57,6 @@ if(CRYSTAL_ENABLE_DEBUG_OVERLAY)
     target_compile_definitions(crystal_core PUBLIC CRYSTAL_DEBUG_OVERLAY)
 endif()
 
-# std::filesystem needs an extra link library on GCC < 9.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)
-    target_link_libraries(crystal_core PUBLIC stdc++fs)
-endif()
-
 # ---------------------------------------------------------------------------
 # Executable
 # ---------------------------------------------------------------------------
