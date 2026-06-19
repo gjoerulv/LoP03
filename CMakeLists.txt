@@ -47,6 +47,11 @@ add_library(crystal_core STATIC
     src/input/RaylibInputQuery.cpp
     src/resource/ResourceManager.cpp
     src/platform/Paths.cpp
+    src/content/Enums.cpp
+    src/content/LoadReport.cpp
+    src/content/JsonValidation.cpp
+    src/content/ContentDatabase.cpp
+    src/content/ContentLoader.cpp
 )
 
 target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -69,6 +74,13 @@ if(WIN32)
     set_target_properties(CrystalDungeons PROPERTIES
         WIN32_EXECUTABLE $<CONFIG:Release>)
 endif()
+
+# Make JSON content available next to the executable at runtime.
+add_custom_command(TARGET CrystalDungeons POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/data"
+            "$<TARGET_FILE_DIR:CrystalDungeons>/data"
+    COMMENT "Copying data/ next to CrystalDungeons.exe")
 
 # ---------------------------------------------------------------------------
 # Tests

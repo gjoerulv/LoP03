@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "enemies": [
+    {
+      "id": "goblin_grunt",
+      "name": "Goblin Grunt",
+      "stats": { "hp": 30, "attack": 10, "magic": 0, "defense": 5, "speed": 9 },
+      "tier": "normal",
+      "tags": ["fast"],
+      "skills": ["strike"],
+      "xpReward": 12,
+      "goldReward": 5
+    },
+    {
+      "id": "skeleton_archer",
+      "name": "Skeleton Archer",
+      "stats": { "hp": 26, "attack": 12, "magic": 0, "defense": 4, "speed": 11 },
+      "tier": "normal",
+      "tags": [],
+      "skills": ["precise_shot"],
+      "xpReward": 14,
+      "goldReward": 6
+    },
+    {
+      "id": "cave_bat",
+      "name": "Cave Bat",
+      "stats": { "hp": 18, "attack": 8, "magic": 0, "defense": 2, "speed": 15 },
+      "tier": "normal",
+      "tags": ["fast"],
+      "skills": ["strike"],
+      "xpReward": 8,
+      "goldReward": 3
+    },
+    {
+      "id": "stone_golem",
+      "name": "Stone Golem",
+      "stats": { "hp": 70, "attack": 14, "magic": 0, "defense": 18, "speed": 4 },
+      "tier": "normal",
+      "tags": ["armored"],
+      "skills": ["strike"],
+      "xpReward": 22,
+      "goldReward": 10
+    },
+    {
+      "id": "venom_spider",
+      "name": "Venom Spider",
+      "stats": { "hp": 28, "attack": 11, "magic": 2, "defense": 6, "speed": 13 },
+      "tier": "normal",
+      "tags": ["fast", "poison"],
+      "skills": ["strike"],
+      "xpReward": 16,
+      "goldReward": 7
+    },
+    {
+      "id": "dark_acolyte",
+      "name": "Dark Acolyte",
+      "stats": { "hp": 34, "attack": 6, "magic": 16, "defense": 6, "speed": 10 },
+      "tier": "normal",
+      "tags": ["magic"],
+      "skills": ["fireball"],
+      "xpReward": 20,
+      "goldReward": 9
+    },
+    {
+      "id": "ogre_marauder",
+      "name": "Ogre Marauder",
+      "stats": { "hp": 110, "attack": 22, "magic": 0, "defense": 14, "speed": 7 },
+      "tier": "elite",
+      "tags": ["armored"],
+      "skills": ["strike", "cleave"],
+      "xpReward": 48,
+      "goldReward": 24
+    }
+  ]
+}

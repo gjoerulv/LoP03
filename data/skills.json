@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": [
+    { "id": "strike", "name": "Strike", "category": "physical", "target": "single_enemy", "power": 10, "mpCost": 0, "description": "A basic melee attack." },
+    { "id": "cleave", "name": "Cleave", "category": "physical", "target": "all_enemies", "power": 7, "mpCost": 4, "description": "A sweeping blow that hits every foe." },
+    { "id": "precise_shot", "name": "Precise Shot", "category": "physical", "target": "single_enemy", "power": 12, "mpCost": 3, "description": "A carefully aimed shot." },
+    { "id": "shadow_strike", "name": "Shadow Strike", "category": "physical", "target": "single_enemy", "power": 13, "mpCost": 4, "description": "A swift strike from the shadows." },
+    { "id": "fireball", "name": "Fireball", "category": "magic", "target": "single_enemy", "element": "fire", "power": 14, "mpCost": 6, "description": "Hurl a ball of flame." },
+    { "id": "frost_lance", "name": "Frost Lance", "category": "magic", "target": "single_enemy", "element": "ice", "power": 14, "mpCost": 6, "description": "Impale a foe on a spear of ice." },
+    { "id": "mend", "name": "Mend", "category": "heal", "target": "single_ally", "power": 20, "mpCost": 5, "description": "Restore a single ally's health." },
+    { "id": "group_mend", "name": "Group Mend", "category": "heal", "target": "all_allies", "power": 14, "mpCost": 12, "description": "Restore the whole party's health." },
+    { "id": "guard_aura", "name": "Guard Aura", "category": "support", "target": "all_allies", "power": 0, "mpCost": 8, "description": "Bolster the party's defenses." },
+    { "id": "bulwark", "name": "Bulwark", "category": "support", "target": "self", "power": 0, "mpCost": 6, "description": "Brace to absorb incoming blows." }
+  ]
+}
