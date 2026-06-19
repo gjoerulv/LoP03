@@ -7,6 +7,11 @@ add_executable(crystal_tests
     test_paths.cpp
     test_content_validation.cpp
     test_content_loader.cpp
+    test_menu.cpp
+    test_text_input.cpp
+    test_party.cpp
+    test_save_system.cpp
+    test_town.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core Catch2::Catch2WithMain)

@@ -8,8 +8,9 @@
 #include "core/GameConfig.hpp"
 #include "core/Log.hpp"
 #include "input/InputMap.hpp"
+#include "platform/Paths.hpp"
 #include "raylib.h"
-#include "states/TitleState.hpp"
+#include "states/MainMenuState.hpp"
 
 namespace cd {
 
@@ -47,12 +48,14 @@ Application::Application()
       screen_(config::kVirtualWidth, config::kVirtualHeight),
       resources_(),
       content_(),
-      context_{resources_, content_, config::kVirtualWidth, config::kVirtualHeight},
+      party_(),
+      saves_(content_, paths::userDataDir() / "saves"),
+      context_{resources_, content_, saves_, party_, config::kVirtualWidth, config::kVirtualHeight},
       input_(),
       stack_(),
       debugOverlay_(true) {
     loadContent();
-    stack_.pushState(std::make_unique<TitleState>(stack_, context_));
+    stack_.pushState(std::make_unique<MainMenuState>(stack_, context_));
     stack_.applyPending();
     log::info("Crystal Dungeons initialized");
 }

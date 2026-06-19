@@ -1,19 +1,24 @@
 #pragma once
 
-// Shared, long-lived services handed to states. Kept small; grows in later
-// milestones (audio, save system, ...).
+// Shared, long-lived services handed to states. Kept small; grows per milestone.
 
 namespace cd {
 
 class ResourceManager;
+struct Party;
 
 namespace content {
 class ContentDatabase;
+}
+namespace save {
+class SaveSystem;
 }
 
 struct AppContext {
     ResourceManager& resources;
     const content::ContentDatabase& content;
+    save::SaveSystem& saves;
+    Party& party;  // the active party/session (empty until New Game or Continue)
     int virtualWidth;
     int virtualHeight;
 };

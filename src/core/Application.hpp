@@ -2,9 +2,11 @@
 
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
+#include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "render/VirtualScreen.hpp"
 #include "resource/ResourceManager.hpp"
+#include "save/SaveSystem.hpp"
 #include "states/StateStack.hpp"
 
 namespace cd {
@@ -34,6 +36,8 @@ private:
     VirtualScreen screen_;
     ResourceManager resources_;
     content::ContentDatabase content_;
+    Party party_;
+    save::SaveSystem saves_;
     AppContext context_;
     Input input_;
     StateStack stack_;
