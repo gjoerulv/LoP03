@@ -32,13 +32,18 @@ data/                     # JSON content (populated M2+)
 assets/                   # textures/audio/fonts placeholders (M8); .gitkeep for now
 src/
   main.cpp
-  core/                   # Application, GameConfig, Log
+  core/                   # Application, AppContext, GameConfig, Log, Geometry (pure)
   render/                 # VirtualScreen, Viewport (pure), RaylibRAII
-  states/                 # GameState, StateStack, concrete states
+  states/                 # GameState, StateStack, concrete states (menu/town/...)
   input/                  # InputAction, InputMap (+ raylib query factory)
   resource/               # ResourceManager (texture/font/sound cache, RAII)
   platform/               # Paths (user-data dir, path sanitizing)
-tests/                    # Catch2 unit tests (headless: pure logic only)
+  content/                # JSON content model: defs, enums, loaders, validators
+  game/                   # runtime model: Character, Party, derivation (pure)
+  save/                   # SaveSystem: versioned JSON slots + autosave (defensive)
+  town/                   # Tilemap, Movement, TownData (pure)
+  ui/                     # Menu, TextInput (pure) + UiDraw (raylib helpers)
+tests/                    # Catch2 unit tests (headless: pure logic + filesystem)
 .claude/skills/crystal-dungeons/SKILL.md
 ```
 
@@ -173,3 +178,48 @@ Enums (string values): `Element`, `SkillCategory`, `SkillTarget`, `EnemyTag`,
   `grantsSkill` must exist.
 - Bumping `version` or changing field meaning is a **public-schema change** —
   requires human approval (see `CLAUDE.md`).
+
+## 8. Town, party, and saves (Milestone 3)
+
+### Flow & states
+
+`MainMenuState` (New Game / Continue / Quit) → `PartyCreationState` →
+`TownState`. Locations push sub-states (`InnState`, `SlotMenuState`,
+`PlaceholderLocationState`); `TownMenuState` is a transparent pause overlay.
+`AppContext` now also carries `save::SaveSystem& saves` and the active
+`Party& party`.
+
+### Town (walkable)
+
+A fixed single-screen **26×15** tilemap (16px tiles) built by `town::buildTown()`.
+`Tilemap` answers solidity and pixel-rect collision; `town::resolveMove` does
+axis-separated collision (natural wall-sliding). Both are pure and unit-tested.
+Seven `Building`s each expose a walkable **Door** interact tile; standing on one
+and pressing Confirm enters that location. Rendering uses code-generated colored
+tiles (placeholder, no external art).
+
+### Party model
+
+`Character` persists `classId/name/level/xp` and current `hp/mp`; `stats`,
+`maxHp`, `maxMp` are **derived** from the `ClassDef` (base + per-level growth,
+truncated for determinism) on creation/load, so they never go stale. MP is a
+provisional `magic`-scaled pool until the combat milestone.
+
+### Save format & rules
+
+Versioned JSON (`version` must equal `kSaveVersion`, currently `1`) under the
+user data dir (`%APPDATA%/CrystalDungeons/saves` on Windows). **Slots:** three
+manual (`save_slot1..3.json`) plus an autosave (`save_auto.json`).
+
+```json
+{ "version": 1, "gold": 150,
+  "party": [ { "classId": "knight", "name": "Rolan", "level": 1, "xp": 0, "hp": 120, "mp": 4 } ] }
+```
+
+- Loading reuses the M2 validator (`ObjectReader`/`LoadReport`): malformed,
+  foreign-version, or unknown-class saves are reported and **leave the target
+  party untouched** — never a crash, never a partial load.
+- Manual saves happen at the town Save Point. **Autosave** writes on dungeon
+  entry (trigger wired in M4); loading any slot — including autosave — always
+  starts the party in **town**, never inside a dungeon (no save-scumming a run).
+- Save-format changes require human approval (see `CLAUDE.md`).

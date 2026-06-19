@@ -6,8 +6,8 @@
 | #  | Milestone                         | Status |
 |----|-----------------------------------|--------|
 | 1  | Project foundation                | ☑ complete (approved) |
-| 2  | Core data model                   | ◐ implemented, awaiting approval |
-| 3  | Town hub shell                    | ☐ |
+| 2  | Core data model                   | ☑ complete (approved) |
+| 3  | Town hub shell                    | ◐ implemented, awaiting approval |
 | 4  | Dungeon generator                 | ☐ |
 | 5  | Battle system MVP                 | ☐ |
 | 6  | Danger rating & scoring           | ☐ |
@@ -68,8 +68,39 @@ Out of scope (deferred to owning milestones): `bosses.json` (M7) and
 `dungeon_themes.json` (M4); leveling/economy logic; equipping/using items.
 
 ## M3 — Town hub shell
-New game/party creation; class selection + renaming; town navigation;
-inn/shop/guild/save/scoreboard placeholders; save/load MVP.
+
+Deliverables: new game/party creation; class selection + renaming; town
+navigation; inn/shop/guild/save/scoreboard placeholders; save/load MVP.
+
+Implemented:
+- Flow: `MainMenu` (New Game / Continue / Quit) → `PartyCreation` (4 slots, class
+  cycle + modal name editing) → **walkable `TownState`** → enter buildings → back.
+- Walkable town (chosen over a menu hub): a single-screen 26×15 tilemap
+  (`town/`), free player movement with axis-separated tile collision, 7 buildings
+  with door-entry prompts. Pure tilemap/movement logic is unit-tested.
+- Locations: **Inn** (real full heal), **Save Point** (save to a manual slot),
+  Training Hall (lists classes), and Guild/Item Shop/Equip Shop/Scoreboard
+  placeholders. Pause overlay (Menu/Cancel) → Resume / Quit to Title.
+- Game model (`game/`): `Character`/`Party`; `createCharacter` derives stats from
+  a `ClassDef` (base + per-level growth); `healFull`.
+- Save system (`save/`): versioned JSON in the user data dir; **3 manual slots +
+  an autosave slot**; defensive loading (reuses the M2 validator) that never
+  corrupts the target party; `autosave()` capability ready for the dungeon-entry
+  trigger. Loading any slot always returns the party to **town**.
+- Reusable UI (`ui/`): pure `Menu` (cursor nav) and `TextInput` (name buffer),
+  plus raylib `UiDraw` helpers. Pure geometry in `core/Geometry.hpp`.
+- Retired the M1 demo states (`TitleState`/`MenuOverlayState`), replaced by the
+  real menu/town flow.
+- Tests: menu nav, text input, character derivation, save round-trip/malformed/
+  version/unknown-class/slots/autosave, tilemap collision & town reachability.
+  62 tests total, all passing.
+
+Autosave semantics (per the human): autosave fires on dungeon entry — the
+trigger is wired in M4; the capability and slot exist now. Loading an autosave
+always starts in town, never inside a dungeon.
+
+Out of scope (deferred): real shop economy, equipping/using items, dungeon
+selection/entry (M4), real scores (M6), tile/character sprite art (M8).
 
 ## M4 — Dungeon generator
 Seeded generation; room graph/grid; start/boss/main-path/side rooms; visible

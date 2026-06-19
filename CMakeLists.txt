@@ -40,9 +40,6 @@ add_library(crystal_core STATIC
     src/core/Application.cpp
     src/render/Viewport.cpp
     src/render/VirtualScreen.cpp
-    src/states/StateStack.cpp
-    src/states/TitleState.cpp
-    src/states/MenuOverlayState.cpp
     src/input/InputMap.cpp
     src/input/RaylibInputQuery.cpp
     src/resource/ResourceManager.cpp
@@ -52,6 +49,22 @@ add_library(crystal_core STATIC
     src/content/JsonValidation.cpp
     src/content/ContentDatabase.cpp
     src/content/ContentLoader.cpp
+    src/game/Party.cpp
+    src/save/SaveSystem.cpp
+    src/ui/Menu.cpp
+    src/ui/TextInput.cpp
+    src/ui/UiDraw.cpp
+    src/town/Tilemap.cpp
+    src/town/Movement.cpp
+    src/town/TownData.cpp
+    src/states/StateStack.cpp
+    src/states/MainMenuState.cpp
+    src/states/PartyCreationState.cpp
+    src/states/SlotMenuState.cpp
+    src/states/TownState.cpp
+    src/states/TownMenuState.cpp
+    src/states/InnState.cpp
+    src/states/PlaceholderLocationState.cpp
 )
 
 target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
