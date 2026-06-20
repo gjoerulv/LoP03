@@ -8,8 +8,8 @@
 | 1  | Project foundation                | ☑ complete (approved) |
 | 2  | Core data model                   | ☑ complete (approved) |
 | 3  | Town hub shell                    | ☑ complete (approved) |
-| 4  | Dungeon generator                 | ◐ implemented, awaiting approval |
-| 5  | Battle system MVP                 | ☐ |
+| 4  | Dungeon generator                 | ☑ complete (approved) |
+| 5  | Battle system MVP                 | ◐ implemented, awaiting approval |
 | 6  | Danger rating & scoring           | ☐ |
 | 7  | Content pass                      | ☐ |
 | 8  | Presentation pass                 | ☐ |
@@ -133,8 +133,31 @@ score (M6); item inventory (chest items are previewed, not stored); multiple
 themes/depth scaling content (M7); sprite art (M8).
 
 ## M5 — Battle system MVP
-Side-view screen; turn order; Attack/Skill/Item/Guard/Escape; damage/healing;
-victory/defeat/escape; KO/revive; return to dungeon.
+
+Deliverables: side-view screen; turn order; Attack/Skill/Item/Guard/Escape;
+damage/healing; victory/defeat/escape; KO/revive; return to dungeon.
+
+Implemented:
+- Combat sim (`battle/`, pure, **deterministic**, unit-tested): `Combatant`,
+  `Battle` (speed-ordered `turnOrder`, formula damage/heal/guard, KO, item-revive,
+  `Outcome`), `buildBattle` from party + enemy team, deterministic enemy AI.
+- `BattleState`: side-view screen (enemies left, party right), phase machine for
+  **Attack / Skill / Item / Guard / Escape**, target/skill/item selection, HP/MP
+  bars, turn counter. Writes hp/mp back to the party; consumes items.
+- **Inventory** (`game/Inventory`): starter potions on New Game, M4 chest items
+  now stored, persisted in the save as an optional `inventory` field
+  (backward-compatible, save version unchanged at 1).
+- **Dungeon integration** (closes the core loop): facing a team + Confirm starts
+  a real battle. **Victory** clears the gate / chest guard; beating the **boss**
+  completes the dungeon → town. **Defeat** → game over (full heal, lose half
+  gold, back to town). **Escape** → stays, gate uncleared. Replaced M4's
+  `EncounterPreviewState`.
+- Tests: damage/guard/magic/heal formulas, KO + item-revive, turn order, victory/
+  defeat detection, enemy AI, inventory ops, save inventory round-trip +
+  backward compatibility. 80 tests total, all passing.
+
+Out of scope (deferred): danger tier + dungeon score (M6); damage variance/crits
+and status ailments e.g. poison (M7/M9); battle sprites/animation (M8).
 
 ## M6 — Danger rating & scoring
 Stat-derived danger formula + labels; battle-turn tracking; dungeon score;

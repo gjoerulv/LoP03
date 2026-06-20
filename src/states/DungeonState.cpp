@@ -10,8 +10,8 @@
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
+#include "states/BattleState.hpp"
 #include "states/DungeonMenuState.hpp"
-#include "states/EncounterPreviewState.hpp"
 #include "states/StateStack.hpp"
 #include "town/Movement.hpp"
 #include "ui/UiDraw.hpp"
@@ -67,15 +67,13 @@ DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dung
     enterRoom(dungeon_.startRoom, std::nullopt);
 }
 
-void DungeonState::enterRoom(int index, std::optional<dungeon::Dir> entrySide) {
-    currentRoom_ = index;
+void DungeonState::buildRoom() {
     facingMarker_ = nullptr;
     onChest_ = false;
     doorTiles_.clear();
     markers_.clear();
 
-    dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(index)];
-    room.visited = true;
+    dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)];
 
     town::Tilemap map(kRoomW, kRoomH, town::Tile::Ground);
     for (int x = 0; x < kRoomW; ++x) {
@@ -96,7 +94,7 @@ void DungeonState::enterRoom(int index, std::optional<dungeon::Dir> entrySide) {
         if (door.gated) {
             const TilePos inner = interiorGap(dir)[0];
             map.set(inner.x, inner.y, town::Tile::Building);  // blocked passage
-            markers_.push_back({inner.x, inner.y, MarkerKind::GateTeam, door.teamIndex});
+            markers_.push_back({inner.x, inner.y, MarkerKind::GateTeam, door.teamIndex, dir});
         } else {
             for (const TilePos& bp : borderGap(dir)) {
                 map.set(bp.x, bp.y, town::Tile::Door);
@@ -107,17 +105,23 @@ void DungeonState::enterRoom(int index, std::optional<dungeon::Dir> entrySide) {
 
     if (room.type == dungeon::RoomType::Boss && room.teamIndex >= 0) {
         map.set(12, 7, town::Tile::Building);
-        markers_.push_back({12, 7, MarkerKind::Boss, room.teamIndex});
+        markers_.push_back({12, 7, MarkerKind::Boss, room.teamIndex, dungeon::Dir::North});
     }
     if (room.chest.present) {
-        markers_.push_back({12, 7, MarkerKind::Chest, -1});  // walkable: step on to open
+        markers_.push_back({12, 7, MarkerKind::Chest, -1, dungeon::Dir::North});
         if (room.teamIndex >= 0) {
             map.set(13, 7, town::Tile::Building);
-            markers_.push_back({13, 7, MarkerKind::GuardTeam, room.teamIndex});
+            markers_.push_back({13, 7, MarkerKind::GuardTeam, room.teamIndex, dungeon::Dir::North});
         }
     }
 
     roomMap_ = std::move(map);
+}
+
+void DungeonState::enterRoom(int index, std::optional<dungeon::Dir> entrySide) {
+    currentRoom_ = index;
+    dungeon_.rooms[static_cast<std::size_t>(index)].visited = true;
+    buildRoom();
 
     const float inset = (kTile - kPlayerSize) * 0.5f;
     TilePos start{12, 7};
@@ -164,30 +168,85 @@ void DungeonState::openChest() {
     context_.party.gold += room.chest.gold;
     std::string msg = TextFormat("Found %d gold", room.chest.gold);
     if (!room.chest.itemId.empty()) {
+        context_.party.inventory.add(room.chest.itemId, 1);
         const char* name = room.chest.itemId.c_str();
         if (const content::ItemDef* it = context_.content.findItem(room.chest.itemId)) {
             name = it->name.c_str();
         }
-        msg += std::string(" + ") + name + " (stored later)";
+        msg += std::string(" + ") + name;
     }
     message_ = msg;
     messageTimer_ = 3.0f;
 }
 
-void DungeonState::inspectTeam(int teamIndex) {
-    if (teamIndex < 0 || teamIndex >= static_cast<int>(dungeon_.teams.size())) {
-        return;
-    }
-    stack().pushState(std::make_unique<EncounterPreviewState>(
-        stack(), context_, dungeon_.teams[static_cast<std::size_t>(teamIndex)]));
-}
-
 void DungeonState::interact() {
     if (onChest_) {
         openChest();
-    } else if (facingMarker_ != nullptr) {
-        inspectTeam(facingMarker_->teamIndex);
+        return;
     }
+    if (facingMarker_ == nullptr) {
+        return;
+    }
+    EncounterKind kind = EncounterKind::None;
+    switch (facingMarker_->kind) {
+        case MarkerKind::GateTeam: kind = EncounterKind::Gate; break;
+        case MarkerKind::GuardTeam: kind = EncounterKind::Guard; break;
+        case MarkerKind::Boss: kind = EncounterKind::Boss; break;
+        case MarkerKind::Chest: return;
+    }
+    startBattle(facingMarker_->teamIndex, kind, facingMarker_->gateDir);
+}
+
+void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir gateDir) {
+    if (teamIndex < 0 || teamIndex >= static_cast<int>(dungeon_.teams.size())) {
+        return;
+    }
+    pendingKind_ = kind;
+    pendingRoom_ = currentRoom_;
+    pendingGateDir_ = gateDir;
+    battleResult_ = battle::Outcome::Ongoing;
+    battle::Battle b =
+        battle::buildBattle(context_.party, dungeon_.teams[static_cast<std::size_t>(teamIndex)],
+                            context_.content);
+    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &battleResult_));
+}
+
+void DungeonState::onResume() {
+    if (pendingKind_ == EncounterKind::None) {
+        return;
+    }
+    const EncounterKind kind = pendingKind_;
+    pendingKind_ = EncounterKind::None;
+    const battle::Outcome result = battleResult_;
+
+    if (result == battle::Outcome::Victory) {
+        dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(pendingRoom_)];
+        if (kind == EncounterKind::Gate) {
+            room.door(pendingGateDir_).gated = false;
+            const int neighbor = room.door(pendingGateDir_).neighbor;
+            if (neighbor >= 0) {
+                dungeon_.rooms[static_cast<std::size_t>(neighbor)]
+                    .door(dungeon::opposite(pendingGateDir_))
+                    .gated = false;
+            }
+            buildRoom();
+            message_ = "The gate is clear!";
+            messageTimer_ = 2.0f;
+        } else if (kind == EncounterKind::Guard) {
+            room.teamIndex = -1;
+            room.chest.guarded = false;
+            buildRoom();
+            message_ = "The guards fall. The chest is yours to open.";
+            messageTimer_ = 2.5f;
+        } else if (kind == EncounterKind::Boss) {
+            stack().popState();  // dungeon cleared -> back to town
+        }
+    } else if (result == battle::Outcome::Defeat) {
+        healFull(context_.party);
+        context_.party.gold /= 2;
+        stack().popState();  // game over -> back to town
+    }
+    // Escaped: nothing changes; the player resumes in the dungeon.
 }
 
 void DungeonState::handleInput(const Input& input) {
