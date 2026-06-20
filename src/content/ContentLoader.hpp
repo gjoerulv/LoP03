@@ -25,6 +25,8 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
 void parseClasses(const Json& root, const std::string& source, ContentDatabase& db, LoadReport& rep);
 void parseEnemies(const Json& root, const std::string& source, ContentDatabase& db, LoadReport& rep);
 void parseItems(const Json& root, const std::string& source, ContentDatabase& db, LoadReport& rep);
+void parseBosses(const Json& root, const std::string& source, ContentDatabase& db, LoadReport& rep);
+void parseThemes(const Json& root, const std::string& source, ContentDatabase& db, LoadReport& rep);
 
 // Cross-reference checks: skill ids referenced by classes, enemies, and scrolls
 // must exist in `db`.

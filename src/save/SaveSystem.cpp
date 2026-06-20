@@ -1,5 +1,6 @@
 #include "save/SaveSystem.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <utility>
 
@@ -62,6 +63,9 @@ bool SaveSystem::save(SaveSlot slot, const Party& party, content::LoadReport& re
         m["xp"] = c.xp;
         m["hp"] = c.hp;
         m["mp"] = c.mp;
+        m["weapon"] = c.weapon;
+        m["armor"] = c.armor;
+        m["accessory"] = c.accessory;
         members.push_back(std::move(m));
     }
     root["party"] = std::move(members);
@@ -146,6 +150,9 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty, content::LoadReport& repor
         const int xp = m.optIntMin("xp", 0, 0);
         const int hp = m.optIntMin("hp", 0, 0);
         const int mp = m.optIntMin("mp", 0, 0);
+        const std::string weapon = m.optString("weapon");
+        const std::string armor = m.optString("armor");
+        const std::string accessory = m.optString("accessory");
         if (report.errorCount() != elementBefore) {
             continue;  // invalid member; skip
         }
@@ -158,9 +165,13 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty, content::LoadReport& repor
 
         Character c = createCharacter(*cls, name, level);
         c.xp = xp;
-        c.hp = hp;
-        c.mp = mp;
-        recomputeDerivedStats(c, *cls);  // clamps hp/mp to derived maxima
+        // Drop equipment ids the content no longer knows about (defensive).
+        c.weapon = (weapon.empty() || db_.findItem(weapon) != nullptr) ? weapon : "";
+        c.armor = (armor.empty() || db_.findItem(armor) != nullptr) ? armor : "";
+        c.accessory = (accessory.empty() || db_.findItem(accessory) != nullptr) ? accessory : "";
+        refreshCharacter(c, db_);  // recompute stats from class + equipment
+        c.hp = std::clamp(hp, 0, c.maxHp);
+        c.mp = std::clamp(mp, 0, c.maxMp);
         loaded.members.push_back(std::move(c));
     }
 

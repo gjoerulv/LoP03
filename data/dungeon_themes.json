@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "themes": [
+    {
+      "id": "ruined_keep",
+      "name": "Ruined Keep",
+      "normalEnemies": ["goblin_grunt", "skeleton_archer", "kobold_scout", "zombie", "bandit", "wild_boar"],
+      "eliteEnemies": ["ogre_marauder", "troll_berserker", "iron_sentinel"],
+      "bosses": ["keep_warden", "rush_tyrant"],
+      "description": "Crumbling halls held by brigands and the restless dead."
+    },
+    {
+      "id": "crystal_mine",
+      "name": "Crystal Mine",
+      "normalEnemies": ["stone_golem", "dark_acolyte", "frost_imp", "mud_crawler", "wisp", "cave_bat"],
+      "eliteEnemies": ["crystal_guardian", "iron_sentinel"],
+      "bosses": ["crystal_sorcerer"],
+      "description": "Glittering tunnels guarded by golems and frost-mages."
+    },
+    {
+      "id": "hollow_forest",
+      "name": "Hollow Forest",
+      "normalEnemies": ["venom_spider", "forest_wolf", "wild_boar", "zombie", "wisp", "cave_bat"],
+      "eliteEnemies": ["shadow_stalker", "plague_bearer", "troll_berserker"],
+      "bosses": ["hollow_commander", "rush_tyrant"],
+      "description": "A poisoned wood prowled by beasts and shadows."
+    }
+  ]
+}

@@ -4,6 +4,8 @@
 #include <cmath>
 #include <utility>
 
+#include "content/ContentDatabase.hpp"
+
 namespace cd {
 
 int deriveMaxMp(int magic) {
@@ -35,6 +37,38 @@ void recomputeDerivedStats(Character& character, const content::ClassDef& cls) {
     character.maxHp = std::max(1, character.stats.maxHp);
     character.maxMp = std::max(0, deriveMaxMp(character.stats.magic));
 
+    character.hp = std::clamp(character.hp, 0, character.maxHp);
+    character.mp = std::clamp(character.mp, 0, character.maxMp);
+}
+
+void refreshCharacter(Character& character, const content::ContentDatabase& db) {
+    const content::ClassDef* cls = db.findClass(character.classId);
+    if (cls == nullptr) {
+        return;
+    }
+    recomputeDerivedStats(character, *cls);  // base stats (clamps hp/mp to base)
+
+    content::StatBlock bonus;
+    for (const std::string& id : {character.weapon, character.armor, character.accessory}) {
+        if (id.empty()) {
+            continue;
+        }
+        if (const content::ItemDef* item = db.findItem(id)) {
+            bonus.maxHp += item->statBonus.maxHp;
+            bonus.attack += item->statBonus.attack;
+            bonus.magic += item->statBonus.magic;
+            bonus.defense += item->statBonus.defense;
+            bonus.speed += item->statBonus.speed;
+        }
+    }
+    character.stats.maxHp += bonus.maxHp;
+    character.stats.attack += bonus.attack;
+    character.stats.magic += bonus.magic;
+    character.stats.defense += bonus.defense;
+    character.stats.speed += bonus.speed;
+
+    character.maxHp = std::max(1, character.stats.maxHp);
+    character.maxMp = std::max(0, deriveMaxMp(character.stats.magic));
     character.hp = std::clamp(character.hp, 0, character.maxHp);
     character.mp = std::clamp(character.mp, 0, character.maxMp);
 }

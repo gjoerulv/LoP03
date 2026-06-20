@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <queue>
 #include <vector>
@@ -146,6 +147,31 @@ TEST_CASE("dungeon: teams and chest rewards reference real content", "[dungeon]"
             REQUIRE(db.findItem(room.chest.itemId) != nullptr);
         }
     }
+}
+
+TEST_CASE("dungeon: a themed run uses the theme's boss pool", "[dungeon]") {
+    const cd::content::ContentDatabase db = loadContent();
+    const Dungeon d = generate(424242, 1, db, "ruined_keep");
+
+    const Room& bossRoom = d.rooms[static_cast<std::size_t>(d.bossRoom)];
+    REQUIRE(bossRoom.teamIndex >= 0);
+    const EnemyTeam& bossTeam = d.teams[static_cast<std::size_t>(bossRoom.teamIndex)];
+    REQUIRE(bossTeam.isBoss);
+    REQUIRE_FALSE(bossTeam.bossId.empty());
+    REQUIRE(db.findBoss(bossTeam.bossId) != nullptr);
+
+    const cd::content::DungeonThemeDef* theme = db.findTheme("ruined_keep");
+    REQUIRE(theme != nullptr);
+    REQUIRE(std::find(theme->bosses.begin(), theme->bosses.end(), bossTeam.bossId) !=
+            theme->bosses.end());
+}
+
+TEST_CASE("dungeon: deeper runs have at least as many gates", "[dungeon]") {
+    const cd::content::ContentDatabase db = loadContent();
+    const Dungeon shallow = generate(7, 1, db, "ruined_keep");
+    const Dungeon deep = generate(7, 6, db, "ruined_keep");
+    REQUIRE(deep.mandatoryGates >= shallow.mandatoryGates);
+    REQUIRE(deep.mandatoryGates >= 3);
 }
 
 #endif  // CRYSTAL_TEST_DATA_DIR

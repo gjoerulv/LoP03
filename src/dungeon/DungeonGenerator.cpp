@@ -28,13 +28,28 @@ struct Pools {
     std::vector<std::string> items;
 };
 
-Pools buildPools(const content::ContentDatabase& db) {
+Pools buildPools(const content::ContentDatabase& db, const content::DungeonThemeDef* theme) {
     Pools p;
-    for (const auto& [id, def] : db.enemies()) {
-        if (def.tier == content::EnemyTier::Elite) {
-            p.eliteEnemies.push_back(id);
-        } else {
-            p.normalEnemies.push_back(id);
+    if (theme != nullptr) {
+        for (const std::string& id : theme->normalEnemies) {
+            if (db.findEnemy(id) != nullptr) {
+                p.normalEnemies.push_back(id);
+            }
+        }
+        for (const std::string& id : theme->eliteEnemies) {
+            if (db.findEnemy(id) != nullptr) {
+                p.eliteEnemies.push_back(id);
+            }
+        }
+    }
+    if (p.normalEnemies.empty()) {
+        // Fallback: every enemy in the database, split by tier.
+        for (const auto& [id, def] : db.enemies()) {
+            if (def.tier == content::EnemyTier::Elite) {
+                p.eliteEnemies.push_back(id);
+            } else {
+                p.normalEnemies.push_back(id);
+            }
         }
     }
     for (const auto& [id, def] : db.items()) {
@@ -45,6 +60,29 @@ Pools buildPools(const content::ContentDatabase& db) {
     std::sort(p.eliteEnemies.begin(), p.eliteEnemies.end());
     std::sort(p.items.begin(), p.items.end());
     return p;
+}
+
+const content::BossDef* pickBoss(Rng& rng, const content::DungeonThemeDef* theme,
+                                 const content::ContentDatabase& db) {
+    std::vector<std::string> ids;
+    if (theme != nullptr) {
+        for (const std::string& id : theme->bosses) {
+            if (db.findBoss(id) != nullptr) {
+                ids.push_back(id);
+            }
+        }
+    }
+    if (ids.empty()) {
+        for (const auto& [id, def] : db.bosses()) {
+            (void)def;
+            ids.push_back(id);
+        }
+    }
+    if (ids.empty()) {
+        return nullptr;
+    }
+    std::sort(ids.begin(), ids.end());
+    return db.findBoss(ids[static_cast<std::size_t>(rng.range(0, static_cast<int>(ids.size()) - 1))]);
 }
 
 std::string teamName(Rng& rng, bool boss) {
@@ -145,14 +183,15 @@ void connect(Dungeon& d, int a, int b) {
 }  // namespace
 
 Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& db,
-                 std::string themeName) {
+                 std::string themeId) {
     Rng rng(seed);
-    const Pools pools = buildPools(db);
+    const content::DungeonThemeDef* theme = themeId.empty() ? nullptr : db.findTheme(themeId);
+    const Pools pools = buildPools(db, theme);
 
     Dungeon d;
     d.seed = seed;
     d.depth = depth < 1 ? 1 : depth;
-    d.themeName = std::move(themeName);
+    d.themeName = theme != nullptr ? theme->name : "Dungeon";
     d.gridW = kGridW;
     d.gridH = kGridH;
 
@@ -239,10 +278,22 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
     }
     d.mandatoryGates = gateCount;
 
-    // --- Boss team.
+    // --- Boss team (from the theme's boss pool; minions accompany the boss).
     {
         const int teamIdx = static_cast<int>(d.teams.size());
-        d.teams.push_back(makeTeam(rng, pools, d.depth, true, db));
+        EnemyTeam bossTeam;
+        bossTeam.isBoss = true;
+        if (const content::BossDef* boss = pickBoss(rng, theme, db)) {
+            bossTeam.bossId = boss->id;
+            bossTeam.name = boss->name;
+            bossTeam.enemyIds = boss->minions;
+            for (const std::string& id : bossTeam.enemyIds) {
+                addTags(db, id, bossTeam.tags);
+            }
+        } else {
+            bossTeam = makeTeam(rng, pools, d.depth, true, db);  // fallback: strong elite
+        }
+        d.teams.push_back(std::move(bossTeam));
         d.rooms[static_cast<std::size_t>(d.bossRoom)].teamIndex = teamIdx;
     }
 

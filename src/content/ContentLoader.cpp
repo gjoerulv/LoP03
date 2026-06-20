@@ -75,6 +75,10 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
         d.element = r.optEnum<Element>("element", parseElement, Element::None, "element");
         d.power = r.optIntMin("power", 0, 0);
         d.mpCost = r.optIntMin("mpCost", 0, 0);
+        d.statusEffect =
+            r.optEnum<StatusType>("statusEffect", parseStatusType, StatusType::None, "status type");
+        d.statusMagnitude = r.optIntMin("statusMagnitude", 0, 0);
+        d.statusDuration = r.optIntMin("statusDuration", 0, 0);
         d.description = r.optString("description");
         if (rep.errorCount() != before) {
             return;  // invalid entry; skip
@@ -172,6 +176,57 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
     });
 }
 
+void parseBosses(const Json& root, const std::string& source, ContentDatabase& db,
+                 LoadReport& rep) {
+    forEachEntry(root, source, "bosses", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        BossDef d;
+        d.id = r.reqString("id");
+        d.name = r.reqString("name");
+        d.archetype =
+            r.reqEnum<BossArchetype>("archetype", parseBossArchetype, "boss archetype");
+        d.stats = r.reqStatBlock("stats");
+        d.skills = r.optStringArray("skills");
+        d.minions = r.optStringArray("minions");
+        d.telegraph = r.optString("telegraph");
+        d.description = r.optString("description");
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addBoss(d)) {
+            rep.add(source, ctx, "duplicate boss id '" + d.id + "'");
+        }
+    });
+}
+
+void parseThemes(const Json& root, const std::string& source, ContentDatabase& db,
+                 LoadReport& rep) {
+    forEachEntry(root, source, "themes", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        DungeonThemeDef d;
+        d.id = r.reqString("id");
+        d.name = r.reqString("name");
+        d.normalEnemies = r.optStringArray("normalEnemies");
+        d.eliteEnemies = r.optStringArray("eliteEnemies");
+        d.bosses = r.optStringArray("bosses");
+        d.description = r.optString("description");
+        if (d.normalEnemies.empty()) {
+            rep.add(source, ctx, "theme must list at least one entry in 'normalEnemies'");
+        }
+        if (d.bosses.empty()) {
+            rep.add(source, ctx, "theme must list at least one entry in 'bosses'");
+        }
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addTheme(d)) {
+            rep.add(source, ctx, "duplicate theme id '" + d.id + "'");
+        }
+    });
+}
+
 void validateReferences(const ContentDatabase& db, LoadReport& rep) {
     const std::string source = "<references>";
     for (const auto& [id, cls] : db.classes()) {
@@ -195,6 +250,40 @@ void validateReferences(const ContentDatabase& db, LoadReport& rep) {
             !db.hasSkill(item.grantsSkill)) {
             rep.add(source, "item '" + id + "'.grantsSkill",
                     "references unknown skill '" + item.grantsSkill + "'");
+        }
+    }
+    for (const auto& [id, boss] : db.bosses()) {
+        for (const auto& skill : boss.skills) {
+            if (!db.hasSkill(skill)) {
+                rep.add(source, "boss '" + id + "'.skills",
+                        "references unknown skill '" + skill + "'");
+            }
+        }
+        for (const auto& minion : boss.minions) {
+            if (db.findEnemy(minion) == nullptr) {
+                rep.add(source, "boss '" + id + "'.minions",
+                        "references unknown enemy '" + minion + "'");
+            }
+        }
+    }
+    for (const auto& [id, theme] : db.themes()) {
+        for (const auto& enemy : theme.normalEnemies) {
+            if (db.findEnemy(enemy) == nullptr) {
+                rep.add(source, "theme '" + id + "'.normalEnemies",
+                        "references unknown enemy '" + enemy + "'");
+            }
+        }
+        for (const auto& enemy : theme.eliteEnemies) {
+            if (db.findEnemy(enemy) == nullptr) {
+                rep.add(source, "theme '" + id + "'.eliteEnemies",
+                        "references unknown enemy '" + enemy + "'");
+            }
+        }
+        for (const auto& boss : theme.bosses) {
+            if (db.findBoss(boss) == nullptr) {
+                rep.add(source, "theme '" + id + "'.bosses",
+                        "references unknown boss '" + boss + "'");
+            }
         }
     }
 }
@@ -236,6 +325,12 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     }
     if (readJsonFile(dataRoot / "items.json", json, rep)) {
         parseItems(json, "items.json", db, rep);
+    }
+    if (readJsonFile(dataRoot / "bosses.json", json, rep)) {
+        parseBosses(json, "bosses.json", db, rep);
+    }
+    if (readJsonFile(dataRoot / "dungeon_themes.json", json, rep)) {
+        parseThemes(json, "dungeon_themes.json", db, rep);
     }
 
     validateReferences(db, rep);

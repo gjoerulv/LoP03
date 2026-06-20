@@ -54,6 +54,7 @@ private:
     battle::Outcome result_ = battle::Outcome::Ongoing;
     bool bossBattle_ = false;
     bool koOccurred_ = false;
+    std::string bossTelegraph_;
 
     Phase phase_ = Phase::Intro;
     std::vector<int> order_;

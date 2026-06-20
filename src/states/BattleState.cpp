@@ -20,6 +20,18 @@ constexpr float kResolveTime = 0.9f;
 bool skillNeedsTarget(content::SkillTarget t) {
     return t == content::SkillTarget::SingleEnemy || t == content::SkillTarget::SingleAlly;
 }
+
+const char* statusShort(content::StatusType t) {
+    switch (t) {
+        case content::StatusType::Poison: return "PSN";
+        case content::StatusType::AttackUp: return "ATK+";
+        case content::StatusType::AttackDown: return "ATK-";
+        case content::StatusType::DefenseUp: return "DEF+";
+        case content::StatusType::DefenseDown: return "DEF-";
+        case content::StatusType::None: return "";
+    }
+    return "";
+}
 }  // namespace
 
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
@@ -28,9 +40,12 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Enemy && c.isBoss) {
             bossBattle_ = true;
+            if (!c.telegraph.empty()) {
+                bossTelegraph_ = c.telegraph;
+            }
         }
     }
-    message_ = "A battle begins!";
+    message_ = bossBattle_ ? "A boss appears!" : "A battle begins!";
 }
 
 int BattleState::currentActor() const {
@@ -51,6 +66,13 @@ void BattleState::startActorTurn() {
     const int actor = currentActor();
     if (!battle_.units[static_cast<std::size_t>(actor)].alive()) {
         advanceTurn();
+        return;
+    }
+    // Status effects tick at the start of the unit's turn (poison, durations).
+    const std::string tick = battle_.tickStatuses(actor);
+    if (!battle_.units[static_cast<std::size_t>(actor)].alive()) {
+        message_ = tick;
+        afterAction();  // poison felled the unit; skip its action
         return;
     }
     battle_.clearGuard(actor);
@@ -382,6 +404,17 @@ void BattleState::drawUnit(const battle::Combatant& c, int x, int y, bool curren
     if (!c.alive()) {
         DrawText("KO", x + 13, y + 4, 8, Color{220, 120, 120, 255});
     }
+
+    if (!c.statuses.empty() && c.alive()) {
+        std::string line;
+        for (const battle::StatusInstance& s : c.statuses) {
+            if (!line.empty()) {
+                line += " ";
+            }
+            line += statusShort(s.type);
+        }
+        DrawText(line.c_str(), x, y + 24, 8, Color{200, 160, 220, 255});
+    }
 }
 
 void BattleState::render() {
@@ -420,8 +453,12 @@ void BattleState::render() {
 
     switch (phase_) {
         case Phase::Intro:
-            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 14, 12, RAYWHITE);
-            ui::drawTextCentered("Confirm to begin", w / 2, panelY + 38, 10,
+            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 8, 12, RAYWHITE);
+            if (!bossTelegraph_.empty()) {
+                ui::drawTextCentered(bossTelegraph_.c_str(), w / 2, panelY + 28, 9,
+                                     Color{225, 170, 170, 255});
+            }
+            ui::drawTextCentered("Confirm to begin", w / 2, panelY + 44, 10,
                                  Color{200, 200, 160, 255});
             break;
         case Phase::Command:

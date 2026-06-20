@@ -10,6 +10,7 @@
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
+#include "states/EquipShopState.hpp"
 #include "states/GuildState.hpp"
 #include "states/InnState.hpp"
 #include "states/PlaceholderLocationState.hpp"
@@ -91,10 +92,7 @@ void TownState::enterLocation(const town::Building& building) {
                                          "Opens in a later milestone."}));
             break;
         case town::LocationId::EquipShop:
-            stack().pushState(std::make_unique<PlaceholderLocationState>(
-                stack(), context_, "Equip Shop",
-                std::vector<std::string>{"Buy weapons and armor.",
-                                         "Opens in a later milestone."}));
+            stack().pushState(std::make_unique<EquipShopState>(stack(), context_));
             break;
         case town::LocationId::Scoreboard:
             stack().pushState(std::make_unique<ScoreboardState>(stack(), context_));

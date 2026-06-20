@@ -95,6 +95,22 @@ constexpr std::array<std::pair<std::string_view, ConsumableEffect>, 5> kConsumab
     {"cure", ConsumableEffect::Cure},
 }};
 
+constexpr std::array<std::pair<std::string_view, StatusType>, 6> kStatusTypes{{
+    {"none", StatusType::None},
+    {"poison", StatusType::Poison},
+    {"attack_up", StatusType::AttackUp},
+    {"attack_down", StatusType::AttackDown},
+    {"defense_up", StatusType::DefenseUp},
+    {"defense_down", StatusType::DefenseDown},
+}};
+
+constexpr std::array<std::pair<std::string_view, BossArchetype>, 4> kBossArchetypes{{
+    {"brute", BossArchetype::Brute},
+    {"sorcerer", BossArchetype::Sorcerer},
+    {"commander", BossArchetype::Commander},
+    {"rush", BossArchetype::Rush},
+}};
+
 }  // namespace
 
 std::optional<Element> parseElement(std::string_view s) { return parseFrom(kElements, s); }
@@ -112,6 +128,10 @@ std::optional<Rarity> parseRarity(std::string_view s) { return parseFrom(kRariti
 std::optional<ConsumableEffect> parseConsumableEffect(std::string_view s) {
     return parseFrom(kConsumableEffects, s);
 }
+std::optional<StatusType> parseStatusType(std::string_view s) { return parseFrom(kStatusTypes, s); }
+std::optional<BossArchetype> parseBossArchetype(std::string_view s) {
+    return parseFrom(kBossArchetypes, s);
+}
 
 const char* toString(Element v) { return nameFrom(kElements, v); }
 const char* toString(SkillCategory v) { return nameFrom(kSkillCategories, v); }
@@ -122,5 +142,7 @@ const char* toString(ItemType v) { return nameFrom(kItemTypes, v); }
 const char* toString(EquipSlot v) { return nameFrom(kEquipSlots, v); }
 const char* toString(Rarity v) { return nameFrom(kRarities, v); }
 const char* toString(ConsumableEffect v) { return nameFrom(kConsumableEffects, v); }
+const char* toString(StatusType v) { return nameFrom(kStatusTypes, v); }
+const char* toString(BossArchetype v) { return nameFrom(kBossArchetypes, v); }
 
 }  // namespace cd::content

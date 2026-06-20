@@ -12,8 +12,38 @@ namespace cd::battle {
 
 namespace {
 
+int statusSum(const Combatant& c, content::StatusType type) {
+    int sum = 0;
+    for (const StatusInstance& s : c.statuses) {
+        if (s.type == type) {
+            sum += s.magnitude;
+        }
+    }
+    return sum;
+}
+
+int attackPercent(const Combatant& c) {
+    return std::max(10, 100 + statusSum(c, content::StatusType::AttackUp) -
+                            statusSum(c, content::StatusType::AttackDown));
+}
+
+int defensePercent(const Combatant& c) {
+    return std::max(10, 100 + statusSum(c, content::StatusType::DefenseUp) -
+                            statusSum(c, content::StatusType::DefenseDown));
+}
+
+int effectiveAttack(const Combatant& a) {
+    int value = a.stats.attack * attackPercent(a) / 100;
+    if (a.enrages && a.hp * 2 < a.maxHp) {
+        value = value * 3 / 2;  // Brute enrage
+    }
+    return value;
+}
+
+int effectiveDefense(const Combatant& d) { return d.stats.defense * defensePercent(d) / 100; }
+
 int physicalDamage(const Combatant& a, const Combatant& d, int power) {
-    int dmg = std::max(1, a.stats.attack + power - d.stats.defense / 2);
+    int dmg = std::max(1, effectiveAttack(a) + power - effectiveDefense(d) / 2);
     if (d.guarding) {
         dmg = std::max(1, dmg / 2);
     }
@@ -21,7 +51,7 @@ int physicalDamage(const Combatant& a, const Combatant& d, int power) {
 }
 
 int magicDamage(const Combatant& a, const Combatant& d, int power) {
-    int dmg = std::max(1, a.stats.magic + power - d.stats.defense / 4);
+    int dmg = std::max(1, a.stats.magic + power - effectiveDefense(d) / 4);
     if (d.guarding) {
         dmg = std::max(1, dmg / 2);
     }
@@ -29,6 +59,43 @@ int magicDamage(const Combatant& a, const Combatant& d, int power) {
 }
 
 int healValue(const Combatant& a, int power) { return power + a.stats.magic / 2; }
+
+void addStatus(Combatant& c, content::StatusType type, int magnitude, int turns) {
+    if (type == content::StatusType::None || turns <= 0) {
+        return;
+    }
+    for (StatusInstance& s : c.statuses) {
+        if (s.type == type) {
+            s.magnitude = magnitude;
+            s.turns = turns;
+            return;
+        }
+    }
+    c.statuses.push_back({type, magnitude, turns});
+}
+
+void clearNegativeStatuses(Combatant& c) {
+    std::vector<StatusInstance> kept;
+    for (const StatusInstance& s : c.statuses) {
+        if (s.type != content::StatusType::Poison && s.type != content::StatusType::AttackDown &&
+            s.type != content::StatusType::DefenseDown) {
+            kept.push_back(s);
+        }
+    }
+    c.statuses = std::move(kept);
+}
+
+const char* statusLabel(content::StatusType type) {
+    switch (type) {
+        case content::StatusType::Poison: return "Poison";
+        case content::StatusType::AttackUp: return "ATK+";
+        case content::StatusType::AttackDown: return "ATK-";
+        case content::StatusType::DefenseUp: return "DEF+";
+        case content::StatusType::DefenseDown: return "DEF-";
+        case content::StatusType::None: return "";
+    }
+    return "";
+}
 
 void applyDamage(Combatant& d, int dmg) { d.hp = std::max(0, d.hp - dmg); }
 
@@ -74,6 +141,32 @@ void Battle::clearGuard(int unit) {
     if (unit >= 0 && unit < static_cast<int>(units.size())) {
         units[static_cast<std::size_t>(unit)].guarding = false;
     }
+}
+
+std::string Battle::tickStatuses(int unit) {
+    std::string log;
+    Combatant& c = units[static_cast<std::size_t>(unit)];
+    if (c.statuses.empty()) {
+        return log;
+    }
+    for (StatusInstance& s : c.statuses) {
+        if (s.type == content::StatusType::Poison && c.hp > 0) {
+            c.hp = std::max(0, c.hp - s.magnitude);
+            log += c.name + " takes " + std::to_string(s.magnitude) + " poison damage.";
+            if (!c.alive()) {
+                log += " " + c.name + " is KO'd!";
+            }
+        }
+        --s.turns;
+    }
+    std::vector<StatusInstance> kept;
+    for (const StatusInstance& s : c.statuses) {
+        if (s.turns > 0) {
+            kept.push_back(s);
+        }
+    }
+    c.statuses = std::move(kept);
+    return log;
 }
 
 std::string Battle::attack(int actor, int target) {
@@ -143,11 +236,14 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                 }
                 break;
             }
-            case content::SkillCategory::Support: {
-                t.guarding = true;
-                log += " " + t.name + " is shielded.";
-                break;
-            }
+            case content::SkillCategory::Support:
+                break;  // effect comes from the applied status below
+        }
+
+        // Apply the skill's status to living targets.
+        if (skill.statusEffect != content::StatusType::None && t.alive()) {
+            addStatus(t, skill.statusEffect, skill.statusMagnitude, skill.statusDuration);
+            log += " " + t.name + ": " + statusLabel(skill.statusEffect) + ".";
         }
     }
     return log;
@@ -180,6 +276,7 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
             }
             break;
         case content::ConsumableEffect::Cure:
+            clearNegativeStatuses(t);
             log += " Cured.";
             break;
         case content::ConsumableEffect::None:
@@ -217,6 +314,24 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         b.units.push_back(std::move(u));
     }
 
+    // Boss combatant (built from a BossDef; its minions follow below).
+    if (!team.bossId.empty()) {
+        if (const content::BossDef* boss = db.findBoss(team.bossId)) {
+            Combatant u;
+            u.side = Side::Enemy;
+            u.sourceId = boss->id;
+            u.name = boss->name;
+            u.stats = boss->stats;
+            u.hp = u.maxHp = boss->stats.maxHp;
+            u.mp = u.maxMp = deriveMaxMp(boss->stats.magic);
+            u.skillIds = boss->skills;
+            u.isBoss = true;
+            u.enrages = boss->archetype == content::BossArchetype::Brute;
+            u.telegraph = boss->telegraph;
+            b.units.push_back(std::move(u));
+        }
+    }
+
     // Count duplicate enemy ids so we can disambiguate names (Goblin A / B).
     std::unordered_map<std::string, int> totals;
     for (const std::string& id : team.enemyIds) {
@@ -235,7 +350,7 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         u.hp = u.maxHp = def->stats.maxHp;
         u.mp = u.maxMp = deriveMaxMp(def->stats.magic);
         u.skillIds = def->skills;
-        u.isBoss = team.isBoss;
+        u.isBoss = false;  // minions are not the boss
         u.name = def->name;
         if (totals[id] > 1) {
             const int n = seen[id]++;

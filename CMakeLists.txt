@@ -78,6 +78,7 @@ add_library(crystal_core STATIC
     src/states/BattleState.cpp
     src/states/DungeonResultState.cpp
     src/states/ScoreboardState.cpp
+    src/states/EquipShopState.cpp
 )
 
 target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
