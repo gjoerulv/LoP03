@@ -25,8 +25,9 @@ struct EnemyTeam {
     std::vector<std::string> enemyIds;  // ids into the content database
     std::vector<std::string> tags;      // aggregated unique tags (display)
     bool isBoss = false;
+    std::string bossId;  // for boss teams: the BossDef id (enemyIds are its minions)
 
-    int count() const { return static_cast<int>(enemyIds.size()); }
+    int count() const { return static_cast<int>(enemyIds.size()) + (bossId.empty() ? 0 : 1); }
 };
 
 struct Chest {

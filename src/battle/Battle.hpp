@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "content/Enums.hpp"
 #include "content/Stats.hpp"
 
 namespace cd {
@@ -25,6 +26,12 @@ namespace cd::battle {
 enum class Side { Party, Enemy };
 enum class Outcome { Ongoing, Victory, Defeat, Escaped };
 
+struct StatusInstance {
+    content::StatusType type = content::StatusType::None;
+    int magnitude = 0;  // poison damage, or buff/debuff percent
+    int turns = 0;      // remaining turns
+};
+
 // Reported back to the caller (the dungeon) when a battle ends.
 struct BattleResult {
     Outcome outcome = Outcome::Ongoing;
@@ -43,8 +50,11 @@ struct Combatant {
     int mp = 0;
     int maxMp = 0;
     std::vector<std::string> skillIds;
+    std::vector<StatusInstance> statuses;
     bool guarding = false;
     bool isBoss = false;
+    bool enrages = false;        // Brute boss: deals more damage below half HP
+    std::string telegraph;       // boss intro line
 
     bool alive() const { return hp > 0; }
 };
@@ -59,6 +69,9 @@ public:
     std::vector<int> aliveIndices(Side s) const;
 
     void clearGuard(int unit);  // call at the start of a unit's turn
+    // Applies poison, decrements durations, removes expired statuses. Returns a
+    // log line (empty if nothing happened). Call at the start of a unit's turn.
+    std::string tickStatuses(int unit);
 
     // Each returns a human-readable log line. Skills deduct MP from the actor.
     std::string attack(int actor, int target);

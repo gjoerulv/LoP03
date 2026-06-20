@@ -16,11 +16,16 @@ struct Character {
     int level = 1;
     int xp = 0;
 
-    content::StatBlock stats;  // derived: base + growth * (level - 1)
+    content::StatBlock stats;  // derived: base + growth * (level - 1) + equipment
     int hp = 0;
     int maxHp = 0;
     int mp = 0;
     int maxMp = 0;
+
+    // Equipped item ids (empty = nothing in that slot).
+    std::string weapon;
+    std::string armor;
+    std::string accessory;
 
     bool isAlive() const { return hp > 0; }
 };

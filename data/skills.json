@@ -5,11 +5,32 @@
     { "id": "cleave", "name": "Cleave", "category": "physical", "target": "all_enemies", "power": 7, "mpCost": 4, "description": "A sweeping blow that hits every foe." },
     { "id": "precise_shot", "name": "Precise Shot", "category": "physical", "target": "single_enemy", "power": 12, "mpCost": 3, "description": "A carefully aimed shot." },
     { "id": "shadow_strike", "name": "Shadow Strike", "category": "physical", "target": "single_enemy", "power": 13, "mpCost": 4, "description": "A swift strike from the shadows." },
+    { "id": "power_smash", "name": "Power Smash", "category": "physical", "target": "single_enemy", "power": 16, "mpCost": 6, "description": "A heavy, crushing blow." },
+    { "id": "whirlwind", "name": "Whirlwind", "category": "physical", "target": "all_enemies", "power": 11, "mpCost": 8, "description": "Spin through all enemies." },
+    { "id": "piercing_arrow", "name": "Piercing Arrow", "category": "physical", "target": "single_enemy", "power": 14, "mpCost": 5, "description": "An armor-piercing shot." },
+    { "id": "venom_fang", "name": "Venom Fang", "category": "physical", "target": "single_enemy", "power": 9, "mpCost": 5, "statusEffect": "poison", "statusMagnitude": 6, "statusDuration": 3, "description": "A bite that injects venom." },
+    { "id": "crippling_blow", "name": "Crippling Blow", "category": "physical", "target": "single_enemy", "power": 10, "mpCost": 6, "statusEffect": "defense_down", "statusMagnitude": 25, "statusDuration": 3, "description": "A blow that weakens the foe's guard." },
+
     { "id": "fireball", "name": "Fireball", "category": "magic", "target": "single_enemy", "element": "fire", "power": 14, "mpCost": 6, "description": "Hurl a ball of flame." },
     { "id": "frost_lance", "name": "Frost Lance", "category": "magic", "target": "single_enemy", "element": "ice", "power": 14, "mpCost": 6, "description": "Impale a foe on a spear of ice." },
+    { "id": "spark", "name": "Spark", "category": "magic", "target": "single_enemy", "element": "lightning", "power": 13, "mpCost": 5, "description": "A jolt of lightning." },
+    { "id": "stone_edge", "name": "Stone Edge", "category": "magic", "target": "single_enemy", "element": "earth", "power": 13, "mpCost": 5, "description": "Jagged rock erupts beneath a foe." },
+    { "id": "inferno", "name": "Inferno", "category": "magic", "target": "all_enemies", "element": "fire", "power": 12, "mpCost": 12, "description": "Engulf all enemies in fire." },
+    { "id": "blizzard", "name": "Blizzard", "category": "magic", "target": "all_enemies", "element": "ice", "power": 12, "mpCost": 12, "description": "A freezing storm strikes every foe." },
+    { "id": "shadow_bolt", "name": "Shadow Bolt", "category": "magic", "target": "single_enemy", "element": "dark", "power": 15, "mpCost": 7, "description": "A bolt of dark energy." },
+    { "id": "holy_ray", "name": "Holy Ray", "category": "magic", "target": "single_enemy", "element": "holy", "power": 15, "mpCost": 7, "description": "A searing ray of light." },
+    { "id": "venom_mist", "name": "Venom Mist", "category": "magic", "target": "all_enemies", "power": 8, "mpCost": 10, "statusEffect": "poison", "statusMagnitude": 5, "statusDuration": 3, "description": "A cloud of poison engulfs all foes." },
+
     { "id": "mend", "name": "Mend", "category": "heal", "target": "single_ally", "power": 20, "mpCost": 5, "description": "Restore a single ally's health." },
     { "id": "group_mend", "name": "Group Mend", "category": "heal", "target": "all_allies", "power": 14, "mpCost": 12, "description": "Restore the whole party's health." },
-    { "id": "guard_aura", "name": "Guard Aura", "category": "support", "target": "all_allies", "power": 0, "mpCost": 8, "description": "Bolster the party's defenses." },
-    { "id": "bulwark", "name": "Bulwark", "category": "support", "target": "self", "power": 0, "mpCost": 6, "description": "Brace to absorb incoming blows." }
+    { "id": "greater_heal", "name": "Greater Heal", "category": "heal", "target": "single_ally", "power": 40, "mpCost": 10, "description": "A powerful restorative." },
+    { "id": "renew", "name": "Renew", "category": "heal", "target": "single_ally", "power": 26, "mpCost": 7, "description": "Soothing restorative magic." },
+
+    { "id": "guard_aura", "name": "Guard Aura", "category": "support", "target": "all_allies", "power": 0, "mpCost": 8, "statusEffect": "defense_up", "statusMagnitude": 30, "statusDuration": 3, "description": "Bolster the party's defenses." },
+    { "id": "bulwark", "name": "Bulwark", "category": "support", "target": "self", "power": 0, "mpCost": 6, "statusEffect": "defense_up", "statusMagnitude": 50, "statusDuration": 3, "description": "Brace to absorb incoming blows." },
+    { "id": "battle_cry", "name": "Battle Cry", "category": "support", "target": "all_allies", "power": 0, "mpCost": 8, "statusEffect": "attack_up", "statusMagnitude": 25, "statusDuration": 3, "description": "Rally the party to strike harder." },
+    { "id": "focus", "name": "Focus", "category": "support", "target": "self", "power": 0, "mpCost": 6, "statusEffect": "attack_up", "statusMagnitude": 40, "statusDuration": 3, "description": "Sharpen your aim and resolve." },
+    { "id": "weaken", "name": "Weaken", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "attack_down", "statusMagnitude": 30, "statusDuration": 3, "description": "Sap a foe's strength." },
+    { "id": "sunder", "name": "Sunder", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "defense_down", "statusMagnitude": 30, "statusDuration": 3, "description": "Shatter a foe's defenses." }
   ]
 }

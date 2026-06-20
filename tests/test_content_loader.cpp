@@ -135,11 +135,15 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     INFO(rep.summary());
     REQUIRE(ok);
     REQUIRE(db.classCount() == 6);
-    REQUIRE(db.skillCount() == 10);
-    REQUIRE(db.enemyCount() == 7);
-    REQUIRE(db.itemCount() == 10);
+    REQUIRE(db.skillCount() == 28);
+    REQUIRE(db.enemyCount() == 20);
+    REQUIRE(db.itemCount() == 36);
+    REQUIRE(db.bossCount() == 4);
+    REQUIRE(db.themeCount() == 3);
     REQUIRE(db.findClass("knight") != nullptr);
     REQUIRE(db.hasSkill("fireball"));
     REQUIRE(db.findItem("scroll_fireball") != nullptr);
+    REQUIRE(db.findBoss("keep_warden") != nullptr);
+    REQUIRE(db.findTheme("ruined_keep") != nullptr);
 }
 #endif

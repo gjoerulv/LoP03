@@ -10,8 +10,8 @@
 | 3  | Town hub shell                    | ☑ complete (approved) |
 | 4  | Dungeon generator                 | ☑ complete (approved) |
 | 5  | Battle system MVP                 | ☑ complete (approved) |
-| 6  | Danger rating & scoring           | ◐ implemented, awaiting approval |
-| 7  | Content pass                      | ☐ |
+| 6  | Danger rating & scoring           | ☑ complete (approved) |
+| 7  | Content pass                      | ◐ implemented, awaiting approval |
 | 8  | Presentation pass                 | ☐ |
 | 9  | Balancing & validation pass       | ☐ |
 | 10 | Release packaging pass            | ☐ |
@@ -194,8 +194,39 @@ Out of scope (deferred): balance tuning (M9); depth-scaled content/themes (M7);
 real-time tie-breaker on the scoreboard; battle/UI art (M8).
 
 ## M7 — Content pass
-6 classes; enemies/elites/bosses; items/equipment/relics; skills/spells; 3 themes;
-balance pass for playable runs.
+
+Deliverables: 6 classes; enemies/elites/bosses; items/equipment/relics;
+skills/spells; 3 themes; balance pass for playable runs; infinite depth-scaled
+runs.
+
+Implemented:
+- Content: 6 classes, **28 skills** (across physical/magic/heal/support, several
+  status-applying), **20 enemies** (14 normal + 6 elite), **36 items**
+  (consumables, weapons, armor, accessories, relics, scrolls), **4 bosses**
+  (Brute/Sorcerer/Commander/Rush), **3 themes** (Ruined Keep / Crystal Mine /
+  Hollow Forest). New `bosses.json` + `dungeon_themes.json` with loaders,
+  validators, and reference checks.
+- **Status-effect system** (chosen): Poison (DoT) plus Attack/Defense up/down,
+  applied by skills/items, ticked each turn, folded into the damage formulas;
+  antidote/`Cure` now lift poison and debuffs. Bosses use a deterministic
+  **enrage** (Brute) and **telegraph** text; minions accompany Commander/Rush.
+- **Equipment system** (chosen, minimal): weapon/armor/accessory slots whose
+  stat bonuses fold into derived stats (`refreshCharacter`); a functional **Equip
+  Shop** (buy with gold + equip/unequip). Equipped gear is saved as an optional
+  field (save version stays 1; old saves load).
+- **Generation:** theme-aware enemy/boss pools + **depth scaling** (path length,
+  team size, elite chance, gate count, rewards); the Guild gains **theme + depth
+  pickers** → infinite seeded runs. Bosses build from `BossDef`.
+- Tests: status effects (poison/buff/debuff/cure/enrage), equipment stat
+  application, boss/theme loaders + validation, themed/depth-scaled generation.
+  108 tests total, all passing.
+
+Decisions (reversible): "battle turns" = rounds; "no-death" = no party KO; status
+set is focused (poison + atk/def buffs/debuffs); balance numbers are first-pass.
+
+Out of scope (deferred): dynamic summons and true multi-wave rush (Commander/Rush
+use a fixed minion team); leveling/XP economy curve and deeper balance (M9);
+sprite art/animation (M8).
 
 ## M8 — Presentation pass
 UI polish; animations; transitions; placeholder audio/music/SFX; better feedback

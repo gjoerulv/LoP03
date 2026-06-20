@@ -19,6 +19,12 @@ struct SkillDef {
     Element element = Element::None;
     int power = 0;   // damage/heal magnitude (>= 0)
     int mpCost = 0;  // MP spent (>= 0)
+
+    // Optional status applied to the skill's targets.
+    StatusType statusEffect = StatusType::None;
+    int statusMagnitude = 0;  // percent for buffs/debuffs, damage for poison
+    int statusDuration = 0;   // turns
+
     std::string description;
 };
 
@@ -60,6 +66,26 @@ struct ItemDef {
     // Scroll: the skill id it teaches (empty for non-scrolls).
     std::string grantsSkill;
 
+    std::string description;
+};
+
+struct BossDef {
+    std::string id;
+    std::string name;
+    BossArchetype archetype = BossArchetype::Brute;
+    StatBlock stats;
+    std::vector<std::string> skills;   // skill ids
+    std::vector<std::string> minions;  // enemy ids fighting alongside the boss
+    std::string telegraph;             // flavor line shown when the battle begins
+    std::string description;
+};
+
+struct DungeonThemeDef {
+    std::string id;
+    std::string name;
+    std::vector<std::string> normalEnemies;  // enemy ids
+    std::vector<std::string> eliteEnemies;   // enemy ids
+    std::vector<std::string> bosses;         // boss ids
     std::string description;
 };
 

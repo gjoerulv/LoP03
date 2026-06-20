@@ -155,8 +155,11 @@ Each file is a versioned wrapper around a named array:
 ```
 
 `version` must equal the supported schema version (currently `1`). Files:
-`skills.json`, `classes.json`, `enemies.json`, `items.json`. (`bosses.json` and
-`dungeon_themes.json` arrive with their owning milestones — M7 and M4.)
+`skills.json`, `classes.json`, `enemies.json`, `items.json`, `bosses.json`,
+`dungeon_themes.json`. Bosses carry an `archetype`, `skills`, `minions`, and a
+`telegraph`; themes list `normalEnemies`/`eliteEnemies`/`bosses` id pools; skills
+may carry an optional `statusEffect`/`statusMagnitude`/`statusDuration`. All ids
+are reference-checked across files.
 
 | Type   | Required fields | Notable optional fields |
 |--------|-----------------|-------------------------|
@@ -317,3 +320,33 @@ versioned JSON in the user data dir (defensive load; missing file = empty board)
 accumulates run stats across battles; a boss victory computes the score, records
 a `ScoreEntry`, and shows `DungeonResultState` before returning to town. The town
 `ScoreboardState` lists the board.
+
+## 12. Content, status & equipment (Milestone 7)
+
+### Status effects (`battle/`)
+
+A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down).
+Skills/items apply them to their targets; `Battle::tickStatuses` (called at each
+unit's turn start) deals poison and ages durations. Buffs/debuffs scale the
+effective attack/defense used in the damage formulas; `Cure`/antidotes strip
+poison and debuffs. A **Brute** boss `enrages` (×1.5 attack below half HP) and
+shows a telegraph line; **Commander/Rush** bosses field a fixed minion team
+(dynamic summons / true waves are deferred). The base (no-status, non-boss)
+formulas are unchanged, so prior battle tests still hold.
+
+### Equipment (`game/`)
+
+`Character` has `weapon`/`armor`/`accessory` slots. `refreshCharacter(c, db)`
+re-derives stats from the class **and** the equipped items' `statBonus`, then
+clamps hp/mp — called on equip changes and on load. The Equip Shop
+(`EquipShopState`) buys gear with gold and equips/unequips it. Equipment is saved
+as optional per-member fields (save version unchanged at `1`; unknown ids are
+dropped on load).
+
+### Theme/depth generation
+
+`generate(seed, depth, db, themeId)` draws enemy and boss pools from the chosen
+`DungeonThemeDef` (falling back to all content for an unknown id), and scales path
+length, team size, elite chance, gate count, and rewards with depth. The Guild
+chooses theme + depth, giving infinite seeded runs. Bosses are built from
+`BossDef` (the boss plus its minions as one `EnemyTeam` with a `bossId`).

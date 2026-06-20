@@ -26,6 +26,10 @@ enum class Rarity { Common, Uncommon, Rare, Epic, Legendary };
 
 enum class ConsumableEffect { None, Heal, Revive, RestoreMp, Cure };
 
+enum class StatusType { None, Poison, AttackUp, AttackDown, DefenseUp, DefenseDown };
+
+enum class BossArchetype { Brute, Sorcerer, Commander, Rush };
+
 // parse* return std::nullopt for unrecognized strings (the caller reports the
 // error with context). toString is the inverse and always returns a stable id.
 std::optional<Element> parseElement(std::string_view s);
@@ -37,6 +41,8 @@ std::optional<ItemType> parseItemType(std::string_view s);
 std::optional<EquipSlot> parseEquipSlot(std::string_view s);
 std::optional<Rarity> parseRarity(std::string_view s);
 std::optional<ConsumableEffect> parseConsumableEffect(std::string_view s);
+std::optional<StatusType> parseStatusType(std::string_view s);
+std::optional<BossArchetype> parseBossArchetype(std::string_view s);
 
 const char* toString(Element v);
 const char* toString(SkillCategory v);
@@ -47,5 +53,7 @@ const char* toString(ItemType v);
 const char* toString(EquipSlot v);
 const char* toString(Rarity v);
 const char* toString(ConsumableEffect v);
+const char* toString(StatusType v);
+const char* toString(BossArchetype v);
 
 }  // namespace cd::content
