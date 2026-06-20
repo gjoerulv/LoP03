@@ -50,11 +50,23 @@ Application::Application()
       content_(),
       party_(),
       saves_(content_, paths::userDataDir() / "saves"),
-      context_{resources_, content_, saves_, party_, config::kVirtualWidth, config::kVirtualHeight},
+      scoreboard_(paths::userDataDir() / "scoreboard.json"),
+      context_{resources_, content_,    saves_,
+               party_,     scoreboard_, config::kVirtualWidth,
+               config::kVirtualHeight},
       input_(),
       stack_(),
       debugOverlay_(true) {
     loadContent();
+    {
+        content::LoadReport scoreReport;
+        if (!scoreboard_.load(scoreReport)) {
+            log::warn("Scoreboard could not be loaded; starting with an empty board.");
+            for (const auto& e : scoreReport.errors()) {
+                log::warn("  " + e.source + ": " + e.context + ": " + e.message);
+            }
+        }
+    }
     stack_.pushState(std::make_unique<MainMenuState>(stack_, context_));
     stack_.applyPending();
     log::info("Crystal Dungeons initialized");

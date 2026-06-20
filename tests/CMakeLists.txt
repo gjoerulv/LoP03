@@ -15,6 +15,9 @@ add_executable(crystal_tests
     test_dungeon.cpp
     test_inventory.cpp
     test_battle.cpp
+    test_danger.cpp
+    test_scoring.cpp
+    test_scoreboard.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core Catch2::Catch2WithMain)

@@ -25,6 +25,13 @@ namespace cd::battle {
 enum class Side { Party, Enemy };
 enum class Outcome { Ongoing, Victory, Defeat, Escaped };
 
+// Reported back to the caller (the dungeon) when a battle ends.
+struct BattleResult {
+    Outcome outcome = Outcome::Ongoing;
+    int rounds = 0;                  // battle turns (rounds) elapsed
+    bool partyKoOccurred = false;    // any party member was KO'd during the fight
+};
+
 struct Combatant {
     Side side = Side::Party;
     std::string name;

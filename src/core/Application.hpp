@@ -7,6 +7,7 @@
 #include "render/VirtualScreen.hpp"
 #include "resource/ResourceManager.hpp"
 #include "save/SaveSystem.hpp"
+#include "score/Scoreboard.hpp"
 #include "states/StateStack.hpp"
 
 namespace cd {
@@ -38,6 +39,7 @@ private:
     content::ContentDatabase content_;
     Party party_;
     save::SaveSystem saves_;
+    score::Scoreboard scoreboard_;
     AppContext context_;
     Input input_;
     StateStack stack_;

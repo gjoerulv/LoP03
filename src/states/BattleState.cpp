@@ -23,7 +23,7 @@ bool skillNeedsTarget(content::SkillTarget t) {
 }  // namespace
 
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
-                         battle::Outcome* resultSlot)
+                         battle::BattleResult* resultSlot)
     : GameState(stack), context_(context), battle_(std::move(battle)), resultSlot_(resultSlot) {
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Enemy && c.isBoss) {
@@ -43,6 +43,7 @@ int BattleState::currentActor() const {
 void BattleState::beginTurns() {
     order_ = battle::turnOrder(battle_);
     orderPos_ = 0;
+    battle_.turnsTaken = 1;  // round 1
     startActorTurn();
 }
 
@@ -68,6 +69,7 @@ void BattleState::advanceTurn() {
         if (orderPos_ >= static_cast<int>(order_.size())) {
             order_ = battle::turnOrder(battle_);
             orderPos_ = 0;
+            ++battle_.turnsTaken;  // a new round begins
         }
         if (!order_.empty() && battle_.units[static_cast<std::size_t>(order_[static_cast<std::size_t>(orderPos_)])].alive()) {
             startActorTurn();
@@ -150,7 +152,6 @@ void BattleState::onCommand() {
             break;
         case 3:  // Guard
             message_ = battle_.guard(currentActor());
-            ++battle_.turnsTaken;
             afterAction();
             break;
         case 4:  // Escape
@@ -218,7 +219,6 @@ void BattleState::executePending(int targetUnit) {
             }
             break;
     }
-    ++battle_.turnsTaken;
     afterAction();
 }
 
@@ -233,11 +233,15 @@ void BattleState::executeEnemy(int actor) {
     } else {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
     }
-    ++battle_.turnsTaken;
     afterAction();
 }
 
 void BattleState::afterAction() {
+    for (const battle::Combatant& c : battle_.units) {
+        if (c.side == battle::Side::Party && c.hp <= 0) {
+            koOccurred_ = true;
+        }
+    }
     phase_ = Phase::Resolve;
     timer_ = kResolveTime;
 }
@@ -251,7 +255,9 @@ void BattleState::finish() {
         }
     }
     if (resultSlot_ != nullptr) {
-        *resultSlot_ = result_;
+        resultSlot_->outcome = result_;
+        resultSlot_->rounds = battle_.turnsTaken;
+        resultSlot_->partyKoOccurred = koOccurred_;
     }
     stack().popState();
 }
