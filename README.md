@@ -6,10 +6,8 @@ dungeons full of *visible* enemy teams and guarded chests, beat the boss, and
 score on how few battle turns you spent. Original work — not a clone of any
 existing game.
 
-> **Status: Milestone 1 (Project Foundation).** This builds a window with a
-> 426×240 virtual screen, a state stack, an input-mapping layer (keyboard +
-> gamepad), and a resource-manager foundation. Gameplay arrives in later
-> milestones. See [`docs/milestones.md`](docs/milestones.md).
+
+> For milestones and project status, see [`docs/milestones.md`](docs/milestones.md).
 
 ## Requirements
 
