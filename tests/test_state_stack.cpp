@@ -47,6 +47,22 @@ std::unique_ptr<FakeState> make(StateStack& s, Record& r, bool updBelow = false,
     return std::make_unique<FakeState>(s, r, updBelow, rndBelow);
 }
 
+// Pops itself the first time it is resumed (models DungeonState returning to
+// town on game-over from within onResume).
+class SelfPopOnResume : public GameState {
+public:
+    explicit SelfPopOnResume(StateStack& s) : GameState(s) {}
+    void onResume() override {
+        if (!done_) {
+            done_ = true;
+            stack().popState();
+        }
+    }
+
+private:
+    bool done_ = false;
+};
+
 }  // namespace
 
 TEST_CASE("stack: transitions are queued until applied", "[states]") {
@@ -181,6 +197,25 @@ TEST_CASE("stack: only the top state receives input", "[states]") {
     stack.handleInput(input);
     REQUIRE(top.input == 1);
     REQUIRE(bottom.input == 0);
+}
+
+TEST_CASE("stack: a transition queued from a lifecycle hook is applied", "[states]") {
+    StateStack stack;
+    Record base;
+    Record top;
+    stack.pushState(make(stack, base));
+    stack.applyPending();
+    stack.pushState(std::make_unique<SelfPopOnResume>(stack));
+    stack.applyPending();
+    stack.pushState(make(stack, top));
+    stack.applyPending();
+    REQUIRE(stack.size() == 3);
+
+    // Popping the top resumes the middle state, whose onResume pops itself.
+    // That follow-up pop must be applied, not dropped.
+    stack.popState();
+    stack.applyPending();
+    REQUIRE(stack.size() == 1);  // only the base remains
 }
 
 TEST_CASE("stack: update applies pending changes first", "[states]") {
