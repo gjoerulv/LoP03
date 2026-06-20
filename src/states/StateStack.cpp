@@ -18,36 +18,44 @@ void StateStack::replaceState(std::unique_ptr<GameState> state) {
 }
 
 void StateStack::applyPending() {
-    for (auto& change : pending_) {
-        switch (change.kind) {
-            case ChangeKind::Push: {
-                if (!states_.empty()) {
-                    states_.back()->onPause();
-                }
-                states_.push_back(std::move(change.state));
-                states_.back()->onEnter();
-                break;
-            }
-            case ChangeKind::Pop: {
-                if (!states_.empty()) {
-                    states_.back()->onExit();
-                    states_.pop_back();
+    // Lifecycle hooks (onEnter/onExit/onResume/onPause) may themselves request
+    // transitions. Process in batches: swap the queue out, apply it, and let any
+    // hook-queued changes accumulate in pending_ for the next batch. This avoids
+    // mutating the container we're iterating and ensures those follow-up
+    // transitions are applied rather than silently dropped.
+    while (!pending_.empty()) {
+        std::vector<PendingChange> batch;
+        batch.swap(pending_);
+        for (auto& change : batch) {
+            switch (change.kind) {
+                case ChangeKind::Push: {
                     if (!states_.empty()) {
-                        states_.back()->onResume();
+                        states_.back()->onPause();
                     }
+                    states_.push_back(std::move(change.state));
+                    states_.back()->onEnter();
+                    break;
                 }
-                break;
-            }
-            case ChangeKind::Clear: {
-                while (!states_.empty()) {
-                    states_.back()->onExit();
-                    states_.pop_back();
+                case ChangeKind::Pop: {
+                    if (!states_.empty()) {
+                        states_.back()->onExit();
+                        states_.pop_back();
+                        if (!states_.empty()) {
+                            states_.back()->onResume();
+                        }
+                    }
+                    break;
                 }
-                break;
+                case ChangeKind::Clear: {
+                    while (!states_.empty()) {
+                        states_.back()->onExit();
+                        states_.pop_back();
+                    }
+                    break;
+                }
             }
         }
     }
-    pending_.clear();
 }
 
 std::size_t StateStack::lowestVisibleForUpdate() const {
