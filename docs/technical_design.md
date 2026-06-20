@@ -42,6 +42,7 @@ src/
   game/                   # runtime model: Character, Party, derivation (pure)
   save/                   # SaveSystem: versioned JSON slots + autosave (defensive)
   town/                   # Tilemap, Movement, TownData (pure)
+  dungeon/                # Rng, DungeonModel, DungeonGenerator (pure, seeded)
   ui/                     # Menu, TextInput (pure) + UiDraw (raylib helpers)
 tests/                    # Catch2 unit tests (headless: pure logic + filesystem)
 .claude/skills/crystal-dungeons/SKILL.md
@@ -223,3 +224,34 @@ manual (`save_slot1..3.json`) plus an autosave (`save_auto.json`).
   entry (trigger wired in M4); loading any slot — including autosave — always
   starts the party in **town**, never inside a dungeon (no save-scumming a run).
 - Save-format changes require human approval (see `CLAUDE.md`).
+
+## 9. Dungeon generation (Milestone 4)
+
+`dungeon/` is pure (no raylib) and seeded, so generation is fully deterministic
+and unit-tested. `dungeon::generate(seed, depth, db)` returns a `Dungeon`:
+
+- **Layout:** a randomized-DFS simple **main path** from a Start room to a Boss
+  room on a 7×7 grid; dead-end **side rooms** branch off path rooms and hold
+  chests. Rooms connect via `Door`s (N/E/S/W) referencing neighbor indices.
+- **Gates:** at least **3** path transitions are marked `gated` and assigned an
+  `EnemyTeam`. Because the path is the unique route to the boss and side rooms are
+  dead-ends, the boss is reachable **only** by passing every gate (a tested
+  invariant: BFS ignoring gated doors cannot reach the boss).
+- **Teams & chests:** enemy teams are composed from the content database (normal/
+  elite by depth) with aggregated tags and an original generated name; chest
+  rewards (gold + optional item) come from the item data. At least one chest is
+  guarded. The `Rng` is xorshift64*, so the same seed yields an identical dungeon
+  on every platform.
+
+**Determinism rule:** to keep generation reproducible, iterate the (unordered)
+content DB into **sorted** id pools before any RNG-driven selection.
+
+### Walkable presentation & flow
+
+`DungeonState` renders one room at a time as a single-screen tilemap (reusing
+`town::Tilemap`/`resolveMove`): walls with door gaps, walk room-to-room. **Gated
+doors are solid** (blocked by a team marker) until the battle milestone, so M4
+exercises generation, exploration, team/chest inspection, and the retreat flow —
+not combat. Entry: Guild → seed → autosave → dungeon; pause → Retreat to town.
+Danger tiers and dungeon score are intentionally absent until M6 (no
+hand-authored danger).

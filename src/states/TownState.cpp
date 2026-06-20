@@ -10,6 +10,7 @@
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
+#include "states/GuildState.hpp"
 #include "states/InnState.hpp"
 #include "states/PlaceholderLocationState.hpp"
 #include "states/SlotMenuState.hpp"
@@ -80,10 +81,7 @@ void TownState::enterLocation(const town::Building& building) {
             break;
         }
         case town::LocationId::Guild:
-            stack().pushState(std::make_unique<PlaceholderLocationState>(
-                stack(), context_, "Guild",
-                std::vector<std::string>{"Choose and enter dungeons here.",
-                                         "Dungeons arrive in Milestone 4."}));
+            stack().pushState(std::make_unique<GuildState>(stack(), context_));
             break;
         case town::LocationId::ItemShop:
             stack().pushState(std::make_unique<PlaceholderLocationState>(

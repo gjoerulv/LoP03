@@ -57,6 +57,8 @@ add_library(crystal_core STATIC
     src/town/Tilemap.cpp
     src/town/Movement.cpp
     src/town/TownData.cpp
+    src/dungeon/DungeonModel.cpp
+    src/dungeon/DungeonGenerator.cpp
     src/states/StateStack.cpp
     src/states/MainMenuState.cpp
     src/states/PartyCreationState.cpp
@@ -65,6 +67,10 @@ add_library(crystal_core STATIC
     src/states/TownMenuState.cpp
     src/states/InnState.cpp
     src/states/PlaceholderLocationState.cpp
+    src/states/GuildState.cpp
+    src/states/DungeonState.cpp
+    src/states/DungeonMenuState.cpp
+    src/states/EncounterPreviewState.cpp
 )
 
 target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")

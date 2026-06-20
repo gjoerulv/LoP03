@@ -7,8 +7,8 @@
 |----|-----------------------------------|--------|
 | 1  | Project foundation                | ☑ complete (approved) |
 | 2  | Core data model                   | ☑ complete (approved) |
-| 3  | Town hub shell                    | ◐ implemented, awaiting approval |
-| 4  | Dungeon generator                 | ☐ |
+| 3  | Town hub shell                    | ☑ complete (approved) |
+| 4  | Dungeon generator                 | ◐ implemented, awaiting approval |
 | 5  | Battle system MVP                 | ☐ |
 | 6  | Danger rating & scoring           | ☐ |
 | 7  | Content pass                      | ☐ |
@@ -103,8 +103,34 @@ Out of scope (deferred): real shop economy, equipping/using items, dungeon
 selection/entry (M4), real scores (M6), tile/character sprite art (M8).
 
 ## M4 — Dungeon generator
-Seeded generation; room graph/grid; start/boss/main-path/side rooms; visible
-enemy teams; chests; ≥3 mandatory gates before boss; exit/retreat flow.
+
+Deliverables: seeded generation; room graph/grid; start/boss/main-path/side
+rooms; visible enemy teams; chests; ≥3 mandatory gates before boss; exit/retreat
+flow.
+
+Implemented:
+- Generator (`dungeon/`, pure, unit-tested): deterministic `Rng`; `generate(seed,
+  depth, db)` builds a randomized-DFS main path (start→boss) on a 7×7 grid with
+  **≥3 mandatory gated doors** on that unique path, dead-end side rooms holding
+  chests (≥1 guarded), and a boss team. Enemy teams and chest rewards are drawn
+  from the M2 content database; same seed ⇒ identical dungeon.
+- Walkable dungeon (chosen over a map view): `DungeonState` builds each room as a
+  single-screen tilemap (reusing `town::Tilemap`/`resolveMove`), walls with door
+  gaps, walk room-to-room. **Gated doors are impassable** (a team blocks them)
+  until the battle milestone; a minimap shows the generated graph and gates.
+- Visible teams show **name / count / members / tags** (no danger tier — that is
+  the M6 formula). `EncounterPreviewState` inspects a team. Unguarded chests open
+  (grant gold); guarded chests prompt "defeat the guard first (M5)".
+- Flow: Guild (`GuildState`, replacing the placeholder) → pick/reroll seed →
+  **autosave on entry** (wires the M3 capability) → `DungeonState`.
+  `DungeonMenuState` → Resume / Retreat to Town.
+- Tests: RNG determinism; generation determinism; start/boss/≥3-gate structure;
+  boss reachable **only** through gated doors; ≥1 guarded chest; teams/chest
+  rewards reference real content. 68 tests total, all passing.
+
+Out of scope (deferred): combat/passing gates (M5); real danger tier and dungeon
+score (M6); item inventory (chest items are previewed, not stored); multiple
+themes/depth scaling content (M7); sprite art (M8).
 
 ## M5 — Battle system MVP
 Side-view screen; turn order; Attack/Skill/Item/Guard/Escape; damage/healing;

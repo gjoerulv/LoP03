@@ -12,6 +12,7 @@ add_executable(crystal_tests
     test_party.cpp
     test_save_system.cpp
     test_town.cpp
+    test_dungeon.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core Catch2::Catch2WithMain)
