@@ -5,11 +5,13 @@
 
 #include "content/Definitions.hpp"
 #include "game/Character.hpp"
+#include "game/Inventory.hpp"
 
 namespace cd {
 
 struct Party {
     std::vector<Character> members;
+    Inventory inventory;
     int gold = 0;
 
     bool empty() const { return members.empty(); }

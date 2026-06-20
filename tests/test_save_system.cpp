@@ -29,6 +29,12 @@ content::ContentDatabase makeDb() {
     mage.name = "Mage";
     mage.baseStats = {70, 6, 20, 6, 11};
     db.addClass(mage);
+
+    content::ItemDef potion;
+    potion.id = "potion";
+    potion.name = "Potion";
+    potion.type = content::ItemType::Consumable;
+    db.addItem(potion);
     return db;
 }
 
@@ -157,6 +163,35 @@ TEST_CASE("save: slot paths are distinct files under the save dir", "[save]") {
     REQUIRE(saves.slotPath(save::SaveSlot::Auto).parent_path() == dir);
     REQUIRE(saves.slotPath(save::SaveSlot::Auto) != saves.slotPath(save::SaveSlot::Manual1));
     REQUIRE(saves.slotPath(save::SaveSlot::Manual1).extension() == ".json");
+
+    fs::remove_all(dir);
+}
+
+TEST_CASE("save: inventory round-trips; missing inventory loads empty", "[save]") {
+    const content::ContentDatabase db = makeDb();
+    const fs::path dir = makeTempDir();
+    const save::SaveSystem saves(db, dir);
+
+    Party p;
+    p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan"));
+    p.inventory.add("potion", 4);
+
+    content::LoadReport rep;
+    REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
+
+    Party loaded;
+    content::LoadReport rep2;
+    REQUIRE(saves.load(save::SaveSlot::Manual1, loaded, rep2));
+    REQUIRE(loaded.inventory.count("potion") == 4);
+
+    // Backward compatibility: a save with no inventory field still loads (empty).
+    writeFile(saves.slotPath(save::SaveSlot::Manual2),
+              R"({"version":1,"gold":0,"party":[
+                 {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4}]})");
+    Party old;
+    content::LoadReport rep3;
+    REQUIRE(saves.load(save::SaveSlot::Manual2, old, rep3));
+    REQUIRE(old.inventory.empty());
 
     fs::remove_all(dir);
 }

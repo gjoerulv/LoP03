@@ -71,6 +71,14 @@ void PartyCreationState::begin() {
         const content::ClassDef* cls = classes_[static_cast<std::size_t>(slots_[i].classIndex)];
         context_.party.members.push_back(createCharacter(*cls, name));
     }
+
+    // Starter supplies so the Item command and revives are usable from the start.
+    context_.party.inventory = Inventory{};
+    context_.party.inventory.add("potion", 3);
+    context_.party.inventory.add("antidote", 1);
+    context_.party.inventory.add("ether", 1);
+    context_.party.inventory.add("phoenix_tear", 1);
+
     stack().clearStates();
     stack().pushState(std::make_unique<TownState>(stack(), context_));
 }

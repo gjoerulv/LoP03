@@ -50,7 +50,9 @@ add_library(crystal_core STATIC
     src/content/ContentDatabase.cpp
     src/content/ContentLoader.cpp
     src/game/Party.cpp
+    src/game/Inventory.cpp
     src/save/SaveSystem.cpp
+    src/battle/Battle.cpp
     src/ui/Menu.cpp
     src/ui/TextInput.cpp
     src/ui/UiDraw.cpp
@@ -70,7 +72,7 @@ add_library(crystal_core STATIC
     src/states/GuildState.cpp
     src/states/DungeonState.cpp
     src/states/DungeonMenuState.cpp
-    src/states/EncounterPreviewState.cpp
+    src/states/BattleState.cpp
 )
 
 target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")

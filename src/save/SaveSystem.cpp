@@ -66,6 +66,15 @@ bool SaveSystem::save(SaveSlot slot, const Party& party, content::LoadReport& re
     }
     root["party"] = std::move(members);
 
+    Json items = Json::array();
+    for (const ItemStack& stack : party.inventory.stacks) {
+        Json js;
+        js["itemId"] = stack.itemId;
+        js["count"] = stack.count;
+        items.push_back(std::move(js));
+    }
+    root["inventory"] = std::move(items);
+
     std::error_code ec;
     fs::create_directories(dir_, ec);
     if (ec) {
@@ -159,6 +168,35 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty, content::LoadReport& repor
         report.add(source, "party",
                    "too many members (" + std::to_string(loaded.members.size()) + ", max " +
                        std::to_string(kMaxPartySize) + ")");
+    }
+
+    // Inventory is an optional, backward-compatible field (missing => empty).
+    if (auto invIt = root.find("inventory"); invIt != root.end()) {
+        if (!invIt->is_array()) {
+            report.add(source, "inventory", "expected array");
+        } else {
+            int invIndex = 0;
+            for (const auto& element : *invIt) {
+                const std::string ctx = "inventory[" + std::to_string(invIndex) + "]";
+                ++invIndex;
+                if (!element.is_object()) {
+                    report.add(source, ctx, "expected object");
+                    continue;
+                }
+                const std::size_t elementBefore = report.errorCount();
+                content::ObjectReader ir(element, ctx, source, report);
+                const std::string itemId = ir.reqString("itemId");
+                const int count = ir.optIntMin("count", 1, 1);
+                if (report.errorCount() != elementBefore) {
+                    continue;
+                }
+                if (db_.findItem(itemId) == nullptr) {
+                    report.add(source, ctx + ".itemId", "unknown item '" + itemId + "'");
+                    continue;
+                }
+                loaded.inventory.add(itemId, count);
+            }
+        }
     }
 
     if (report.errorCount() != before) {
