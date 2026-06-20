@@ -13,6 +13,7 @@
 #include "states/GuildState.hpp"
 #include "states/InnState.hpp"
 #include "states/PlaceholderLocationState.hpp"
+#include "states/ScoreboardState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TownMenuState.hpp"
@@ -96,10 +97,7 @@ void TownState::enterLocation(const town::Building& building) {
                                          "Opens in a later milestone."}));
             break;
         case town::LocationId::Scoreboard:
-            stack().pushState(std::make_unique<PlaceholderLocationState>(
-                stack(), context_, "Scoreboard",
-                std::vector<std::string>{"No scores yet.",
-                                         "Scoring arrives in Milestone 6."}));
+            stack().pushState(std::make_unique<ScoreboardState>(stack(), context_));
             break;
     }
 }

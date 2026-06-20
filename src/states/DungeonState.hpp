@@ -6,6 +6,7 @@
 
 #include "battle/Battle.hpp"
 #include "core/Geometry.hpp"
+#include "danger/DangerRating.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "states/GameState.hpp"
 #include "town/Tilemap.hpp"
@@ -44,12 +45,22 @@ private:
         int neighbor = -1;
     };
 
+    struct RunStats {
+        int battleTurns = 0;
+        int dangerDefeated = 0;
+        int chestsOpened = 0;
+        int treasureGold = 0;
+        bool noDeath = true;
+        int escapes = 0;
+    };
+
     void enterRoom(int index, std::optional<dungeon::Dir> entrySide);
     void buildRoom();  // rebuilds map/markers/doors for the current room (no move)
     void recomputeInteraction(int playerTileX, int playerTileY);
     void interact();
     void openChest();
     void startBattle(int teamIndex, EncounterKind kind, dungeon::Dir gateDir);
+    void completeDungeon();
     void renderMinimap() const;
 
     AppContext& context_;
@@ -64,11 +75,15 @@ private:
     const Marker* facingMarker_ = nullptr;
     bool onChest_ = false;
 
+    std::vector<danger::Tier> teamTier_;  // precomputed danger per team
+    RunStats run_;
+
     // Pending battle context (applied in onResume).
     EncounterKind pendingKind_ = EncounterKind::None;
     int pendingRoom_ = 0;
+    int pendingTeamIndex_ = -1;
     dungeon::Dir pendingGateDir_ = dungeon::Dir::North;
-    battle::Outcome battleResult_ = battle::Outcome::Ongoing;
+    battle::BattleResult battleResult_;
 
     std::string message_;
     float messageTimer_ = 0.0f;

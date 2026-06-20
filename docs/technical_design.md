@@ -44,6 +44,8 @@ src/
   town/                   # Tilemap, Movement, TownData (pure)
   dungeon/                # Rng, DungeonModel, DungeonGenerator (pure, seeded)
   battle/                 # Battle: deterministic turn-based combat (pure)
+  danger/                 # DangerRating: stat-derived danger tiers (pure)
+  score/                  # Scoring + persistent Scoreboard
   ui/                     # Menu, TextInput (pure) + UiDraw (raylib helpers)
 tests/                    # Catch2 unit tests (headless: pure logic + filesystem)
 .claude/skills/crystal-dungeons/SKILL.md
@@ -281,5 +283,37 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   `Outcome` is written to a slot the `DungeonState` reads on resume. Victory
   un-gates the door / removes a chest guard; a boss victory ends the run
   (return to town); defeat triggers game over (heal, lose half gold, return to
-  town); escape leaves the gate intact. Dungeon **score** for these outcomes is
-  M6.
+  town); escape leaves the gate intact.
+
+## 11. Danger & scoring (Milestone 6)
+
+Both modules are pure and unit-tested.
+
+### Danger (`danger/`)
+
+`teamThreat(team, db)` = per-enemy stat threat (weighted HP/Attack/Magic/Defense/
+Speed) + per-skill threat (damaging skills weighted full, support/heal half),
+scaled by a synergy factor (more enemies and a healer raise it). `tierFor(threat,
+depth, isBoss)` compares the threat to a depth baseline (`50 + 25·(depth−1)`) and
+returns **Trivial/Easy/Fair/Dangerous/Deadly**; boss teams are always **Boss**.
+The tier is therefore derived solely from stats and abilities — **never
+hand-authored** — and is shown on the map (colored label) and the fight prompt.
+Weights/thresholds are explicit constants, tuned in M9.
+
+### Scoring (`score/`)
+
+A run is summarized as `RunSummary` (completed, battleTurns = total rounds,
+dangerDefeated, chestsOpened, treasureGold, noDeath, escapes). `scoreBreakdown`
+yields each component and the clamped total: base + boss − **per-round turn
+penalty** + chest + danger-defeated + treasure + no-death − escape. An
+**unfinished run scores 0**, and the turn penalty is large relative to the
+bonuses so *fewest battle turns* dominates — and because each team/chest is
+finite, there is nothing to farm. The `Scoreboard` persists ranked entries as
+versioned JSON in the user data dir (defensive load; missing file = empty board).
+
+### Run flow
+
+`BattleState` reports a `BattleResult` (outcome, rounds, party-KO). `DungeonState`
+accumulates run stats across battles; a boss victory computes the score, records
+a `ScoreEntry`, and shows `DungeonResultState` before returning to town. The town
+`ScoreboardState` lists the board.

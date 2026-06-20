@@ -18,7 +18,7 @@ struct AppContext;
 class BattleState : public GameState {
 public:
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
-                battle::Outcome* resultSlot);
+                battle::BattleResult* resultSlot);
 
     void handleInput(const Input& input) override;
     void update(float dt) override;
@@ -50,9 +50,10 @@ private:
 
     AppContext& context_;
     battle::Battle battle_;
-    battle::Outcome* resultSlot_;
+    battle::BattleResult* resultSlot_;
     battle::Outcome result_ = battle::Outcome::Ongoing;
     bool bossBattle_ = false;
+    bool koOccurred_ = false;
 
     Phase phase_ = Phase::Intro;
     std::vector<int> order_;

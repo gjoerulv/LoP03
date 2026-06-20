@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "content/ContentDatabase.hpp"
@@ -10,8 +11,12 @@
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
+#include "score/ScoreEntry.hpp"
+#include "score/Scoreboard.hpp"
+#include "score/Scoring.hpp"
 #include "states/BattleState.hpp"
 #include "states/DungeonMenuState.hpp"
+#include "states/DungeonResultState.hpp"
 #include "states/StateStack.hpp"
 #include "town/Movement.hpp"
 #include "ui/UiDraw.hpp"
@@ -59,11 +64,27 @@ Color tileColor(town::Tile t) {
     }
 }
 
+Color tierColor(danger::Tier t) {
+    switch (t) {
+        case danger::Tier::Trivial: return Color{150, 150, 160, 255};
+        case danger::Tier::Easy: return Color{120, 200, 120, 255};
+        case danger::Tier::Fair: return Color{220, 210, 110, 255};
+        case danger::Tier::Dangerous: return Color{230, 150, 80, 255};
+        case danger::Tier::Deadly: return Color{225, 90, 90, 255};
+        case danger::Tier::Boss: return Color{200, 110, 220, 255};
+    }
+    return WHITE;
+}
+
 }  // namespace
 
 DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon)
     : GameState(stack), context_(context), dungeon_(std::move(dungeon)),
       roomMap_(kRoomW, kRoomH) {
+    teamTier_.reserve(dungeon_.teams.size());
+    for (const dungeon::EnemyTeam& team : dungeon_.teams) {
+        teamTier_.push_back(danger::assess(team, dungeon_.depth, context_.content));
+    }
     enterRoom(dungeon_.startRoom, std::nullopt);
 }
 
@@ -160,12 +181,14 @@ void DungeonState::openChest() {
         return;
     }
     if (room.chest.guarded) {
-        message_ = "Guarded - defeat the team first (Milestone 5).";
+        message_ = "Guarded - defeat the team first.";
         messageTimer_ = 2.5f;
         return;
     }
     room.chest.opened = true;
     context_.party.gold += room.chest.gold;
+    ++run_.chestsOpened;
+    run_.treasureGold += room.chest.gold;
     std::string msg = TextFormat("Found %d gold", room.chest.gold);
     if (!room.chest.itemId.empty()) {
         context_.party.inventory.add(room.chest.itemId, 1);
@@ -203,8 +226,9 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     }
     pendingKind_ = kind;
     pendingRoom_ = currentRoom_;
+    pendingTeamIndex_ = teamIndex;
     pendingGateDir_ = gateDir;
-    battleResult_ = battle::Outcome::Ongoing;
+    battleResult_ = battle::BattleResult{};
     battle::Battle b =
         battle::buildBattle(context_.party, dungeon_.teams[static_cast<std::size_t>(teamIndex)],
                             context_.content);
@@ -217,36 +241,82 @@ void DungeonState::onResume() {
     }
     const EncounterKind kind = pendingKind_;
     pendingKind_ = EncounterKind::None;
-    const battle::Outcome result = battleResult_;
+    const battle::Outcome outcome = battleResult_.outcome;
 
-    if (result == battle::Outcome::Victory) {
-        dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(pendingRoom_)];
-        if (kind == EncounterKind::Gate) {
-            room.door(pendingGateDir_).gated = false;
-            const int neighbor = room.door(pendingGateDir_).neighbor;
-            if (neighbor >= 0) {
-                dungeon_.rooms[static_cast<std::size_t>(neighbor)]
-                    .door(dungeon::opposite(pendingGateDir_))
-                    .gated = false;
-            }
-            buildRoom();
-            message_ = "The gate is clear!";
-            messageTimer_ = 2.0f;
-        } else if (kind == EncounterKind::Guard) {
-            room.teamIndex = -1;
-            room.chest.guarded = false;
-            buildRoom();
-            message_ = "The guards fall. The chest is yours to open.";
-            messageTimer_ = 2.5f;
-        } else if (kind == EncounterKind::Boss) {
-            stack().popState();  // dungeon cleared -> back to town
-        }
-    } else if (result == battle::Outcome::Defeat) {
+    // Accumulate run statistics regardless of outcome.
+    run_.battleTurns += battleResult_.rounds;
+    if (battleResult_.partyKoOccurred) {
+        run_.noDeath = false;
+    }
+
+    if (outcome == battle::Outcome::Escaped) {
+        ++run_.escapes;
+        return;  // gate intact; resume in the dungeon
+    }
+    if (outcome == battle::Outcome::Defeat) {
         healFull(context_.party);
         context_.party.gold /= 2;
         stack().popState();  // game over -> back to town
+        return;
     }
-    // Escaped: nothing changes; the player resumes in the dungeon.
+    if (outcome != battle::Outcome::Victory) {
+        return;
+    }
+
+    // Credit the danger defeated.
+    if (pendingTeamIndex_ >= 0 && pendingTeamIndex_ < static_cast<int>(teamTier_.size())) {
+        run_.dangerDefeated += danger::tierWeight(teamTier_[static_cast<std::size_t>(pendingTeamIndex_)]);
+    }
+
+    dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(pendingRoom_)];
+    if (kind == EncounterKind::Gate) {
+        room.door(pendingGateDir_).gated = false;
+        const int neighbor = room.door(pendingGateDir_).neighbor;
+        if (neighbor >= 0) {
+            dungeon_.rooms[static_cast<std::size_t>(neighbor)]
+                .door(dungeon::opposite(pendingGateDir_))
+                .gated = false;
+        }
+        buildRoom();
+        message_ = "The gate is clear!";
+        messageTimer_ = 2.0f;
+    } else if (kind == EncounterKind::Guard) {
+        room.teamIndex = -1;
+        room.chest.guarded = false;
+        buildRoom();
+        message_ = "The guards fall. The chest is yours to open.";
+        messageTimer_ = 2.5f;
+    } else if (kind == EncounterKind::Boss) {
+        completeDungeon();
+    }
+}
+
+void DungeonState::completeDungeon() {
+    score::RunSummary summary;
+    summary.completed = true;
+    summary.battleTurns = run_.battleTurns;
+    summary.dangerDefeated = run_.dangerDefeated;
+    summary.chestsOpened = run_.chestsOpened;
+    summary.treasureGold = run_.treasureGold;
+    summary.noDeath = run_.noDeath;
+    summary.escapes = run_.escapes;
+
+    const int total = score::computeScore(summary);
+
+    score::ScoreEntry entry;
+    entry.score = total;
+    entry.battleTurns = summary.battleTurns;
+    entry.dangerDefeated = summary.dangerDefeated;
+    entry.chestsOpened = summary.chestsOpened;
+    entry.noDeath = summary.noDeath;
+    entry.depth = dungeon_.depth;
+    entry.theme = dungeon_.themeName;
+    entry.seed = dungeon_.seed;
+    context_.scoreboard.add(entry);
+    content::LoadReport saveReport;
+    context_.scoreboard.save(saveReport);
+
+    stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total));
 }
 
 void DungeonState::handleInput(const Input& input) {
@@ -369,6 +439,14 @@ void DungeonState::render() {
         DrawRectangle(m.x * kTile + 2, m.y * kTile + 2, kTile - 4, kTile - 4, c);
         ui::drawTextCentered(glyph, m.x * kTile + kTile / 2, m.y * kTile + 4, 8,
                              Color{20, 20, 20, 255});
+
+        // Visible danger label above an enemy team.
+        if (m.kind != MarkerKind::Chest && m.teamIndex >= 0 &&
+            m.teamIndex < static_cast<int>(teamTier_.size())) {
+            const danger::Tier tier = teamTier_[static_cast<std::size_t>(m.teamIndex)];
+            ui::drawTextCentered(danger::tierName(tier), m.x * kTile + kTile / 2,
+                                 m.y * kTile - 8, 8, tierColor(tier));
+        }
     }
 
     // Player.
@@ -388,13 +466,33 @@ void DungeonState::render() {
     const int h = context_.virtualHeight;
     DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 165});
     const char* prompt = "Arrows/WASD: Move    Menu: Pause / Retreat";
+    std::string promptBuf;
     if (!message_.empty()) {
         prompt = message_.c_str();
     } else if (onChest_) {
-        prompt = "Confirm: Open chest";
-    } else if (facingMarker_ != nullptr) {
-        prompt = facingMarker_->kind == MarkerKind::Boss ? "Confirm: Inspect the boss"
-                                                         : "Confirm: Inspect enemy team";
+        const dungeon::Chest& chest = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].chest;
+        const std::string rarity = chest.rarity.empty() ? "" : " (" + chest.rarity + ")";
+        promptBuf = chest.guarded ? "Guarded chest" + rarity + " - defeat the guards to claim"
+                                  : "Confirm: Open chest" + rarity;
+        prompt = promptBuf.c_str();
+    } else if (facingMarker_ != nullptr && facingMarker_->teamIndex >= 0 &&
+               facingMarker_->teamIndex < static_cast<int>(teamTier_.size())) {
+        const danger::Tier tier = teamTier_[static_cast<std::size_t>(facingMarker_->teamIndex)];
+        const dungeon::EnemyTeam& team =
+            dungeon_.teams[static_cast<std::size_t>(facingMarker_->teamIndex)];
+        promptBuf = std::string("Confirm: Fight  -  ") + danger::tierName(tier) + "  x" +
+                    std::to_string(team.count());
+        if (!team.tags.empty()) {
+            promptBuf += "  [";
+            for (std::size_t i = 0; i < team.tags.size(); ++i) {
+                if (i != 0) {
+                    promptBuf += ",";
+                }
+                promptBuf += team.tags[i];
+            }
+            promptBuf += "]";
+        }
+        prompt = promptBuf.c_str();
     }
     ui::drawTextCentered(prompt, context_.virtualWidth / 2, h - 13, 8, Color{235, 230, 180, 255});
 }

@@ -9,8 +9,8 @@
 | 2  | Core data model                   | ☑ complete (approved) |
 | 3  | Town hub shell                    | ☑ complete (approved) |
 | 4  | Dungeon generator                 | ☑ complete (approved) |
-| 5  | Battle system MVP                 | ◐ implemented, awaiting approval |
-| 6  | Danger rating & scoring           | ☐ |
+| 5  | Battle system MVP                 | ☑ complete (approved) |
+| 6  | Danger rating & scoring           | ◐ implemented, awaiting approval |
 | 7  | Content pass                      | ☐ |
 | 8  | Presentation pass                 | ☐ |
 | 9  | Balancing & validation pass       | ☐ |
@@ -160,8 +160,38 @@ Out of scope (deferred): danger tier + dungeon score (M6); damage variance/crits
 and status ailments e.g. poison (M7/M9); battle sprites/animation (M8).
 
 ## M6 — Danger rating & scoring
-Stat-derived danger formula + labels; battle-turn tracking; dungeon score;
-scoreboard; tests for danger and scoring.
+
+Deliverables: stat-derived danger formula + labels; battle-turn tracking; dungeon
+score; scoreboard; tests for danger and scoring.
+
+Implemented:
+- Danger (`danger/`, pure, tested): `teamThreat` = stat-weighted sum
+  (HP/Attack/Magic/Defense/Speed) + per-skill threat, scaled by a team-synergy
+  factor (enemy count + healer presence); `tierFor` maps threat vs a depth
+  baseline to **Trivial / Easy / Fair / Dangerous / Deadly**, with boss teams
+  always **Boss**. Derived only from stats/abilities — never hand-authored.
+- Visible danger: enemy teams now show a colored tier label on the dungeon map,
+  and the fight prompt shows tier + count + tags; guarded chests show rarity and
+  a fight-to-claim prompt.
+- Battle-turn tracking: a battle reports a `BattleResult` (outcome, **rounds**,
+  party-KO). The dungeon accumulates rounds, teams/danger defeated, chests/
+  treasure, escapes, and a no-death flag across the run.
+- Scoring (`score/`, pure, tested): `computeScore`/`scoreBreakdown` — base +
+  boss − per-round turn penalty + chest + danger-defeated + treasure + no-death −
+  escape; **0 if not completed**. Boss victory shows a `DungeonResultState`
+  breakdown, records the run, and returns to town.
+- Scoreboard (`score/Scoreboard`): persistent JSON in the user data dir
+  (defensive load, ranked best-first); real `ScoreboardState` replaces the town
+  placeholder.
+- Tests: danger monotonicity/tiers/boss/thresholds/determinism; scoring
+  (incomplete=0, fewer-turns-higher, bonuses, clamp); scoreboard
+  add/sort/save/load/malformed. 98 tests total, all passing.
+
+Decisions (reversible): "battle turns" = rounds; "no-death" = no party KO during
+the run; weights/thresholds/coefficients are tunable in the balance pass (M9).
+
+Out of scope (deferred): balance tuning (M9); depth-scaled content/themes (M7);
+real-time tie-breaker on the scoreboard; battle/UI art (M8).
 
 ## M7 — Content pass
 6 classes; enemies/elites/bosses; items/equipment/relics; skills/spells; 3 themes;
