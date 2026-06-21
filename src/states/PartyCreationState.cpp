@@ -62,7 +62,7 @@ void PartyCreationState::cycleClass(int slotIndex, int direction) {
 
 void PartyCreationState::begin() {
     context_.party.members.clear();
-    context_.party.gold = 0;
+    context_.party.gold = 150;  // a little starting gold for the shops
     for (std::size_t i = 0; i < slots_.size(); ++i) {
         std::string name = slots_[i].name.trimmed();
         if (name.empty()) {

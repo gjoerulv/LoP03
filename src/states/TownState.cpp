@@ -15,8 +15,9 @@
 #include "states/EquipShopState.hpp"
 #include "states/GuildState.hpp"
 #include "states/InnState.hpp"
-#include "states/PlaceholderLocationState.hpp"
+#include "states/ItemShopState.hpp"
 #include "states/ScoreboardState.hpp"
+#include "states/TrainingHallState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TownMenuState.hpp"
@@ -83,25 +84,14 @@ void TownState::enterLocation(const town::Building& building) {
             stack().pushState(
                 std::make_unique<SlotMenuState>(stack(), context_, SlotMenuMode::Save));
             break;
-        case town::LocationId::TrainingHall: {
-            std::vector<std::string> lines = {
-                TextFormat("%d classes in this world.",
-                           static_cast<int>(context_.content.classCount())),
-                "Knight, Ranger, Mage,",
-                "Cleric, Rogue, Guardian.",
-                "Full training: a later milestone."};
-            stack().pushState(std::make_unique<PlaceholderLocationState>(stack(), context_,
-                                                                         "Training Hall", lines));
+        case town::LocationId::TrainingHall:
+            stack().pushState(std::make_unique<TrainingHallState>(stack(), context_));
             break;
-        }
         case town::LocationId::Guild:
             stack().pushState(std::make_unique<GuildState>(stack(), context_));
             break;
         case town::LocationId::ItemShop:
-            stack().pushState(std::make_unique<PlaceholderLocationState>(
-                stack(), context_, "Item Shop",
-                std::vector<std::string>{"Buy consumables and supplies.",
-                                         "Opens in a later milestone."}));
+            stack().pushState(std::make_unique<ItemShopState>(stack(), context_));
             break;
         case town::LocationId::EquipShop:
             stack().pushState(std::make_unique<EquipShopState>(stack(), context_));

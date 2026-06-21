@@ -190,6 +190,8 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.skills = r.optStringArray("skills");
         d.minions = r.optStringArray("minions");
         d.telegraph = r.optString("telegraph");
+        d.xpReward = r.optIntMin("xpReward", 0, 0);
+        d.goldReward = r.optIntMin("goldReward", 0, 0);
         d.description = r.optString("description");
         if (rep.errorCount() != before) {
             return;

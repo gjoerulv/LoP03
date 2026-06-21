@@ -102,4 +102,36 @@ int highestLevel(const Party& party) {
     return best;
 }
 
+int xpToNext(int level) {
+    const int lv = level < 1 ? 1 : level;
+    return 30 + (lv - 1) * 20;
+}
+
+void grantXp(Character& character, int xp, const content::ContentDatabase& db) {
+    if (xp <= 0) {
+        return;
+    }
+    character.xp += xp;
+    bool leveled = false;
+    while (character.level < kMaxLevel && character.xp >= xpToNext(character.level)) {
+        character.xp -= xpToNext(character.level);
+        ++character.level;
+        leveled = true;
+    }
+    if (character.level >= kMaxLevel) {
+        character.xp = 0;
+    }
+    if (leveled) {
+        const int beforeMaxHp = character.maxHp;
+        refreshCharacter(character, db);
+        character.hp = std::min(character.maxHp, character.hp + std::max(0, character.maxHp - beforeMaxHp));
+    }
+}
+
+void grantPartyXp(Party& party, int xp, const content::ContentDatabase& db) {
+    for (Character& c : party.members) {
+        grantXp(c, xp, db);
+    }
+}
+
 }  // namespace cd

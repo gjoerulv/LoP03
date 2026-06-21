@@ -191,9 +191,10 @@ Enums (string values): `Element`, `SkillCategory`, `SkillTarget`, `EnemyTag`,
 
 ### Flow & states
 
-`MainMenuState` (New Game / Continue / Quit) → `PartyCreationState` →
-`TownState`. Locations push sub-states (`InnState`, `SlotMenuState`,
-`PlaceholderLocationState`); `TownMenuState` is a transparent pause overlay.
+`MainMenuState` (New Game / Continue / Controls / Quit) → `PartyCreationState` →
+`TownState`. Town locations push real sub-states (`InnState`, `ItemShopState`,
+`EquipShopState`, `TrainingHallState`, `GuildState`, `ScoreboardState`,
+`SlotMenuState`); `TownMenuState` is a transparent pause overlay.
 `AppContext` now also carries `save::SaveSystem& saves` and the active
 `Party& party`.
 
@@ -384,5 +385,18 @@ a geared level-1 party can down a depth-1 boss, and a simulated full clear score
 positively. No coefficients needed tuning. Malformed-data and save-compatibility
 coverage was extended (bosses/themes parsers; minimal/old saves; dropped gear).
 
-**Known gap:** XP/leveling is not implemented — power growth is via gold/equipment
-only. Documented in `docs/milestones.md` for a scope decision before release.
+## 15. Leveling, shops & packaging (Milestone 10)
+
+- **XP/leveling (`game/Party`):** `xpToNext(level)` defines the curve;
+  `grantXp`/`grantPartyXp` add XP, level up (capped at `kMaxLevel`), recompute
+  stats via `refreshCharacter`, and heal the max-HP gained. Battle victories in
+  the dungeon award the party XP and gold from the defeated team's enemies and
+  boss (`xpReward`/`goldReward`). `level`/`xp` persist in the save.
+- **Shops/services:** `ItemShopState` buys consumables; `EquipShopState` buys and
+  equips gear; `TrainingHallState` pays gold to level a character up by one
+  (gold→level progression alongside battle XP). Parties start with a little gold.
+- **Packaging:** the final `README.md` documents what the game is, the MSVC build/
+  run, controls, the play loop, project layout, the smoke test (the 125-test
+  suite, which loads content, generates dungeons, and simulates a clear), and
+  known limitations. The deliverable is `CrystalDungeons.exe` plus the `data/`
+  folder copied beside it.
