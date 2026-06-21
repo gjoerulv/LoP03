@@ -32,7 +32,8 @@ data/                     # JSON content (populated M2+)
 assets/                   # textures/audio/fonts placeholders (M8); .gitkeep for now
 src/
   main.cpp
-  core/                   # Application, AppContext, GameConfig, Log, Geometry (pure)
+  core/                   # Application, AppContext, GameConfig, Log, Geometry, FadeController
+  audio/                  # AudioManager: synthesized placeholder SFX + music
   render/                 # VirtualScreen, Viewport (pure), RaylibRAII
   states/                 # GameState, StateStack, concrete states (menu/town/...)
   input/                  # InputAction, InputMap (+ raylib query factory)
@@ -350,3 +351,24 @@ dropped on load).
 length, team size, elite chance, gate count, and rewards with depth. The Guild
 chooses theme + depth, giving infinite seeded runs. Bosses are built from
 `BossDef` (the boss plus its minions as one `EnemyTeam` with a `bossId`).
+
+## 13. Presentation (Milestone 8)
+
+- **Audio (`audio/AudioManager`):** SFX and looping music are **synthesized at
+  runtime** into raylib `Sound`s (RAII-wrapped) — no asset files required. An
+  internal device guard owns `InitAudioDevice`/`CloseAudioDevice` (so sounds
+  unload before the device closes). Every call is guarded by the device state, so
+  a failed init or generation is a silent no-op, never a crash. Music loops by
+  re-playing when the current track stops. Real files dropped under
+  `assets/audio/` are the intended later replacement.
+- **Transitions (`core/FadeController`):** a pure fade-in timer; `Application`
+  draws a black overlay at `coverAlpha()` inside the 426×240 target so it scales
+  with the game. Scene states call `fade.start()` (and set music) in their
+  `onEnter`/`onResume`/ctor.
+- **Animation:** `BattleState` spawns floating damage/heal numbers (computed from
+  per-unit HP deltas around each action) that rise and fade.
+- **Shared services:** `AppContext` now also carries `AudioManager&` and
+  `FadeController&`. The `HelpState` (from the main menu) documents controls.
+
+Visuals and audio are validated by a human (not unit-tested); only pure timing
+(`FadeController`) is covered by tests.

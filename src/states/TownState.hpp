@@ -15,6 +15,8 @@ class TownState : public GameState {
 public:
     TownState(StateStack& stack, AppContext& context);
 
+    void onEnter() override;
+    void onResume() override;
     void handleInput(const Input& input) override;
     void update(float dt) override;
     void render() override;

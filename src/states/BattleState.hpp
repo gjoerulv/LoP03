@@ -46,6 +46,16 @@ private:
     void finish();
     std::string outcomeMessage() const;
 
+    struct FloatNumber {
+        float x = 0.0f;
+        float y = 0.0f;
+        float timer = 0.0f;
+        std::string text;
+        bool heal = false;
+    };
+    void unitScreenPos(int index, int& outX, int& outY) const;
+    void spawnNumbers(const std::vector<int>& hpBefore);  // also plays Hit/Heal/Ko SFX
+
     void drawUnit(const battle::Combatant& c, int x, int y, bool current, bool targeted) const;
 
     AppContext& context_;
@@ -74,6 +84,7 @@ private:
 
     std::string message_;
     float timer_ = 0.0f;
+    std::vector<FloatNumber> floats_;
 };
 
 }  // namespace cd

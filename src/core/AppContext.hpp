@@ -5,6 +5,8 @@
 namespace cd {
 
 class ResourceManager;
+class AudioManager;
+class FadeController;
 struct Party;
 
 namespace content {
@@ -23,6 +25,8 @@ struct AppContext {
     save::SaveSystem& saves;
     Party& party;  // the active party/session (empty until New Game or Continue)
     score::Scoreboard& scoreboard;
+    AudioManager& audio;
+    FadeController& fade;
     int virtualWidth;
     int virtualHeight;
 };

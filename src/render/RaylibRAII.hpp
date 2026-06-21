@@ -88,6 +88,45 @@ private:
     bool valid_ = false;
 };
 
+class SoundHandle {
+public:
+    SoundHandle() = default;
+    explicit SoundHandle(Sound sound) : sound_(sound), valid_(true) {}
+    ~SoundHandle() { reset(); }
+
+    SoundHandle(const SoundHandle&) = delete;
+    SoundHandle& operator=(const SoundHandle&) = delete;
+
+    SoundHandle(SoundHandle&& other) noexcept { moveFrom(other); }
+    SoundHandle& operator=(SoundHandle&& other) noexcept {
+        if (this != &other) {
+            reset();
+            moveFrom(other);
+        }
+        return *this;
+    }
+
+    bool valid() const { return valid_; }
+    const Sound& get() const { return sound_; }
+
+    void reset() {
+        if (valid_) {
+            UnloadSound(sound_);
+            valid_ = false;
+        }
+    }
+
+private:
+    void moveFrom(SoundHandle& other) {
+        sound_ = other.sound_;
+        valid_ = other.valid_;
+        other.valid_ = false;
+    }
+
+    Sound sound_{};
+    bool valid_ = false;
+};
+
 class FontHandle {
 public:
     FontHandle() = default;

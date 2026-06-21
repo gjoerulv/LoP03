@@ -6,8 +6,10 @@
 #include <string>
 #include <utility>
 
+#include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
+#include "core/FadeController.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -85,6 +87,8 @@ DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dung
     for (const dungeon::EnemyTeam& team : dungeon_.teams) {
         teamTier_.push_back(danger::assess(team, dungeon_.depth, context_.content));
     }
+    context_.fade.start();
+    context_.audio.setMusic(MusicTrack::Dungeon);
     enterRoom(dungeon_.startRoom, std::nullopt);
 }
 
@@ -186,6 +190,7 @@ void DungeonState::openChest() {
         return;
     }
     room.chest.opened = true;
+    context_.audio.play(Sfx::Chest);
     context_.party.gold += room.chest.gold;
     ++run_.chestsOpened;
     run_.treasureGold += room.chest.gold;
@@ -242,6 +247,11 @@ void DungeonState::onResume() {
     const EncounterKind kind = pendingKind_;
     pendingKind_ = EncounterKind::None;
     const battle::Outcome outcome = battleResult_.outcome;
+
+    // Returning from a battle: fade in and restore dungeon music (town states
+    // override it again if we end up leaving).
+    context_.fade.start();
+    context_.audio.setMusic(MusicTrack::Dungeon);
 
     // Accumulate run statistics regardless of outcome.
     run_.battleTurns += battleResult_.rounds;

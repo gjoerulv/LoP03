@@ -5,8 +5,10 @@
 #include <string>
 #include <vector>
 
+#include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
+#include "core/FadeController.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -48,6 +50,16 @@ TownState::TownState(StateStack& stack, AppContext& context)
     // Center the player body inside the spawn tile.
     const float inset = (town::Tilemap::kTileSize - kPlayerSize) * 0.5f;
     player_ = Rect{town_.spawnPixel.x + inset, town_.spawnPixel.y + inset, kPlayerSize, kPlayerSize};
+}
+
+void TownState::onEnter() {
+    context_.fade.start();
+    context_.audio.setMusic(MusicTrack::Town);
+}
+
+void TownState::onResume() {
+    context_.fade.start();
+    context_.audio.setMusic(MusicTrack::Town);
 }
 
 const town::Building* TownState::buildingAtPlayerTile() const {
@@ -107,9 +119,11 @@ void TownState::handleInput(const Input& input) {
              (input.down(InputAction::MoveUp) ? 1.0f : 0.0f);
 
     if (input.pressed(InputAction::Confirm) && nearDoor_ != nullptr) {
+        context_.audio.play(Sfx::Confirm);
         enterLocation(*nearDoor_);
     }
     if (input.pressed(InputAction::Menu) || input.pressed(InputAction::Cancel)) {
+        context_.audio.play(Sfx::Confirm);
         stack().pushState(std::make_unique<TownMenuState>(stack(), context_));
     }
 }

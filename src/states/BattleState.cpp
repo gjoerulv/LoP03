@@ -3,9 +3,11 @@
 #include <algorithm>
 #include <utility>
 
+#include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
+#include "core/FadeController.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -46,6 +48,64 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
         }
     }
     message_ = bossBattle_ ? "A boss appears!" : "A battle begins!";
+    context_.fade.start();
+    context_.audio.setMusic(MusicTrack::Battle);
+}
+
+void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
+    int enemyRow = 0;
+    int partyRow = 0;
+    for (int i = 0; i < index; ++i) {
+        if (battle_.units[static_cast<std::size_t>(i)].side == battle::Side::Enemy) {
+            ++enemyRow;
+        } else {
+            ++partyRow;
+        }
+    }
+    if (battle_.units[static_cast<std::size_t>(index)].side == battle::Side::Enemy) {
+        outX = 36;
+        outY = 36 + enemyRow * 34;
+    } else {
+        outX = context_.virtualWidth - 110;
+        outY = 36 + partyRow * 34;
+    }
+}
+
+void BattleState::spawnNumbers(const std::vector<int>& hpBefore) {
+    bool anyDamage = false;
+    bool anyHeal = false;
+    bool anyKo = false;
+    for (std::size_t i = 0; i < battle_.units.size() && i < hpBefore.size(); ++i) {
+        const int delta = battle_.units[i].hp - hpBefore[i];
+        if (delta == 0) {
+            continue;
+        }
+        int x = 0;
+        int y = 0;
+        unitScreenPos(static_cast<int>(i), x, y);
+        FloatNumber f;
+        f.x = static_cast<float>(x) + 14.0f;
+        f.y = static_cast<float>(y);
+        f.timer = 0.9f;
+        f.heal = delta > 0;
+        f.text = delta > 0 ? "+" + std::to_string(delta) : std::to_string(-delta);
+        floats_.push_back(std::move(f));
+        if (delta > 0) {
+            anyHeal = true;
+        } else {
+            anyDamage = true;
+        }
+        if (hpBefore[i] > 0 && battle_.units[i].hp <= 0) {
+            anyKo = true;
+        }
+    }
+    if (anyKo) {
+        context_.audio.play(Sfx::Ko);
+    } else if (anyDamage) {
+        context_.audio.play(Sfx::Hit);
+    } else if (anyHeal) {
+        context_.audio.play(Sfx::Heal);
+    }
 }
 
 int BattleState::currentActor() const {
@@ -69,7 +129,13 @@ void BattleState::startActorTurn() {
         return;
     }
     // Status effects tick at the start of the unit's turn (poison, durations).
+    std::vector<int> hpBefore;
+    hpBefore.reserve(battle_.units.size());
+    for (const battle::Combatant& u : battle_.units) {
+        hpBefore.push_back(u.hp);
+    }
     const std::string tick = battle_.tickStatuses(actor);
+    spawnNumbers(hpBefore);
     if (!battle_.units[static_cast<std::size_t>(actor)].alive()) {
         message_ = tick;
         afterAction();  // poison felled the unit; skip its action
@@ -225,6 +291,11 @@ void BattleState::onItemChosen() {
 
 void BattleState::executePending(int targetUnit) {
     const int actor = currentActor();
+    std::vector<int> hpBefore;
+    hpBefore.reserve(battle_.units.size());
+    for (const battle::Combatant& u : battle_.units) {
+        hpBefore.push_back(u.hp);
+    }
     switch (pendingKind_) {
         case PendingKind::Attack:
             message_ = battle_.attack(actor, targetUnit);
@@ -241,10 +312,16 @@ void BattleState::executePending(int targetUnit) {
             }
             break;
     }
+    spawnNumbers(hpBefore);
     afterAction();
 }
 
 void BattleState::executeEnemy(int actor) {
+    std::vector<int> hpBefore;
+    hpBefore.reserve(battle_.units.size());
+    for (const battle::Combatant& u : battle_.units) {
+        hpBefore.push_back(u.hp);
+    }
     const battle::EnemyChoice choice = battle::chooseEnemyAction(battle_, actor, context_.content);
     if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
@@ -255,6 +332,7 @@ void BattleState::executeEnemy(int actor) {
     } else {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
     }
+    spawnNumbers(hpBefore);
     afterAction();
 }
 
@@ -301,6 +379,18 @@ std::string BattleState::outcomeMessage() const {
 void BattleState::handleInput(const Input& input) {
     const bool up = input.pressed(InputAction::MoveUp) || input.pressed(InputAction::MoveLeft);
     const bool down = input.pressed(InputAction::MoveDown) || input.pressed(InputAction::MoveRight);
+
+    if (phase_ != Phase::Resolve) {
+        if (up || down) {
+            context_.audio.play(Sfx::Move);
+        }
+        if (input.pressed(InputAction::Confirm)) {
+            context_.audio.play(Sfx::Confirm);
+        }
+    }
+    if (input.pressed(InputAction::Cancel)) {
+        context_.audio.play(Sfx::Cancel);
+    }
 
     switch (phase_) {
         case Phase::Intro:
@@ -360,6 +450,14 @@ void BattleState::handleInput(const Input& input) {
 }
 
 void BattleState::update(float dt) {
+    for (FloatNumber& f : floats_) {
+        f.y -= 22.0f * dt;
+        f.timer -= dt;
+    }
+    floats_.erase(std::remove_if(floats_.begin(), floats_.end(),
+                                 [](const FloatNumber& f) { return f.timer <= 0.0f; }),
+                  floats_.end());
+
     if (phase_ != Phase::Resolve) {
         return;
     }
@@ -372,6 +470,7 @@ void BattleState::update(float dt) {
         result_ = o;
         phase_ = Phase::Done;
         message_ = outcomeMessage();
+        context_.audio.play(o == battle::Outcome::Victory ? Sfx::Victory : Sfx::Defeat);
     } else {
         advanceTurn();
     }
@@ -446,6 +545,12 @@ void BattleState::render() {
     }
 
     DrawText(TextFormat("Turns: %d", battle_.turnsTaken), 6, 6, 8, Color{170, 170, 190, 255});
+
+    // Floating damage / heal numbers.
+    for (const FloatNumber& f : floats_) {
+        DrawText(f.text.c_str(), static_cast<int>(f.x), static_cast<int>(f.y), 10,
+                 f.heal ? Color{120, 220, 120, 255} : Color{245, 120, 120, 255});
+    }
 
     // Bottom panel.
     const int panelY = h - 64;

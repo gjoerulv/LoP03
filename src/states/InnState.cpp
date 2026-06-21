@@ -1,5 +1,6 @@
 #include "states/InnState.hpp"
 
+#include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
@@ -12,7 +13,10 @@ namespace cd {
 InnState::InnState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {}
 
-void InnState::onEnter() { healFull(context_.party); }
+void InnState::onEnter() {
+    healFull(context_.party);
+    context_.audio.play(Sfx::Heal);
+}
 
 void InnState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Confirm)) {
