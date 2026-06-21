@@ -12,8 +12,8 @@
 | 5  | Battle system MVP                 | ☑ complete (approved) |
 | 6  | Danger rating & scoring           | ☑ complete (approved) |
 | 7  | Content pass                      | ☑ complete (approved) |
-| 8  | Presentation pass                 | ◐ implemented, awaiting approval |
-| 9  | Balancing & validation pass       | ☐ |
+| 8  | Presentation pass                 | ☑ complete (approved) |
+| 9  | Balancing & validation pass       | ◐ implemented, awaiting approval |
 | 10 | Release packaging pass            | ☐ |
 
 ## M1 — Project foundation
@@ -259,8 +259,37 @@ Out of scope (deferred): real sprite/tileset art and bespoke music (placeholder
 remains); richer battle animation; screen-shake and particle effects.
 
 ## M9 — Balancing & validation pass
-Difficulty curves; score sanity; malformed-data testing; save compatibility;
-performance cleanup; bug fixing.
+
+Deliverables: difficulty curves; score sanity; malformed-data testing; save
+compatibility; performance cleanup; bug fixing.
+
+Implemented:
+- **Headless battle simulator** (`battle/Simulator`, pure): deterministically
+  auto-resolves a fight with AI for both sides — the validation instrument for
+  difficulty/score sanity.
+- **Difficulty curves (validated):** deeper dungeons are more threatening (danger
+  rises with depth); the same party fares worse against deeper gates; a starting
+  level-1 party clears a depth-1 gate; a geared level-1 party (the realistic
+  in-game power ceiling) defeats a depth-1 boss. No coefficient tuning was
+  required — the existing balance passes the sanity checks.
+- **Score sanity:** a simulated full clear yields a positive, sensible score;
+  fewer turns score higher (existing tests).
+- **Malformed-data hardening:** added tests for `bosses.json`/`dungeon_themes.json`
+  (bad/missing archetype, missing enemy/boss pools) on top of the existing
+  per-file validators; loading stays defensive and never crashes.
+- **Save compatibility:** minimal v1 saves (no inventory/equipment) load; saved
+  equipment round-trips; gear ids the content no longer knows are dropped on load.
+- **Performance:** reviewed the per-frame render/update paths — no heap
+  allocation in the movement hot path; the 426×240 target is well within budget,
+  so no changes were needed.
+- **Bug review:** no critical bugs found (the lifecycle-hook transition bug was
+  fixed during M5). 120 tests total, all passing.
+
+KNOWN GAP (surfaced by this pass): **XP/leveling is not implemented** — parties
+stay level 1; power grows only via gold/equipment. The game is winnable this way
+(validated), but the design brief lists "Characters gain XP and levels."
+Recommend adding minimal leveling before release (M10) — a scope decision for the
+human.
 
 ## M10 — Release packaging pass
 Final README; build/run/controls; known limitations; smoke tests; clean

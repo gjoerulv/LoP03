@@ -35,6 +35,14 @@ content::ContentDatabase makeDb() {
     potion.name = "Potion";
     potion.type = content::ItemType::Consumable;
     db.addItem(potion);
+
+    content::ItemDef sword;
+    sword.id = "iron_sword";
+    sword.name = "Iron Sword";
+    sword.type = content::ItemType::Equipment;
+    sword.slot = content::EquipSlot::Weapon;
+    sword.statBonus = {0, 6, 0, 0, 0};
+    db.addItem(sword);
     return db;
 }
 
@@ -192,6 +200,58 @@ TEST_CASE("save: inventory round-trips; missing inventory loads empty", "[save]"
     content::LoadReport rep3;
     REQUIRE(saves.load(save::SaveSlot::Manual2, old, rep3));
     REQUIRE(old.inventory.empty());
+
+    fs::remove_all(dir);
+}
+
+TEST_CASE("save: a minimal save with no equipment still loads", "[save]") {
+    const content::ContentDatabase db = makeDb();
+    const fs::path dir = makeTempDir();
+    const save::SaveSystem saves(db, dir);
+
+    writeFile(saves.slotPath(save::SaveSlot::Manual1),
+              R"({"version":1,"gold":10,"party":[
+                 {"classId":"knight","name":"Rolan","level":1,"xp":0,"hp":120,"mp":4}]})");
+    Party p;
+    content::LoadReport rep;
+    REQUIRE(saves.load(save::SaveSlot::Manual1, p, rep));
+    REQUIRE(p.members.size() == 1);
+    REQUIRE(p.members[0].weapon.empty());
+    REQUIRE(p.inventory.empty());
+
+    fs::remove_all(dir);
+}
+
+TEST_CASE("save: equipment round-trips; unknown gear is dropped", "[save]") {
+    const content::ContentDatabase db = makeDb();
+    const fs::path dir = makeTempDir();
+    const save::SaveSystem saves(db, dir);
+
+    Party p;
+    Character c = createCharacter(*db.findClass("knight"), "Rolan");
+    c.weapon = "iron_sword";
+    refreshCharacter(c, db);
+    const int armedAttack = c.stats.attack;
+    p.members.push_back(c);
+
+    content::LoadReport rep;
+    REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
+
+    Party loaded;
+    content::LoadReport rep2;
+    REQUIRE(saves.load(save::SaveSlot::Manual1, loaded, rep2));
+    REQUIRE(loaded.members[0].weapon == "iron_sword");
+    REQUIRE(loaded.members[0].stats.attack == armedAttack);  // bonus reapplied
+
+    // A save referencing gear the content no longer knows is dropped (not fatal).
+    writeFile(saves.slotPath(save::SaveSlot::Manual2),
+              R"({"version":1,"gold":0,"party":[
+                 {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4,
+                  "weapon":"ghost_blade"}]})");
+    Party dropped;
+    content::LoadReport rep3;
+    REQUIRE(saves.load(save::SaveSlot::Manual2, dropped, rep3));
+    REQUIRE(dropped.members[0].weapon.empty());
 
     fs::remove_all(dir);
 }
