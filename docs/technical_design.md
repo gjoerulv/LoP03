@@ -372,3 +372,17 @@ chooses theme + depth, giving infinite seeded runs. Bosses are built from
 
 Visuals and audio are validated by a human (not unit-tested); only pure timing
 (`FadeController`) is covered by tests.
+
+## 14. Balancing & validation (Milestone 9)
+
+`battle/Simulator` deterministically auto-resolves a `Battle` with simple AI for
+both sides (party: heal a badly hurt ally if able, else the strongest affordable
+damaging skill on the weakest enemy). It is pure and used by the balance tests to
+make difficulty/score claims objective: deeper dungeons rate more dangerous, the
+same party fares worse at greater depth, a starting party clears a depth-1 gate,
+a geared level-1 party can down a depth-1 boss, and a simulated full clear scores
+positively. No coefficients needed tuning. Malformed-data and save-compatibility
+coverage was extended (bosses/themes parsers; minimal/old saves; dropped gear).
+
+**Known gap:** XP/leveling is not implemented — power growth is via gold/equipment
+only. Documented in `docs/milestones.md` for a scope decision before release.

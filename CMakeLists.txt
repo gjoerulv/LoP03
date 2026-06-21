@@ -53,6 +53,7 @@ add_library(crystal_core STATIC
     src/game/Inventory.cpp
     src/save/SaveSystem.cpp
     src/battle/Battle.cpp
+    src/battle/Simulator.cpp
     src/audio/AudioManager.cpp
     src/ui/Menu.cpp
     src/ui/TextInput.cpp

@@ -196,3 +196,65 @@ TEST_CASE("validation: item semantic rules are enforced", "[content]") {
         REQUIRE(potion->effectAmount == 30);
     }
 }
+
+TEST_CASE("validation: bosses parse and reject bad archetypes", "[content]") {
+    SECTION("valid boss") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseBosses(parse(R"({"version":1,"bosses":[
+            {"id":"b","name":"Boss","archetype":"brute",
+             "stats":{"hp":300,"attack":20,"magic":0,"defense":10,"speed":8}}]})"),
+                    "mem", db, rep);
+        REQUIRE(rep.ok());
+        REQUIRE(db.bossCount() == 1);
+    }
+    SECTION("unknown archetype") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseBosses(parse(R"({"version":1,"bosses":[
+            {"id":"b","name":"Boss","archetype":"wizard",
+             "stats":{"hp":300,"attack":20,"magic":0,"defense":10,"speed":8}}]})"),
+                    "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+        REQUIRE(db.bossCount() == 0);
+    }
+    SECTION("missing archetype") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseBosses(parse(R"({"version":1,"bosses":[
+            {"id":"b","name":"Boss","stats":{"hp":1,"attack":0,"magic":0,"defense":0,"speed":0}}]})"),
+                    "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+        REQUIRE(db.bossCount() == 0);
+    }
+}
+
+TEST_CASE("validation: themes require enemy and boss pools", "[content]") {
+    SECTION("valid theme") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseThemes(parse(R"({"version":1,"themes":[
+            {"id":"t","name":"Theme","normalEnemies":["goblin"],"bosses":["b"]}]})"),
+                    "mem", db, rep);
+        REQUIRE(rep.ok());
+        REQUIRE(db.themeCount() == 1);
+    }
+    SECTION("missing normalEnemies") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseThemes(parse(R"({"version":1,"themes":[
+            {"id":"t","name":"Theme","bosses":["b"]}]})"),
+                    "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+        REQUIRE(db.themeCount() == 0);
+    }
+    SECTION("missing bosses") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseThemes(parse(R"({"version":1,"themes":[
+            {"id":"t","name":"Theme","normalEnemies":["goblin"]}]})"),
+                    "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+        REQUIRE(db.themeCount() == 0);
+    }
+}
