@@ -144,6 +144,7 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     REQUIRE(db.hasSkill("fireball"));
     REQUIRE(db.findItem("scroll_fireball") != nullptr);
     REQUIRE(db.findBoss("keep_warden") != nullptr);
+    REQUIRE(db.findBoss("keep_warden")->xpReward > 0);
     REQUIRE(db.findTheme("ruined_keep") != nullptr);
 }
 #endif

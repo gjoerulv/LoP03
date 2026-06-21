@@ -22,6 +22,7 @@ add_executable(crystal_tests
     test_equipment.cpp
     test_fade.cpp
     test_balance.cpp
+    test_leveling.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core Catch2::Catch2WithMain)

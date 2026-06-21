@@ -13,8 +13,8 @@
 | 6  | Danger rating & scoring           | ☑ complete (approved) |
 | 7  | Content pass                      | ☑ complete (approved) |
 | 8  | Presentation pass                 | ☑ complete (approved) |
-| 9  | Balancing & validation pass       | ◐ implemented, awaiting approval |
-| 10 | Release packaging pass            | ☐ |
+| 9  | Balancing & validation pass       | ☑ complete (approved) |
+| 10 | Release packaging pass            | ◐ implemented, awaiting approval |
 
 ## M1 — Project foundation
 
@@ -292,5 +292,26 @@ Recommend adding minimal leveling before release (M10) — a scope decision for 
 human.
 
 ## M10 — Release packaging pass
-Final README; build/run/controls; known limitations; smoke tests; clean
-structure; final playable build target.
+
+Deliverables: final README; build/run/controls; known limitations; smoke tests;
+clean structure; final playable build target. Plus (human-requested): XP/leveling
+(Option A), Item Shop, and Training Hall.
+
+Implemented:
+- **XP/leveling** (`game/Party`): `xpToNext`/`grantXp`/`grantPartyXp`. Battle
+  victories grant the party XP and gold from the defeated team (enemies + boss
+  `xpReward`/`goldReward`); level-ups recompute stats via `refreshCharacter` and
+  heal the HP gained. `level`/`xp` already persist; level cap 50.
+- **Item Shop** (`ItemShopState`): buy consumables with gold.
+- **Training Hall** (`TrainingHallState`): pay gold to level a character up by
+  one (gold→level progression alongside battle XP).
+- Starting gold (150) for onboarding; the town's seven locations are now all
+  real states (removed the now-unused `PlaceholderLocationState`).
+- **Release packaging:** final README (what it is, build/run, controls, how to
+  play, project layout, smoke test, known limitations, originality note); Release
+  build documented; the test suite (125 tests) serves as the smoke test; clean
+  project structure.
+- Tests: XP curve, level-up stat recompute + heal, level cap, party XP, boss
+  `xpReward` in shipped data. 125 tests total, all passing.
+
+The full Milestone 1–10 plan is complete: a feature-complete, playable build.

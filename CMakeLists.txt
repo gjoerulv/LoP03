@@ -73,7 +73,8 @@ add_library(crystal_core STATIC
     src/states/TownState.cpp
     src/states/TownMenuState.cpp
     src/states/InnState.cpp
-    src/states/PlaceholderLocationState.cpp
+    src/states/ItemShopState.cpp
+    src/states/TrainingHallState.cpp
     src/states/GuildState.cpp
     src/states/DungeonState.cpp
     src/states/DungeonMenuState.cpp
@@ -99,10 +100,16 @@ add_executable(CrystalDungeons src/main.cpp)
 target_link_libraries(CrystalDungeons PRIVATE crystal_core)
 set_project_warnings(CrystalDungeons)
 
-# On Windows, build a GUI app (no console) for Release; keep console in Debug.
+# On Windows, build a GUI app (no console window) for Release; keep the console
+# in Debug. The GUI subsystem normally expects WinMain, so point the entry point
+# back at the standard main() we provide.
 if(WIN32)
     set_target_properties(CrystalDungeons PROPERTIES
         WIN32_EXECUTABLE $<CONFIG:Release>)
+    if(MSVC)
+        target_link_options(CrystalDungeons PRIVATE
+            $<$<CONFIG:Release>:/ENTRY:mainCRTStartup>)
+    endif()
 endif()
 
 # Make JSON content available next to the executable at runtime.

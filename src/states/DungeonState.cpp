@@ -278,6 +278,29 @@ void DungeonState::onResume() {
         run_.dangerDefeated += danger::tierWeight(teamTier_[static_cast<std::size_t>(pendingTeamIndex_)]);
     }
 
+    // Award XP and gold for the defeated team.
+    std::string reward;
+    if (pendingTeamIndex_ >= 0 && pendingTeamIndex_ < static_cast<int>(dungeon_.teams.size())) {
+        const dungeon::EnemyTeam& team = dungeon_.teams[static_cast<std::size_t>(pendingTeamIndex_)];
+        int xp = 0;
+        int gold = 0;
+        for (const std::string& id : team.enemyIds) {
+            if (const content::EnemyDef* e = context_.content.findEnemy(id)) {
+                xp += e->xpReward;
+                gold += e->goldReward;
+            }
+        }
+        if (const content::BossDef* boss = context_.content.findBoss(team.bossId)) {
+            xp += boss->xpReward;
+            gold += boss->goldReward;
+        }
+        context_.party.gold += gold;
+        grantPartyXp(context_.party, xp, context_.content);
+        if (xp > 0) {
+            reward = TextFormat(" (+%d XP, +%dg)", xp, gold);
+        }
+    }
+
     dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(pendingRoom_)];
     if (kind == EncounterKind::Gate) {
         room.door(pendingGateDir_).gated = false;
@@ -288,13 +311,13 @@ void DungeonState::onResume() {
                 .gated = false;
         }
         buildRoom();
-        message_ = "The gate is clear!";
-        messageTimer_ = 2.0f;
+        message_ = "The gate is clear!" + reward;
+        messageTimer_ = 2.5f;
     } else if (kind == EncounterKind::Guard) {
         room.teamIndex = -1;
         room.chest.guarded = false;
         buildRoom();
-        message_ = "The guards fall. The chest is yours to open.";
+        message_ = "The guards fall." + reward;
         messageTimer_ = 2.5f;
     } else if (kind == EncounterKind::Boss) {
         completeDungeon();
