@@ -2,7 +2,9 @@
 
 #include <utility>
 
+#include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
+#include "core/FadeController.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
@@ -12,7 +14,10 @@ namespace cd {
 
 DungeonResultState::DungeonResultState(StateStack& stack, AppContext& context,
                                        score::RunSummary summary, int score)
-    : GameState(stack), context_(context), summary_(std::move(summary)), score_(score) {}
+    : GameState(stack), context_(context), summary_(std::move(summary)), score_(score) {
+    context_.fade.start();
+    context_.audio.play(Sfx::Victory);
+}
 
 void DungeonResultState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel)) {

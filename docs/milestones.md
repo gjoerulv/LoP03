@@ -11,8 +11,8 @@
 | 4  | Dungeon generator                 | ☑ complete (approved) |
 | 5  | Battle system MVP                 | ☑ complete (approved) |
 | 6  | Danger rating & scoring           | ☑ complete (approved) |
-| 7  | Content pass                      | ◐ implemented, awaiting approval |
-| 8  | Presentation pass                 | ☐ |
+| 7  | Content pass                      | ☑ complete (approved) |
+| 8  | Presentation pass                 | ◐ implemented, awaiting approval |
 | 9  | Balancing & validation pass       | ☐ |
 | 10 | Release packaging pass            | ☐ |
 
@@ -229,8 +229,34 @@ use a fixed minion team); leveling/XP economy curve and deeper balance (M9);
 sprite art/animation (M8).
 
 ## M8 — Presentation pass
-UI polish; animations; transitions; placeholder audio/music/SFX; better feedback
-text; controls/help screen.
+
+Deliverables: UI polish; animations; transitions; placeholder audio/music/SFX;
+better feedback text; controls/help screen.
+
+Implemented:
+- **Audio** (`audio/AudioManager`): placeholder SFX and looping music are
+  **synthesized at runtime** (no asset files needed). Fully guarded — if the
+  audio device or generation fails, every call is a silent no-op (never a crash).
+  Per-scene music (Town/Dungeon/Battle) and SFX wired to menus, combat
+  (hit/heal/KO/victory/defeat), chests, and the inn. Real files can replace it
+  later under `assets/audio/`.
+- **Transitions:** a shared `FadeController` (pure, tested) drives a fade-in on
+  every scene change (menu↔town↔dungeon↔battle↔result); `Application` draws the
+  fade in virtual space so it scales cleanly.
+- **Animation:** floating damage/heal numbers rise and fade in battle; the title
+  prompt blinks; the player shows a facing tick.
+- **Controls/help screen** (`HelpState`) from the main menu, listing keyboard and
+  gamepad mappings.
+- **UI polish:** layered 16-bit window frames (double border); clearer battle/
+  status/danger feedback.
+- Test: `FadeController` timing.  110 tests total, all passing.
+
+Note: audio + visuals are **human-validation** items (cannot be auto-tested).
+The synthesized audio is intentionally primitive; final creative direction is
+out of scope.
+
+Out of scope (deferred): real sprite/tileset art and bespoke music (placeholder
+remains); richer battle animation; screen-shake and particle effects.
 
 ## M9 — Balancing & validation pass
 Difficulty curves; score sanity; malformed-data testing; save compatibility;

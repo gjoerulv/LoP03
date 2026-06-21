@@ -51,13 +51,15 @@ Application::Application()
       party_(),
       saves_(content_, paths::userDataDir() / "saves"),
       scoreboard_(paths::userDataDir() / "scoreboard.json"),
-      context_{resources_, content_,    saves_,
-               party_,     scoreboard_, config::kVirtualWidth,
-               config::kVirtualHeight},
+      audio_(),
+      fade_(),
+      context_{resources_, content_,    saves_, party_, scoreboard_,
+               audio_,     fade_,       config::kVirtualWidth, config::kVirtualHeight},
       input_(),
       stack_(),
       debugOverlay_(true) {
     loadContent();
+    fade_.start(0.6f);
     {
         content::LoadReport scoreReport;
         if (!scoreboard_.load(scoreReport)) {
@@ -108,13 +110,19 @@ void Application::processFrame() {
 
     stack_.handleInput(input_);
     stack_.update(dt);
+    audio_.update();
+    fade_.update(dt);
     if (stack_.empty()) {
         return;  // a state requested exit; loop will terminate
     }
 
-    // 1) Draw the world at the internal resolution.
+    // 1) Draw the world at the internal resolution, then the fade overlay.
     screen_.beginDraw(BLACK);
     stack_.render();
+    if (fade_.active()) {
+        const unsigned char a = static_cast<unsigned char>(fade_.coverAlpha() * 255.0f);
+        DrawRectangle(0, 0, config::kVirtualWidth, config::kVirtualHeight, Color{0, 0, 0, a});
+    }
     screen_.endDraw();
 
     // 2) Present the scaled virtual screen, then any overlays at window scale.

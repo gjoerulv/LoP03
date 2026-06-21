@@ -1,7 +1,9 @@
 #pragma once
 
+#include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
+#include "core/FadeController.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "render/VirtualScreen.hpp"
@@ -40,6 +42,8 @@ private:
     Party party_;
     save::SaveSystem saves_;
     score::Scoreboard scoreboard_;
+    AudioManager audio_;
+    FadeController fade_;
     AppContext context_;
     Input input_;
     StateStack stack_;

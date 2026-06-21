@@ -5,6 +5,11 @@ namespace cd::ui {
 void drawPanel(int x, int y, int w, int h, Color fill, Color border) {
     DrawRectangle(x, y, w, h, fill);
     DrawRectangleLines(x, y, w, h, border);
+    // A darker inner frame gives a layered 16-bit window look.
+    const Color inner{static_cast<unsigned char>(border.r * 3 / 5),
+                      static_cast<unsigned char>(border.g * 3 / 5),
+                      static_cast<unsigned char>(border.b * 3 / 5), border.a};
+    DrawRectangleLines(x + 2, y + 2, w - 4, h - 4, inner);
 }
 
 void drawTextCentered(const char* text, int centerX, int y, int fontSize, Color color) {
