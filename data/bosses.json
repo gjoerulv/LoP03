@@ -9,6 +9,8 @@
       "skills": ["power_smash", "whirlwind"],
       "minions": ["skeleton_archer"],
       "telegraph": "The Warden hefts its cleaver and roars.",
+      "xpReward": 220,
+      "goldReward": 140,
       "description": "A towering brute that guards the ruined keep."
     },
     {
@@ -19,6 +21,8 @@
       "skills": ["blizzard", "venom_mist", "sunder"],
       "minions": ["frost_imp", "wisp"],
       "telegraph": "Frost gathers around the Sorcerer's outstretched hands.",
+      "xpReward": 210,
+      "goldReward": 150,
       "description": "A mage who weaves ice and venom in the crystal depths."
     },
     {
@@ -29,6 +33,8 @@
       "skills": ["battle_cry", "weaken", "strike"],
       "minions": ["forest_wolf", "bandit", "wild_boar"],
       "telegraph": "The Commander signals, and the pack closes in.",
+      "xpReward": 210,
+      "goldReward": 150,
       "description": "A cunning leader who fights amid a loyal warband."
     },
     {
@@ -39,6 +45,8 @@
       "skills": ["whirlwind", "power_smash"],
       "minions": ["goblin_grunt", "kobold_scout", "cave_bat", "zombie"],
       "telegraph": "An endless horde surges forward without end.",
+      "xpReward": 240,
+      "goldReward": 160,
       "description": "A tyrant who throws wave upon wave of minions."
     }
   ]

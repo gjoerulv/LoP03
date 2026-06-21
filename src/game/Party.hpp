@@ -45,4 +45,14 @@ void healFull(Party& party);
 // Highest level among living/all members (0 if empty) — used for save summaries.
 int highestLevel(const Party& party);
 
+inline constexpr int kMaxLevel = 50;
+
+// XP required to advance FROM `level` to the next level.
+int xpToNext(int level);
+
+// Adds XP to a character, leveling up (recomputing stats and healing the maxHP
+// gained) as needed. Grants to the whole party with grantPartyXp.
+void grantXp(Character& character, int xp, const content::ContentDatabase& db);
+void grantPartyXp(Party& party, int xp, const content::ContentDatabase& db);
+
 }  // namespace cd

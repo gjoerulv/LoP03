@@ -77,6 +77,8 @@ struct BossDef {
     std::vector<std::string> skills;   // skill ids
     std::vector<std::string> minions;  // enemy ids fighting alongside the boss
     std::string telegraph;             // flavor line shown when the battle begins
+    int xpReward = 0;
+    int goldReward = 0;
     std::string description;
 };
 
