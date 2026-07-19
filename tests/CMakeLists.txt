@@ -10,6 +10,7 @@ add_executable(crystal_tests
     test_settings.cpp
     test_asset_manifest.cpp
     test_animation.cpp
+    test_audio.cpp
     test_paths.cpp
     test_content_validation.cpp
     test_content_loader.cpp

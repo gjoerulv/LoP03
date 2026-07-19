@@ -84,6 +84,28 @@ const char* tierSilhouetteId(danger::Tier tier) {
     return "marker.enemy.normal";
 }
 
+// Per-theme dungeon music and ambience (M21, owner-approved model); unknown
+// theme ids fall back to the Ruined Keep pair.
+MusicTrack themeMusic(const std::string& themeId) {
+    if (themeId == "crystal_mine") {
+        return MusicTrack::DungeonMine;
+    }
+    if (themeId == "hollow_forest") {
+        return MusicTrack::DungeonForest;
+    }
+    return MusicTrack::DungeonKeep;
+}
+
+AmbienceTrack themeAmbience(const std::string& themeId) {
+    if (themeId == "crystal_mine") {
+        return AmbienceTrack::Mine;
+    }
+    if (themeId == "hollow_forest") {
+        return AmbienceTrack::Forest;
+    }
+    return AmbienceTrack::Keep;
+}
+
 }  // namespace
 
 DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon)
@@ -94,7 +116,8 @@ DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dung
         teamTier_.push_back(danger::assess(team, dungeon_.depth, context_.content));
     }
     context_.fade.start();
-    context_.audio.setMusic(MusicTrack::Dungeon);
+    context_.audio.setMusic(themeMusic(dungeon_.themeId));
+    context_.audio.setAmbience(themeAmbience(dungeon_.themeId));
     enterRoom(dungeon_.startRoom, std::nullopt);
 }
 
@@ -165,6 +188,9 @@ void DungeonState::buildRoom() {
 void DungeonState::enterRoom(int index, std::optional<dungeon::Dir> entrySide) {
     currentRoom_ = index;
     dungeon_.rooms[static_cast<std::size_t>(index)].visited = true;
+    if (entrySide) {
+        context_.audio.play(Sfx::Door);  // through a doorway, not the initial spawn
+    }
     buildRoom();
 
     const dungeon::RoomLayout& layout = layouts_[static_cast<std::size_t>(index)];
@@ -270,7 +296,7 @@ void DungeonState::resolveEvent() {
     switch (ev.kind) {
         case dungeon::RoomEventKind::Shrine: {
             if (context_.party.gold < ev.goldCost) {
-                context_.audio.play(Sfx::Cancel);
+                context_.audio.play(Sfx::Error);
                 message_ = "The shrine asks " + std::to_string(ev.goldCost) +
                            "g - you cannot pay.";
                 messageTimer_ = scaledMessageTime(context_, 2.5f);
@@ -295,7 +321,7 @@ void DungeonState::resolveEvent() {
             break;
         case dungeon::RoomEventKind::Merchant: {
             if (context_.party.gold < ev.goldCost) {
-                context_.audio.play(Sfx::Cancel);
+                context_.audio.play(Sfx::Error);
                 message_ = "The merchant wants " + std::to_string(ev.goldCost) +
                            "g - you cannot pay.";
                 messageTimer_ = scaledMessageTime(context_, 2.5f);
@@ -304,14 +330,14 @@ void DungeonState::resolveEvent() {
             context_.party.gold -= ev.goldCost;
             context_.party.inventory.add(ev.itemId, 1);
             const content::ItemDef* it = context_.content.findItem(ev.itemId);
-            context_.audio.play(Sfx::Confirm);
+            context_.audio.play(Sfx::Interact);
             message_ = "Bought " + (it != nullptr ? it->name : ev.itemId) +
                        ". The merchant moves on.";
             break;
         }
         case dungeon::RoomEventKind::ScoreWager:
             run_.wagerAccepted = true;
-            context_.audio.play(Sfx::Confirm);
+            context_.audio.play(Sfx::Interact);
             message_ = "The omen accepts your dare. Finish without a death!";
             break;
         case dungeon::RoomEventKind::EliteChallenge:
@@ -398,7 +424,7 @@ void DungeonState::onResume() {
     // Returning from a battle: fade in and restore dungeon music (town states
     // override it again if we end up leaving).
     context_.fade.start();
-    context_.audio.setMusic(MusicTrack::Dungeon);
+    context_.audio.setMusic(themeMusic(dungeon_.themeId));
 
     // Accumulate run statistics regardless of outcome.
     run_.battleTurns += battleResult_.rounds;
@@ -541,6 +567,7 @@ void DungeonState::update(float dt) {
         player_.x = moved.x;
         player_.y = moved.y;
         walkTime_ += dt;
+        context_.audio.play(Sfx::Step);  // cadence via the role's rate limit
     } else {
         walkTime_ = 0.0f;
     }

@@ -4,6 +4,7 @@
 #include <memory>
 #include <utility>
 
+#include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "content/LoadReport.hpp"
 #include "core/AppContext.hpp"
@@ -43,6 +44,7 @@ GuildState::GuildState(StateStack& stack, AppContext& context)
 }
 
 void GuildState::onEnter() {
+    context_.audio.setMusic(MusicTrack::Guild);  // preparation scene (M21)
     themeIds_.clear();
     for (const auto& [id, def] : context_.content.themes()) {
         (void)def;
@@ -53,6 +55,12 @@ void GuildState::onEnter() {
         themeIndex_ = 0;
     }
     seed_ = randomSeed();
+}
+
+void GuildState::onResume() {
+    // Back from the dungeon (or a submenu): restore the preparation scene.
+    context_.audio.setMusic(MusicTrack::Guild);
+    context_.audio.setAmbience(AmbienceTrack::None);
 }
 
 std::string GuildState::currentThemeName() const {

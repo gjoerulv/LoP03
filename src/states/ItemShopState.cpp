@@ -75,7 +75,7 @@ void ItemShopState::handleInput(const Input& input) {
                 message_ = "Bought " + it->name;
                 rebuild();
             } else {
-                context_.audio.play(Sfx::Cancel);
+                context_.audio.play(Sfx::Error);
                 message_ = "Not enough gold for " + it->name;
             }
         }

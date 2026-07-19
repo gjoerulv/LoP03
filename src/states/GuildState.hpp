@@ -19,6 +19,7 @@ public:
     GuildState(StateStack& stack, AppContext& context);
 
     void onEnter() override;
+    void onResume() override;
     void handleInput(const Input& input) override;
     void render() override;
 

@@ -18,7 +18,8 @@ DungeonResultState::DungeonResultState(StateStack& stack, AppContext& context,
                                        score::RunSummary summary, int score)
     : GameState(stack), context_(context), summary_(std::move(summary)), score_(score) {
     context_.fade.start();
-    context_.audio.play(Sfx::Victory);
+    context_.audio.setMusic(MusicTrack::Result);
+    context_.audio.setAmbience(AmbienceTrack::None);
 }
 
 void DungeonResultState::handleInput(const Input& input) {

@@ -2,7 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (see §N).
+- **Status:** complete (approved) — approved by the owner on 2026-07-20
+  after manual testing (see §N).
 - **Last reviewed repository commit:** `cce5a41` (M19, 2026-07-19). Re-audit:
   Brute bosses already enrage in the sim (damage ×1.5 below half HP,
   unannounced); Sorcerer/Commander differ only by data; saves never persist

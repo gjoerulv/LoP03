@@ -6,6 +6,25 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M21 update:** the full original soundscape ships (11 music tracks, 4
+> ambience beds, 15 SFX — all generated, all manifest-driven). Listening
+> pass, every scene and transition: title → town (music + light ambience) →
+> guild (preparation track) → each dungeon theme (distinct track + bed:
+> keep wind / mine drips / forest rustle) → normal battle → boss battle
+> (heavier track) → victory fanfare / defeat dirge (one-shot jingles) →
+> result (calm track) → back to town. Checks: no two music tracks ever
+> stack (0.25 s crossfade on every switch); loop seams free of clicks;
+> footsteps cadence while walking (town + dungeon) without spamming; doors,
+> chests, merchant/omen interactions, and "cannot pay/afford" refusals each
+> have a distinct sound (refusals buzz, not the cancel blip); physical vs
+> magic hits vs status casts sound different in battle; volume sliders
+> (master/music/SFX) behave, persist, and ambience follows the music
+> slider; nothing clips at maximum volumes; rapid menu scrolling sounds
+> clean; delete any WAV from the build's `assets/audio/` → silence or
+> synth fallback + a log line, never a crash (drill scripted: title.wav);
+> a full run muted loses no essential information. Final soundscape
+> acceptance is the owner's subjective call.
+>
 > **M20 update:** dungeons gain composed encounters, events, and boss
 > mechanics. Rows 20–24 checks: teams feel role-coherent (never two
 > healers/buffers; always a damage threat); depth 8+ runs are markedly

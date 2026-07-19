@@ -29,11 +29,11 @@ CMakeLists.txt            # root build
 cmake/                    # Dependencies.cmake, CompilerWarnings.cmake
 docs/                     # design + technical + milestones (source of truth)
 data/                     # JSON content (populated M2+)
-assets/                   # textures/audio/fonts placeholders (M8); .gitkeep for now
+assets/                   # manifest.json + generated textures/audio + credits.md
 src/
   main.cpp
   core/                   # Application, AppContext, GameConfig, Log, Geometry, FadeController
-  audio/                  # AudioManager: synthesized placeholder SFX + music
+  audio/                  # AudioManager + AudioRoles: manifest-driven audio, synth fallback
   render/                 # VirtualScreen, Viewport (pure), RaylibRAII
   states/                 # GameState, StateStack, concrete states (menu/town/...)
   input/                  # InputAction, InputMap (+ raylib query factory)
@@ -127,8 +127,9 @@ States request **stable logical IDs** — never file paths. `ResourceManager`
 caches by id and owns raylib handles via RAII wrappers (`RaylibRAII.hpp`);
 unknown ids / missing files / failed loads log a warning and return a
 generated **placeholder** (magenta checker) or the default font — never crash.
-`AudioManager` resolves its fixed roles (`sfx.*`, `music.*`) against the same
-catalog: manifest file → synthesized tone → silence (owner-approved order);
+`AudioManager` resolves its fixed roles (`sfx.*`, `music.*`, `ambience.*`;
+tables in `src/audio/AudioRoles.hpp` since M21) against the same catalog:
+manifest file → synthesized tone → silence (owner-approved order);
 file music uses raylib music streams. Reload model (owner-approved): callers
 cache nothing and re-fetch by id; the debug-only F5 `ReloadAssets` action
 re-resolves the catalog and restarts the current track. CMake copies `assets/`
@@ -201,6 +202,30 @@ carry the information without color.
   fallen minions at half HP once, below half HP; Rush doubles its first
   action's damage. Enemy AI also casts Support skills whose status the
   target lacks — making buffer/debuffer enemies (and Commander kits) real.
+
+### Audio architecture (M21)
+
+The full soundscape ships through the M14 catalog — 30 original WAVs (11
+music, 4 ambience, 15 SFX) produced by the deterministic
+`tools/asset_gen/generate_audio.ps1` (byte-identical reruns; provenance in
+`assets/credits.md`). The stable contract is `src/audio/AudioRoles.hpp`
+(raylib-free): `Sfx`/`MusicTrack`/`AmbienceTrack` enums, role-id tables,
+the synth-fallback map, per-role SFX rate-limit intervals, and the fade
+curve — all headless-tested against the shipped manifest
+(`tests/test_audio.cpp`, including RIFF-header validation of every file).
+`AudioManager` gains a second streamed channel for ambience (file-or-
+silence, governed by the music volume slider), a 0.25 s crossfade on music
+changes, one-shot victory/defeat jingles (`loop:false`; when the file is
+missing the matching stinger SFX plays so battle end is never silent), and
+rate limiting so held movement keys yield a step cadence and rapid menu
+scrolling stays clean. Scene mapping: title/town/guild tracks, per-theme
+dungeon music + ambience (owner decision; `themeMusic`/`themeAmbience` in
+`DungeonState`), boss battles use `music.boss` via the existing
+`bossBattle_` flag, and the result screen plays `music.result`. Battle SFX
+are typed at the presentation layer only (`stageNumbers` picks
+physical/magic/status codes from the resolved `SkillDef`) — the sim is
+untouched. No gameplay information is sound-only; the muted game plays
+identically.
 
 ### Score comparability & economy audit (M19)
 

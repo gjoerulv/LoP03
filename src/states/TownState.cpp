@@ -82,11 +82,13 @@ TownState::TownState(StateStack& stack, AppContext& context)
 void TownState::onEnter() {
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Town);
+    context_.audio.setAmbience(AmbienceTrack::Town);
 }
 
 void TownState::onResume() {
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Town);
+    context_.audio.setAmbience(AmbienceTrack::Town);
 }
 
 const town::Building* TownState::buildingAtPlayerTile() const {
@@ -156,6 +158,7 @@ void TownState::update(float dt) {
         player_.x = moved.x;
         player_.y = moved.y;
         walkTime_ += dt;
+        context_.audio.play(Sfx::Step);  // cadence via the role's rate limit
     } else {
         walkTime_ = 0.0f;  // stand frame
     }

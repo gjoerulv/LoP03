@@ -2,9 +2,30 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** implemented, awaiting manual approval (see §N).
+- **Last reviewed repository commit:** M20 approval HEAD (2026-07-20).
+  Re-audit: `AudioManager` (M14) resolves 9 SFX + 3 music roles two-tier
+  (manifest file → synthesized tone → silence); 4 audio files ship, all from
+  the deterministic in-project generator approved at M15
+  (`tools/asset_gen/generate_audio.ps1` + the M14 confirm chime). No ambience
+  concept exists; no title/guild/boss/victory/defeat/result music roles; no
+  error/step/door/interact/hit-type/status SFX; transitions are hard cuts
+  with no rate limiting. The manifest schema (v2) already carries
+  sfx/music types with `loop`+`volume` — ambience ships as `ambience.*`
+  role ids of the music type, so **no schema revision is required**.
+  Volume settings (master/music/SFX) exist since M13. Battle SFX stage
+  through `BattleState::pendingSfx_`; `bossBattle_` flag exists.
+- **Owner decisions (2026-07-20):**
+  1. **Sourcing: in-project generated.** Extend the deterministic generator
+     for the full soundscape (~11 music, 4 ambience, 15 SFX); original,
+     provenance-complete; any track later replaceable via manifest edit
+     only.
+  2. **Dungeon music: per-theme tracks** (keep/mine/forest), matching
+     per-theme ambience; the shared `music.dungeon` role is retired
+     (synth fallback preserved).
+  3. **Battle end: victory fanfare + defeat dirge** as short non-looping
+     music tracks, plus a calm result-screen track; stinger SFX roles stay
+     defined.
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M21 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -133,3 +154,65 @@ by real shipped content.
 - `assets/credits.md` — complete attribution.
 - `README.md` — known-limitations line about placeholder audio removed.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-20)
+
+**Sourcing (owner decision 1).** The full soundscape is produced in-project
+by `tools/asset_gen/generate_audio.ps1` — 30 original 22050 Hz PCM16 mono
+WAVs, byte-identical on rerun (hash-verified). Music keeps the approved
+M15 identity (square lead + triangle bass); ambience is shaped noise
+(xorshift → one-pole lowpass → whole-cycle amplitude LFO, seam-consistent)
+with deterministic sine chirps/drips; SFX are segment-rendered
+sine/square/tri/noise sweeps. `assets/credits.md` records all three
+families; the M14 proof chime was regenerated into the SFX family.
+
+**Roles & manager.** New raylib-free `src/audio/AudioRoles.hpp` is the
+stable contract: `Sfx` (15), `MusicTrack` (11), `AmbienceTrack` (4), role
+ids, the synth-fallback map (new roles fall to the nearest M8 loop),
+per-role SFX rate-limit intervals, and the fade curve. `AudioManager`
+gains an ambience stream channel (file-or-silence, follows the music
+volume slider), a 0.25 s crossfade on music changes (synth tier hard-cuts;
+switching back mid-fade restarts clean), one-shot jingle handling
+(non-loop stream frees the channel when done), and SFX rate limiting
+(first play always free). Manifest schema untouched (v2; `ambience` was
+already a first-class type since M14) — **no schema revision**.
+
+**Scene map (owner decisions 2–3).** Title menu gets its own track (was
+Town); Guild + return-from-dungeon get the preparation track; the three
+themes get distinct music + ambience pairs (`themeMusic`/`themeAmbience`
+on `dungeon_.themeId`, keep-pair fallback for unknown ids); boss battles
+use `music.boss` (existing `bossBattle_` flag); battle end switches the
+music channel to the victory fanfare or defeat dirge (missing jingle file
+→ the old stinger SFX, so battle end is never silent); the result screen
+plays `music.result` with ambience off.
+
+**New SFX wiring.** Error buzz on every refusal (shrine/merchant cannot
+pay, shop/training cannot afford — previously the cancel blip; the equip
+shop had no purchase sounds at all and gained confirm/error); footsteps in
+town and dungeon cadenced purely by the role's 0.16 s rate limit (no
+per-state timers); doors on dungeon room transitions (not the initial
+spawn); interact for merchant purchase + omen acceptance; battle hits
+typed at the presentation layer (`stageNumbers` codes: physical 2 / magic
+4 / status 5 from the resolved `SkillDef`) — the deterministic sim is
+untouched, all pre-existing battle tests pass unmodified.
+
+**Evidence.** 235/235 tests (7 new in `tests/test_audio.cpp`): role-table
+integrity, shipped-manifest coverage of every role (type, existing file,
+loop flags — jingles non-loop, ambience loop, volume ranges), RIFF-header
+validation of all 30 files (PCM16/mono/22050, size-consistent), credits
+coverage per family, rate-limit policy, fade curve, synth-fallback map.
+Smoke runs: normal launch + input + clean close, and the missing-file
+drill (build copy of `title.wav` removed → runs, no crash) — both OK.
+
+**Deviations / notes:**
+1. Ambience has no synthesized fallback tier (silence + log by design);
+   music keeps one via the nearest-loop map.
+2. The retired `music.dungeon` role id was replaced by
+   `music.dungeon.{keep,mine,forest}`; the old `dungeon.wav` file became
+   `dungeon_keep.wav` (same approved melody).
+3. Victory/defeat SFX stinger roles remain defined and shipped as files —
+   they now serve as the jingle fallback rather than the battle-end
+   default.
+4. Loop-seam quality relies on per-note decay envelopes (music) and
+   whole-cycle LFOs (ambience), not crossfaded seams; the owner listening
+   pass (§J) is the acceptance gate for clicks.

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <filesystem>
 
+#include "audio/AudioRoles.hpp"
 #include "render/RaylibRAII.hpp"
 
 // Audio with two tiers per logical role (M14, owner-approved fallback order):
@@ -12,10 +13,12 @@
 // the audio device state — if init or any load fails, calls are silent no-ops
 // (never a crash). File-backed music uses raylib music streams; synthesized
 // music keeps the M8 re-play loop. Replacing any sound requires only an
-// assets/manifest.json entry + file — no C++ (roles below).
+// assets/manifest.json entry + file — no C++ (role ids in AudioRoles.hpp).
 //
-// Manifest role ids: sfx.ui.{move,confirm,cancel}, sfx.battle.{hit,heal,ko,
-// victory,defeat}, sfx.world.chest, music.{town,dungeon,battle}.
+// M21 additions: a second streamed channel for ambience (file-or-silence,
+// governed by the music volume), a short crossfade when the music track
+// changes, one-shot victory/defeat jingles (stinger SFX fallback), and
+// per-role SFX rate limiting for rapid menus and footsteps.
 
 namespace cd {
 
@@ -23,29 +26,25 @@ namespace assets {
 class AssetManifest;
 }
 
-enum class Sfx { Move, Confirm, Cancel, Hit, Heal, Ko, Victory, Defeat, Chest };
-inline constexpr std::size_t kSfxCount = 9;
-
-enum class MusicTrack { None, Town, Dungeon, Battle };
-inline constexpr std::size_t kMusicCount = 3;  // Town, Dungeon, Battle
-
 class AudioManager {
 public:
     AudioManager();
 
     void play(Sfx id);
     void setMusic(MusicTrack track);
-    void update();  // call each frame; streams/loops the current track
+    void setAmbience(AmbienceTrack track);
+    void update();  // call each frame; streams, loops, and fades
     void setEnabled(bool enabled);
     bool enabled() const { return enabled_; }
 
     // Volume controls (0..1 each), persisted via settings (M13). Applied to
-    // the master output, the current music, and each SFX at play time.
+    // the master output, the current music and ambience streams, and each SFX
+    // at play time. Ambience follows the music slider.
     void setVolumes(float master, float music, float sfx);
 
     // Resolves every audio role against the manifest (M14): file-backed
     // sounds/streams replace the synthesized tier where present and loadable.
-    // Safe to call again for the debug reload — the current track restarts.
+    // Safe to call again for the debug reload — the current tracks restart.
     void applyManifest(const assets::AssetManifest& manifest,
                        const std::filesystem::path& root);
 
@@ -58,8 +57,13 @@ private:
         DeviceGuard& operator=(const DeviceGuard&) = delete;
     };
 
+    static constexpr std::size_t kSynthMusicCount = 3;  // town, dungeon, battle
+
     void stopCurrent();
     void startCurrent();
+    void stopAmbience();
+    void startAmbience();
+    void cancelFade();
 
     DeviceGuard device_;
     bool ready_ = false;
@@ -67,15 +71,27 @@ private:
 
     // Synthesized tier (always built when the device is ready).
     std::array<SoundHandle, kSfxCount> synthSfx_;
-    std::array<SoundHandle, kMusicCount> synthMusic_;
+    std::array<SoundHandle, kSynthMusicCount> synthMusic_;
 
     // File tier from the manifest (optional per role).
     std::array<SoundHandle, kSfxCount> fileSfx_;
     std::array<float, kSfxCount> fileSfxVolume_{};
     std::array<MusicHandle, kMusicCount> fileMusic_;
     std::array<float, kMusicCount> fileMusicVolume_{};
+    std::array<MusicHandle, kAmbienceCount> fileAmbience_;
+    std::array<float, kAmbienceCount> fileAmbienceVolume_{};
 
     MusicTrack current_ = MusicTrack::None;
+    AmbienceTrack currentAmbience_ = AmbienceTrack::None;
+
+    // Crossfade state: index into fileMusic_ still fading out, or -1.
+    int fadingIndex_ = -1;
+    float fadeElapsed_ = 0.0f;
+
+    // Last accepted play time per SFX role (negative = never), for the pure
+    // rate-limit policy in AudioRoles.hpp.
+    std::array<double, kSfxCount> lastSfxTime_{};
+
     float masterVolume_ = 1.0f;
     float musicVolume_ = 1.0f;
     float sfxVolume_ = 1.0f;

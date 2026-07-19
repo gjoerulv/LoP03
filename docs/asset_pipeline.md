@@ -59,20 +59,34 @@ entry (or null → fall back to a static texture / shape);
 draws it anchored on the collision center. Callers keep their own clock —
 pass 0 to show the first (stand) frame.
 
-## 3. Audio roles (what you can replace today)
+## 3. Audio roles (M21: full soundscape shipped)
+
+The stable role tables live in `src/audio/AudioRoles.hpp` (raylib-free;
+tests validate the shipped manifest against them). All 30 shipped files are
+original, produced by `tools/asset_gen/generate_audio.ps1` (deterministic —
+reruns are byte-identical).
 
 | Role id | Used for |
 |---|---|
-| `sfx.ui.move` / `sfx.ui.confirm` / `sfx.ui.cancel` | menu navigation |
-| `sfx.battle.hit` / `heal` / `ko` / `victory` / `defeat` | combat feedback |
-| `sfx.world.chest` | chest opening |
-| `music.town` / `music.dungeon` / `music.battle` | scene music (streamed) |
-| `ambience.*` | validated, plays from M21 |
+| `sfx.ui.{move,confirm,cancel,error}` | menus; `error` = refusals (can't pay/afford) |
+| `sfx.battle.{hit,hit_magic,heal,status,ko,victory,defeat}` | combat feedback by action type |
+| `sfx.world.{chest,step,door,interact}` | exploration (steps are rate-limit cadenced) |
+| `music.title` / `music.town` / `music.guild` | scene music (streamed loops) |
+| `music.dungeon.{keep,mine,forest}` | per-theme dungeon music (owner decision) |
+| `music.battle` / `music.boss` | normal vs boss battles |
+| `music.victory` / `music.defeat` | one-shot jingles (`loop: false`) at battle end |
+| `music.result` | dungeon result screen |
+| `ambience.{town,keep,mine,forest}` | looping beds layered under music |
 
 **Fallback order (owner-approved):** manifest file → synthesized placeholder
-tone → silence; every miss logs a warning, nothing crashes. File-backed music
-uses raylib music streams with the manifest `loop` flag; volumes combine
-group settings (M13 Settings screen) × per-asset `volume`.
+tone → silence; every miss logs a warning, nothing crashes. New M21 music
+roles map to the nearest M8 synth loop (`kSynthMusicIndex`); a missing
+victory/defeat jingle falls back to the matching stinger SFX; ambience has no
+synth tier (silence). File-backed music uses raylib music streams with the
+manifest `loop` flag; track changes crossfade over 0.25 s; rapid SFX are
+rate-limited per role (`kSfxMinInterval`). Volumes combine group settings
+(M13 Settings screen) × per-asset `volume`; ambience follows the music
+slider.
 
 Texture/font roles follow the same pattern (placeholder checker / default
 font as fallback); visual role names are assigned in M15/M17 as art lands.

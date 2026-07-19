@@ -11,11 +11,12 @@ music, or text. Built in **C++20** with **raylib**.
 > **Status: feature-complete playable build** (Milestones 1–10). Town hub,
 > seeded walkable dungeons, deterministic turn-based combat with status effects,
 > danger ratings, scoring + scoreboard, content (classes/enemies/elites/bosses/
-> items/skills/themes), equipment, XP/leveling, shops, placeholder audio, and a
-> controls screen are all in. Art and audio are intentionally placeholder.
-> A post-M10 completion program (M11–M24: UI/text safety, input remapping,
-> replaceable assets, final art/audio, compact rooms, accessibility, release
-> polish) is planned — see `docs/completion_roadmap.md`.
+> items/skills/themes), equipment, XP/leveling, shops, and a controls screen
+> are all in. A post-M10 completion program (M11–M24) is underway — UI/text
+> safety, input remapping, replaceable assets, generated 16-bit-style art,
+> compact rooms, encounter variety, and (M21) a full original soundscape
+> (music, ambience, SFX) are done; onboarding/accessibility, validation, and
+> release packaging remain — see `docs/completion_roadmap.md`.
 
 ## Requirements
 
@@ -104,7 +105,7 @@ letterbox/pillarbox bars.
 src/
   core/      Application loop, AppContext, config, FadeController (transitions)
   render/    VirtualScreen (426x240 scaling), Viewport, raylib RAII wrappers
-  audio/     AudioManager (synthesized placeholder SFX + music)
+  audio/     AudioManager (manifest-driven music/ambience/SFX, synth fallback)
   input/     action mapping (keyboard + gamepad)
   resource/  cached textures/fonts with graceful fallback
   platform/  user-data paths, path sanitizing
@@ -139,11 +140,12 @@ save round-trips via the Save Point + Continue.
 
 ## Known limitations
 
-- **Placeholder art and audio.** Tiles, characters, and enemies are colored
-  rectangles/glyphs; SFX and music are simple synthesized tones. Every sound
-  and visual role is replaceable without code via `assets/manifest.json`
-  (see `docs/asset_pipeline.md`; debug builds reload with F5); missing files
-  fall back to the placeholders, then silence.
+- **Generated assets.** All art (16-bit-style pixel tiles/sprites) and all
+  audio (11 chiptune music tracks, 4 ambience beds, 15 SFX) are original and
+  produced by deterministic in-repo generators (`tools/asset_gen/`). Every
+  sound and visual role is replaceable without code via
+  `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload
+  with F5); missing files fall back to synthesized placeholders or silence.
 - Status effects are a focused set (poison + attack/defense buffs/debuffs).
   Bosses use stats, skills, minions, telegraph text, and a Brute enrage; dynamic
   summons and true multi-wave "rush" are not implemented.
@@ -153,8 +155,10 @@ save round-trips via the Save Point + Continue.
 ## Originality & assets
 
 All content (names, classes, enemies, bosses, items, skills, themes, story
-flavor, UI) is original to this project. No copyrighted assets are used. Audio
-and tile/sprite visuals are generated in code as placeholders.
+flavor, UI) is original to this project. No copyrighted assets are used. All
+audio and tile/sprite visuals are original, produced by the deterministic
+generators in `tools/asset_gen/`; provenance is recorded in
+`assets/credits.md`.
 
 ## Documentation
 

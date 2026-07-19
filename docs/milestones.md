@@ -27,8 +27,8 @@
 | 17 | Exploration visuals & animation    | ☑ complete (approved) |
 | 18 | Battle presentation & game feel    | ☑ complete (approved) |
 | 19 | Progression, economy & score-integrity hardening | ☑ complete (approved) |
-| 20 | Encounter & dungeon-content variety | ◑ implemented, awaiting manual approval |
-| 21 | Final music, ambience & sound effects | ☐ planned |
+| 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
+| 21 | Final music, ambience & sound effects | ◑ implemented, awaiting manual approval |
 | 22 | Onboarding & accessibility         | ☐ planned |
 | 23 | Automated visual validation, playtesting & balance hardening | ☐ planned |
 | 24 | Release packaging & final release validation | ☐ planned |
@@ -639,12 +639,12 @@ milestone is not automatic authorization to start the next.
 
 ## M20 — Encounter & dungeon-content variety
 
-- **Status:** ◑ implemented, awaiting manual approval (228/228 tests; the
-  depth plateau is fixed — clearing levels now 1/3/5/9/11 at depths
-  1/5/6/8/10; captures in `docs/screenshots/m20_events/`; see the note's
-  §N. Owner decisions executed in full: role taxonomy + composition.json +
-  depth scaling + generation v3; all six events; one sim mechanic per boss
-  archetype.)
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-20
+  after manual testing. (228/228 tests; the depth plateau is fixed —
+  clearing levels now 1/3/5/9/11 at depths 1/5/6/8/10; captures in
+  `docs/screenshots/m20_events/`; see the note's §N. Owner decisions
+  executed in full: role taxonomy + composition.json + depth scaling +
+  generation v3; all six events; one sim mechanic per boss archetype.)
 - **Goal:** add targeted tactical variety after the presentation and room
   foundations are stable.
 - **Player-facing outcome:** more distinct enemy teams, a small set of
@@ -671,7 +671,14 @@ milestone is not automatic authorization to start the next.
 
 ## M21 — Final music, ambience & sound effects
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (235/235 tests; 30
+  original WAVs — 11 music incl. per-theme dungeon tracks and one-shot
+  victory/defeat jingles, 4 ambience beds, 15 SFX — all deterministic,
+  manifest-driven, provenance-recorded; ambience channel + crossfades +
+  SFX rate limiting in `AudioManager`; smoke-tested incl. the
+  missing-file drill; owner listening pass pending — see the note's §N.
+  Owner decisions 2026-07-20: in-project generated sourcing; per-theme
+  dungeon music; fanfare/dirge jingles at battle end.)
 - **Goal:** replace synthesized placeholders with coherent original/licensed
   audio delivered through the asset manifest.
 - **Player-facing outcome:** real music, ambience, and sound effects across

@@ -60,7 +60,10 @@ private:
     // Computes deltas into the pending presentation (floats, hit flags,
     // SFX); nothing is shown until commitPresentation() runs (at the
     // sequencer's impact beat, or immediately for status ticks).
-    void stageNumbers(const std::vector<int>& hpBefore);
+    // damageSfx picks the impact sound (2 physical, 4 magic); statusAction
+    // marks buff/debuff casts that move no HP (SFX code 5).
+    void stageNumbers(const std::vector<int>& hpBefore, int damageSfx = 2,
+                      bool statusAction = false);
     void commitPresentation();
 
     void drawUnit(const battle::Combatant& c, int index, int x, int y, bool current,

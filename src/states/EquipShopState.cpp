@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
@@ -183,8 +184,10 @@ void EquipShopState::confirm() {
             if (context_.party.gold >= it->value) {
                 context_.party.gold -= it->value;
                 context_.party.inventory.add(it->id, 1);
+                context_.audio.play(Sfx::Confirm);
                 message_ = "Bought " + it->name;
             } else {
+                context_.audio.play(Sfx::Error);
                 message_ = "Not enough gold for " + it->name;
             }
             break;

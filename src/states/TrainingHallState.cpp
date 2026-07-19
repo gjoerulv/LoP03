@@ -58,7 +58,7 @@ void TrainingHallState::handleInput(const Input& input) {
             message_ = c.name + " trained to Lv." + std::to_string(c.level) + "!";
             rebuild();
         } else {
-            context_.audio.play(Sfx::Cancel);
+            context_.audio.play(Sfx::Error);
             message_ = "Not enough gold to train " + c.name;
         }
     }

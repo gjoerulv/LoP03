@@ -67,7 +67,7 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
     hitFlags_.assign(battle_.units.size(), 0);
     koFade_.assign(battle_.units.size(), 1.0f);
     context_.fade.start();
-    context_.audio.setMusic(MusicTrack::Battle);
+    context_.audio.setMusic(bossBattle_ ? MusicTrack::Boss : MusicTrack::Battle);
 }
 
 int BattleState::enemyBaseY() const {
@@ -101,7 +101,8 @@ void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     }
 }
 
-void BattleState::stageNumbers(const std::vector<int>& hpBefore) {
+void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
+                               bool statusAction) {
     hitFlags_.assign(battle_.units.size(), 0);
     bool anyDamage = false;
     bool anyHeal = false;
@@ -131,7 +132,7 @@ void BattleState::stageNumbers(const std::vector<int>& hpBefore) {
             anyKo = true;
         }
     }
-    pendingSfx_ = anyKo ? 3 : (anyDamage ? 2 : (anyHeal ? 1 : 0));
+    pendingSfx_ = anyKo ? 3 : (anyDamage ? damageSfx : (anyHeal ? 1 : (statusAction ? 5 : 0)));
 }
 
 void BattleState::commitPresentation() {
@@ -146,6 +147,8 @@ void BattleState::commitPresentation() {
         displayHp_[i] = battle_.units[i].hp;
     }
     switch (pendingSfx_) {
+        case 5: context_.audio.play(Sfx::Status); break;
+        case 4: context_.audio.play(Sfx::HitMagic); break;
         case 3: context_.audio.play(Sfx::Ko); break;
         case 2: context_.audio.play(Sfx::Hit); break;
         case 1: context_.audio.play(Sfx::Heal); break;
@@ -347,6 +350,8 @@ void BattleState::executePending(int targetUnit) {
     for (const battle::Combatant& u : battle_.units) {
         hpBefore.push_back(u.hp);
     }
+    int damageSfx = 2;
+    bool statusAction = false;
     switch (pendingKind_) {
         case PendingKind::Attack:
             message_ = battle_.attack(actor, targetUnit);
@@ -354,6 +359,8 @@ void BattleState::executePending(int targetUnit) {
         case PendingKind::Skill:
             if (const content::SkillDef* s = context_.content.findSkill(pendingSkillId_)) {
                 message_ = battle_.useSkill(actor, targetUnit, *s);
+                damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
+                statusAction = s->statusEffect != content::StatusType::None;
             }
             break;
         case PendingKind::Item:
@@ -363,7 +370,7 @@ void BattleState::executePending(int targetUnit) {
             }
             break;
     }
-    stageNumbers(hpBefore);
+    stageNumbers(hpBefore, damageSfx, statusAction);
     afterAction();
 }
 
@@ -374,16 +381,20 @@ void BattleState::executeEnemy(int actor) {
         hpBefore.push_back(u.hp);
     }
     const battle::EnemyChoice choice = battle::chooseEnemyAction(battle_, actor, context_.content);
+    int damageSfx = 2;
+    bool statusAction = false;
     if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);
+            damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
+            statusAction = s->statusEffect != content::StatusType::None;
         }
     } else if (choice.target >= 0) {
         message_ = battle_.attack(actor, choice.target);
     } else {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
     }
-    stageNumbers(hpBefore);
+    stageNumbers(hpBefore, damageSfx, statusAction);
     afterAction();
 }
 
@@ -557,7 +568,10 @@ void BattleState::update(float dt) {
         result_ = o;
         phase_ = Phase::Done;
         message_ = outcomeMessage();
-        context_.audio.play(o == battle::Outcome::Victory ? Sfx::Victory : Sfx::Defeat);
+        // One-shot jingle on the music channel (M21); if its file is missing
+        // the AudioManager falls back to the matching stinger SFX.
+        context_.audio.setMusic(o == battle::Outcome::Victory ? MusicTrack::Victory
+                                                             : MusicTrack::Defeat);
     } else {
         advanceTurn();
     }

@@ -38,11 +38,13 @@ MainMenuState::MainMenuState(StateStack& stack, AppContext& context)
 
 void MainMenuState::onEnter() {
     context_.fade.start();
-    context_.audio.setMusic(MusicTrack::Town);
+    context_.audio.setMusic(MusicTrack::Title);
+    context_.audio.setAmbience(AmbienceTrack::None);
     rebuild();
 }
 void MainMenuState::onResume() {
-    context_.audio.setMusic(MusicTrack::Town);
+    context_.audio.setMusic(MusicTrack::Title);
+    context_.audio.setAmbience(AmbienceTrack::None);
     rebuild();  // refresh Continue after returning
 }
 
