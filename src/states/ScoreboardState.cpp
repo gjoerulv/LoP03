@@ -17,11 +17,12 @@ namespace {
 // Column layout: numeric columns are right-aligned at fixed edges (space
 // padding cannot align a variable-width font); the theme fills the rest.
 constexpr int kRankX = 40;       // left edge, "#"
-constexpr int kScoreR = 130;     // right edge of Score
-constexpr int kTurnsR = 185;     // right edge of Turns
-constexpr int kDangerR = 245;    // right edge of Danger
-constexpr int kDepthR = 290;     // right edge of Depth
-constexpr int kThemeX = 306;     // left edge of Theme
+constexpr int kScoreR = 126;     // right edge of Score
+constexpr int kTurnsR = 178;     // right edge of Turns
+constexpr int kDangerR = 230;    // right edge of Danger
+constexpr int kDepthR = 270;     // right edge of Depth
+constexpr int kLvR = 304;        // right edge of Lv (M19 comparability tag)
+constexpr int kThemeX = 318;     // left edge of Theme
 constexpr int kHeaderY = 44;
 constexpr int kRowsY = 60;
 constexpr int kRowH = 13;
@@ -68,6 +69,7 @@ void ScoreboardState::render() {
     ui::drawTextRight("Turns", kTurnsR, kHeaderY, style::kFontBody, style::kTextDim);
     ui::drawTextRight("Danger", kDangerR, kHeaderY, style::kFontBody, style::kTextDim);
     ui::drawTextRight("Depth", kDepthR, kHeaderY, style::kFontBody, style::kTextDim);
+    ui::drawTextRight("Lv", kLvR, kHeaderY, style::kFontBody, style::kTextDim);
     DrawText("Theme", kThemeX, kHeaderY, style::kFontBody, style::kTextDim);
 
     const int total = static_cast<int>(entries.size());
@@ -85,14 +87,25 @@ void ScoreboardState::render() {
         ui::drawTextRight(TextFormat("%d", e.dangerDefeated), kDangerR, y, style::kFontBody,
                           rowColor);
         ui::drawTextRight(TextFormat("%d", e.depth), kDepthR, y, style::kFontBody, rowColor);
+        // Party level at completion; legacy entries (pre-M19) show "-".
+        if (e.partyLevel > 0) {
+            ui::drawTextRight(TextFormat("%d", e.partyLevel), kLvR, y, style::kFontBody,
+                              rowColor);
+        } else {
+            ui::drawTextRight("-", kLvR, y, style::kFontBody, style::kTextDim);
+        }
         std::string theme = e.theme + (e.noDeath ? "  *" : "");
         ui::drawTextFitted(theme, kThemeX, y, w - kThemeX - 16, style::kFontBody, rowColor,
                            "scoreboard.theme");
     }
 
+    // The honest-comparison conditions (M19 policy): no hidden normalization;
+    // players compare runs at matching conditions instead.
     const int legendY = kRowsY + count * kRowH + 4;
-    DrawText("* = no-death run", kRankX, legendY, style::kFontSmall,
-             Color{150, 170, 150, 255});
+    DrawText("* = no-death   Lv = party level ('-' = older run)", kRankX, legendY,
+             style::kFontSmall, Color{150, 170, 150, 255});
+    DrawText("Compare runs at the same Depth and Lv.", kRankX, legendY + 10,
+             style::kFontSmall, style::kTextDim);
     if (scroll_.moreAbove() || scroll_.moreBelow(total, kVisibleRows)) {
         ui::drawTextRight(TextFormat("%d-%d of %d   Up/Down: Scroll", first + 1, first + count,
                                      total),

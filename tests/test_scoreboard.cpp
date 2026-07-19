@@ -100,6 +100,28 @@ TEST_CASE("scoreboard: entries without generationVersion load as pre-M16", "[sco
     REQUIRE(board.entries().size() == 1);
     REQUIRE(board.entries()[0].score == 900);
     REQUIRE(board.entries()[0].generationVersion == 0);  // absent field = pre-versioning
+    REQUIRE(board.entries()[0].partyLevel == 0);         // absent field = legacy run
+    fs::remove_all(dir);
+}
+
+TEST_CASE("scoreboard: partyLevel comparability tag round-trips", "[score]") {
+    const fs::path dir = makeTempDir();
+    const fs::path file = dir / "scoreboard.json";
+    {
+        score::Scoreboard board(file);
+        score::ScoreEntry e = entry(1500, 9);
+        e.partyLevel = 7;
+        board.add(e);
+        content::LoadReport rep;
+        REQUIRE(board.save(rep));
+    }
+    {
+        score::Scoreboard board(file);
+        content::LoadReport rep;
+        REQUIRE(board.load(rep));
+        REQUIRE(board.entries().size() == 1);
+        REQUIRE(board.entries()[0].partyLevel == 7);
+    }
     fs::remove_all(dir);
 }
 

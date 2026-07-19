@@ -32,6 +32,7 @@ add_executable(crystal_tests
     test_equipment.cpp
     test_fade.cpp
     test_balance.cpp
+    test_economy.cpp
     test_leveling.cpp
 )
 

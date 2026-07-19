@@ -6,6 +6,15 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M19 update:** the scoreboard gains an **Lv** column (party level at
+> completion; "-" for pre-M19 runs) and a two-line legend stating the
+> comparison conditions. Rows 18/19 checks: Lv shows for new runs and "-"
+> for old entries; the legend is readable; columns still fit at every
+> window case; an old scoreboard.json still loads. Economy spot-checks for
+> row 16: one depth-1 clear must not fund training the whole party a level
+> at mid-game prices; a fresh party still clears depth 1. Capture:
+> `docs/screenshots/m19_score/`.
+>
 > **M18 update:** battle actions are staged (lunge → impact flash/shake +
 > numbers + HP-bar commit → message). Battle rows 24–30 gain checks: at
 > Normal speed each action reads clearly and briskly; Fast visibly halves

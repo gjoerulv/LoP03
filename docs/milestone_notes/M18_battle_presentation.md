@@ -2,7 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (see §N).
+- **Status:** complete (approved) — approved by the owner on 2026-07-19
+  after manual testing (see §N).
 - **Last reviewed repository commit:** `a9426b9` (M17, 2026-07-19). Re-audit:
   much of §C's hierarchy already exists from M12/M15/M17 (turn line + cursor,
   disabled commands, skill/item costs + descriptions, round counter, boss

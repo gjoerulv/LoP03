@@ -25,8 +25,8 @@
 | 15 | Art-direction vertical slice       | ☑ complete (approved) |
 | 16 | Compact dungeon-room system        | ☑ complete (approved) |
 | 17 | Exploration visuals & animation    | ☑ complete (approved) |
-| 18 | Battle presentation & game feel    | ◑ implemented, awaiting manual approval |
-| 19 | Progression, economy & score-integrity hardening | ☐ planned |
+| 18 | Battle presentation & game feel    | ☑ complete (approved) |
+| 19 | Progression, economy & score-integrity hardening | ◑ implemented, awaiting manual approval |
 | 20 | Encounter & dungeon-content variety | ☐ planned |
 | 21 | Final music, ambience & sound effects | ☐ planned |
 | 22 | Onboarding & accessibility         | ☐ planned |
@@ -578,10 +578,11 @@ milestone is not automatic authorization to start the next.
 
 ## M18 — Battle presentation & game feel
 
-- **Status:** ◑ implemented, awaiting manual approval (208/208 tests, battle/
-  simulator tests unmodified; live-battle captures in
-  `docs/screenshots/m18_battle/`; see the note's §N. Owner decision executed:
-  optional `effectFlash`/`effectShake` settings fields, no version bump.)
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. (208/208 tests, battle/simulator tests unmodified;
+  live-battle captures in `docs/screenshots/m18_battle/`; see the note's §N.
+  Owner decision executed: optional `effectFlash`/`effectShake` settings
+  fields, no version bump.)
 - **Goal:** make deterministic combat clear, fast, and satisfying without
   undermining fewest-turn score play.
 - **Player-facing outcome:** readable battle information hierarchy; short
@@ -607,7 +608,12 @@ milestone is not automatic authorization to start the next.
 
 ## M19 — Progression, economy & score-integrity hardening
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (216/216 tests; audit
+  found no exploit loops and no tuning warranted — values unchanged; the
+  depth>6 difficulty plateau is documented and deferred to M20; capture in
+  `docs/screenshots/m19_score/`; see the note's §N. Owner decisions
+  executed: `partyLevel` comparability tag + visible conditions; economy
+  rules kept.)
 - **Goal:** audit and tune the existing XP/leveling, Training Hall, shops,
   equipment, and scoring so progression supports replay without presenting
   incomparable runs as equivalent.

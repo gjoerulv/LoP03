@@ -103,6 +103,14 @@ returning to town. Combat stays fully readable with audio muted.
 
 ## 9. Scoring
 
+**Score comparability (M19, owner-approved):** runs are never silently
+normalized. Every new score entry is tagged with its run conditions — depth,
+theme, seed, generation version, and **party level** (highest member at
+completion) — and the scoreboard shows Depth and Lv per row with a plain
+legend: *compare runs at the same Depth and Lv*. Older entries without the
+tag show "-". Farming power before a run is legal; it is simply visible.
+The score formula itself ignores party level.
+
 Ranking priority: (1) dungeon completed? → (2) fewest battle turns → (3) most
 optional danger defeated → (4) most treasure → (5) fastest real time (final
 tie-break only).

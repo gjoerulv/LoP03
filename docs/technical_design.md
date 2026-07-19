@@ -170,6 +170,23 @@ crowned boss), with the M15 prop sprites and colored glyph rectangles as
 fallbacks; the tier is also always shown as the text label, so shape+text
 carry the information without color.
 
+### Score comparability & economy audit (M19)
+
+`ScoreEntry` carries two optional comparability tags, both loaded with
+absent-defaults and written without a scoreboard format bump:
+`generationVersion` (M16) and `partyLevel` (M19; highest party level at
+completion, 0 = legacy shown as "-"). Ranking (`ranksAbove`) never reads
+them — they make comparison conditions visible instead of normalizing.
+The economy evidence battery lives in `tests/test_economy.cpp`: pure
+score-incentive guards (fewer turns always better; stalling and escapes
+always cost; unfinished runs score 0 regardless of loot) plus data-driven
+sims (depth-by-level clearing curve, income vs Training Hall costs, class
+identity at levels 1–50). An on-demand analysis table prints via
+`crystal_tests "[economy-report]" -s`. The M19 audit found no exploit
+loops and left all data values unchanged; the depth>6 difficulty plateau
+it exposed is deferred to M20's composition constraints (changing team
+composition would change published seed meaning).
+
 ### Battle presentation sequencer (M18)
 
 The simulation stays synchronous and deterministic; `render/BattleSequencer`

@@ -358,6 +358,7 @@ void DungeonState::completeDungeon() {
     entry.theme = dungeon_.themeName;
     entry.seed = dungeon_.seed;
     entry.generationVersion = dungeon::kGenerationVersion;
+    entry.partyLevel = highestLevel(context_.party);
     context_.scoreboard.add(entry);
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);

@@ -12,6 +12,14 @@
   must be identified from the actual post-M19 game; slices below are
   provisional and this note must be refreshed against the then-current
   repository before implementation begins.
+- **Input from the M19 audit (2026-07-19):** the depth difficulty curve
+  **plateaus past depth ~6** — `makeTeam` size caps at `min(5, 2+depth)`
+  (saturated at depth 3) and elite chance at `min(50, depth*12)` (saturated
+  by depth ~4), so depth 8–10 dungeons clear at the same party level as
+  depth 4–5 (evidence table in the M19 note §N). Fixing this changes what
+  published seeds generate, so it belongs to this milestone's composition
+  work and needs the generation-version policy applied (bump
+  `kGenerationVersion`, owner sign-off).
 
 ## B. Problem statement
 

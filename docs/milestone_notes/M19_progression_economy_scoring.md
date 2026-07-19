@@ -2,9 +2,20 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** implemented, awaiting manual approval (see §N).
+- **Last reviewed repository commit:** `97a1871` (M18, 2026-07-19). Re-audit:
+  score entries already carry depth/theme/seed/`generationVersion` (M16) but
+  no power context; scoring coefficients live in `Scoring.cpp`; battle gold
+  does not feed the treasure bonus and no per-turn income exists, so
+  farming/stalling cannot inflate a single run's score by construction;
+  Training Hall = 40+30·level gold per level vs battle XP 30+20·(level−1)
+  to next; Inn healing is free; equipment is class-unrestricted.
+- **Owner decisions (2026-07-19):** (1) **comparability policy approved** —
+  optional `partyLevel` tag on score entries (highest level at completion;
+  absent = legacy "-"), an Lv column, and a visible conditions legend;
+  ranking math unchanged, no hidden normalization; (2) **economy rules kept**
+  (free Inn, unrestricted equipment) — data-value tuning only, each change
+  evidence-backed.
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M19 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -131,3 +142,52 @@ This is an audit-and-tuning milestone, not a reimplementation of XP.
 - `docs/technical_design.md` — scoreboard schema if changed.
 - Save/schema docs if fields added.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-19)
+
+**Audit findings** (battery: `tests/test_economy.cpp`; table via
+`crystal_tests "[economy-report]" -s`, worst of 3 seeds per depth):
+
+| depth | clearing lv | rounds | xp/member | gold/clear | train-4 @clearing lv |
+|---|---|---|---|---|---|
+| 1 | 1 | 20 | 486 | 478 | 280 |
+| 2 | 2 | 32 | 707 | 625 | 400 |
+| 3 | 2 | 46 | 928 | 796 | 400 |
+| 4 | 3 | 43 | 950 | 915 | 520 |
+| 5 | 3 | 55 | 1126 | 969 | 520 |
+| 6 | 5 | 48 | 1332 | 1162 | 760 |
+| 8 | 3 | 65 | 1257 | 967 | 520 |
+| 10 | 3 | 65 | 1257 | 1029 | 520 |
+
+- **No exploit loops.** Battle gold never enters the treasure bonus, no
+  per-turn income exists, stalling and escapes strictly cost score, and an
+  unfinished run scores 0 — all now guarded by pure tests.
+- **Roles hold.** A depth-1 clear (~478g) cannot fund training the party
+  even one level at mid-game prices (~760g); battle XP levels a fresh party
+  out of L1 in one clear. Training = instant targeted gold sink; battles =
+  broad free income. Class stat identity verified at levels 1/10/25/50.
+- **One structural finding:** the difficulty curve **plateaus past depth
+  ~6** (team size caps at depth 3, elite chance at ~depth 4), so depth 8–10
+  clears at the same level as depth 4–5. Fixing it changes what published
+  seeds generate → out of M19 scope; **deferred to M20** (externalized
+  composition constraints), recorded there.
+- **No data-value tuning applied** — the evidence showed nothing broken at
+  the depths the generator actually scales across. The battery is the
+  regression net (playable-and-rising curve, sink/income relation, class
+  identity, score-incentive guards).
+
+**Comparability policy delivered** (owner-approved): optional `partyLevel`
+on `ScoreEntry` (highest member at completion; absent = legacy), written/
+loaded without a format bump; recorded at dungeon completion; scoreboard
+gains an Lv column ("-" for legacy) and a two-line legend naming the honest
+comparison conditions. Ranking math untouched. Backward-compat round-trip
+and absent-default tests added. Economy rules kept as-is per the owner
+(free Inn, unrestricted equipment) — reviewed, not changed.
+
+**Evidence:** 216/216 tests (8 new); scoreboard capture with mixed tagged/
+legacy entries in `docs/screenshots/m19_score/` (seeded board, owner's real
+scoreboard backed up and restored).
+
+**Deviations:** none beyond the explicitly deferred depth-plateau fix; no
+owner-run confirmation sessions occurred yet (the manual checklist covers
+them).
