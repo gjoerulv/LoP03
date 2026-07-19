@@ -1,80 +1,105 @@
 # M11 — Completion Baseline and Presentation Audit
 
-> Status: ☐ not started.
->
-> Approval gate: do not begin M11 until the human has explicitly approved M10.
->
-> Baseline for this specification: commit
-> `e293f49f35ddd3bd4c49202194cadd96aead7811`.
+## A. Status and authority
 
-## 1. Objective
+- **Status:** planned
+- **Last reviewed repository commit:**
+  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Approval gate:** M10 was manually tested and approved by the owner on
+  2026-07-19, so the M10 prerequisite is satisfied. Do not begin M11 without
+  the owner's explicit authorization to start it.
+- **Relationship to `docs/milestones.md`:** this note is the single
+  authoritative detailed scope for the M11 entry in the ledger. The ledger
+  holds the current status; this note holds the plan. On conflict, follow the
+  authority order in `CLAUDE.md`.
+- This note must be **re-audited and refreshed against the then-current
+  repository** before implementation begins. Its baseline observations
+  describe the repository at the commit above and may go stale.
 
-Establish a trustworthy baseline for the post-M10 completion program before
-changing UI, controls, assets, dungeon rooms, or presentation.
+## B. Problem statement
 
-This milestone converts broad complaints such as “basic graphics,” “text does
-not fit,” “controls are unclear,” and “rooms are too large” into a concrete,
+The project is mechanically complete (M1–M10 approved) but its presentation is
+prototype-level, and presentation work cuts across many systems: fixed-
+coordinate UI drawing, font measurement and wrapping, input bindings and
+prompts, state transitions, resource loading, audio, room geometry, battle
+feedback, and dynamic content text.
+
+Concrete repository evidence at the reviewed commit:
+
+- `src/ui/UiDraw.*` exposes only panel/centered-text/menu helpers; states draw
+  text directly (~48 raw `DrawText` call sites) with exactly one
+  `MeasureText` use (`drawTextCentered`);
+- `assets/` is empty (`.gitkeep`) and `AudioManager` synthesizes all audio;
+- `ResourceManager` requires callers to pass both cache key and file path;
+- there is no settings file, no remapping UI, and one production raw-input
+  exception (`PartyCreationState` reads Backspace/Enter directly);
+- `DungeonState` hard-codes 26×15 rooms at 16-pixel tiles, filling the whole
+  426×240 exploration surface.
+
+Making broad changes without a captured baseline risks: fixing low-value
+cosmetic issues while missing clipping or usability blockers; designing final
+assets for layouts about to change; and scope expansion across several
+milestones at once. M11 converts broad complaints ("basic graphics", "text
+does not fit", "controls are unclear", "rooms are too large") into a concrete,
 prioritized defect register tied to actual screens, code paths, and acceptance
 criteria.
 
-M11 is primarily an audit and documentation milestone. It must not become an
-unapproved implementation pass.
+M11 is an audit and documentation milestone. It must not become an unapproved
+implementation pass.
 
-## 2. Why this milestone comes first
+## C. Goals
 
-The current project is mechanically complete, but presentation work cuts across
-many systems:
+- A verified (or honestly reported unverified) build/test/run baseline at the
+  audited commit.
+- A complete inventory of player-facing screens, modals, overlays, and
+  important dynamic variants, each with recorded risks and severity.
+- A prioritized presentation defect register with stable IDs, categories,
+  severities, and recommended owning milestones.
+- Initial contracts: UI style guide, control standard, asset-pipeline decision
+  record, and manual test matrix.
+- An evidence-based recommendation for the first M12 slice (M12-a).
 
-- fixed-coordinate UI drawing;
-- font measurement and wrapping;
-- input bindings and prompts;
-- state transitions;
-- resource loading;
-- audio;
-- room geometry;
-- battle feedback;
-- content descriptions and dynamic values.
+## D. Non-goals
 
-Making broad changes without a captured baseline would create three risks:
+M11 must not:
 
-1. fixing low-value cosmetic issues while missing clipping or usability
-   blockers;
-2. designing final assets for layouts that are about to change;
-3. allowing Claude Code to expand scope across several milestones at once.
+- redesign screens;
+- change the virtual resolution;
+- implement a UI framework;
+- change controls or bindings;
+- add settings/remapping;
+- create the final asset manifest schema;
+- replace synthesized audio;
+- add sprites, tilesets, fonts, or music;
+- change dungeon generation or room dimensions;
+- change battle, progression, scoring, economy, saves, or content schemas;
+- perform broad cleanup refactors;
+- begin M12 implementation.
 
-## 3. Required reading
+Small documentation corrections are allowed when they are factual and directly
+support the audit. Any product-code change requires separate owner approval
+and must be justified as necessary to complete M11.
 
-Before proposing work, read:
+## E. Dependencies
 
-- `CLAUDE.md`;
-- `docs/game_design.md`;
-- `docs/technical_design.md`;
-- `docs/milestones.md`;
-- `docs/completion_roadmap.md`;
-- this file;
-- `.claude/skills/crystal-dungeons/SKILL.md`.
+- M10 `complete (approved)` — satisfied 2026-07-19.
+- Owner authorization to start M11.
+- A working MSVC/Ninja build environment (Visual Studio developer shell).
+- If Claude cannot launch or observe the game, the owner must capture the
+  screenshot baseline following the exact steps Claude provides (see slice
+  M11-c and section J).
 
-Then inspect the repository, especially:
+Required reading before proposing work: `CLAUDE.md`, `docs/game_design.md`,
+`docs/technical_design.md`, `docs/milestones.md`, `docs/completion_roadmap.md`,
+this note, and `.claude/skills/crystal-dungeons/SKILL.md`. Then inspect the
+repository — especially `src/ui/`, `src/states/`, `src/input/`,
+`src/resource/`, `src/audio/`, `src/render/`, `src/town/`, `src/dungeon/`,
+`src/battle/`, `data/`, `tests/`, and the root `CMakeLists.txt` plus `cmake/`.
+Do not rely only on this note's baseline observations.
 
-- `src/ui/`;
-- `src/states/`;
-- `src/input/`;
-- `src/resource/`;
-- `src/audio/`;
-- `src/render/`;
-- `src/town/`;
-- `src/dungeon/`;
-- `src/battle/`;
-- `data/`;
-- `tests/`;
-- root `CMakeLists.txt` and relevant files under `cmake/`.
+## F. Proposed slices
 
-Do not rely only on this note’s baseline observations. Confirm them against the
-current checkout because the repository may have advanced.
-
-## 4. Scope
-
-### 4.1 Build and test baseline
+### M11-a — Build and test baseline
 
 Run the supported MSVC/Ninja build from a Visual Studio developer environment:
 
@@ -84,24 +109,15 @@ cmake --build build-msvc
 ctest --test-dir build-msvc --output-on-failure
 ```
 
-Record:
+Record: current commit; configure result; build result; warnings from project
+code; test count and result; executable startup and clean exit; any mismatch
+between docs and actual commands. Do not claim verification if the commands
+were not run.
 
-- current commit;
-- configure result;
-- build result;
-- warnings from project code;
-- test count and result;
-- executable startup and clean exit;
-- any mismatch between docs and actual commands.
-
-Do not claim verification if the commands were not run.
-
-### 4.2 Screen and flow inventory
+### M11-b — Screen and flow inventory
 
 Inventory every player-facing state, modal, overlay, and important dynamic
-variant.
-
-At minimum include:
+variant. At minimum include:
 
 - title/main menu;
 - new game and party creation;
@@ -131,23 +147,14 @@ At minimum include:
 - dungeon result and score breakdown;
 - error/fallback states reachable through malformed or missing external data.
 
-For each entry record:
+For each entry record: source state/class; entry path; dynamic inputs; current
+controls; text/layout risks; visual hierarchy issues; missing feedback;
+screenshot status; severity and recommended owning milestone.
 
-- source state/class;
-- entry path;
-- dynamic inputs;
-- current controls;
-- text/layout risks;
-- visual hierarchy issues;
-- missing feedback;
-- screenshot status;
-- severity and recommended owning milestone.
+### M11-c — Screenshot baseline
 
-### 4.3 Screenshot baseline
-
-Capture the inventory where the available environment permits.
-
-Required display cases:
+Capture the inventory where the available environment permits. Required
+display cases:
 
 - native virtual output at 426×240;
 - default 1278×720 window;
@@ -160,181 +167,86 @@ Required display cases:
 Prefer native-resolution captures for layout review and at least one window
 capture for scaling/letterboxing review.
 
-If Claude cannot launch or see the game:
-
-- state that screenshot capture is not verified;
-- provide exact navigation steps and filenames for the human;
-- do not fabricate visual findings;
-- continue with static code/text risk analysis, clearly marked as such.
+If Claude cannot launch or see the game: state that screenshot capture is not
+verified; provide exact navigation steps and filenames for the owner; do not
+fabricate visual findings; continue with static code/text risk analysis,
+clearly marked as such.
 
 Recommended capture location if screenshots are committed:
+`docs/screenshots/m11_baseline/`. Use small PNGs and meaningful names. Do not
+commit duplicate window-scaled captures when the native image demonstrates the
+same issue. If the owner prefers screenshots outside Git, attach them to the
+milestone report and keep a markdown index with references.
 
-```text
-docs/screenshots/m11_baseline/
-```
+### M11-d — Presentation defect register
 
-Use small PNGs and meaningful names. Do not commit duplicate window-scaled
-captures when the native image demonstrates the same issue. If the human
-prefers screenshots outside Git, attach them to the milestone report and keep a
-markdown index with references.
+Create `docs/presentation_audit.md`. Each defect must include: stable ID (for
+example `UI-TEXT-001`); screen/state; observed behavior; expected behavior;
+reproduction steps; severity; frequency; affected input/display modes; likely
+subsystem owner; recommended milestone/slice; screenshot/reference where
+available; whether the finding is observed or inferred from static analysis.
 
-### 4.4 Presentation defect register
-
-Create:
-
-```text
-docs/presentation_audit.md
-```
-
-Each defect must include:
-
-- stable ID, for example `UI-TEXT-001`;
-- screen/state;
-- observed behavior;
-- expected behavior;
-- reproduction steps;
-- severity;
-- frequency;
-- affected input/display modes;
-- likely subsystem owner;
-- recommended milestone/slice;
-- screenshot/reference where available;
-- whether the finding is observed or inferred from static analysis.
-
-Use these categories:
-
-- text clipping/overflow;
-- overlap or unsafe bounds;
-- weak hierarchy/readability;
-- insufficient contrast;
-- unclear focus/selection;
-- inconsistent controls;
-- hard-coded control prompts;
-- state-transition/input buffering;
-- excessive empty space;
-- oversized dungeon rooms;
-- unclear navigation or interactables;
-- placeholder art;
-- animation/feedback gap;
-- audio gap;
-- asset-pipeline coupling;
-- inconsistent terminology;
-- accessibility barrier;
-- onboarding/comprehension issue;
-- performance/resource-lifetime risk;
-- test/validation gap.
+Categories: text clipping/overflow; overlap or unsafe bounds; weak
+hierarchy/readability; insufficient contrast; unclear focus/selection;
+inconsistent controls; hard-coded control prompts; state-transition/input
+buffering; excessive empty space; oversized dungeon rooms; unclear navigation
+or interactables; placeholder art; animation/feedback gap; audio gap;
+asset-pipeline coupling; inconsistent terminology; accessibility barrier;
+onboarding/comprehension issue; performance/resource-lifetime risk;
+test/validation gap.
 
 Severity:
 
-- **Blocker** — prevents completion, loses data, traps input, crashes, or makes
-  required information unavailable.
-- **High** — materially harms readability, control, or understanding in a common
-  flow.
+- **Blocker** — prevents completion, loses data, traps input, crashes, or
+  makes required information unavailable.
+- **High** — materially harms readability, control, or understanding in a
+  common flow.
 - **Medium** — visible quality/usability defect with a workable path around it.
 - **Low** — polish issue with limited impact.
 
 Do not inflate every visual imperfection to High. Prioritize by player impact,
 frequency, and rework dependency.
 
-### 4.5 Initial UI style guide
+### M11-e — Initial contracts
 
-Create:
+Create four baseline documents. These are contracts for later milestones, not
+final designs.
 
-```text
-docs/ui_style_guide.md
-```
+**`docs/ui_style_guide.md`** — current virtual resolution and safe bounds;
+provisional margins and spacing scale; text roles found in the current game;
+minimum contrast targets; focus/selection requirements; disabled-state
+behavior; color-plus-secondary-indicator rule; footer/control-hint
+reservation; wrapping/scrolling/pagination/ellipsis policies; confirmation and
+error-message conventions; known unresolved decisions for M12/M15. Do not
+invent final colors, fonts, frames, or art motifs before M15.
 
-This is a baseline contract, not a final art bible. It should define:
+**`docs/control_standard.md`** — current semantic actions and default
+bindings; current raw-input exceptions; expected Confirm/Cancel/Menu
+semantics; navigation rules for lists, tabs, grids, and modals; keyboard-only
+and gamepad-only requirements; D-pad/left-stick requirements; repeat,
+deadzone, and transition-input risks to resolve in M13; prompt-generation
+requirement after remapping; controller-disconnect behavior target; unresolved
+actions such as Details/PageLeft/PageRight. Do not implement remapping or
+settings in M11.
 
-- current virtual resolution and safe bounds;
-- provisional margins and spacing scale;
-- text roles found in the current game;
-- minimum contrast targets;
-- focus/selection requirements;
-- disabled-state behavior;
-- color-plus-secondary-indicator rule;
-- footer/control-hint reservation;
-- wrapping/scrolling/pagination/ellipsis policies;
-- confirmation and error-message conventions;
-- known unresolved decisions for M12/M15.
+**`docs/asset_pipeline.md`** — current `ResourceManager` caller-supplied
+key/path behavior; current empty `assets/` tree; current synthesized
+`AudioManager` behavior; proposed logical asset ID model; proposed versioned
+manifest responsibilities; required fallback behavior; proposed directory
+organization; build/package copying requirements; attribution/license
+tracking; questions requiring approval before M14. Do not finalize the public
+manifest schema or change resource APIs in M11.
 
-Do not invent final colors, fonts, frames, or art motifs before M15.
+**`docs/manual_test_matrix.md`** — a matrix covering: screen/flow; test data
+variant; keyboard; gamepad D-pad; gamepad left stick; display/window case;
+text/readability result; focus/navigation result; audio result where relevant;
+screenshot/evidence; pass/fail/not run. Include explicit maximum-content cases
+rather than only normal happy paths.
 
-### 4.6 Initial control standard
+### M11-f — Prioritized next slice
 
-Create:
-
-```text
-docs/control_standard.md
-```
-
-Document:
-
-- current semantic actions and default bindings;
-- current raw-input exceptions, if any;
-- expected Confirm/Cancel/Menu semantics;
-- navigation rules for lists, tabs, grids, and modals;
-- keyboard-only and gamepad-only requirements;
-- D-pad/left-stick requirements;
-- repeat, deadzone, and transition-input risks to resolve in M13;
-- prompt-generation requirement after remapping;
-- controller disconnect behavior target;
-- unresolved actions such as Details/PageLeft/PageRight.
-
-Do not implement remapping or settings in M11.
-
-### 4.7 Asset-pipeline decision draft
-
-Create:
-
-```text
-docs/asset_pipeline.md
-```
-
-Document the current state and proposed M14 contract:
-
-- current `ResourceManager` caller-supplied key/path behavior;
-- current empty `assets/` tree;
-- current synthesized `AudioManager` behavior;
-- proposed logical asset ID model;
-- proposed versioned manifest responsibilities;
-- required fallback behavior;
-- proposed directory organization;
-- build/package copying requirements;
-- attribution/license tracking;
-- questions requiring approval before M14.
-
-Do not finalize the public manifest schema or change resource APIs in M11.
-
-### 4.8 Manual test matrix
-
-Create:
-
-```text
-docs/manual_test_matrix.md
-```
-
-The matrix must cover:
-
-- screen/flow;
-- test data variant;
-- keyboard;
-- gamepad D-pad;
-- gamepad left stick;
-- display/window case;
-- text/readability result;
-- focus/navigation result;
-- audio result where relevant;
-- screenshot/evidence;
-- pass/fail/not run.
-
-Include explicit maximum-content cases rather than only normal happy paths.
-
-### 4.9 Prioritized next slice
-
-Conclude the audit with a recommendation for M12-a.
-
-The default recommendation is:
+Conclude the audit with a recommendation for M12-a. The default recommendation
+is:
 
 > Central font-aware text measurement, bounded wrapping, long-token handling,
 > overflow diagnostics, and migration of Help plus one representative modal.
@@ -342,30 +254,9 @@ The default recommendation is:
 Change that recommendation only if the audit finds a more severe prerequisite.
 Explain the evidence and trade-off.
 
-## 5. Explicit non-goals
+## G. Expected systems affected
 
-M11 must not:
-
-- redesign screens;
-- change the virtual resolution;
-- implement a UI framework;
-- change controls or bindings;
-- add settings/remapping;
-- create the final asset manifest schema;
-- replace synthesized audio;
-- add sprites, tilesets, fonts, or music;
-- change dungeon generation or room dimensions;
-- change battle, progression, scoring, economy, saves, or content schemas;
-- perform broad cleanup refactors;
-- begin M12 implementation.
-
-Small documentation corrections are allowed when they are factual and directly
-support the audit. Any product-code change requires separate human approval and
-must be justified as necessary to complete M11.
-
-## 6. Required output files
-
-Expected committed files from M11:
+Documentation only. Expected committed outputs:
 
 ```text
 docs/presentation_audit.md
@@ -375,42 +266,78 @@ docs/asset_pipeline.md
 docs/manual_test_matrix.md
 ```
 
-Also update only when necessary:
+Updated only when necessary: `docs/milestones.md`, `docs/technical_design.md`,
+`README.md`, `.claude/skills/crystal-dungeons/SKILL.md`. Screenshot files are
+conditional on the agreed evidence policy. No `src/`, `data/`, `assets/`, or
+CMake changes are expected; any would require separate owner approval.
 
-```text
-docs/milestones.md
-docs/technical_design.md
-README.md
-.claude/skills/crystal-dungeons/SKILL.md
-```
+## H. Data, schema, and save compatibility
 
-Screenshot files are conditional on the agreed evidence policy.
+**No impact.** M11 changes no JSON schemas, asset manifests, save files,
+settings files, deterministic seeds, scoring, or public content identifiers.
 
-## 7. Acceptance criteria
+## I. Automated validation
+
+- Configure, build, and run the existing test suite (125 tests at the reviewed
+  commit) with the commands in slice M11-a; report exact results.
+- Launch the executable and confirm startup and clean exit.
+- No new automated tests are expected from an audit milestone.
+- Anything not run must be reported as **not verified** with exact commands
+  and expected output for the owner.
+
+## J. Manual validation for the owner
+
+- Review the screen/flow inventory for completeness against your knowledge of
+  the game.
+- Review the defect register: agree/adjust severities and owning milestones.
+- Review the four initial contracts for direction errors.
+- If Claude could not capture screenshots: follow the provided navigation
+  steps and capture the listed cases (native 426×240, default 1278×720,
+  1280×720, 1920×1080, narrow window, near-square window), then send them
+  back.
+- Approve or amend the recommended M12-a slice.
+
+## K. Acceptance criteria
 
 M11 is complete only when:
 
-- M10 has been explicitly approved first;
 - current commit, build, test, and executable status are reported honestly;
 - all major screens and dynamic variants are inventoried;
 - observed findings are distinguished from static-analysis risks;
-- the defect register is prioritized and assigns ownership to later milestones;
+- the defect register is prioritized and assigns ownership to later
+  milestones;
 - the initial UI, control, asset, and manual-test contracts exist;
 - no final art direction or public schema was silently decided;
 - no unrelated code changes were made;
-- the human approves the defect priorities and recommended M12-a slice.
+- the owner approves the defect priorities and recommended M12-a slice.
 
-## 8. Completion report additions
+## L. Risks and failure modes
 
-In addition to the standard milestone report, include:
+- **Scope creep into implementation** — the audit tempts "quick fixes"; any
+  product-code change needs separate approval.
+- **Unverifiable visuals** — if Claude cannot see the game, findings must be
+  labeled static-analysis; fabricated visual claims would poison the register.
+- **Severity inflation** — over-rating cosmetic issues buries the real
+  blockers; prioritize by player impact, frequency, and rework dependency.
+- **Stale baseline** — findings are tied to the audited commit; if the repo
+  advances, re-verify before relying on them.
+- **Missing maximum-content cases** — auditing only happy paths would let
+  text-overflow defects survive into M12 acceptance.
+- **Second-order risk** — wrong milestone-ownership recommendations here
+  misroute work for M12–M18; the owner review of priorities is the control.
 
-- count of inventoried screens/variants;
-- defect counts by severity and category;
-- screenshot coverage count;
-- number of unverified visual cases;
-- top five blockers/high-impact defects;
-- recommended M12-a scope;
-- decisions deferred to M12–M16;
-- explicit statement that M12 has not begun.
+## M. Required documentation updates on completion
 
-Then stop and wait for human approval.
+- `docs/milestones.md` — M11 status to `implemented, awaiting manual
+  approval`, then `complete (approved)` after owner sign-off.
+- This note — record the actual audit results, deviations, and evidence
+  locations.
+- `docs/technical_design.md` — only if the audit corrects a factual claim.
+- `README.md` — only if commands/instructions proved wrong.
+- `.claude/skills/crystal-dungeons/SKILL.md` — new gotchas discovered while
+  auditing.
+- Completion report per `docs/milestone_completion_template.md`, including:
+  count of inventoried screens/variants; defect counts by severity and
+  category; screenshot coverage count; number of unverified visual cases; top
+  five blockers/high-impact defects; recommended M12-a scope; decisions
+  deferred to M12–M16; explicit statement that M12 has not begun.

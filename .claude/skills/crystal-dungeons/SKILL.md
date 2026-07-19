@@ -19,17 +19,21 @@ driven mainly by **fewest battle turns**. Audience: **fans of 16-bit JRPGs and
 roguelites who want real tactical depth with a readable UI** (medium difficulty;
 score-chasing is rewarding but not mandatory). Not a story JRPG, not an FF clone.
 
-## Source-of-truth map
+## Source-of-truth map (authority order, highest first)
 
-- `CLAUDE.md` — operating contract (authoritative).
-- `docs/game_design.md` — what the game is and why.
-- `docs/technical_design.md` — architecture, conventions, build.
-- `docs/milestones.md` — milestone list + current status (update every milestone).
-- `README.md` — how a human builds/runs.
-- This skill — workflow, gotchas, verification, when to ask the human.
+1. `CLAUDE.md` — operating contract (authoritative).
+2. Approved active `docs/milestone_notes/MXX_*.md` — current milestone scope.
+3. `docs/milestones.md` — milestone ledger + status (update every milestone).
+4. `docs/game_design.md` — what the game is and why.
+5. `docs/technical_design.md` — architecture, conventions, build.
+6. `docs/completion_roadmap.md` — long-term direction; **never** authorization
+   to work ahead.
+7. Supporting docs (`README.md`, style/control/asset/test docs,
+   `docs/milestone_completion_template.md`). This skill — workflow, gotchas.
 
-At session start: read `CLAUDE.md`, then the four docs above, then inspect the
-repo, then identify the current milestone and whether it is complete.
+At session start: read `CLAUDE.md`, then the docs above, then inspect the repo
+(current HEAD + working tree), then identify the current milestone and whether
+it is complete.
 
 ## Pinned dependencies (do NOT float to master)
 
@@ -129,18 +133,34 @@ CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
 
 ## Milestone workflow
 
-1. Read contract + docs + repo. Identify current milestone; confirm prior one is
-   approved.
-2. Post a concrete implementation plan **before** coding.
-3. Implement **only** the current milestone. No smuggling next-milestone work.
-4. Build + run tests (or give exact unverified commands + expected output).
-5. Update docs if behavior/design changed.
-6. Post the **Milestone Completion Report** (9 sections, see CLAUDE.md) and
-   **stop** for human approval.
+Statuses (only these): `planned` · `in progress` · `implemented, awaiting
+manual approval` · `complete (approved)` · `blocked`. **Only the owner sets
+`complete (approved)`**, after manual testing; Claude's terminal state is
+`implemented, awaiting manual approval`. Approval of one milestone is not
+authorization to start the next.
 
-Milestones: 1 Foundation · 2 Data model · 3 Town shell · 4 Dungeon gen ·
-5 Battle MVP · 6 Danger+scoring · 7 Content · 8 Presentation · 9 Balance/validation ·
-10 Packaging.
+1. Read contract + docs + repo (HEAD, working tree). Identify current
+   milestone; confirm the prior one is `complete (approved)`.
+2. **Re-audit the milestone note against the current checkout** before
+   planning; refresh it if stale. Post a concrete plan **before** coding; get
+   owner authorization to begin.
+3. Implement **only** the approved slices. Routine engineering decisions are
+   autonomous; escalate per the CLAUDE.md mandatory-escalation list.
+4. Build + run tests (or give exact unverified commands + expected output).
+5. Update all affected docs — documentation is part of the implementation.
+6. Report using `docs/milestone_completion_template.md`, set the status to
+   `implemented, awaiting manual approval`, and **stop** for owner approval.
+
+**Git:** never commit, push, amend, rebase, merge, tag, or force-update —
+inspection only. The owner handles all commits and pushes.
+
+Milestones: M1–M10 complete (approved; M10 on 2026-07-19). Post-M10 program:
+M11 Baseline audit · M12 UI/text safety · M13 Input/settings · M14 Asset
+manifest · M15 Art vertical slice · M16 Compact rooms · M17 Exploration
+visuals · M18 Battle presentation · M19 Progression/score integrity ·
+M20 Content variety · M21 Final audio · M22 Onboarding/accessibility ·
+M23 Validation/playtesting/balance · M24 Release packaging. Details:
+`docs/milestones.md` + one note per milestone under `docs/milestone_notes/`.
 
 ## Verification checklist (before claiming done)
 
@@ -159,6 +179,10 @@ Milestones: 1 Foundation · 2 Data model · 3 Town shell · 4 Dungeon gen ·
 
 - Claiming a build/test passed without running it.
 - Implementing beyond the approved milestone.
+- Marking a milestone `complete (approved)` without the owner's manual
+  approval, or treating one approval as authorization for the next milestone.
+- Committing or pushing (the owner owns Git history).
+- Implementing from a stale milestone note without re-auditing it first.
 - Hand-authoring danger labels instead of deriving from stats (M6).
 - Scoring that rewards farming/stalling instead of fewest turns.
 - Copyrighted names/assets sneaking in. Everything original.

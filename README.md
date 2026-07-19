@@ -13,6 +13,9 @@ music, or text. Built in **C++20** with **raylib**.
 > danger ratings, scoring + scoreboard, content (classes/enemies/elites/bosses/
 > items/skills/themes), equipment, XP/leveling, shops, placeholder audio, and a
 > controls screen are all in. Art and audio are intentionally placeholder.
+> A post-M10 completion program (M11–M24: UI/text safety, input remapping,
+> replaceable assets, final art/audio, compact rooms, accessibility, release
+> polish) is planned — see `docs/completion_roadmap.md`.
 
 ## Requirements
 
@@ -148,5 +151,7 @@ and tile/sprite visuals are generated in code as placeholders.
 
 - [`docs/game_design.md`](docs/game_design.md) — what the game is and why.
 - [`docs/technical_design.md`](docs/technical_design.md) — architecture & conventions.
-- [`docs/milestones.md`](docs/milestones.md) — roadmap and status.
+- [`docs/milestones.md`](docs/milestones.md) — milestone ledger and status.
+- [`docs/completion_roadmap.md`](docs/completion_roadmap.md) — post-M10
+  completion program (M11–M24) direction and quality targets.
 - `CLAUDE.md` — the project's operating contract.

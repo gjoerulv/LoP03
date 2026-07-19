@@ -3,10 +3,15 @@
 > Strategic roadmap for the post-M10 completion program.
 >
 > Baseline reviewed: commit `e293f49f35ddd3bd4c49202194cadd96aead7811`.
+> Last planning review: commit `a316f244e870718aa27d9995dc871e11572ad429`
+> (2026-07-19). M10 was manually tested and **approved by the owner on
+> 2026-07-19**; the program below (M11–M24) is active planning.
 >
 > This document defines direction and quality bars. It does **not** authorize
 > implementation from later milestones. `docs/milestones.md` and the active
-> milestone note control current scope.
+> milestone note control current scope. Each milestone M11–M24 has exactly one
+> authoritative note under `docs/milestone_notes/`, indexed from
+> `docs/milestones.md`.
 
 ## 1. Mission
 
@@ -71,19 +76,21 @@ control feedback would create avoidable rework.
 
 ## 3. Authority and execution model
 
-Document authority for implementation:
+Document authority for implementation (matching `CLAUDE.md`):
 
 1. `CLAUDE.md` — project operating contract and non-negotiable rules.
-2. `docs/game_design.md` — authoritative player-facing game rules.
-3. `docs/technical_design.md` — authoritative architecture and engineering
+2. The approved active `docs/milestone_notes/MXX_*.md` — exact scope for the
+   current milestone.
+3. `docs/milestones.md` — milestone ledger, historical record, and status.
+4. `docs/game_design.md` — authoritative player-facing game rules.
+5. `docs/technical_design.md` — authoritative architecture and engineering
    constraints.
-4. `docs/milestones.md` — historical record, current status, and approved
-   milestone order.
-5. Active `docs/milestone_notes/MXX_*.md` — exact scope for the current
-   milestone.
 6. This roadmap — long-term direction and quality targets.
+7. Supporting authoring, validation, control, asset, and test documents.
 
-When documents conflict, stop and ask the human. Do not silently choose the
+When documents conflict: identify the conflict, apply the authority order where
+it resolves the issue, escalate material product or architecture conflicts to
+the human, and update the stale document afterward. Do not silently choose the
 broader or more expensive interpretation.
 
 Every milestone must be:
@@ -370,7 +377,7 @@ Acceptance:
 - build/tests are verified or explicitly reported as unverified;
 - human approves the defect priorities.
 
-### M12 — UI layout, typography, and text safety
+### M12 — UI layout and text-safety foundation
 
 **Goal:** replace fixed-coordinate text assumptions with a small, game-specific,
 measured layout foundation.
@@ -469,7 +476,7 @@ Acceptance:
 - malformed settings fall back safely;
 - controller disconnect falls back without locking the current screen.
 
-### M14 — Asset catalog and replaceable resources
+### M14 — Asset manifest and replaceable resources
 
 **Goal:** make presentation roles external, validated, and swappable.
 
@@ -571,7 +578,7 @@ Acceptance:
 - no copyrighted or near-replica assets/layouts/music are used;
 - full asset production does not begin before this gate.
 
-### M16 — Compact dungeon-room architecture
+### M16 — Compact dungeon-room system
 
 **Goal:** replace fixed full-screen room realization with compact, validated,
 data-driven room layouts while preserving dungeon topology and run rules.
@@ -627,7 +634,7 @@ Acceptance:
 - same seed + generation version produces the same topology and room layouts;
 - navigation and interactables are immediately legible in human testing.
 
-### M17 — Exploration visual production
+### M17 — Exploration visuals and animation
 
 **Goal:** replace abstract town/dungeon presentation with readable characters,
 enemies, tiles, props, effects, and atmosphere using the approved art system.
@@ -707,7 +714,7 @@ Acceptance:
 - combat remains fully understandable with audio muted;
 - no animation changes deterministic battle outcomes.
 
-### M19 — Progression, economy, and score integrity hardening
+### M19 — Progression, economy, and score-integrity hardening
 
 **Goal:** ensure the newly implemented XP/leveling and town economy support
 replay without making score comparisons meaningless.
@@ -741,7 +748,7 @@ Acceptance:
 - progression and economy values remain data-driven;
 - simulations and human runs identify no trivial progression exploit.
 
-### M20 — Encounter, event, and boss variety
+### M20 — Encounter and dungeon-content variety
 
 **Goal:** deepen replay through meaningful tactical combinations rather than
 unbounded content count.
@@ -871,10 +878,11 @@ Acceptance:
 - tutorial state persists defensively and can be reset;
 - accessibility options are covered by the manual matrix.
 
-### M23 — Automated visual and content validation
+### M23 — Automated visual validation, playtesting, and balance hardening
 
-**Goal:** prevent presentation regressions and make long-content/edge states
-repeatable.
+**Goal:** prevent presentation regressions, make long-content/edge states
+repeatable, and harden usability and balance with observed external
+playtesting — so that M24 can be pure packaging.
 
 Recommended tools:
 
@@ -901,21 +909,7 @@ Do not introduce fragile pixel-perfect image comparisons as the only validation.
 Geometry assertions and reviewed screenshots are more maintainable initially.
 If image diffs are later added, define tolerance and intentional-update policy.
 
-Acceptance:
-
-- representative captures are reproducible;
-- unintended UI overflow is a failing validation result;
-- missing required assets fail clearly;
-- thousands of generated rooms remain valid;
-- balance reports identify outlier encounters and progression bands;
-- capture/debug tooling is excluded or safely disabled in release builds.
-
-### M24 — Playtesting, tuning, and polished release candidate
-
-**Goal:** validate the actual experience, fix high-value defects, and produce a
-clean polished Windows release candidate.
-
-Test with at least:
+Playtest with at least:
 
 - a player unfamiliar with the project;
 - an experienced JRPG player;
@@ -937,6 +931,29 @@ Observe without coaching:
 - dominant strategies;
 - whether players voluntarily start another run.
 
+Then fix repeated control/readability/navigation/score-comprehension defects
+and make final balance and pacing changes backed by that evidence.
+
+Acceptance:
+
+- representative captures are reproducible;
+- unintended UI overflow is a failing validation result;
+- missing required assets fail clearly;
+- thousands of generated rooms remain valid;
+- balance reports identify outlier encounters and progression bands;
+- all listed tester profiles were observed; repeated usability defects are
+  resolved, not documented away;
+- new players complete the core loop unaided; score and danger are explainable
+  by players;
+- no dominant strategy trivializes representative runs;
+- capture/debug tooling is excluded or safely disabled in release builds.
+
+### M24 — Release packaging and final release validation
+
+**Goal:** produce and validate a reproducible, clean, polished Windows release
+candidate. Playtesting and balance are complete (M23); only release-blocking
+fixes are in scope.
+
 Release work:
 
 - reproducible Release preset/build;
@@ -947,16 +964,16 @@ Release work:
 - graceful audio/controller failure;
 - clean logs and known limitations;
 - smoke test on a machine without the development environment;
-- final screenshot and manual test matrix sign-off.
+- final screenshot and manual test matrix sign-off on the packaged build.
 
 Acceptance:
 
-- new players complete the core loop unaided;
-- repeated control/layout failures are resolved, not documented away;
-- score and danger are explainable by players;
-- no dominant strategy trivializes representative runs;
 - packaged build runs without Visual Studio installed;
-- no debug overlays, placeholder paths, or unlicensed assets ship;
+- saves and settings persist correctly in the packaged build;
+- no debug overlays, capture tooling, placeholder paths, or unlicensed assets
+  ship;
+- final manual test matrix is signed off on the packaged build;
+- known limitations are documented honestly;
 - human explicitly approves the polished release candidate.
 
 ## 8. Recommended implementation order
@@ -975,8 +992,9 @@ The order is intentional:
 10. M20 add targeted variety.
 11. M21 finalize audio through the proven asset pipeline.
 12. M22 harden onboarding and accessibility across the full game.
-13. M23 automate regression detection.
-14. M24 tune with real players and package the polished release candidate.
+13. M23 automate regression detection, playtest with real players, and harden
+    balance from that evidence.
+14. M24 package and validate the polished release candidate.
 
 Starting with final art or music would be the wrong order. It would bind expensive
 creative work to unstable layouts and hard-coded presentation contracts.
