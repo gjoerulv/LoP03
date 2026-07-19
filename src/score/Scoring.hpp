@@ -15,6 +15,11 @@ struct RunSummary {
     int treasureGold = 0;
     bool noDeath = true;      // no party member was KO'd during the run
     int escapes = 0;          // battles escaped from
+    // Score wager event (M20): accepted before the boss, pays +150 on a
+    // completed no-death run, costs 100 on a completed run with deaths. The
+    // stake is fixed and shown before accepting; unfinished runs still
+    // score 0.
+    bool wagerAccepted = false;
 };
 
 struct ScoreBreakdown {
@@ -26,6 +31,7 @@ struct ScoreBreakdown {
     int treasureBonus = 0;
     int noDeathBonus = 0;
     int escapePenalty = 0;
+    int wager = 0;  // +150 / -100 / 0 (M20 wager event)
     int total = 0;
 };
 

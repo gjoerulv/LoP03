@@ -120,6 +120,7 @@ void parseEnemies(const Json& root, const std::string& source, ContentDatabase& 
         d.name = r.reqString("name");
         d.stats = r.reqStatBlock("stats");
         d.tier = r.optEnum<EnemyTier>("tier", parseEnemyTier, EnemyTier::Normal, "enemy tier");
+        d.role = r.reqEnum<EnemyRole>("role", parseEnemyRole, "enemy role");
         for (const auto& tag : r.optStringArray("tags")) {
             if (auto parsed = parseEnemyTag(tag)) {
                 d.tags.push_back(*parsed);
@@ -311,6 +312,55 @@ bool readJsonFile(const fs::path& file, Json& out, LoadReport& rep) {
     return true;
 }
 
+void parseComposition(const Json& root, const std::string& source, ContentDatabase& db,
+                      LoadReport& rep) {
+    if (!root.is_object()) {
+        rep.add(source, "<root>", "expected a top-level JSON object");
+        return;
+    }
+    ObjectReader r(root, "composition", source, rep);
+    const int version = r.reqInt("version");
+    if (version != 1) {
+        rep.add(source, "version", "unsupported composition version");
+        return;
+    }
+    CompositionDef c;  // defaults are the owner-approved curves
+    if (const auto it = root.find("team"); it != root.end() && it->is_object()) {
+        ObjectReader t(*it, "composition.team", source, rep);
+        c.minSize = t.optIntMin("minSize", 1, c.minSize);
+        c.deepMinSize = t.optIntMin("deepMinSize", 1, c.deepMinSize);
+        c.deepMinDepth = t.optIntMin("deepMinDepth", 1, c.deepMinDepth);
+        c.maxSizeBase = t.optIntMin("maxSizeBase", 1, c.maxSizeBase);
+        c.maxSizePerDepths = t.optIntMin("maxSizePerDepths", 1, c.maxSizePerDepths);
+        c.maxSizeCap = t.optIntMin("maxSizeCap", 1, c.maxSizeCap);
+        c.elitePctPerDepth = t.optIntMin("elitePctPerDepth", 0, c.elitePctPerDepth);
+        c.elitePctMax = t.optIntMin("elitePctMax", 0, c.elitePctMax);
+        c.maxSupport = t.optIntMin("maxSupport", 0, c.maxSupport);
+        c.minDamage = t.optIntMin("minDamage", 0, c.minDamage);
+    }
+    if (const auto it = root.find("boss"); it != root.end() && it->is_object()) {
+        ObjectReader b(*it, "composition.boss", source, rep);
+        c.minMinions = b.optIntMin("minMinions", 0, c.minMinions);
+        c.maxMinions = b.optIntMin("maxMinions", 0, c.maxMinions);
+    }
+    if (const auto it = root.find("statScale"); it != root.end() && it->is_object()) {
+        ObjectReader s(*it, "composition.statScale", source, rep);
+        c.scaleStartDepth = s.optIntMin("startDepth", 1, c.scaleStartDepth);
+        c.scalePctPerDepth = s.optIntMin("pctPerDepth", 0, c.scalePctPerDepth);
+        c.scalePctMax = s.optIntMin("pctMax", 0, c.scalePctMax);
+    }
+    // Relational sanity: report and repair rather than ship an impossible rule.
+    if (c.maxSizeCap < c.deepMinSize || c.maxSizeCap < c.minSize) {
+        rep.add(source, "team", "maxSizeCap below minimum sizes; raised to match");
+        c.maxSizeCap = c.deepMinSize > c.minSize ? c.deepMinSize : c.minSize;
+    }
+    if (c.maxMinions < c.minMinions) {
+        rep.add(source, "boss", "maxMinions below minMinions; raised to match");
+        c.maxMinions = c.minMinions;
+    }
+    db.setComposition(c);
+}
+
 bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     const std::size_t before = rep.errorCount();
 
@@ -333,6 +383,9 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     }
     if (readJsonFile(dataRoot / "dungeon_themes.json", json, rep)) {
         parseThemes(json, "dungeon_themes.json", db, rep);
+    }
+    if (readJsonFile(dataRoot / "composition.json", json, rep)) {
+        parseComposition(json, "composition.json", db, rep);
     }
 
     validateReferences(db, rep);

@@ -2,9 +2,26 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** implemented, awaiting manual approval (see §N).
+- **Last reviewed repository commit:** `cce5a41` (M19, 2026-07-19). Re-audit:
+  Brute bosses already enrage in the sim (damage ×1.5 below half HP,
+  unannounced); Sorcerer/Commander differ only by data; saves never persist
+  dungeons, so generation-shape changes are save-safe; `EnemyDef` has
+  tags/tier/skills but no role field; events have no model anywhere.
+- **Owner decisions (2026-07-19):**
+  1. **Approved in full:** `role` field on enemies; versioned
+     `data/composition.json` (team-size/elite depth curves, support caps,
+     damage minimums, boss-minion bounds) **plus depth stat scaling**
+     (+6%/depth past depth 5, capped +90%, flowing into danger);
+     `kGenerationVersion` → 3.
+  2. **All six room events ship:** shrine trade-off, healing spring,
+     trapped treasure, merchant exchange, optional elite challenge, and a
+     score-wager modifier (comparability-reviewed, visible in the score
+     breakdown).
+  3. **One sim mechanic per boss archetype** (rule changes approved):
+     Brute enrage announced at trigger; Sorcerer empowers as minions fall;
+     Commander rallies fallen minions once below half HP. Determinism
+     preserved and tested.
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M20 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -142,3 +159,70 @@ tactical combinations*, not raw content count.
 - `docs/technical_design.md` — schema additions and generator constraints.
 - Content-authoring documentation for the new schemas.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-20)
+
+**Roles & composition (owner decision 1, in full).** `EnemyRole` (7 roles)
+required on every enemy; the 20-enemy roster annotated; `data/composition.json`
+v1 externalizes size/elite curves, support cap (1), damage minimum (1), boss
+minion bounds (1–3), and depth stat scaling (+6%/depth past 5, cap +90%)
+carried by `EnemyTeam.statScalePct` into both `buildBattle` and the danger
+formula. Constraint-aware `makeTeam` filters sorted candidate pools per
+slot; an unsatisfiable elite pool falls back to normals rather than
+violating a rule (a hole the scale test caught: Crystal Mine's elites were
+all protectors). `kGenerationVersion` = 3.
+
+**Depth-plateau fix verified** (economy battery, worst of 3 seeds):
+clearing level by depth is now 1/1/1/1/3/5/9/11 at depths 1–6/8/10 (was
+flat at 3 past depth 6). Depths 1–4 became slightly easier (all clear at
+L1) — constraint-composed teams replace lucky all-elite rolls; flagged for
+M23 play-tuning (`elitePctPerDepth` is the lever).
+
+**Gap-driven content (identified, not quantity):** the roster had **zero
+healers or buffers**. Added `bog_shaman` (normal healer, mine+forest),
+`war_drummer` (normal buffer, keep), `grave_chanter` (elite healer,
+keep+forest), plus `troll_berserker` into the mine's elite pool (its elites
+had no damage role). Enemy AI now casts Support skills whose status the
+target lacks — shadow_stalker's `weaken` was dead content before this.
+
+**Boss mechanics (owner decision 3):** Brute enrage announcement (once);
+Sorcerer +25% magic per fallen ally ("empowered" in the log); Commander
+rallies fallen minions at half HP, once, below half HP (implemented in
+`tickStatuses`, which play and simulator share — no play/sim divergence);
+Rush doubles its first action. Telegraphs rewritten to state mechanic and
+counterplay. All headless-tested on hand-built battles.
+
+**All six events (owner decision 2):** 2–3 dead-end `RoomType::Event`
+rooms per dungeon (kinds unique per dungeon), realized as the M16-deferred
+`EventChamber` archetype with a solid anchor; every trade-off shown in the
+footer before Confirm: shrine (40+20·depth gold → heal half of missing HP),
+healing spring (40% HP, single use), merchant (one consumable at 130%
+value), elite challenge (1–2 elites, double danger credit through the
+normal battle flow), omen wager (`ScoreBreakdown.wager`: +150 completed
+no-death / −100 completed with deaths; result panel grows a line), and
+trapped chests (35% of unguarded chests; +25·depth+15 gold; claiming wounds
+the party 25% max HP, never fatally; red-tinted with a "T" glyph fallback).
+Five generated event props (shrine/spring/merchant/totem/omen) shipped
+through the manifest with glyph fallbacks.
+
+**Evidence:** 228/228 tests (12 new across composition/boss/events): 1000+
+teams constraint-checked at scale, scaling reaches fight and label, curve
+helpers, all four boss mechanics, support-AI gating, event well-formedness
+(dead ends, unique kinds, valid payloads, traps only on unguarded chests),
+wager scoring paths, theme role coverage. In-game captures show the
+challenge totem + danger label live in Crystal Mine
+(`docs/screenshots/m20_events/`). All pre-existing PNGs byte-identical
+after the generator rerun.
+
+**Deviations / notes:**
+1. Blind scripted play did not trigger each event end-to-end; §J's owner
+   checklist covers that explicitly (the matrix M20 note lists every
+   check).
+2. Dynamic mid-battle unit ADDITION was avoided: the Commander rally
+   revives its fallen minions rather than summoning new units — same
+   fantasy, no turn-order model change.
+3. Merchant sells exactly one item per visit (single-confirm prompt), not
+   an in-dungeon shop UI.
+4. Battle presentation for revived minions reuses the M18 KO-fade restore
+   path (`commitPresentation` resets the fade when a shown-dead unit
+   returns).

@@ -16,9 +16,11 @@
 
 namespace cd::dungeon {
 
-// Bumped when room realization changes how a seed plays. Version 1 is the
-// pre-M16 fixed 26x15 room build; version 2 is the compact archetype system.
-inline constexpr int kGenerationVersion = 2;
+// Bumped when generation changes how a seed plays. Version 1 is the pre-M16
+// fixed 26x15 room build; version 2 is the compact archetype system;
+// version 3 adds composition constraints, depth stat scaling, and room
+// events (M20).
+inline constexpr int kGenerationVersion = 3;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).
@@ -35,8 +37,9 @@ enum class RoomArchetype {
     TreasureVault,    // guarded chest side room
     BossAntechamber,  // main-path room with a door into the boss room
     BossArena,        // boss room
+    EventChamber,     // event side room (M20: shrine/spring/merchant/...)
 };
-inline constexpr int kRoomArchetypeCount = 8;
+inline constexpr int kRoomArchetypeCount = 9;
 
 const char* archetypeName(RoomArchetype a);
 
@@ -74,6 +77,7 @@ struct RoomLayout {
     Point chest;         // walkable chest anchor, if the room has a chest
     Point guard;         // guard anchor beside the chest (solid while guarded)
     Point boss;          // boss anchor (solid while the boss stands)
+    Point event;         // event anchor (solid until the event resolves)
 
     bool inBounds(int x, int y) const { return x >= 0 && y >= 0 && x < width && y < height; }
     Cell at(int x, int y) const {

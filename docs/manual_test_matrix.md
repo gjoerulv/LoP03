@@ -6,6 +6,19 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M20 update:** dungeons gain composed encounters, events, and boss
+> mechanics. Rows 20–24 checks: teams feel role-coherent (never two
+> healers/buffers; always a damage threat); depth 8+ runs are markedly
+> harder than depth 4 (bigger teams, more elites, stronger stats, labels
+> still honest); find and trigger **every event** — shrine, spring,
+> merchant, elite challenge (double danger credited on the result), omen
+> wager (result shows the +150/−100 line), and a trapped chest (red-tinted,
+> wounds stated before taking) — each trade-off must be fully readable in
+> the footer *before* pressing Confirm; fight all four bosses and confirm
+> the telegraphed mechanic visibly happens (rage announcement, empowered
+> magic after minion kills, one rally below half HP, doubled opening blow).
+> Captures: `docs/screenshots/m20_events/`.
+>
 > **M19 update:** the scoreboard gains an **Lv** column (party level at
 > completion; "-" for pre-M19 runs) and a two-line legend stating the
 > comparison conditions. Rows 18/19 checks: Lv shows for new runs and "-"

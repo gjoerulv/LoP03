@@ -150,6 +150,12 @@ void DungeonState::buildRoom() {
                                 room.teamIndex, dungeon::Dir::North});
         }
     }
+    if (room.type == dungeon::RoomType::Event && !room.event.resolved &&
+        layout.event.valid()) {
+        map.set(layout.event.x, layout.event.y, town::Tile::Building);
+        markers_.push_back({layout.event.x, layout.event.y, MarkerKind::Event, room.teamIndex,
+                            dungeon::Dir::North});
+    }
 
     roomMap_ = std::move(map);
     originX_ = (context_.virtualWidth - layout.width * kTile) / 2;
@@ -215,6 +221,15 @@ void DungeonState::openChest() {
         }
         msg += std::string(" + ") + name;
     }
+    if (room.chest.trapped) {
+        // Exactly the wound the prompt warned about: 25% max HP, never fatal.
+        for (Character& c : context_.party.members) {
+            if (c.hp > 0) {
+                c.hp = std::max(1, c.hp - c.maxHp / 4);
+            }
+        }
+        msg = "The trap bites - the party is wounded! " + msg;
+    }
     message_ = msg;
     messageTimer_ = scaledMessageTime(context_, 3.0f);
 }
@@ -232,9 +247,129 @@ void DungeonState::interact() {
         case MarkerKind::GateTeam: kind = EncounterKind::Gate; break;
         case MarkerKind::GuardTeam: kind = EncounterKind::Guard; break;
         case MarkerKind::Boss: kind = EncounterKind::Boss; break;
+        case MarkerKind::Event:
+            if (facingMarker_->teamIndex >= 0) {
+                startBattle(facingMarker_->teamIndex, EncounterKind::Challenge,
+                            facingMarker_->gateDir);
+            } else {
+                resolveEvent();
+            }
+            return;
         case MarkerKind::Chest: return;
     }
     startBattle(facingMarker_->teamIndex, kind, facingMarker_->gateDir);
+}
+
+// Applies a non-battle event exactly as its footer prompt stated it.
+void DungeonState::resolveEvent() {
+    dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)];
+    dungeon::RoomEvent& ev = room.event;
+    if (ev.resolved) {
+        return;
+    }
+    switch (ev.kind) {
+        case dungeon::RoomEventKind::Shrine: {
+            if (context_.party.gold < ev.goldCost) {
+                context_.audio.play(Sfx::Cancel);
+                message_ = "The shrine asks " + std::to_string(ev.goldCost) +
+                           "g - you cannot pay.";
+                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                return;
+            }
+            context_.party.gold -= ev.goldCost;
+            for (Character& c : context_.party.members) {
+                c.hp = std::min(c.maxHp, c.hp + (c.maxHp - c.hp) / 2);
+            }
+            context_.audio.play(Sfx::Heal);
+            message_ = "The shrine accepts your offering - the party's wounds half-mend.";
+            break;
+        }
+        case dungeon::RoomEventKind::HealingSpring:
+            for (Character& c : context_.party.members) {
+                if (c.hp > 0) {
+                    c.hp = std::min(c.maxHp, c.hp + c.maxHp * 40 / 100);
+                }
+            }
+            context_.audio.play(Sfx::Heal);
+            message_ = "The spring's water restores the party. It runs dry.";
+            break;
+        case dungeon::RoomEventKind::Merchant: {
+            if (context_.party.gold < ev.goldCost) {
+                context_.audio.play(Sfx::Cancel);
+                message_ = "The merchant wants " + std::to_string(ev.goldCost) +
+                           "g - you cannot pay.";
+                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                return;
+            }
+            context_.party.gold -= ev.goldCost;
+            context_.party.inventory.add(ev.itemId, 1);
+            const content::ItemDef* it = context_.content.findItem(ev.itemId);
+            context_.audio.play(Sfx::Confirm);
+            message_ = "Bought " + (it != nullptr ? it->name : ev.itemId) +
+                       ". The merchant moves on.";
+            break;
+        }
+        case dungeon::RoomEventKind::ScoreWager:
+            run_.wagerAccepted = true;
+            context_.audio.play(Sfx::Confirm);
+            message_ = "The omen accepts your dare. Finish without a death!";
+            break;
+        case dungeon::RoomEventKind::EliteChallenge:
+        case dungeon::RoomEventKind::None:
+            return;  // challenges resolve through battle, not here
+    }
+    ev.resolved = true;
+    buildRoom();
+    messageTimer_ = scaledMessageTime(context_, 3.0f);
+}
+
+// The visible trade-off, shown in the footer BEFORE the player confirms.
+std::string DungeonState::eventPromptText() const {
+    const dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)];
+    const dungeon::RoomEvent& ev = room.event;
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    switch (ev.kind) {
+        case dungeon::RoomEventKind::Shrine:
+            if (context_.party.gold < ev.goldCost) {
+                return "The shrine asks " + std::to_string(ev.goldCost) +
+                       "g for its blessing - you cannot pay.";
+            }
+            return input::prompt(map, InputAction::Confirm, device,
+                                 "Offer " + std::to_string(ev.goldCost) + "g") +
+                   " - the party heals half of all wounds";
+        case dungeon::RoomEventKind::HealingSpring:
+            return input::prompt(map, InputAction::Confirm, device, "Drink") +
+                   " - party recovers 40% HP (single use)";
+        case dungeon::RoomEventKind::Merchant: {
+            const content::ItemDef* it = context_.content.findItem(ev.itemId);
+            const std::string name = it != nullptr ? it->name : ev.itemId;
+            if (context_.party.gold < ev.goldCost) {
+                return "Merchant sells " + name + " for " + std::to_string(ev.goldCost) +
+                       "g - you cannot pay.";
+            }
+            return input::prompt(map, InputAction::Confirm, device, "Buy " + name) + " for " +
+                   std::to_string(ev.goldCost) + "g (dungeon prices)";
+        }
+        case dungeon::RoomEventKind::ScoreWager:
+            return input::prompt(map, InputAction::Confirm, device, "Accept the omen's wager") +
+                   ": +150 score if no ally falls, -100 if one does";
+        case dungeon::RoomEventKind::EliteChallenge: {
+            if (room.teamIndex < 0 ||
+                room.teamIndex >= static_cast<int>(dungeon_.teams.size())) {
+                return "";
+            }
+            const dungeon::EnemyTeam& team =
+                dungeon_.teams[static_cast<std::size_t>(room.teamIndex)];
+            const danger::Tier tier = teamTier_[static_cast<std::size_t>(room.teamIndex)];
+            return input::prompt(map, InputAction::Confirm, device, "Challenge ") + team.name +
+                   "  -  " + danger::tierName(tier) + "  x" + std::to_string(team.count()) +
+                   "  -  double danger score, no treasure";
+        }
+        case dungeon::RoomEventKind::None:
+            break;
+    }
+    return "";
 }
 
 void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir gateDir) {
@@ -331,6 +466,18 @@ void DungeonState::onResume() {
         buildRoom();
         message_ = "The guards fall." + reward;
         messageTimer_ = scaledMessageTime(context_, 2.5f);
+    } else if (kind == EncounterKind::Challenge) {
+        // The challenge pays double danger: the base credit was added above,
+        // so add the same weight once more.
+        if (pendingTeamIndex_ >= 0 && pendingTeamIndex_ < static_cast<int>(teamTier_.size())) {
+            run_.dangerDefeated +=
+                danger::tierWeight(teamTier_[static_cast<std::size_t>(pendingTeamIndex_)]);
+        }
+        room.teamIndex = -1;
+        room.event.resolved = true;
+        buildRoom();
+        message_ = "Challenge won - double danger credited." + reward;
+        messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Boss) {
         completeDungeon();
     }
@@ -345,6 +492,7 @@ void DungeonState::completeDungeon() {
     summary.treasureGold = run_.treasureGold;
     summary.noDeath = run_.noDeath;
     summary.escapes = run_.escapes;
+    summary.wagerAccepted = run_.wagerAccepted;
 
     const int total = score::computeScore(summary);
 
@@ -497,6 +645,7 @@ void DungeonState::render() {
         const char* glyph = "?";
         const char* spriteId = nullptr;   // M17 silhouette (shape encodes tier)
         const char* fallbackId = nullptr; // M15 prop sprite
+        Color tint = WHITE;
         switch (m.kind) {
             case MarkerKind::GateTeam:
             case MarkerKind::GuardTeam:
@@ -514,20 +663,56 @@ void DungeonState::render() {
                 fallbackId = "prop.boss_marker";
                 break;
             case MarkerKind::Chest: {
-                const bool opened =
-                    dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].chest.opened;
-                c = opened ? Color{120, 100, 50, 255} : Color{232, 200, 96, 255};
-                glyph = "C";
-                fallbackId = opened ? nullptr : "prop.chest";
+                const dungeon::Chest& chest =
+                    dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].chest;
+                c = chest.opened ? Color{120, 100, 50, 255} : Color{232, 200, 96, 255};
+                glyph = chest.trapped && !chest.opened ? "T" : "C";
+                fallbackId = chest.opened ? nullptr : "prop.chest";
+                if (chest.trapped && !chest.opened) {
+                    tint = Color{255, 150, 150, 255};  // visibly dangerous
+                    c = Color{220, 120, 96, 255};
+                }
+                break;
+            }
+            case MarkerKind::Event: {
+                switch (dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].event.kind) {
+                    case dungeon::RoomEventKind::Shrine:
+                        c = Color{100, 220, 215, 255};
+                        glyph = "S";
+                        spriteId = "prop.event.shrine";
+                        break;
+                    case dungeon::RoomEventKind::HealingSpring:
+                        c = Color{90, 150, 220, 255};
+                        glyph = "~";
+                        spriteId = "prop.event.spring";
+                        break;
+                    case dungeon::RoomEventKind::Merchant:
+                        c = Color{230, 200, 110, 255};
+                        glyph = "M";
+                        spriteId = "prop.event.merchant";
+                        break;
+                    case dungeon::RoomEventKind::EliteChallenge:
+                        c = Color{210, 120, 90, 255};
+                        glyph = "!";
+                        spriteId = "prop.event.totem";
+                        break;
+                    case dungeon::RoomEventKind::ScoreWager:
+                        c = Color{180, 110, 220, 255};
+                        glyph = "?";
+                        spriteId = "prop.event.omen";
+                        break;
+                    case dungeon::RoomEventKind::None:
+                        break;
+                }
                 break;
             }
         }
         const int mx = originX_ + m.x * kTile;
         const int my = originY_ + m.y * kTile;
         if (spriteId != nullptr && context_.resources.hasTexture(spriteId)) {
-            DrawTexture(context_.resources.texture(spriteId), mx + 2, my + 2, WHITE);
+            DrawTexture(context_.resources.texture(spriteId), mx + 2, my + 2, tint);
         } else if (fallbackId != nullptr && context_.resources.hasTexture(fallbackId)) {
-            DrawTexture(context_.resources.texture(fallbackId), mx + 2, my + 2, WHITE);
+            DrawTexture(context_.resources.texture(fallbackId), mx + 2, my + 2, tint);
         } else {
             DrawRectangle(mx + 2, my + 2, kTile - 4, kTile - 4, c);
             ui::drawTextCentered(glyph, mx + kTile / 2, my + 4, 8, Color{20, 20, 20, 255});
@@ -593,9 +778,18 @@ void DungeonState::render() {
     } else if (onChest_) {
         const dungeon::Chest& chest = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].chest;
         const std::string rarity = chest.rarity.empty() ? "" : " (" + chest.rarity + ")";
-        text = chest.guarded
-                   ? "Guarded chest" + rarity + " - defeat the guards to claim"
-                   : input::prompt(map, InputAction::Confirm, device, "Open chest" + rarity);
+        if (chest.guarded) {
+            text = "Guarded chest" + rarity + " - defeat the guards to claim";
+        } else if (chest.trapped && !chest.opened) {
+            // Trapped treasure: the wound is stated before the take.
+            text = input::prompt(map, InputAction::Confirm, device,
+                                 "Take trapped chest" + rarity) +
+                   " - the party suffers 25% max-HP wounds";
+        } else {
+            text = input::prompt(map, InputAction::Confirm, device, "Open chest" + rarity);
+        }
+    } else if (facingMarker_ != nullptr && facingMarker_->kind == MarkerKind::Event) {
+        text = eventPromptText();
     } else if (facingMarker_ != nullptr && facingMarker_->teamIndex >= 0 &&
                facingMarker_->teamIndex < static_cast<int>(teamTier_.size())) {
         const danger::Tier tier = teamTier_[static_cast<std::size_t>(facingMarker_->teamIndex)];

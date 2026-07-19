@@ -1,5 +1,6 @@
 ﻿#include "states/DungeonResultState.hpp"
 
+#include <algorithm>
 #include <utility>
 
 #include "audio/AudioManager.hpp"
@@ -33,7 +34,11 @@ void DungeonResultState::render() {
     ClearBackground(Color{14, 18, 22, 255});
 
     const int boxW = 300;
-    const int boxH = 190;
+    // The panel grows with its line count (escapes and the M20 wager are
+    // conditional) so the breakdown never crowds the footer (UI-LAYOUT-018).
+    const int lineCount =
+        6 + (summary_.escapes > 0 ? 1 : 0) + (summary_.wagerAccepted ? 1 : 0);
+    const int boxH = std::max(190, 62 + lineCount * 13 + 34);
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
     ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{22, 30, 36, 245}, Color{120, 200, 140, 255});
@@ -61,6 +66,10 @@ void DungeonResultState::render() {
     line(summary_.noDeath ? "No-death bonus" : "No-death bonus (lost)", b.noDeathBonus, plus);
     if (summary_.escapes > 0) {
         line(TextFormat("Escapes (%d)", summary_.escapes), -b.escapePenalty, minus);
+    }
+    if (summary_.wagerAccepted) {
+        line(b.wager >= 0 ? "Omen wager won" : "Omen wager lost", b.wager,
+             b.wager >= 0 ? plus : minus);
     }
 
     ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,

@@ -63,6 +63,29 @@ optional guarded chests, and an exit/retreat option. **No random encounters.**
 Visible enemy team shows: team name, danger level, enemy count, optional tags
 (Fast, Magic, Armored, Poison, …).
 
+**Encounters are composed, not rolled blind (M20).** Every enemy has a
+tactical **role** — bruiser, sniper, healer, buffer, protector, attrition,
+disruptor — and authored composition rules (`data/composition.json`) that
+generation cannot violate: team size and elite share grow with depth, at
+most one support enemy per normal team, at least one damage role, bounded
+boss minions. Past depth 5 enemies also grow stronger (+6% stats per depth,
+capped +90%) so deep dungeons keep escalating; danger labels are computed
+from the scaled stats, so they never lie.
+
+**Room events (M20).** Dead-end event rooms offer real decisions whose full
+trade-off is shown **before** confirming: a shrine (gold for healing), a
+one-use healing spring, a wandering merchant (one item at dungeon markup),
+an elite challenge (double danger score, no treasure), and an omen's score
+wager (+150 if you finish with no deaths, −100 if anyone falls — shown in
+the score breakdown). Some unguarded chests are visibly **trapped**: extra
+gold, but claiming wounds the whole party.
+
+**Bosses are mechanically distinct (M20).** Each archetype has one
+deterministic mechanic, stated in its telegraph: the Brute's damage swells
+below half HP (announced when it triggers), the Sorcerer's magic grows as
+its minions fall, the Commander rallies its fallen minions once below half
+HP, and the Rush tyrant's opening blow lands with doubled force.
+
 **Rooms are compact and purposeful (M16),** drawn centered on the screen
 rather than filling it. Each room is realized as one of eight archetypes
 derived from its role in the graph — Entry, Corridor, Crossroads, Gate

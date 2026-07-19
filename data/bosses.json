@@ -8,7 +8,7 @@
       "stats": { "hp": 320, "attack": 26, "magic": 0, "defense": 16, "speed": 8 },
       "skills": ["power_smash", "whirlwind"],
       "minions": ["skeleton_archer"],
-      "telegraph": "The Warden hefts its cleaver and roars.",
+      "telegraph": "The Warden hefts its cleaver. Below half health its fury doubles - end it quickly or guard through the rage.",
       "xpReward": 220,
       "goldReward": 140,
       "description": "A towering brute that guards the ruined keep."
@@ -20,7 +20,7 @@
       "stats": { "hp": 230, "attack": 10, "magic": 26, "defense": 12, "speed": 11 },
       "skills": ["blizzard", "venom_mist", "sunder"],
       "minions": ["frost_imp", "wisp"],
-      "telegraph": "Frost gathers around the Sorcerer's outstretched hands.",
+      "telegraph": "Frost gathers around the Sorcerer. Every fallen servant feeds its magic - strike the master before the coven falls.",
       "xpReward": 210,
       "goldReward": 150,
       "description": "A mage who weaves ice and venom in the crystal depths."
@@ -32,7 +32,7 @@
       "stats": { "hp": 260, "attack": 20, "magic": 6, "defense": 14, "speed": 12 },
       "skills": ["battle_cry", "weaken", "strike"],
       "minions": ["forest_wolf", "bandit", "wild_boar"],
-      "telegraph": "The Commander signals, and the pack closes in.",
+      "telegraph": "The Commander signals the pack. Wounded below half, it will rally its fallen once - silence it before the horn sounds.",
       "xpReward": 210,
       "goldReward": 150,
       "description": "A cunning leader who fights amid a loyal warband."
@@ -44,7 +44,7 @@
       "stats": { "hp": 280, "attack": 22, "magic": 0, "defense": 12, "speed": 10 },
       "skills": ["whirlwind", "power_smash"],
       "minions": ["goblin_grunt", "kobold_scout", "cave_bat", "zombie"],
-      "telegraph": "An endless horde surges forward without end.",
+      "telegraph": "The Tyrant surges forward. Its opening blow lands with doubled force - guard the first strike, then answer.",
       "xpReward": 240,
       "goldReward": 160,
       "description": "A tyrant who throws wave upon wave of minions."

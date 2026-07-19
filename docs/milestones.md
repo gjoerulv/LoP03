@@ -26,8 +26,8 @@
 | 16 | Compact dungeon-room system        | ☑ complete (approved) |
 | 17 | Exploration visuals & animation    | ☑ complete (approved) |
 | 18 | Battle presentation & game feel    | ☑ complete (approved) |
-| 19 | Progression, economy & score-integrity hardening | ◑ implemented, awaiting manual approval |
-| 20 | Encounter & dungeon-content variety | ☐ planned |
+| 19 | Progression, economy & score-integrity hardening | ☑ complete (approved) |
+| 20 | Encounter & dungeon-content variety | ◑ implemented, awaiting manual approval |
 | 21 | Final music, ambience & sound effects | ☐ planned |
 | 22 | Onboarding & accessibility         | ☐ planned |
 | 23 | Automated visual validation, playtesting & balance hardening | ☐ planned |
@@ -608,12 +608,12 @@ milestone is not automatic authorization to start the next.
 
 ## M19 — Progression, economy & score-integrity hardening
 
-- **Status:** ◑ implemented, awaiting manual approval (216/216 tests; audit
-  found no exploit loops and no tuning warranted — values unchanged; the
-  depth>6 difficulty plateau is documented and deferred to M20; capture in
-  `docs/screenshots/m19_score/`; see the note's §N. Owner decisions
-  executed: `partyLevel` comparability tag + visible conditions; economy
-  rules kept.)
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. (216/216 tests; audit found no exploit loops and no
+  tuning warranted — values unchanged; the depth>6 difficulty plateau is
+  documented and deferred to M20; capture in `docs/screenshots/m19_score/`;
+  see the note's §N. Owner decisions executed: `partyLevel` comparability
+  tag + visible conditions; economy rules kept.)
 - **Goal:** audit and tune the existing XP/leveling, Training Hall, shops,
   equipment, and scoring so progression supports replay without presenting
   incomparable runs as equivalent.
@@ -639,7 +639,12 @@ milestone is not automatic authorization to start the next.
 
 ## M20 — Encounter & dungeon-content variety
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (228/228 tests; the
+  depth plateau is fixed — clearing levels now 1/3/5/9/11 at depths
+  1/5/6/8/10; captures in `docs/screenshots/m20_events/`; see the note's
+  §N. Owner decisions executed in full: role taxonomy + composition.json +
+  depth scaling + generation v3; all six events; one sim mechanic per boss
+  archetype.)
 - **Goal:** add targeted tactical variety after the presentation and room
   foundations are stable.
 - **Player-facing outcome:** more distinct enemy teams, a small set of

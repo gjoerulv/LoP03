@@ -26,6 +26,7 @@ struct Pools {
     std::vector<std::string> normalEnemies;
     std::vector<std::string> eliteEnemies;
     std::vector<std::string> items;
+    std::vector<std::string> consumables;  // merchant offers (M20)
 };
 
 Pools buildPools(const content::ContentDatabase& db, const content::DungeonThemeDef* theme) {
@@ -53,12 +54,15 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
         }
     }
     for (const auto& [id, def] : db.items()) {
-        (void)def;
         p.items.push_back(id);
+        if (def.type == content::ItemType::Consumable) {
+            p.consumables.push_back(id);
+        }
     }
     std::sort(p.normalEnemies.begin(), p.normalEnemies.end());
     std::sort(p.eliteEnemies.begin(), p.eliteEnemies.end());
     std::sort(p.items.begin(), p.items.end());
+    std::sort(p.consumables.begin(), p.consumables.end());
     return p;
 }
 
@@ -113,10 +117,39 @@ void addTags(const content::ContentDatabase& db, const std::string& enemyId,
     }
 }
 
+// Constraint-aware slot filling (M20): candidates come from the tier pool
+// filtered by the composition rules — support roles capped per team, and
+// the trailing slots reserved for damage roles until the minimum is met.
+// Filtering preserves the sorted pool order, so composition stays fully
+// deterministic for a seed.
+std::vector<std::string> slotCandidates(const std::vector<std::string>& pool,
+                                        const content::ContentDatabase& db,
+                                        const content::CompositionDef& comp, int slotsLeft,
+                                        int supportCount, int damageCount) {
+    std::vector<std::string> out;
+    const bool needDamage = comp.minDamage - damageCount >= slotsLeft;
+    for (const std::string& id : pool) {
+        const content::EnemyDef* def = db.findEnemy(id);
+        if (def == nullptr) {
+            continue;
+        }
+        if (content::isSupportRole(def->role) && supportCount >= comp.maxSupport) {
+            continue;
+        }
+        if (needDamage && !content::isDamageRole(def->role)) {
+            continue;
+        }
+        out.push_back(id);
+    }
+    return out;
+}
+
 EnemyTeam makeTeam(Rng& rng, const Pools& pools, int depth, bool boss,
                    const content::ContentDatabase& db) {
+    const content::CompositionDef& comp = db.composition();
     EnemyTeam team;
     team.isBoss = boss;
+    team.statScalePct = 100 + comp.statScalePct(depth);
 
     const auto& normals = pools.normalEnemies;
     const auto& elites = pools.eliteEnemies.empty() ? pools.normalEnemies : pools.eliteEnemies;
@@ -127,16 +160,35 @@ EnemyTeam makeTeam(Rng& rng, const Pools& pools, int depth, bool boss,
                 0, static_cast<int>(elites.size()) - 1))]);
         }
     } else {
-        const int size = rng.range(2, std::min(5, 2 + depth));
-        const int eliteChance = std::min(50, depth * 12);
+        const int size = rng.range(comp.teamSizeMin(depth), comp.teamSizeMax(depth));
+        const int eliteChance = comp.eliteChancePct(depth);
+        int supportCount = 0;
+        int damageCount = 0;
         for (int i = 0; i < size; ++i) {
             const bool elite = !pools.eliteEnemies.empty() && rng.chance(eliteChance);
             const auto& pool = elite ? pools.eliteEnemies : normals;
             if (pool.empty()) {
                 continue;
             }
-            team.enemyIds.push_back(
-                pool[static_cast<std::size_t>(rng.range(0, static_cast<int>(pool.size()) - 1))]);
+            std::vector<std::string> candidates =
+                slotCandidates(pool, db, comp, size - i, supportCount, damageCount);
+            if (candidates.empty() && elite) {
+                // The elite pool cannot satisfy the constraint (e.g. no
+                // damage-role elites in this theme): fill from normals so the
+                // rule holds rather than the tier.
+                candidates = slotCandidates(normals, db, comp, size - i, supportCount,
+                                            damageCount);
+            }
+            if (candidates.empty()) {
+                candidates = pool;  // data gap: degrade rather than under-fill
+            }
+            const std::string& pick = candidates[static_cast<std::size_t>(
+                rng.range(0, static_cast<int>(candidates.size()) - 1))];
+            if (const content::EnemyDef* def = db.findEnemy(pick)) {
+                supportCount += content::isSupportRole(def->role) ? 1 : 0;
+                damageCount += content::isDamageRole(def->role) ? 1 : 0;
+            }
+            team.enemyIds.push_back(pick);
         }
     }
 
@@ -284,10 +336,15 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
         const int teamIdx = static_cast<int>(d.teams.size());
         EnemyTeam bossTeam;
         bossTeam.isBoss = true;
+        bossTeam.statScalePct = 100 + db.composition().statScalePct(d.depth);
         if (const content::BossDef* boss = pickBoss(rng, theme, db)) {
             bossTeam.bossId = boss->id;
             bossTeam.name = boss->name;
             bossTeam.enemyIds = boss->minions;
+            const int maxMinions = db.composition().maxMinions;
+            if (static_cast<int>(bossTeam.enemyIds.size()) > maxMinions) {
+                bossTeam.enemyIds.resize(static_cast<std::size_t>(maxMinions));
+            }
             for (const std::string& id : bossTeam.enemyIds) {
                 addTags(db, id, bossTeam.tags);
             }
@@ -342,6 +399,106 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
             d.rooms[static_cast<std::size_t>(sideIndex)].teamIndex = teamIdx;
         }
         ++created;
+    }
+
+    // --- Event side rooms (M20): dead-end rooms offering visible decisions.
+    {
+        std::array<RoomEventKind, 5> kinds{RoomEventKind::Shrine, RoomEventKind::HealingSpring,
+                                           RoomEventKind::Merchant, RoomEventKind::EliteChallenge,
+                                           RoomEventKind::ScoreWager};
+        for (int i = 4; i > 0; --i) {
+            std::swap(kinds[static_cast<std::size_t>(i)],
+                      kinds[static_cast<std::size_t>(rng.range(0, i))]);
+        }
+        const int desiredEvents = rng.range(2, 3);
+        int made = 0;
+        for (std::size_t pi = 0; pi < d.mainPath.size() && made < desiredEvents; ++pi) {
+            const int parent = d.mainPath[pi];
+            if (d.rooms[static_cast<std::size_t>(parent)].type == RoomType::Boss) {
+                continue;
+            }
+            std::vector<Dir> freeDirs;
+            for (Dir dir : {Dir::North, Dir::East, Dir::South, Dir::West}) {
+                const int nx = d.rooms[static_cast<std::size_t>(parent)].gridX + dirDx(dir);
+                const int ny = d.rooms[static_cast<std::size_t>(parent)].gridY + dirDy(dir);
+                if (inBounds(nx, ny) && grid[static_cast<std::size_t>(cellIndex(nx, ny))] == -1) {
+                    freeDirs.push_back(dir);
+                }
+            }
+            if (freeDirs.empty()) {
+                continue;
+            }
+            const Dir chosen = freeDirs[static_cast<std::size_t>(rng.range(
+                0, static_cast<int>(freeDirs.size()) - 1))];
+            const int nx = d.rooms[static_cast<std::size_t>(parent)].gridX + dirDx(chosen);
+            const int ny = d.rooms[static_cast<std::size_t>(parent)].gridY + dirDy(chosen);
+
+            Room side;
+            side.gridX = nx;
+            side.gridY = ny;
+            side.type = RoomType::Event;
+            const int sideIndex = static_cast<int>(d.rooms.size());
+            grid[static_cast<std::size_t>(cellIndex(nx, ny))] = sideIndex;
+            d.rooms.push_back(side);
+            connect(d, parent, sideIndex);
+
+            RoomEvent ev;
+            ev.kind = kinds[static_cast<std::size_t>(made)];
+            switch (ev.kind) {
+                case RoomEventKind::Shrine:
+                    ev.goldCost = 40 + 20 * d.depth;
+                    break;
+                case RoomEventKind::Merchant:
+                    if (!pools.consumables.empty()) {
+                        ev.itemId = pools.consumables[static_cast<std::size_t>(rng.range(
+                            0, static_cast<int>(pools.consumables.size()) - 1))];
+                        if (const content::ItemDef* it = db.findItem(ev.itemId)) {
+                            ev.goldCost = it->value * 130 / 100;  // dungeon markup
+                        }
+                    } else {
+                        ev.kind = RoomEventKind::HealingSpring;  // no stock: degrade
+                    }
+                    break;
+                case RoomEventKind::EliteChallenge: {
+                    const auto& elitePool =
+                        pools.eliteEnemies.empty() ? pools.normalEnemies : pools.eliteEnemies;
+                    if (!elitePool.empty()) {
+                        EnemyTeam ct;
+                        ct.statScalePct = 100 + db.composition().statScalePct(d.depth);
+                        const int n = rng.range(1, 2);
+                        for (int e = 0; e < n; ++e) {
+                            ct.enemyIds.push_back(elitePool[static_cast<std::size_t>(rng.range(
+                                0, static_cast<int>(elitePool.size()) - 1))]);
+                        }
+                        for (const std::string& id : ct.enemyIds) {
+                            addTags(db, id, ct.tags);
+                        }
+                        ct.name = teamName(rng, false);
+                        const int teamIdx = static_cast<int>(d.teams.size());
+                        d.teams.push_back(std::move(ct));
+                        d.rooms[static_cast<std::size_t>(sideIndex)].teamIndex = teamIdx;
+                    } else {
+                        ev.kind = RoomEventKind::ScoreWager;  // no elites: degrade
+                    }
+                    break;
+                }
+                case RoomEventKind::HealingSpring:
+                case RoomEventKind::ScoreWager:
+                case RoomEventKind::None:
+                    break;
+            }
+            d.rooms[static_cast<std::size_t>(sideIndex)].event = ev;
+            ++made;
+        }
+    }
+
+    // --- Trapped chests (M20): some unguarded chests carry a visible
+    // risk/reward trade — extra gold, but claiming wounds the party.
+    for (Room& r : d.rooms) {
+        if (r.chest.present && !r.chest.guarded && rng.chance(35)) {
+            r.chest.trapped = true;
+            r.chest.gold += 25 * d.depth + 15;
+        }
     }
 
     return d;

@@ -2,7 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (see §N).
+- **Status:** complete (approved) — approved by the owner on 2026-07-19
+  after manual testing (see §N).
 - **Last reviewed repository commit:** `97a1871` (M18, 2026-07-19). Re-audit:
   score entries already carry depth/theme/seed/`generationVersion` (M16) but
   no power context; scoring coefficients live in `Scoring.cpp`; battle gold

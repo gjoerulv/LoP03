@@ -170,6 +170,38 @@ crowned boss), with the M15 prop sprites and colored glyph rectangles as
 fallbacks; the tier is also always shown as the text label, so shape+text
 carry the information without color.
 
+### Composition, events & boss mechanics (M20)
+
+- **Roles & constraints:** `EnemyDef.role` is required content
+  (`enemies.json`); `data/composition.json` (v1, validated with repair-or-
+  report semantics, defaults = the shipped curves) externalizes team-size
+  and elite-chance depth curves, the support cap, the damage minimum, boss
+  minion bounds, and depth stat scaling. `makeTeam` fills slots from
+  constraint-filtered candidate lists (sorted pools, so composition is
+  deterministic per seed); an elite pool that cannot satisfy a rule falls
+  back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
+  carries the depth multiplier into both `buildBattle` and
+  `danger::teamThreat`, so displayed danger always matches the fight.
+  `kGenerationVersion` = 3.
+- **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
+  kinds unique per dungeon) carry a `RoomEvent`
+  (shrine/spring/merchant/challenge/wager) realized as an `EventChamber`
+  layout archetype with a solid event anchor; unguarded chests may be
+  `trapped` (extra gold, party wounds on claim). `DungeonState` shows each
+  event's full trade-off in the footer before Confirm and applies exactly
+  what it stated; elite challenges run through the normal battle flow with
+  an `EncounterKind::Challenge` that credits danger twice. The wager flows
+  through `RunSummary.wagerAccepted` → `ScoreBreakdown.wager` (+150
+  no-death / −100 otherwise, completed runs only) and the result panel
+  grows a line for it.
+- **Boss mechanics** (deterministic, in the pure sim, mirrored identically
+  by play and simulator because both share `tickStatuses` at turn start):
+  Brute enrage ×1.5 below half HP with a once-only announcement; Sorcerer
+  +25% magic per fallen ally (logged as "empowered"); Commander revives
+  fallen minions at half HP once, below half HP; Rush doubles its first
+  action's damage. Enemy AI also casts Support skills whose status the
+  target lacks — making buffer/debuffer enemies (and Commander kits) real.
+
 ### Score comparability & economy audit (M19)
 
 `ScoreEntry` carries two optional comparability tags, both loaded with

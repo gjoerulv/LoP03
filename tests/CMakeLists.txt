@@ -25,6 +25,7 @@ add_executable(crystal_tests
     test_inventory.cpp
     test_battle.cpp
     test_battle_sequencer.cpp
+    test_boss_mechanics.cpp
     test_danger.cpp
     test_scoring.cpp
     test_scoreboard.cpp
@@ -33,6 +34,8 @@ add_executable(crystal_tests
     test_fade.cpp
     test_balance.cpp
     test_economy.cpp
+    test_composition.cpp
+    test_events.cpp
     test_leveling.cpp
 )
 

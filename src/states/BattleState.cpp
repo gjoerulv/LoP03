@@ -140,6 +140,9 @@ void BattleState::commitPresentation() {
     }
     pendingFloats_.clear();
     for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        if (battle_.units[i].hp > 0 && displayHp_[i] <= 0) {
+            koFade_[i] = 1.0f;  // revived (Commander rally, revive items): rise again
+        }
         displayHp_[i] = battle_.units[i].hp;
     }
     switch (pendingSfx_) {

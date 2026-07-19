@@ -31,6 +31,7 @@ DimRange dimsFor(RoomArchetype a, const Room& room) {
         case RoomArchetype::TreasureVault: return {9, 13, 7, 11};
         case RoomArchetype::BossAntechamber: return {9, 13, 7, 9};
         case RoomArchetype::BossArena: return {15, 19, 11, 13};
+        case RoomArchetype::EventChamber: return {7, 9, 7, 9};
         case RoomArchetype::Corridor: break;
     }
     // Corridor: long axis along a straight door pair; bent corridors stay a
@@ -107,6 +108,10 @@ void appendConfigProblems(const Room& room, const RoomLayout& l, unsigned openMa
     if (l.boss.valid()) {
         solid[static_cast<std::size_t>(l.boss.y * w + l.boss.x)] = 1;
         mustTouch.push_back(l.boss);
+    }
+    if (l.event.valid()) {
+        solid[static_cast<std::size_t>(l.event.y * w + l.event.x)] = 1;
+        mustTouch.push_back(l.event);
     }
     if (l.chest.valid()) {
         mustReach.push_back(l.chest);
@@ -210,6 +215,7 @@ const char* archetypeName(RoomArchetype a) {
         case RoomArchetype::TreasureVault: return "TreasureVault";
         case RoomArchetype::BossAntechamber: return "BossAntechamber";
         case RoomArchetype::BossArena: return "BossArena";
+        case RoomArchetype::EventChamber: return "EventChamber";
     }
     return "Unknown";
 }
@@ -221,6 +227,9 @@ RoomArchetype classifyRoom(const Dungeon& d, int roomIndex) {
     }
     if (room.type == RoomType::Start) {
         return RoomArchetype::Entry;
+    }
+    if (room.type == RoomType::Event) {
+        return RoomArchetype::EventChamber;
     }
     if (room.type == RoomType::Treasure) {
         return room.teamIndex >= 0 ? RoomArchetype::TreasureVault : RoomArchetype::TreasureAlcove;
@@ -329,6 +338,23 @@ RoomLayout realizeRoom(const Dungeon& d, int roomIndex, int generationVersion) {
                           : Point{l.chest.x, l.chest.y + 1};
         }
     }
+    if (room.type == RoomType::Event) {
+        // Event anchor at the focal wall opposite the single entrance,
+        // exactly like a chest.
+        Dir doorDir = Dir::North;
+        for (int di = 0; di < kDirCount; ++di) {
+            if (room.hasDoor(static_cast<Dir>(di))) {
+                doorDir = static_cast<Dir>(di);
+                break;
+            }
+        }
+        switch (doorDir) {
+            case Dir::North: l.event = Point{cx, l.height - 2}; break;
+            case Dir::South: l.event = Point{cx, 1}; break;
+            case Dir::East: l.event = Point{1, cy}; break;
+            case Dir::West: l.event = Point{l.width - 2, cy}; break;
+        }
+    }
 
     // Keep-clear mask: door lanes (two tiles deep, gated or not), anchors,
     // and their neighbors. Obstacles never land here, so the number and
@@ -360,6 +386,7 @@ RoomLayout realizeRoom(const Dungeon& d, int roomIndex, int generationVersion) {
     if (l.chest.valid()) markWithNeighbors(l.chest);
     if (l.guard.valid()) markWithNeighbors(l.guard);
     if (l.boss.valid()) markWithNeighbors(l.boss);
+    if (l.event.valid()) markWithNeighbors(l.event);
 
     // Landmark obstacles: corner-inset pillars everywhere, plus a diagonal
     // ring around the center in crossroads and arenas. Composition stays
@@ -475,6 +502,12 @@ std::vector<std::string> validateLayout(const Dungeon& d, int roomIndex,
     }
     if (l.boss.valid() && !interior(l.boss)) {
         out.push_back("boss anchor not interior");
+    }
+    if ((room.type == RoomType::Event) != l.event.valid()) {
+        out.push_back("event anchor does not match the room type");
+    }
+    if (l.event.valid() && !interior(l.event)) {
+        out.push_back("event anchor not interior");
     }
     if (!interior(l.centerSpawn) || !l.walkable(l.centerSpawn.x, l.centerSpawn.y) ||
         l.centerSpawn == l.boss || l.centerSpawn == l.guard) {

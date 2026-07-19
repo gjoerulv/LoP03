@@ -15,6 +15,8 @@ constexpr int kDangerBonus = 60;     // per danger weight defeated
 constexpr int kTreasureDivisor = 5;  // gold -> points
 constexpr int kNoDeathBonus = 300;
 constexpr int kEscapePenalty = 40;   // per escaped battle
+constexpr int kWagerWin = 150;       // M20 wager event: completed, no deaths
+constexpr int kWagerLoss = 100;      // completed with deaths
 }  // namespace
 
 ScoreBreakdown scoreBreakdown(const RunSummary& run) {
@@ -30,9 +32,12 @@ ScoreBreakdown scoreBreakdown(const RunSummary& run) {
     b.treasureBonus = std::max(0, run.treasureGold) / kTreasureDivisor;
     b.noDeathBonus = run.noDeath ? kNoDeathBonus : 0;
     b.escapePenalty = kEscapePenalty * std::max(0, run.escapes);
+    if (run.wagerAccepted) {
+        b.wager = run.noDeath ? kWagerWin : -kWagerLoss;
+    }
 
     b.total = std::max(0, b.base + b.bossBonus - b.turnPenalty + b.chestBonus + b.dangerBonus +
-                              b.treasureBonus + b.noDeathBonus - b.escapePenalty);
+                              b.treasureBonus + b.noDeathBonus - b.escapePenalty + b.wager);
     return b;
 }
 

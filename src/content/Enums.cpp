@@ -65,6 +65,16 @@ constexpr std::array<std::pair<std::string_view, EnemyTier>, 2> kEnemyTiers{{
     {"elite", EnemyTier::Elite},
 }};
 
+constexpr std::array<std::pair<std::string_view, EnemyRole>, 7> kEnemyRoles{{
+    {"bruiser", EnemyRole::Bruiser},
+    {"sniper", EnemyRole::Sniper},
+    {"healer", EnemyRole::Healer},
+    {"buffer", EnemyRole::Buffer},
+    {"protector", EnemyRole::Protector},
+    {"attrition", EnemyRole::Attrition},
+    {"disruptor", EnemyRole::Disruptor},
+}};
+
 constexpr std::array<std::pair<std::string_view, ItemType>, 4> kItemTypes{{
     {"consumable", ItemType::Consumable},
     {"equipment", ItemType::Equipment},
@@ -122,6 +132,7 @@ std::optional<SkillTarget> parseSkillTarget(std::string_view s) {
 }
 std::optional<EnemyTag> parseEnemyTag(std::string_view s) { return parseFrom(kEnemyTags, s); }
 std::optional<EnemyTier> parseEnemyTier(std::string_view s) { return parseFrom(kEnemyTiers, s); }
+std::optional<EnemyRole> parseEnemyRole(std::string_view s) { return parseFrom(kEnemyRoles, s); }
 std::optional<ItemType> parseItemType(std::string_view s) { return parseFrom(kItemTypes, s); }
 std::optional<EquipSlot> parseEquipSlot(std::string_view s) { return parseFrom(kEquipSlots, s); }
 std::optional<Rarity> parseRarity(std::string_view s) { return parseFrom(kRarities, s); }
@@ -138,6 +149,7 @@ const char* toString(SkillCategory v) { return nameFrom(kSkillCategories, v); }
 const char* toString(SkillTarget v) { return nameFrom(kSkillTargets, v); }
 const char* toString(EnemyTag v) { return nameFrom(kEnemyTags, v); }
 const char* toString(EnemyTier v) { return nameFrom(kEnemyTiers, v); }
+const char* toString(EnemyRole v) { return nameFrom(kEnemyRoles, v); }
 const char* toString(ItemType v) { return nameFrom(kItemTypes, v); }
 const char* toString(EquipSlot v) { return nameFrom(kEquipSlots, v); }
 const char* toString(Rarity v) { return nameFrom(kRarities, v); }

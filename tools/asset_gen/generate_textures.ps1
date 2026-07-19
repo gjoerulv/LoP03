@@ -400,4 +400,41 @@ Draw-Brackets $b 0 1
 Draw-Brackets $b 16 0
 SaveImg $b 'ui/facing_brackets.png'
 
+Write-Output 'Generating M20 event props...'
+
+# --- Event props (12x12; shape-distinct so kind reads without color) ---
+$b = New-Img 12 12                                                # shrine: stone + sigil
+FR $b 3 3 6 7 $PAL.stone2; FR $b 3 3 6 1 $PAL.stone3
+FR $b 2 10 8 1 $PAL.stone1
+P $b 5 5 $PAL.cyan; P $b 6 6 $PAL.cyan; P $b 5 7 $PAL.cyan
+Outline $b; SaveImg $b 'props/event_shrine.png'
+
+$b = New-Img 12 12                                                # spring: pool + glints
+$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.wat1)), 1, 3, 10, 7)
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.wat2)), 2, 4, 8, 5); $g.Dispose()
+P $b 4 5 $PAL.wat3; P $b 7 6 $PAL.wat3; P $b 5 7 $PAL.glint
+Outline $b; SaveImg $b 'props/event_spring.png'
+
+$b = New-Img 12 12                                                # merchant: pack figure
+FR $b 4 2 4 3 $PAL.earth3; FR $b 4 4 4 1 $PAL.night1              # hood + face
+FR $b 3 5 6 4 $PAL.earth2                                          # coat
+FR $b 8 4 3 6 $PAL.earth1; P $b 9 5 $PAL.gold                      # pack + buckle
+FR $b 4 9 2 2 $PAL.night3; FR $b 6 9 2 2 $PAL.night3
+Outline $b; SaveImg $b 'props/event_merchant.png'
+
+$b = New-Img 12 12                                                # totem: carved post
+FR $b 4 1 4 10 $PAL.earth2; FR $b 4 1 4 1 $PAL.earth3
+FR $b 5 3 2 1 $PAL.danger; FR $b 5 6 2 1 $PAL.danger; FR $b 5 9 2 1 $PAL.danger
+FR $b 3 10 6 1 $PAL.earth1
+Outline $b; SaveImg $b 'props/event_totem.png'
+
+$b = New-Img 12 12                                                # omen: floating orb
+$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.violet)), 2, 1, 8, 8)
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C '#7B50BC')), 3, 2, 6, 6); $g.Dispose()
+P $b 4 3 $PAL.glint; P $b 6 5 $PAL.glint
+FR $b 4 10 4 1 $PAL.night3                                         # shadow
+Outline $b; SaveImg $b 'props/event_omen.png'
+
 Write-Output 'Texture generation complete.'

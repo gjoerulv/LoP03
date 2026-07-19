@@ -90,7 +90,9 @@ int teamThreat(const dungeon::EnemyTeam& team, const content::ContentDatabase& d
     }
     // Team synergy: action economy (more bodies) and sustain (a healer).
     const int synergyPercent = 100 + 10 * std::max(0, count - 1) + (hasHealer ? 10 : 0);
-    return sum * synergyPercent / 100;
+    // Depth stat scaling (M20): the same multiplier buildBattle applies, so
+    // the displayed tier matches the fight.
+    return sum * synergyPercent / 100 * team.statScalePct / 100;
 }
 
 Tier tierFor(int threat, int depth, bool isBoss) {

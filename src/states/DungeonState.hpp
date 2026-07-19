@@ -32,8 +32,8 @@ public:
     void render() override;
 
 private:
-    enum class MarkerKind { GateTeam, GuardTeam, Boss, Chest };
-    enum class EncounterKind { None, Gate, Guard, Boss };
+    enum class MarkerKind { GateTeam, GuardTeam, Boss, Chest, Event };
+    enum class EncounterKind { None, Gate, Guard, Boss, Challenge };
     struct Marker {
         int x = 0;
         int y = 0;
@@ -55,6 +55,7 @@ private:
         int treasureGold = 0;
         bool noDeath = true;
         int escapes = 0;
+        bool wagerAccepted = false;  // M20 score-wager event
     };
 
     void enterRoom(int index, std::optional<dungeon::Dir> entrySide);
@@ -62,6 +63,8 @@ private:
     void recomputeInteraction(int playerTileX, int playerTileY);
     void interact();
     void openChest();
+    void resolveEvent();  // applies a non-battle event's stated trade-off
+    std::string eventPromptText() const;  // the pre-confirmation trade-off line
     void startBattle(int teamIndex, EncounterKind kind, dungeon::Dir gateDir);
     void completeDungeon();
     void renderMinimap() const;
