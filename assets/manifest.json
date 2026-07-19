@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "assets": [
     { "id": "sfx.ui.confirm", "type": "sfx", "path": "audio/sfx/confirm.wav", "volume": 0.9 },
 
@@ -15,11 +15,25 @@
     { "id": "tiles.town.building", "type": "texture", "path": "textures/environments/town_building.png" },
     { "id": "tiles.town.door", "type": "texture", "path": "textures/environments/town_door.png" },
 
+    { "id": "tiles.town.flowers", "type": "texture", "path": "textures/environments/town_flowers.png" },
+
     { "id": "tiles.ruined_keep.floor", "type": "texture", "path": "textures/environments/keep_floor.png" },
     { "id": "tiles.ruined_keep.wall", "type": "texture", "path": "textures/environments/keep_wall.png" },
     { "id": "tiles.ruined_keep.door", "type": "texture", "path": "textures/environments/keep_door.png" },
+    { "id": "tiles.ruined_keep.accent", "type": "texture", "path": "textures/environments/keep_rubble.png" },
+
+    { "id": "tiles.crystal_mine.floor", "type": "texture", "path": "textures/environments/mine_floor.png" },
+    { "id": "tiles.crystal_mine.wall", "type": "texture", "path": "textures/environments/mine_wall.png" },
+    { "id": "tiles.crystal_mine.door", "type": "texture", "path": "textures/environments/mine_door.png" },
+    { "id": "tiles.crystal_mine.accent", "type": "texture", "path": "textures/environments/mine_crystals.png" },
+
+    { "id": "tiles.hollow_forest.floor", "type": "texture", "path": "textures/environments/forest_floor.png" },
+    { "id": "tiles.hollow_forest.wall", "type": "texture", "path": "textures/environments/forest_wall.png" },
+    { "id": "tiles.hollow_forest.door", "type": "texture", "path": "textures/environments/forest_door.png" },
+    { "id": "tiles.hollow_forest.accent", "type": "texture", "path": "textures/environments/forest_shrine.png" },
 
     { "id": "actor.player.overworld", "type": "texture", "path": "textures/actors/player_overworld.png" },
+    { "id": "actor.player.walk", "type": "texture", "path": "textures/actors/player_walk.png" },
     { "id": "actor.knight.battle", "type": "texture", "path": "textures/actors/knight_battle.png" },
     { "id": "actor.ranger.battle", "type": "texture", "path": "textures/actors/ranger_battle.png" },
     { "id": "actor.mage.battle", "type": "texture", "path": "textures/actors/mage_battle.png" },
@@ -34,8 +48,23 @@
     { "id": "prop.chest", "type": "texture", "path": "textures/props/chest.png" },
     { "id": "prop.gate_marker", "type": "texture", "path": "textures/props/gate_marker.png" },
     { "id": "prop.boss_marker", "type": "texture", "path": "textures/props/boss_marker.png" },
+    { "id": "marker.enemy.normal", "type": "texture", "path": "textures/props/enemy_normal.png" },
+    { "id": "marker.enemy.elite", "type": "texture", "path": "textures/props/enemy_elite.png" },
+    { "id": "marker.enemy.boss", "type": "texture", "path": "textures/props/enemy_boss.png" },
 
     { "id": "ui.frame.default", "type": "texture", "path": "textures/ui/frame_default.png" },
-    { "id": "ui.emblem.crystal", "type": "texture", "path": "textures/ui/emblem_crystal.png" }
+    { "id": "ui.emblem.crystal", "type": "texture", "path": "textures/ui/emblem_crystal.png" },
+    { "id": "ui.facing_brackets", "type": "texture", "path": "textures/ui/facing_brackets.png" },
+
+    { "id": "anim.player.walk.down", "type": "animation", "texture": "actor.player.walk",
+      "row": 0, "frameCount": 3, "frameWidth": 12, "frameHeight": 12, "frameTime": 0.15 },
+    { "id": "anim.player.walk.up", "type": "animation", "texture": "actor.player.walk",
+      "row": 1, "frameCount": 3, "frameWidth": 12, "frameHeight": 12, "frameTime": 0.15 },
+    { "id": "anim.player.walk.left", "type": "animation", "texture": "actor.player.walk",
+      "row": 2, "frameCount": 3, "frameWidth": 12, "frameHeight": 12, "frameTime": 0.15 },
+    { "id": "anim.player.walk.right", "type": "animation", "texture": "actor.player.walk",
+      "row": 3, "frameCount": 3, "frameWidth": 12, "frameHeight": 12, "frameTime": 0.15 },
+    { "id": "anim.ui.facing_brackets", "type": "animation", "texture": "ui.facing_brackets",
+      "row": 0, "frameCount": 2, "frameWidth": 16, "frameHeight": 16, "frameTime": 0.4 }
   ]
 }

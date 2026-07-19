@@ -18,6 +18,7 @@
 #include "score/Scoreboard.hpp"
 #include "score/Scoring.hpp"
 #include "input/PromptLabels.hpp"
+#include "render/SpriteDraw.hpp"
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
 #include "states/BattleState.hpp"
@@ -59,6 +60,28 @@ Color tierColor(danger::Tier t) {
 // Message-speed setting scales every transient message duration.
 float scaledMessageTime(const AppContext& context, float base) {
     return base * settings::messageDurationScale(context.settings.values.messageSpeed);
+}
+
+const char* walkAnimId(render::Facing f) {
+    switch (f) {
+        case render::Facing::Down: return "anim.player.walk.down";
+        case render::Facing::Up: return "anim.player.walk.up";
+        case render::Facing::Left: return "anim.player.walk.left";
+        case render::Facing::Right: return "anim.player.walk.right";
+    }
+    return "anim.player.walk.down";
+}
+
+// Team-marker silhouette by stat-derived danger tier: shape, not color,
+// carries the differentiation (plain / horned / crowned figures).
+const char* tierSilhouetteId(danger::Tier tier) {
+    if (tier == danger::Tier::Boss) {
+        return "marker.enemy.boss";
+    }
+    if (tier == danger::Tier::Dangerous || tier == danger::Tier::Deadly) {
+        return "marker.enemy.elite";
+    }
+    return "marker.enemy.normal";
 }
 
 }  // namespace
@@ -357,8 +380,10 @@ void DungeonState::handleInput(const Input& input) {
 }
 
 void DungeonState::update(float dt) {
+    worldTime_ += dt;
     const float length = std::sqrt(moveX_ * moveX_ + moveY_ * moveY_);
-    if (length > 0.0001f) {
+    moving_ = length > 0.0001f;
+    if (moving_) {
         const float nx = moveX_ / length;
         const float ny = moveY_ / length;
         facing_ = Vec2{nx, ny};
@@ -366,6 +391,9 @@ void DungeonState::update(float dt) {
             town::resolveMove(player_, nx * kSpeed * dt, ny * kSpeed * dt, roomMap_);
         player_.x = moved.x;
         player_.y = moved.y;
+        walkTime_ += dt;
+    } else {
+        walkTime_ = 0.0f;
     }
 
     const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / kTile);
@@ -437,11 +465,19 @@ void DungeonState::render() {
     const std::string wallId = tilePrefix + "wall";
     const std::string doorId = tilePrefix + "door";
     const std::string floorId = tilePrefix + "floor";
+    const std::string accentId = tilePrefix + "accent";
+    const bool hasAccent = context_.resources.hasTexture(accentId);
+    const int accentSalt = currentRoom_ * 101 + static_cast<int>(dungeon_.seed % 251u);
     for (int ty = 0; ty < roomMap_.height(); ++ty) {
         for (int tx = 0; tx < roomMap_.width(); ++tx) {
             const town::Tile t = roomMap_.at(tx, ty);
+            // Deterministic sparse accent variants break up plain floors
+            // (crystal clusters, rubble, shrine stones) — presentation only.
+            const bool accent = hasAccent && t == town::Tile::Ground &&
+                                (tx * 31 + ty * 17 + accentSalt) % 13 == 0;
             const std::string& id = t == town::Tile::Building ? wallId
                                     : t == town::Tile::Door  ? doorId
+                                    : accent                 ? accentId
                                                              : floorId;
             if (context_.resources.hasTexture(id)) {
                 DrawTexture(context_.resources.texture(id), originX_ + tx * kTile,
@@ -453,29 +489,35 @@ void DungeonState::render() {
         }
     }
 
-    // Markers (sprites when the catalog has them; glyph rectangles otherwise).
+    // World sprites: markers first, then the player; text labels and the
+    // facing indicator draw in a final overlay pass so nothing occludes them.
     for (const Marker& m : markers_) {
         Color c{};
         const char* glyph = "?";
-        const char* spriteId = nullptr;
+        const char* spriteId = nullptr;   // M17 silhouette (shape encodes tier)
+        const char* fallbackId = nullptr; // M15 prop sprite
         switch (m.kind) {
             case MarkerKind::GateTeam:
             case MarkerKind::GuardTeam:
                 c = Color{206, 84, 84, 255};
                 glyph = "!";
-                spriteId = "prop.gate_marker";
+                if (m.teamIndex >= 0 && m.teamIndex < static_cast<int>(teamTier_.size())) {
+                    spriteId = tierSilhouetteId(teamTier_[static_cast<std::size_t>(m.teamIndex)]);
+                }
+                fallbackId = "prop.gate_marker";
                 break;
             case MarkerKind::Boss:
                 c = Color{184, 92, 206, 255};
                 glyph = "B";
-                spriteId = "prop.boss_marker";
+                spriteId = "marker.enemy.boss";
+                fallbackId = "prop.boss_marker";
                 break;
             case MarkerKind::Chest: {
                 const bool opened =
                     dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].chest.opened;
                 c = opened ? Color{120, 100, 50, 255} : Color{232, 200, 96, 255};
                 glyph = "C";
-                spriteId = opened ? nullptr : "prop.chest";
+                fallbackId = opened ? nullptr : "prop.chest";
                 break;
             }
         }
@@ -483,29 +525,49 @@ void DungeonState::render() {
         const int my = originY_ + m.y * kTile;
         if (spriteId != nullptr && context_.resources.hasTexture(spriteId)) {
             DrawTexture(context_.resources.texture(spriteId), mx + 2, my + 2, WHITE);
+        } else if (fallbackId != nullptr && context_.resources.hasTexture(fallbackId)) {
+            DrawTexture(context_.resources.texture(fallbackId), mx + 2, my + 2, WHITE);
         } else {
             DrawRectangle(mx + 2, my + 2, kTile - 4, kTile - 4, c);
             ui::drawTextCentered(glyph, mx + kTile / 2, my + 4, 8, Color{20, 20, 20, 255});
         }
-
-        // Visible danger label above an enemy team.
-        if (m.kind != MarkerKind::Chest && m.teamIndex >= 0 &&
-            m.teamIndex < static_cast<int>(teamTier_.size())) {
-            const danger::Tier tier = teamTier_[static_cast<std::size_t>(m.teamIndex)];
-            ui::drawTextCentered(danger::tierName(tier), mx + kTile / 2, my - 8, 8,
-                                 tierColor(tier));
-        }
     }
 
-    // Player.
-    if (context_.resources.hasTexture("actor.player.overworld")) {
-        DrawTexture(context_.resources.texture("actor.player.overworld"),
-                    originX_ + static_cast<int>(player_.x),
-                    originY_ + static_cast<int>(player_.y), WHITE);
-    } else {
+    // Player: directional walk animation, then static sprite, then rectangle.
+    const float pcx = originX_ + player_.x + player_.w * 0.5f;
+    const float pcy = originY_ + player_.y + player_.h * 0.5f;
+    const render::Facing facing = render::facingFrom(facing_.x, facing_.y);
+    if (!render::drawAnimationCentered(context_.resources, walkAnimId(facing),
+                                       moving_ ? walkTime_ : 0.0f, pcx, pcy) &&
+        !render::drawTextureCentered(context_.resources, "actor.player.overworld", pcx, pcy)) {
         DrawRectangle(originX_ + static_cast<int>(player_.x),
                       originY_ + static_cast<int>(player_.y), static_cast<int>(player_.w),
                       static_cast<int>(player_.h), Color{236, 224, 128, 255});
+    }
+
+    // Overlay pass: danger labels above teams, pulsing brackets on the
+    // interactable the player is facing (or standing on, for chests).
+    for (const Marker& m : markers_) {
+        if (m.kind != MarkerKind::Chest && m.teamIndex >= 0 &&
+            m.teamIndex < static_cast<int>(teamTier_.size())) {
+            const danger::Tier tier = teamTier_[static_cast<std::size_t>(m.teamIndex)];
+            ui::drawTextCentered(danger::tierName(tier), originX_ + m.x * kTile + kTile / 2,
+                                 originY_ + m.y * kTile - 8, 8, tierColor(tier));
+        }
+    }
+    const Marker* highlight = facingMarker_;
+    if (highlight == nullptr && onChest_) {
+        for (const Marker& m : markers_) {
+            if (m.kind == MarkerKind::Chest) {
+                highlight = &m;
+                break;
+            }
+        }
+    }
+    if (highlight != nullptr) {
+        render::drawAnimationCentered(context_.resources, "anim.ui.facing_brackets", worldTime_,
+                                      static_cast<float>(originX_ + highlight->x * kTile + kTile / 2),
+                                      static_cast<float>(originY_ + highlight->y * kTile + kTile / 2));
     }
 
     // HUD: backdrop sized to the measured lines so text never spills past it.

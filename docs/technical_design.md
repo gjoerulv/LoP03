@@ -119,8 +119,9 @@ string-based and headless-tested.
 
 ### Resources & the asset manifest (M14)
 
-Presentation assets resolve through `assets/manifest.json` (schema v1,
-owner-approved; parsing/validation is raylib-free in `src/assets/AssetManifest`
+Presentation assets resolve through `assets/manifest.json` (schema v1
+owner-approved at M14; v2 animation entries owner-approved at M17; the loader
+accepts both. Parsing/validation is raylib-free in `src/assets/AssetManifest`
 and headless-tested, including a test that validates the shipped manifest).
 States request **stable logical IDs** — never file paths. `ResourceManager`
 caches by id and owns raylib handles via RAII wrappers (`RaylibRAII.hpp`);
@@ -141,7 +142,33 @@ themed dungeon tiles via `tiles.<theme>.*` — `Dungeon.themeId` carries the
 content id — player/battle sprites with specific-id-then-generic lookup,
 `ui::drawFramedPanel` nine-patch) and keep the pre-asset colored-shape
 drawing as the fallback for roles without art, so themes and enemies gain
-art incrementally in M17 without code changes.
+art incrementally without code changes.
+
+### Animation & exploration presentation (M17)
+
+Manifest v2 adds `"animation"` entries: a horizontal frame strip inside a
+catalog texture (`texture`, `row`, `frameCount`, `frameWidth`/`Height`,
+`frameTime`, `loop`). Validation drops malformed entries and any animation
+whose strip texture is missing (`dropDanglingAnimations`, re-run after file
+checks); a shipped-manifest test also parses PNG headers to prove every
+strip fits its texture. Playback is pure and allocation-free
+(`render/Animation.hpp`: `frameAt` wraps or holds, `frameRect` indexes the
+strip); states keep their own clocks (walk clock resets while standing so
+frame 0 is the stand pose; a free-running world clock drives indicator
+pulses). `render/SpriteDraw` draws animation frames or static textures
+**centered on the collision-rect center**, so visual bounds are independent
+of collision bounds (art can change size freely; collision never reads
+texture dimensions).
+
+Draw-order rule (town + dungeon): tiles (with deterministic sparse accent
+variants) → world sprites (markers, then the player) → overlay pass (danger
+labels, the pulsing facing-brackets indicator) → HUD/minimap/footer. World
+sprites stay tile-bounded, overlays always draw above them — no depth
+sorting is needed or performed. Team markers select a silhouette by
+stat-derived danger tier (normal / horned elite for Dangerous+Deadly /
+crowned boss), with the M15 prop sprites and colored glyph rectangles as
+fallbacks; the tier is also always shown as the text label, so shape+text
+carry the information without color.
 
 ### Paths & safety
 

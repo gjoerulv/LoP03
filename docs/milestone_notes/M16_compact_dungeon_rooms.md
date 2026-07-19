@@ -2,7 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (see §N).
+- **Status:** complete (approved) — approved by the owner on 2026-07-19
+  after manual testing (see §N).
 - **Last reviewed repository commit:** `7eda462` (M15, 2026-07-19). Re-audit
   findings: room realization (`DungeonState::buildRoom`) is a fixed 26×15
   build with **zero RNG draws**, so a derived-seed layout layer cannot perturb

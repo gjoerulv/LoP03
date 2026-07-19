@@ -13,36 +13,51 @@ maps IDs to files and metadata. Replacing any asset for an existing role is a
 manifest + file change — **never a C++ edit**. IDs are public identifiers once
 shipped; renaming one is a schema-level decision.
 
-## 2. Manifest schema (v1, frozen)
+## 2. Manifest schema (v2 — v1 plus animation entries)
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "assets": [
     { "id": "sfx.ui.confirm",   "type": "sfx",     "path": "audio/sfx/confirm.wav", "volume": 0.9 },
     { "id": "music.town",       "type": "music",   "path": "audio/music/town.ogg",  "loop": true, "volume": 0.8 },
     { "id": "ambience.crystal_mine", "type": "ambience", "path": "audio/ambience/mine.ogg" },
     { "id": "font.ui.body",     "type": "font",    "path": "fonts/body.ttf", "size": 10 },
-    { "id": "ui.frame.default", "type": "texture", "path": "textures/ui/frame.png", "filter": "nearest" }
+    { "id": "ui.frame.default", "type": "texture", "path": "textures/ui/frame.png", "filter": "nearest" },
+    { "id": "anim.player.walk.down", "type": "animation", "texture": "actor.player.walk",
+      "row": 0, "frameCount": 3, "frameWidth": 12, "frameHeight": 12, "frameTime": 0.15, "loop": true }
   ]
 }
 ```
 
 - `id` — dotted namespaces: `ui.` `font.` `tiles.<theme>.` `actor.` `enemy.`
-  `effect.` `music.` `ambience.` `sfx.`.
-- `type` — `texture | font | music | ambience | sfx`.
+  `marker.` `prop.` `effect.` `anim.` `music.` `ambience.` `sfx.`.
+- `type` — `texture | font | music | ambience | sfx | animation`.
 - `path` — relative to `assets/`, sanitized (no absolute paths, drives, `..`).
+  Animation entries have **no path**; they reference a texture entry by id.
 - Per-type optional metadata: texture `filter` (`nearest`|`bilinear`,
   default nearest); font `size` (default 10); music/ambience `loop`
   (default true); music/ambience/sfx `volume` (0..1 multiplier, default 1).
-- Reserved for M17: an optional `frames` animation block will be added
-  **without** a version bump (additive).
+- Animation entries (v2, owner-approved 2026-07-19): `texture` (the strip),
+  `row` (default 0), `frameCount`, `frameWidth`, `frameHeight` (required,
+  ≥ 1), `frameTime` seconds (default 0.15, > 0), `loop` (default true;
+  false = hold last frame). Frames run left-to-right on the given row.
+  Version 1 manifests (no animations) still load.
 
-**Validation** (headless-tested, `tests/test_asset_manifest.cpp`): duplicate
-ids, unknown types, unsafe paths, out-of-range volumes, and missing files are
-reported and the entry skipped — valid entries survive, the game never
-crashes. A missing `manifest.json` is a valid empty catalog. The shipped
-manifest is validated by the test suite with zero errors.
+**Validation** (headless-tested, `tests/test_asset_manifest.cpp` +
+`tests/test_animation.cpp`): duplicate ids, unknown types, unsafe paths,
+out-of-range volumes, missing files, malformed animation metadata, and
+animations referencing a missing strip texture are reported and the entry
+skipped — valid entries survive, the game never crashes. A missing
+`manifest.json` is a valid empty catalog. The shipped manifest is validated
+by the test suite with zero errors, including a PNG-header check that every
+shipped animation fits inside its strip texture.
+
+**Using an animation from code:** `resources.animation(id)` returns the
+entry (or null → fall back to a static texture / shape);
+`render::frameAt`/`frameRect` pick the frame; `render::drawAnimationCentered`
+draws it anchored on the collision center. Callers keep their own clock —
+pass 0 to show the first (stand) frame.
 
 ## 3. Audio roles (what you can replace today)
 

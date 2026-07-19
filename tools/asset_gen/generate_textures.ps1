@@ -264,4 +264,140 @@ $g.Dispose()
 FR $b 6 26 20 3 $PAL.stone1; FR $b 8 25 16 1 $PAL.stone2
 Outline $b; SaveImg $b 'ui/emblem_crystal.png'
 
+Write-Output 'Generating M17 exploration art...'
+
+# --- Player walk sheet (36x48: 3 frames x 4 rows = down, up, left, right) ---
+# Frame 0 = stand (the static player_overworld pose), 1/2 = alternating steps.
+function Draw-PlayerFrame($bmp, [int]$ox, [int]$oy, [string]$dir, [int]$step) {
+  FR $bmp ($ox+4) ($oy+1) 4 3 $PAL.night3                          # hood
+  if ($dir -ne 'up') { FR $bmp ($ox+4) ($oy+3) 4 1 $PAL.night1 }   # face shadow
+  FR $bmp ($ox+3) ($oy+4) 6 5 $PAL.earth1; FR $bmp ($ox+3) ($oy+4) 6 1 $PAL.earth2  # cloak
+  switch ($dir) {                                                  # gold clasp per facing
+    'down'  { P $bmp ($ox+5) ($oy+5) $PAL.gold; P $bmp ($ox+6) ($oy+5) $PAL.gold }
+    'left'  { P $bmp ($ox+4) ($oy+5) $PAL.gold }
+    'right' { P $bmp ($ox+7) ($oy+5) $PAL.gold }
+  }
+  switch ($step) {                                                 # legs: stand / step A / step B
+    0 { FR $bmp ($ox+4) ($oy+9) 2 2 $PAL.night3; FR $bmp ($ox+6) ($oy+9) 2 2 $PAL.night3 }
+    1 { FR $bmp ($ox+4) ($oy+9) 2 2 $PAL.night3; FR $bmp ($ox+6) ($oy+9) 2 1 $PAL.night3 }
+    2 { FR $bmp ($ox+4) ($oy+9) 2 1 $PAL.night3; FR $bmp ($ox+6) ($oy+9) 2 2 $PAL.night3 }
+  }
+}
+$b = New-Img 36 48
+$rows = @('down','up','left','right')
+for ($r = 0; $r -lt 4; $r++) { for ($f = 0; $f -lt 3; $f++) {
+  Draw-PlayerFrame $b ($f*12) ($r*12) $rows[$r] $f } }
+Outline $b; SaveImg $b 'actors/player_walk.png'
+
+# --- Overworld enemy silhouettes (12x12; shape encodes tier, never color alone) ---
+$b = New-Img 12 12                                                # normal: hunched beast
+$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroon)), 1, 4, 9, 6)
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroon)), 6, 2, 5, 5); $g.Dispose()
+P $b 9 4 $PAL.danger; P $b 7 4 $PAL.danger
+FR $b 2 9 2 2 $PAL.maroonD; FR $b 6 9 2 2 $PAL.maroonD
+Outline $b; SaveImg $b 'props/enemy_normal.png'
+
+$b = New-Img 12 12                                                # elite: horned + banded
+$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroon)), 1, 4, 10, 7)
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroon)), 6, 2, 5, 5); $g.Dispose()
+P $b 7 1 $PAL.glint; P $b 10 1 $PAL.glint                          # horns
+P $b 9 4 $PAL.danger; P $b 7 4 $PAL.danger
+FR $b 2 6 4 1 $PAL.violet                                          # war-band
+FR $b 2 10 2 1 $PAL.maroonD; FR $b 7 10 2 1 $PAL.maroonD
+Outline $b; SaveImg $b 'props/enemy_elite.png'
+
+$b = New-Img 12 12                                                # boss: tall, crowned
+FR $b 3 3 6 8 $PAL.bossBody; FR $b 4 4 4 6 $PAL.bossD
+foreach ($x in @(4,6,8)) { P $b $x 1 $PAL.gold }; FR $b 4 2 5 1 $PAL.gold
+P $b 5 5 $PAL.danger; P $b 7 5 $PAL.danger
+FR $b 3 11 2 1 $PAL.night1; FR $b 7 11 2 1 $PAL.night1
+Outline $b; SaveImg $b 'props/enemy_boss.png'
+
+# --- Crystal Mine tiles: braced rock, luminous mineral seams ---
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.night2
+Speckle $b 0 0 16 16 $PAL.night3 0.30; Speckle $b 0 0 16 16 $PAL.stone1 0.10
+P $b 4 11 $PAL.cyan; P $b 12 3 $PAL.wat3
+SaveImg $b 'environments/mine_floor.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.stone1                    # rock + timber brace
+Speckle $b 0 0 16 16 $PAL.night2 0.25; Speckle $b 0 0 16 16 $PAL.stone2 0.12
+FR $b 0 0 16 3 $PAL.earth2; FR $b 0 2 16 1 $PAL.earth1             # beam
+FR $b 0 3 2 13 $PAL.earth1; FR $b 14 3 2 13 $PAL.earth1            # posts
+P $b 6 8 $PAL.cyan; P $b 10 12 $PAL.violet                          # embedded minerals
+SaveImg $b 'environments/mine_wall.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.stone1                    # timber-framed opening
+FR $b 4 0 8 16 $PAL.night1
+FR $b 2 0 2 16 $PAL.earth2; FR $b 12 0 2 16 $PAL.earth2            # posts
+FR $b 2 0 12 2 $PAL.earth3                                          # lintel
+P $b 7 13 $PAL.cyan
+SaveImg $b 'environments/mine_door.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.night2                    # accent: crystal cluster
+Speckle $b 0 0 16 16 $PAL.night3 0.30
+FR $b 6 6 2 7 $PAL.cyan; P $b 6 5 $PAL.glint                        # main shard
+FR $b 9 8 2 5 $PAL.violet; P $b 9 7 $PAL.glint
+FR $b 4 9 1 4 $PAL.wat3
+FR $b 4 13 8 1 $PAL.stone1                                          # rubble base
+SaveImg $b 'environments/mine_crystals.png'
+
+# --- Hollow Forest tiles: mossy litter, root-mass walls ---
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.veg0
+Speckle $b 0 0 16 16 $PAL.veg1 0.35; Speckle $b 0 0 16 16 $PAL.earth1 0.08
+P $b 3 5 $PAL.veg3; P $b 11 12 $PAL.veg2
+SaveImg $b 'environments/forest_floor.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.earth1                    # trunk/root mass
+for ($x = 1; $x -lt 16; $x += 5) { FR $b $x 0 2 16 $PAL.earth2; FR $b ($x+2) 0 1 16 '#3A2E20' }
+FR $b 0 0 16 2 $PAL.veg1; Speckle $b 0 0 16 2 $PAL.veg2 0.30       # moss cap
+Speckle $b 0 10 16 6 '#3A2E20' 0.15
+SaveImg $b 'environments/forest_wall.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.earth1                    # root archway
+FR $b 4 0 8 16 $PAL.night1
+for ($j = 0; $j -lt 5; $j++) { P $b (4+$j) $j $PAL.earth2; P $b (11-$j) $j $PAL.earth2 }  # arch roots
+FR $b 3 0 1 16 $PAL.earth2; FR $b 12 0 1 16 $PAL.earth2
+P $b 5 14 $PAL.veg1; P $b 10 15 $PAL.veg1
+SaveImg $b 'environments/forest_door.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.veg0                      # accent: mossy shrine stone
+Speckle $b 0 0 16 16 $PAL.veg1 0.35
+FR $b 5 5 6 7 $PAL.stone2; FR $b 5 5 6 1 $PAL.stone3               # stone
+FR $b 4 12 8 1 $PAL.stone1                                          # base
+P $b 7 7 $PAL.cyan; P $b 8 8 $PAL.cyan                              # carved sigil
+P $b 5 5 $PAL.veg2; P $b 10 11 $PAL.veg2                            # moss creep
+SaveImg $b 'environments/forest_shrine.png'
+
+# --- Accents for existing themes ---
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.stone2                    # keep: collapsed rubble
+FR $b 0 7 16 1 $PAL.night3; Speckle $b 0 0 16 16 $PAL.stone1 0.10
+FR $b 4 8 4 3 $PAL.stone1; FR $b 9 6 3 2 $PAL.stone1; FR $b 7 11 5 2 $PAL.stone1
+P $b 5 8 $PAL.stone3; P $b 10 6 $PAL.stone3; P $b 8 11 $PAL.stone3
+SaveImg $b 'environments/keep_rubble.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.veg2                      # town: flower patch
+Speckle $b 0 0 16 16 $PAL.veg1 0.14
+foreach ($f in @(@(3,4,'gold'),@(10,7,'glint'),@(6,11,'danger'))) {
+  P $b $f[0] $f[1] $PAL[$f[2]]; P $b $f[0] ($f[1]+1) $PAL.veg3 }
+SaveImg $b 'environments/town_flowers.png'
+
+# --- Facing brackets (32x16: 2 frames of 16x16; tight then loose pulse) ---
+$b = New-Img 32 16
+function Draw-Brackets($bmp, [int]$ox, [int]$inset) {
+  $lo = $inset; $hi = 15 - $inset
+  foreach ($c in @(@($lo,$lo,1,1),@($hi,$lo,-1,1),@($lo,$hi,1,-1),@($hi,$hi,-1,-1))) {
+    $x = $c[0]; $y = $c[1]; $dx = $c[2]; $dy = $c[3]
+    for ($i = 0; $i -lt 4; $i++) {
+      P $bmp ($ox + $x + $dx*$i) ($y + $dy) $PAL.night1              # shadow
+      P $bmp ($ox + $x + $dx*$i) $y $PAL.gold                        # arm horizontal
+      P $bmp ($ox + $x) ($y + $dy*$i) $PAL.gold                      # arm vertical
+    }
+  }
+}
+Draw-Brackets $b 0 1
+Draw-Brackets $b 16 0
+SaveImg $b 'ui/facing_brackets.png'
+
 Write-Output 'Texture generation complete.'

@@ -2,9 +2,20 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** implemented, awaiting manual approval (see §N).
+- **Last reviewed repository commit:** `faa7ed8` (M16, 2026-07-19). Re-audit:
+  manifest v1 (29 entries) live; M15 direction approved and generated
+  in-project; M16 compact rooms landed (markers = prop sprites, themes keyed
+  off `Dungeon.themeId`, only ruined_keep has tiles); player is a
+  single-frame 12×12 sprite; no animation system exists.
+- **Owner decisions (2026-07-19):** (1) **manifest schema v2 approved** — new
+  `"animation"` entry type referencing an existing texture as a horizontal
+  frame strip (`texture`, `row`, `frameCount`, `frameWidth`, `frameHeight`,
+  `frameTime`, `loop`); loader accepts v1 and v2; missing/invalid animations
+  fall back to a static frame or plain texture. (2) **All three themes are
+  produced in this milestone with a single owner review at the gate** (the
+  per-theme review gates were designed for commissioned art; generated art
+  iterates by one-script changes).
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M17 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -142,3 +153,62 @@ interactables — none of which exist at the reviewed commit.
 - `docs/art_bible.md` — any refinements discovered in production.
 - `docs/manual_test_matrix.md` — theme/readability rows.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-19)
+
+**Delivered.**
+
+- **Manifest v2** (`src/assets/AssetManifest`): `"animation"` entries per
+  the owner-approved schema; loader accepts v1 and v2; malformed metadata
+  and dangling texture references are dropped with readable errors
+  (`dropDanglingAnimations`, re-run after file existence checks so a
+  dropped strip texture orphans its animations safely).
+- **Pure playback** (`src/render/Animation.hpp`): `frameAt` (loop wraps,
+  non-loop holds, degenerate metadata → frame 0) and `frameRect` (strip
+  indexing, clamped). **Anchored drawing** (`src/render/SpriteDraw`):
+  animation/texture drawn centered on the collision-rect center with pixel
+  snapping — visual bounds independent of collision (anchor rule: center,
+  a deliberate change from the bible's earlier bottom-center note; §8
+  updated).
+- **Art** (deterministic generator additions; 15 new PNGs, all pre-existing
+  PNGs byte-identical): player 36×48 walk sheet (4 facings × 3 frames,
+  frame 0 = stand), overworld enemy silhouettes (plain / horned / crowned —
+  shape encodes tier), Crystal Mine and Hollow Forest full tile sets
+  (floor/wall/door/accent), Ruined Keep rubble accent, town flower accent,
+  2-frame facing-brackets strip. Manifest: 45 file entries + 5 animations;
+  credits updated.
+- **Integration:** Town and Dungeon states play the directional walk cycle
+  (walk clock resets to the stand frame when stopped; fallback static
+  sprite, then rectangle); dungeon team markers select tier silhouettes
+  (danger::Tier Boss → crowned, Dangerous/Deadly → horned, else plain) with
+  M15 props then glyph rectangles as fallbacks; deterministic sparse floor
+  accents (hash of tile, room, seed — presentation only); pulsing gold
+  facing-brackets on the faced interactable or occupied chest; explicit
+  draw order tiles → markers → player → overlays (danger labels, brackets)
+  → HUD.
+
+**Automated evidence:** 201/201 tests (8 new): manifest v2 parse/validate/
+drop rules, v1 compatibility, playback loop/hold/clamp semantics, frame-rect
+indexing, and a shipped-manifest check that reads PNG headers to prove every
+animation fits its strip texture. Build clean, zero warnings.
+
+**In-game evidence** (`docs/screenshots/m17_explore/`): town standing +
+mid-step walk frame (01/02); Ruined Keep entry + walk frame (03/04);
+Crystal Mine entry with braced walls, timber doors, crystal-cluster accents
+(05) and a second mine room (06); Hollow Forest entry with trunk walls,
+root archways, shrine accents (07). All three themes visibly distinct by
+composition; clean exit code 0.
+
+**Deviations / notes:**
+1. Blind scripted walks did not reach a gate block, guarded chest, or the
+   boss arena this run (seeds rolled unhelpful layouts), so the tier
+   silhouettes, facing brackets, and crowned boss marker were not captured
+   in-game. Their draw path is the same verified marker/animation code, and
+   the matrix M17 note asks the owner to verify them by eye.
+2. Anchor rule changed from the bible's forward-looking "bottom-center" to
+   center-anchoring (recorded in §8) — better fit for 12×12 actors on 16px
+   tiles in pure top-down.
+3. Town flower accents land only where Grass tiles exist (the tree border
+   ring), so they are subtle; deliberate, not a bug.
+4. No glow/particle effects beyond the luminous crystal pixels and the
+   pulsing brackets — restraint per §D; more would risk the density rule.

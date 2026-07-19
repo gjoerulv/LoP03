@@ -23,8 +23,8 @@
 | 13 | Input consistency, remapping & settings | ☑ complete (approved) |
 | 14 | Asset manifest & replaceable resources | ☑ complete (approved) |
 | 15 | Art-direction vertical slice       | ☑ complete (approved) |
-| 16 | Compact dungeon-room system        | ◑ implemented, awaiting manual approval |
-| 17 | Exploration visuals & animation    | ☐ planned |
+| 16 | Compact dungeon-room system        | ☑ complete (approved) |
+| 17 | Exploration visuals & animation    | ◑ implemented, awaiting manual approval |
 | 18 | Battle presentation & game feel    | ☐ planned |
 | 19 | Progression, economy & score-integrity hardening | ☐ planned |
 | 20 | Encounter & dungeon-content variety | ☐ planned |
@@ -513,11 +513,11 @@ milestone is not automatic authorization to start the next.
 
 ## M16 — Compact dungeon-room system
 
-- **Status:** ◑ implemented, awaiting manual approval (193/193 tests; mass
-  validation of thousands of generated rooms; captures in
-  `docs/screenshots/m16_rooms/`; see the note's §N. Owner decisions executed:
-  optional `generationVersion` score field without a format bump; the 8
-  topology-derived archetypes.)
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. (193/193 tests; mass validation of thousands of
+  generated rooms; captures in `docs/screenshots/m16_rooms/`; see the note's
+  §N. Owner decisions executed: optional `generationVersion` score field
+  without a format bump; the 8 topology-derived archetypes.)
 - **Goal:** separate dungeon topology from compact room realization and replace
   the fixed 26×15 full-screen room assumption.
 - **Player-facing outcome:** compact, purposeful rooms with readable entrances,
@@ -547,7 +547,10 @@ milestone is not automatic authorization to start the next.
 
 ## M17 — Exploration visuals & animation
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (201/201 tests;
+  captures in `docs/screenshots/m17_explore/`; see the note's §N. Owner
+  decisions executed: manifest v2 animation schema; all three themes in one
+  pass with a single review.)
 - **Goal:** produce final-quality town/dungeon characters, enemies, tiles,
   props, animations, effects, and theme atmosphere on the stable asset and
   room systems.

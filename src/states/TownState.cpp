@@ -23,6 +23,7 @@
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TownMenuState.hpp"
+#include "render/SpriteDraw.hpp"
 #include "town/Movement.hpp"
 #include "ui/UiDraw.hpp"
 
@@ -57,6 +58,16 @@ const char* tileTextureId(town::Tile tile) {
         case town::Tile::Door: return "tiles.town.door";
     }
     return "";
+}
+
+const char* walkAnimId(render::Facing f) {
+    switch (f) {
+        case render::Facing::Down: return "anim.player.walk.down";
+        case render::Facing::Up: return "anim.player.walk.up";
+        case render::Facing::Left: return "anim.player.walk.left";
+        case render::Facing::Right: return "anim.player.walk.right";
+    }
+    return "anim.player.walk.down";
 }
 
 }  // namespace
@@ -135,7 +146,8 @@ void TownState::handleInput(const Input& input) {
 
 void TownState::update(float dt) {
     const float length = std::sqrt(moveX_ * moveX_ + moveY_ * moveY_);
-    if (length > 0.0001f) {
+    moving_ = length > 0.0001f;
+    if (moving_) {
         const float nx = moveX_ / length;
         const float ny = moveY_ / length;
         facing_ = Vec2{nx, ny};
@@ -143,6 +155,9 @@ void TownState::update(float dt) {
             town::resolveMove(player_, nx * kPlayerSpeed * dt, ny * kPlayerSpeed * dt, town_.map);
         player_.x = moved.x;
         player_.y = moved.y;
+        walkTime_ += dt;
+    } else {
+        walkTime_ = 0.0f;  // stand frame
     }
     nearDoor_ = buildingAtPlayerTile();
 }
@@ -156,6 +171,11 @@ void TownState::render() {
         for (int tx = 0; tx < map.width(); ++tx) {
             const town::Tile tile = map.at(tx, ty);
             const char* id = tileTextureId(tile);
+            // Deterministic accent variant: occasional flower patches on grass.
+            if (tile == town::Tile::Grass && (tx * 31 + ty * 17) % 11 == 0 &&
+                context_.resources.hasTexture("tiles.town.flowers")) {
+                id = "tiles.town.flowers";
+            }
             if (context_.resources.hasTexture(id)) {
                 DrawTexture(context_.resources.texture(id), tx * ts, ty * ts, WHITE);
             } else {
@@ -170,18 +190,21 @@ void TownState::render() {
         ui::drawTextCentered(b.name.c_str(), cx, b.y * ts - 9, 8, Color{225, 225, 235, 255});
     }
 
-    // Player (sprite when the catalog has one) + facing tick.
-    if (context_.resources.hasTexture("actor.player.overworld")) {
-        DrawTexture(context_.resources.texture("actor.player.overworld"),
-                    static_cast<int>(player_.x), static_cast<int>(player_.y), WHITE);
-    } else {
+    // Player: directional walk animation, then static sprite, then rectangle
+    // (with the old facing tick, which the sprites encode themselves).
+    const float pcx = player_.x + player_.w * 0.5f;
+    const float pcy = player_.y + player_.h * 0.5f;
+    const render::Facing facing = render::facingFrom(facing_.x, facing_.y);
+    if (!render::drawAnimationCentered(context_.resources, walkAnimId(facing),
+                                       moving_ ? walkTime_ : 0.0f, pcx, pcy) &&
+        !render::drawTextureCentered(context_.resources, "actor.player.overworld", pcx, pcy)) {
         DrawRectangle(static_cast<int>(player_.x), static_cast<int>(player_.y),
                       static_cast<int>(player_.w), static_cast<int>(player_.h),
                       Color{236, 224, 128, 255});
+        DrawRectangle(static_cast<int>(pcx + facing_.x * 4.0f - 1.0f),
+                      static_cast<int>(pcy + facing_.y * 4.0f - 1.0f), 3, 3,
+                      Color{60, 50, 30, 255});
     }
-    DrawRectangle(static_cast<int>(player_.x + player_.w * 0.5f + facing_.x * 4.0f - 1.0f),
-                  static_cast<int>(player_.y + player_.h * 0.5f + facing_.y * 4.0f - 1.0f), 3, 3,
-                  Color{60, 50, 30, 255});
 
     // Party HUD (top-left); the backdrop is sized to the measured text so
     // long names never spill past it.

@@ -95,6 +95,9 @@ private:
     float messageTimer_ = 0.0f;
     float moveX_ = 0.0f;
     float moveY_ = 0.0f;
+    float walkTime_ = 0.0f;   // walk-cycle clock; 0 while standing
+    float worldTime_ = 0.0f;  // always advancing (indicator pulses)
+    bool moving_ = false;
 };
 
 }  // namespace cd

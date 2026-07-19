@@ -6,6 +6,22 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M17 update:** exploration has final-direction art in all three themes.
+> New checks for rows 9/20: player walk animation plays while moving and
+> freezes on a stand frame when stopped, facing matches movement (four
+> directions); Crystal Mine (braced rock + crystal clusters) and Hollow
+> Forest (trunk walls + root archways + shrine stones) render their own tile
+> sets; sparse accent tiles appear but never obscure doors or markers; team
+> markers are silhouettes whose **shape** differs by danger (plain / horned
+> / crowned) with the text label still present; gold corner brackets pulse
+> on the interactable you face (gate, guard, boss) or the chest you stand
+> on; danger labels and brackets draw above everything. Verify by eye: a
+> gate block, a guarded chest, and the boss arena with the crowned
+> silhouette (scripted captures could not reach them — see the M17 note
+> §N). Missing-asset drill: delete the `anim.player.walk.*` entries from
+> `assets/manifest.json` → static player sprite, no crash; delete
+> `actor.player.walk` too → same. Captures: `docs/screenshots/m17_explore/`.
+>
 > **M16 update:** dungeon rooms are now compact archetype layouts (Entry,
 > Corridor, Crossroads, Gate Chamber, Treasure Alcove, Treasure Vault, Boss
 > Antechamber, Boss Arena) drawn centered on a black backdrop instead of

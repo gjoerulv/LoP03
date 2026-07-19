@@ -43,6 +43,14 @@ bool ResourceManager::hasTexture(const std::string& id) const {
     return entry != nullptr && entry->type == assets::AssetType::Texture;
 }
 
+const assets::AssetEntry* ResourceManager::animation(const std::string& id) const {
+    if (manifest_ == nullptr) {
+        return nullptr;
+    }
+    const assets::AssetEntry* entry = manifest_->find(id);
+    return entry != nullptr && entry->type == assets::AssetType::Animation ? entry : nullptr;
+}
+
 const Texture2D& ResourceManager::texture(const std::string& id) {
     if (auto it = textures_.find(id); it != textures_.end()) {
         return it->second.get();

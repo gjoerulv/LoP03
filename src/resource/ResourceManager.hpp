@@ -19,6 +19,7 @@ namespace cd {
 
 namespace assets {
 class AssetManifest;
+struct AssetEntry;
 }
 
 class ResourceManager {
@@ -46,6 +47,12 @@ public:
     // any failure. The default font is never unloaded.
     const Font& font(const std::string& id);
     const Font& defaultFont() const { return defaultFont_; }
+
+    // Returns the catalog's animation entry for a logical id, or nullptr when
+    // absent (callers then fall back to a static texture or shape). The
+    // returned entry lives in the catalog; per the reload model, re-fetch by
+    // id every frame instead of caching it.
+    const assets::AssetEntry* animation(const std::string& id) const;
 
     // Drops every cached resource; next use re-resolves through the catalog.
     void reload() { clear(); }

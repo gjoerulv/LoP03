@@ -90,11 +90,32 @@ reserved for their meanings and never decorative.
 - Text stays raylib-default font for now; a pixel font is a separate,
   owner-gated decision (not smuggled into this slice).
 
-## 8. Animation conventions (forward-looking, M17)
+## 8. Animation conventions (implemented, M17)
 
-- Walk cycles 2–4 frames at 8–10 fps; idle = 2-frame breathe; effects ≤ 6
-  frames. Anchors bottom-center. Defined here so M15 sprites are drawn with
-  animation-compatible proportions; no animation ships in the slice.
+- Walk cycles 3 frames (stand / step A / step B) at ~6.7 fps (0.15s per
+  frame); frame 0 doubles as the stand pose so a stopped actor is just the
+  animation at t = 0. Sheet rows encode facing: down, up, left, right.
+  Indicator pulses 2 frames at 0.4s. Effects ≤ 6 frames.
+- Sprites draw centered on the collision-rect center (anchor rule changed
+  from the M15 "bottom-center" plan: center-anchoring keeps 12×12 actors in
+  16px tiles visually stable in top-down view and decouples art size from
+  collision).
+
+### 8b. Theme identity in production (M17)
+
+Composition carries each theme; palettes stay within §2:
+
+- **Ruined Keep** — coursed masonry, cracked slab floors, rubble-pile
+  accents. Identity: broken geometry.
+- **Crystal Mine** — dark rough rock, timber support beams and posts on
+  every wall, timber-framed openings, cyan/violet crystal-cluster accents
+  (the only luminous elements). Identity: braced excavation.
+- **Hollow Forest** — mossy leaf-litter floors, massive trunk-and-root
+  walls with moss caps, root archway openings, mossy shrine-stone accents
+  with carved cyan sigils. Identity: overgrown enclosure.
+- **Overworld enemy silhouettes** differentiate by shape, never color
+  alone: plain hunched beast (normal), horned + war-banded (dangerous),
+  tall crowned figure (boss-tier).
 
 ## 9. Audio direction
 
