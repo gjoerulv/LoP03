@@ -296,15 +296,47 @@ and unit-tested. `dungeon::generate(seed, depth, db)` returns a `Dungeon`:
 **Determinism rule:** to keep generation reproducible, iterate the (unordered)
 content DB into **sorted** id pools before any RNG-driven selection.
 
+### Compact room realization (Milestone 16)
+
+Topology and room realization are separate systems. `dungeon::generate` keeps
+deciding connectivity, gates, teams, chests, and the boss exactly as above;
+`dungeon/RoomLayout` (pure, unit-tested) turns each graph room into a compact
+layout:
+
+- **Archetypes** classified from immutable topology facts (`classifyRoom`):
+  Entry, Corridor, Crossroads, GateChamber, TreasureAlcove, TreasureVault,
+  BossAntechamber, BossArena. Owner-approved dimension ranges: common
+  chambers 9–15 × 7–11 tiles, corridors 9–13 long × 5–7 wide (long axis along
+  the door pair), boss arena 15–19 × 11–13; global bounds 5..19 × 5..13.
+- **Derived room-local seeds:** `roomLocalSeed(dungeonSeed,
+  kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
+  a per-room `Rng`. Realization **never draws from the topology RNG**, so
+  presentation changes cannot alter what a published seed means.
+  `kGenerationVersion` (currently 2; 1 = the pre-M16 fixed 26×15 rooms) is
+  folded into the hash and recorded on new score entries as an optional
+  `generationVersion` field — no scoreboard format bump; absent = pre-M16
+  (owner decision 2026-07-19).
+- **Layout contents:** closed border walls, centered two-tile door gaps per
+  wall (`doorGap`/`interiorGap`), sparse landmark pillars filtered by a
+  keep-clear mask (door lanes, anchors, spawns), and anchors for chest,
+  chest guard, and boss. RNG draw order depends only on immutable topology,
+  so a cleared gate or defeated guard never reshapes a room.
+- **Validation:** `validateLayout` BFS-checks every configuration a player
+  can experience (fully open, pristine gates-closed, and each cleared-gate
+  entry): doors, chest, and spawns reachable; gate/guard/boss blocks
+  face-able. Mass tests validate thousands of rooms across seeds, depths,
+  and themes; a safety net drops obstacles rather than ship an invalid room.
+
 ### Walkable presentation & flow
 
-`DungeonState` renders one room at a time as a single-screen tilemap (reusing
-`town::Tilemap`/`resolveMove`): walls with door gaps, walk room-to-room. **Gated
-doors are solid** (blocked by a team marker) until the battle milestone, so M4
-exercises generation, exploration, team/chest inspection, and the retreat flow —
-not combat. Entry: Guild → seed → autosave → dungeon; pause → Retreat to town.
-Danger tiers and dungeon score are intentionally absent until M6 (no
-hand-authored danger).
+`DungeonState` realizes all layouts once at dungeon entry (from pristine
+state) and composes each room's `town::Tilemap` from the layout base plus
+live overlays (door gaps carved unless gated; gate/guard/boss marker blocks
+while their encounters stand). Rooms draw centered in the exploration
+viewport (origin offset; render-only — movement and interaction stay in
+room-local space, reusing `resolveMove`). Entering through a door spawns you
+on that door's interior tile; the start room uses the layout's center spawn.
+Entry: Guild → seed → autosave → dungeon; pause → Retreat to town.
 
 ## 10. Combat (Milestone 5)
 

@@ -26,41 +26,15 @@
 #include "states/StateStack.hpp"
 #include "town/Movement.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
 namespace {
 
-constexpr int kRoomW = 26;
-constexpr int kRoomH = 15;
 constexpr int kTile = town::Tilemap::kTileSize;
 constexpr float kSpeed = 78.0f;
 constexpr float kPlayerSize = 12.0f;
-
-struct TilePos {
-    int x;
-    int y;
-};
-
-std::array<TilePos, 2> borderGap(dungeon::Dir d) {
-    switch (d) {
-        case dungeon::Dir::North: return {{{12, 0}, {13, 0}}};
-        case dungeon::Dir::South: return {{{12, kRoomH - 1}, {13, kRoomH - 1}}};
-        case dungeon::Dir::East: return {{{kRoomW - 1, 7}, {kRoomW - 1, 8}}};
-        case dungeon::Dir::West: return {{{0, 7}, {0, 8}}};
-    }
-    return {{{12, 0}, {13, 0}}};
-}
-
-std::array<TilePos, 2> interiorGap(dungeon::Dir d) {
-    switch (d) {
-        case dungeon::Dir::North: return {{{12, 1}, {13, 1}}};
-        case dungeon::Dir::South: return {{{12, kRoomH - 2}, {13, kRoomH - 2}}};
-        case dungeon::Dir::East: return {{{kRoomW - 2, 7}, {kRoomW - 2, 8}}};
-        case dungeon::Dir::West: return {{{1, 7}, {1, 8}}};
-    }
-    return {{{12, 1}, {13, 1}}};
-}
 
 Color tileColor(town::Tile t) {
     switch (t) {
@@ -91,7 +65,7 @@ float scaledMessageTime(const AppContext& context, float base) {
 
 DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon)
     : GameState(stack), context_(context), dungeon_(std::move(dungeon)),
-      roomMap_(kRoomW, kRoomH) {
+      layouts_(dungeon::realizeAllRooms(dungeon_)), roomMap_(1, 1) {
     teamTier_.reserve(dungeon_.teams.size());
     for (const dungeon::EnemyTeam& team : dungeon_.teams) {
         teamTier_.push_back(danger::assess(team, dungeon_.depth, context_.content));
@@ -108,15 +82,17 @@ void DungeonState::buildRoom() {
     markers_.clear();
 
     dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)];
+    const dungeon::RoomLayout& layout = layouts_[static_cast<std::size_t>(currentRoom_)];
 
-    town::Tilemap map(kRoomW, kRoomH, town::Tile::Ground);
-    for (int x = 0; x < kRoomW; ++x) {
-        map.set(x, 0, town::Tile::Building);
-        map.set(x, kRoomH - 1, town::Tile::Building);
-    }
-    for (int y = 0; y < kRoomH; ++y) {
-        map.set(0, y, town::Tile::Building);
-        map.set(kRoomW - 1, y, town::Tile::Building);
+    // Base collision from the realized layout (closed border + obstacles);
+    // door gaps and encounter blocks are overlaid from live gate/guard state.
+    town::Tilemap map(layout.width, layout.height, town::Tile::Ground);
+    for (int y = 0; y < layout.height; ++y) {
+        for (int x = 0; x < layout.width; ++x) {
+            if (layout.at(x, y) == dungeon::RoomLayout::Cell::Wall) {
+                map.set(x, y, town::Tile::Building);
+            }
+        }
     }
 
     for (dungeon::Dir dir : {dungeon::Dir::North, dungeon::Dir::East, dungeon::Dir::South,
@@ -126,30 +102,35 @@ void DungeonState::buildRoom() {
             continue;
         }
         if (door.gated) {
-            const TilePos inner = interiorGap(dir)[0];
+            const dungeon::RoomLayout::Point inner = layout.interiorGap(dir)[0];
             map.set(inner.x, inner.y, town::Tile::Building);  // blocked passage
             markers_.push_back({inner.x, inner.y, MarkerKind::GateTeam, door.teamIndex, dir});
         } else {
-            for (const TilePos& bp : borderGap(dir)) {
+            for (const dungeon::RoomLayout::Point& bp : layout.doorGap(dir)) {
                 map.set(bp.x, bp.y, town::Tile::Door);
                 doorTiles_.push_back({bp.x, bp.y, dir, door.neighbor});
             }
         }
     }
 
-    if (room.type == dungeon::RoomType::Boss && room.teamIndex >= 0) {
-        map.set(12, 7, town::Tile::Building);
-        markers_.push_back({12, 7, MarkerKind::Boss, room.teamIndex, dungeon::Dir::North});
+    if (room.type == dungeon::RoomType::Boss && room.teamIndex >= 0 && layout.boss.valid()) {
+        map.set(layout.boss.x, layout.boss.y, town::Tile::Building);
+        markers_.push_back({layout.boss.x, layout.boss.y, MarkerKind::Boss, room.teamIndex,
+                            dungeon::Dir::North});
     }
-    if (room.chest.present) {
-        markers_.push_back({12, 7, MarkerKind::Chest, -1, dungeon::Dir::North});
-        if (room.teamIndex >= 0) {
-            map.set(13, 7, town::Tile::Building);
-            markers_.push_back({13, 7, MarkerKind::GuardTeam, room.teamIndex, dungeon::Dir::North});
+    if (room.chest.present && layout.chest.valid()) {
+        markers_.push_back({layout.chest.x, layout.chest.y, MarkerKind::Chest, -1,
+                            dungeon::Dir::North});
+        if (room.teamIndex >= 0 && layout.guard.valid()) {
+            map.set(layout.guard.x, layout.guard.y, town::Tile::Building);
+            markers_.push_back({layout.guard.x, layout.guard.y, MarkerKind::GuardTeam,
+                                room.teamIndex, dungeon::Dir::North});
         }
     }
 
     roomMap_ = std::move(map);
+    originX_ = (context_.virtualWidth - layout.width * kTile) / 2;
+    originY_ = (context_.virtualHeight - ui::style::kFooterHeight - layout.height * kTile) / 2;
 }
 
 void DungeonState::enterRoom(int index, std::optional<dungeon::Dir> entrySide) {
@@ -157,11 +138,10 @@ void DungeonState::enterRoom(int index, std::optional<dungeon::Dir> entrySide) {
     dungeon_.rooms[static_cast<std::size_t>(index)].visited = true;
     buildRoom();
 
+    const dungeon::RoomLayout& layout = layouts_[static_cast<std::size_t>(index)];
     const float inset = (kTile - kPlayerSize) * 0.5f;
-    TilePos start{12, 7};
-    if (entrySide) {
-        start = interiorGap(*entrySide)[0];
-    }
+    const dungeon::RoomLayout::Point start =
+        entrySide ? layout.interiorGap(*entrySide)[0] : layout.centerSpawn;
     player_ = Rect{static_cast<float>(start.x) * kTile + inset,
                    static_cast<float>(start.y) * kTile + inset, kPlayerSize, kPlayerSize};
 }
@@ -354,6 +334,7 @@ void DungeonState::completeDungeon() {
     entry.depth = dungeon_.depth;
     entry.theme = dungeon_.themeName;
     entry.seed = dungeon_.seed;
+    entry.generationVersion = dungeon::kGenerationVersion;
     context_.scoreboard.add(entry);
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);
@@ -463,9 +444,11 @@ void DungeonState::render() {
                                     : t == town::Tile::Door  ? doorId
                                                              : floorId;
             if (context_.resources.hasTexture(id)) {
-                DrawTexture(context_.resources.texture(id), tx * kTile, ty * kTile, WHITE);
+                DrawTexture(context_.resources.texture(id), originX_ + tx * kTile,
+                            originY_ + ty * kTile, WHITE);
             } else {
-                DrawRectangle(tx * kTile, ty * kTile, kTile, kTile, tileColor(t));
+                DrawRectangle(originX_ + tx * kTile, originY_ + ty * kTile, kTile, kTile,
+                              tileColor(t));
             }
         }
     }
@@ -496,32 +479,33 @@ void DungeonState::render() {
                 break;
             }
         }
+        const int mx = originX_ + m.x * kTile;
+        const int my = originY_ + m.y * kTile;
         if (spriteId != nullptr && context_.resources.hasTexture(spriteId)) {
-            DrawTexture(context_.resources.texture(spriteId), m.x * kTile + 2, m.y * kTile + 2,
-                        WHITE);
+            DrawTexture(context_.resources.texture(spriteId), mx + 2, my + 2, WHITE);
         } else {
-            DrawRectangle(m.x * kTile + 2, m.y * kTile + 2, kTile - 4, kTile - 4, c);
-            ui::drawTextCentered(glyph, m.x * kTile + kTile / 2, m.y * kTile + 4, 8,
-                                 Color{20, 20, 20, 255});
+            DrawRectangle(mx + 2, my + 2, kTile - 4, kTile - 4, c);
+            ui::drawTextCentered(glyph, mx + kTile / 2, my + 4, 8, Color{20, 20, 20, 255});
         }
 
         // Visible danger label above an enemy team.
         if (m.kind != MarkerKind::Chest && m.teamIndex >= 0 &&
             m.teamIndex < static_cast<int>(teamTier_.size())) {
             const danger::Tier tier = teamTier_[static_cast<std::size_t>(m.teamIndex)];
-            ui::drawTextCentered(danger::tierName(tier), m.x * kTile + kTile / 2,
-                                 m.y * kTile - 8, 8, tierColor(tier));
+            ui::drawTextCentered(danger::tierName(tier), mx + kTile / 2, my - 8, 8,
+                                 tierColor(tier));
         }
     }
 
     // Player.
     if (context_.resources.hasTexture("actor.player.overworld")) {
         DrawTexture(context_.resources.texture("actor.player.overworld"),
-                    static_cast<int>(player_.x), static_cast<int>(player_.y), WHITE);
+                    originX_ + static_cast<int>(player_.x),
+                    originY_ + static_cast<int>(player_.y), WHITE);
     } else {
-        DrawRectangle(static_cast<int>(player_.x), static_cast<int>(player_.y),
-                      static_cast<int>(player_.w), static_cast<int>(player_.h),
-                      Color{236, 224, 128, 255});
+        DrawRectangle(originX_ + static_cast<int>(player_.x),
+                      originY_ + static_cast<int>(player_.y), static_cast<int>(player_.w),
+                      static_cast<int>(player_.h), Color{236, 224, 128, 255});
     }
 
     // HUD: backdrop sized to the measured lines so text never spills past it.

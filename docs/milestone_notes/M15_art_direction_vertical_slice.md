@@ -2,8 +2,9 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — the approval IS the
-  art-direction gate (see §N). **Owner decision
+- **Status:** complete (approved) — approved by the owner on 2026-07-19 after
+  manual testing. The approval is the art-direction gate: the generated
+  in-project direction is authorized for M17/M21 production. **Owner decision
   (2026-07-19): slice art/audio is generated in-project by Claude** (scripted
   pixel art + synthesized chiptune through the manifest); the art bible and
   slice double as a commissioning spec if pro art is wanted later. The

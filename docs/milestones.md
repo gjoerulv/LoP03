@@ -22,8 +22,8 @@
 | 12 | UI layout & text-safety foundation | ☑ complete (approved) |
 | 13 | Input consistency, remapping & settings | ☑ complete (approved) |
 | 14 | Asset manifest & replaceable resources | ☑ complete (approved) |
-| 15 | Art-direction vertical slice       | ◑ implemented, awaiting manual approval |
-| 16 | Compact dungeon-room system        | ☐ planned |
+| 15 | Art-direction vertical slice       | ☑ complete (approved) |
+| 16 | Compact dungeon-room system        | ◑ implemented, awaiting manual approval |
 | 17 | Exploration visuals & animation    | ☐ planned |
 | 18 | Battle presentation & game feel    | ☐ planned |
 | 19 | Progression, economy & score-integrity hardening | ☐ planned |
@@ -481,9 +481,11 @@ milestone is not automatic authorization to start the next.
 
 ## M15 — Art-direction vertical slice
 
-- **Status:** ◑ implemented, awaiting manual approval (the approval is the
-  art-direction gate; 181/181 tests; captures in
-  `docs/screenshots/m15_slice/`; see the note's §N)
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. The approval is the art-direction gate: the generated
+  in-project direction (art bible + slice) is authorized for M17/M21
+  production. (181/181 tests; captures in `docs/screenshots/m15_slice/`; see
+  the note's §N.)
 - **Goal:** prove the final visual/audio direction and its production cost on
   one coherent slice before creating the full asset set.
 - **Player-facing outcome:** one polished path through the game: title, one
@@ -511,7 +513,11 @@ milestone is not automatic authorization to start the next.
 
 ## M16 — Compact dungeon-room system
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (193/193 tests; mass
+  validation of thousands of generated rooms; captures in
+  `docs/screenshots/m16_rooms/`; see the note's §N. Owner decisions executed:
+  optional `generationVersion` score field without a format bump; the 8
+  topology-derived archetypes.)
 - **Goal:** separate dungeon topology from compact room realization and replace
   the fixed 26×15 full-screen room assumption.
 - **Player-facing outcome:** compact, purposeful rooms with readable entrances,

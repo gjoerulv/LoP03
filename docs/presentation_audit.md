@@ -230,6 +230,9 @@ shop detail line (side-by-side compare remains M22).
 - 26×15×16px = 416×240 of 426×240 (10px dead band right). Known M16 driver;
   recorded here for completeness with severity tied to the roadmap.
 - → **M16** (no earlier action).
+- **Fixed (M16):** rooms are now compact archetype layouts (5–19 × 5–13
+  tiles) realized from derived room-local seeds and drawn centered in the
+  exploration viewport; captures in `docs/screenshots/m16_rooms/`.
 
 **ART-016 — Placeholder art everywhere** `[observed]` (all shots)
 - Rectangles/glyphs for actors, tiles, markers; code-generated colors.

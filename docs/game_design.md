@@ -63,6 +63,18 @@ optional guarded chests, and an exit/retreat option. **No random encounters.**
 Visible enemy team shows: team name, danger level, enemy count, optional tags
 (Fast, Magic, Armored, Poison, …).
 
+**Rooms are compact and purposeful (M16),** drawn centered on the screen
+rather than filling it. Each room is realized as one of eight archetypes
+derived from its role in the graph — Entry, Corridor, Crossroads, Gate
+Chamber, Treasure Alcove, Treasure Vault, Boss Antechamber, Boss Arena — with
+bounded dimensions (common chambers ≈9–15 × 7–11 tiles, corridors narrow
+along their travel axis, the boss arena largest), centered door gaps, sparse
+landmark pillars that never block a path, and purposeful anchor placement
+(chest opposite the entrance with its guard beside it; the boss at the arena
+center). The same seed always reproduces the same rooms; room realization is
+versioned (score entries record the generation version) so published seeds
+stay comparable.
+
 ## 7. Danger rating (derived, never hand-authored)
 
 Displayed danger is computed **deterministically from enemy stats and abilities**

@@ -85,6 +85,45 @@ TEST_CASE("scoreboard: a missing file loads as an empty board", "[score]") {
     fs::remove_all(dir);
 }
 
+TEST_CASE("scoreboard: entries without generationVersion load as pre-M16", "[score]") {
+    const fs::path dir = makeTempDir();
+    const fs::path file = dir / "scoreboard.json";
+    {
+        std::ofstream out(file, std::ios::binary | std::ios::trunc);
+        out << R"({"version":1,"entries":[{"score":900,"battleTurns":11,)"
+            << R"("dangerDefeated":4,"chestsOpened":2,"noDeath":1,"depth":2,)"
+            << R"("theme":"Ruined Keep","seed":42}]})";
+    }
+    score::Scoreboard board(file);
+    content::LoadReport rep;
+    REQUIRE(board.load(rep));
+    REQUIRE(board.entries().size() == 1);
+    REQUIRE(board.entries()[0].score == 900);
+    REQUIRE(board.entries()[0].generationVersion == 0);  // absent field = pre-versioning
+    fs::remove_all(dir);
+}
+
+TEST_CASE("scoreboard: generationVersion round-trips", "[score]") {
+    const fs::path dir = makeTempDir();
+    const fs::path file = dir / "scoreboard.json";
+    {
+        score::Scoreboard board(file);
+        score::ScoreEntry e = entry(1200, 7);
+        e.generationVersion = 2;
+        board.add(e);
+        content::LoadReport rep;
+        REQUIRE(board.save(rep));
+    }
+    {
+        score::Scoreboard board(file);
+        content::LoadReport rep;
+        REQUIRE(board.load(rep));
+        REQUIRE(board.entries().size() == 1);
+        REQUIRE(board.entries()[0].generationVersion == 2);
+    }
+    fs::remove_all(dir);
+}
+
 TEST_CASE("scoreboard: a malformed file is reported, never crashes", "[score]") {
     const fs::path dir = makeTempDir();
     const fs::path file = dir / "scoreboard.json";

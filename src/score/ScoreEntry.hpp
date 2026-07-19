@@ -15,6 +15,11 @@ struct ScoreEntry {
     int depth = 1;
     std::string theme;
     std::uint64_t seed = 0;
+    // Room-realization version the run was played under (see
+    // dungeon::kGenerationVersion). 0 = recorded before versioning existed
+    // (pre-M16). Optional in the file; the scoreboard format version is
+    // unchanged so old files load as-is (owner decision, 2026-07-19).
+    int generationVersion = 0;
 };
 
 }  // namespace cd::score

@@ -6,6 +6,18 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M16 update:** dungeon rooms are now compact archetype layouts (Entry,
+> Corridor, Crossroads, Gate Chamber, Treasure Alcove, Treasure Vault, Boss
+> Antechamber, Boss Arena) drawn centered on a black backdrop instead of
+> filling the screen. Row 20 gains checks: rooms visibly smaller than the
+> screen and varied per archetype; door gaps centered on walls; pillars never
+> block a door, chest, or encounter; entering a room places you just inside
+> the door you used; minimap still matches reality; danger labels sit above
+> markers. Walk at least: the entry room, a corridor, a treasure room
+> (chest + guard beside it), a gate block, and the boss antechamber/arena
+> (large room, boss marker centered). Same seed must reproduce the same
+> rooms. Captures: `docs/screenshots/m16_rooms/`.
+>
 > **M15 update:** the slice screens (title, town, Ruined Keep, battle,
 > pause/result panels) now render generated art + music via the manifest —
 > judge them against `docs/art_bible.md`; captures in

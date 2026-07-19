@@ -2,9 +2,23 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** implemented, awaiting manual approval (see §N).
+- **Last reviewed repository commit:** `7eda462` (M15, 2026-07-19). Re-audit
+  findings: room realization (`DungeonState::buildRoom`) is a fixed 26×15
+  build with **zero RNG draws**, so a derived-seed layout layer cannot perturb
+  topology by construction; score-relevant seed content (teams, gates,
+  chests, boss) is pure topology; the scoreboard loader tolerates absent
+  optional fields, so a per-entry `generationVersion` needs no file-version
+  bump.
+- **Owner decisions (2026-07-19):** (1) score entries gain an **optional
+  `generationVersion` field with no scoreboard version bump** (absent =
+  pre-M16; old files load unchanged); (2) archetype set = the **8
+  topology-derived archetypes** (Entry, Corridor, Crossroads, Gate Chamber,
+  Treasure Alcove, Treasure Vault, Boss Antechamber, Boss Arena) — Shrine/
+  Event and Encounter chambers deferred to M20 because they require events or
+  free-standing teams that do not exist in the topology; dimension ranges:
+  common chambers 9–15 × 7–11, corridors 9–13 long × 5–7 wide, boss arena
+  15–19 × 11–13.
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M16 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -162,3 +176,64 @@ not be destabilized.
 - Save/score schema docs if a field was added.
 - `docs/manual_test_matrix.md` — archetype/seed rows.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-19)
+
+**Delivered.** New pure module `src/dungeon/RoomLayout.{hpp,cpp}`
+(topology untouched — `DungeonGenerator`/`DungeonModel` unchanged except the
+pre-existing M15 `themeId` field):
+
+- `classifyRoom` — the 8 owner-approved archetypes from immutable topology
+  facts (priority: Boss > Start > Treasure guarded/unguarded > boss-adjacent
+  > gated > 3+ doors > corridor).
+- `roomLocalSeed(seed, kGenerationVersion, roomIndex, archetype)` —
+  splitmix64-style hash; realization never draws from the topology RNG.
+  `kGenerationVersion = 2` (1 = pre-M16 fixed 26×15 rooms).
+- `realizeRoom`/`realizeAllRooms` — owner-approved dimension ranges;
+  corridors run along their door axis (bent corridors stay small chambers);
+  centered two-tile door gaps; sparse corner/diagonal landmark pillars
+  filtered by a keep-clear mask (door lanes two tiles deep, anchors,
+  spawns) so RNG draw order depends only on immutable facts; chest anchored
+  opposite the entrance with the guard beside it; boss at arena center
+  (center spawn shifted below); connectivity safety net drops obstacles
+  rather than produce an invalid room.
+- `validateLayout` — bounds/border/anchor checks plus BFS over every
+  player-experienceable configuration (fully open, pristine, each
+  cleared-gate entry).
+
+`DungeonState` realizes all layouts once at dungeon entry (pristine state),
+composes each room's `Tilemap` from the layout base plus live overlays
+(gates/guard/boss/chest), and draws the room centered above the footer
+(render-only origin offset; movement/interaction stay room-local). Score
+entries now record `generationVersion` (optional field, no scoreboard
+format bump; loader defaults absent → 0 = pre-M16) per the owner decision.
+
+**Automated evidence:** 193/193 tests (12 new): archetype classification,
+seed independence, realization determinism, corridor orientation, validator
+rejection of corrupted layouts, compactness bounds, mass validation of
+roughly five thousand rooms (asserted > 2,000) across 40 seeds × 3 depths ×
+4 theme settings with ≥ 5 archetypes observed, and scoreboard
+generationVersion round-trip + absent-field backward compatibility. All
+pre-existing topology invariants stay green. Build clean, zero warnings.
+
+**In-game evidence** (`docs/screenshots/m16_rooms/`, scripted keyboard
+driving): 01 Entry room (~10×7, pillars, west+south doors, centered); 02 a
+second distinct chamber (north+east doors, minimap updated); 03 Treasure
+Vault with chest sprite, guard marker beside it, and the "Deadly" danger
+label correctly placed above the marker; 04 pause panel over a compact
+room. Door transitions work in both directions; walls/pillars pin movement;
+clean exit code 0.
+
+**Deviations / notes:**
+1. Gate blocks and the boss arena were not reached by the blind scripted
+   walk (the run's south path led to the treasure vault). Their rendering
+   is the same marker/label code path verified in capture 03, and their
+   placement/reachability is covered by the validator in every
+   configuration — but the owner should walk a gate and the boss arena
+   (matrix row 20/23 checks).
+2. Shrine/Event and Encounter chambers deferred to M20 per the kickoff
+   decision (they need events or free-standing teams).
+3. The technical-design M4 "Walkable presentation & flow" paragraph was
+   rewritten (it described the fixed 26×15 rooms and pre-M5 gate behavior);
+   historical detail lives in git history.
+4. Obstacle "props" are wall-tile pillars only; themed prop art is M17.

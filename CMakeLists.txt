@@ -71,6 +71,7 @@ add_library(crystal_core STATIC
     src/town/TownData.cpp
     src/dungeon/DungeonModel.cpp
     src/dungeon/DungeonGenerator.cpp
+    src/dungeon/RoomLayout.cpp
     src/danger/DangerRating.cpp
     src/score/Scoring.cpp
     src/score/Scoreboard.cpp

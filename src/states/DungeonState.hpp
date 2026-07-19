@@ -8,6 +8,7 @@
 #include "core/Geometry.hpp"
 #include "danger/DangerRating.hpp"
 #include "dungeon/DungeonModel.hpp"
+#include "dungeon/RoomLayout.hpp"
 #include "states/GameState.hpp"
 #include "town/Tilemap.hpp"
 
@@ -15,8 +16,10 @@ namespace cd {
 
 struct AppContext;
 
-// Walkable dungeon explorer. Each room is a single-screen tilemap; walk room to
-// room through open doors. Facing a team and pressing Confirm starts a battle.
+// Walkable dungeon explorer. Each room is a compact archetype layout realized
+// from a derived room-local seed (M16), drawn centered in the exploration
+// viewport; walk room to room through open doors. Facing a team and pressing
+// Confirm starts a battle.
 // Victory clears the gate (or chest guard); beating the boss completes the
 // dungeon; defeat ends the run. Inspect, open chests, retreat to town.
 class DungeonState : public GameState {
@@ -65,8 +68,11 @@ private:
 
     AppContext& context_;
     dungeon::Dungeon dungeon_;
+    std::vector<dungeon::RoomLayout> layouts_;  // realized once, from pristine state
     int currentRoom_ = 0;
     town::Tilemap roomMap_;
+    int originX_ = 0;  // pixel offset centering the room in the viewport
+    int originY_ = 0;
     Rect player_;
     Vec2 facing_{0.0f, 1.0f};
 
