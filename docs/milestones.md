@@ -18,7 +18,7 @@
 | 8  | Presentation pass                 | ☑ complete (approved) |
 | 9  | Balancing & validation pass       | ☑ complete (approved) |
 | 10 | Release packaging pass            | ☑ complete (approved) |
-| 11 | Completion baseline & presentation audit | ☐ planned |
+| 11 | Completion baseline & presentation audit | ◑ implemented, awaiting manual approval |
 | 12 | UI layout & text-safety foundation | ☐ planned |
 | 13 | Input consistency, remapping & settings | ☐ planned |
 | 14 | Asset manifest & replaceable resources | ☐ planned |
@@ -354,7 +354,10 @@ milestone is not automatic authorization to start the next.
 
 ## M11 — Completion baseline & presentation audit
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (audited commit
+  `8271871`; outputs: `docs/presentation_audit.md`, `docs/ui_style_guide.md`,
+  `docs/control_standard.md`, `docs/asset_pipeline.md`,
+  `docs/manual_test_matrix.md`, 7 baseline screenshots)
 - **Goal:** verify the approved M10 baseline and convert vague polish goals into
   a prioritized, evidence-based defect register before changing production code.
 - **Player-facing outcome:** none — the game is unchanged; this milestone is an

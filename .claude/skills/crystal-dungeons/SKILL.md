@@ -121,6 +121,12 @@ CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
    traversal: sanitize all relative paths (`paths::sanitizeRelative`).
 10. **High warnings on project code only**, not on `_deps`. Don't "fix" warnings
     inside dependencies.
+11. **Driving the game for screenshots:** never use focus-dependent
+    `SendKeys` — it leaks keystrokes into whatever app has focus (it
+    happened). Use `PostMessage` WM_KEYDOWN/WM_KEYUP addressed to the game's
+    HWND (arrows need the extended-key bit, ~70ms between down/up so GLFW
+    sees both) plus `SetWindowPos` topmost+`SWP_NOACTIVATE` so
+    `CopyFromScreen` actually sees the game. Proper capture tooling is M23.
 
 ## Architecture rules (enforce in review)
 

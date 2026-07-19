@@ -2,9 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** planned
+- **Status:** implemented, awaiting manual approval (implemented 2026-07-19;
+  see section N for the as-implemented record).
 - **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+  `827187124f9123c7275abcbbb45d5a4aabedf92b` (2026-07-19).
 - **Approval gate:** M10 was manually tested and approved by the owner on
   2026-07-19, so the M10 prerequisite is satisfied. Do not begin M11 without
   the owner's explicit authorization to start it.
@@ -341,3 +342,41 @@ M11 is complete only when:
   category; screenshot coverage count; number of unverified visual cases; top
   five blockers/high-impact defects; recommended M12-a scope; decisions
   deferred to M12–M16; explicit statement that M12 has not begun.
+
+## N. As-implemented record (2026-07-19)
+
+- **Audited commit:** `827187124f9123c7275abcbbb45d5a4aabedf92b`, clean tree.
+- **M11-a:** MSVC 19.51 / Ninja Debug configure+build clean (fresh
+  FetchContent clones verified on pinned tags raylib `6.0`, Catch2
+  `v3.15.1`, json `v3.12.0`); zero project warnings; `ctest` 125/125 passed
+  (10.73s); executable launched and exited cleanly (code 0).
+- **M11-b:** 31-entry screen/flow inventory with maximum-content cases —
+  `docs/presentation_audit.md` §1.
+- **M11-c (partial, deviation):** 7 live captures at the default 1278×720
+  window (`docs/screenshots/m11_baseline/01…06`), taken by driving the game
+  with `PostMessage` keystrokes addressed to its window handle. Native
+  426×240 capture is not possible without engine support (M23 tooling);
+  window cases W2–W6 and ~26 remaining screens are delegated to the owner via
+  the matrix (rows list exact steps and target filenames). **Incident:** the
+  first capture attempt used focus-dependent `SendKeys`; three keystrokes
+  (Down, Down, Enter) leaked into the foreground application instead of the
+  game, and two mis-captured PNGs (showing the foreground app, not the game)
+  were created and immediately deleted. Method switched to
+  PostMessage-to-HWND + topmost-no-activate, which cannot leak input.
+- **M11-d:** 24-defect register (1 Blocker, 7 High, 9 Medium, 7 Low; 8
+  observed / 3 static-certain / 13 static) — `docs/presentation_audit.md` §2.
+- **M11-e:** initial contracts written: `docs/ui_style_guide.md`,
+  `docs/control_standard.md`, `docs/asset_pipeline.md`,
+  `docs/manual_test_matrix.md`.
+- **M11-f:** M12-a recommendation = default (measurement/wrapping/overflow
+  diagnostics + Help migration) **plus** the battle bottom panel as the
+  representative modal, and two one-line fixes for owner approval
+  (UI-TEXT-010 stale title label, UI-LAYOUT-009 overlay default-off) —
+  `docs/presentation_audit.md` §4.
+- **No product code, data, assets, or build files were changed.** All
+  changes are documentation plus baseline screenshots.
+- **Notable audit results beyond the plan:** design-contract violation
+  UI-INFO-005 (encounter team name/members not shown — `game_design.md` §6),
+  gamepad soft-lock Blocker UI-INPUT-001, advertised-but-missing left-stick
+  support CTRL-006, and 64 authored descriptions that are never rendered
+  (UI-INFO-004).
