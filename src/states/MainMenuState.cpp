@@ -1,5 +1,6 @@
 #include "states/MainMenuState.hpp"
 
+#include <algorithm>
 #include <memory>
 
 #include "audio/AudioManager.hpp"
@@ -94,7 +95,12 @@ void MainMenuState::render() {
     ui::drawTextCentered("a 16-bit-inspired dungeon-score roguelite", w / 2, 78, 10,
                          Color{170, 170, 200, 255});
 
-    ui::drawMenu(menu_, w / 2 - 40, 120, 22, 14, RAYWHITE, Color{90, 90, 110, 255},
+    // Center the menu block on its widest label (measured, not guessed).
+    int menuW = 0;
+    for (const ui::MenuItem& item : menu_.items()) {
+        menuW = std::max(menuW, ui::measureText(item.label, 14));
+    }
+    ui::drawMenu(menu_, w / 2 - menuW / 2, 120, 22, 14, RAYWHITE, Color{90, 90, 110, 255},
                  Color{240, 220, 120, 255});
 
     const content::ContentDatabase& db = context_.content;
@@ -102,7 +108,6 @@ void MainMenuState::render() {
                         static_cast<int>(db.classCount()), static_cast<int>(db.enemyCount()),
                         static_cast<int>(db.itemCount())),
              6, h - 16, 10, Color{120, 120, 140, 255});
-    DrawText("Milestone 8 - Presentation", w - 168, h - 16, 10, Color{120, 120, 140, 255});
 }
 
 }  // namespace cd

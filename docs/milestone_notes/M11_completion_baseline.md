@@ -2,8 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (implemented 2026-07-19;
-  see section N for the as-implemented record).
+- **Status:** complete (approved by the owner on 2026-07-19; implemented
+  2026-07-19; see section N for the as-implemented record).
 - **Last reviewed repository commit:**
   `827187124f9123c7275abcbbb45d5a4aabedf92b` (2026-07-19).
 - **Approval gate:** M10 was manually tested and approved by the owner on

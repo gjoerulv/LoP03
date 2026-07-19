@@ -13,11 +13,21 @@
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
+namespace style = ui::style;
+
 namespace {
 constexpr float kResolveTime = 0.9f;
+
+// Bottom-panel layout (M12): everything must fit inside the 60px panel.
+constexpr int kPanelH = 60;
+constexpr int kListX = 24;       // command/skill/item lists (cursor at x-10)
+constexpr int kListItemH = 12;
+constexpr int kListRows = 4;     // visible rows in skill/item lists (scrolled)
+constexpr int kInfoX = 150;      // right column: actor line + descriptions
 
 bool skillNeedsTarget(content::SkillTarget t) {
     return t == content::SkillTarget::SingleEnemy || t == content::SkillTarget::SingleAlly;
@@ -52,6 +62,18 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
     context_.audio.setMusic(MusicTrack::Battle);
 }
 
+int BattleState::enemyBaseY() const {
+    int enemies = 0;
+    for (const battle::Combatant& c : battle_.units) {
+        if (c.side == battle::Side::Enemy) {
+            ++enemies;
+        }
+    }
+    // Five enemy rows only fit above the bottom panel when the column starts
+    // higher (the turn counter lives top-right, so this space is free).
+    return enemies >= 5 ? 20 : 36;
+}
+
 void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     int enemyRow = 0;
     int partyRow = 0;
@@ -64,7 +86,7 @@ void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     }
     if (battle_.units[static_cast<std::size_t>(index)].side == battle::Side::Enemy) {
         outX = 36;
-        outY = 36 + enemyRow * 34;
+        outY = enemyBaseY() + enemyRow * 34;
     } else {
         outX = context_.virtualWidth - 110;
         outY = 36 + partyRow * 34;
@@ -206,6 +228,8 @@ void BattleState::buildSkillMenu() {
         items.push_back({s->name + "  (MP " + std::to_string(s->mpCost) + ")", affordable});
     }
     skillMenu_.setItems(std::move(items));
+    skillScroll_.reset();
+    skillScroll_.follow(static_cast<int>(skillMenu_.size()), kListRows, skillMenu_.cursor());
 }
 
 void BattleState::buildItemMenu() {
@@ -217,6 +241,8 @@ void BattleState::buildItemMenu() {
         items.push_back({name + "  x" + std::to_string(context_.party.inventory.count(id)), true});
     }
     itemMenu_.setItems(std::move(items));
+    itemScroll_.reset();
+    itemScroll_.follow(static_cast<int>(itemMenu_.size()), kListRows, itemMenu_.cursor());
 }
 
 void BattleState::onCommand() {
@@ -406,6 +432,10 @@ void BattleState::handleInput(const Input& input) {
         case Phase::ChooseSkill:
             if (up) skillMenu_.moveUp();
             if (down) skillMenu_.moveDown();
+            if (up || down) {
+                skillScroll_.follow(static_cast<int>(skillMenu_.size()), kListRows,
+                                    skillMenu_.cursor());
+            }
             if (input.pressed(InputAction::Confirm)) onSkillChosen();
             if (input.pressed(InputAction::Cancel)) {
                 phase_ = Phase::Command;
@@ -414,6 +444,10 @@ void BattleState::handleInput(const Input& input) {
         case Phase::ChooseItem:
             if (up) itemMenu_.moveUp();
             if (down) itemMenu_.moveDown();
+            if (up || down) {
+                itemScroll_.follow(static_cast<int>(itemMenu_.size()), kListRows,
+                                   itemMenu_.cursor());
+            }
             if (input.pressed(InputAction::Confirm)) onItemChosen();
             if (input.pressed(InputAction::Cancel)) {
                 phase_ = Phase::Command;
@@ -512,7 +546,16 @@ void BattleState::drawUnit(const battle::Combatant& c, int x, int y, bool curren
             }
             line += statusShort(s.type);
         }
-        DrawText(line.c_str(), x, y + 24, 8, Color{200, 160, 220, 255});
+        // Party rows have HP text to the right, so their statuses sit below;
+        // enemy rows use the open field to the right, keeping tall enemy
+        // columns clear of the bottom panel.
+        if (c.side == battle::Side::Party) {
+            ui::drawTextFitted(line, x, y + 24, 100, 8, Color{200, 160, 220, 255},
+                               "battle.status.party");
+        } else {
+            ui::drawTextFitted(line, x + 44, y + 4, 120, 8, Color{200, 160, 220, 255},
+                               "battle.status.enemy");
+        }
     }
 }
 
@@ -531,12 +574,13 @@ void BattleState::render() {
     if (phase_ == Phase::ChooseTarget && !targetCandidates_.empty()) {
         targetUnit = targetCandidates_[static_cast<std::size_t>(targetCursor_)];
     }
+    const int enemyY0 = enemyBaseY();
     for (std::size_t i = 0; i < battle_.units.size(); ++i) {
         const battle::Combatant& c = battle_.units[i];
         const bool isCurrent = partyTurn && static_cast<int>(i) == actor;
         const bool isTarget = static_cast<int>(i) == targetUnit;
         if (c.side == battle::Side::Enemy) {
-            drawUnit(c, 36, 36 + enemyRow * 34, isCurrent, isTarget);
+            drawUnit(c, 36, enemyY0 + enemyRow * 34, isCurrent, isTarget);
             ++enemyRow;
         } else {
             drawUnit(c, w - 110, 36 + partyRow * 34, isCurrent, isTarget);
@@ -544,7 +588,9 @@ void BattleState::render() {
         }
     }
 
-    DrawText(TextFormat("Turns: %d", battle_.turnsTaken), 6, 6, 8, Color{170, 170, 190, 255});
+    // Turn counter top-right: the top-left is needed by tall enemy columns.
+    ui::drawTextRight(TextFormat("Turns: %d", battle_.turnsTaken), w - 6, 6, 8,
+                      style::kTextDim);
 
     // Floating damage / heal numbers.
     for (const FloatNumber& f : floats_) {
@@ -552,47 +598,80 @@ void BattleState::render() {
                  f.heal ? Color{120, 220, 120, 255} : Color{245, 120, 120, 255});
     }
 
-    // Bottom panel.
-    const int panelY = h - 64;
-    ui::drawPanel(4, panelY, w - 8, 60, Color{24, 22, 34, 240}, Color{120, 120, 160, 255});
+    // Bottom panel: lists live in the left column (scrolled to kListRows),
+    // the actor line and selected-entry description in the right column.
+    const int panelY = h - kPanelH - 4;
+    ui::drawPanel(4, panelY, w - 8, kPanelH, Color{24, 22, 34, 240}, Color{120, 120, 160, 255});
+    const int infoW = w - kInfoX - 12;
+    const int listLabelW = kInfoX - kListX - 18;
 
     switch (phase_) {
         case Phase::Intro:
-            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 8, 12, RAYWHITE);
+            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 6, 12, style::kText);
             if (!bossTelegraph_.empty()) {
-                ui::drawTextCentered(bossTelegraph_.c_str(), w / 2, panelY + 28, 9,
-                                     Color{225, 170, 170, 255});
+                ui::drawTextWrapped(bossTelegraph_, 16, panelY + 22, w - 32, style::kFontBody,
+                                    Color{225, 170, 170, 255}, "battle.telegraph", 2);
             }
-            ui::drawTextCentered("Confirm to begin", w / 2, panelY + 44, 10,
+            ui::drawTextCentered("Confirm to begin", w / 2, panelY + 48, style::kFontBody,
                                  Color{200, 200, 160, 255});
             break;
         case Phase::Command:
-            DrawText(TextFormat("%s's turn", battle_.units[static_cast<std::size_t>(actor)].name.c_str()),
-                     12, panelY + 6, 10, RAYWHITE);
-            ui::drawMenu(commandMenu_, 24, panelY + 22, 12, 10, RAYWHITE, Color{90, 90, 110, 255},
-                         Color{240, 220, 120, 255});
+            ui::drawMenu(commandMenu_, kListX, panelY + 5, 11, style::kFontBody, style::kText,
+                         style::kDisabled, style::kCursor);
+            ui::drawTextFitted(
+                TextFormat("%s's turn",
+                           battle_.units[static_cast<std::size_t>(actor)].name.c_str()),
+                kInfoX, panelY + 6, infoW, style::kFontBody, style::kText, "battle.actor");
             break;
-        case Phase::ChooseSkill:
-            DrawText("Skill:", 12, panelY + 6, 10, RAYWHITE);
-            ui::drawMenu(skillMenu_, 24, panelY + 20, 11, 10, RAYWHITE, Color{90, 90, 110, 255},
-                         Color{240, 220, 120, 255});
+        case Phase::ChooseSkill: {
+            ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,
+                                 kListItemH, style::kFontBody, listLabelW, style::kText,
+                                 style::kDisabled, style::kCursor, "battle.skills");
+            ui::drawTextFitted("Choose a skill  (Cancel: back)", kInfoX, panelY + 6, infoW,
+                               style::kFontBody, style::kTextDim, "battle.skillhint");
+            if (!skillIds_.empty()) {
+                const std::string& sid =
+                    skillIds_[static_cast<std::size_t>(skillMenu_.cursor())];
+                if (const content::SkillDef* s = context_.content.findSkill(sid)) {
+                    if (!s->description.empty()) {
+                        ui::drawTextWrapped(s->description, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::kSuccess,
+                                            "battle.skilldesc", 2);
+                    }
+                }
+            }
             break;
-        case Phase::ChooseItem:
-            DrawText("Item:", 12, panelY + 6, 10, RAYWHITE);
-            ui::drawMenu(itemMenu_, 24, panelY + 20, 11, 10, RAYWHITE, Color{90, 90, 110, 255},
-                         Color{240, 220, 120, 255});
+        }
+        case Phase::ChooseItem: {
+            ui::drawMenuScrolled(itemMenu_, itemScroll_, kListRows, kListX, panelY + 6,
+                                 kListItemH, style::kFontBody, listLabelW, style::kText,
+                                 style::kDisabled, style::kCursor, "battle.items");
+            ui::drawTextFitted("Choose an item  (Cancel: back)", kInfoX, panelY + 6, infoW,
+                               style::kFontBody, style::kTextDim, "battle.itemhint");
+            if (!itemIds_.empty()) {
+                const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
+                if (const content::ItemDef* it = context_.content.findItem(iid)) {
+                    if (!it->description.empty()) {
+                        ui::drawTextWrapped(it->description, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::kSuccess,
+                                            "battle.itemdesc", 2);
+                    }
+                }
+            }
             break;
+        }
         case Phase::ChooseTarget:
-            ui::drawTextCentered("Choose a target  (Cancel: back)", w / 2, panelY + 24, 10,
-                                 RAYWHITE);
+            ui::drawTextCentered("Choose a target  (Cancel: back)", w / 2, panelY + 24,
+                                 style::kFontBody, style::kText);
             break;
         case Phase::Resolve:
-            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 24, 10, RAYWHITE);
+            ui::drawTextWrapped(message_, 16, panelY + 14, w - 32, style::kFontBody,
+                                style::kText, "battle.message", 3);
             break;
         case Phase::Done:
-            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 16, 12,
-                                 Color{240, 230, 160, 255});
-            ui::drawTextCentered("Confirm to continue", w / 2, panelY + 40, 10,
+            ui::drawTextWrapped(message_, 16, panelY + 10, w - 32, 12,
+                                Color{240, 230, 160, 255}, "battle.outcome", 2);
+            ui::drawTextCentered("Confirm to continue", w / 2, panelY + 44, style::kFontBody,
                                  Color{200, 200, 160, 255});
             break;
     }

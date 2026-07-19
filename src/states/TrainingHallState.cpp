@@ -22,13 +22,14 @@ void TrainingHallState::onEnter() { rebuild(); }
 int TrainingHallState::trainingCost(int level) const { return 40 + level * 30; }
 
 void TrainingHallState::rebuild() {
+    // No %-padding: it cannot align a variable-width font (audit UI-TEXT-017).
     std::vector<ui::MenuItem> items;
     for (const Character& c : context_.party.members) {
         if (c.level >= kMaxLevel) {
-            items.push_back({TextFormat("%-10s  Lv.%d  (max)", c.name.c_str(), c.level), false});
+            items.push_back({TextFormat("%s  Lv.%d  (max)", c.name.c_str(), c.level), false});
         } else {
             items.push_back(
-                {TextFormat("%-10s  Lv.%d  ->  %dg", c.name.c_str(), c.level, trainingCost(c.level)),
+                {TextFormat("%s  Lv.%d  ->  %dg", c.name.c_str(), c.level, trainingCost(c.level)),
                  true});
         }
     }

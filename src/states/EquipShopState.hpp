@@ -5,6 +5,7 @@
 
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
+#include "ui/ScrollWindow.hpp"
 
 namespace cd {
 
@@ -30,6 +31,7 @@ private:
     AppContext& context_;
     Phase phase_ = Phase::Menu;
     ui::Menu menu_;
+    ui::ScrollWindow scroll_;
     std::vector<std::string> rowIds_;  // item ids parallel to menu rows (Buy / EquipItem)
     int selectedChar_ = 0;
     int selectedSlot_ = 0;  // 0 weapon, 1 armor, 2 accessory

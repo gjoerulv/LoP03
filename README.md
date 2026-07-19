@@ -63,7 +63,7 @@ cmake --build build-msvc --config Release
 
 | Action                | Keyboard               | Gamepad            |
 |-----------------------|------------------------|--------------------|
-| Move / Navigate       | Arrows or WASD         | D-Pad / Left Stick |
+| Move / Navigate       | Arrows or WASD         | D-Pad              |
 | Confirm               | Enter or Space         | A                  |
 | Cancel / Back         | Esc or Backspace       | B                  |
 | Menu / Pause          | Tab                    | Start              |

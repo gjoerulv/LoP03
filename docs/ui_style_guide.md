@@ -1,9 +1,14 @@
 # UI Style Guide — Baseline Contract (M11)
 
-> Status: **provisional baseline**, established by the M11 audit at commit
-> `8271871`. This documents what exists and the rules M12 must implement. It
-> is *not* an art bible — final colors, fonts, frames, and motifs are decided
-> in M15. M12 updates this document as conventions become real.
+> Status: **implemented (M12)** for measurement, wrapping, overflow policy,
+> list scrolling, and typography roles — the roles/colors/spacing live in
+> `src/ui/UiStyle.hpp`, the policies in `src/ui/TextLayout` +
+> `src/ui/UiDraw` (see `docs/technical_design.md` §15). Still *not* an art
+> bible — final colors, fonts, frames, and motifs are decided in M15.
+> Not yet migrated to the system: party creation, save slots, Guild, pause
+> menus (they fit today); prompt strings become binding-derived in M13.
+> Any bounded draw that cannot fit logs `[ui-overflow]` and clips — a clean
+> log during the manual matrix is part of screen acceptance.
 
 ## 1. Canvas and safe bounds
 

@@ -5,6 +5,16 @@
 > filled what could be verified by automated keyboard driving and screenshot
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
+>
+> **M12 update:** rows previously marked *expect fail* for UI-TEXT-001/002,
+> UI-LAYOUT-003, and the scoreboard/HUD text defects are now **expect pass —
+> verify**: the fixes are implemented and unit-tested, and rows 1/3/9 were
+> re-verified with post-fix captures (`docs/screenshots/m12_after/`). While
+> running any row, also watch the console for `[ui-overflow]` warnings — any
+> occurrence is a defect even if the screen looks acceptable. Battle rows
+> gain new checks: skill/item description panel shows for the selected
+> entry; command menu fully visible (UI-TEXT-024); shops show the detail
+> line; scoreboard scrolls with the range indicator.
 
 ## How to run
 

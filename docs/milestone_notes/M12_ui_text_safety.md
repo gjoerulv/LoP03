@@ -2,9 +2,12 @@
 
 ## A. Status and authority
 
-- **Status:** planned
+- **Status:** implemented, awaiting manual approval (implemented 2026-07-19;
+  see section N for the as-implemented record and deviations).
 - **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+  `5311ef9d671e4d4b301dcb4e1a872219f61d3d08` (2026-07-19). Re-audit result:
+  the note's baseline observations hold; defect IDs referenced below are from
+  `docs/presentation_audit.md`.
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M12 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -201,3 +204,64 @@ only changes.
 - `docs/manual_test_matrix.md` — updated rows for migrated screens.
 - `.claude/skills/crystal-dungeons/SKILL.md` — layout-usage gotchas.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-19)
+
+Base commit `5311ef9`; owner authorized M12 with the M11 approval (including
+the approved M12-a slice: measurement/wrapping/diagnostics + Help + battle
+panel + the two one-line fixes UI-TEXT-010 / UI-LAYOUT-009).
+
+**Slices delivered:**
+
+- **M12-a** — `src/ui/TextLayout.{hpp,cpp}` (pure, injectable measurement,
+  greedy wrap, UTF-8-safe long-token breaking, `lineHeight`); overflow
+  diagnostics (`[ui-overflow]` log once per site/text + scissor clip) in
+  `src/ui/UiDraw`; Help migrated (measured columns, wrapped footer, and the
+  false "Left Stick" claim corrected to "D-Pad" in Help and the README —
+  CTRL-006's honest-docs half; the input half stays M13).
+- **M12-b** — `src/ui/ScrollWindow.hpp` (pure follow/free-scroll window with
+  more-above/below); `drawMenuScrolled` with arrow indicators;
+  `drawTextRight`/`drawTextFitted`/`drawTextWrapped` adapters.
+- **M12-c** — `src/ui/UiStyle.hpp` (7 font roles, spacing, shared colors);
+  adopted by every migrated file (unmigrated files keep their literals until
+  touched).
+- **M12-d** — migrated: battle bottom panel (command menu fits — fixing
+  newly-found **UI-TEXT-024**, see below; skill/item lists scroll 4 rows with
+  the selected entry's description; message/telegraph wrapping; 5-enemy
+  columns start at y=20 with the turn counter moved top-right and enemy
+  statuses beside units — UI-LAYOUT-003); equip shop (9-row scroll +
+  slot/stat/description detail line — UI-TEXT-001, UI-INFO-013); item shop
+  (10-row scroll + description); scoreboard (right-aligned numeric columns,
+  depth column, free scroll + range indicator — UI-TEXT-012 display parts);
+  town/dungeon HUDs (measured backdrops — UI-TEXT-008); dungeon fight prompt
+  now includes the team name (UI-INFO-005); title (stale label removed —
+  UI-TEXT-010; menu centered — UI-020); result panel pitch (UI-LAYOUT-018);
+  Inn/Training Hall padding (UI-TEXT-017); debug overlay default-off
+  (UI-LAYOUT-009).
+
+**Discovery:** the baseline battle *command* menu drew "Guard" clipped and
+"Escape" fully off-screen (y=246 > 240) while still selectable — registered
+retroactively as **UI-TEXT-024** (High) and fixed by the panel redesign.
+
+**Deviations from this note:**
+
+1. Not all screen families were migrated: party creation, save slots, Guild,
+   and the pause menus keep their current (fitting) fixed layouts; they adopt
+   the system when M13 touches their prompts. Acceptance is judged on
+   migrated screens; the audit register tracks the rest.
+2. The M12-c "contrast validation helper" was not built; the documented
+   manual check in `docs/ui_style_guide.md` §4 stands in. Rationale: the
+   palette is placeholder until M15; a helper would validate throwaway
+   colors.
+3. Long/empty/maximum-data coverage is in the pure tests (wrap/scroll edge
+   cases) plus the manual matrix rows; no per-screen automated content tests
+   (screens are raylib-side — M23 owns automated capture).
+4. UI-INFO-005 was resolved via the prompt line (the design contract needs
+   name/danger/count/tags only — no separate preview panel was added).
+
+**Validation:** MSVC/Ninja Debug build clean, zero project warnings;
+**144/144 tests pass** (19 new: 11 wrap/fit, 8 scroll-window); game launched,
+driven, exited cleanly (code 0) twice; post-fix captures of title/Help/town
+in `docs/screenshots/m12_after/` confirm overlay-off, label removal, menu
+centering, honest Help table, and the measured HUD. Battle/shop/scoreboard
+visuals need the owner's manual pass (matrix rows 13–14, 19, 24–31).

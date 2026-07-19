@@ -6,6 +6,7 @@
 #include "battle/Battle.hpp"
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
+#include "ui/ScrollWindow.hpp"
 
 namespace cd {
 
@@ -53,6 +54,7 @@ private:
         std::string text;
         bool heal = false;
     };
+    int enemyBaseY() const;
     void unitScreenPos(int index, int& outX, int& outY) const;
     void spawnNumbers(const std::vector<int>& hpBefore);  // also plays Hit/Heal/Ko SFX
 
@@ -73,6 +75,8 @@ private:
     ui::Menu commandMenu_;
     ui::Menu skillMenu_;
     ui::Menu itemMenu_;
+    ui::ScrollWindow skillScroll_;
+    ui::ScrollWindow itemScroll_;
     std::vector<std::string> skillIds_;
     std::vector<std::string> itemIds_;
 

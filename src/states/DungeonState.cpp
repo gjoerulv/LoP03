@@ -1,5 +1,6 @@
 #include "states/DungeonState.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <memory>
@@ -487,12 +488,15 @@ void DungeonState::render() {
                   static_cast<int>(player_.w), static_cast<int>(player_.h),
                   Color{236, 224, 128, 255});
 
-    // HUD.
-    DrawRectangle(2, 2, 150, 12, Color{0, 0, 0, 150});
-    DrawText(TextFormat("%s  depth %d  gates %d", dungeon_.themeName.c_str(), dungeon_.depth,
-                        dungeon_.mandatoryGates),
-             5, 4, 8, RAYWHITE);
-    DrawText(TextFormat("Gold %d", context_.party.gold), 5, 16, 8, Color{230, 220, 150, 255});
+    // HUD: backdrop sized to the measured lines so text never spills past it.
+    const std::string hudLine1 = TextFormat("%s  depth %d  gates %d", dungeon_.themeName.c_str(),
+                                            dungeon_.depth, dungeon_.mandatoryGates);
+    const std::string hudLine2 = TextFormat("Gold %d", context_.party.gold);
+    const int hudW = std::max(ui::measureText(hudLine1, 8), ui::measureText(hudLine2, 8)) + 6;
+    DrawRectangle(2, 2, hudW, 24, Color{0, 0, 0, 150});
+    ui::drawTextFitted(hudLine1, 5, 4, context_.virtualWidth - 10, 8, RAYWHITE, "dungeon.hud");
+    ui::drawTextFitted(hudLine2, 5, 14, context_.virtualWidth - 10, 8,
+                       Color{230, 220, 150, 255}, "dungeon.hud");
 
     renderMinimap();
 
@@ -513,8 +517,10 @@ void DungeonState::render() {
         const danger::Tier tier = teamTier_[static_cast<std::size_t>(facingMarker_->teamIndex)];
         const dungeon::EnemyTeam& team =
             dungeon_.teams[static_cast<std::size_t>(facingMarker_->teamIndex)];
-        promptBuf = std::string("Confirm: Fight  -  ") + danger::tierName(tier) + "  x" +
-                    std::to_string(team.count());
+        // Show the team name with tier/count/tags — the visible-encounter
+        // contract (game_design.md §6, defect UI-INFO-005).
+        promptBuf = std::string("Confirm: Fight ") + team.name + "  -  " +
+                    danger::tierName(tier) + "  x" + std::to_string(team.count());
         if (!team.tags.empty()) {
             promptBuf += "  [";
             for (std::size_t i = 0; i < team.tags.size(); ++i) {
@@ -527,7 +533,10 @@ void DungeonState::render() {
         }
         prompt = promptBuf.c_str();
     }
-    ui::drawTextCentered(prompt, context_.virtualWidth / 2, h - 13, 8, Color{235, 230, 180, 255});
+    const int promptW = ui::measureText(prompt, 8);
+    const int promptX = std::max(4, (context_.virtualWidth - promptW) / 2);
+    ui::drawTextFitted(prompt, promptX, h - 13, context_.virtualWidth - promptX - 4, 8,
+                       Color{235, 230, 180, 255}, "dungeon.prompt");
 }
 
 }  // namespace cd

@@ -5,6 +5,7 @@
 
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
+#include "ui/ScrollWindow.hpp"
 
 namespace cd {
 
@@ -24,6 +25,7 @@ private:
 
     AppContext& context_;
     ui::Menu menu_;
+    ui::ScrollWindow scroll_;
     std::vector<std::string> ids_;
     std::string message_;
 };

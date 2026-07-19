@@ -1,5 +1,10 @@
 # Presentation Audit — Defect Register (M11)
 
+> **M12 update (2026-07-19):** defects carry a `Fixed (M12)` / `Partial
+> (M12)` marker where the text-safety milestone addressed them; verification
+> is the owner's manual pass (rows in `docs/manual_test_matrix.md`).
+> Post-migration evidence: `docs/screenshots/m12_after/`.
+>
 > Audited commit: `827187124f9123c7275abcbbb45d5a4aabedf92b` (2026-07-19).
 > Build: MSVC 19.51 / Ninja, Debug. Tests: 125/125 passed. Executable launched
 > and exited cleanly (code 0).
@@ -82,6 +87,7 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 ### High
 
 **UI-TEXT-001 — Equip-shop buy list overflows the screen** `[static-certain]`
+**Fixed (M12):** scrolling list (9 visible rows, arrows, selection followed).
 - Screen: equip shop, Buy phase. 25 equippable items × 14px from y=60 ends at
   y≈410 — 170px past the 240px screen. ~12 rows visible; the cursor wraps
   through invisible rows (`Menu::step` wraps; `drawMenu` draws all).
@@ -91,6 +97,8 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 
 **UI-TEXT-002 — Battle skill/item lists overflow the command panel**
 `[static-certain]`
+**Fixed (M12):** panel redesign — lists scroll in 4 rows; see also
+UI-TEXT-024 below (command menu itself was off-screen).
 - Screen: battle, ChooseSkill/ChooseItem. Panel is 60px (y=176..236); lists
   start panelY+20 with 11px rows → 4th+ row draws below the panel edge; 6th+
   approaches screen bottom. Characters can know 4–6+ skills (starting skills +
@@ -101,6 +109,8 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 
 **UI-LAYOUT-003 — 5-enemy battles collide with the command panel**
 `[static-certain]`
+**Fixed (M12):** 5-enemy columns start at y=20 (turn counter moved
+top-right); enemy statuses render beside the unit instead of below it.
 - Screen: battle field. Enemy rows at y=36+row·34; row 5 occupies y=172..188
   plus name (y=163) and status line (y=196) vs. panel top y=176.
 - Expected: unit layout fits any legal encounter (enemy team size 1–5).
@@ -109,6 +119,9 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 
 **UI-INFO-004 — Item/skill descriptions exist in data but are never shown**
 `[static]` (verified: zero render sites reference `description`)
+**Partial (M12):** descriptions now shown for the selected entry in the
+battle skill/item lists and both shops (plus gear slot/stat summary). Full
+contextual Details help remains M22.
 - 36 items and 28 skills carry authored descriptions (≤55 chars); no screen
   renders them. Players buy gear and cast skills blind; MP cost appears only
   in the battle skill list.
@@ -117,6 +130,8 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
   **M22** (full Details help). Feeds CTRL standard (Details action, M13).
 
 **UI-INFO-005 — Encounter display violates the design contract** `[static]`
+**Fixed (M12):** the fight prompt now includes the team name (name + tier +
+count + tags — the full game_design §6 contract).
 - `docs/game_design.md` §6: visible teams show **team name**, danger, count,
   tags. The dungeon prompt shows tier + count + tags only
   (`DungeonState.cpp:516`); the team's generated name and member list are
@@ -144,6 +159,7 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 
 **UI-TEXT-008 — HUD backdrops are fixed-width; text can spill past them**
 `[static]` (partially observed in shot 05)
+**Fixed (M12):** town and dungeon HUD backdrops sized from measured text.
 - Town party HUD and dungeon HUD draw a 150px backdrop, then unbounded text
   ("Party:" + four 12-char names ≈ 220px; theme+depth+gates line similar).
 - Expected: backdrop sized from measured text (or text clipped to it).
@@ -151,6 +167,9 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 
 **UI-LAYOUT-009 — Debug overlay overlaps the party HUD and is on by default**
 `[observed]` (shots 01, 05: overlay covers "Party:"/HUD corner)
+**Fixed (M12):** overlay starts hidden; F1 still toggles it in debug builds
+(overlap when toggled on is accepted as debug-only; Release exclusion is the
+M24 check).
 - Debug builds start with the overlay visible (`Application::debugOverlay_`),
   stacked on the same top-left corner as gameplay HUDs.
 - Expected: overlay off by default; no overlap with gameplay HUD; excluded
@@ -160,6 +179,7 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 
 **UI-TEXT-010 — Stale "Milestone 8 - Presentation" label on the title**
 `[observed]` (shot 01; `MainMenuState.cpp:105`)
+**Fixed (M12):** label removed (content counts kept as load feedback).
 - Also: raw content counts on the title footer are developer diagnostics.
 - Expected: version/build string sourced from one place, or removed.
 - → **M12-d** (title family). Trivial, but M11 changes no code.
@@ -174,6 +194,9 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 
 **UI-TEXT-012 — Scoreboard: misaligned columns, hard cap, missing context**
 `[static]`
+**Fixed (M12)** for (a) columns (right-aligned numerics), (b) cap (free
+scrolling with range indicator), and depth display; seed display and the
+comparability *policy* remain M19.
 - (a) Column alignment uses space padding with a variable-width font (also
   `SlotMenuState` summaries — 012a); (b) display caps at 14 rows with no
   scroll or "more" indicator; (c) rows omit depth and seed (012b), so scores
@@ -182,6 +205,8 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 - Owner: `ScoreboardState`. → **M12-b/M12-d**; policy in **M19**.
 
 **UI-INFO-013 — Gear is bought without seeing its stats** `[static]`
+**Fixed (M12):** selected gear shows slot + stat bonus + description in the
+shop detail line (side-by-side compare remains M22).
 - Equip-shop Buy shows name+price only; no slot, no stat bonus, no compare.
 - → **M12-d** (shop family detail line); full compare UI is **M22** Details.
 
@@ -208,11 +233,13 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 **UI-TEXT-017 — Space-padded pseudo-columns in Inn/Training Hall** `[static]`
 - `%-12s`/`%-10s` with a variable-width font; 11–12-char names break the pad
   width outright. → **M12-d** (town-services family).
+- **Fixed (M12):** Inn uses real columns; Training Hall drops the padding.
 
 **UI-LAYOUT-018 — Dungeon-result panel is 2px from overflow** `[static]`
 - The 8-line case (escape penalty shown) ends at y≈172 vs footer at 174
   inside the 190px panel. Any added line overlaps. → **M12-d** (result
   family).
+- **Fixed (M12):** row pitch 13 leaves 10px clearance in the 8-line case.
 
 **UI-019 — Minimap visited state is alpha-only** `[static]`
 - Unvisited rooms differ only by transparency; weak signal, no legend.
@@ -221,6 +248,17 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 **UI-020 — Title menu block sits off-center** `[observed]` (shot 01)
 - Left-aligned labels at `w/2-40` read as off-center against the centered
   title. → **M12-d** (title family).
+- **Fixed (M12):** centered on the measured widest label.
+
+**UI-TEXT-024 — Battle command menu drew its last rows off-screen**
+`[static-certain]` — *discovered during M12 implementation; missed by the
+M11 audit (UI-TEXT-002 understated it).*
+- At the reviewed baseline the 5-command menu rendered at panelY+22 with
+  12px rows: "Guard" was clipped at the screen edge and "Escape" started at
+  y=246 — entirely below the 240px screen — while remaining selectable via
+  cursor wrap. Severity retroactively **High**.
+- **Fixed (M12):** the command menu renders at panelY+5 with 11px rows; all
+  five rows sit inside the panel.
 
 **CTRL-021 — Dead `Pause` binding; Help omits it** `[static]`
 - `InputAction::Pause` (P / gamepad Select) is bound and consumed nowhere;

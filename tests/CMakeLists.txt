@@ -9,6 +9,8 @@ add_executable(crystal_tests
     test_content_loader.cpp
     test_menu.cpp
     test_text_input.cpp
+    test_text_layout.cpp
+    test_scroll_window.cpp
     test_party.cpp
     test_save_system.cpp
     test_town.cpp

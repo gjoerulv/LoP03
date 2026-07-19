@@ -11,11 +11,54 @@
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
+namespace style = ui::style;
+
 namespace {
 const char* const kSlotNames[3] = {"Weapon", "Armor", "Accessory"};
+
+constexpr int kListX = 40;
+constexpr int kListY = 64;
+constexpr int kListItemH = 14;
+constexpr int kVisibleRows = 9;
+
+std::string statBonusSummary(const content::StatBlock& b) {
+    std::string out;
+    auto add = [&out](const char* tag, int v) {
+        if (v != 0) {
+            out += (out.empty() ? "" : " ") + std::string(tag) + (v > 0 ? "+" : "") +
+                   std::to_string(v);
+        }
+    };
+    add("HP", b.maxHp);
+    add("ATK", b.attack);
+    add("MAG", b.magic);
+    add("DEF", b.defense);
+    add("SPD", b.speed);
+    return out;
+}
+
+// One-line summary of a piece of gear: slot, stat bonus, description.
+std::string equipDetail(const content::ItemDef& it) {
+    std::string out;
+    switch (it.slot) {
+        case content::EquipSlot::Weapon: out = "Weapon"; break;
+        case content::EquipSlot::Armor: out = "Armor"; break;
+        case content::EquipSlot::Accessory: out = "Accessory"; break;
+        case content::EquipSlot::None: break;
+    }
+    const std::string stats = statBonusSummary(it.statBonus);
+    if (!stats.empty()) {
+        out += (out.empty() ? "" : "  ") + stats;
+    }
+    if (!it.description.empty()) {
+        out += (out.empty() ? "" : "  -  ") + it.description;
+    }
+    return out;
+}
 
 content::EquipSlot slotEnum(int slot) {
     switch (slot) {
@@ -110,6 +153,8 @@ void EquipShopState::rebuild() {
         }
     }
     menu_.setItems(std::move(items));
+    scroll_.reset();
+    scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
 }
 
 void EquipShopState::confirm() {
@@ -184,6 +229,7 @@ void EquipShopState::handleInput(const Input& input) {
     if (input.pressed(InputAction::MoveDown)) {
         menu_.moveDown();
     }
+    scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
     if (input.pressed(InputAction::Confirm)) {
         confirm();
     }
@@ -202,9 +248,9 @@ void EquipShopState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ClearBackground(Color{16, 16, 24, 255});
-    ui::drawTextCentered("Equipment Shop", w / 2, 14, 16, RAYWHITE);
-    DrawText(TextFormat("Gold: %d", context_.party.gold), w - 110, 14, 11,
-             Color{230, 220, 150, 255});
+    ui::drawTextCentered("Equipment Shop", w / 2, 14, style::kFontScreenTitle, style::kText);
+    ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 14, 14, style::kFontMenu,
+                      style::kGold);
 
     const char* hint = "Confirm: Select   Cancel: Back";
     switch (phase_) {
@@ -214,15 +260,36 @@ void EquipShopState::render() {
         case Phase::EquipSlot: hint = "Choose a slot."; break;
         case Phase::EquipItem: hint = "Choose an item to equip."; break;
     }
-    DrawText(hint, 20, 36, 10, Color{180, 180, 200, 255});
-
-    ui::drawMenu(menu_, 40, 60, 14, 11, RAYWHITE, Color{90, 90, 110, 255},
-                 Color{240, 220, 120, 255});
-
+    DrawText(hint, 20, 36, style::kFontBody, style::kTextDim);
     if (!message_.empty()) {
-        ui::drawTextCentered(message_.c_str(), w / 2, h - 30, 10, Color{170, 220, 170, 255});
+        ui::drawTextFitted(message_, 20, 50, w - 40, style::kFontBody, style::kSuccess,
+                           "equipshop.message");
     }
-    ui::drawTextCentered("Cancel: Back", w / 2, h - 14, 9, Color{150, 150, 170, 255});
+
+    ui::drawMenuScrolled(menu_, scroll_, kVisibleRows, kListX, kListY, kListItemH,
+                         style::kFontMenu, 300, style::kText, style::kDisabled, style::kCursor,
+                         "equipshop.list");
+
+    // Detail line for the selected piece of gear (Buy and EquipItem phases).
+    const content::ItemDef* detail = nullptr;
+    if (phase_ == Phase::Buy && !rowIds_.empty()) {
+        detail = context_.content.findItem(rowIds_[static_cast<std::size_t>(menu_.cursor())]);
+    } else if (phase_ == Phase::EquipItem) {
+        if (menu_.cursor() == 0) {
+            ui::drawTextWrapped("Remove the current equipment.", 20, h - 52, w - 40,
+                                style::kFontBody, style::kTextDim, "equipshop.detail", 2);
+        } else if (!rowIds_.empty()) {
+            detail = context_.content.findItem(
+                rowIds_[static_cast<std::size_t>(menu_.cursor() - 1)]);
+        }
+    }
+    if (detail != nullptr) {
+        ui::drawTextWrapped(equipDetail(*detail), 20, h - 52, w - 40, style::kFontBody,
+                            style::kSuccess, "equipshop.detail", 2);
+    }
+
+    ui::drawTextCentered("Cancel: Back", w / 2, h - style::kFooterHeight + 2, 9,
+                         style::kTextHint);
 }
 
 }  // namespace cd

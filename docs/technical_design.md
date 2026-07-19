@@ -385,7 +385,41 @@ a geared level-1 party can down a depth-1 boss, and a simulated full clear score
 positively. No coefficients needed tuning. Malformed-data and save-compatibility
 coverage was extended (bosses/themes parsers; minimal/old saves; dropped gear).
 
-## 15. Leveling, shops & packaging (Milestone 10)
+## 15. UI layout & text safety (Milestone 12)
+
+Text placement is measured, never guessed (M12). The pure layer is headless-
+tested; raylib adapters live in `ui/UiDraw`.
+
+- **`ui/TextLayout`** (pure): injectable `TextMeasure`; `wrapText` does greedy
+  word wrap with long-token breaking (UTF-8-boundary safe) and preserves
+  explicit newlines; `lineHeight(fontSize)` is the single line-spacing rule.
+- **`ui/ScrollWindow`** (pure, header-only): scrolling window over vertical
+  lists — `follow` keeps a cursor visible (menus), `scrollBy` free-scrolls
+  (scoreboard); `moreAbove/moreBelow` drive the arrow indicators.
+- **`ui/UiStyle.hpp`**: named font roles (TitleHero 22 / ScreenTitle 16 /
+  Heading 14 / MenuLarge 14 / Menu 11 / Body 10 / Small 8), spacing, shared
+  colors. States use roles, not ad-hoc numbers, as they are migrated.
+- **`ui/UiDraw` additions**: `measureText`/`raylibMeasure()`;
+  `drawTextRight`; `drawTextFitted` (fits-or-clips + logs); `drawTextWrapped`
+  (bounded lines + logs); `drawMenuScrolled` (window slice + arrows).
+- **Overflow diagnostics:** any bounded draw that cannot fit reports
+  `[ui-overflow] site: 'text' Wpx > Mpx` once per site/text via `cd::log` and
+  scissor-clips instead of spilling. Silent truncation is prohibited; the log
+  line is the regression tripwire until M23 automates capture.
+- **Migrated in M12:** Help; battle bottom panel (command menu now fits — it
+  previously drew its last row off-screen; skill/item lists scroll in 4 rows
+  with the selected entry's description in the right column; 5-enemy columns
+  start higher and enemy statuses sit beside the unit); equip/item shops
+  (scrolling lists + selected-item detail line); scoreboard (right-aligned
+  numeric columns, depth column, free scrolling); town/dungeon HUD backdrops
+  sized to measured text; dungeon fight prompt includes the team name; title
+  menu centered on measured labels; result-panel pitch; Inn/Training Hall
+  drop `%-N s` pseudo-columns. Debug overlay now starts hidden (F1 toggles).
+- **Not yet migrated** (fit today, tracked in the audit register): party
+  creation, save slots, Guild, pause menus. Hard-coded control-prompt strings
+  everywhere are M13 scope (binding-derived labels).
+
+## 16. Leveling, shops & packaging (Milestone 10)
 
 - **XP/leveling (`game/Party`):** `xpToNext(level)` defines the curve;
   `grantXp`/`grantPartyXp` add XP, level up (capped at `kMaxLevel`), recompute

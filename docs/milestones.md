@@ -18,8 +18,8 @@
 | 8  | Presentation pass                 | ☑ complete (approved) |
 | 9  | Balancing & validation pass       | ☑ complete (approved) |
 | 10 | Release packaging pass            | ☑ complete (approved) |
-| 11 | Completion baseline & presentation audit | ◑ implemented, awaiting manual approval |
-| 12 | UI layout & text-safety foundation | ☐ planned |
+| 11 | Completion baseline & presentation audit | ☑ complete (approved) |
+| 12 | UI layout & text-safety foundation | ◑ implemented, awaiting manual approval |
 | 13 | Input consistency, remapping & settings | ☐ planned |
 | 14 | Asset manifest & replaceable resources | ☐ planned |
 | 15 | Art-direction vertical slice       | ☐ planned |
@@ -354,10 +354,11 @@ milestone is not automatic authorization to start the next.
 
 ## M11 — Completion baseline & presentation audit
 
-- **Status:** ◑ implemented, awaiting manual approval (audited commit
+- **Status:** ☑ complete (approved by the owner 2026-07-19; audited commit
   `8271871`; outputs: `docs/presentation_audit.md`, `docs/ui_style_guide.md`,
   `docs/control_standard.md`, `docs/asset_pipeline.md`,
-  `docs/manual_test_matrix.md`, 7 baseline screenshots)
+  `docs/manual_test_matrix.md`, 7 baseline screenshots; 24-defect register —
+  1 Blocker, 7 High. Approval includes the recommended M12-a slice.)
 - **Goal:** verify the approved M10 baseline and convert vague polish goals into
   a prioritized, evidence-based defect register before changing production code.
 - **Player-facing outcome:** none — the game is unchanged; this milestone is an
@@ -385,7 +386,9 @@ milestone is not automatic authorization to start the next.
 
 ## M12 — UI layout & text-safety foundation
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (base commit
+  `5311ef9`; 144/144 tests; see the note's §N for the as-implemented record
+  and deviations)
 - **Goal:** replace fixed-coordinate text assumptions with a small measured
   layout/text system and migrate screens in reviewable families so required
   text never clips or overlaps.

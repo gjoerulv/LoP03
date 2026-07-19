@@ -57,6 +57,7 @@ add_library(crystal_core STATIC
     src/audio/AudioManager.cpp
     src/ui/Menu.cpp
     src/ui/TextInput.cpp
+    src/ui/TextLayout.cpp
     src/ui/UiDraw.cpp
     src/town/Tilemap.cpp
     src/town/Movement.cpp

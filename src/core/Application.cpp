@@ -57,7 +57,8 @@ Application::Application()
                audio_,     fade_,       config::kVirtualWidth, config::kVirtualHeight},
       input_(),
       stack_(),
-      debugOverlay_(true) {
+      // Off by default (audit UI-LAYOUT-009); F1 toggles it in debug builds.
+      debugOverlay_(false) {
     loadContent();
     fade_.start(0.6f);
     {

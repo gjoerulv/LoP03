@@ -39,11 +39,13 @@ void InnState::render() {
     ui::drawTextCentered("The party rests. HP and MP fully restored.", w / 2, boxY + 38, 10,
                          Color{200, 200, 170, 255});
 
+    // Two real columns; space-padding cannot align a variable-width font.
     int y = boxY + 62;
     for (const Character& c : context_.party.members) {
-        DrawText(TextFormat("%-12s Lv.%d", c.name.c_str(), c.level), boxX + 20, y, 10, RAYWHITE);
-        DrawText(TextFormat("HP %d/%d   MP %d/%d", c.hp, c.maxHp, c.mp, c.maxMp), boxX + 150, y, 10,
-                 Color{170, 220, 170, 255});
+        ui::drawTextFitted(TextFormat("%s  Lv.%d", c.name.c_str(), c.level), boxX + 20, y, 124,
+                           10, RAYWHITE, "inn.name");
+        DrawText(TextFormat("HP %d/%d   MP %d/%d", c.hp, c.maxHp, c.mp, c.maxMp), boxX + 150, y,
+                 10, Color{170, 220, 170, 255});
         y += 18;
     }
 

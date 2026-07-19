@@ -157,13 +157,15 @@ void TownState::render() {
                   static_cast<int>(player_.y + player_.h * 0.5f + facing_.y * 4.0f - 1.0f), 3, 3,
                   Color{60, 50, 30, 255});
 
-    // Party HUD (top-left).
-    DrawRectangle(2, 2, 150, 12, Color{0, 0, 0, 140});
+    // Party HUD (top-left); the backdrop is sized to the measured text so
+    // long names never spill past it.
     std::string hud = "Party:";
     for (const Character& c : context_.party.members) {
         hud += " " + c.name;
     }
-    DrawText(hud.c_str(), 5, 4, 8, RAYWHITE);
+    const int hudW = ui::measureText(hud, 8) + 6;
+    DrawRectangle(2, 2, hudW, 12, Color{0, 0, 0, 140});
+    ui::drawTextFitted(hud, 5, 4, context_.virtualWidth - 10, 8, RAYWHITE, "town.hud");
 
     // Interaction prompt.
     if (nearDoor_ != nullptr) {

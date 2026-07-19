@@ -41,12 +41,14 @@ void DungeonResultState::render() {
     ui::drawTextCentered(TextFormat("Score: %d", score_), w / 2, boxY + 38, 16, RAYWHITE);
 
     const score::ScoreBreakdown b = score::scoreBreakdown(summary_);
-    int y = boxY + 64;
+    // Pitch 13 keeps the maximum 8-line breakdown (escapes shown) clear of
+    // the footer inside the 190px panel (audit UI-LAYOUT-018).
+    int y = boxY + 62;
     const Color label{200, 200, 215, 255};
     auto line = [&](const char* text, int value, Color color) {
         DrawText(text, boxX + 22, y, 10, label);
         DrawText(TextFormat("%+d", value), boxX + boxW - 70, y, 10, color);
-        y += 14;
+        y += 13;
     };
     const Color plus{150, 220, 150, 255};
     const Color minus{225, 150, 150, 255};
