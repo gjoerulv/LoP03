@@ -14,7 +14,7 @@
 | 7  | Content pass                      | ☑ complete (approved) |
 | 8  | Presentation pass                 | ☑ complete (approved) |
 | 9  | Balancing & validation pass       | ☑ complete (approved) |
-| 10 | Release packaging pass            | ◐ implemented, awaiting approval |
+| 10 | Release packaging pass            | ☑ complete (approved) |
 | 11 | Completion baseline & presentation audit | ☐ not started |
 | 12 | UI layout, typography & text safety | ☐ not started |
 | 13 | Input consistency, remapping & settings | ☐ not started |
