@@ -2,7 +2,7 @@
 
 ## Project Identity
 
-This project is a complete 16-bit-inspired turn-based JRPG roguelite built in C++20 with raylib.
+This project is a feature-complete 16-bit-inspired turn-based JRPG roguelite built in C++20 with raylib. The post-M10 program focuses on turning the playable prototype into a polished, readable, configurable release without replacing its proven core systems.
 
 Working title: `Crystal Dungeons`.
 
@@ -23,12 +23,20 @@ Do not continue to the next milestone until the human explicitly approves.
 At the start of every session:
 
 1. Read this file.
-2. Read `docs/game_design.md`, `docs/technical_design.md`, `docs/milestones.md`, and any current milestone notes if they exist.
+2. Read `docs/game_design.md`, `docs/technical_design.md`, `docs/milestones.md`, `docs/completion_roadmap.md`, and the current milestone note if one exists.
 3. Inspect the repository before proposing changes.
 4. Identify the current milestone and whether it is complete.
 5. Verify build/test commands before claiming work is complete.
 
 If these docs do not exist yet, create them during the appropriate early milestone and keep them updated.
+
+### Document Authority and Scope
+
+For current implementation scope, the active milestone note and `docs/milestones.md` take precedence over the broader `docs/completion_roadmap.md`.
+
+The completion roadmap defines strategic direction and quality targets. It does not authorize work from later milestones. Do not combine UI, input, asset, room-generation, battle-presentation, content, audio, accessibility, and release work into one unapproved pass.
+
+If the documents conflict or a milestone requires a product, architecture, dependency, save-format, public-schema, or expensive-to-reverse decision, stop and ask the human.
 
 ## Human Collaboration Rules
 
@@ -398,7 +406,7 @@ Prefer:
 
 ## Rendering and Presentation
 
-Target:
+Current baseline:
 
 * Internal resolution: 426×240
 * Clean scaling to the window
@@ -407,25 +415,39 @@ Target:
 * Party on right, enemies on left
 * Original 16-bit-inspired UI windows
 
-Placeholder sprites are acceptable.
+The core loop now works. Post-M10 work may invest in presentation, but only through approved milestones and stable interfaces.
 
-Do not use copyrighted assets.
+Required completion targets:
 
-Do not spend excessive time on polish before the core loop works.
+* Every required player-facing text element must fit its assigned region or use an explicit wrap, scroll, page, or details mechanism.
+* Text placement must use measured bounds; do not estimate width from character count.
+* Focus, selection, danger, rarity, and status must not rely on color alone.
+* Keyboard and gamepad prompts must reflect active bindings once remapping exists.
+* Standard dungeon rooms must become compact, purposeful layouts rather than automatically filling the full exploration screen.
+* Graphics, fonts, animations, music, ambience, and SFX must be selected through stable logical asset identifiers and external presentation data.
+* Missing assets must degrade safely and visibly/silently as appropriate.
+* Human validation is mandatory for readability, control feel, art direction, animation timing, and audio quality.
+
+The 426×240 virtual resolution remains the approved baseline. Changing it is a cross-cutting player-facing decision and requires explicit human approval after evidence from the UI-layout milestone.
+
+Placeholder assets are acceptable only as temporary fallbacks or inside an approved implementation slice. They are not the final presentation target.
+
+Do not use copyrighted assets or imitate a protected game's sprites, music, UI layout, characters, maps, or other distinctive expression.
 
 ## Audio
 
-Provide placeholder music and sound effects.
+The synthesized placeholder audio remains a safe fallback until the final-audio milestone.
 
-Audio requirements:
+Completion requirements:
 
-* Easy to replace later
-* Isolated under an assets/audio-style structure
-* Graceful failure if audio is missing
-* No hard crash on failed audio load
-* Replacing audio should not require code changes if filenames/formats remain compatible
-
-Music and SFX do not need final creative direction yet.
+* Music, ambience, and SFX must be referenced by logical IDs and resolved through external asset metadata.
+* Replacing an audio file for an existing logical role must not require a C++ change.
+* Use raylib's streaming music support for final music where appropriate.
+* Provide separate master, music, and SFX controls.
+* Missing or invalid audio must degrade to silence without crashing.
+* State transitions must not stack music tracks or leak resources.
+* All shipped audio must have clear provenance, licensing, and attribution records.
+* No essential gameplay information may be conveyed by sound alone.
 
 ## Security and Robustness
 
@@ -538,6 +560,12 @@ Work in order. Stop after each milestone.
 * Clean project structure
 * Final playable build target
 
+### Post-M10 Completion Program
+
+The detailed post-M10 milestone index and status live in `docs/milestones.md`. Strategic direction and quality targets live in `docs/completion_roadmap.md`. The active `docs/milestone_notes/MXX_*.md` file defines the exact current slice.
+
+Do not begin M11 until M10 has been explicitly human-approved. Do not copy the full post-M10 roadmap into this operating contract or treat the roadmap as approval to work ahead.
+
 ## Milestone Completion Report Format
 
 At the end of every milestone, report:
@@ -601,19 +629,11 @@ A milestone is done only when:
 - No unrelated refactors are included
 - No next-milestone work is smuggled in
 
-## Current First Task
+## Current Task Selection
 
-If the project has no skill yet:
-1. Interview the human only for material ambiguities.
-2. Always include recommended answers.
-3. Create `.claude/skills/crystal-dungeons/SKILL.md`.
-4. Stop for approval if the human wants to review the skill.
-
-After the skill is approved:
-1. Start Milestone 1 only.
-2. Provide the Milestone 1 implementation plan.
-3. Implement Milestone 1.
-4. Run/build/test where possible.
-5. Report completion using the milestone report format.
-6. Stop and wait for approval.
-```
+1. Determine the current milestone and approval state from `docs/milestones.md`.
+2. Read the active milestone note, if one exists.
+3. Inspect the current checkout before planning.
+4. Do not restart historical milestones or follow stale task text from earlier project phases.
+5. At the baseline commit `e293f49f35ddd3bd4c49202194cadd96aead7811`, M10 is implemented but awaiting human approval. Do not begin M11 until that approval is explicit.
+6. After M10 approval, propose M11 using `docs/milestone_notes/M11_completion_baseline.md`, complete only M11, report, and stop.
