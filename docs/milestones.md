@@ -14,7 +14,7 @@
 | 7  | Content pass                      | ☑ complete (approved) |
 | 8  | Presentation pass                 | ☑ complete (approved) |
 | 9  | Balancing & validation pass       | ☑ complete (approved) |
-| 10 | Release packaging pass            | ◐ implemented, awaiting approval |
+| 10 | Release packaging pass            | ☑ implemented, awaiting approval |
 
 ## M1 — Project foundation
 
