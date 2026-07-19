@@ -61,17 +61,24 @@ cmake --build build-msvc --config Release
 
 ## Controls
 
+Default bindings — everything except text-delete and the debug toggle is
+**remappable in-game** under **Main Menu → Settings** (also reachable from the
+pause menus). Settings, volumes, window mode, and battle/message speed persist
+in `settings.json` in the user data folder.
+
 | Action                | Keyboard               | Gamepad            |
 |-----------------------|------------------------|--------------------|
-| Move / Navigate       | Arrows or WASD         | D-Pad              |
+| Move / Navigate       | Arrows or WASD         | D-Pad / Left Stick |
 | Confirm               | Enter or Space         | A                  |
 | Cancel / Back         | Esc or Backspace       | B                  |
 | Menu / Pause          | Tab                    | Start              |
-| Adjust (Guild theme/depth, etc.) | Left / Right | D-Pad L/R          |
+| Adjust (Guild, Settings) | Left / Right        | D-Pad L/R / Stick  |
+| Delete (name entry)   | Backspace              | X                  |
 | Toggle debug overlay  | F1                     | —                  |
 
-The same list is in-game under **Main Menu → Controls**. The window is resizable;
-the 426×240 image always scales to fit with letterbox/pillarbox bars.
+The in-game list (**Main Menu → Controls**) always shows your *current*
+bindings. The window is resizable; the 426×240 image always scales to fit with
+letterbox/pillarbox bars.
 
 ## How to play
 

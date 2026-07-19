@@ -12,6 +12,7 @@
 #include "save/SaveSystem.hpp"
 #include "states/HelpState.hpp"
 #include "states/PartyCreationState.hpp"
+#include "states/SettingsState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -22,7 +23,8 @@ namespace {
 constexpr int kNewGame = 0;
 constexpr int kContinue = 1;
 constexpr int kControls = 2;
-constexpr int kQuit = 3;
+constexpr int kSettings = 3;
+constexpr int kQuit = 4;
 
 bool anySaveExists(const save::SaveSystem& saves) {
     return saves.exists(save::SaveSlot::Auto) || saves.exists(save::SaveSlot::Manual1) ||
@@ -49,17 +51,18 @@ void MainMenuState::rebuild() {
     items.push_back({"New Game", true});
     items.push_back({"Continue", anySaveExists(context_.saves)});
     items.push_back({"Controls", true});
+    items.push_back({"Settings", true});
     items.push_back({"Quit", true});
     menu_.setItems(std::move(items));
     menu_.setCursor(previous);
 }
 
 void MainMenuState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
         context_.audio.play(Sfx::Move);
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
         context_.audio.play(Sfx::Move);
     }
@@ -75,6 +78,9 @@ void MainMenuState::handleInput(const Input& input) {
                 break;
             case kControls:
                 stack().pushState(std::make_unique<HelpState>(stack(), context_));
+                break;
+            case kSettings:
+                stack().pushState(std::make_unique<SettingsState>(stack(), context_));
                 break;
             case kQuit:
                 stack().popState();  // empties the stack -> app exits

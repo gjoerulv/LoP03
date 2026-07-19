@@ -2,9 +2,9 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** implemented, awaiting manual approval (implemented 2026-07-19;
+  see section N for the as-implemented record and deviations).
+- **Last reviewed repository commit:** `a247b09` (2026-07-19).
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M13 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -229,3 +229,53 @@ prefers placeholders.
 - `docs/manual_test_matrix.md` — input/settings rows.
 - `.claude/skills/crystal-dungeons/SKILL.md` — input-layer gotchas.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-19)
+
+Base commit `a247b09`. All eight slices delivered; 173/173 tests pass
+(29 new across `test_input_frame/remap/prompt_labels/settings`).
+
+**Core (`src/input/`):** `InputAction` reworked (dead `Pause` removed —
+CTRL-021; `TextBackspace` added, Backspace + gamepad X; stable
+serialization/display names); `InputQuery` extended (axes, text codepoints,
+pressed-key queue); the `Input` facade now computes a per-frame model —
+unified down states with left-stick hysteresis 0.5/0.35 (CTRL-006 fixed for
+real), own edges, `navPressed` hold-repeat (0.35s/90ms), held-input
+suppression on stack-top changes, active-device tracking. New pure modules:
+`PromptLabels` (binding-derived "[Tab] Pause" labels — CTRL-007) and `Remap`
+(swap-with-donor conflicts, Esc reserved, never-unbound invariants).
+
+**Settings (`src/settings/`):** versioned `settings.json` v1 (volumes /
+borderless / battle+message speed / both devices' bindings) with defensive
+load and strand-protection; `AudioManager::setVolumes`; applied at startup
+and live from the Settings screen; battle speed drives the resolve pause,
+message speed scales transient messages (no dead options shipped).
+
+**States:** name editing through the input layer (Blocker UI-INPUT-001
+fixed; gamepad exits/deletes, typing labeled keyboard-only); new
+`SettingsState` (title + both pause menus, so settings are reachable before
+New Game) and `RemapState` per device with listen-flow, conflict messages,
+reset; Controls page generated from the live `InputMap`; every footer/hint
+binding-derived; menu navigation uses `navPressed`; battle Left/Right
+aliases removed (CTRL-022).
+
+**Runtime-verified** (driven session, captures in
+`docs/screenshots/m13_after/`): Settings screen with disabled gamepad row;
+remap listen overlay; J-bind + conflict-free rebind; reset; settings.json
+round-trip including reset-to-defaults. **Defect found and fixed during
+verification:** a just-bound key that was still physically held immediately
+fired as its new action (observed: binding J to Move Up moved the cursor);
+fixed by suppress-until-release after every remap.
+
+**Deviations / owner-attention items:**
+1. `settings.json` v1 shipped under the blanket M13 authorization; the shape
+   follows this note's spec but the owner has not explicitly signed the
+   schema — review it before it hardens (it is trivially replaceable until a
+   release ships).
+2. No on-screen keyboard for gamepad typing (conservative recommendation
+   adopted); revisit by M22.
+3. Shake/flash/high-contrast options deferred to M18/M22 per the note (no
+   dead options).
+4. `Quit` action remains reserved/unbound.
+5. Controller disconnect does not auto-pause gameplay (pad inputs release
+   cleanly, keyboard continues); flagged as an owner decision.

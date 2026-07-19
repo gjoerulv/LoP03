@@ -9,6 +9,7 @@
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -54,11 +55,11 @@ void ItemShopState::rebuild() {
 }
 
 void ItemShopState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
         context_.audio.play(Sfx::Move);
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
         context_.audio.play(Sfx::Move);
     }
@@ -111,8 +112,12 @@ void ItemShopState::render() {
         }
     }
 
-    ui::drawTextCentered("Confirm: Buy    Cancel: Back", w / 2, h - style::kFooterHeight + 2,
-                         style::kFontBody, style::kTextHint);
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    const std::string footer = input::prompt(map, InputAction::Confirm, device, "Buy") +
+                               "    " + input::prompt(map, InputAction::Cancel, device, "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, style::kFontBody,
+                         style::kTextHint);
 }
 
 }  // namespace cd

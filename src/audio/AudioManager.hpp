@@ -28,6 +28,11 @@ public:
     void setEnabled(bool enabled);
     bool enabled() const { return enabled_; }
 
+    // Volume controls (0..1 each), persisted via settings (M13). Master is a
+    // multiplier on the manager's base output level; music/sfx scale their
+    // sound groups.
+    void setVolumes(float master, float music, float sfx);
+
 private:
     // RAII for the audio device; first member so it outlives the sound handles.
     struct DeviceGuard {

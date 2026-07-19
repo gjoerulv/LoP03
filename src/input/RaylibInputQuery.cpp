@@ -16,6 +16,9 @@ InputQuery makeRaylibInputQuery(int gamepad) {
     q.buttonPressed = [](int pad, int button) { return IsGamepadButtonPressed(pad, button); };
     q.buttonReleased = [](int pad, int button) { return IsGamepadButtonReleased(pad, button); };
     q.gamepadAvailable = [](int pad) { return IsGamepadAvailable(pad); };
+    q.axisValue = [](int pad, int axis) { return GetGamepadAxisMovement(pad, axis); };
+    q.nextChar = []() { return GetCharPressed(); };
+    q.nextKeyPressed = []() { return GetKeyPressed(); };
     return q;
 }
 

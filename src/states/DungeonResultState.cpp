@@ -6,6 +6,7 @@
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -62,8 +63,10 @@ void DungeonResultState::render() {
         line(TextFormat("Escapes (%d)", summary_.escapes), -b.escapePenalty, minus);
     }
 
-    ui::drawTextCentered("Confirm: Return to Town", w / 2, boxY + boxH - 16, 10,
-                         Color{200, 200, 160, 255});
+    ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,
+                                       context_.input.activeDevice(), "Return to Town")
+                             .c_str(),
+                         w / 2, boxY + boxH - 16, 10, Color{200, 200, 160, 255});
 }
 
 }  // namespace cd

@@ -2,6 +2,7 @@
 
 #include "core/AppContext.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "score/Scoreboard.hpp"
 #include "states/StateStack.hpp"
@@ -32,10 +33,10 @@ ScoreboardState::ScoreboardState(StateStack& stack, AppContext& context)
 
 void ScoreboardState::handleInput(const Input& input) {
     const int total = static_cast<int>(context_.scoreboard.entries().size());
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         scroll_.scrollBy(total, kVisibleRows, -1);
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         scroll_.scrollBy(total, kVisibleRows, 1);
     }
     if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Confirm)) {
@@ -53,8 +54,11 @@ void ScoreboardState::render() {
     if (entries.empty()) {
         ui::drawTextWrapped("No runs recorded yet. Clear a dungeon to set a score!", 60, h / 2,
                             w - 120, style::kFontBody, style::kTextDim, "scoreboard.empty", 2);
-        ui::drawTextCentered("Cancel: Back", w / 2, h - style::kFooterHeight + 2,
-                             style::kFontBody, style::kTextHint);
+        ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
+                                           context_.input.activeDevice(), "Back")
+                                 .c_str(),
+                             w / 2, h - style::kFooterHeight + 2, style::kFontBody,
+                             style::kTextHint);
         return;
     }
 
@@ -95,7 +99,10 @@ void ScoreboardState::render() {
                           w - 16, legendY, style::kFontSmall, style::kTextDim);
     }
 
-    ui::drawTextCentered("Cancel: Back", w / 2, h - style::kFooterHeight + 2, style::kFontBody,
+    ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
+                                       context_.input.activeDevice(), "Back")
+                             .c_str(),
+                         w / 2, h - style::kFooterHeight + 2, style::kFontBody,
                          style::kTextHint);
 }
 

@@ -11,6 +11,8 @@
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
+#include "input/PromptLabels.hpp"
+#include "settings/Settings.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -20,7 +22,6 @@ namespace cd {
 namespace style = ui::style;
 
 namespace {
-constexpr float kResolveTime = 0.9f;
 
 // Bottom-panel layout (M12): everything must fit inside the 60px panel.
 constexpr int kPanelH = 60;
@@ -369,7 +370,9 @@ void BattleState::afterAction() {
         }
     }
     phase_ = Phase::Resolve;
-    timer_ = kResolveTime;
+    // Battle speed setting scales the between-action pause; Confirm always
+    // skips it regardless.
+    timer_ = settings::resolveSeconds(context_.settings.values.battleSpeed);
 }
 
 void BattleState::finish() {
@@ -403,8 +406,10 @@ std::string BattleState::outcomeMessage() const {
 }
 
 void BattleState::handleInput(const Input& input) {
-    const bool up = input.pressed(InputAction::MoveUp) || input.pressed(InputAction::MoveLeft);
-    const bool down = input.pressed(InputAction::MoveDown) || input.pressed(InputAction::MoveRight);
+    // Up/Down only: Left/Right are reserved for future columns/adjust
+    // (control standard; M13 dropped the old Left/Right aliases).
+    const bool up = input.navPressed(InputAction::MoveUp);
+    const bool down = input.navPressed(InputAction::MoveDown);
 
     if (phase_ != Phase::Resolve) {
         if (up || down) {
@@ -604,6 +609,9 @@ void BattleState::render() {
     ui::drawPanel(4, panelY, w - 8, kPanelH, Color{24, 22, 34, 240}, Color{120, 120, 160, 255});
     const int infoW = w - kInfoX - 12;
     const int listLabelW = kInfoX - kListX - 18;
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    const std::string backHint = input::prompt(map, InputAction::Cancel, device, "Back");
 
     switch (phase_) {
         case Phase::Intro:
@@ -612,8 +620,9 @@ void BattleState::render() {
                 ui::drawTextWrapped(bossTelegraph_, 16, panelY + 22, w - 32, style::kFontBody,
                                     Color{225, 170, 170, 255}, "battle.telegraph", 2);
             }
-            ui::drawTextCentered("Confirm to begin", w / 2, panelY + 48, style::kFontBody,
-                                 Color{200, 200, 160, 255});
+            ui::drawTextCentered(
+                input::prompt(map, InputAction::Confirm, device, "Begin").c_str(), w / 2,
+                panelY + 48, style::kFontBody, Color{200, 200, 160, 255});
             break;
         case Phase::Command:
             ui::drawMenu(commandMenu_, kListX, panelY + 5, 11, style::kFontBody, style::kText,
@@ -627,7 +636,7 @@ void BattleState::render() {
             ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,
                                  kListItemH, style::kFontBody, listLabelW, style::kText,
                                  style::kDisabled, style::kCursor, "battle.skills");
-            ui::drawTextFitted("Choose a skill  (Cancel: back)", kInfoX, panelY + 6, infoW,
+            ui::drawTextFitted("Choose a skill   " + backHint, kInfoX, panelY + 6, infoW,
                                style::kFontBody, style::kTextDim, "battle.skillhint");
             if (!skillIds_.empty()) {
                 const std::string& sid =
@@ -646,7 +655,7 @@ void BattleState::render() {
             ui::drawMenuScrolled(itemMenu_, itemScroll_, kListRows, kListX, panelY + 6,
                                  kListItemH, style::kFontBody, listLabelW, style::kText,
                                  style::kDisabled, style::kCursor, "battle.items");
-            ui::drawTextFitted("Choose an item  (Cancel: back)", kInfoX, panelY + 6, infoW,
+            ui::drawTextFitted("Choose an item   " + backHint, kInfoX, panelY + 6, infoW,
                                style::kFontBody, style::kTextDim, "battle.itemhint");
             if (!itemIds_.empty()) {
                 const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
@@ -661,7 +670,7 @@ void BattleState::render() {
             break;
         }
         case Phase::ChooseTarget:
-            ui::drawTextCentered("Choose a target  (Cancel: back)", w / 2, panelY + 24,
+            ui::drawTextCentered(("Choose a target   " + backHint).c_str(), w / 2, panelY + 24,
                                  style::kFontBody, style::kText);
             break;
         case Phase::Resolve:
@@ -671,8 +680,9 @@ void BattleState::render() {
         case Phase::Done:
             ui::drawTextWrapped(message_, 16, panelY + 10, w - 32, 12,
                                 Color{240, 230, 160, 255}, "battle.outcome", 2);
-            ui::drawTextCentered("Confirm to continue", w / 2, panelY + 44, style::kFontBody,
-                                 Color{200, 200, 160, 255});
+            ui::drawTextCentered(
+                input::prompt(map, InputAction::Confirm, device, "Continue").c_str(), w / 2,
+                panelY + 44, style::kFontBody, Color{200, 200, 160, 255});
             break;
     }
 }

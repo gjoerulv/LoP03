@@ -8,6 +8,7 @@
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -39,11 +40,11 @@ void TrainingHallState::rebuild() {
 }
 
 void TrainingHallState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
         context_.audio.play(Sfx::Move);
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
         context_.audio.play(Sfx::Move);
     }
@@ -83,8 +84,11 @@ void TrainingHallState::render() {
     if (!message_.empty()) {
         ui::drawTextCentered(message_.c_str(), w / 2, h - 30, 10, Color{170, 220, 170, 255});
     }
-    ui::drawTextCentered("Confirm: Train    Cancel: Back", w / 2, h - 14, 10,
-                         Color{150, 150, 170, 255});
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    const std::string footer = input::prompt(map, InputAction::Confirm, device, "Train") +
+                               "    " + input::prompt(map, InputAction::Cancel, device, "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, h - 14, 10, Color{150, 150, 170, 255});
 }
 
 }  // namespace cd

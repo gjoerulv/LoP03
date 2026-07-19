@@ -40,8 +40,14 @@ add_library(crystal_core STATIC
     src/core/Application.cpp
     src/render/Viewport.cpp
     src/render/VirtualScreen.cpp
+    src/input/Input.cpp
     src/input/InputMap.cpp
+    src/input/PromptLabels.cpp
     src/input/RaylibInputQuery.cpp
+    src/input/Remap.cpp
+    src/settings/Settings.cpp
+    src/states/RemapState.cpp
+    src/states/SettingsState.cpp
     src/resource/ResourceManager.cpp
     src/platform/Paths.cpp
     src/content/Enums.cpp

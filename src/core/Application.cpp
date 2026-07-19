@@ -53,13 +53,26 @@ Application::Application()
       scoreboard_(paths::userDataDir() / "scoreboard.json"),
       audio_(),
       fade_(),
-      context_{resources_, content_,    saves_, party_, scoreboard_,
-               audio_,     fade_,       config::kVirtualWidth, config::kVirtualHeight},
       input_(),
+      settings_(paths::userDataDir() / "settings.json"),
+      context_{resources_, content_, saves_,    party_,
+               scoreboard_, audio_,  fade_,     input_,
+               settings_,   config::kVirtualWidth, config::kVirtualHeight},
       stack_(),
       // Off by default (audit UI-LAYOUT-009); F1 toggles it in debug builds.
       debugOverlay_(false) {
     loadContent();
+    {
+        content::LoadReport settingsReport;
+        if (!settings_.load(input_.map(), settingsReport)) {
+            log::warn("Settings could not be loaded; using defaults.");
+        }
+        for (const auto& e : settingsReport.errors()) {
+            log::warn("  " + e.source + ": " + e.context + ": " + e.message);
+        }
+        audio_.setVolumes(settings_.values.masterVolume, settings_.values.musicVolume,
+                          settings_.values.sfxVolume);
+    }
     fade_.start(0.6f);
     {
         content::LoadReport scoreReport;
@@ -104,17 +117,29 @@ void Application::run() {
 void Application::processFrame() {
     const float dt = GetFrameTime();
     input_.setQuery(makeRaylibInputQuery(0));
+    input_.update(dt);
 
     if (input_.pressed(InputAction::ToggleDebug)) {
         debugOverlay_ = !debugOverlay_;
     }
 
+    // Settings-driven window mode (self-healing each frame).
+    if (settings_.values.borderlessFullscreen != IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)) {
+        ToggleBorderlessWindowed();
+    }
+
+    GameState* const topBefore = stack_.top();
     stack_.handleInput(input_);
     stack_.update(dt);
     audio_.update();
     fade_.update(dt);
     if (stack_.empty()) {
         return;  // a state requested exit; loop will terminate
+    }
+    // A state transition swallows buffered presses so a held Confirm cannot
+    // activate something in the screen that just appeared.
+    if (stack_.top() != topBefore) {
+        input_.suppressUntilRelease();
     }
 
     // 1) Draw the world at the internal resolution, then the fade overlay.

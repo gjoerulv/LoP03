@@ -4,6 +4,7 @@
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -49,7 +50,10 @@ void InnState::render() {
         y += 18;
     }
 
-    ui::drawTextCentered("Cancel: Back", w / 2, boxY + boxH - 20, 10, Color{160, 150, 140, 255});
+    ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
+                                       context_.input.activeDevice(), "Back")
+                             .c_str(),
+                         w / 2, boxY + boxH - 20, 10, Color{160, 150, 140, 255});
 }
 
 }  // namespace cd

@@ -72,6 +72,9 @@ Severity: **Blocker** / **High** / **Medium** / **Low** (definitions in
 ### Blocker
 
 **UI-INPUT-001 — Gamepad-only player soft-locks in name editing** `[static]`
+**Fixed (M13):** text entry flows through the input layer; A/B/Enter/Esc all
+finish editing, X/Backspace deletes; typing itself still needs a keyboard
+(labeled in-game).
 - Screen: party creation, editing mode. Repro: with only a gamepad, Confirm
   (A) on a name row → editing starts; editing polls raw
   `GetCharPressed`/`IsKeyPressed(KEY_BACKSPACE/ENTER/ESCAPE)` only
@@ -142,6 +145,8 @@ count + tags — the full game_design §6 contract).
 
 **CTRL-006 — "Left Stick" navigation is advertised but not implemented**
 `[static]` (verify with a controller)
+**Fixed (M13):** real analog support with hysteresis (0.5/0.35); docs/Help
+re-advertise the stick honestly. Owner controller pass confirms.
 - Help (`HelpState.cpp:19`) and README claim D-Pad / Left Stick; `InputMap`
   binds D-pad buttons only and `InputQuery` has no axis callbacks at all.
 - Expected: stick navigation works (M13) or docs stop claiming it (interim).
@@ -150,6 +155,9 @@ count + tags — the full game_design §6 contract).
 
 **CTRL-007 — Prompts name abstract actions, not keys, and are hard-coded**
 `[observed]` (shots 03, 05, 06)
+**Fixed (M13):** every footer/hint derives from the live bindings via
+`input::prompt` ("[Tab] Pause"); the Controls page is generated from the
+`InputMap` and reflects remaps.
 - "Menu: Pause" (town/dungeon footer) never says Tab/Start; every footer
   string is a hard-coded literal; after M13 remapping they would all lie.
 - Expected: binding-derived labels for the active device.
@@ -263,10 +271,14 @@ M11 audit (UI-TEXT-002 understated it).*
 **CTRL-021 — Dead `Pause` binding; Help omits it** `[static]`
 - `InputAction::Pause` (P / gamepad Select) is bound and consumed nowhere;
   Help doesn't list it. → **M13-2** (action vocabulary cleanup).
+- **Fixed (M13):** the Pause action was removed; Menu is the single
+  pause/menu action.
 
 **CTRL-022 — Battle lists treat Left/Right as Up/Down** `[static]`
 - `up = MoveUp||MoveLeft` in every battle menu; harmless but inconsistent
   with list semantics elsewhere. → **M13** control standard.
+- **Fixed (M13):** aliases removed; vertical lists use Up/Down only, and
+  Left/Right stay reserved for value adjust.
 
 **DATA-023 — No manual seed entry at the Guild** `[static]`
 - Seeds can only be rerolled, never typed; sharing a seed with another player

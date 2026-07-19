@@ -10,6 +10,7 @@
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "states/TownState.hpp"
@@ -92,29 +93,34 @@ void PartyCreationState::handleInput(const Input& input) {
     }
 
     if (editing_) {
-        for (int c = GetCharPressed(); c > 0; c = GetCharPressed()) {
+        // Everything flows through the input layer (M13; fixes the
+        // gamepad-only soft-lock UI-INPUT-001): typed characters via
+        // nextChar, delete via TextBackspace (Backspace / gamepad X), and
+        // Confirm or Cancel — from either device — finishes editing.
+        // TextBackspace wins over Cancel when both fire from the same
+        // Backspace press.
+        for (int c = input.nextChar(); c > 0; c = input.nextChar()) {
             slots_[static_cast<std::size_t>(cursor_)].name.appendCodepoint(c);
         }
-        if (IsKeyPressed(KEY_BACKSPACE)) {
+        if (input.navPressed(InputAction::TextBackspace)) {
             slots_[static_cast<std::size_t>(cursor_)].name.backspace();
-        }
-        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_ESCAPE)) {
+        } else if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel)) {
             editing_ = false;
         }
         return;
     }
 
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         cursor_ = (cursor_ + kRows - 1) % kRows;
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         cursor_ = (cursor_ + 1) % kRows;
     }
     if (cursor_ < kBeginRow) {
-        if (input.pressed(InputAction::MoveLeft)) {
+        if (input.navPressed(InputAction::MoveLeft)) {
             cycleClass(cursor_, -1);
         }
-        if (input.pressed(InputAction::MoveRight)) {
+        if (input.navPressed(InputAction::MoveRight)) {
             cycleClass(cursor_, +1);
         }
     }
@@ -171,12 +177,27 @@ void PartyCreationState::render() {
     }
     DrawText("Begin Adventure", 54, beginY, 12, beginSel ? yellow : RAYWHITE);
 
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
     if (editing_) {
-        ui::drawTextCentered("Editing name - type, Backspace, Enter to finish", w / 2, h - 30, 10,
-                             Color{170, 220, 170, 255});
+        const std::string editHint =
+            device == ActiveDevice::Keyboard
+                ? "Type a name   " +
+                      input::prompt(map, InputAction::TextBackspace, device, "Delete") +
+                      "   " + input::prompt(map, InputAction::Confirm, device, "Finish")
+                : input::prompt(map, InputAction::TextBackspace, device, "Delete") + "   " +
+                      input::prompt(map, InputAction::Confirm, device, "Finish") +
+                      "   (typing needs a keyboard)";
+        ui::drawTextCentered(editHint.c_str(), w / 2, h - 30, 10, Color{170, 220, 170, 255});
     }
-    ui::drawTextCentered("Up/Down: Move   Left/Right: Class   Confirm: Edit/Begin   Cancel: Back",
-                         w / 2, h - 16, 10, Color{150, 150, 170, 255});
+    const std::string footer =
+        "[" + input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
+        input::primaryLabel(map, InputAction::MoveDown, device) + "] Move   [" +
+        input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
+        input::primaryLabel(map, InputAction::MoveRight, device) + "] Class   " +
+        input::prompt(map, InputAction::Confirm, device, "Edit/Begin") + "   " +
+        input::prompt(map, InputAction::Cancel, device, "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, h - 16, 9, Color{150, 150, 170, 255});
 }
 
 }  // namespace cd

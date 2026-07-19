@@ -11,6 +11,7 @@
 #include "core/FadeController.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/EquipShopState.hpp"
 #include "states/GuildState.hpp"
@@ -167,15 +168,28 @@ void TownState::render() {
     DrawRectangle(2, 2, hudW, 12, Color{0, 0, 0, 140});
     ui::drawTextFitted(hud, 5, 4, context_.virtualWidth - 10, 8, RAYWHITE, "town.hud");
 
-    // Interaction prompt.
+    // Interaction prompt, generated from the live bindings (M13).
+    const int h = context_.virtualHeight;
+    const InputMap& bindings = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
     if (nearDoor_ != nullptr) {
-        const int h = context_.virtualHeight;
         DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
-        ui::drawTextCentered(TextFormat("Confirm: Enter %s   |   Menu: Pause", nearDoor_->name.c_str()),
-                             context_.virtualWidth / 2, h - 13, 8, Color{240, 230, 160, 255});
+        const std::string text =
+            input::prompt(bindings, InputAction::Confirm, device, "Enter " + nearDoor_->name) +
+            "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
+                             Color{240, 230, 160, 255});
     } else {
-        const int h = context_.virtualHeight;
-        ui::drawTextCentered("Arrows/WASD: Move   Menu: Pause", context_.virtualWidth / 2, h - 13, 8,
+        const std::string moveLabel =
+            device == ActiveDevice::Keyboard
+                ? input::primaryLabel(bindings, InputAction::MoveUp, device) + "/" +
+                      input::primaryLabel(bindings, InputAction::MoveDown, device) + "/" +
+                      input::primaryLabel(bindings, InputAction::MoveLeft, device) + "/" +
+                      input::primaryLabel(bindings, InputAction::MoveRight, device)
+                : "D-Pad/Stick";
+        const std::string text = "[" + moveLabel + "] Move   " +
+                                 input::prompt(bindings, InputAction::Menu, device, "Pause");
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
                              Color{170, 170, 190, 255});
     }
 }

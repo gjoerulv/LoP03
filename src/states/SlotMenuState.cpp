@@ -6,6 +6,7 @@
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "states/TownState.hpp"
@@ -77,10 +78,10 @@ void SlotMenuState::confirmSelection() {
 }
 
 void SlotMenuState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
     }
     if (input.pressed(InputAction::Confirm)) {
@@ -104,8 +105,13 @@ void SlotMenuState::render() {
     if (!message_.empty()) {
         ui::drawTextCentered(message_.c_str(), w / 2, 180, 10, Color{170, 220, 170, 255});
     }
-    ui::drawTextCentered("Up/Down: Select    Confirm: OK    Cancel: Back", w / 2, 218, 10,
-                         Color{150, 150, 170, 255});
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    const std::string footer =
+        input::prompt(map, InputAction::Confirm, device,
+                      mode_ == SlotMenuMode::Save ? "Save" : "Load") +
+        "    " + input::prompt(map, InputAction::Cancel, device, "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, 218, 10, Color{150, 150, 170, 255});
 }
 
 }  // namespace cd

@@ -4,6 +4,10 @@ add_executable(crystal_tests
     test_viewport.cpp
     test_state_stack.cpp
     test_input_map.cpp
+    test_input_frame.cpp
+    test_remap.cpp
+    test_prompt_labels.cpp
+    test_settings.cpp
     test_paths.cpp
     test_content_validation.cpp
     test_content_loader.cpp

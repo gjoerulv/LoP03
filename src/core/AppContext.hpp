@@ -7,6 +7,7 @@ namespace cd {
 class ResourceManager;
 class AudioManager;
 class FadeController;
+class Input;
 struct Party;
 
 namespace content {
@@ -18,6 +19,9 @@ class SaveSystem;
 namespace score {
 class Scoreboard;
 }
+namespace settings {
+class SettingsStore;
+}
 
 struct AppContext {
     ResourceManager& resources;
@@ -27,6 +31,10 @@ struct AppContext {
     score::Scoreboard& scoreboard;
     AudioManager& audio;
     FadeController& fade;
+    // M13: the input system (bindings + device state, mutable for the remap
+    // screen) and the persistent settings store.
+    Input& input;
+    settings::SettingsStore& settings;
     int virtualWidth;
     int virtualHeight;
 };

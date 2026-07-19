@@ -87,12 +87,35 @@ function** (no raylib) returning scale + destination rect, and is unit-tested.
 
 ### Input layer
 
-`InputAction` is the gameplay-facing enum. `InputMap` holds key/gamepad bindings
-per action. Resolution is **pure**: `InputMap::isDown/isPressed/isReleased(action,
-const InputQuery&)`, where `InputQuery` is a set of callbacks. Production uses
-`makeRaylibInputQuery()` (wraps raylib polling); tests inject fakes. The `Input`
-facade (owned by `Application`) refreshes the query each frame and is passed to
-states as `const Input&`.
+`InputAction` is the gameplay-facing enum (with stable serialization names and
+display names). `InputMap` holds key/gamepad bindings per action; `InputQuery`
+is a set of injected callbacks (keys, buttons, axes, text codepoints, pressed-
+key queue) so everything below tests headlessly with fakes; production uses
+`makeRaylibInputQuery()`.
+
+The `Input` facade (owned by `Application`) computes a per-frame action model
+in `update(dt)` (M13): unified key/button/left-stick down states (stick with
+0.5-enter/0.35-release hysteresis), its own press/release edges, hold-repeat
+navigation (`navPressed`, 0.35s delay / 90ms interval — menus use it,
+Confirm/Cancel never repeat), suppression of held input across state
+transitions and remap listens (`suppressUntilRelease`, triggered by
+`Application` on stack-top changes), and active-device tracking that drives
+prompt labels. Supporting pure modules: `input/PromptLabels` (binding →
+"[Tab] Pause"-style labels; all prompts and the generated Controls page use
+them), `input/Remap` (swap-with-donor conflict policy, Esc reserved,
+never-unbound invariants).
+
+### Settings (M13)
+
+`settings::SettingsStore` persists a versioned `settings.json` (v1) in the
+user data dir: master/music/SFX volumes (applied via
+`AudioManager::setVolumes`), borderless-window mode (applied self-healing per
+frame), battle speed (scales the battle resolve pause), message speed (scales
+transient message durations), and both devices' remappable bindings. Loading
+is defensive (ObjectReader/LoadReport): missing file = silent defaults;
+malformed/foreign-version = reported defaults; a binding set that would
+strand the keyboard restores that action's defaults. Parse/serialize are
+string-based and headless-tested.
 
 ### Resources
 

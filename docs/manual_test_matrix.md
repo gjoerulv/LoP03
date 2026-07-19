@@ -6,6 +6,16 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M13 update:** left-stick navigation now exists (run the stick pass for
+> real); row 6 name-editing on gamepad is **expect pass** (A/B finish, X
+> deletes — the Blocker fix); rows 3/17 prompts now show live binding labels
+> and must update after remapping. New checks: Settings screen (volumes
+> audible immediately, window toggle, battle/message speed take effect),
+> Remap Keyboard/Gamepad (listen flow, [Esc] cancel, conflict swap message,
+> reset, persistence across restart), corrupt `settings.json` recovery, and
+> settings reachable from the title before New Game. Post-M13 captures:
+> `docs/screenshots/m13_after/`.
+>
 > **M12 update:** rows previously marked *expect fail* for UI-TEXT-001/002,
 > UI-LAYOUT-003, and the scoreboard/HUD text defects are now **expect pass —
 > verify**: the fixes are implemented and unit-tested, and rows 1/3/9 were

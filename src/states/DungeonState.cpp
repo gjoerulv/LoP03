@@ -1,4 +1,4 @@
-#include "states/DungeonState.hpp"
+﻿#include "states/DungeonState.hpp"
 
 #include <algorithm>
 #include <array>
@@ -17,6 +17,8 @@
 #include "score/ScoreEntry.hpp"
 #include "score/Scoreboard.hpp"
 #include "score/Scoring.hpp"
+#include "input/PromptLabels.hpp"
+#include "settings/Settings.hpp"
 #include "states/BattleState.hpp"
 #include "states/DungeonMenuState.hpp"
 #include "states/DungeonResultState.hpp"
@@ -77,6 +79,11 @@ Color tierColor(danger::Tier t) {
         case danger::Tier::Boss: return Color{200, 110, 220, 255};
     }
     return WHITE;
+}
+
+// Message-speed setting scales every transient message duration.
+float scaledMessageTime(const AppContext& context, float base) {
+    return base * settings::messageDurationScale(context.settings.values.messageSpeed);
 }
 
 }  // namespace
@@ -182,12 +189,12 @@ void DungeonState::openChest() {
     }
     if (room.chest.opened) {
         message_ = "The chest is empty.";
-        messageTimer_ = 2.0f;
+        messageTimer_ = scaledMessageTime(context_, 2.0f);
         return;
     }
     if (room.chest.guarded) {
         message_ = "Guarded - defeat the team first.";
-        messageTimer_ = 2.5f;
+        messageTimer_ = scaledMessageTime(context_, 2.5f);
         return;
     }
     room.chest.opened = true;
@@ -205,7 +212,7 @@ void DungeonState::openChest() {
         msg += std::string(" + ") + name;
     }
     message_ = msg;
-    messageTimer_ = 3.0f;
+    messageTimer_ = scaledMessageTime(context_, 3.0f);
 }
 
 void DungeonState::interact() {
@@ -313,13 +320,13 @@ void DungeonState::onResume() {
         }
         buildRoom();
         message_ = "The gate is clear!" + reward;
-        messageTimer_ = 2.5f;
+        messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Guard) {
         room.teamIndex = -1;
         room.chest.guarded = false;
         buildRoom();
         message_ = "The guards fall." + reward;
-        messageTimer_ = 2.5f;
+        messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Boss) {
         completeDungeon();
     }
@@ -502,16 +509,17 @@ void DungeonState::render() {
 
     const int h = context_.virtualHeight;
     DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 165});
-    const char* prompt = "Arrows/WASD: Move    Menu: Pause / Retreat";
-    std::string promptBuf;
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    std::string text;
     if (!message_.empty()) {
-        prompt = message_.c_str();
+        text = message_;
     } else if (onChest_) {
         const dungeon::Chest& chest = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].chest;
         const std::string rarity = chest.rarity.empty() ? "" : " (" + chest.rarity + ")";
-        promptBuf = chest.guarded ? "Guarded chest" + rarity + " - defeat the guards to claim"
-                                  : "Confirm: Open chest" + rarity;
-        prompt = promptBuf.c_str();
+        text = chest.guarded
+                   ? "Guarded chest" + rarity + " - defeat the guards to claim"
+                   : input::prompt(map, InputAction::Confirm, device, "Open chest" + rarity);
     } else if (facingMarker_ != nullptr && facingMarker_->teamIndex >= 0 &&
                facingMarker_->teamIndex < static_cast<int>(teamTier_.size())) {
         const danger::Tier tier = teamTier_[static_cast<std::size_t>(facingMarker_->teamIndex)];
@@ -519,23 +527,32 @@ void DungeonState::render() {
             dungeon_.teams[static_cast<std::size_t>(facingMarker_->teamIndex)];
         // Show the team name with tier/count/tags — the visible-encounter
         // contract (game_design.md §6, defect UI-INFO-005).
-        promptBuf = std::string("Confirm: Fight ") + team.name + "  -  " +
-                    danger::tierName(tier) + "  x" + std::to_string(team.count());
+        text = input::prompt(map, InputAction::Confirm, device, "Fight ") + team.name +
+               "  -  " + danger::tierName(tier) + "  x" + std::to_string(team.count());
         if (!team.tags.empty()) {
-            promptBuf += "  [";
+            text += "  [";
             for (std::size_t i = 0; i < team.tags.size(); ++i) {
                 if (i != 0) {
-                    promptBuf += ",";
+                    text += ",";
                 }
-                promptBuf += team.tags[i];
+                text += team.tags[i];
             }
-            promptBuf += "]";
+            text += "]";
         }
-        prompt = promptBuf.c_str();
+    } else {
+        const std::string moveLabel =
+            device == ActiveDevice::Keyboard
+                ? input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
+                      input::primaryLabel(map, InputAction::MoveDown, device) + "/" +
+                      input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
+                      input::primaryLabel(map, InputAction::MoveRight, device)
+                : "D-Pad/Stick";
+        text = "[" + moveLabel + "] Move    " +
+               input::prompt(map, InputAction::Menu, device, "Pause / Retreat");
     }
-    const int promptW = ui::measureText(prompt, 8);
+    const int promptW = ui::measureText(text, 8);
     const int promptX = std::max(4, (context_.virtualWidth - promptW) / 2);
-    ui::drawTextFitted(prompt, promptX, h - 13, context_.virtualWidth - promptX - 4, 8,
+    ui::drawTextFitted(text, promptX, h - 13, context_.virtualWidth - promptX - 4, 8,
                        Color{235, 230, 180, 255}, "dungeon.prompt");
 }
 

@@ -2,8 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (implemented 2026-07-19;
-  see section N for the as-implemented record and deviations).
+- **Status:** complete (approved by the owner on 2026-07-19; implemented
+  2026-07-19; see section N for the as-implemented record and deviations).
 - **Last reviewed repository commit:**
   `5311ef9d671e4d4b301dcb4e1a872219f61d3d08` (2026-07-19). Re-audit result:
   the note's baseline observations hold; defect IDs referenced below are from

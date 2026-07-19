@@ -8,6 +8,7 @@
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -223,10 +224,10 @@ void EquipShopState::confirm() {
 }
 
 void EquipShopState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
     }
     scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
@@ -288,7 +289,10 @@ void EquipShopState::render() {
                             style::kSuccess, "equipshop.detail", 2);
     }
 
-    ui::drawTextCentered("Cancel: Back", w / 2, h - style::kFooterHeight + 2, 9,
+    const std::string footer =
+        input::prompt(context_.input.map(), InputAction::Cancel,
+                      context_.input.activeDevice(), "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, 9,
                          style::kTextHint);
 }
 

@@ -140,6 +140,25 @@ void AudioManager::update() {
     }
 }
 
+void AudioManager::setVolumes(float master, float music, float sfx) {
+    if (!ready_) {
+        return;
+    }
+    const auto clamp01 = [](float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); };
+    // 0.5 is the synthesized placeholder's base output level.
+    SetMasterVolume(0.5f * clamp01(master));
+    for (SoundHandle& s : sfx_) {
+        if (s.valid()) {
+            SetSoundVolume(s.get(), clamp01(sfx));
+        }
+    }
+    for (SoundHandle& m : music_) {
+        if (m.valid()) {
+            SetSoundVolume(m.get(), clamp01(music));
+        }
+    }
+}
+
 void AudioManager::setEnabled(bool enabled) {
     enabled_ = enabled;
     if (!enabled_ && ready_ && current_ != MusicTrack::None) {

@@ -1,8 +1,11 @@
 #include "states/HelpState.hpp"
 
+#include <string>
+
 #include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -10,27 +13,21 @@
 
 namespace cd {
 
-namespace {
-struct Row {
-    const char* action;
-    const char* keyboard;
-    const char* gamepad;
-};
-// NOTE: gamepad navigation is D-pad only until analog-stick support lands in
-// M13 (control_standard.md); this table must state what actually works.
-constexpr Row kRows[] = {
-    {"Move / Navigate", "Arrows or WASD", "D-Pad"},
-    {"Confirm", "Enter or Space", "A"},
-    {"Cancel / Back", "Esc or Backspace", "B"},
-    {"Menu / Pause", "Tab", "Start"},
-    {"Adjust (Guild)", "Left / Right", "D-Pad L/R"},
-    {"Toggle debug overlay", "F1", "-"},
-};
+namespace style = ui::style;
 
-// Column layout (x, max width) inside the 426px virtual screen.
-constexpr int kCol1X = 32;
-constexpr int kCol2X = 172;
-constexpr int kCol3X = 316;
+namespace {
+// Column layout (x positions) inside the 426px virtual screen.
+constexpr int kCol1X = 28;
+constexpr int kCol2X = 168;
+constexpr int kCol3X = 312;
+
+// The actions shown on the controls page, generated from the LIVE bindings
+// (M13): remapping is always reflected here.
+constexpr InputAction kShownActions[] = {
+    InputAction::MoveUp,    InputAction::MoveDown, InputAction::MoveLeft,
+    InputAction::MoveRight, InputAction::Confirm,  InputAction::Cancel,
+    InputAction::Menu,      InputAction::TextBackspace, InputAction::ToggleDebug,
+};
 }  // namespace
 
 HelpState::HelpState(StateStack& stack, AppContext& context)
@@ -44,37 +41,41 @@ void HelpState::handleInput(const Input& input) {
 }
 
 void HelpState::render() {
-    namespace style = ui::style;
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ClearBackground(Color{16, 16, 26, 255});
-    ui::drawTextCentered("Controls", w / 2, 16, style::kFontScreenTitle, style::kText);
+    ui::drawTextCentered("Controls", w / 2, 14, style::kFontScreenTitle, style::kText);
 
     const int col1W = kCol2X - kCol1X - 8;
     const int col2W = kCol3X - kCol2X - 8;
     const int col3W = w - kCol3X - style::kSafeMargin - 4;
+    const InputMap& map = context_.input.map();
 
-    int y = 52;
+    int y = 42;
     ui::drawTextFitted("Action", kCol1X, y, col1W, style::kFontBody, style::kTextDim,
                        "help.header");
     ui::drawTextFitted("Keyboard", kCol2X, y, col2W, style::kFontBody, style::kTextDim,
                        "help.header");
     ui::drawTextFitted("Gamepad", kCol3X, y, col3W, style::kFontBody, style::kTextDim,
                        "help.header");
-    y += 18;
-    for (const Row& r : kRows) {
-        ui::drawTextFitted(r.action, kCol1X, y, col1W, style::kFontBody, style::kText,
-                           "help.action");
-        ui::drawTextFitted(r.keyboard, kCol2X, y, col2W, style::kFontBody,
-                           Color{200, 210, 230, 255}, "help.keyboard");
-        ui::drawTextFitted(r.gamepad, kCol3X, y, col3W, style::kFontBody,
-                           Color{200, 210, 230, 255}, "help.gamepad");
-        y += 16;
+    y += 17;
+    for (InputAction a : kShownActions) {
+        ui::drawTextFitted(std::string(actionDisplayName(a)), kCol1X, y, col1W,
+                           style::kFontBody, style::kText, "help.action");
+        ui::drawTextFitted(input::allLabels(map, a, ActiveDevice::Keyboard), kCol2X, y, col2W,
+                           style::kFontBody, Color{200, 210, 230, 255}, "help.keyboard");
+        ui::drawTextFitted(input::allLabels(map, a, ActiveDevice::Gamepad), kCol3X, y, col3W,
+                           style::kFontBody, Color{200, 210, 230, 255}, "help.gamepad");
+        y += 15;
     }
 
-    ui::drawTextWrapped("The window is resizable; the image always scales to fit.", kCol1X,
-                        h - 34, w - 2 * kCol1X, 9, Color{160, 160, 180, 255}, "help.note", 1);
-    ui::drawTextCentered("Cancel: Back", w / 2, h - style::kFooterHeight + 2, style::kFontBody,
+    ui::drawTextWrapped(
+        "Bindings can be changed under Settings. The window is resizable; the image always "
+        "scales to fit.",
+        kCol1X, h - 36, w - 2 * kCol1X, 9, Color{160, 160, 180, 255}, "help.note", 2);
+    const std::string footer =
+        input::prompt(map, InputAction::Cancel, context_.input.activeDevice(), "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, style::kFontBody,
                          style::kTextHint);
 }
 

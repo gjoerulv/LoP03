@@ -19,8 +19,8 @@
 | 9  | Balancing & validation pass       | ☑ complete (approved) |
 | 10 | Release packaging pass            | ☑ complete (approved) |
 | 11 | Completion baseline & presentation audit | ☑ complete (approved) |
-| 12 | UI layout & text-safety foundation | ◑ implemented, awaiting manual approval |
-| 13 | Input consistency, remapping & settings | ☐ planned |
+| 12 | UI layout & text-safety foundation | ☑ complete (approved) |
+| 13 | Input consistency, remapping & settings | ◑ implemented, awaiting manual approval |
 | 14 | Asset manifest & replaceable resources | ☐ planned |
 | 15 | Art-direction vertical slice       | ☐ planned |
 | 16 | Compact dungeon-room system        | ☐ planned |
@@ -386,7 +386,7 @@ milestone is not automatic authorization to start the next.
 
 ## M12 — UI layout & text-safety foundation
 
-- **Status:** ◑ implemented, awaiting manual approval (base commit
+- **Status:** ☑ complete (approved by the owner 2026-07-19; base commit
   `5311ef9`; 144/144 tests; see the note's §N for the as-implemented record
   and deviations)
 - **Goal:** replace fixed-coordinate text assumptions with a small measured
@@ -418,7 +418,9 @@ milestone is not automatic authorization to start the next.
 
 ## M13 — Input consistency, remapping & settings
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (base commit
+  `a247b09`; 173/173 tests; see the note's §N for the as-implemented record
+  and deviations)
 - **Goal:** make all menus and gameplay predictable with keyboard and
   controller, make prompts reflect active bindings, and persist settings.
 - **Player-facing outcome:** consistent Confirm/Cancel semantics; remappable
