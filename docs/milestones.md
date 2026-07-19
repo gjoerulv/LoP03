@@ -20,8 +20,8 @@
 | 10 | Release packaging pass            | ☑ complete (approved) |
 | 11 | Completion baseline & presentation audit | ☑ complete (approved) |
 | 12 | UI layout & text-safety foundation | ☑ complete (approved) |
-| 13 | Input consistency, remapping & settings | ◑ implemented, awaiting manual approval |
-| 14 | Asset manifest & replaceable resources | ☐ planned |
+| 13 | Input consistency, remapping & settings | ☑ complete (approved) |
+| 14 | Asset manifest & replaceable resources | ◑ implemented, awaiting manual approval |
 | 15 | Art-direction vertical slice       | ☐ planned |
 | 16 | Compact dungeon-room system        | ☐ planned |
 | 17 | Exploration visuals & animation    | ☐ planned |
@@ -418,7 +418,7 @@ milestone is not automatic authorization to start the next.
 
 ## M13 — Input consistency, remapping & settings
 
-- **Status:** ◑ implemented, awaiting manual approval (base commit
+- **Status:** ☑ complete (approved by the owner 2026-07-19; base commit
   `a247b09`; 173/173 tests; see the note's §N for the as-implemented record
   and deviations)
 - **Goal:** make all menus and gameplay predictable with keyboard and
@@ -449,7 +449,9 @@ milestone is not automatic authorization to start the next.
 
 ## M14 — Asset manifest & replaceable resources
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (base commit
+  `67689b4`; schema v1 owner-approved 2026-07-19; 181/181 tests; see the
+  note's §N)
 - **Goal:** centralize presentation identity in a validated, versioned external
   asset manifest so states request logical IDs instead of file paths.
 - **Player-facing outcome:** none directly (placeholders remain); groundwork

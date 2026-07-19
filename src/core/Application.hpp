@@ -1,5 +1,6 @@
 #pragma once
 
+#include "assets/AssetManifest.hpp"
 #include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
@@ -25,6 +26,7 @@ public:
 
 private:
     void loadContent();
+    void loadAssets();  // (re)loads the manifest and re-points resources/audio
     void processFrame();
     void drawDebugOverlay() const;
 
@@ -39,6 +41,8 @@ private:
     WindowGuard window_;
     VirtualScreen screen_;
     ResourceManager resources_;
+    assets::AssetManifest manifest_;
+    std::filesystem::path assetsDir_;
     content::ContentDatabase content_;
     Party party_;
     save::SaveSystem saves_;

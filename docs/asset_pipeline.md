@@ -1,109 +1,107 @@
-# Asset Pipeline — Current State and M14 Decision Draft (M11)
+# Asset Pipeline — Implemented Reference (M14)
 
-> Status: **decision draft** from the M11 audit at commit `8271871`. Nothing
-> here is implemented; the version-1 manifest schema requires owner approval
-> before M14 freezes it. M14 turns this into the authoritative pipeline doc.
+> Status: **implemented** (M14; schema v1 owner-approved 2026-07-19).
+> Modules: `src/assets/AssetManifest.*` (raylib-free parse/validate),
+> `src/resource/ResourceManager` (logical-ID textures/fonts),
+> `src/audio/AudioManager` (file-tier audio over the synthesized fallback).
+> This is the authoritative how-to for adding or replacing assets.
 
-## 1. Current state (audited)
+## 1. The contract
 
-- **`assets/` is empty** (`.gitkeep` only). Every visual is code-generated:
-  colored rectangles, glyph markers, raylib default font.
-- **`ResourceManager`** (`src/resource/`) caches by caller-supplied key and
-  loads from a caller-supplied path (`texture(key, path)`,
-  `font(key, path, size)`); missing/failed loads log and return a generated
-  magenta-checkerboard placeholder / default font. RAII-owned; requires an
-  initialized window. **No state currently loads any file asset** — the
-  manager is exercised only by its fallback path.
-- **`AudioManager`** (`src/audio/`) synthesizes every SFX and music loop at
-  runtime into raylib `Sound`s behind a device guard; all calls are no-ops if
-  the device failed. Music "streams" by re-playing a generated loop. Tracks:
-  Town / Dungeon / Battle. SFX: move, confirm, cancel, hit, heal, KO,
-  victory, defeat, chest.
-- **Path safety:** `paths::sanitizeRelative()` exists and is the mandatory
-  gate for any file access.
-- **Packaging today:** CMake copies `data/` beside the exe; there is no
-  `assets/` copy step (nothing to copy yet).
+States and systems request **stable dotted logical IDs**; `assets/manifest.json`
+maps IDs to files and metadata. Replacing any asset for an existing role is a
+manifest + file change — **never a C++ edit**. IDs are public identifiers once
+shipped; renaming one is a schema-level decision.
 
-## 2. Proposed logical-ID model (for M14 approval)
+## 2. Manifest schema (v1, frozen)
 
-States request stable dotted IDs; the manifest maps IDs to files + metadata:
-
-```
-ui.frame.default      ui.cursor.primary     font.ui.body
-tiles.ruined_keep.floor_a                   actor.knight.overworld
-enemy.crystal_slime.battle                  music.town.day
-ambience.crystal_mine                       sfx.ui.confirm
+```json
+{
+  "version": 1,
+  "assets": [
+    { "id": "sfx.ui.confirm",   "type": "sfx",     "path": "audio/sfx/confirm.wav", "volume": 0.9 },
+    { "id": "music.town",       "type": "music",   "path": "audio/music/town.ogg",  "loop": true, "volume": 0.8 },
+    { "id": "ambience.crystal_mine", "type": "ambience", "path": "audio/ambience/mine.ogg" },
+    { "id": "font.ui.body",     "type": "font",    "path": "fonts/body.ttf", "size": 10 },
+    { "id": "ui.frame.default", "type": "texture", "path": "textures/ui/frame.png", "filter": "nearest" }
+  ]
+}
 ```
 
-Namespaces: `ui.` `font.` `tiles.<theme>.` `actor.` `enemy.` `effect.`
-`music.` `ambience.` `sfx.`. IDs are public identifiers once shipped —
-renaming one after release is a schema change.
+- `id` — dotted namespaces: `ui.` `font.` `tiles.<theme>.` `actor.` `enemy.`
+  `effect.` `music.` `ambience.` `sfx.`.
+- `type` — `texture | font | music | ambience | sfx`.
+- `path` — relative to `assets/`, sanitized (no absolute paths, drives, `..`).
+- Per-type optional metadata: texture `filter` (`nearest`|`bilinear`,
+  default nearest); font `size` (default 10); music/ambience `loop`
+  (default true); music/ambience/sfx `volume` (0..1 multiplier, default 1).
+- Reserved for M17: an optional `frames` animation block will be added
+  **without** a version bump (additive).
 
-## 3. Proposed manifest responsibilities (v1)
+**Validation** (headless-tested, `tests/test_asset_manifest.cpp`): duplicate
+ids, unknown types, unsafe paths, out-of-range volumes, and missing files are
+reported and the entry skipped — valid entries survive, the game never
+crashes. A missing `manifest.json` is a valid empty catalog. The shipped
+manifest is validated by the test suite with zero errors.
 
-`assets/manifest.json`, versioned wrapper like the `data/` files:
+## 3. Audio roles (what you can replace today)
 
-- id → relative path (sanitized; no absolute paths, no `..`);
-- asset type (texture / font / music / ambience / sfx);
-- texture: filter mode, optional atlas frame metadata (extended in M17 with
-  animation frames/timing/anchor — reserved, not designed here);
-- font: base size, glyph-coverage policy;
-- music/ambience: loop flag/points, default volume;
-- sfx: default volume, optional variation set;
-- reserved: theme/pack override table (design deferred);
-- manifest `version` (starts at 1).
+| Role id | Used for |
+|---|---|
+| `sfx.ui.move` / `sfx.ui.confirm` / `sfx.ui.cancel` | menu navigation |
+| `sfx.battle.hit` / `heal` / `ko` / `victory` / `defeat` | combat feedback |
+| `sfx.world.chest` | chest opening |
+| `music.town` / `music.dungeon` / `music.battle` | scene music (streamed) |
+| `ambience.*` | validated, plays from M21 |
 
-Validation (raylib-free, reusing `ObjectReader`/`LoadReport`): duplicate
-IDs, unknown types, missing files, unsafe paths, malformed metadata → clear
-errors, never crashes. Required-vs-optional IDs: a missing *required* ID is
-a loud validation error; a missing *optional* ID degrades to fallback.
+**Fallback order (owner-approved):** manifest file → synthesized placeholder
+tone → silence; every miss logs a warning, nothing crashes. File-backed music
+uses raylib music streams with the manifest `loop` flag; volumes combine
+group settings (M13 Settings screen) × per-asset `volume`.
 
-## 4. Required fallback behavior (unchanged principles)
+Texture/font roles follow the same pattern (placeholder checker / default
+font as fallback); visual role names are assigned in M15/M17 as art lands.
 
-- texture → generated checkerboard placeholder + log;
-- font → raylib default font + log;
-- music/ambience/sfx → synthesized placeholder if one exists for the role,
-  else silence + log;
-- never crash, never read outside the assets root.
+## 4. How to add or replace an asset
 
-Development diagnostics must stay loud even when the player experience
-degrades gracefully.
+1. Put the file under the matching `assets/` subtree
+   (`textures/…`, `fonts/…`, `audio/{music,ambience,sfx}/…`).
+2. Add or edit its entry in `assets/manifest.json`.
+3. **Record it in `assets/credits.md`** (file, role, source/author, license,
+   attribution). A shipped external asset without an entry is a release
+   blocker (M24 verifies).
+4. Run the game — debug builds can press **F5** to reload the manifest live
+   (caches drop, callers re-fetch by id, current music restarts on the
+   re-resolved tier). Or just relaunch.
+5. `ctest` validates the shipped manifest automatically.
 
-## 5. Proposed directory organization
+The pipeline is proven end-to-end by `sfx.ui.confirm`: the shipped
+`audio/sfx/confirm.wav` (original, generated) replaces the synthesized
+confirm tone with zero C++ involved — delete its manifest entry and the old
+tone returns.
+
+## 5. Directory layout
 
 ```text
 assets/
   manifest.json
-  credits.md            # provenance/license/attribution for every external asset
+  credits.md
   fonts/
   textures/{ui,actors,enemies,environments,effects}/
   audio/{music,ambience,sfx}/
 ```
 
-## 6. Build/package requirements
+CMake copies `assets/` next to the executable exactly like `data/`; the
+release package (M24) ships both trees.
 
-- CMake copies `assets/` beside the executable exactly like `data/` (M14).
-- Release packaging (M24) ships `data/` + `assets/` + credits; a shipped
-  external asset without a `credits.md` entry is a release blocker.
-- Manual development reload command (debug builds only) re-resolves the
-  manifest; handle semantics (stable handle vs re-fetch-by-ID) are an M14
-  design decision that must be written down before implementation.
+## 6. Engineering rules
 
-## 7. Attribution and licensing policy
-
-Every external asset records at acquisition time: source, author, license,
-license URL/text, and any required attribution string, in `assets/credits.md`.
-Original assets are marked as original. No copyrighted or near-replica
-material (CLAUDE.md).
-
-## 8. Questions requiring owner approval before M14
-
-1. Approve the v1 manifest schema shape (§3) before implementation freezes
-   it (public-schema rule).
-2. Logical-ID naming convention (§2) — IDs become public identifiers.
-3. Sourcing strategy for real assets (commissioned / licensed / produced) —
-   affects credits policy and M15 planning, can be deferred to M15.
-4. Reload handle semantics (§6) — cheap to decide early, expensive to
-   retrofit.
-5. Whether `AudioManager`'s synthesized tones remain the permanent fallback
-   tier under the manifest (recommended: yes) or silence-only.
+- Parsing/validation stays raylib-free (`src/assets/`); GPU/audio loading
+  lives in the managers and requires the window/device.
+- Reload model (owner-approved): **callers cache nothing** — request by id at
+  use time; `ResourceManager::reload()` clears its cache; holding a
+  `Texture2D&`/`Font&` across a reload is a bug.
+- Presentation data stays out of `data/` (gameplay content) — changing art
+  can never change combat or generation.
+- New asset *types* or metadata semantics = manifest schema revision =
+  owner approval first.

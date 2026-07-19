@@ -16,20 +16,22 @@ namespace cd {
 
 namespace {
 
-// Resolves the content directory: prefer a "data" folder next to the executable
-// (CMake copies it there), then fall back to the working directory.
-std::filesystem::path resolveDataDir() {
+// Resolves a bundled directory ("data", "assets"): prefer the folder next to
+// the executable (CMake copies both there), then the working directory.
+std::filesystem::path resolveBundledDir(const char* name) {
     namespace fs = std::filesystem;
     const char* appDir = GetApplicationDirectory();
     if (appDir != nullptr) {
-        fs::path candidate = fs::path(appDir) / "data";
+        fs::path candidate = fs::path(appDir) / name;
         std::error_code ec;
         if (fs::exists(candidate, ec) && !ec) {
             return candidate;
         }
     }
-    return fs::path("data");
+    return fs::path(name);
 }
+
+std::filesystem::path resolveDataDir() { return resolveBundledDir("data"); }
 
 }  // namespace
 
@@ -73,6 +75,7 @@ Application::Application()
         audio_.setVolumes(settings_.values.masterVolume, settings_.values.musicVolume,
                           settings_.values.sfxVolume);
     }
+    loadAssets();
     fade_.start(0.6f);
     {
         content::LoadReport scoreReport;
@@ -108,6 +111,26 @@ void Application::loadContent() {
     }
 }
 
+void Application::loadAssets() {
+    assetsDir_ = resolveBundledDir("assets");
+    content::LoadReport report;
+    if (!manifest_.load(assetsDir_, report)) {
+        log::warn("Asset manifest could not be loaded; using fallbacks only.");
+    }
+    for (const auto& e : report.errors()) {
+        log::warn("  " + e.source + ": " + e.context + ": " + e.message);
+    }
+    if (!manifest_.empty()) {
+        log::info(TextFormat("Asset manifest: %d entr%s from '%s'",
+                             static_cast<int>(manifest_.size()),
+                             manifest_.size() == 1 ? "y" : "ies",
+                             assetsDir_.string().c_str()));
+    }
+    resources_.setCatalog(&manifest_, assetsDir_);
+    resources_.reload();
+    audio_.applyManifest(manifest_, assetsDir_);
+}
+
 void Application::run() {
     while (!WindowShouldClose() && !stack_.empty()) {
         processFrame();
@@ -122,6 +145,14 @@ void Application::processFrame() {
     if (input_.pressed(InputAction::ToggleDebug)) {
         debugOverlay_ = !debugOverlay_;
     }
+#ifdef CRYSTAL_DEBUG_OVERLAY
+    // Manual development reload (owner-approved model: caches drop, callers
+    // re-fetch by id; the current music restarts on the re-resolved tier).
+    if (input_.pressed(InputAction::ReloadAssets)) {
+        log::info("Reloading assets...");
+        loadAssets();
+    }
+#endif
 
     // Settings-driven window mode (self-healing each frame).
     if (settings_.values.borderlessFullscreen != IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)) {

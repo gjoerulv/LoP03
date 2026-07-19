@@ -2,9 +2,13 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** implemented, awaiting manual approval (implemented 2026-07-19;
+  see section N). **Owner-approved decisions (2026-07-19):** manifest schema
+  v1 = versioned wrapper + flat `assets` array with dotted logical IDs and
+  per-type metadata; audio fallback tier = synthesized tones, then silence;
+  reload model = re-fetch by ID, callers cache nothing, ResourceManager
+  rebuilds its cache on reload.
+- **Last reviewed repository commit:** `67689b4` (2026-07-19).
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M14 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -165,3 +169,38 @@ assets/
 - `README.md` — deliverable now includes `assets/` beside `data/`.
 - `.claude/skills/crystal-dungeons/SKILL.md` — manifest gotchas.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-19)
+
+Base commit `67689b4`. All four provisional slices delivered; 181/181 tests
+(8 new manifest tests, including validation of the shipped manifest).
+
+- **Manifest** (`src/assets/AssetManifest.*`): schema v1 exactly as
+  owner-approved; raylib-free parse/validate on the ObjectReader/LoadReport
+  pattern; duplicate/unknown-type/unsafe-path/bad-metadata/missing-file
+  entries reported and skipped; missing manifest.json = valid empty catalog.
+- **ResourceManager**: logical-ID-only API (`texture(id)`, `font(id)`)
+  resolving through the catalog; per-entry filter/size metadata honored;
+  placeholder/default-font fallback preserved; `reload()` per the approved
+  re-fetch model. The old key+path API is gone (it had no callers).
+- **AudioManager**: two tiers per role — manifest file, then synthesized,
+  then silence; file music via raylib music streams (new `MusicHandle` RAII
+  wrapper) with manifest loop/volume metadata; master volume now uses the
+  full range with the synth tier attenuated to preserve loudness;
+  `applyManifest` is reload-safe (stops, unloads, re-resolves, restarts the
+  current track). Ambience type validates but plays from M21.
+- **Wiring**: `assets/` resolves beside the exe like `data/` (CMake copies
+  both); manifest loads at startup with a logged summary; debug-only **F5**
+  (`ReloadAssets`, fixed binding) re-resolves live.
+- **Proof asset**: `assets/audio/sfx/confirm.wav` (original two-note chime,
+  generated) ships mapped to `sfx.ui.confirm` with a `credits.md` entry —
+  runtime log confirms the file loads and plays in place of the synthesized
+  tone with zero C++ involvement.
+- **Runtime verification**: startup log shows "Asset manifest: 1 entry" and
+  the WAV loading; clean init and exit.
+
+**Deviations:** none of substance from the approved slices. Notes: the
+texture/font side has no shipped assets yet (roles arrive with M15/M17 art) —
+the mechanism is tested via placeholder fallback and manifest tests; the
+attribution policy lives in `assets/credits.md` with M24 as the enforcement
+gate; packaging beyond the build-directory copy remains M24.

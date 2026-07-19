@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "assets/AssetManifest.hpp"
+#include "core/Log.hpp"
 #include "raylib.h"
 
 namespace cd {
@@ -12,6 +14,20 @@ namespace {
 
 constexpr int kSampleRate = 22050;
 constexpr float kPi = 3.14159265358979323846f;
+// The synthesized tones are deliberately played quieter than real files (they
+// are harsh); this preserves the pre-M14 loudness now that the master volume
+// uses the full range.
+constexpr float kSynthLevel = 0.5f;
+
+// Manifest role ids, indexed like the Sfx / MusicTrack-1 enums.
+constexpr const char* kSfxIds[kSfxCount] = {
+    "sfx.ui.move",       "sfx.ui.confirm",    "sfx.ui.cancel",
+    "sfx.battle.hit",    "sfx.battle.heal",   "sfx.battle.ko",
+    "sfx.battle.victory", "sfx.battle.defeat", "sfx.world.chest",
+};
+constexpr const char* kMusicIds[kMusicCount] = {"music.town", "music.dungeon", "music.battle"};
+
+float clamp01(float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); }
 
 // Tiny deterministic noise source (for hit SFX) — no <random> needed.
 float noiseSample(std::uint32_t& state) {
@@ -83,31 +99,76 @@ AudioManager::AudioManager() {
     if (!ready_) {
         return;
     }
-    SetMasterVolume(0.5f);
+    SetMasterVolume(masterVolume_);
 
-    sfx_[static_cast<std::size_t>(Sfx::Move)] = makeTone(880.0f, 0.04f, 0.3f);
-    sfx_[static_cast<std::size_t>(Sfx::Confirm)] = makeTone(660.0f, 0.09f, 0.4f, false, 990.0f);
-    sfx_[static_cast<std::size_t>(Sfx::Cancel)] = makeTone(440.0f, 0.09f, 0.35f, false, 300.0f);
-    sfx_[static_cast<std::size_t>(Sfx::Hit)] = makeTone(0.0f, 0.10f, 0.4f, true);
-    sfx_[static_cast<std::size_t>(Sfx::Heal)] = makeTone(523.0f, 0.18f, 0.35f, false, 784.0f);
-    sfx_[static_cast<std::size_t>(Sfx::Ko)] = makeTone(330.0f, 0.25f, 0.4f, false, 120.0f);
-    sfx_[static_cast<std::size_t>(Sfx::Victory)] = makeTone(523.0f, 0.35f, 0.45f, false, 1046.0f);
-    sfx_[static_cast<std::size_t>(Sfx::Defeat)] = makeTone(220.0f, 0.45f, 0.4f, false, 90.0f);
-    sfx_[static_cast<std::size_t>(Sfx::Chest)] = makeTone(784.0f, 0.12f, 0.4f, false, 1175.0f);
+    synthSfx_[static_cast<std::size_t>(Sfx::Move)] = makeTone(880.0f, 0.04f, 0.3f);
+    synthSfx_[static_cast<std::size_t>(Sfx::Confirm)] =
+        makeTone(660.0f, 0.09f, 0.4f, false, 990.0f);
+    synthSfx_[static_cast<std::size_t>(Sfx::Cancel)] =
+        makeTone(440.0f, 0.09f, 0.35f, false, 300.0f);
+    synthSfx_[static_cast<std::size_t>(Sfx::Hit)] = makeTone(0.0f, 0.10f, 0.4f, true);
+    synthSfx_[static_cast<std::size_t>(Sfx::Heal)] =
+        makeTone(523.0f, 0.18f, 0.35f, false, 784.0f);
+    synthSfx_[static_cast<std::size_t>(Sfx::Ko)] = makeTone(330.0f, 0.25f, 0.4f, false, 120.0f);
+    synthSfx_[static_cast<std::size_t>(Sfx::Victory)] =
+        makeTone(523.0f, 0.35f, 0.45f, false, 1046.0f);
+    synthSfx_[static_cast<std::size_t>(Sfx::Defeat)] =
+        makeTone(220.0f, 0.45f, 0.4f, false, 90.0f);
+    synthSfx_[static_cast<std::size_t>(Sfx::Chest)] =
+        makeTone(784.0f, 0.12f, 0.4f, false, 1175.0f);
 
     // ~2s looping placeholder tracks.
-    music_[0] = makeLoop({523.0f, 659.0f, 784.0f, 659.0f}, 0.22f, 2, 0.12f);  // Town (major)
-    music_[1] = makeLoop({392.0f, 466.0f, 523.0f, 466.0f}, 0.28f, 2, 0.12f);  // Dungeon (minor)
-    music_[2] = makeLoop({440.0f, 554.0f, 659.0f, 554.0f}, 0.16f, 3, 0.13f);  // Battle (tense)
+    synthMusic_[0] = makeLoop({523.0f, 659.0f, 784.0f, 659.0f}, 0.22f, 2, 0.12f);  // Town
+    synthMusic_[1] = makeLoop({392.0f, 466.0f, 523.0f, 466.0f}, 0.28f, 2, 0.12f);  // Dungeon
+    synthMusic_[2] = makeLoop({440.0f, 554.0f, 659.0f, 554.0f}, 0.16f, 3, 0.13f);  // Battle
 }
 
 void AudioManager::play(Sfx id) {
     if (!ready_ || !enabled_) {
         return;
     }
-    const SoundHandle& s = sfx_[static_cast<std::size_t>(id)];
-    if (s.valid()) {
-        PlaySound(s.get());
+    const std::size_t i = static_cast<std::size_t>(id);
+    if (fileSfx_[i].valid()) {
+        SetSoundVolume(fileSfx_[i].get(), sfxVolume_ * fileSfxVolume_[i]);
+        PlaySound(fileSfx_[i].get());
+        return;
+    }
+    if (synthSfx_[i].valid()) {
+        SetSoundVolume(synthSfx_[i].get(), sfxVolume_ * kSynthLevel);
+        PlaySound(synthSfx_[i].get());
+    }
+    // Neither tier available: silence (still no crash).
+}
+
+void AudioManager::stopCurrent() {
+    if (!ready_ || current_ == MusicTrack::None) {
+        return;
+    }
+    const std::size_t idx = static_cast<std::size_t>(current_) - 1;
+    if (idx >= kMusicCount) {
+        return;
+    }
+    if (fileMusic_[idx].valid()) {
+        StopMusicStream(fileMusic_[idx].get());
+    } else if (synthMusic_[idx].valid()) {
+        StopSound(synthMusic_[idx].get());
+    }
+}
+
+void AudioManager::startCurrent() {
+    if (!ready_ || !enabled_ || current_ == MusicTrack::None) {
+        return;
+    }
+    const std::size_t idx = static_cast<std::size_t>(current_) - 1;
+    if (idx >= kMusicCount) {
+        return;
+    }
+    if (fileMusic_[idx].valid()) {
+        SetMusicVolume(fileMusic_[idx].get(), musicVolume_ * fileMusicVolume_[idx]);
+        PlayMusicStream(fileMusic_[idx].get());
+    } else if (synthMusic_[idx].valid()) {
+        SetSoundVolume(synthMusic_[idx].get(), musicVolume_ * kSynthLevel);
+        PlaySound(synthMusic_[idx].get());
     }
 }
 
@@ -115,19 +176,9 @@ void AudioManager::setMusic(MusicTrack track) {
     if (track == current_) {
         return;
     }
-    if (ready_ && current_ != MusicTrack::None) {
-        const std::size_t prev = static_cast<std::size_t>(current_) - 1;
-        if (prev < music_.size() && music_[prev].valid()) {
-            StopSound(music_[prev].get());
-        }
-    }
+    stopCurrent();
     current_ = track;
-    if (ready_ && enabled_ && current_ != MusicTrack::None) {
-        const std::size_t idx = static_cast<std::size_t>(current_) - 1;
-        if (idx < music_.size() && music_[idx].valid()) {
-            PlaySound(music_[idx].get());
-        }
-    }
+    startCurrent();
 }
 
 void AudioManager::update() {
@@ -135,38 +186,96 @@ void AudioManager::update() {
         return;
     }
     const std::size_t idx = static_cast<std::size_t>(current_) - 1;
-    if (idx < music_.size() && music_[idx].valid() && !IsSoundPlaying(music_[idx].get())) {
-        PlaySound(music_[idx].get());  // loop the track
-    }
-}
-
-void AudioManager::setVolumes(float master, float music, float sfx) {
-    if (!ready_) {
+    if (idx >= kMusicCount) {
         return;
     }
-    const auto clamp01 = [](float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); };
-    // 0.5 is the synthesized placeholder's base output level.
-    SetMasterVolume(0.5f * clamp01(master));
-    for (SoundHandle& s : sfx_) {
-        if (s.valid()) {
-            SetSoundVolume(s.get(), clamp01(sfx));
-        }
-    }
-    for (SoundHandle& m : music_) {
-        if (m.valid()) {
-            SetSoundVolume(m.get(), clamp01(music));
-        }
+    if (fileMusic_[idx].valid()) {
+        UpdateMusicStream(fileMusic_[idx].get());  // looping handled by the stream
+    } else if (synthMusic_[idx].valid() && !IsSoundPlaying(synthMusic_[idx].get())) {
+        PlaySound(synthMusic_[idx].get());  // loop the synthesized track
     }
 }
 
 void AudioManager::setEnabled(bool enabled) {
+    if (enabled_ == enabled) {
+        return;
+    }
     enabled_ = enabled;
-    if (!enabled_ && ready_ && current_ != MusicTrack::None) {
+    if (!enabled_) {
+        stopCurrent();
+    } else {
+        startCurrent();
+    }
+}
+
+void AudioManager::setVolumes(float master, float music, float sfx) {
+    masterVolume_ = clamp01(master);
+    musicVolume_ = clamp01(music);
+    sfxVolume_ = clamp01(sfx);
+    if (!ready_) {
+        return;
+    }
+    SetMasterVolume(masterVolume_);
+    // Re-apply to whatever is currently playing; SFX pick it up at play time.
+    if (current_ != MusicTrack::None) {
         const std::size_t idx = static_cast<std::size_t>(current_) - 1;
-        if (idx < music_.size() && music_[idx].valid()) {
-            StopSound(music_[idx].get());
+        if (idx < kMusicCount) {
+            if (fileMusic_[idx].valid()) {
+                SetMusicVolume(fileMusic_[idx].get(), musicVolume_ * fileMusicVolume_[idx]);
+            } else if (synthMusic_[idx].valid()) {
+                SetSoundVolume(synthMusic_[idx].get(), musicVolume_ * kSynthLevel);
+            }
         }
     }
+}
+
+void AudioManager::applyManifest(const assets::AssetManifest& manifest,
+                                 const std::filesystem::path& root) {
+    if (!ready_) {
+        return;
+    }
+    // Stop before unloading anything the current track might be using, then
+    // restart it on whatever tier resolves afterwards (debug reload path).
+    const MusicTrack playing = current_;
+    stopCurrent();
+
+    for (std::size_t i = 0; i < kSfxCount; ++i) {
+        fileSfx_[i].reset();
+        fileSfxVolume_[i] = 1.0f;
+        const assets::AssetEntry* entry = manifest.find(kSfxIds[i]);
+        if (entry == nullptr || entry->type != assets::AssetType::Sfx) {
+            continue;
+        }
+        const Sound sound = LoadSound((root / entry->path).string().c_str());
+        if (IsSoundValid(sound)) {
+            fileSfx_[i] = SoundHandle(sound);
+            fileSfxVolume_[i] = entry->volume;
+        } else {
+            log::warn("AudioManager: could not load '" + entry->path +
+                      "' for role " + kSfxIds[i] + "; using synthesized fallback");
+        }
+    }
+
+    for (std::size_t i = 0; i < kMusicCount; ++i) {
+        fileMusic_[i].reset();
+        fileMusicVolume_[i] = 1.0f;
+        const assets::AssetEntry* entry = manifest.find(kMusicIds[i]);
+        if (entry == nullptr || entry->type != assets::AssetType::Music) {
+            continue;
+        }
+        Music music = LoadMusicStream((root / entry->path).string().c_str());
+        if (IsMusicValid(music)) {
+            music.looping = entry->loop;
+            fileMusic_[i] = MusicHandle(music);
+            fileMusicVolume_[i] = entry->volume;
+        } else {
+            log::warn("AudioManager: could not load '" + entry->path +
+                      "' for role " + kMusicIds[i] + "; using synthesized fallback");
+        }
+    }
+
+    current_ = MusicTrack::None;
+    setMusic(playing);
 }
 
 }  // namespace cd

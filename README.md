@@ -140,8 +140,10 @@ save round-trips via the Save Point + Continue.
 ## Known limitations
 
 - **Placeholder art and audio.** Tiles, characters, and enemies are colored
-  rectangles/glyphs; SFX and music are simple synthesized tones. Both are
-  isolated and easy to replace (audio degrades to silence if unavailable).
+  rectangles/glyphs; SFX and music are simple synthesized tones. Every sound
+  and visual role is replaceable without code via `assets/manifest.json`
+  (see `docs/asset_pipeline.md`; debug builds reload with F5); missing files
+  fall back to the placeholders, then silence.
 - Status effects are a focused set (poison + attack/defense buffs/debuffs).
   Bosses use stats, skills, minions, telegraph text, and a Brute enrage; dynamic
   summons and true multi-wave "rush" are not implemented.

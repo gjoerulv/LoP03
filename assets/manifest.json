@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "sfx.ui.confirm",
+      "type": "sfx",
+      "path": "audio/sfx/confirm.wav",
+      "volume": 0.9
+    }
+  ]
+}

@@ -2,8 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (implemented 2026-07-19;
-  see section N for the as-implemented record and deviations).
+- **Status:** complete (approved by the owner on 2026-07-19; implemented
+  2026-07-19; see section N for the as-implemented record and deviations).
 - **Last reviewed repository commit:** `a247b09` (2026-07-19).
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M13 ledger entry; the ledger holds status. On conflict, follow the

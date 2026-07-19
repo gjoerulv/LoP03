@@ -117,12 +117,22 @@ malformed/foreign-version = reported defaults; a binding set that would
 strand the keyboard restores that action's defaults. Parse/serialize are
 string-based and headless-tested.
 
-### Resources
+### Resources & the asset manifest (M14)
 
-`ResourceManager` caches by key and owns raylib handles via RAII wrappers
-(`RaylibRAII.hpp`). Missing/failed loads log a warning and return a generated
-**placeholder** (e.g., magenta checkerboard texture) — never crash. Requires an
-initialized window, so it is exercised at runtime, not in unit tests.
+Presentation assets resolve through `assets/manifest.json` (schema v1,
+owner-approved; parsing/validation is raylib-free in `src/assets/AssetManifest`
+and headless-tested, including a test that validates the shipped manifest).
+States request **stable logical IDs** — never file paths. `ResourceManager`
+caches by id and owns raylib handles via RAII wrappers (`RaylibRAII.hpp`);
+unknown ids / missing files / failed loads log a warning and return a
+generated **placeholder** (magenta checker) or the default font — never crash.
+`AudioManager` resolves its fixed roles (`sfx.*`, `music.*`) against the same
+catalog: manifest file → synthesized tone → silence (owner-approved order);
+file music uses raylib music streams. Reload model (owner-approved): callers
+cache nothing and re-fetch by id; the debug-only F5 `ReloadAssets` action
+re-resolves the catalog and restarts the current track. CMake copies `assets/`
+beside the executable like `data/`; provenance lives in `assets/credits.md`.
+Authoring guide: `docs/asset_pipeline.md`.
 
 ### Paths & safety
 

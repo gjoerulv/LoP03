@@ -22,6 +22,7 @@ InputMap::InputMap() {
     bindKey(InputAction::Menu, KEY_TAB);
     bindKey(InputAction::TextBackspace, KEY_BACKSPACE);  // text editing only
     bindKey(InputAction::ToggleDebug, KEY_F1);
+    bindKey(InputAction::ReloadAssets, KEY_F5);  // consumed in debug builds only
     // Quit has no default key: Esc/Backspace map to Cancel, whose meaning is
     // contextual per state (resume an overlay, or leave the title). Quit stays
     // reserved for an explicit, unambiguous quit affordance later.

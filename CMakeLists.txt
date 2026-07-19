@@ -45,6 +45,7 @@ add_library(crystal_core STATIC
     src/input/PromptLabels.cpp
     src/input/RaylibInputQuery.cpp
     src/input/Remap.cpp
+    src/assets/AssetManifest.cpp
     src/settings/Settings.cpp
     src/states/RemapState.cpp
     src/states/SettingsState.cpp
@@ -119,12 +120,15 @@ if(WIN32)
     endif()
 endif()
 
-# Make JSON content available next to the executable at runtime.
+# Make JSON content and the asset tree available next to the executable.
 add_custom_command(TARGET CrystalDungeons POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_CURRENT_SOURCE_DIR}/data"
             "$<TARGET_FILE_DIR:CrystalDungeons>/data"
-    COMMENT "Copying data/ next to CrystalDungeons.exe")
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+            "$<TARGET_FILE_DIR:CrystalDungeons>/assets"
+    COMMENT "Copying data/ and assets/ next to CrystalDungeons.exe")
 
 # ---------------------------------------------------------------------------
 # Tests

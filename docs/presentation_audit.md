@@ -235,6 +235,9 @@ shop detail line (side-by-side compare remains M22).
 - Rectangles/glyphs for actors, tiles, markers; code-generated colors.
 - → **M15/M17** (no earlier action). Not inflated above Medium: readable, but
   it is the program's core quality gap.
+- **Enabler (M14):** the asset manifest now makes every texture/font/audio
+  role replaceable without C++ (proven live by `sfx.ui.confirm` shipping as a
+  file); producing the real art/audio remains M15/M17/M21.
 
 ### Low
 

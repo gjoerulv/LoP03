@@ -20,10 +20,11 @@ enum class InputAction {
     Menu,
     TextBackspace,  // delete-one-char while editing text (never remapped)
     ToggleDebug,
+    ReloadAssets,  // debug builds: re-resolve the asset manifest (never remapped)
     Quit,  // reserved for an explicit quit affordance; no default binding
 };
 
-inline constexpr std::size_t kInputActionCount = 10;
+inline constexpr std::size_t kInputActionCount = 11;
 
 inline constexpr std::size_t actionIndex(InputAction a) { return static_cast<std::size_t>(a); }
 
@@ -52,6 +53,7 @@ constexpr std::string_view actionName(InputAction a) {
         case InputAction::Menu: return "menu";
         case InputAction::TextBackspace: return "text_backspace";
         case InputAction::ToggleDebug: return "toggle_debug";
+        case InputAction::ReloadAssets: return "reload_assets";
         case InputAction::Quit: return "quit";
     }
     return "";
@@ -79,6 +81,7 @@ constexpr std::string_view actionDisplayName(InputAction a) {
         case InputAction::Menu: return "Menu / Pause";
         case InputAction::TextBackspace: return "Delete (text entry)";
         case InputAction::ToggleDebug: return "Toggle debug overlay";
+        case InputAction::ReloadAssets: return "Reload assets (debug)";
         case InputAction::Quit: return "Quit";
     }
     return "";
