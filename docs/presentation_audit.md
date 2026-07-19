@@ -238,6 +238,11 @@ shop detail line (side-by-side compare remains M22).
 - **Enabler (M14):** the asset manifest now makes every texture/font/audio
   role replaceable without C++ (proven live by `sfx.ui.confirm` shipping as a
   file); producing the real art/audio remains M15/M17/M21.
+- **Partial (M15):** the vertical slice ships generated pixel art for the
+  town, Ruined Keep, player, battle actors/enemies/boss, markers, UI frame,
+  emblem, and three music loops (`docs/screenshots/m15_slice/`); direction
+  pending the owner gate. Crystal Mine / Hollow Forest and per-enemy art
+  remain M17.
 
 ### Low
 

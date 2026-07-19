@@ -2,8 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (implemented 2026-07-19;
-  see section N). **Owner-approved decisions (2026-07-19):** manifest schema
+- **Status:** complete (approved by the owner on 2026-07-19; implemented
+  2026-07-19; see section N). **Owner-approved decisions (2026-07-19):** manifest schema
   v1 = versioned wrapper + flat `assets` array with dotted logical IDs and
   per-type metadata; audio fallback tier = synthesized tones, then silence;
   reload model = re-fetch by ID, callers cache nothing, ResourceManager

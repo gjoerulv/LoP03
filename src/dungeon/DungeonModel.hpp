@@ -63,6 +63,7 @@ struct Dungeon {
     std::uint64_t seed = 0;
     int depth = 1;
     std::string themeName;
+    std::string themeId;  // content id ("ruined_keep"); presentation keys off it
     int gridW = 0;
     int gridH = 0;
 

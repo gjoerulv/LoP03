@@ -29,6 +29,11 @@ public:
     // are relative to. The manifest is not owned and must outlive use.
     void setCatalog(const assets::AssetManifest* manifest, std::filesystem::path root);
 
+    // True when the catalog maps this id to a texture entry. States use this
+    // to fall back to the pre-asset drawing path (colored shapes) instead of
+    // showing the missing-asset checker for roles that simply have no art yet.
+    bool hasTexture(const std::string& id) const;
+
     // Returns the cached texture for a logical id ("ui.frame.default"). On
     // first request the id is resolved through the catalog; unknown ids or
     // failed loads cache the magenta/black checker placeholder instead.

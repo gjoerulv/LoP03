@@ -1,4 +1,4 @@
-#include "states/DungeonMenuState.hpp"
+﻿#include "states/DungeonMenuState.hpp"
 
 #include <memory>
 
@@ -60,7 +60,7 @@ void DungeonMenuState::render() {
     const int boxH = 124;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
-    ui::drawPanel(boxX, boxY, boxW, boxH, Color{24, 22, 40, 240}, Color{150, 130, 180, 255});
+    ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{24, 22, 40, 240}, Color{150, 130, 180, 255});
     ui::drawTextCentered("Dungeon Paused", w / 2, boxY + 12, 14, RAYWHITE);
     ui::drawMenu(menu_, boxX + 30, boxY + 40, 18, 12, RAYWHITE, Color{90, 90, 110, 255},
                  Color{240, 220, 120, 255});

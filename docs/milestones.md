@@ -21,8 +21,8 @@
 | 11 | Completion baseline & presentation audit | ☑ complete (approved) |
 | 12 | UI layout & text-safety foundation | ☑ complete (approved) |
 | 13 | Input consistency, remapping & settings | ☑ complete (approved) |
-| 14 | Asset manifest & replaceable resources | ◑ implemented, awaiting manual approval |
-| 15 | Art-direction vertical slice       | ☐ planned |
+| 14 | Asset manifest & replaceable resources | ☑ complete (approved) |
+| 15 | Art-direction vertical slice       | ◑ implemented, awaiting manual approval |
 | 16 | Compact dungeon-room system        | ☐ planned |
 | 17 | Exploration visuals & animation    | ☐ planned |
 | 18 | Battle presentation & game feel    | ☐ planned |
@@ -449,7 +449,7 @@ milestone is not automatic authorization to start the next.
 
 ## M14 — Asset manifest & replaceable resources
 
-- **Status:** ◑ implemented, awaiting manual approval (base commit
+- **Status:** ☑ complete (approved by the owner 2026-07-19; base commit
   `67689b4`; schema v1 owner-approved 2026-07-19; 181/181 tests; see the
   note's §N)
 - **Goal:** centralize presentation identity in a validated, versioned external
@@ -481,7 +481,9 @@ milestone is not automatic authorization to start the next.
 
 ## M15 — Art-direction vertical slice
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (the approval is the
+  art-direction gate; 181/181 tests; captures in
+  `docs/screenshots/m15_slice/`; see the note's §N)
 - **Goal:** prove the final visual/audio direction and its production cost on
   one coherent slice before creating the full asset set.
 - **Player-facing outcome:** one polished path through the game: title, one

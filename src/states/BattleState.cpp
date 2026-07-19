@@ -12,6 +12,7 @@
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "input/PromptLabels.hpp"
+#include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -517,17 +518,50 @@ void BattleState::update(float dt) {
 
 void BattleState::drawUnit(const battle::Combatant& c, int x, int y, bool current,
                            bool targeted) const {
-    const Color body = c.side == battle::Side::Enemy ? Color{170, 80, 90, 255}
-                                                     : Color{90, 130, 190, 255};
-    DrawRectangle(x, y, 40, 16, c.alive() ? body : Color{60, 60, 70, 255});
-    if (targeted) {
-        DrawRectangleLines(x - 2, y - 2, 44, 20, Color{240, 220, 120, 255});
+    // Sprite lookup: a specific id first (M17 will ship per-enemy art), then
+    // the tier-generic slice sprite, then the pre-asset rectangle.
+    std::string spriteId;
+    if (c.side == battle::Side::Party) {
+        spriteId = "actor." + c.sourceId + ".battle";
+    } else if (c.isBoss) {
+        spriteId = "boss." + c.sourceId + ".battle";
+        if (!context_.resources.hasTexture(spriteId)) {
+            spriteId = "boss.generic.battle";
+        }
+    } else {
+        spriteId = "enemy." + c.sourceId + ".battle";
+        if (!context_.resources.hasTexture(spriteId)) {
+            const content::EnemyDef* def = context_.content.findEnemy(c.sourceId);
+            spriteId = (def != nullptr && def->tier == content::EnemyTier::Elite)
+                           ? "enemy.elite.battle"
+                           : "enemy.normal.battle";
+        }
+    }
+
+    int nameY = y - 9;
+    if (context_.resources.hasTexture(spriteId)) {
+        const Texture2D& tex = context_.resources.texture(spriteId);
+        const int sx = x + 20 - tex.width / 2;   // bottom-center on the old
+        const int sy = y + 16 - tex.height;      // 40x16 footprint
+        DrawTexture(tex, sx, sy, c.alive() ? WHITE : Color{110, 110, 125, 255});
+        if (targeted) {
+            DrawRectangleLines(sx - 2, sy - 2, tex.width + 4, tex.height + 4,
+                               Color{240, 220, 120, 255});
+        }
+        nameY = sy - 10;
+    } else {
+        const Color body = c.side == battle::Side::Enemy ? Color{170, 80, 90, 255}
+                                                         : Color{90, 130, 190, 255};
+        DrawRectangle(x, y, 40, 16, c.alive() ? body : Color{60, 60, 70, 255});
+        if (targeted) {
+            DrawRectangleLines(x - 2, y - 2, 44, 20, Color{240, 220, 120, 255});
+        }
     }
     if (current) {
         DrawText(">", x - 9, y + 3, 10, Color{240, 220, 120, 255});
     }
 
-    DrawText(c.name.c_str(), x, y - 9, 8, RAYWHITE);
+    DrawText(c.name.c_str(), x, nameY, 8, RAYWHITE);
     // HP bar.
     const float hpFrac = c.maxHp > 0 ? static_cast<float>(c.hp) / static_cast<float>(c.maxHp) : 0.0f;
     DrawRectangle(x, y + 17, 40, 3, Color{40, 40, 40, 255});
@@ -606,7 +640,8 @@ void BattleState::render() {
     // Bottom panel: lists live in the left column (scrolled to kListRows),
     // the actor line and selected-entry description in the right column.
     const int panelY = h - kPanelH - 4;
-    ui::drawPanel(4, panelY, w - 8, kPanelH, Color{24, 22, 34, 240}, Color{120, 120, 160, 255});
+    ui::drawFramedPanel(context_.resources, 4, panelY, w - 8, kPanelH, Color{24, 22, 34, 240},
+                        Color{120, 120, 160, 255});
     const int infoW = w - kInfoX - 12;
     const int listLabelW = kInfoX - kListX - 18;
     const InputMap& map = context_.input.map();

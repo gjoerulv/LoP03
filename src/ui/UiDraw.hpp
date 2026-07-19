@@ -12,9 +12,18 @@
 // bounded helpers report overflow to the log once per site instead of
 // silently clipping or spilling.
 
+namespace cd {
+class ResourceManager;
+}
+
 namespace cd::ui {
 
 void drawPanel(int x, int y, int w, int h, Color fill, Color border);
+
+// Panel that uses the nine-patch "ui.frame.default" texture when the catalog
+// provides one (M15), and the plain double-border drawPanel otherwise.
+void drawFramedPanel(ResourceManager& resources, int x, int y, int w, int h, Color fill,
+                     Color border);
 
 // Measurement against the active raylib font (requires an initialized window).
 int measureText(const std::string& text, int fontSize);

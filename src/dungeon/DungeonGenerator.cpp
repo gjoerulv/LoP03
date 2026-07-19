@@ -192,6 +192,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
     d.seed = seed;
     d.depth = depth < 1 ? 1 : depth;
     d.themeName = theme != nullptr ? theme->name : "Dungeon";
+    d.themeId = theme != nullptr ? theme->id : "";
     d.gridW = kGridW;
     d.gridH = kGridH;
 

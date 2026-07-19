@@ -18,6 +18,7 @@
 #include "score/Scoreboard.hpp"
 #include "score/Scoring.hpp"
 #include "input/PromptLabels.hpp"
+#include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
 #include "states/BattleState.hpp"
 #include "states/DungeonMenuState.hpp"
@@ -449,37 +450,60 @@ void DungeonState::renderMinimap() const {
 
 void DungeonState::render() {
     ClearBackground(BLACK);
+    // Theme tiles from the catalog (M15); colored rectangles remain the
+    // fallback for themes that have no art yet.
+    const std::string tilePrefix = "tiles." + dungeon_.themeId + ".";
+    const std::string wallId = tilePrefix + "wall";
+    const std::string doorId = tilePrefix + "door";
+    const std::string floorId = tilePrefix + "floor";
     for (int ty = 0; ty < roomMap_.height(); ++ty) {
         for (int tx = 0; tx < roomMap_.width(); ++tx) {
-            DrawRectangle(tx * kTile, ty * kTile, kTile, kTile, tileColor(roomMap_.at(tx, ty)));
+            const town::Tile t = roomMap_.at(tx, ty);
+            const std::string& id = t == town::Tile::Building ? wallId
+                                    : t == town::Tile::Door  ? doorId
+                                                             : floorId;
+            if (context_.resources.hasTexture(id)) {
+                DrawTexture(context_.resources.texture(id), tx * kTile, ty * kTile, WHITE);
+            } else {
+                DrawRectangle(tx * kTile, ty * kTile, kTile, kTile, tileColor(t));
+            }
         }
     }
 
-    // Markers.
+    // Markers (sprites when the catalog has them; glyph rectangles otherwise).
     for (const Marker& m : markers_) {
         Color c{};
         const char* glyph = "?";
+        const char* spriteId = nullptr;
         switch (m.kind) {
             case MarkerKind::GateTeam:
             case MarkerKind::GuardTeam:
                 c = Color{206, 84, 84, 255};
                 glyph = "!";
+                spriteId = "prop.gate_marker";
                 break;
             case MarkerKind::Boss:
                 c = Color{184, 92, 206, 255};
                 glyph = "B";
+                spriteId = "prop.boss_marker";
                 break;
             case MarkerKind::Chest: {
                 const bool opened =
                     dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].chest.opened;
                 c = opened ? Color{120, 100, 50, 255} : Color{232, 200, 96, 255};
                 glyph = "C";
+                spriteId = opened ? nullptr : "prop.chest";
                 break;
             }
         }
-        DrawRectangle(m.x * kTile + 2, m.y * kTile + 2, kTile - 4, kTile - 4, c);
-        ui::drawTextCentered(glyph, m.x * kTile + kTile / 2, m.y * kTile + 4, 8,
-                             Color{20, 20, 20, 255});
+        if (spriteId != nullptr && context_.resources.hasTexture(spriteId)) {
+            DrawTexture(context_.resources.texture(spriteId), m.x * kTile + 2, m.y * kTile + 2,
+                        WHITE);
+        } else {
+            DrawRectangle(m.x * kTile + 2, m.y * kTile + 2, kTile - 4, kTile - 4, c);
+            ui::drawTextCentered(glyph, m.x * kTile + kTile / 2, m.y * kTile + 4, 8,
+                                 Color{20, 20, 20, 255});
+        }
 
         // Visible danger label above an enemy team.
         if (m.kind != MarkerKind::Chest && m.teamIndex >= 0 &&
@@ -491,9 +515,14 @@ void DungeonState::render() {
     }
 
     // Player.
-    DrawRectangle(static_cast<int>(player_.x), static_cast<int>(player_.y),
-                  static_cast<int>(player_.w), static_cast<int>(player_.h),
-                  Color{236, 224, 128, 255});
+    if (context_.resources.hasTexture("actor.player.overworld")) {
+        DrawTexture(context_.resources.texture("actor.player.overworld"),
+                    static_cast<int>(player_.x), static_cast<int>(player_.y), WHITE);
+    } else {
+        DrawRectangle(static_cast<int>(player_.x), static_cast<int>(player_.y),
+                      static_cast<int>(player_.w), static_cast<int>(player_.h),
+                      Color{236, 224, 128, 255});
+    }
 
     // HUD: backdrop sized to the measured lines so text never spills past it.
     const std::string hudLine1 = TextFormat("%s  depth %d  gates %d", dungeon_.themeName.c_str(),

@@ -1,4 +1,4 @@
-#include "states/InnState.hpp"
+﻿#include "states/InnState.hpp"
 
 #include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
@@ -34,7 +34,7 @@ void InnState::render() {
     const int boxH = 170;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
-    ui::drawPanel(boxX, boxY, boxW, boxH, Color{30, 24, 40, 255}, Color{200, 170, 120, 255});
+    ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{30, 24, 40, 255}, Color{200, 170, 120, 255});
 
     ui::drawTextCentered("Inn", w / 2, boxY + 12, 18, RAYWHITE);
     ui::drawTextCentered("The party rests. HP and MP fully restored.", w / 2, boxY + 38, 10,

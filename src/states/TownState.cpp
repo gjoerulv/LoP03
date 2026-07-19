@@ -13,6 +13,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "resource/ResourceManager.hpp"
 #include "states/EquipShopState.hpp"
 #include "states/GuildState.hpp"
 #include "states/InnState.hpp"
@@ -43,6 +44,19 @@ Color tileColor(town::Tile tile) {
         case town::Tile::Door: return Color{156, 112, 70, 255};
     }
     return BLACK;
+}
+
+const char* tileTextureId(town::Tile tile) {
+    switch (tile) {
+        case town::Tile::Ground: return "tiles.town.ground";
+        case town::Tile::Path: return "tiles.town.path";
+        case town::Tile::Grass: return "tiles.town.grass";
+        case town::Tile::Tree: return "tiles.town.tree";
+        case town::Tile::Water: return "tiles.town.water";
+        case town::Tile::Building: return "tiles.town.building";
+        case town::Tile::Door: return "tiles.town.door";
+    }
+    return "";
 }
 
 }  // namespace
@@ -140,7 +154,13 @@ void TownState::render() {
     ClearBackground(BLACK);
     for (int ty = 0; ty < map.height(); ++ty) {
         for (int tx = 0; tx < map.width(); ++tx) {
-            DrawRectangle(tx * ts, ty * ts, ts, ts, tileColor(map.at(tx, ty)));
+            const town::Tile tile = map.at(tx, ty);
+            const char* id = tileTextureId(tile);
+            if (context_.resources.hasTexture(id)) {
+                DrawTexture(context_.resources.texture(id), tx * ts, ty * ts, WHITE);
+            } else {
+                DrawRectangle(tx * ts, ty * ts, ts, ts, tileColor(tile));
+            }
         }
     }
 
@@ -150,10 +170,15 @@ void TownState::render() {
         ui::drawTextCentered(b.name.c_str(), cx, b.y * ts - 9, 8, Color{225, 225, 235, 255});
     }
 
-    // Player + facing tick.
-    DrawRectangle(static_cast<int>(player_.x), static_cast<int>(player_.y),
-                  static_cast<int>(player_.w), static_cast<int>(player_.h),
-                  Color{236, 224, 128, 255});
+    // Player (sprite when the catalog has one) + facing tick.
+    if (context_.resources.hasTexture("actor.player.overworld")) {
+        DrawTexture(context_.resources.texture("actor.player.overworld"),
+                    static_cast<int>(player_.x), static_cast<int>(player_.y), WHITE);
+    } else {
+        DrawRectangle(static_cast<int>(player_.x), static_cast<int>(player_.y),
+                      static_cast<int>(player_.w), static_cast<int>(player_.h),
+                      Color{236, 224, 128, 255});
+    }
     DrawRectangle(static_cast<int>(player_.x + player_.w * 0.5f + facing_.x * 4.0f - 1.0f),
                   static_cast<int>(player_.y + player_.h * 0.5f + facing_.y * 4.0f - 1.0f), 3, 3,
                   Color{60, 50, 30, 255});

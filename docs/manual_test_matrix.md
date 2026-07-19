@@ -6,6 +6,15 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M15 update:** the slice screens (title, town, Ruined Keep, battle,
+> pause/result panels) now render generated art + music via the manifest —
+> judge them against `docs/art_bible.md`; captures in
+> `docs/screenshots/m15_slice/`. Battle sprites and the framed battle panel
+> were not reachable by scripted capture: verify rows 24–31 by eye (class
+> sprites per party member, tier sprites on enemies, 32px boss, gray tint on
+> KO, target box around sprites). Crystal Mine / Hollow Forest intentionally
+> keep colored-rectangle tiles until M17.
+>
 > **M13 update:** left-stick navigation now exists (run the stick pass for
 > real); row 6 name-editing on gamepad is **expect pass** (A/B finish, X
 > deletes — the Blocker fix); rows 3/17 prompts now show live binding labels

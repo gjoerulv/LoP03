@@ -4,6 +4,7 @@
 #include <unordered_set>
 
 #include "core/Log.hpp"
+#include "resource/ResourceManager.hpp"
 
 namespace cd::ui {
 
@@ -30,6 +31,29 @@ void drawPanel(int x, int y, int w, int h, Color fill, Color border) {
                       static_cast<unsigned char>(border.g * 3 / 5),
                       static_cast<unsigned char>(border.b * 3 / 5), border.a};
     DrawRectangleLines(x + 2, y + 2, w - 4, h - 4, inner);
+}
+
+void drawFramedPanel(ResourceManager& resources, int x, int y, int w, int h, Color fill,
+                     Color border) {
+    static const std::string kFrameId = "ui.frame.default";
+    if (!resources.hasTexture(kFrameId)) {
+        drawPanel(x, y, w, h, fill, border);
+        return;
+    }
+    DrawRectangle(x + 3, y + 3, w - 6, h - 6, fill);
+    const Texture2D& frame = resources.texture(kFrameId);
+    NPatchInfo patch{};
+    patch.source = Rectangle{0, 0, static_cast<float>(frame.width),
+                             static_cast<float>(frame.height)};
+    patch.left = 8;
+    patch.top = 8;
+    patch.right = 8;
+    patch.bottom = 8;
+    patch.layout = NPATCH_NINE_PATCH;
+    DrawTextureNPatch(frame, patch,
+                      Rectangle{static_cast<float>(x), static_cast<float>(y),
+                                static_cast<float>(w), static_cast<float>(h)},
+                      Vector2{0, 0}, 0.0f, WHITE);
 }
 
 int measureText(const std::string& text, int fontSize) {

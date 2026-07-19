@@ -1,0 +1,122 @@
+# Crystal Dungeons — Art Bible
+
+> Status: **proposal pending the M15 owner gate.** Sourcing (owner decision
+> 2026-07-19): assets are generated in-project by scripted pixel art +
+> synthesized chiptune (`tools/asset_gen/`), fully original; this document
+> doubles as a commissioning spec if professional art is wanted later.
+> Nothing here is final until the owner approves the vertical slice.
+
+## 1. Mood and visual pillars
+
+1. **Readable first.** Every gameplay-relevant thing (exits, enemies, chests,
+   the player) must read in silhouette at native 426×240. Atmosphere never
+   outranks legibility.
+2. **Restrained dark fantasy.** Muted, slightly desaturated stone-and-earth
+   world; quiet dread rather than gore or noise.
+3. **Crystal as light.** Luminous cyan/violet crystal accents are the world's
+   focal contrast — used sparingly (markers, UI glints, the emblem, boss
+   presence), never as wallpaper.
+4. **Efficiency aesthetic.** Clean geometry and calm framing suit a game
+   about doing things in the fewest turns; no visual busywork.
+
+## 2. Palette strategy
+
+Base ramps (hex; ±1 step variation allowed, no new hues without a bible
+update):
+
+- **Night base:** `#0E0C14` (outline/void), `#12101A`, `#1C1826`, `#262233`
+- **Stone:** `#3A3646`, `#4A4658`, `#5C566B`, `#736D82`
+- **Earth/wood:** `#4A3B2A`, `#6B5138`, `#8A6D48`, `#A98F63`
+- **Vegetation:** `#22371E`, `#2A4432`, `#3A5C40`, `#4E7A50`
+- **Water:** `#22304E`, `#2A3C64`, `#34506E`, `#4A6A8A`
+- **Crystal accents:** cyan `#64E0DC`, violet `#9C6CE8` (+`#C9A8F5` glint)
+- **Signal colors:** danger `#D85A5A`, gold/reward `#E8D670`,
+  heal `#8CD98C`
+- Class accents: Knight `#C0C6D0`, Ranger `#4E9A50`, Mage `#6C7CE8`,
+  Cleric `#E8E2C8`, Rogue `#8A5FB0`, Guardian `#C87E3A`
+
+Rules: 3-band shading (shadow/base/highlight) from the ramps above; sparse
+single-pixel speckle for texture, no heavy dithering; signal colors are
+reserved for their meanings and never decorative.
+
+## 3. Pixel grid and scale
+
+- **Tile size: 16×16** (authoritative; matches `Tilemap::kTileSize`).
+- Overworld actors/props: **12×12** inside the 16px tile (collision box
+  unchanged — art never changes collision).
+- Battle sprites: **24×24** (bosses 32×32), side-profile, party faces left,
+  enemies face right.
+- UI frame: 24×24 nine-patch with 8px borders; icons 8×8 or 12×12.
+- Native-resolution authoring only; nearest-neighbor scaling; no mixed-scale
+  pixels ("pixel-perfect or absent").
+
+## 4. Outline and shading
+
+- Full 1px outline in `#0E0C14` on every actor, prop, and marker (auto-traced
+  by the generator); environment tiles have **no** outer outline (they tile).
+- Light source: top-left, consistent everywhere.
+- Interior detail minimal: one shadow band + one highlight; faces are
+  abstract (hood/helm shadows, no facial features at this scale).
+
+## 5. Silhouette identity
+
+- **Player (overworld):** small hooded traveler, gold cloak accent — the
+  only warm-gold moving thing in a scene.
+- **Classes (battle):** one shared humanoid base, identity via silhouette
+  add-ons + accent: Knight sword+shield, Ranger bow+hood, Mage staff+hat,
+  Cleric robe+rod, Rogue dagger+scarf, Guardian tower shield.
+- **Enemies:** hunched/bestial shapes vs. the party's upright ones; elites
+  add horns + violet accent; bosses are larger with a crown/crest and violet
+  crystal glow. Danger is shape+size+accent, never hue alone.
+- **Interactables:** chest (gold trim), gate marker (crossed blades on red),
+  boss marker (crowned skull on violet) — each unique in silhouette.
+
+## 6. Environment composition
+
+- **Town:** warm and safe — greens/earth, framed by a tree border; buildings
+  read as solid roofed blocks with clear doors.
+- **Ruined Keep** (slice theme): cracked slab floors, coursed masonry walls,
+  broken-arch doors; sparse rubble speckle; cool stone ramp.
+- Later themes (M17) differentiate by **shape language**, not palette swap:
+  Crystal Mine = supports/rails/clusters; Hollow Forest = roots/organic
+  boundaries. Grayscale composition must still distinguish them.
+- Decorative density stays low near doors, markers, and paths.
+
+## 7. UI ornament
+
+- Nine-patch dark-steel frame with tiny cyan corner glints; panel fills stay
+  the current near-black blues so M12 text contrast is preserved.
+- The crystal emblem (32×32 cluster) marks the title screen only.
+- Text stays raylib-default font for now; a pixel font is a separate,
+  owner-gated decision (not smuggled into this slice).
+
+## 8. Animation conventions (forward-looking, M17)
+
+- Walk cycles 2–4 frames at 8–10 fps; idle = 2-frame breathe; effects ≤ 6
+  frames. Anchors bottom-center. Defined here so M15 sprites are drawn with
+  animation-compatible proportions; no animation ships in the slice.
+
+## 9. Audio direction
+
+- Chiptune-style: square-wave lead, triangle bass, generous decay; calm
+  major-mode town, sparse minor dungeon with drone, driving battle at
+  ~140 BPM. Loops are seamless and short (6–10s for the slice); real
+  arrangements in M21 follow this language.
+
+## 10. Prohibitions
+
+- No copyrighted or imitative material: no Final Fantasy or other JRPG
+  sprite/UI/monogram look-alikes, no borrowed monster/spell designs, no
+  sampled game audio. Everything original or properly licensed with a
+  `credits.md` record.
+- No signal-color reuse, no outline-less actors, no off-grid pixels, no
+  decorative crystal spam.
+
+## 11. Production notes
+
+Generators live in `tools/asset_gen/` (PowerShell + System.Drawing; WAV
+writer for audio) and are deterministic — rerunning them reproduces every
+generated asset byte-for-byte from this bible's constants. Per-asset cost is
+effectively zero once a shape function exists; the honest ceiling is
+"deliberate simple pixel art", which the owner accepts or replaces at the
+M15 gate.

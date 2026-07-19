@@ -9,6 +9,7 @@
 #include "core/FadeController.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
+#include "resource/ResourceManager.hpp"
 #include "save/SaveSystem.hpp"
 #include "states/HelpState.hpp"
 #include "states/PartyCreationState.hpp"
@@ -97,6 +98,9 @@ void MainMenuState::render() {
     ClearBackground(Color{18, 16, 30, 255});
     DrawRectangle(0, h - 60, w, 60, Color{26, 24, 44, 255});
 
+    if (context_.resources.hasTexture("ui.emblem.crystal")) {
+        DrawTexture(context_.resources.texture("ui.emblem.crystal"), w / 2 - 16, 10, WHITE);
+    }
     ui::drawTextCentered("CRYSTAL DUNGEONS", w / 2, 50, 22, RAYWHITE);
     ui::drawTextCentered("a 16-bit-inspired dungeon-score roguelite", w / 2, 78, 10,
                          Color{170, 170, 200, 255});

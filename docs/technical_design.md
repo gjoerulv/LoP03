@@ -134,6 +134,15 @@ re-resolves the catalog and restarts the current track. CMake copies `assets/`
 beside the executable like `data/`; provenance lives in `assets/credits.md`.
 Authoring guide: `docs/asset_pipeline.md`.
 
+M15 ships the first real catalog content: deterministic generators under
+`tools/asset_gen/` produce the slice's tiles/sprites/UI/music per
+`docs/art_bible.md`. Render paths key off the catalog per element (town and
+themed dungeon tiles via `tiles.<theme>.*` — `Dungeon.themeId` carries the
+content id — player/battle sprites with specific-id-then-generic lookup,
+`ui::drawFramedPanel` nine-patch) and keep the pre-asset colored-shape
+drawing as the fallback for roles without art, so themes and enemies gain
+art incrementally in M17 without code changes.
+
 ### Paths & safety
 
 `paths::userDataDir()` resolves a per-user writable dir (`%APPDATA%/CrystalDungeons`

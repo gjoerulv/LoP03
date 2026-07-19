@@ -1,4 +1,4 @@
-#include "states/DungeonResultState.hpp"
+﻿#include "states/DungeonResultState.hpp"
 
 #include <utility>
 
@@ -36,7 +36,7 @@ void DungeonResultState::render() {
     const int boxH = 190;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
-    ui::drawPanel(boxX, boxY, boxW, boxH, Color{22, 30, 36, 245}, Color{120, 200, 140, 255});
+    ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{22, 30, 36, 245}, Color{120, 200, 140, 255});
 
     ui::drawTextCentered("Dungeon Cleared!", w / 2, boxY + 12, 18, Color{150, 230, 160, 255});
     ui::drawTextCentered(TextFormat("Score: %d", score_), w / 2, boxY + 38, 16, RAYWHITE);

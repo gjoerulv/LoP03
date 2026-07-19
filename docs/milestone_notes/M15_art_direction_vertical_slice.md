@@ -2,9 +2,13 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** implemented, awaiting manual approval — the approval IS the
+  art-direction gate (see §N). **Owner decision
+  (2026-07-19): slice art/audio is generated in-project by Claude** (scripted
+  pixel art + synthesized chiptune through the manifest); the art bible and
+  slice double as a commissioning spec if pro art is wanted later. The
+  direction gate at the end of M15 remains the owner's.
+- **Last reviewed repository commit:** `67689b4`+M14 (2026-07-19).
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M15 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -143,3 +147,38 @@ shading rules, and UI ornament language are all undecided.
 - `docs/completion_roadmap.md` — only if the gate decision changes M16–M21
   assumptions.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-19)
+
+Owner sourcing decision executed: all slice assets generated in-project by
+deterministic scripts (`tools/asset_gen/generate_textures.ps1`,
+`generate_audio.ps1`) — 25 PNGs + 3 music WAVs, all original, recorded in
+`assets/credits.md`, validated by the manifest test. 181/181 tests pass.
+
+**Delivered:** `docs/art_bible.md` (proposal pending this gate); title
+emblem + framed title; textured town (7 tiles) + hooded player sprite;
+Ruined Keep tile set; chest/gate/boss marker sprites; six class battle
+sprites + normal/elite/boss enemy sprites; nine-patch UI frame on the
+battle/pause/Inn/result panels; town/dungeon/battle chiptune loops replacing
+the synthesized hums. Render integration keys off the catalog per element
+with the colored-shape path kept as fallback (`Dungeon.themeId` added so
+theme tiles resolve; sprite lookup tries specific ids first so M17 per-enemy
+art is drop-in). Captures: `docs/screenshots/m15_slice/` (title, town,
+Guild, keep room ×2, framed pause).
+
+**Deviations / gate notes:**
+1. Battle screens could not be reached by scripted capture — class/enemy/
+   boss sprites and the framed battle panel follow the same verified pattern
+   but need the owner's eyes (matrix rows 24–31).
+2. The "one service interior" is represented by the framed Inn panel; no
+   interior scene art exists (services are panel screens by design).
+3. Font unchanged (raylib default) — a pixel font is a separate owner
+   decision, deliberately not smuggled in.
+4. Production-cost evidence: each additional tile/sprite is a small
+   generator function (minutes); the honest ceiling is deliberate simple
+   pixel art. If the owner wants a higher ceiling for M17, the bible + this
+   slice are the commissioning spec.
+
+**The M15 gate is the owner's:** approve this direction for M17/M21
+production, request iteration (palette/shapes/music are one-script changes),
+or reject in favor of commissioned/licensed art.

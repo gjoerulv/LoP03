@@ -1,11 +1,41 @@
 {
   "version": 1,
   "assets": [
-    {
-      "id": "sfx.ui.confirm",
-      "type": "sfx",
-      "path": "audio/sfx/confirm.wav",
-      "volume": 0.9
-    }
+    { "id": "sfx.ui.confirm", "type": "sfx", "path": "audio/sfx/confirm.wav", "volume": 0.9 },
+
+    { "id": "music.town", "type": "music", "path": "audio/music/town.wav", "loop": true, "volume": 0.8 },
+    { "id": "music.dungeon", "type": "music", "path": "audio/music/dungeon.wav", "loop": true, "volume": 0.8 },
+    { "id": "music.battle", "type": "music", "path": "audio/music/battle.wav", "loop": true, "volume": 0.8 },
+
+    { "id": "tiles.town.ground", "type": "texture", "path": "textures/environments/town_ground.png" },
+    { "id": "tiles.town.grass", "type": "texture", "path": "textures/environments/town_grass.png" },
+    { "id": "tiles.town.path", "type": "texture", "path": "textures/environments/town_path.png" },
+    { "id": "tiles.town.tree", "type": "texture", "path": "textures/environments/town_tree.png" },
+    { "id": "tiles.town.water", "type": "texture", "path": "textures/environments/town_water.png" },
+    { "id": "tiles.town.building", "type": "texture", "path": "textures/environments/town_building.png" },
+    { "id": "tiles.town.door", "type": "texture", "path": "textures/environments/town_door.png" },
+
+    { "id": "tiles.ruined_keep.floor", "type": "texture", "path": "textures/environments/keep_floor.png" },
+    { "id": "tiles.ruined_keep.wall", "type": "texture", "path": "textures/environments/keep_wall.png" },
+    { "id": "tiles.ruined_keep.door", "type": "texture", "path": "textures/environments/keep_door.png" },
+
+    { "id": "actor.player.overworld", "type": "texture", "path": "textures/actors/player_overworld.png" },
+    { "id": "actor.knight.battle", "type": "texture", "path": "textures/actors/knight_battle.png" },
+    { "id": "actor.ranger.battle", "type": "texture", "path": "textures/actors/ranger_battle.png" },
+    { "id": "actor.mage.battle", "type": "texture", "path": "textures/actors/mage_battle.png" },
+    { "id": "actor.cleric.battle", "type": "texture", "path": "textures/actors/cleric_battle.png" },
+    { "id": "actor.rogue.battle", "type": "texture", "path": "textures/actors/rogue_battle.png" },
+    { "id": "actor.guardian.battle", "type": "texture", "path": "textures/actors/guardian_battle.png" },
+
+    { "id": "enemy.normal.battle", "type": "texture", "path": "textures/enemies/normal_battle.png" },
+    { "id": "enemy.elite.battle", "type": "texture", "path": "textures/enemies/elite_battle.png" },
+    { "id": "boss.generic.battle", "type": "texture", "path": "textures/enemies/boss_battle.png" },
+
+    { "id": "prop.chest", "type": "texture", "path": "textures/props/chest.png" },
+    { "id": "prop.gate_marker", "type": "texture", "path": "textures/props/gate_marker.png" },
+    { "id": "prop.boss_marker", "type": "texture", "path": "textures/props/boss_marker.png" },
+
+    { "id": "ui.frame.default", "type": "texture", "path": "textures/ui/frame_default.png" },
+    { "id": "ui.emblem.crystal", "type": "texture", "path": "textures/ui/emblem_crystal.png" }
   ]
 }

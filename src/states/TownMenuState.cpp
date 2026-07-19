@@ -1,4 +1,4 @@
-#include "states/TownMenuState.hpp"
+﻿#include "states/TownMenuState.hpp"
 
 #include <memory>
 
@@ -62,7 +62,7 @@ void TownMenuState::render() {
     const int boxH = 106;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
-    ui::drawPanel(boxX, boxY, boxW, boxH, Color{28, 26, 48, 240}, Color{120, 120, 200, 255});
+    ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{28, 26, 48, 240}, Color{120, 120, 200, 255});
     ui::drawTextCentered("Paused", w / 2, boxY + 12, 14, RAYWHITE);
     ui::drawMenu(menu_, boxX + 40, boxY + 38, 18, 12, RAYWHITE, Color{90, 90, 110, 255},
                  Color{240, 220, 120, 255});
