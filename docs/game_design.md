@@ -90,6 +90,17 @@ revive exist; game over if all party KO. **Every** encounter (incl. bosses) is
 escapable. Escaping a normal battle forfeits that guarded chest/reward; escaping
 the boss or leaving the dungeon gives **0 dungeon score**.
 
+**Presentation (M18)** never changes results — it stages how the computed
+outcome is shown: a brief lunge, an impact beat (hit flash, small shake,
+damage numbers, HP bars updating), then the message. Because score play means
+many repeated battles, pacing is a design rule: **Battle Speed** Normal is
+brisk (~0.3s of staging per action), Fast halves it, Instant skips staging
+outright, and Confirm always skips ahead. **Battle Flash** and **Battle
+Shake** settings (full/reduced/off) gate the impact effects; flash is a
+gentle brighten, never a strobe. Fallen enemies sink from the field; fallen
+allies stay visible for revives; defeat states its consequences before
+returning to town. Combat stays fully readable with audio muted.
+
 ## 9. Scoring
 
 Ranking priority: (1) dungeon completed? → (2) fewest battle turns → (3) most

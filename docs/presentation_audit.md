@@ -224,6 +224,8 @@ shop detail line (side-by-side compare remains M22).
   (`DungeonState::onResume`), with no game-over screen and no mention of the
   gold loss or run score forfeiture.
 - Expected: an explicit defeat/return summary (mirror of `DungeonResultState`).
+- **Fixed (M18):** the defeat outcome message now states the consequences
+  (carried to town, half gold lost, run forfeit) before the return.
 - → **M18** (battle presentation) or **M12-d** dungeon family — owner call.
 
 **ROOM-015 — Rooms fill the whole exploration screen** `[observed+static]`

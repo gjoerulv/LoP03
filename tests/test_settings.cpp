@@ -41,6 +41,40 @@ TEST_CASE("settings: serialize/parse round-trip preserves values and bindings") 
     CHECK(loadedMap.buttons(InputAction::Confirm).front() == 5);
 }
 
+TEST_CASE("settings: effect levels round-trip and default to full when absent") {
+    Settings values;
+    values.effectFlash = EffectLevel::Off;
+    values.effectShake = EffectLevel::Reduced;
+    InputMap map;
+    const std::string text = serializeSettings(values, map);
+
+    Settings loaded;
+    InputMap loadedMap;
+    LoadReport report;
+    REQUIRE(parseSettingsText(text, loaded, loadedMap, report));
+    CHECK(report.errorCount() == 0);
+    CHECK(loaded.effectFlash == EffectLevel::Off);
+    CHECK(loaded.effectShake == EffectLevel::Reduced);
+
+    // Pre-M18 file: gameplay object without effect fields keeps Full.
+    Settings old;
+    LoadReport report2;
+    REQUIRE(parseSettingsText(
+        R"({"version":1,"gameplay":{"battleSpeed":"fast","messageSpeed":"normal"}})", old,
+        loadedMap, report2));
+    CHECK(report2.errorCount() == 0);
+    CHECK(old.effectFlash == EffectLevel::Full);
+    CHECK(old.effectShake == EffectLevel::Full);
+
+    // Unknown value: reported, default kept.
+    Settings bad;
+    LoadReport report3;
+    REQUIRE(parseSettingsText(
+        R"({"version":1,"gameplay":{"effectFlash":"strobe"}})", bad, loadedMap, report3));
+    CHECK(report3.errorCount() == 1);
+    CHECK(bad.effectFlash == EffectLevel::Full);
+}
+
 TEST_CASE("settings: malformed JSON yields defaults and a report") {
     Settings values;
     InputMap map;

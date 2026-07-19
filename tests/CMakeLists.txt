@@ -24,6 +24,7 @@ add_executable(crystal_tests
     test_room_layout.cpp
     test_inventory.cpp
     test_battle.cpp
+    test_battle_sequencer.cpp
     test_danger.cpp
     test_scoring.cpp
     test_scoreboard.cpp

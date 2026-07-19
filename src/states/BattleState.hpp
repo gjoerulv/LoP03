@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "battle/Battle.hpp"
+#include "render/BattleSequencer.hpp"
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
 #include "ui/ScrollWindow.hpp"
@@ -56,9 +57,14 @@ private:
     };
     int enemyBaseY() const;
     void unitScreenPos(int index, int& outX, int& outY) const;
-    void spawnNumbers(const std::vector<int>& hpBefore);  // also plays Hit/Heal/Ko SFX
+    // Computes deltas into the pending presentation (floats, hit flags,
+    // SFX); nothing is shown until commitPresentation() runs (at the
+    // sequencer's impact beat, or immediately for status ticks).
+    void stageNumbers(const std::vector<int>& hpBefore);
+    void commitPresentation();
 
-    void drawUnit(const battle::Combatant& c, int x, int y, bool current, bool targeted) const;
+    void drawUnit(const battle::Combatant& c, int index, int x, int y, bool current,
+                  bool targeted) const;
 
     AppContext& context_;
     battle::Battle battle_;
@@ -87,8 +93,17 @@ private:
     int targetCursor_ = 0;
 
     std::string message_;
-    float timer_ = 0.0f;
     std::vector<FloatNumber> floats_;
+
+    // Staged presentation (M18): the sim result is already final; these only
+    // control when it becomes visible.
+    render::BattleSequencer seq_;
+    std::vector<int> displayHp_;            // HP as currently shown (commits at impact)
+    std::vector<FloatNumber> pendingFloats_;
+    std::vector<char> hitFlags_;            // units brightened during the impact beat
+    std::vector<float> koFade_;             // enemy fade-out after a shown KO (1 -> 0)
+    int lungeUnit_ = -1;                    // acting unit during the current sequence
+    int pendingSfx_ = 0;                    // 0 none, 1 heal, 2 hit, 3 ko
 };
 
 }  // namespace cd

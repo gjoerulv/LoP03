@@ -48,6 +48,22 @@ std::optional<MessageSpeed> messageSpeedFromName(std::string_view name) {
     return std::nullopt;
 }
 
+std::string_view effectLevelName(EffectLevel s) {
+    switch (s) {
+        case EffectLevel::Full: return "full";
+        case EffectLevel::Reduced: return "reduced";
+        case EffectLevel::Off: return "off";
+    }
+    return "full";
+}
+
+std::optional<EffectLevel> effectLevelFromName(std::string_view name) {
+    if (name == "full") return EffectLevel::Full;
+    if (name == "reduced") return EffectLevel::Reduced;
+    if (name == "off") return EffectLevel::Off;
+    return std::nullopt;
+}
+
 float resolveSeconds(BattleSpeed s) {
     switch (s) {
         case BattleSpeed::Normal: return 0.9f;
@@ -164,6 +180,22 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
         } else {
             report.add(kSource, "gameplay.messageSpeed", "unknown value '" + message + "'");
         }
+        // M18 effect fields are optional; absent keeps the Full default so
+        // pre-M18 settings files load unchanged.
+        const std::string flash =
+            gameplay.optString("effectFlash", std::string(effectLevelName(values.effectFlash)));
+        if (auto s = effectLevelFromName(flash)) {
+            values.effectFlash = *s;
+        } else {
+            report.add(kSource, "gameplay.effectFlash", "unknown value '" + flash + "'");
+        }
+        const std::string shake =
+            gameplay.optString("effectShake", std::string(effectLevelName(values.effectShake)));
+        if (auto s = effectLevelFromName(shake)) {
+            values.effectShake = *s;
+        } else {
+            report.add(kSource, "gameplay.effectShake", "unknown value '" + shake + "'");
+        }
     }
 
     if (const auto it = root.find("bindings"); it != root.end() && it->is_object()) {
@@ -215,7 +247,9 @@ std::string serializeSettings(const Settings& values, const InputMap& map) {
                      {"sfx", values.sfxVolume}};
     root["display"] = {{"borderless", values.borderlessFullscreen}};
     root["gameplay"] = {{"battleSpeed", std::string(battleSpeedName(values.battleSpeed))},
-                        {"messageSpeed", std::string(messageSpeedName(values.messageSpeed))}};
+                        {"messageSpeed", std::string(messageSpeedName(values.messageSpeed))},
+                        {"effectFlash", std::string(effectLevelName(values.effectFlash))},
+                        {"effectShake", std::string(effectLevelName(values.effectShake))}};
 
     Json keyboard = Json::object();
     Json gamepad = Json::object();

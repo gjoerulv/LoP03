@@ -24,8 +24,8 @@
 | 14 | Asset manifest & replaceable resources | ☑ complete (approved) |
 | 15 | Art-direction vertical slice       | ☑ complete (approved) |
 | 16 | Compact dungeon-room system        | ☑ complete (approved) |
-| 17 | Exploration visuals & animation    | ◑ implemented, awaiting manual approval |
-| 18 | Battle presentation & game feel    | ☐ planned |
+| 17 | Exploration visuals & animation    | ☑ complete (approved) |
+| 18 | Battle presentation & game feel    | ◑ implemented, awaiting manual approval |
 | 19 | Progression, economy & score-integrity hardening | ☐ planned |
 | 20 | Encounter & dungeon-content variety | ☐ planned |
 | 21 | Final music, ambience & sound effects | ☐ planned |
@@ -547,10 +547,11 @@ milestone is not automatic authorization to start the next.
 
 ## M17 — Exploration visuals & animation
 
-- **Status:** ◑ implemented, awaiting manual approval (201/201 tests;
-  captures in `docs/screenshots/m17_explore/`; see the note's §N. Owner
-  decisions executed: manifest v2 animation schema; all three themes in one
-  pass with a single review.)
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. (201/201 tests; captures in
+  `docs/screenshots/m17_explore/`; see the note's §N. Owner decisions
+  executed: manifest v2 animation schema; all three themes in one pass with
+  a single review.)
 - **Goal:** produce final-quality town/dungeon characters, enemies, tiles,
   props, animations, effects, and theme atmosphere on the stable asset and
   room systems.
@@ -577,7 +578,10 @@ milestone is not automatic authorization to start the next.
 
 ## M18 — Battle presentation & game feel
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval (208/208 tests, battle/
+  simulator tests unmodified; live-battle captures in
+  `docs/screenshots/m18_battle/`; see the note's §N. Owner decision executed:
+  optional `effectFlash`/`effectShake` settings fields, no version bump.)
 - **Goal:** make deterministic combat clear, fast, and satisfying without
   undermining fewest-turn score play.
 - **Player-facing outcome:** readable battle information hierarchy; short

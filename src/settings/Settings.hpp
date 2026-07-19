@@ -21,11 +21,17 @@ inline constexpr int kSettingsVersion = 1;
 
 enum class BattleSpeed { Normal, Fast, Instant };
 enum class MessageSpeed { Slow, Normal, Fast };
+// Battle effect intensity (M18, owner-approved 2026-07-19): optional
+// settings fields, absent = Full. Flash is a brighten pulse (never a
+// strobe); shake is a small screen offset.
+enum class EffectLevel { Full, Reduced, Off };
 
 std::string_view battleSpeedName(BattleSpeed s);
 std::optional<BattleSpeed> battleSpeedFromName(std::string_view name);
 std::string_view messageSpeedName(MessageSpeed s);
 std::optional<MessageSpeed> messageSpeedFromName(std::string_view name);
+std::string_view effectLevelName(EffectLevel s);
+std::optional<EffectLevel> effectLevelFromName(std::string_view name);
 
 // Seconds a battle action's resolve pause lasts (Confirm always skips it).
 float resolveSeconds(BattleSpeed s);
@@ -39,6 +45,8 @@ struct Settings {
     bool borderlessFullscreen = false;
     BattleSpeed battleSpeed = BattleSpeed::Normal;
     MessageSpeed messageSpeed = MessageSpeed::Normal;
+    EffectLevel effectFlash = EffectLevel::Full;
+    EffectLevel effectShake = EffectLevel::Full;
 };
 
 // In-memory parse/serialize (exposed for headless tests). parse fills

@@ -6,6 +6,19 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M18 update:** battle actions are staged (lunge → impact flash/shake +
+> numbers + HP-bar commit → message). Battle rows 24–30 gain checks: at
+> Normal speed each action reads clearly and briskly; Fast visibly halves
+> the staging; Instant shows results at once; Confirm skips any moment of a
+> sequence without losing information; Settings' new **Battle Flash** and
+> **Battle Shake** rows (reduced/off) are visibly honored in the next fight;
+> fallen enemies sink from the field while KO'd allies stay (revivable);
+> a grayed command explains itself ("No skills learned." / "No usable
+> items."); defeat states its consequences (town return, half gold, run
+> forfeit); and a full fight is understandable with audio muted. Captures:
+> `docs/screenshots/m18_battle/` (settings rows, target select, live impact
+> flash + hit-stop, post-impact bar commit, enemy sunk after KO).
+>
 > **M17 update:** exploration has final-direction art in all three themes.
 > New checks for rows 9/20: player walk animation plays while moving and
 > freezes on a stand frame when stopped, facing matches movement (four

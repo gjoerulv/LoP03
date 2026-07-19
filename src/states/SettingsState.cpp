@@ -28,10 +28,12 @@ constexpr int kSfxRow = 2;
 constexpr int kWindowRow = 3;
 constexpr int kBattleSpeedRow = 4;
 constexpr int kMessageSpeedRow = 5;
-constexpr int kRemapKeyboardRow = 6;
-constexpr int kRemapGamepadRow = 7;
-constexpr int kResetRow = 8;
-constexpr int kBackRow = 9;
+constexpr int kEffectFlashRow = 6;
+constexpr int kEffectShakeRow = 7;
+constexpr int kRemapKeyboardRow = 8;
+constexpr int kRemapGamepadRow = 9;
+constexpr int kResetRow = 10;
+constexpr int kBackRow = 11;
 
 int volumeSteps(float v) { return static_cast<int>(v * 10.0f + 0.5f); }
 
@@ -60,6 +62,12 @@ void SettingsState::rebuild() {
                      true});
     items.push_back({std::string("Message Speed:  < ") +
                          std::string(settings::messageSpeedName(v.messageSpeed)) + " >",
+                     true});
+    items.push_back({std::string("Battle Flash:  < ") +
+                         std::string(settings::effectLevelName(v.effectFlash)) + " >",
+                     true});
+    items.push_back({std::string("Battle Shake:  < ") +
+                         std::string(settings::effectLevelName(v.effectShake)) + " >",
                      true});
     items.push_back({"Remap Keyboard...", true});
     items.push_back({"Remap Gamepad...", context_.input.gamepadAvailable()});
@@ -106,6 +114,18 @@ void SettingsState::adjust(int row, int direction) {
             int s = static_cast<int>(v.messageSpeed) + direction;
             s = (s % 3 + 3) % 3;
             v.messageSpeed = static_cast<settings::MessageSpeed>(s);
+            break;
+        }
+        case kEffectFlashRow: {
+            int s = static_cast<int>(v.effectFlash) + direction;
+            s = (s % 3 + 3) % 3;
+            v.effectFlash = static_cast<settings::EffectLevel>(s);
+            break;
+        }
+        case kEffectShakeRow: {
+            int s = static_cast<int>(v.effectShake) + direction;
+            s = (s % 3 + 3) % 3;
+            v.effectShake = static_cast<settings::EffectLevel>(s);
             break;
         }
         default: return;
@@ -172,11 +192,12 @@ void SettingsState::render() {
     ClearBackground(Color{16, 16, 26, 255});
     ui::drawTextCentered("Settings", w / 2, 14, style::kFontScreenTitle, style::kText);
 
-    ui::drawMenu(menu_, 70, 44, 17, style::kFontMenu, style::kText, style::kDisabled,
+    // 12 rows at 14px spacing keep the taller M18 menu inside 240px.
+    ui::drawMenu(menu_, 70, 36, 14, style::kFontMenu, style::kText, style::kDisabled,
                  style::kCursor);
 
     if (!message_.empty()) {
-        ui::drawTextFitted(message_, 40, h - 46, w - 80, style::kFontBody, style::kSuccess,
+        ui::drawTextFitted(message_, 40, h - 34, w - 80, style::kFontBody, style::kSuccess,
                            "settings.message");
     }
 

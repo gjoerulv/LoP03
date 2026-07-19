@@ -170,6 +170,26 @@ crowned boss), with the M15 prop sprites and colored glyph rectangles as
 fallbacks; the tier is also always shown as the text label, so shape+text
 carry the information without color.
 
+### Battle presentation sequencer (M18)
+
+The simulation stays synchronous and deterministic; `render/BattleSequencer`
+(pure, time-injected, headless-tested) only paces how an already-final
+result becomes visible: **Windup** (acting unit leans toward the foe) →
+**Impact** (hit units brighten, small screen shake, floating numbers +
+SFX appear, and the *displayed* HP commits) → **Settle** (the message pause,
+`resolveSeconds`). `BattleState` keeps a `displayHp_` mirror so bars, KO
+tags, and enemy fade-outs update at the impact beat rather than instantly;
+fallen enemies sink away over 0.4s while party members stay visible for
+revives. Battle speed scales the staging (Fast halves it; Instant skips
+windup/impact entirely) and Confirm always skips the whole sequence — the
+commit still fires exactly once, so no information is ever lost by
+skipping. `effectFlash`/`effectShake` (M18 settings, full/reduced/off)
+gate the impact effects; flash is a decaying brighten pulse, never a
+strobe. The sim/presentation boundary is enforced by tests: every
+pre-existing battle and simulator test passes unmodified, and the
+sequencer's own tests cover stage ordering, speed scaling, skip semantics,
+one-shot commits, and settings honoring.
+
 ### Paths & safety
 
 `paths::userDataDir()` resolves a per-user writable dir (`%APPDATA%/CrystalDungeons`

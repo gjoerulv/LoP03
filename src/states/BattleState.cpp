@@ -60,6 +60,12 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
         }
     }
     message_ = bossBattle_ ? "A boss appears!" : "A battle begins!";
+    displayHp_.reserve(battle_.units.size());
+    for (const battle::Combatant& c : battle_.units) {
+        displayHp_.push_back(c.hp);
+    }
+    hitFlags_.assign(battle_.units.size(), 0);
+    koFade_.assign(battle_.units.size(), 1.0f);
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Battle);
 }
@@ -95,7 +101,8 @@ void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     }
 }
 
-void BattleState::spawnNumbers(const std::vector<int>& hpBefore) {
+void BattleState::stageNumbers(const std::vector<int>& hpBefore) {
+    hitFlags_.assign(battle_.units.size(), 0);
     bool anyDamage = false;
     bool anyHeal = false;
     bool anyKo = false;
@@ -113,23 +120,35 @@ void BattleState::spawnNumbers(const std::vector<int>& hpBefore) {
         f.timer = 0.9f;
         f.heal = delta > 0;
         f.text = delta > 0 ? "+" + std::to_string(delta) : std::to_string(-delta);
-        floats_.push_back(std::move(f));
+        pendingFloats_.push_back(std::move(f));
         if (delta > 0) {
             anyHeal = true;
         } else {
             anyDamage = true;
+            hitFlags_[i] = 1;  // brightened during the impact beat
         }
         if (hpBefore[i] > 0 && battle_.units[i].hp <= 0) {
             anyKo = true;
         }
     }
-    if (anyKo) {
-        context_.audio.play(Sfx::Ko);
-    } else if (anyDamage) {
-        context_.audio.play(Sfx::Hit);
-    } else if (anyHeal) {
-        context_.audio.play(Sfx::Heal);
+    pendingSfx_ = anyKo ? 3 : (anyDamage ? 2 : (anyHeal ? 1 : 0));
+}
+
+void BattleState::commitPresentation() {
+    for (FloatNumber& f : pendingFloats_) {
+        floats_.push_back(std::move(f));
     }
+    pendingFloats_.clear();
+    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        displayHp_[i] = battle_.units[i].hp;
+    }
+    switch (pendingSfx_) {
+        case 3: context_.audio.play(Sfx::Ko); break;
+        case 2: context_.audio.play(Sfx::Hit); break;
+        case 1: context_.audio.play(Sfx::Heal); break;
+        default: break;
+    }
+    pendingSfx_ = 0;
 }
 
 int BattleState::currentActor() const {
@@ -159,7 +178,8 @@ void BattleState::startActorTurn() {
         hpBefore.push_back(u.hp);
     }
     const std::string tick = battle_.tickStatuses(actor);
-    spawnNumbers(hpBefore);
+    stageNumbers(hpBefore);
+    commitPresentation();  // status ticks are not action-staged; show at once
     if (!battle_.units[static_cast<std::size_t>(actor)].alive()) {
         message_ = tick;
         afterAction();  // poison felled the unit; skip its action
@@ -340,7 +360,7 @@ void BattleState::executePending(int targetUnit) {
             }
             break;
     }
-    spawnNumbers(hpBefore);
+    stageNumbers(hpBefore);
     afterAction();
 }
 
@@ -360,7 +380,7 @@ void BattleState::executeEnemy(int actor) {
     } else {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
     }
-    spawnNumbers(hpBefore);
+    stageNumbers(hpBefore);
     afterAction();
 }
 
@@ -371,9 +391,15 @@ void BattleState::afterAction() {
         }
     }
     phase_ = Phase::Resolve;
-    // Battle speed setting scales the between-action pause; Confirm always
-    // skips it regardless.
-    timer_ = settings::resolveSeconds(context_.settings.values.battleSpeed);
+    // Stage the presentation of the already-final result: windup and impact
+    // only when something was actually hit/healed, then the speed-scaled
+    // message pause. Confirm always skips the whole sequence.
+    lungeUnit_ = currentActor();
+    render::BattleStageParams params;
+    params.speed = context_.settings.values.battleSpeed;
+    params.flash = context_.settings.values.effectFlash;
+    params.shake = context_.settings.values.effectShake;
+    seq_.start(!pendingFloats_.empty(), settings::resolveSeconds(params.speed), params);
 }
 
 void BattleState::finish() {
@@ -397,7 +423,9 @@ std::string BattleState::outcomeMessage() const {
         case battle::Outcome::Victory:
             return bossBattle_ ? "Victory! The dungeon boss is defeated!" : "Victory!";
         case battle::Outcome::Defeat:
-            return "The party has fallen...";
+            // Defeat consequences are stated, not silent (UI-INFO-014).
+            return "The party has fallen... You are carried back to town; "
+                   "half your gold is lost and the run is forfeit.";
         case battle::Outcome::Escaped:
             return "Escaped!";
         case battle::Outcome::Ongoing:
@@ -478,7 +506,7 @@ void BattleState::handleInput(const Input& input) {
             break;
         case Phase::Resolve:
             if (input.pressed(InputAction::Confirm)) {
-                timer_ = 0.0f;  // skip the pause
+                seq_.skip();  // skip windup/impact/pause; the result still shows
             }
             break;
         case Phase::Done:
@@ -490,21 +518,37 @@ void BattleState::handleInput(const Input& input) {
 }
 
 void BattleState::update(float dt) {
-    for (FloatNumber& f : floats_) {
-        f.y -= 22.0f * dt;
-        f.timer -= dt;
+    // Floating numbers hold still during the impact beat (a brief hit-stop)
+    // and rise otherwise.
+    if (seq_.stage() != render::BattleStage::Impact) {
+        for (FloatNumber& f : floats_) {
+            f.y -= 22.0f * dt;
+            f.timer -= dt;
+        }
+        floats_.erase(std::remove_if(floats_.begin(), floats_.end(),
+                                     [](const FloatNumber& f) { return f.timer <= 0.0f; }),
+                      floats_.end());
     }
-    floats_.erase(std::remove_if(floats_.begin(), floats_.end(),
-                                 [](const FloatNumber& f) { return f.timer <= 0.0f; }),
-                  floats_.end());
+    // Fallen enemies sink away once their shown HP reaches zero; party
+    // members stay visible (they can be revived).
+    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        if (battle_.units[i].side == battle::Side::Enemy && displayHp_[i] <= 0 &&
+            koFade_[i] > 0.0f) {
+            koFade_[i] = std::max(0.0f, koFade_[i] - dt / 0.4f);
+        }
+    }
 
     if (phase_ != Phase::Resolve) {
         return;
     }
-    timer_ -= dt;
-    if (timer_ > 0.0f) {
+    seq_.update(dt);
+    if (seq_.takeCommit()) {
+        commitPresentation();
+    }
+    if (!seq_.finished()) {
         return;
     }
+    lungeUnit_ = -1;
     const battle::Outcome o = battle_.outcome();
     if (o != battle::Outcome::Ongoing) {
         result_ = o;
@@ -516,10 +560,25 @@ void BattleState::update(float dt) {
     }
 }
 
-void BattleState::drawUnit(const battle::Combatant& c, int x, int y, bool current,
+void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, bool current,
                            bool targeted) const {
-    // Sprite lookup: a specific id first (M17 will ship per-enemy art), then
-    // the tier-generic slice sprite, then the pre-asset rectangle.
+    // Everything drawn here shows the *displayed* HP state, which commits at
+    // the sequencer's impact beat — the sim result itself is already final.
+    const int shownHp = displayHp_[static_cast<std::size_t>(index)];
+    const bool shownAlive = shownHp > 0;
+    const float fade = koFade_[static_cast<std::size_t>(index)];
+    if (c.side == battle::Side::Enemy && fade <= 0.0f) {
+        return;  // fully sunk after its KO was shown
+    }
+    if (index == lungeUnit_) {
+        // Acting unit leans toward the foe during windup/impact.
+        x += static_cast<int>(seq_.lunge() * 4.0f) * (c.side == battle::Side::Party ? -1 : 1);
+    }
+    const float flash =
+        hitFlags_[static_cast<std::size_t>(index)] != 0 ? seq_.flashStrength() : 0.0f;
+
+    // Sprite lookup: a specific id first (per-enemy art is a manifest
+    // drop-in), then the tier-generic sprite, then the pre-asset rectangle.
     std::string spriteId;
     if (c.side == battle::Side::Party) {
         spriteId = "actor." + c.sourceId + ".battle";
@@ -543,7 +602,12 @@ void BattleState::drawUnit(const battle::Combatant& c, int x, int y, bool curren
         const Texture2D& tex = context_.resources.texture(spriteId);
         const int sx = x + 20 - tex.width / 2;   // bottom-center on the old
         const int sy = y + 16 - tex.height;      // 40x16 footprint
-        DrawTexture(tex, sx, sy, c.alive() ? WHITE : Color{110, 110, 125, 255});
+        Color tint = shownAlive ? WHITE : Color{110, 110, 125, 255};
+        tint.a = static_cast<unsigned char>(255.0f * fade);
+        DrawTexture(tex, sx, sy, tint);
+        if (flash > 0.0f) {
+            DrawRectangle(sx, sy, tex.width, tex.height, Fade(WHITE, 0.55f * flash));
+        }
         if (targeted) {
             DrawRectangleLines(sx - 2, sy - 2, tex.width + 4, tex.height + 4,
                                Color{240, 220, 120, 255});
@@ -552,7 +616,10 @@ void BattleState::drawUnit(const battle::Combatant& c, int x, int y, bool curren
     } else {
         const Color body = c.side == battle::Side::Enemy ? Color{170, 80, 90, 255}
                                                          : Color{90, 130, 190, 255};
-        DrawRectangle(x, y, 40, 16, c.alive() ? body : Color{60, 60, 70, 255});
+        DrawRectangle(x, y, 40, 16, Fade(shownAlive ? body : Color{60, 60, 70, 255}, fade));
+        if (flash > 0.0f) {
+            DrawRectangle(x, y, 40, 16, Fade(WHITE, 0.55f * flash));
+        }
         if (targeted) {
             DrawRectangleLines(x - 2, y - 2, 44, 20, Color{240, 220, 120, 255});
         }
@@ -561,23 +628,26 @@ void BattleState::drawUnit(const battle::Combatant& c, int x, int y, bool curren
         DrawText(">", x - 9, y + 3, 10, Color{240, 220, 120, 255});
     }
 
-    DrawText(c.name.c_str(), x, nameY, 8, RAYWHITE);
-    // HP bar.
-    const float hpFrac = c.maxHp > 0 ? static_cast<float>(c.hp) / static_cast<float>(c.maxHp) : 0.0f;
-    DrawRectangle(x, y + 17, 40, 3, Color{40, 40, 40, 255});
-    DrawRectangle(x, y + 17, static_cast<int>(40 * hpFrac), 3, Color{90, 200, 110, 255});
+    DrawText(c.name.c_str(), x, nameY, 8, Fade(RAYWHITE, fade));
+    // HP bar (displayed value).
+    const float hpFrac =
+        c.maxHp > 0 ? static_cast<float>(shownHp) / static_cast<float>(c.maxHp) : 0.0f;
+    DrawRectangle(x, y + 17, 40, 3, Fade(Color{40, 40, 40, 255}, fade));
+    DrawRectangle(x, y + 17, static_cast<int>(40 * (hpFrac < 0.0f ? 0.0f : hpFrac)), 3,
+                  Fade(Color{90, 200, 110, 255}, fade));
     if (c.side == battle::Side::Party) {
         const float mpFrac =
             c.maxMp > 0 ? static_cast<float>(c.mp) / static_cast<float>(c.maxMp) : 0.0f;
         DrawRectangle(x, y + 21, 40, 2, Color{40, 40, 40, 255});
         DrawRectangle(x, y + 21, static_cast<int>(40 * mpFrac), 2, Color{90, 120, 210, 255});
-        DrawText(TextFormat("%d/%d", c.hp, c.maxHp), x + 44, y + 4, 8, RAYWHITE);
+        DrawText(TextFormat("%d/%d", shownHp < 0 ? 0 : shownHp, c.maxHp), x + 44, y + 4, 8,
+                 RAYWHITE);
     }
-    if (!c.alive()) {
-        DrawText("KO", x + 13, y + 4, 8, Color{220, 120, 120, 255});
+    if (!shownAlive) {
+        DrawText("KO", x + 13, y + 4, 8, Fade(Color{220, 120, 120, 255}, fade));
     }
 
-    if (!c.statuses.empty() && c.alive()) {
+    if (!c.statuses.empty() && shownAlive) {
         std::string line;
         for (const battle::StatusInstance& s : c.statuses) {
             if (!line.empty()) {
@@ -613,16 +683,21 @@ void BattleState::render() {
     if (phase_ == Phase::ChooseTarget && !targetCandidates_.empty()) {
         targetUnit = targetCandidates_[static_cast<std::size_t>(targetCursor_)];
     }
+    // Screen shake (impact beat only; honors the shake setting) offsets the
+    // battlefield, never the UI panel.
+    const int shakeX = seq_.shakeOffset();
     const int enemyY0 = enemyBaseY();
     for (std::size_t i = 0; i < battle_.units.size(); ++i) {
         const battle::Combatant& c = battle_.units[i];
         const bool isCurrent = partyTurn && static_cast<int>(i) == actor;
         const bool isTarget = static_cast<int>(i) == targetUnit;
         if (c.side == battle::Side::Enemy) {
-            drawUnit(c, 36, enemyY0 + enemyRow * 34, isCurrent, isTarget);
+            drawUnit(c, static_cast<int>(i), 36 + shakeX, enemyY0 + enemyRow * 34, isCurrent,
+                     isTarget);
             ++enemyRow;
         } else {
-            drawUnit(c, w - 110, 36 + partyRow * 34, isCurrent, isTarget);
+            drawUnit(c, static_cast<int>(i), w - 110 + shakeX, 36 + partyRow * 34, isCurrent,
+                     isTarget);
             ++partyRow;
         }
     }
@@ -633,7 +708,7 @@ void BattleState::render() {
 
     // Floating damage / heal numbers.
     for (const FloatNumber& f : floats_) {
-        DrawText(f.text.c_str(), static_cast<int>(f.x), static_cast<int>(f.y), 10,
+        DrawText(f.text.c_str(), static_cast<int>(f.x) + shakeX, static_cast<int>(f.y), 10,
                  f.heal ? Color{120, 220, 120, 255} : Color{245, 120, 120, 255});
     }
 
@@ -666,6 +741,14 @@ void BattleState::render() {
                 TextFormat("%s's turn",
                            battle_.units[static_cast<std::size_t>(actor)].name.c_str()),
                 kInfoX, panelY + 6, infoW, style::kFontBody, style::kText, "battle.actor");
+            // Say *why* a grayed command is unavailable.
+            if (!commandMenu_.currentEnabled()) {
+                const char* why = commandMenu_.cursor() == 1 ? "No skills learned."
+                                  : commandMenu_.cursor() == 2 ? "No usable items."
+                                                               : "";
+                ui::drawTextFitted(why, kInfoX, panelY + 20, infoW, style::kFontBody,
+                                   style::kTextDim, "battle.why");
+            }
             break;
         case Phase::ChooseSkill: {
             ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,

@@ -2,9 +2,23 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** implemented, awaiting manual approval (see §N).
+- **Last reviewed repository commit:** `a9426b9` (M17, 2026-07-19). Re-audit:
+  much of §C's hierarchy already exists from M12/M15/M17 (turn line + cursor,
+  disabled commands, skill/item costs + descriptions, round counter, boss
+  telegraph at intro, framed panel, tier sprites, KO tint, target box);
+  missing are action staging, impact feedback (flash/shake/hit-stop), KO/
+  victory presentation, effect settings, and a disabled-command reason.
+  `BattleState.cpp` is 726 lines; the sim applies results synchronously and
+  presentation is a flat message+pause (`resolveSeconds`).
+- **Owner decision (2026-07-19): settings revision approved** — optional
+  `effectFlash` / `effectShake` fields ("full" / "reduced" / "off", default
+  full, no version bump; old files load unchanged). Flash is a brighten
+  pulse (no strobing at any level); shake is 2px full / 1px reduced.
+- **Scope note from re-audit:** the simulation has no boss phase/enrage
+  state (BossDef carries only a telegraph line), so "escalation visuals"
+  would require a combat-rule change — excluded by §D; the telegraph remains
+  the boss-mechanic surface.
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M18 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -146,3 +160,50 @@ roadmap explicitly rejects "animation that punishes score play".
 - `docs/manual_test_matrix.md` — battle presentation rows.
 - `docs/asset_pipeline.md` — battle effect/sprite authoring if new metadata.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. As-implemented record (2026-07-19)
+
+**Delivered.**
+
+- **Effect settings** (owner-approved revision): `settings::EffectLevel`
+  (full/reduced/off) with optional `effectFlash`/`effectShake` fields —
+  absent = full, no version bump, pre-M18 files load unchanged; two new
+  Settings rows (menu respaced to fit 12 rows); round-trip/defaulting/
+  invalid-value tests.
+- **Pure sequencer** (`src/render/BattleSequencer`): Windup (0.18s) →
+  Impact (0.14s) → Settle (`resolveSeconds`) staging of an already-final
+  sim result. Fast halves staging; Instant and impact-less actions (guard)
+  skip straight to settle; `skip()` jumps to the end; a one-shot commit
+  signal marks when numbers/SFX/displayed HP appear. Flash strength and
+  shake offset honor their levels (flash is a decaying brighten pulse —
+  never a strobe; shake ±2px full / ±1px reduced, impact-only).
+- **BattleState integration:** `displayHp_` mirror commits at impact so HP
+  bars, HP text, KO tags, and enemy fade-outs change when the hit lands,
+  not when the sim computed it; acting unit lunges 4px toward the foe; hit
+  units brighten; floating numbers hold during impact (hit-stop) then rise;
+  fallen enemies sink away over 0.4s (party stays visible for revives);
+  SFX moved to the impact beat; Confirm skips any point of the sequence
+  with the commit still firing; grayed commands explain themselves ("No
+  skills learned." / "No usable items."); the defeat message now states
+  its consequences (fixes audit UI-INFO-014).
+- **Sim boundary:** `src/battle/` untouched; every pre-existing battle and
+  simulator test passes **unmodified**. 208/208 total (7 new).
+
+**In-game evidence** (`docs/screenshots/m18_battle/`, scripted): Settings
+screen with the two new rows; a real 3-enemy Crystal Mine gate battle —
+target selection, a live impact frame (Frost Imp brightened by the flash
+with the damage number held during hit-stop), the post-impact frame
+(committed HP bar), and the field after the imp's KO (sunk away, target
+box on the next enemy, party damage taken). Clean exit code 0.
+
+**Deviations / notes:**
+1. No impact particles or elemental effect sprites — the flash/shake/
+   number/lunge set covers §C's "restrained feedback" without new assets;
+   elemental effect art can ride M21/M20 if wanted (recorded as a possible
+   follow-up, not a gap in acceptance).
+2. Boss escalation visuals excluded (no sim phase state — see §A scope
+   note); the telegraph at intro remains the boss surface.
+3. Hit-stop is implemented as the impact-beat number hold rather than a
+   global freeze — full freezes read as jank at 0.14s scale.
+4. MP changes display instantly (only HP is staged); staging MP added no
+   readability value.

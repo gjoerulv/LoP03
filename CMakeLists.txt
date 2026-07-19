@@ -73,6 +73,7 @@ add_library(crystal_core STATIC
     src/dungeon/DungeonGenerator.cpp
     src/dungeon/RoomLayout.cpp
     src/render/SpriteDraw.cpp
+    src/render/BattleSequencer.cpp
     src/danger/DangerRating.cpp
     src/score/Scoring.cpp
     src/score/Scoreboard.cpp

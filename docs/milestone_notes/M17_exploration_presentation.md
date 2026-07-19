@@ -2,7 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (see §N).
+- **Status:** complete (approved) — approved by the owner on 2026-07-19
+  after manual testing (see §N).
 - **Last reviewed repository commit:** `faa7ed8` (M16, 2026-07-19). Re-audit:
   manifest v1 (29 entries) live; M15 direction approved and generated
   in-project; M16 compact rooms landed (markers = prop sprites, themes keyed
