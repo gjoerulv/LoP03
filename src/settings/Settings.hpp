@@ -47,6 +47,9 @@ struct Settings {
     MessageSpeed messageSpeed = MessageSpeed::Normal;
     EffectLevel effectFlash = EffectLevel::Full;
     EffectLevel effectShake = EffectLevel::Full;
+    // M22 (owner-approved): switchable high-contrast UI palette. Optional
+    // field; absent = standard palette, so older files load unchanged.
+    bool highContrast = false;
 };
 
 // In-memory parse/serialize (exposed for headless tests). parse fills

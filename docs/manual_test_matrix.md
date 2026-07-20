@@ -6,6 +6,35 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M23 update:** validation + playtesting. The capture set
+> (`build-msvc\CrystalDungeons.exe --capture docs\screenshots\m23_captures`)
+> replaces ad-hoc screenshots: 22 deterministic native-res scenes,
+> self-checking for text overflow — review it for visual regressions after
+> any UI change. External playtests follow `docs/playtest_protocol.md`
+> (six profiles, uncoached, observation sheets); their findings are the
+> M23 hardening input. Balance: early ramp retuned (generation v4);
+> verify in play that depth 4 feels like a step up from depth 1-3 and
+> depth 6+ demands leveling. Release builds must not react to
+> `--capture`.
+>
+> **M22 update:** onboarding + accessibility. Checks, on a fresh
+> `tutorial.json` (delete it or use Settings > "Reset tutorial prompts"):
+> each of the nine one-time prompts appears exactly once at the right
+> moment (town, guild, dungeon, battle, guarded chest, event, first
+> victory, result, return to town), reads clearly, dismisses with one
+> Confirm, and never reappears across restarts; Settings > "Tutorial
+> Prompts: Off" suppresses all of them; a hand-corrupted tutorial.json
+> starts fresh without crashing. **Details** ([C]/gamepad Y, remappable in
+> both Remap screens): opens/closes cleanly in battle (focused unit stats
+> + statuses), dungeon (danger tiers + faced team), result/scoreboard
+> (score components), and equip-shop Buy (per-member gear deltas); footers
+> advertise it. **High Contrast On**: every screen stays readable and
+> nothing relies on color alone; toggle applies instantly and persists.
+> Destructive confirmations: saving over an existing slot and Quit to
+> Title both demand a second Confirm with a visible warning, and cursor
+> movement/Cancel disarms them. Settings and Controls remain reachable
+> from the title screen before New Game.
+>
 > **M21 update:** the full original soundscape ships (11 music tracks, 4
 > ambience beds, 15 SFX — all generated, all manifest-driven). Listening
 > pass, every scene and transition: title → town (music + light ambience) →

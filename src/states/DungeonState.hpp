@@ -26,8 +26,10 @@ class DungeonState : public GameState {
 public:
     DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon);
 
+    void onEnter() override;   // first-dungeon tutorial beat
     void onResume() override;  // applies a battle outcome
     void handleInput(const Input& input) override;
+    void openDetails();  // M22 contextual Details overlay
     void update(float dt) override;
     void render() override;
 

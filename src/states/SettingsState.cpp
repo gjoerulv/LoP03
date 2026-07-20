@@ -14,6 +14,7 @@
 #include "settings/Settings.hpp"
 #include "states/RemapState.hpp"
 #include "states/StateStack.hpp"
+#include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
 
@@ -30,10 +31,13 @@ constexpr int kBattleSpeedRow = 4;
 constexpr int kMessageSpeedRow = 5;
 constexpr int kEffectFlashRow = 6;
 constexpr int kEffectShakeRow = 7;
-constexpr int kRemapKeyboardRow = 8;
-constexpr int kRemapGamepadRow = 9;
-constexpr int kResetRow = 10;
-constexpr int kBackRow = 11;
+constexpr int kHighContrastRow = 8;
+constexpr int kTutorialRow = 9;
+constexpr int kRemapKeyboardRow = 10;
+constexpr int kRemapGamepadRow = 11;
+constexpr int kResetTutorialRow = 12;
+constexpr int kResetRow = 13;
+constexpr int kBackRow = 14;
 
 int volumeSteps(float v) { return static_cast<int>(v * 10.0f + 0.5f); }
 
@@ -69,8 +73,15 @@ void SettingsState::rebuild() {
     items.push_back({std::string("Battle Shake:  < ") +
                          std::string(settings::effectLevelName(v.effectShake)) + " >",
                      true});
+    items.push_back({std::string("High Contrast:  < ") + (v.highContrast ? "On" : "Off") +
+                         " >",
+                     true});
+    items.push_back({std::string("Tutorial Prompts:  < ") +
+                         (context_.tutorial.state.enabled ? "On" : "Off") + " >",
+                     true});
     items.push_back({"Remap Keyboard...", true});
     items.push_back({"Remap Gamepad...", context_.input.gamepadAvailable()});
+    items.push_back({"Reset tutorial prompts", true});
     items.push_back({"Reset settings and bindings", true});
     items.push_back({"Back", true});
     const int previous = menu_.cursor();
@@ -128,6 +139,16 @@ void SettingsState::adjust(int row, int direction) {
             v.effectShake = static_cast<settings::EffectLevel>(s);
             break;
         }
+        case kHighContrastRow:
+            v.highContrast = !v.highContrast;
+            ui::style::setHighContrast(v.highContrast);  // visible immediately
+            break;
+        case kTutorialRow: {
+            context_.tutorial.state.enabled = !context_.tutorial.state.enabled;
+            content::LoadReport report;
+            context_.tutorial.save(report);
+            break;
+        }
         default: return;
     }
     context_.audio.play(Sfx::Move);
@@ -144,10 +165,16 @@ void SettingsState::activate(int row) {
             stack().pushState(
                 std::make_unique<RemapState>(stack(), context_, ActiveDevice::Gamepad));
             break;
+        case kResetTutorialRow:
+            context_.tutorial.reset();
+            message_ = "Tutorial prompts will show again";
+            rebuild();
+            break;
         case kResetRow:
             context_.settings.values = settings::Settings{};
             input::resetBindings(context_.input.map());
             applyAudio();
+            ui::style::setHighContrast(context_.settings.values.highContrast);
             saveSettings();
             message_ = "Settings and bindings reset to defaults";
             rebuild();
@@ -190,15 +217,16 @@ void SettingsState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ClearBackground(Color{16, 16, 26, 255});
-    ui::drawTextCentered("Settings", w / 2, 14, style::kFontScreenTitle, style::kText);
+    ui::drawTextCentered("Settings", w / 2, 14, style::kFontScreenTitle, style::palette().text);
 
-    // 12 rows at 14px spacing keep the taller M18 menu inside 240px.
-    ui::drawMenu(menu_, 70, 36, 14, style::kFontMenu, style::kText, style::kDisabled,
-                 style::kCursor);
+    // 15 rows (M22) fit inside 240px at 12px spacing starting higher; the
+    // message line sits between the menu and the footer.
+    ui::drawMenu(menu_, 70, 30, 12, style::kFontMenu, style::palette().text,
+                 style::palette().disabled, style::palette().cursor);
 
     if (!message_.empty()) {
-        ui::drawTextFitted(message_, 40, h - 34, w - 80, style::kFontBody, style::kSuccess,
-                           "settings.message");
+        ui::drawTextFitted(message_, 40, h - 28, w - 80, style::kFontBody,
+                           style::palette().success, "settings.message");
     }
 
     const InputMap& map = context_.input.map();
@@ -209,7 +237,7 @@ void SettingsState::render() {
         input::prompt(map, InputAction::Confirm, device, "Select") + "    " +
         input::prompt(map, InputAction::Cancel, device, "Save & Back");
     ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, 9,
-                         style::kTextHint);
+                         style::palette().textHint);
 }
 
 }  // namespace cd

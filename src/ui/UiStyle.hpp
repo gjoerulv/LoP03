@@ -2,10 +2,9 @@
 
 #include "raylib.h"
 
-// Named typography roles, spacing, and shared UI colors (M12-c). States use
-// these instead of ad-hoc numeric sizes/colors so conventions stay in one
-// place until real fonts/themes arrive via the asset pipeline (M14/M15).
-// Documented in docs/ui_style_guide.md — update both together.
+// Named typography roles, spacing, and shared UI colors (M12-c; M22 palette).
+// States use these instead of ad-hoc numeric sizes/colors so conventions stay
+// in one place. Documented in docs/ui_style_guide.md — update both together.
 
 namespace cd::ui::style {
 
@@ -24,7 +23,31 @@ inline constexpr int kPad = 8;          // default panel padding
 inline constexpr int kPadSmall = 4;
 inline constexpr int kFooterHeight = 16;  // reserved control-hint strip
 
-// --- Colors ---
+// --- Color palette (M22, owner-approved) ---
+// Two palettes: the standard one keeps the exact pre-M22 colors; the
+// high-contrast one uses pure white/black pairs and brighter accents.
+// palette() reads the active table; the ONLY writer is the settings-apply
+// path (Application / SettingsState) via setHighContrast — a deliberate,
+// documented exception to the no-global-mutable-state rule (single-threaded
+// game loop, plain data, one writer).
+struct Palette {
+    Color text;
+    Color textDim;
+    Color textHint;
+    Color disabled;
+    Color cursor;
+    Color success;
+    Color dangerText;
+    Color gold;
+};
+
+const Palette& palette();
+void setHighContrast(bool on);
+bool highContrastActive();
+
+// --- Legacy color constants (standard palette values) ---
+// Prefer palette() in new/updated code; these remain for compile-time
+// contexts and match the standard palette exactly.
 inline constexpr Color kText{245, 245, 245, 255};        // ~RAYWHITE
 inline constexpr Color kTextDim{170, 170, 190, 255};
 inline constexpr Color kTextHint{150, 150, 170, 255};

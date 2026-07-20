@@ -20,6 +20,7 @@ InputMap::InputMap() {
     bindKey(InputAction::Cancel, KEY_BACKSPACE);
     bindKey(InputAction::Cancel, KEY_ESCAPE);
     bindKey(InputAction::Menu, KEY_TAB);
+    bindKey(InputAction::Details, KEY_C);
     bindKey(InputAction::TextBackspace, KEY_BACKSPACE);  // text editing only
     bindKey(InputAction::ToggleDebug, KEY_F1);
     bindKey(InputAction::ReloadAssets, KEY_F5);  // consumed in debug builds only
@@ -38,6 +39,7 @@ InputMap::InputMap() {
     bindButton(InputAction::Confirm, GAMEPAD_BUTTON_RIGHT_FACE_DOWN);       // A
     bindButton(InputAction::Cancel, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);       // B
     bindButton(InputAction::Menu, GAMEPAD_BUTTON_MIDDLE_RIGHT);             // Start
+    bindButton(InputAction::Details, GAMEPAD_BUTTON_RIGHT_FACE_UP);         // Y
     bindButton(InputAction::TextBackspace, GAMEPAD_BUTTON_RIGHT_FACE_LEFT);  // X
 }
 

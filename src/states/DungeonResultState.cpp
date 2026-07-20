@@ -1,6 +1,7 @@
 ﻿#include "states/DungeonResultState.hpp"
 
 #include <algorithm>
+#include <memory>
 #include <utility>
 
 #include "audio/AudioManager.hpp"
@@ -9,7 +10,11 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "states/DetailsOverlayState.hpp"
+#include "states/ScoreDetailsText.hpp"
 #include "states/StateStack.hpp"
+#include "states/TutorialPromptState.hpp"
+#include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
 
 namespace cd {
@@ -22,7 +27,16 @@ DungeonResultState::DungeonResultState(StateStack& stack, AppContext& context,
     context_.audio.setAmbience(AmbienceTrack::None);
 }
 
+void DungeonResultState::onEnter() {
+    maybeTutorialPrompt(stack(), context_, tutorial::kResultFirst);
+}
+
 void DungeonResultState::handleInput(const Input& input) {
+    if (input.pressed(InputAction::Details)) {
+        stack().pushState(std::make_unique<DetailsOverlayState>(
+            stack(), context_, "How Scoring Works", scoreDetailsText()));
+        return;
+    }
     if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel)) {
         stack().popState();  // close the result
         stack().popState();  // leave the dungeon -> back to town
@@ -73,8 +87,11 @@ void DungeonResultState::render() {
              b.wager >= 0 ? plus : minus);
     }
 
-    ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,
-                                       context_.input.activeDevice(), "Return to Town")
+    ui::drawTextCentered((input::prompt(context_.input.map(), InputAction::Confirm,
+                                        context_.input.activeDevice(), "Return to Town") +
+                          "   " +
+                          input::prompt(context_.input.map(), InputAction::Details,
+                                        context_.input.activeDevice(), "Details"))
                              .c_str(),
                          w / 2, boxY + boxH - 16, 10, Color{200, 200, 160, 255});
 }

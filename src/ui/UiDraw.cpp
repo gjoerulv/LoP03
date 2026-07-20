@@ -10,9 +10,14 @@ namespace cd::ui {
 
 namespace {
 
+// Total overflow/truncation occurrences (every event, not deduplicated);
+// the M23 capture tool asserts a zero delta per rendered scene.
+long gOverflowEvents = 0;
+
 // Overflow diagnostics: report each unique (site, text) once so a per-frame
 // render loop cannot spam the log. Small and bounded by the game's own text.
 void reportOverflowOnce(const char* site, const std::string& text, int width, int maxWidth) {
+    ++gOverflowEvents;
     static std::unordered_set<std::string> reported;
     std::string key = std::string(site) + "|" + text;
     if (reported.insert(std::move(key)).second) {
@@ -22,6 +27,8 @@ void reportOverflowOnce(const char* site, const std::string& text, int width, in
 }
 
 }  // namespace
+
+long overflowEvents() { return gOverflowEvents; }
 
 void drawPanel(int x, int y, int w, int h, Color fill, Color border) {
     DrawRectangle(x, y, w, h, fill);

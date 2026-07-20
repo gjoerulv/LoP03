@@ -20,6 +20,10 @@ namespace cd::ui {
 
 void drawPanel(int x, int y, int w, int h, Color fill, Color border);
 
+// Running count of text overflow/truncation events (every occurrence). The
+// M23 capture tool asserts a zero delta per rendered scene; tests may too.
+long overflowEvents();
+
 // Panel that uses the nine-patch "ui.frame.default" texture when the catalog
 // provides one (M15), and the plain double-border drawPanel otherwise.
 void drawFramedPanel(ResourceManager& resources, int x, int y, int w, int h, Color fill,

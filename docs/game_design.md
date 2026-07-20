@@ -168,6 +168,26 @@ return to town, 0 dungeon score, partial gold loss. Save/load required (JSON,
 versioned). Any dungeon suspend-save (if added) continues the same run and must
 not enable save-scumming.
 
+## 12b. Onboarding & accessibility (M22)
+
+**Onboarding teaches through play, never through a forced sequence.** Nine
+one-time contextual prompts (`src/tutorial/`) fire on first encounter —
+town, guild, dungeon, battle, guarded chest, event, first victory, first
+result, first return to town — each a small dismissible panel; once seen,
+never again (progress persists in `tutorial.json`; disable-all and reset
+live in Settings). The **Details** action (remappable; C / gamepad Y)
+opens read-only contextual help wherever the footer offers it: unit stats
+and status shorthand in battle, danger-tier derivation in the dungeon,
+score components on the result and scoreboard, and per-member gear
+comparison in the equip shop. Nothing behind Details is required to play.
+
+**Accessibility commitments:** keyboard-only and gamepad-only complete;
+no color-only or sound-only information anywhere; a High Contrast palette
+toggle; battle flash/shake reducible to off; message pacing and battle
+speed configurable; Settings reachable before starting a game; destructive
+actions (save overwrite, quit-to-title) need an explicit second Confirm.
+These are engineering bars, not formal WCAG claims.
+
 ## 13. First-complete-version content target
 
 6 classes · 12–18 enemy types · 6 elites · 3 boss archetypes · 30+ items/equipment

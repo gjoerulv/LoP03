@@ -16,6 +16,7 @@ exceptions since M13 — text entry flows through the input layer):
 | Confirm | Enter, Space | A | select, interact, advance |
 | Cancel | Esc, Backspace | B | back, close, (opens pause in town/dungeon) |
 | Menu | Tab | Start | opens pause in town/dungeon |
+| Details | C | Y | M22: contextual help panels (battle stats/statuses, dungeon danger, score components, gear comparison) |
 | TextBackspace | Backspace (fixed) | X (fixed) | delete-one-char in text editing |
 | ToggleDebug | F1 (fixed) | — | debug overlay |
 | Quit | — | — | reserved, unbound |
@@ -39,6 +40,14 @@ characters still require a keyboard (labeled in-game).
   (see §3) — a buffered press can never activate the next screen.
 - Every screen reachable and exitable with keyboard alone and gamepad alone
   (UI-INPUT-001 fixed in M13; owner's manual pass confirms in practice).
+- **Details** (M22) opens a read-only overlay wherever the footer offers it;
+  Confirm, Cancel, or Details again closes it. It is remappable and never
+  required to progress — everything it explains is also learnable by play.
+- **Destructive actions need a second Confirm** (M22): overwriting an
+  existing save slot and quitting to title from the pause menu both arm on
+  the first Confirm (with an explicit warning) and execute on the second;
+  moving the cursor or Cancel disarms. One-time tutorial prompts freeze the
+  scene below and dismiss with a single Confirm/Cancel.
 
 ## 3. Navigation rules
 

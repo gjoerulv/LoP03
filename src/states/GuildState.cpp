@@ -15,6 +15,8 @@
 #include "save/SaveSystem.hpp"
 #include "states/DungeonState.hpp"
 #include "states/StateStack.hpp"
+#include "states/TutorialPromptState.hpp"
+#include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
 
 namespace cd {
@@ -45,6 +47,7 @@ GuildState::GuildState(StateStack& stack, AppContext& context)
 
 void GuildState::onEnter() {
     context_.audio.setMusic(MusicTrack::Guild);  // preparation scene (M21)
+    maybeTutorialPrompt(stack(), context_, tutorial::kGuildPrepare);
     themeIds_.clear();
     for (const auto& [id, def] : context_.content.themes()) {
         (void)def;

@@ -27,6 +27,7 @@ private:
 
     void rebuild();
     void confirm();
+    void openItemDetails();  // M22: item stats + per-member equip deltas
 
     AppContext& context_;
     Phase phase_ = Phase::Menu;

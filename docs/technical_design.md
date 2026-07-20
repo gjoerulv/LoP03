@@ -203,6 +203,54 @@ carry the information without color.
   action's damage. Enemy AI also casts Support skills whose status the
   target lacks — making buffer/debuffer enemies (and Commander kits) real.
 
+### Validation tooling (M23)
+
+Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
+<outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
+is not Release) renders 22 scenario states — every screen family, all
+three themes, five-enemy and boss battles, worst-case 12-char names,
+maximal score breakdowns, the tutorial/Details overlays, High Contrast —
+to the real 426×240 virtual screen in a hidden window, exports native-res
+PNGs (`VirtualScreen::exportImage`), and **fails (nonzero exit) if any
+scene raises a text-overflow diagnostic** (`ui::overflowEvents()`, a
+running counter behind the M12 fitted/wrapped helpers). All mutable state
+lives in a scratch temp dir; player data is never touched; reruns are
+byte-identical (hash-verified). **Lint:** `tests/test_presentation_lint.cpp`
+resolves every convention-derived texture id (per-theme tiles, per-class
+battle actors, tier fallbacks, markers, props) against the shipped
+manifest, checks name/description/telegraph budgets with a conservative
+measure (it caught two over-budget boss telegraphs on first run), and
+validates 2000+ generated rooms against the full M16 invariant set.
+**Reports:** `crystal_tests "[sim-report]" -s` emits reproducible JSON —
+progression bands per depth and outlier encounters (teams needing > 2× the
+median rounds at the dungeon's clearing level). The M23 tuning
+(composition.json elite pressure; `kGenerationVersion` 4) moved the
+clearing curve from 1/1/1/1/3/5/9/11 to 1/1/1/2/3/7/9/11 (depths
+1/2/3/4/5/6/8/10).
+
+### Onboarding & accessibility (M22)
+
+Tutorial: `src/tutorial/Tutorial.*` is raylib-free — a constexpr beat table
+(9 beats, stable ids), `Progress {enabled, seen}` with defensive
+parse/serialize (malformed or foreign-version `tutorial.json` → fresh
+state, reported, never a crash; unknown seen ids survive round trips), and
+`TutorialStore::takeBeat` which marks-and-saves on first fire so a prompt
+shows at most once even across crashes. `TutorialPromptState` and the M22
+`DetailsOverlayState` are transparent overlay states (`rendersBelow()`
+only): the scene below freezes and dims, one Confirm dismisses. Beats are
+triggered from `onEnter`/`onResume`/`update` — never constructors, whose
+queued pushes would order the overlay underneath the state being built.
+`Details` is a new remappable `InputAction` (keyboard C, gamepad Y;
+additive to the bindings schema — old settings files keep the default).
+The UI palette moved behind `style::palette()` (see `ui_style_guide.md`
+§4): standard table byte-identical to the old constants, high-contrast
+table selected by `settings.highContrast` (optional field, absent = off).
+Save-overwrite and quit-to-title arm on first Confirm and execute on the
+second. Tests: `tests/test_tutorial.cpp` (round-trip, malformed, take-once
+store semantics on a temp file, beat-text wrap lint with a conservative
+measure) and `tests/test_accessibility.cpp` (palette equivalence/switch,
+settings round-trip, Details action schema + defaults).
+
 ### Audio architecture (M21)
 
 The full soundscape ships through the M14 catalog — 30 original WAVs (11

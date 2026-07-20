@@ -69,6 +69,18 @@ building labels over the mid-green town field.
 Text over variable art must get a stable backing (panel strip, shadow, or
 outline) — rule inherited from CLAUDE.md.
 
+**Palette accessor (M22, owner-approved).** Shared UI colors are now read
+through `style::palette()` (`src/ui/UiStyle.*`): a standard table
+byte-identical to the legacy constants, and a high-contrast table (pure
+white text, brightened dim/hint/disabled/accent roles) selected by the
+Settings "High Contrast" toggle. The palette is the one deliberate
+mutable-global exception: a single table pointer, written only by the
+settings-apply path (Application startup and the Settings row), single
+threaded. New code uses `palette()`; the legacy constants remain only for
+compile-time contexts and as the standard table's definition. The
+high-contrast mode brightens roles — it never removes the marker+color
+double-signal rules above.
+
 ## 5. Focus and selection
 
 - Current convention: `>` cursor glyph + yellow tint `(240,220,120)`. Keep

@@ -3,8 +3,11 @@
 #include <algorithm>
 #include <utility>
 
+#include <memory>
+
 #include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
+#include "states/DetailsOverlayState.hpp"
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
@@ -226,6 +229,74 @@ void EquipShopState::confirm() {
     }
 }
 
+namespace {
+
+// "ATK +2  DEF -1" style delta between two equip bonuses; empty = no change.
+std::string bonusDelta(const content::StatBlock& next, const content::StatBlock& cur) {
+    std::string out;
+    const auto add = [&out](const char* tag, int d) {
+        if (d == 0) {
+            return;
+        }
+        if (!out.empty()) {
+            out += "  ";
+        }
+        out += std::string(tag) + (d > 0 ? " +" : " ") + std::to_string(d);
+    };
+    add("HP", next.maxHp - cur.maxHp);
+    add("ATK", next.attack - cur.attack);
+    add("MAG", next.magic - cur.magic);
+    add("DEF", next.defense - cur.defense);
+    add("SPD", next.speed - cur.speed);
+    return out;
+}
+
+const char* slotLabel(content::EquipSlot s) {
+    switch (s) {
+        case content::EquipSlot::Weapon: return "Weapon";
+        case content::EquipSlot::Armor: return "Armor";
+        case content::EquipSlot::Accessory: return "Accessory";
+        case content::EquipSlot::None: break;
+    }
+    return "Item";
+}
+
+}  // namespace
+
+void EquipShopState::openItemDetails() {
+    if (rowIds_.empty() || menu_.cursor() >= static_cast<int>(rowIds_.size())) {
+        return;
+    }
+    const content::ItemDef* it =
+        context_.content.findItem(rowIds_[static_cast<std::size_t>(menu_.cursor())]);
+    if (it == nullptr) {
+        return;
+    }
+    std::string body = it->name + " - " + slotLabel(it->slot) + ", " +
+                       std::to_string(it->value) + "g.";
+    const std::string own = bonusDelta(it->statBonus, content::StatBlock{});
+    if (!own.empty()) {
+        body += "\nBonus: " + own;
+    }
+    if (!it->description.empty()) {
+        body += "\n" + it->description;
+    }
+    body += "\n\nIf equipped (vs current gear):";
+    for (Character& m : context_.party.members) {
+        const std::string& curId = it->slot == content::EquipSlot::Weapon  ? m.weapon
+                                   : it->slot == content::EquipSlot::Armor ? m.armor
+                                                                           : m.accessory;
+        content::StatBlock cur{};
+        if (const content::ItemDef* curItem = context_.content.findItem(curId)) {
+            cur = curItem->statBonus;
+        }
+        const std::string delta = bonusDelta(it->statBonus, cur);
+        body += "\n" + m.name + ": " + (delta.empty() ? "no change" : delta);
+    }
+    stack().pushState(
+        std::make_unique<DetailsOverlayState>(stack(), context_, "Gear Details", body));
+}
+
 void EquipShopState::handleInput(const Input& input) {
     if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
@@ -234,6 +305,10 @@ void EquipShopState::handleInput(const Input& input) {
         menu_.moveDown();
     }
     scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
+    if (phase_ == Phase::Buy && input.pressed(InputAction::Details)) {
+        openItemDetails();
+        return;
+    }
     if (input.pressed(InputAction::Confirm)) {
         confirm();
     }
@@ -252,9 +327,9 @@ void EquipShopState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ClearBackground(Color{16, 16, 24, 255});
-    ui::drawTextCentered("Equipment Shop", w / 2, 14, style::kFontScreenTitle, style::kText);
+    ui::drawTextCentered("Equipment Shop", w / 2, 14, style::kFontScreenTitle, style::palette().text);
     ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 14, 14, style::kFontMenu,
-                      style::kGold);
+                      style::palette().gold);
 
     const char* hint = "Confirm: Select   Cancel: Back";
     switch (phase_) {
@@ -264,14 +339,14 @@ void EquipShopState::render() {
         case Phase::EquipSlot: hint = "Choose a slot."; break;
         case Phase::EquipItem: hint = "Choose an item to equip."; break;
     }
-    DrawText(hint, 20, 36, style::kFontBody, style::kTextDim);
+    DrawText(hint, 20, 36, style::kFontBody, style::palette().textDim);
     if (!message_.empty()) {
-        ui::drawTextFitted(message_, 20, 50, w - 40, style::kFontBody, style::kSuccess,
+        ui::drawTextFitted(message_, 20, 50, w - 40, style::kFontBody, style::palette().success,
                            "equipshop.message");
     }
 
     ui::drawMenuScrolled(menu_, scroll_, kVisibleRows, kListX, kListY, kListItemH,
-                         style::kFontMenu, 300, style::kText, style::kDisabled, style::kCursor,
+                         style::kFontMenu, 300, style::palette().text, style::palette().disabled, style::palette().cursor,
                          "equipshop.list");
 
     // Detail line for the selected piece of gear (Buy and EquipItem phases).
@@ -281,7 +356,7 @@ void EquipShopState::render() {
     } else if (phase_ == Phase::EquipItem) {
         if (menu_.cursor() == 0) {
             ui::drawTextWrapped("Remove the current equipment.", 20, h - 52, w - 40,
-                                style::kFontBody, style::kTextDim, "equipshop.detail", 2);
+                                style::kFontBody, style::palette().textDim, "equipshop.detail", 2);
         } else if (!rowIds_.empty()) {
             detail = context_.content.findItem(
                 rowIds_[static_cast<std::size_t>(menu_.cursor() - 1)]);
@@ -289,14 +364,18 @@ void EquipShopState::render() {
     }
     if (detail != nullptr) {
         ui::drawTextWrapped(equipDetail(*detail), 20, h - 52, w - 40, style::kFontBody,
-                            style::kSuccess, "equipshop.detail", 2);
+                            style::palette().success, "equipshop.detail", 2);
     }
 
-    const std::string footer =
-        input::prompt(context_.input.map(), InputAction::Cancel,
-                      context_.input.activeDevice(), "Back");
+    std::string footer = input::prompt(context_.input.map(), InputAction::Cancel,
+                                       context_.input.activeDevice(), "Back");
+    if (phase_ == Phase::Buy) {
+        footer = input::prompt(context_.input.map(), InputAction::Details,
+                               context_.input.activeDevice(), "Compare") +
+                 "    " + footer;
+    }
     ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, 9,
-                         style::kTextHint);
+                         style::palette().textHint);
 }
 
 }  // namespace cd

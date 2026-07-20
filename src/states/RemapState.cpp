@@ -150,13 +150,13 @@ void RemapState::render() {
     ClearBackground(Color{16, 16, 26, 255});
     const char* title =
         device_ == ActiveDevice::Keyboard ? "Remap Keyboard" : "Remap Gamepad";
-    ui::drawTextCentered(title, w / 2, 14, style::kFontScreenTitle, style::kText);
+    ui::drawTextCentered(title, w / 2, 14, style::kFontScreenTitle, style::palette().text);
 
-    ui::drawMenu(menu_, 60, 44, 17, style::kFontMenu, style::kText, style::kDisabled,
-                 style::kCursor);
+    ui::drawMenu(menu_, 60, 44, 17, style::kFontMenu, style::palette().text, style::palette().disabled,
+                 style::palette().cursor);
 
     if (!message_.empty()) {
-        ui::drawTextFitted(message_, 40, h - 46, w - 80, style::kFontBody, style::kSuccess,
+        ui::drawTextFitted(message_, 40, h - 46, w - 80, style::kFontBody, style::palette().success,
                            "remap.message");
     }
 
@@ -174,9 +174,9 @@ void RemapState::render() {
                                                  ? "Press a key for "
                                                  : "Press a button for ") +
                                  std::string(actionDisplayName(action));
-        ui::drawTextCentered(line.c_str(), w / 2, boxY + 14, style::kFontBody, style::kText);
+        ui::drawTextCentered(line.c_str(), w / 2, boxY + 14, style::kFontBody, style::palette().text);
         ui::drawTextCentered("[Esc] Cancel", w / 2, boxY + 38, style::kFontBody,
-                             style::kTextHint);
+                             style::palette().textHint);
         return;
     }
 
@@ -186,7 +186,7 @@ void RemapState::render() {
         input::prompt(map, InputAction::Confirm, promptDevice, "Rebind") + "    " +
         input::prompt(map, InputAction::Cancel, promptDevice, "Back");
     ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, 9,
-                         style::kTextHint);
+                         style::palette().textHint);
 }
 
 }  // namespace cd

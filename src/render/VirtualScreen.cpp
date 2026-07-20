@@ -29,4 +29,15 @@ void VirtualScreen::blitToWindow(int windowWidth, int windowHeight, Color bars) 
     DrawTexturePro(target_.get().texture, src, dst, Vector2{0.0f, 0.0f}, 0.0f, WHITE);
 }
 
+bool VirtualScreen::exportImage(const char* path) const {
+    if (!target_.valid()) {
+        return false;
+    }
+    Image img = LoadImageFromTexture(target_.get().texture);
+    ImageFlipVertical(&img);  // render textures are stored y-flipped
+    const bool ok = ExportImage(img, path);
+    UnloadImage(img);
+    return ok;
+}
+
 }  // namespace cd

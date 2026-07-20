@@ -13,6 +13,7 @@
 #include "score/Scoreboard.hpp"
 #include "settings/Settings.hpp"
 #include "states/StateStack.hpp"
+#include "tutorial/Tutorial.hpp"
 
 namespace cd {
 
@@ -49,10 +50,11 @@ private:
     score::Scoreboard scoreboard_;
     AudioManager audio_;
     FadeController fade_;
-    // input_ and settings_ are declared before context_ because the context
-    // holds references to them.
+    // input_, settings_, and tutorial_ are declared before context_ because
+    // the context holds references to them.
     Input input_;
     settings::SettingsStore settings_;
+    tutorial::TutorialStore tutorial_;
     AppContext context_;
     StateStack stack_;
     bool debugOverlay_;

@@ -14,9 +14,9 @@ music, or text. Built in **C++20** with **raylib**.
 > items/skills/themes), equipment, XP/leveling, shops, and a controls screen
 > are all in. A post-M10 completion program (M11–M24) is underway — UI/text
 > safety, input remapping, replaceable assets, generated 16-bit-style art,
-> compact rooms, encounter variety, and (M21) a full original soundscape
-> (music, ambience, SFX) are done; onboarding/accessibility, validation, and
-> release packaging remain — see `docs/completion_roadmap.md`.
+> compact rooms, encounter variety, a full original soundscape, and (M22)
+> in-play onboarding + accessibility options are done; validation/balance
+> hardening and release packaging remain — see `docs/completion_roadmap.md`.
 
 ## Requirements
 
@@ -64,8 +64,10 @@ cmake --build build-msvc --config Release
 
 Default bindings — everything except text-delete and the debug toggle is
 **remappable in-game** under **Main Menu → Settings** (also reachable from the
-pause menus). Settings, volumes, window mode, and battle/message speed persist
-in `settings.json` in the user data folder.
+pause menus). Settings, volumes, window mode, battle/message speed, effect
+intensity, and the high-contrast palette persist in `settings.json` in the
+user data folder; one-time tutorial-prompt progress persists in
+`tutorial.json` beside it (toggle or reset in Settings).
 
 | Action                | Keyboard               | Gamepad            |
 |-----------------------|------------------------|--------------------|
@@ -73,6 +75,7 @@ in `settings.json` in the user data folder.
 | Confirm               | Enter or Space         | A                  |
 | Cancel / Back         | Esc or Backspace       | B                  |
 | Menu / Pause          | Tab                    | Start              |
+| Details / Info        | C                      | Y                  |
 | Adjust (Guild, Settings) | Left / Right        | D-Pad L/R / Stick  |
 | Delete (name entry)   | Backspace              | X                  |
 | Toggle debug overlay  | F1                     | —                  |

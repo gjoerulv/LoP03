@@ -11,6 +11,7 @@
 #include "platform/Paths.hpp"
 #include "raylib.h"
 #include "states/MainMenuState.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -57,9 +58,11 @@ Application::Application()
       fade_(),
       input_(),
       settings_(paths::userDataDir() / "settings.json"),
+      tutorial_(paths::userDataDir() / "tutorial.json"),
       context_{resources_, content_, saves_,    party_,
                scoreboard_, audio_,  fade_,     input_,
-               settings_,   config::kVirtualWidth, config::kVirtualHeight},
+               settings_,   tutorial_,
+               config::kVirtualWidth, config::kVirtualHeight},
       stack_(),
       // Off by default (audit UI-LAYOUT-009); F1 toggles it in debug builds.
       debugOverlay_(false) {
@@ -74,6 +77,16 @@ Application::Application()
         }
         audio_.setVolumes(settings_.values.masterVolume, settings_.values.musicVolume,
                           settings_.values.sfxVolume);
+        ui::style::setHighContrast(settings_.values.highContrast);
+    }
+    {
+        content::LoadReport tutorialReport;
+        if (!tutorial_.load(tutorialReport)) {
+            log::warn("Tutorial state could not be loaded; starting fresh.");
+        }
+        for (const auto& e : tutorialReport.errors()) {
+            log::warn("  " + e.source + ": " + e.context + ": " + e.message);
+        }
     }
     loadAssets();
     fade_.start(0.6f);

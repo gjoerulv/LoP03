@@ -2,7 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval (see §N).
+- **Status:** complete (approved) — approved by the owner on 2026-07-20
+  after the manual listening pass (see §N).
 - **Last reviewed repository commit:** M20 approval HEAD (2026-07-20).
   Re-audit: `AudioManager` (M14) resolves 9 SFX + 3 music roles two-tier
   (manifest file → synthesized tone → silence); 4 audio files ship, all from

@@ -28,6 +28,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 option(CRYSTAL_BUILD_TESTS         "Build Catch2 unit tests"            ON)
 option(CRYSTAL_WARNINGS_AS_ERRORS  "Treat project warnings as errors"   OFF)
 option(CRYSTAL_ENABLE_DEBUG_OVERLAY "Compile the runtime debug overlay" ON)
+# M23 capture CLI (--capture): dev builds only; Release never compiles it
+# even when the option is ON.
+option(CRYSTAL_ENABLE_CAPTURE      "Compile the deterministic capture CLI" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CompilerWarnings)
@@ -66,6 +69,9 @@ add_library(crystal_core STATIC
     src/ui/TextInput.cpp
     src/ui/TextLayout.cpp
     src/ui/UiDraw.cpp
+    src/ui/UiStyle.cpp
+    src/tutorial/Tutorial.cpp
+    src/capture/CaptureRunner.cpp
     src/town/Tilemap.cpp
     src/town/Movement.cpp
     src/town/TownData.cpp
@@ -94,6 +100,8 @@ add_library(crystal_core STATIC
     src/states/ScoreboardState.cpp
     src/states/EquipShopState.cpp
     src/states/HelpState.cpp
+    src/states/TutorialPromptState.cpp
+    src/states/DetailsOverlayState.cpp
 )
 
 target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -102,6 +110,12 @@ set_project_warnings(crystal_core)
 
 if(CRYSTAL_ENABLE_DEBUG_OVERLAY)
     target_compile_definitions(crystal_core PUBLIC CRYSTAL_DEBUG_OVERLAY)
+endif()
+
+# The capture CLI is excluded from Release configurations unconditionally
+# (owner requirement: no debug surface reachable in a Release build).
+if(CRYSTAL_ENABLE_CAPTURE AND NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_definitions(crystal_core PUBLIC CRYSTAL_CAPTURE)
 endif()
 
 # ---------------------------------------------------------------------------

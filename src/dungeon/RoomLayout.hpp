@@ -19,8 +19,9 @@ namespace cd::dungeon {
 // Bumped when generation changes how a seed plays. Version 1 is the pre-M16
 // fixed 26x15 room build; version 2 is the compact archetype system;
 // version 3 adds composition constraints, depth stat scaling, and room
-// events (M20).
-inline constexpr int kGenerationVersion = 3;
+// events (M20); version 4 is the M23 early-ramp tuning (elite pressure
+// values in data/composition.json — owner-approved, battery-evidenced).
+inline constexpr int kGenerationVersion = 4;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

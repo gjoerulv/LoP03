@@ -27,12 +27,16 @@ public:
 private:
     void rebuild();
     void confirmSelection();
+    void disarmOverwrite();
 
     AppContext& context_;
     SlotMenuMode mode_;
     ui::Menu menu_;
     std::vector<save::SaveSlot> slots_;
     std::string message_;
+    // M22: overwriting an existing save needs a second Confirm on the same
+    // slot; moving the cursor or Cancel disarms it.
+    int pendingOverwrite_ = -1;
 };
 
 }  // namespace cd

@@ -22,6 +22,8 @@
 #include "states/TrainingHallState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
+#include "states/TutorialPromptState.hpp"
+#include "tutorial/Tutorial.hpp"
 #include "states/TownMenuState.hpp"
 #include "render/SpriteDraw.hpp"
 #include "town/Movement.hpp"
@@ -83,12 +85,17 @@ void TownState::onEnter() {
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Town);
     context_.audio.setAmbience(AmbienceTrack::Town);
+    maybeTutorialPrompt(stack(), context_, tutorial::kTownWelcome);
 }
 
 void TownState::onResume() {
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Town);
     context_.audio.setAmbience(AmbienceTrack::Town);
+    // Fires once, after the player has seen their first run's reckoning.
+    if (context_.tutorial.state.seen.count(tutorial::kResultFirst) > 0) {
+        maybeTutorialPrompt(stack(), context_, tutorial::kTownReturn);
+    }
 }
 
 const town::Building* TownState::buildingAtPlayerTile() const {

@@ -90,16 +90,16 @@ void ItemShopState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ClearBackground(Color{16, 16, 24, 255});
-    ui::drawTextCentered("Item Shop", w / 2, 14, style::kFontScreenTitle, style::kText);
+    ui::drawTextCentered("Item Shop", w / 2, 14, style::kFontScreenTitle, style::palette().text);
     ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 14, 14, style::kFontMenu,
-                      style::kGold);
+                      style::palette().gold);
     if (!message_.empty()) {
-        ui::drawTextFitted(message_, 20, 32, w - 40, style::kFontBody, style::kSuccess,
+        ui::drawTextFitted(message_, 20, 32, w - 40, style::kFontBody, style::palette().success,
                            "itemshop.message");
     }
 
     ui::drawMenuScrolled(menu_, scroll_, kVisibleRows, kListX, kListY, kListItemH,
-                         style::kFontMenu, 300, style::kText, style::kDisabled, style::kCursor,
+                         style::kFontMenu, 300, style::palette().text, style::palette().disabled, style::palette().cursor,
                          "itemshop.list");
 
     // Description of the selected consumable.
@@ -108,7 +108,7 @@ void ItemShopState::render() {
             context_.content.findItem(ids_[static_cast<std::size_t>(menu_.cursor())]);
         if (it != nullptr && !it->description.empty()) {
             ui::drawTextWrapped(it->description, 20, h - 52, w - 40, style::kFontBody,
-                                style::kSuccess, "itemshop.detail", 2);
+                                style::palette().success, "itemshop.detail", 2);
         }
     }
 
@@ -117,7 +117,7 @@ void ItemShopState::render() {
     const std::string footer = input::prompt(map, InputAction::Confirm, device, "Buy") +
                                "    " + input::prompt(map, InputAction::Cancel, device, "Back");
     ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, style::kFontBody,
-                         style::kTextHint);
+                         style::palette().textHint);
 }
 
 }  // namespace cd

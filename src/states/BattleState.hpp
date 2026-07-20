@@ -22,6 +22,7 @@ public:
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                 battle::BattleResult* resultSlot);
 
+    void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
     void update(float dt) override;
     void render() override;
@@ -64,6 +65,8 @@ private:
     // marks buff/debuff casts that move no HP (SFX code 5).
     void stageNumbers(const std::vector<int>& hpBefore, int damageSfx = 2,
                       bool statusAction = false);
+    // M22: pushes the contextual Details overlay for the focused unit.
+    void openDetails();
     void commitPresentation();
 
     void drawUnit(const battle::Combatant& c, int index, int x, int y, bool current,

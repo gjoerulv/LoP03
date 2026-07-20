@@ -22,6 +22,9 @@ class Scoreboard;
 namespace settings {
 class SettingsStore;
 }
+namespace tutorial {
+class TutorialStore;
+}
 
 struct AppContext {
     ResourceManager& resources;
@@ -35,6 +38,8 @@ struct AppContext {
     // screen) and the persistent settings store.
     Input& input;
     settings::SettingsStore& settings;
+    // M22: one-time onboarding prompt progress (tutorial.json).
+    tutorial::TutorialStore& tutorial;
     int virtualWidth;
     int virtualHeight;
 };

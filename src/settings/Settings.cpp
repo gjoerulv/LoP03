@@ -196,6 +196,14 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
         } else {
             report.add(kSource, "gameplay.effectShake", "unknown value '" + shake + "'");
         }
+        // M22: optional; absent keeps the standard palette.
+        if (const auto hc = it->find("highContrast"); hc != it->end()) {
+            if (hc->is_boolean()) {
+                values.highContrast = hc->get<bool>();
+            } else {
+                report.add(kSource, "gameplay.highContrast", "expected a boolean");
+            }
+        }
     }
 
     if (const auto it = root.find("bindings"); it != root.end() && it->is_object()) {
@@ -249,7 +257,8 @@ std::string serializeSettings(const Settings& values, const InputMap& map) {
     root["gameplay"] = {{"battleSpeed", std::string(battleSpeedName(values.battleSpeed))},
                         {"messageSpeed", std::string(messageSpeedName(values.messageSpeed))},
                         {"effectFlash", std::string(effectLevelName(values.effectFlash))},
-                        {"effectShake", std::string(effectLevelName(values.effectShake))}};
+                        {"effectShake", std::string(effectLevelName(values.effectShake))},
+                        {"highContrast", values.highContrast}};
 
     Json keyboard = Json::object();
     Json gamepad = Json::object();

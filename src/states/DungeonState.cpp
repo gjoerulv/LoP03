@@ -23,8 +23,11 @@
 #include "settings/Settings.hpp"
 #include "states/BattleState.hpp"
 #include "states/DungeonMenuState.hpp"
+#include "states/DetailsOverlayState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/StateStack.hpp"
+#include "states/TutorialPromptState.hpp"
+#include "tutorial/Tutorial.hpp"
 #include "town/Movement.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -413,6 +416,8 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &battleResult_));
 }
 
+void DungeonState::onEnter() { maybeTutorialPrompt(stack(), context_, tutorial::kDungeonFirst); }
+
 void DungeonState::onResume() {
     if (pendingKind_ == EncounterKind::None) {
         return;
@@ -444,6 +449,10 @@ void DungeonState::onResume() {
     }
     if (outcome != battle::Outcome::Victory) {
         return;
+    }
+
+    if (kind != EncounterKind::Boss) {
+        maybeTutorialPrompt(stack(), context_, tutorial::kVictoryFirst);
     }
 
     // Credit the danger defeated.
@@ -549,9 +558,36 @@ void DungeonState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Confirm)) {
         interact();
     }
+    if (input.pressed(InputAction::Details)) {
+        openDetails();
+    }
     if (input.pressed(InputAction::Menu) || input.pressed(InputAction::Cancel)) {
         stack().pushState(std::make_unique<DungeonMenuState>(stack(), context_));
     }
+}
+
+// M22: danger-tier reference plus whatever is currently faced.
+void DungeonState::openDetails() {
+    std::string body;
+    if (facingMarker_ != nullptr && facingMarker_->teamIndex >= 0 &&
+        facingMarker_->teamIndex < static_cast<int>(dungeon_.teams.size())) {
+        const dungeon::EnemyTeam& team =
+            dungeon_.teams[static_cast<std::size_t>(facingMarker_->teamIndex)];
+        const danger::Tier tier = teamTier_[static_cast<std::size_t>(facingMarker_->teamIndex)];
+        body += "Facing: " + team.name + " - " + std::string(danger::tierName(tier)) + ", " +
+                std::to_string(team.enemyIds.size() + (team.bossId.empty() ? 0 : 1)) +
+                " enemies.\n\n";
+    }
+    body +=
+        "Danger is computed from the actual enemies' stats, skills, and team "
+        "synergy - never hand-picked. Tiers from weakest to strongest: "
+        "Trivial, Easy, Fair, Dangerous, Deadly, Boss.\n\nGate teams must be "
+        "fought to reach the boss. Guarded chests show their rarity before "
+        "the fight; escaping the guard forfeits the chest. Events state "
+        "their full trade-off in the footer before you Confirm. Deeper "
+        "dungeons field bigger, stronger teams - and pay better.";
+    stack().pushState(
+        std::make_unique<DetailsOverlayState>(stack(), context_, "Dungeon Details", body));
 }
 
 void DungeonState::update(float dt) {
@@ -583,6 +619,16 @@ void DungeonState::update(float dt) {
     }
 
     recomputeInteraction(tx, ty);
+
+    // First-encounter beats fire when the relevant thing is faced (the
+    // footer is already explaining it), never mid-walk.
+    if (facingMarker_ != nullptr) {
+        if (facingMarker_->kind == MarkerKind::GuardTeam) {
+            maybeTutorialPrompt(stack(), context_, tutorial::kChestGuarded);
+        } else if (facingMarker_->kind == MarkerKind::Event) {
+            maybeTutorialPrompt(stack(), context_, tutorial::kEventFirst);
+        }
+    }
 
     if (messageTimer_ > 0.0f) {
         messageTimer_ -= dt;
@@ -845,6 +891,7 @@ void DungeonState::render() {
                       input::primaryLabel(map, InputAction::MoveRight, device)
                 : "D-Pad/Stick";
         text = "[" + moveLabel + "] Move    " +
+               input::prompt(map, InputAction::Details, device, "Details") + "    " +
                input::prompt(map, InputAction::Menu, device, "Pause / Retreat");
     }
     const int promptW = ui::measureText(text, 8);

@@ -44,7 +44,7 @@ void HelpState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ClearBackground(Color{16, 16, 26, 255});
-    ui::drawTextCentered("Controls", w / 2, 14, style::kFontScreenTitle, style::kText);
+    ui::drawTextCentered("Controls", w / 2, 14, style::kFontScreenTitle, style::palette().text);
 
     const int col1W = kCol2X - kCol1X - 8;
     const int col2W = kCol3X - kCol2X - 8;
@@ -52,16 +52,16 @@ void HelpState::render() {
     const InputMap& map = context_.input.map();
 
     int y = 42;
-    ui::drawTextFitted("Action", kCol1X, y, col1W, style::kFontBody, style::kTextDim,
+    ui::drawTextFitted("Action", kCol1X, y, col1W, style::kFontBody, style::palette().textDim,
                        "help.header");
-    ui::drawTextFitted("Keyboard", kCol2X, y, col2W, style::kFontBody, style::kTextDim,
+    ui::drawTextFitted("Keyboard", kCol2X, y, col2W, style::kFontBody, style::palette().textDim,
                        "help.header");
-    ui::drawTextFitted("Gamepad", kCol3X, y, col3W, style::kFontBody, style::kTextDim,
+    ui::drawTextFitted("Gamepad", kCol3X, y, col3W, style::kFontBody, style::palette().textDim,
                        "help.header");
     y += 17;
     for (InputAction a : kShownActions) {
         ui::drawTextFitted(std::string(actionDisplayName(a)), kCol1X, y, col1W,
-                           style::kFontBody, style::kText, "help.action");
+                           style::kFontBody, style::palette().text, "help.action");
         ui::drawTextFitted(input::allLabels(map, a, ActiveDevice::Keyboard), kCol2X, y, col2W,
                            style::kFontBody, Color{200, 210, 230, 255}, "help.keyboard");
         ui::drawTextFitted(input::allLabels(map, a, ActiveDevice::Gamepad), kCol3X, y, col3W,
@@ -76,7 +76,7 @@ void HelpState::render() {
     const std::string footer =
         input::prompt(map, InputAction::Cancel, context_.input.activeDevice(), "Back");
     ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, style::kFontBody,
-                         style::kTextHint);
+                         style::palette().textHint);
 }
 
 }  // namespace cd

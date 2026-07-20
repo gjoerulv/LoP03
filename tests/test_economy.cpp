@@ -3,6 +3,7 @@
 #include "score/Scoring.hpp"
 
 #ifdef CRYSTAL_TEST_DATA_DIR
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -17,6 +18,7 @@
 #include "danger/DangerRating.hpp"
 #include "dungeon/DungeonGenerator.hpp"
 #include "dungeon/DungeonModel.hpp"
+#include "dungeon/RoomLayout.hpp"
 #include "game/Party.hpp"
 #endif
 
@@ -237,6 +239,66 @@ TEST_CASE("economy report: depth/level/income battery", "[.][economy-report]") {
                   << " | " << sample.gold << " | " << sample.chestGold << " | "
                   << trainPartyCost(worstLv) << "\n";
     }
+    SUCCEED();
+}
+
+// Machine-readable balance report (M23): progression bands per depth plus
+// outlier encounters (teams whose simulated rounds deviate hard from the
+// per-dungeon median at the appropriate party level). Reproducible JSON:
+//   crystal_tests.exe "[sim-report]" -s > sim_report.json
+TEST_CASE("sim report: progression bands and outlier encounters (JSON)",
+          "[.][sim-report]") {
+    const content::ContentDatabase db = loadContent();
+    const char* themes[] = {"ruined_keep", "crystal_mine", "hollow_forest"};
+    std::cout << "{\n  \"generationVersion\": " << dungeon::kGenerationVersion
+              << ",\n  \"bands\": [\n";
+    bool firstBand = true;
+    for (int depth : {1, 2, 3, 4, 5, 6, 8, 10}) {
+        int worstLv = 0;
+        ClearStats sample;
+        for (std::uint64_t seed : {11ull, 222ull, 3333ull}) {
+            const dungeon::Dungeon d = dungeon::generate(seed, depth, db, "ruined_keep");
+            const int lv = clearingLevel(db, d);
+            if (lv > worstLv) {
+                worstLv = lv;
+                sample = simulateClear(db, d, std::min(lv, kMaxLevel));
+            }
+        }
+        std::cout << (firstBand ? "" : ",\n") << "    {\"depth\": " << depth
+                  << ", \"clearingLevel\": " << worstLv << ", \"rounds\": " << sample.rounds
+                  << ", \"xpPerMember\": " << sample.xp << ", \"gold\": " << sample.gold
+                  << "}";
+        firstBand = false;
+    }
+    std::cout << "\n  ],\n  \"outliers\": [\n";
+    // Outliers: per theme at a mid depth, any team needing > 2x the median
+    // rounds (or unwinnable) at that dungeon's clearing level.
+    bool firstOutlier = true;
+    for (const char* theme : themes) {
+        for (std::uint64_t seed : {11ull, 222ull, 3333ull}) {
+            const dungeon::Dungeon d = dungeon::generate(seed, 5, db, theme);
+            const int lv = std::min(clearingLevel(db, d), kMaxLevel);
+            std::vector<int> rounds;
+            for (const dungeon::EnemyTeam& team : d.teams) {
+                battle::Battle b = battle::buildBattle(makeParty(db, lv), team, db);
+                const battle::SimResult r = battle::simulate(b, db);
+                rounds.push_back(r.outcome == battle::Outcome::Victory ? r.rounds : 999);
+            }
+            std::vector<int> sorted = rounds;
+            std::sort(sorted.begin(), sorted.end());
+            const int median = sorted[sorted.size() / 2];
+            for (std::size_t i = 0; i < d.teams.size(); ++i) {
+                if (rounds[i] > median * 2) {
+                    std::cout << (firstOutlier ? "" : ",\n") << "    {\"theme\": \"" << theme
+                              << "\", \"seed\": " << seed << ", \"team\": \""
+                              << d.teams[i].name << "\", \"rounds\": " << rounds[i]
+                              << ", \"medianRounds\": " << median << "}";
+                    firstOutlier = false;
+                }
+            }
+        }
+    }
+    std::cout << "\n  ]\n}\n";
     SUCCEED();
 }
 

@@ -28,9 +28,9 @@
 | 18 | Battle presentation & game feel    | ☑ complete (approved) |
 | 19 | Progression, economy & score-integrity hardening | ☑ complete (approved) |
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
-| 21 | Final music, ambience & sound effects | ◑ implemented, awaiting manual approval |
-| 22 | Onboarding & accessibility         | ☐ planned |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned |
+| 21 | Final music, ambience & sound effects | ☑ complete (approved) |
+| 22 | Onboarding & accessibility         | ☑ complete (approved) |
+| 23 | Automated visual validation, playtesting & balance hardening | ◐ in progress (tooling + tuning done; awaiting owner playtests) |
 | 24 | Release packaging & final release validation | ☐ planned |
 
 ## M1 — Project foundation
@@ -671,14 +671,14 @@ milestone is not automatic authorization to start the next.
 
 ## M21 — Final music, ambience & sound effects
 
-- **Status:** ◑ implemented, awaiting manual approval (235/235 tests; 30
-  original WAVs — 11 music incl. per-theme dungeon tracks and one-shot
-  victory/defeat jingles, 4 ambience beds, 15 SFX — all deterministic,
-  manifest-driven, provenance-recorded; ambience channel + crossfades +
-  SFX rate limiting in `AudioManager`; smoke-tested incl. the
-  missing-file drill; owner listening pass pending — see the note's §N.
-  Owner decisions 2026-07-20: in-project generated sourcing; per-theme
-  dungeon music; fanfare/dirge jingles at battle end.)
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-20
+  after the manual listening pass. (235/235 tests; 30 original WAVs — 11
+  music incl. per-theme dungeon tracks and one-shot victory/defeat
+  jingles, 4 ambience beds, 15 SFX — all deterministic, manifest-driven,
+  provenance-recorded; ambience channel + crossfades + SFX rate limiting
+  in `AudioManager`; smoke-tested incl. the missing-file drill; see the
+  note's §N. Owner decisions 2026-07-20: in-project generated sourcing;
+  per-theme dungeon music; fanfare/dirge jingles at battle end.)
 - **Goal:** replace synthesized placeholders with coherent original/licensed
   audio delivered through the asset manifest.
 - **Player-facing outcome:** real music, ambience, and sound effects across
@@ -702,7 +702,15 @@ milestone is not automatic authorization to start the next.
 
 ## M22 — Onboarding & accessibility
 
-- **Status:** ☐ planned
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-20
+  after manual testing. (244/244 tests; 9 one-time contextual prompts
+  persisted in tutorial.json with disable/reset in Settings; remappable
+  Details action with contextual panels in
+  battle/dungeon/result/scoreboard/equip shop; high-contrast palette
+  behind style::palette(); save-overwrite and quit-to-title
+  second-Confirm guards; see the note's §N. Owner decisions 2026-07-20:
+  contextual one-time prompts; own tutorial.json; Details action +
+  palette accessor approved.)
 - **Goal:** teach the game through play and remove avoidable barriers while
   retaining tactical challenge.
 - **Player-facing outcome:** progressive contextual onboarding; in-game
@@ -729,7 +737,13 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned
+- **Status:** ◐ in progress — tooling, diagnostics, lint/mass/report
+  suites, and the sim-justified early-ramp tuning (generation v4) are
+  implemented (247/247 tests; 22 deterministic captures, byte-identical
+  reruns, zero overflow); the milestone now waits on the owner-run
+  external playtests per `docs/playtest_protocol.md`, whose findings feed
+  the hardening pass before status can advance (owner-confirmed flow,
+  2026-07-20).
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
