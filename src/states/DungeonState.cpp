@@ -119,8 +119,11 @@ DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dung
         teamTier_.push_back(danger::assess(team, dungeon_.depth, context_.content));
     }
     context_.fade.start();
-    context_.audio.setMusic(themeMusic(dungeon_.themeId));
-    context_.audio.setAmbience(themeAmbience(dungeon_.themeId));
+    // Theme music + ambience are applied in onEnter(), not here: entering the
+    // dungeon pops the Guild, which fires TownState::onResume and re-asserts
+    // the town audio *after* this constructor runs. onEnter() runs after that
+    // pop, so the dungeon audio wins (previously the ambience stayed on the
+    // town bed for the whole dungeon).
     enterRoom(dungeon_.startRoom, std::nullopt);
 }
 
@@ -416,7 +419,13 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &battleResult_));
 }
 
-void DungeonState::onEnter() { maybeTutorialPrompt(stack(), context_, tutorial::kDungeonFirst); }
+void DungeonState::onEnter() {
+    // Runs after the Guild pop's TownState::onResume, so these win and the
+    // dungeon actually gets its own theme music + ambience bed.
+    context_.audio.setMusic(themeMusic(dungeon_.themeId));
+    context_.audio.setAmbience(themeAmbience(dungeon_.themeId));
+    maybeTutorialPrompt(stack(), context_, tutorial::kDungeonFirst);
+}
 
 void DungeonState::onResume() {
     if (pendingKind_ == EncounterKind::None) {
@@ -426,10 +435,11 @@ void DungeonState::onResume() {
     pendingKind_ = EncounterKind::None;
     const battle::Outcome outcome = battleResult_.outcome;
 
-    // Returning from a battle: fade in and restore dungeon music (town states
-    // override it again if we end up leaving).
+    // Returning from a battle: fade in and restore the dungeon music *and*
+    // ambience (town states override them again if we end up leaving).
     context_.fade.start();
     context_.audio.setMusic(themeMusic(dungeon_.themeId));
+    context_.audio.setAmbience(themeAmbience(dungeon_.themeId));
 
     // Accumulate run statistics regardless of outcome.
     run_.battleTurns += battleResult_.rounds;

@@ -27,7 +27,11 @@ The older rows below are retained as historical baseline evidence and are **not*
 > Mine / Hollow Forest beds — each has its own signature: **town** a quiet
 > breeze with frequent high bird whistles; **keep** a loud, hollow, beating low
 > drone; **mine** a metallic hum under regular echoing water drips; **forest** a
-> busy bright leaf rustle with low owl hoots. **Slider reroute (supersedes the M21-update note):** the
+> busy bright leaf rustle with low owl hoots. **The bed must switch per theme:**
+> enter Ruined Keep / Crystal Mine / Hollow Forest dungeons from the Guild and
+> confirm the ambience changes to that theme's bed (this was broken — the town
+> bed used to play in every dungeon), and returning to town switches back.
+> **Slider reroute (supersedes the M21-update note):** the
 > **SFX** slider now moves ambience volume and the **Music** slider no longer
 > does (music still follows Music) — check both in a dungeon. Missing-background
 > drill: delete a `assets/textures/backgrounds/*.png` from the build → that

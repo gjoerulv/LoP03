@@ -135,6 +135,19 @@ Implemented on top of the M26 approval commit.
     0.35 → 0.24; owner can fine-tune by ear.
   - Music and SFX WAVs verified **byte-identical**; ambience deterministic on
     rerun.
+  - **Second bug (owner-reported): the dungeon ambience never changed in game.**
+    Root cause was transition ordering, not the audio: `DungeonState` set its
+    theme music+ambience in its **constructor**, but `GuildState::enterDungeon`
+    pops the Guild *then* pushes the dungeon in one batch — the pop exposes
+    `TownState`, whose `onResume` re-asserts the town music+ambience *after* the
+    constructor ran. Music recovered (`DungeonState::onResume` re-sets it after
+    the first battle) but ambience never did. Fixed by applying the theme
+    music+ambience in `DungeonState::onEnter` (runs after the pop's Town resume,
+    so it wins) and also restoring ambience in `onResume`. Added
+    `AudioManager::currentAmbience()/currentMusic()` accessors and two headless
+    `StateStack` regression tests (`[states][audio]`) that lock the ordering
+    (onEnter audio wins over the exposed state's onResume; the old
+    constructor-only approach is shown to lose). Suite now **254**.
 - **Slider reroute:** the two ambience gain sites in `AudioManager.cpp`
   (`startAmbience`, `setVolumes`) now multiply by `sfxVolume_`. No new Settings
   field, no save migration.

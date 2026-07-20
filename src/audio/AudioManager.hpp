@@ -15,8 +15,8 @@
 // music keeps the M8 re-play loop. Replacing any sound requires only an
 // assets/manifest.json entry + file — no C++ (role ids in AudioRoles.hpp).
 //
-// M21 additions: a second streamed channel for ambience (file-or-silence,
-// governed by the music volume), a short crossfade when the music track
+// M21 additions: a second streamed channel for ambience (file-or-silence;
+// governed by the SFX volume since M27), a short crossfade when the music track
 // changes, one-shot victory/defeat jingles (stinger SFX fallback), and
 // per-role SFX rate limiting for rapid menus and footsteps.
 
@@ -37,9 +37,14 @@ public:
     void setEnabled(bool enabled);
     bool enabled() const { return enabled_; }
 
+    // The active scene tracks (also valid when the audio device is absent —
+    // set*/currentAmbience are tracked regardless). Used by tests/diagnostics.
+    MusicTrack currentMusic() const { return current_; }
+    AmbienceTrack currentAmbience() const { return currentAmbience_; }
+
     // Volume controls (0..1 each), persisted via settings (M13). Applied to
     // the master output, the current music and ambience streams, and each SFX
-    // at play time. Ambience follows the music slider.
+    // at play time. Ambience follows the SFX slider (M27).
     void setVolumes(float master, float music, float sfx);
 
     // Resolves every audio role against the manifest (M14): file-backed

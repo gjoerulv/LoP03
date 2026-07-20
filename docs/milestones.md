@@ -915,9 +915,11 @@ commitment; each note adds the detail once the ground under it is stable.
 ## M27 — Environment & ambience identity
 
 - **Status:** implemented, awaiting manual approval (owner authorized
-  2026-07-20; six service backgrounds, retuned ambience beds, ambience routed
-  to the SFX slider; 252/252 tests; 23/23 capture scenes clean; generators
-  byte-identical bar the intended changes — see the note's §K)
+  2026-07-20; six service backgrounds, redesigned per-place ambience beds,
+  ambience routed to the SFX slider, and a fix for the dungeon ambience never
+  switching per theme; 254/254 tests incl. a StateStack ambience-transition
+  regression guard; 23/23 capture scenes clean; generators byte-identical bar
+  the intended changes — see the note's §K)
 - **Goal:** make town services and dungeon themes feel like distinct places.
 - **Context:** all six town service states draw a single
   `ClearBackground(solid)`. Per-theme ambience *is* correctly wired
