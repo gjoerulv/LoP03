@@ -38,7 +38,7 @@ src/
   states/                 # GameState, StateStack, concrete states (menu/town/...)
   input/                  # InputAction, InputMap (+ raylib query factory)
   resource/               # ResourceManager (texture/font/sound cache, RAII)
-  platform/               # Paths (user-data dir, path sanitizing)
+  platform/            # Paths + AtomicFile (user-data dir, safe persistence)
   content/                # JSON content model: defs, enums, loaders, validators
   game/                   # runtime model: Character, Party, Inventory, derivation
   save/                   # SaveSystem: versioned JSON slots + autosave (defensive)
@@ -183,7 +183,7 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = 3.
+  `kGenerationVersion` = 4.
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager) realized as an `EventChamber`
@@ -500,7 +500,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 2; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 4; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).
@@ -696,3 +696,13 @@ tested; raylib adapters live in `ui/UiDraw`.
   suite, which loads content, generates dungeons, and simulates a clear), and
   known limitations. The deliverable is `CrystalDungeons.exe` plus the `data/`
   folder copied beside it.
+
+## Release-hardening corrections (post-356619d audit)
+
+- `CRYSTAL_DEBUG_OVERLAY` and `CRYSTAL_CAPTURE` are configuration-aware generator-expression definitions and are never compiled for any Release configuration, including Visual Studio multi-config builds. `CRYSTAL_SHIPPING_BUILD` adds a compile-time guard against accidental linkage.
+- The `msvc-release` preset explicitly disables both development surfaces. Packaging independently scans the staged executable for debug/capture markers and verifies the PE machine type is AMD64.
+- Save slots, settings, tutorial progress, and scoreboard data use sibling-temp atomic replacement. Save slots retain one `.bak` generation. A failed write leaves the prior destination intact.
+- Scoreboard loading is transactional: malformed data does not replace already-valid in-memory entries.
+- Packaged builds write timestamped persistent logs under the user-data `logs` directory; fatal startup errors show a GUI dialog with the log path.
+- Dungeon generation compatibility is currently version 4.
+

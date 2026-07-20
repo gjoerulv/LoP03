@@ -238,3 +238,8 @@ packaging engineering proceeds **in parallel** while this milestone stays
 open for the playtests; playtest findings land here as hardening (or as
 release-blocking fixes under M24's scope). M24's final matrix sign-off
 and release-candidate approval wait until M23 completes.
+
+## Post-audit release-hardening correction
+
+A static audit of commit `356619d64d4511c7f047bef1a4ca82d1df561595` found that the original `CMAKE_BUILD_TYPE` capture gate was unsafe for Visual Studio multi-configuration Release builds. The repair uses `$<CONFIG:Release>` generator expressions, excludes both capture and overlay code from every Release configuration, adds atomic persistence and transactional scoreboard loading, and adds persistent packaged-build diagnostics. Automated and owner-run validation remain required; this note does not mark M23 approved.
+

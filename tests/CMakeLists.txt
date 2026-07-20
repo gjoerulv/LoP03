@@ -15,6 +15,7 @@ add_executable(crystal_tests
     test_accessibility.cpp
     test_presentation_lint.cpp
     test_paths.cpp
+    test_atomic_file.cpp
     test_content_validation.cpp
     test_content_loader.cpp
     test_menu.cpp

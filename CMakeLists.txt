@@ -49,6 +49,7 @@ include(Dependencies)
 # ---------------------------------------------------------------------------
 add_library(crystal_core STATIC
     src/core/Application.cpp
+    src/core/Log.cpp
     src/render/Viewport.cpp
     src/render/VirtualScreen.cpp
     src/input/Input.cpp
@@ -62,6 +63,7 @@ add_library(crystal_core STATIC
     src/states/SettingsState.cpp
     src/resource/ResourceManager.cpp
     src/platform/Paths.cpp
+    src/platform/AtomicFile.cpp
     src/content/Enums.cpp
     src/content/LoadReport.cpp
     src/content/JsonValidation.cpp
@@ -117,15 +119,13 @@ target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"
 target_link_libraries(crystal_core PUBLIC raylib nlohmann_json::nlohmann_json)
 set_project_warnings(crystal_core)
 
-if(CRYSTAL_ENABLE_DEBUG_OVERLAY)
-    target_compile_definitions(crystal_core PUBLIC CRYSTAL_DEBUG_OVERLAY)
-endif()
-
-# The capture CLI is excluded from Release configurations unconditionally
-# (owner requirement: no debug surface reachable in a Release build).
-if(CRYSTAL_ENABLE_CAPTURE AND NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_definitions(crystal_core PUBLIC CRYSTAL_CAPTURE)
-endif()
+# Configuration-aware guards are mandatory: CMAKE_BUILD_TYPE is empty for
+# multi-configuration generators such as Visual Studio.
+target_compile_definitions(crystal_core PUBLIC
+    $<$<CONFIG:Release>:CRYSTAL_SHIPPING_BUILD>
+    $<$<AND:$<BOOL:${CRYSTAL_ENABLE_DEBUG_OVERLAY}>,$<NOT:$<CONFIG:Release>>>:CRYSTAL_DEBUG_OVERLAY>
+    $<$<AND:$<BOOL:${CRYSTAL_ENABLE_CAPTURE}>,$<NOT:$<CONFIG:Release>>>:CRYSTAL_CAPTURE>
+)
 
 # ---------------------------------------------------------------------------
 # Executable
@@ -148,6 +148,7 @@ endif()
 # in Debug. The GUI subsystem normally expects WinMain, so point the entry point
 # back at the standard main() we provide.
 if(WIN32)
+    target_link_libraries(CrystalDungeons PRIVATE user32)
     set_target_properties(CrystalDungeons PROPERTIES
         WIN32_EXECUTABLE $<CONFIG:Release>)
     if(MSVC)

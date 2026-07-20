@@ -1,3 +1,15 @@
+# Current packaged-build release validation
+
+The older rows below are retained as historical baseline evidence and are **not** a final M24 pass. Record the current packaged-build run using `docs/release_hardening_manual_checklist.md`.
+
+- Build SHA: _not run_
+- Package version: _not run_
+- Tester/date: _not run_
+- Display/input cases: _not run_
+- Final result: _not run_
+
+---
+
 # Manual Test Matrix (M11 baseline)
 
 > Companion to `docs/presentation_audit.md`. Status legend: **pass** /

@@ -190,3 +190,10 @@ never the tool); Debug and Release suites both 247/247.
 Windows box without dev tooling, the full manual-matrix pass on the
 packaged build, the 0.9.0→1.0.0 bump, and the explicit release-candidate
 acceptance. Roadmap closure notes wait for actual closure.
+
+## Post-audit release-hardening correction
+
+The packaging path now explicitly disables debug overlay and capture tooling, validates the configured cache, rejects embedded development-only markers, and verifies the staged executable is AMD64. Release startup failures produce a persistent log and visible error dialog. Persistent JSON writes are atomic, and save slots retain one backup generation. M24 remains implemented/awaiting owner approval until the packaged-build manual matrix and clean-machine smoke test are completed.
+
+Owner checklist: [`docs/release_hardening_manual_checklist.md`](../release_hardening_manual_checklist.md).
+

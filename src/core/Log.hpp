@@ -1,17 +1,18 @@
 #pragma once
 
-#include <string>
-
-#include "raylib.h"
-
-// Thin wrapper over raylib's TraceLog so the rest of the codebase has a single,
-// replaceable logging entry point. raylib's logger works before/without a
-// window, so these are always safe to call.
+#include <filesystem>
+#include <string_view>
 
 namespace cd::log {
 
-inline void info(const std::string& msg) { TraceLog(LOG_INFO, "%s", msg.c_str()); }
-inline void warn(const std::string& msg) { TraceLog(LOG_WARNING, "%s", msg.c_str()); }
-inline void error(const std::string& msg) { TraceLog(LOG_ERROR, "%s", msg.c_str()); }
+// Creates a timestamped persistent log under logDirectory. Logging remains
+// usable through raylib even when persistent-file initialization fails.
+bool initialize(const std::filesystem::path& logDirectory);
+void shutdown();
+std::filesystem::path currentLogPath();
 
-}  // namespace cd::log
+void info(std::string_view message);
+void warn(std::string_view message);
+void error(std::string_view message);
+
+} // namespace cd::log
