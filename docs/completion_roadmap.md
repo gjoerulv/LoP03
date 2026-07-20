@@ -1,17 +1,17 @@
 # Crystal Dungeons — Completion and Presentation Roadmap
 
-> Strategic roadmap for the post-M10 completion program.
+> Strategic frame for the post-M10 completion program (M11–M24) and for
+> planning further work beyond it.
 >
-> Baseline reviewed: commit `e293f49f35ddd3bd4c49202194cadd96aead7811`.
-> Last planning review: commit `a316f244e870718aa27d9995dc871e11572ad429`
-> (2026-07-19). M10 was manually tested and **approved by the owner on
-> 2026-07-19**; the program below (M11–M24) is active planning.
+> This document defines **direction and quality bars only**. It does not
+> authorize implementation, and it is not a status record: `docs/milestones.md`
+> is the authoritative ledger, and the active `docs/milestone_notes/MXX_*.md`
+> controls current scope. Every milestone from M11 on has exactly one note
+> there, indexed from the ledger.
 >
-> This document defines direction and quality bars. It does **not** authorize
-> implementation from later milestones. `docs/milestones.md` and the active
-> milestone note control current scope. Each milestone M11–M24 has exactly one
-> authoritative note under `docs/milestone_notes/`, indexed from
-> `docs/milestones.md`.
+> Deliberately carries no commit pointers or status claims — those went stale
+> here twice. Read the ledger for state; read this for the bars that state has
+> to clear.
 
 ## 1. Mission
 
@@ -352,629 +352,27 @@ At completion:
 
 ## 7. Milestone roadmap
 
-### M11 — Completion baseline and presentation audit
-
-**Goal:** establish a trustworthy visual/usability baseline and convert vague
-polish goals into a prioritized defect register.
-
-Deliverables:
-
-- build/test verification at the approved M10 baseline;
-- screen inventory for all main states and modals;
-- screenshots at native and representative window sizes where tooling permits;
-- presentation defect register categorized by severity and subsystem;
-- initial UI style guide, control standard, asset-pipeline decision record, and
-  manual test matrix;
-- confirmed list of player-facing strings/values that can become long or
-  dynamic;
-- no product code changes unless separately approved.
-
-Acceptance:
-
-- every major screen and flow is represented;
-- every known clipping/overlap/focus/control ambiguity is recorded;
-- the next UI slice is selected from evidence rather than assumption;
-- build/tests are verified or explicitly reported as unverified;
-- human approves the defect priorities.
-
-### M12 — UI layout and text-safety foundation
-
-**Goal:** replace fixed-coordinate text assumptions with a small, game-specific,
-measured layout foundation.
-
-Recommended slices:
-
-1. **M12-a — Text measurement and wrapping**
-   - font-aware measurement;
-   - explicit line height and spacing;
-   - bounded wrapping;
-   - long-token handling;
-   - overflow diagnostics;
-   - migrate Help and one representative modal.
-
-2. **M12-b — Layout primitives**
-   - rectangles, insets, alignment, vertical/horizontal stacks;
-   - padded panels;
-   - list viewport and scroll model;
-   - safe-area and footer reservation;
-   - focus visibility contract.
-
-3. **M12-c — Typography and UI theme**
-   - typography roles;
-   - spacing scale;
-   - panel/focus/disabled/danger styles;
-   - contrast validation helper or documented manual check;
-   - no color-only state.
-
-4. **M12-d onward — Screen-family migrations**
-   - title/help/settings shell;
-   - party creation/save/load;
-   - town services;
-   - guild/dungeon HUD;
-   - battle;
-   - result/scoreboard.
-
-Required architecture:
-
-- build only the primitives this game uses; do not create a browser-style UI
-  framework;
-- measure with the actual selected font;
-- keep layout policy testable without opening a window where practical;
-- support wrapping, scrolling, paging, and deliberate ellipsis policies;
-- add a debug overlay/log for assigned-vs-rendered bounds.
-
-Acceptance:
-
-- zero unintended text overflow in the manual matrix;
-- every variable-length list scrolls or paginates;
-- selected controls remain visible;
-- disabled actions explain why when the reason is not obvious;
-- long-content tests cover every migrated screen family;
-- the 426×240 baseline remains unless a separate resolution decision is
-  approved.
-
-**Resolution warning:** moving to 640×360 may improve UI and asset production,
-but it changes every composition and should not be smuggled into a text-layout
-slice. First prove whether 426×240 can meet the approved content and legibility
-requirements.
-
-### M13 — Input consistency, remapping, and settings
-
-**Goal:** make the game predictable with keyboard and controller and make all
-prompts reflect active bindings.
-
-Recommended slices:
-
-1. audit and remove direct raw input reads outside the platform adapter;
-2. expand the semantic action vocabulary only where current screens need it;
-3. implement menu navigation repeat, analog deadzone/hysteresis, and
-   transition-input suppression;
-4. track the most recently intentional input device;
-5. generate action labels/prompts from bindings;
-6. add settings persistence with defensive loading;
-7. add keyboard and gamepad remapping with conflict handling;
-8. add display/audio/gameplay accessibility settings that existing systems can
-   honor.
-
-Minimum settings target:
-
-- fullscreen/windowed and scale mode;
-- master/music/SFX volume;
-- battle/message speed;
-- screen shake off/reduced/full once shake exists;
-- flash intensity off/reduced/full once flashes exist;
-- high-contrast UI option;
-- reset bindings and settings to defaults.
-
-Acceptance:
-
-- complete keyboard-only and gamepad-only runs;
-- D-pad and left stick both navigate all UIs;
-- Confirm/Cancel behavior is consistent;
-- prompts update after remapping;
-- binding conflicts cannot leave the UI unusable;
-- malformed settings fall back safely;
-- controller disconnect falls back without locking the current screen.
-
-### M14 — Asset manifest and replaceable resources
-
-**Goal:** make presentation roles external, validated, and swappable.
-
-Recommended catalog responsibilities:
-
-- logical ID → file path;
-- asset type;
-- texture filtering and optional atlas/frame metadata;
-- font base size and glyph coverage policy;
-- music loop and default volume metadata;
-- sound default volume and optional variation set;
-- theme/pack overrides;
-- catalog version.
-
-Recommended directory shape:
-
-```text
-assets/
-  manifest.json
-  credits.md
-  themes/
-  fonts/
-  textures/
-    actors/
-    enemies/
-    environments/
-    effects/
-    ui/
-  audio/
-    music/
-    ambience/
-    sfx/
-```
-
-Required work:
-
-- define and approve the version-1 manifest schema;
-- create a raylib-free catalog loader/validator;
-- evolve `ResourceManager` so states request logical IDs only;
-- evolve `AudioManager` to support real streaming music and loaded SFX while
-  retaining safe fallback behavior;
-- provide generated checkerboard/default-font/silence fallbacks;
-- add a development-only manual asset reload;
-- copy the assets tree next to the executable in build and release layouts;
-- record origin/license/attribution for every shipped external asset.
-
-Acceptance:
-
-- changing town music requires no C++ edit;
-- changing a player/enemy/environment texture requires no C++ edit;
-- switching a theme mapping requires no gameplay-code edit;
-- duplicate IDs, missing required IDs, unsafe paths, and bad metadata are clear
-  validation errors;
-- missing optional assets do not crash;
-- no state contains a presentation file path.
-
-### M15 — Art-direction vertical slice
-
-**Goal:** prove one coherent final-quality presentation slice before producing a
-large asset set.
-
-Create an art bible covering:
-
-- mood and visual pillars;
-- palette strategy and crystal accent language;
-- authoritative pixel grid and tile size;
-- character and enemy silhouette scale;
-- outline and shading rules;
-- animation frame conventions;
-- UI ornament and icon rules;
-- environmental composition;
-- readable interaction hierarchy;
-- prohibited imitation targets.
-
-Recommended direction:
-
-- restrained dark-fantasy environments;
-- luminous crystal accents used as focal contrast, not everywhere;
-- readable silhouettes and limited palette noise;
-- strong class identity;
-- compact, deliberate animation;
-- interface framing that supports text rather than competing with it.
-
-Vertical-slice content:
-
-- title screen;
-- one town area and one service;
-- one compact Ruined Keep room;
-- one normal battle;
-- one boss battle;
-- one result screen;
-- representative music and SFX through the new catalog.
-
-Acceptance:
-
-- human approves the art bible and slice;
-- assets are readable at native resolution and supported scaling modes;
-- the slice proves the production effort is affordable;
-- no copyrighted or near-replica assets/layouts/music are used;
-- full asset production does not begin before this gate.
-
-### M16 — Compact dungeon-room system
-
-**Goal:** replace fixed full-screen room realization with compact, validated,
-data-driven room layouts while preserving dungeon topology and run rules.
-
-Required model separation:
-
-- `Dungeon`/room graph: connectivity, mandatory path, gates, reward ownership,
-  boss progression;
-- room archetype: semantic purpose and allowed layout parameters;
-- room layout: dimensions, local tiles, door anchors, spawn points, markers,
-  collision, prop zones, draw origin;
-- presentation theme: tiles, props, ambience, colors, and effects.
-
-Initial archetypes:
-
-- Entry;
-- Connector/Corridor;
-- Crossroads;
-- Gate Chamber;
-- Encounter Chamber;
-- Treasure Alcove;
-- Shrine/Event Chamber;
-- Elite Chamber;
-- Boss Antechamber;
-- Boss Arena.
-
-Room validation must prove:
-
-- every connected door has a valid anchor;
-- the player can reach every required door from the spawn;
-- required encounter markers do not block the only path incorrectly;
-- chests and interactables are reachable;
-- the spawn is valid and not inside collision;
-- boss layouts remain navigable;
-- local bounds and draw origin stay inside the exploration viewport;
-- paired graph doors remain consistent.
-
-Use flood fill/BFS for connectivity. Use derived room-local seeds to preserve
-separation from topology RNG.
-
-Score/reproducibility decision:
-
-- determine whether a generator version must be stored with score entries;
-- keep existing score/save loading backward compatible if a field is added;
-- obtain human approval before changing public JSON/save/score schema.
-
-Acceptance:
-
-- standard rooms no longer cover the full exploration screen;
-- at least five archetypes appear across representative runs;
-- thousands of generated rooms pass connectivity/reference checks;
-- mandatory gate and boss reachability rules remain true;
-- same seed + generation version produces the same topology and room layouts;
-- navigation and interactables are immediately legible in human testing.
-
-### M17 — Exploration visuals and animation
-
-**Goal:** replace abstract town/dungeon presentation with readable characters,
-enemies, tiles, props, effects, and atmosphere using the approved art system.
-
-Required systems:
-
-- sprite animation data with frame rectangles, timing, loop mode, and anchor;
-- visual bounds separated from collision bounds;
-- deterministic draw layers;
-- top-down actor facing/walk/idle states;
-- visible enemy silhouettes and danger/elite/boss differentiation;
-- theme-specific tiles and props;
-- interaction highlights that do not rely only on color;
-- restrained particles/glows/overlays suitable for raylib and the target
-  hardware.
-
-Theme identity must come from composition and shape, not palette swaps alone:
-
-- Ruined Keep: masonry, defensive geometry, banners, statues, broken furniture;
-- Crystal Mine: supports, rails, equipment, fractured rock, luminous clusters;
-- Hollow Forest: roots, clearings, fallen trunks, shrines, organic boundaries.
-
-Acceptance:
-
-- player/enemy/interactable silhouettes remain readable at native resolution;
-- collision is unaffected by texture dimensions;
-- draw ordering has no obvious depth errors;
-- themes remain distinguishable in grayscale composition tests;
-- decorative density does not obscure exits, hazards, enemies, or chests;
-- missing animation definitions fall back to a static valid frame.
-
-### M18 — Battle presentation and game feel
-
-**Goal:** make turn-based combat fast, clear, and satisfying without delaying the
-fewest-turn scoring loop.
-
-Required information hierarchy:
-
-- active combatant;
-- legal commands and unavailable reasons;
-- selected target and valid target set;
-- HP/MP and status effects;
-- skill/item description and cost;
-- current round/turn score context;
-- action message and result;
-- boss telegraph and escalation state.
-
-Action presentation should use a short sequence:
-
-1. anticipation;
-2. motion/pose or projectile;
-3. impact;
-4. number/status feedback;
-5. brief recovery;
-6. next action.
-
-Add restrained, configurable:
-
-- hit stop;
-- sprite flash;
-- screen shake;
-- impact particles;
-- elemental/heal/status effects;
-- KO/victory feedback;
-- boss phase/enrage feedback.
-
-Support Normal, Fast, and near-instant battle presentation where safe. Effects
-must not change simulation timing or results.
-
-Acceptance:
-
-- source, target, effect, and result are always understandable;
-- normal actions resolve briskly;
-- Fast materially reduces downtime;
-- reduced-flash and reduced-shake settings work;
-- status effects and telegraphs are visible without opening a separate manual;
-- combat remains fully understandable with audio muted;
-- no animation changes deterministic battle outcomes.
-
-### M19 — Progression, economy, and score-integrity hardening
-
-**Goal:** ensure the newly implemented XP/leveling and town economy support
-replay without making score comparisons meaningless.
-
-This milestone is an audit and tuning milestone, not a reimplementation of XP.
-
-Required analysis:
-
-- XP curve and level-cap pacing;
-- battle XP versus paid Training Hall progression;
-- gold inflow and sinks by depth;
-- healing and failure consequences;
-- consumable/equipment purchase dominance;
-- class power growth and equipment scaling;
-- low-level versus high-level score comparability;
-- incentives to farm weak encounters before scoring runs.
-
-A scoring policy must be explicit. Recommended default:
-
-- segment or tag scoreboards by meaningful run conditions such as seed, depth,
-  theme, generator version, party level/power band, and difficulty modifiers;
-- do not hide a complex power-normalization formula from the player unless
-  simulation proves it is robust and the UI can explain it.
-
-Acceptance:
-
-- no obvious infinite or dominant gold/XP loop;
-- Training Hall and battle XP have distinct, defensible roles;
-- every class retains a meaningful tactical identity;
-- score comparison conditions are visible and honest;
-- progression and economy values remain data-driven;
-- simulations and human runs identify no trivial progression exploit.
-
-### M20 — Encounter and dungeon-content variety
-
-**Goal:** deepen replay through meaningful tactical combinations rather than
-unbounded content count.
-
-Define encounter roles and composition constraints:
-
-- bruiser;
-- glass cannon;
-- healer;
-- buffer/debuffer;
-- protector;
-- poison/attrition;
-- speed disruption;
-- anti-magic/anti-physical;
-- elite specialist.
-
-Externalize composition rules such as depth/theme pools, incompatible roles,
-maximum support count, elite frequency, team size, and boss-minion rules.
-
-Add a deliberately small room-event set only after M16 is stable:
-
-- shrine trade-off;
-- limited healing source;
-- trapped treasure;
-- merchant or exchange;
-- optional elite challenge;
-- score-risk modifier.
-
-Every event must create a decision with visible consequences. Decorative text
-alone is not enough.
-
-Boss acceptance:
-
-- recognizable silhouette and audio identity;
-- unique mechanic and telegraph;
-- counterplay;
-- escalation/phase;
-- reward identity;
-- not merely inflated HP.
-
-Acceptance:
-
-- generated teams cannot violate authored composition constraints;
-- representative runs contain distinct tactical questions;
-- events expose risk/reward before confirmation;
-- boss mechanics are distinguishable in blind playtest notes;
-- content quantity is added only after role coverage gaps are identified.
-
-### M21 — Final music, ambience, and sound effects
-
-**Goal:** replace synthesized placeholders with coherent, licensed/original,
-manifest-driven audio.
-
-Minimum music states:
-
-- title;
-- town;
-- preparation/guild;
-- dungeon theme or approved shared/variant model;
-- normal battle;
-- boss battle;
-- victory;
-- defeat;
-- result.
-
-Minimum ambience:
-
-- town;
-- Ruined Keep;
-- Crystal Mine;
-- Hollow Forest.
-
-Mixing requirements:
-
-- streamed music through raylib music streams;
-- click-free loops and transitions;
-- separate master/music/SFX controls;
-- SFX variation for repetitive actions where useful;
-- no clipping at maximum configured volume;
-- rate-limited or softened rapid menu navigation;
-- safe silence fallback;
-- game remains understandable without sound.
-
-Acceptance:
-
-- all major scenes have intentional audio;
-- music does not stack across state transitions;
-- loops and transitions are clean;
-- settings persist and apply consistently;
-- every shipped asset has provenance and license/attribution records;
-- swapping a track or effect requires no C++ edit.
-
-### M22 — Onboarding and accessibility
-
-**Goal:** teach the game through play and remove avoidable barriers without
-removing tactical challenge.
-
-Onboarding sequence should teach progressively:
-
-1. town movement and interaction;
-2. party preparation and equipment;
-3. dungeon danger and gates;
-4. battle command/target selection;
-5. turn-efficiency scoring;
-6. retreat/failure consequences;
-7. XP, shops, and deeper runs.
-
-Requirements:
-
-- interactive or in-context tutorial actions, not only a static controls page;
-- tutorial prompts can be disabled and revisited;
-- contextual Details for stats, statuses, danger, score components, and
-  equipment comparisons;
-- high-contrast UI option;
-- no essential color-only or sound-only information;
-- reduced motion/flash/shake controls;
-- configurable text/message pacing;
-- destructive-action confirmation and clear error recovery;
-- settings reachable before starting a game.
-
-Acceptance:
-
-- a new tester completes a depth-1 run without external instruction;
-- every critical mechanic is explained in-game;
-- keyboard-only and gamepad-only operation remain complete;
-- critical text meets the documented contrast target;
-- tutorial state persists defensively and can be reset;
-- accessibility options are covered by the manual matrix.
-
-### M23 — Automated visual validation, playtesting, and balance hardening
-
-**Goal:** prevent presentation regressions, make long-content/edge states
-repeatable, and harden usability and balance with observed external
-playtesting — so that M24 can be pure packaging.
-
-Recommended tools:
-
-- deterministic debug/capture scenarios for representative screens;
-- screenshot capture at native virtual resolution;
-- UI bounds and overlap diagnostics;
-- content linting for missing asset IDs, undefined action tokens, invalid
-  animations, and text overflow policies;
-- large-scale room generation/connectivity tests;
-- expanded deterministic battle simulations and machine-readable reports.
-
-Representative capture states:
-
-- title/help/settings;
-- party creation with maximum names;
-- full save metadata and empty slots;
-- each town service with long item/class descriptions;
-- guild with maximum seed/depth strings;
-- each dungeon theme and archetype;
-- battle with maximum statuses, long skill descriptions, and five enemies;
-- victory/defeat/result/scoreboard extremes.
-
-Do not introduce fragile pixel-perfect image comparisons as the only validation.
-Geometry assertions and reviewed screenshots are more maintainable initially.
-If image diffs are later added, define tolerance and intentional-update policy.
-
-Playtest with at least:
-
-- a player unfamiliar with the project;
-- an experienced JRPG player;
-- a roguelite/score-chasing player;
-- a controller-first player;
-- a keyboard-first player;
-- a smaller-display or low-vision test setup where available.
-
-Observe without coaching:
-
-- time to begin a run;
-- wrong-button and navigation errors;
-- missed interactables;
-- unread/clipped text;
-- room-navigation hesitation;
-- battle decision clarity;
-- score comprehension;
-- run duration;
-- dominant strategies;
-- whether players voluntarily start another run.
-
-Then fix repeated control/readability/navigation/score-comprehension defects
-and make final balance and pacing changes backed by that evidence.
-
-Acceptance:
-
-- representative captures are reproducible;
-- unintended UI overflow is a failing validation result;
-- missing required assets fail clearly;
-- thousands of generated rooms remain valid;
-- balance reports identify outlier encounters and progression bands;
-- all listed tester profiles were observed; repeated usability defects are
-  resolved, not documented away;
-- new players complete the core loop unaided; score and danger are explainable
-  by players;
-- no dominant strategy trivializes representative runs;
-- capture/debug tooling is excluded or safely disabled in release builds.
-
-### M24 — Release packaging and final release validation
-
-**Goal:** produce and validate a reproducible, clean, polished Windows release
-candidate. Playtesting and balance are complete (M23); only release-blocking
-fixes are in scope.
-
-Release work:
-
-- reproducible Release preset/build;
-- packaged `data/` and `assets/` trees;
-- executable/version metadata and icon;
-- stable save/settings paths;
-- licenses and credits;
-- graceful audio/controller failure;
-- clean logs and known limitations;
-- smoke test on a machine without the development environment;
-- final screenshot and manual test matrix sign-off on the packaged build.
-
-Acceptance:
-
-- packaged build runs without Visual Studio installed;
-- saves and settings persist correctly in the packaged build;
-- no debug overlays, capture tooling, placeholder paths, or unlicensed assets
-  ship;
-- final manual test matrix is signed off on the packaged build;
-- known limitations are documented honestly;
-- human explicitly approves the polished release candidate.
+The per-milestone plans that once lived here have been delivered and are
+recorded where the work actually happened. This section is deliberately a
+pointer, not a copy — three parallel descriptions of the same milestones drift
+apart, and the plan is the least reliable of the three once code exists.
+
+| For | Read |
+|-----|------|
+| Current status of every milestone | `docs/milestones.md` (the ledger — authoritative) |
+| What a milestone actually delivered | `docs/milestones.md`, per-milestone section |
+| Full scope, decisions, and deviations | `docs/milestone_notes/MXX_*.md` (one note per milestone) |
+| Why the program is ordered this way | §8 below |
+| Quality bars any new milestone must meet | §4, §5, §9, and §10 of this document |
+
+The program covers M11–M24. Sections §1–§6 and §8–§11 remain the strategic
+frame for planning further work: they define the mission, the non-negotiable
+product requirements, the engineering guardrails, the per-screen definition of
+done, and the failure modes to reject. None of that is milestone-specific, and
+all of it still applies to milestones not yet planned.
+
+This document never authorizes implementation. `docs/milestones.md` and the
+active milestone note control current scope.
 
 ## 8. Recommended implementation order
 
@@ -1090,3 +488,66 @@ web or platform standards.
 - raylib 6.0 examples and API reference:
   - https://www.raylib.com/examples.html
   - https://www.raylib.com/cheatsheet/raylib_cheatsheet_v6.0.pdf
+
+## 12. Polish program (M25–M30) — direction
+
+Added 2026-07-20, after an owner review found the game not release-ready and
+deferred M23/M24 behind this work. Direction and quality bars only; scope lives
+in `docs/milestones.md` and the per-milestone notes.
+
+### Why this phase exists
+
+The completion program (M11–M24) delivered systems, safety, and replaceability.
+What it did not deliver is *identity*: enemies share three sprites across 27
+definitions, town services are flat colour fields, and every enemy in the game
+makes the same decision every turn. The result reads as a well-built prototype
+rather than a finished game. Two defect classes dominate:
+
+- **Visual sameness.** Presentation contracts are correct and the fallbacks work
+  exactly as designed — but a fallback used everywhere becomes the art
+  direction. Per-enemy art was always a manifest drop-in; nobody dropped it in.
+- **Tactical staleness.** Deterministic lowest-HP targeting is readable and
+  testable, and it made M5–M22 possible. It also means the optimal play is to
+  keep one character wounded, which inverts party roles: an efficiently played
+  mage becomes the tank.
+
+### Quality bars for this phase
+
+Additional to §4, §5, §9 and §10, which all still apply:
+
+1. **Distinctness is a requirement, not a polish item.** Every enemy, boss,
+   service screen, and dungeon theme must be identifiable without reading its
+   name. Tier-generic fallbacks remain in the code as a safety net, but shipping
+   content relying on one is a defect the lint suite must catch.
+2. **Unpredictable must not mean random.** Enemy behaviour should be hard for a
+   player to exploit and impossible for the simulator to disagree about. Seeded
+   variance yes; nondeterminism never. The simulator and live play must continue
+   to produce identical outcomes from identical inputs.
+3. **Player agency over threat.** Removing exploitable targeting is only half
+   the change. If the player cannot deliberately influence who gets attacked,
+   the result is frustration rather than tactics — the control skills are part
+   of the AI change, not a follow-up.
+4. **Score history stays honest.** M19's principle holds: runs are never
+   silently normalised. A battle-rules change is as comparability-breaking as a
+   generation change and gets its own version tag, because a player comparing
+   two runs is entitled to know which rules produced each.
+5. **Progression should have texture.** Content volume alone does not fix
+   staleness. Skills arriving over levels give a run shape that a larger flat
+   roster does not.
+
+### Ordering rationale
+
+Presentation corrections (M25) first: they are risk-free, independently
+valuable, and M28's enmity model is unreadable without the target-info UI that
+M25 introduces. Art identity (M26) before content expansion (M29), so new
+enemies inherit an established language rather than setting one. The combat
+rules change (M28) before content built for it (M29), so behaviour profiles
+exist before enemies are designed around them. Economy (M30) last, because gold
+income depends on battle outcomes and content — tuning a rest cost before those
+settle is tuning against a moving target.
+
+M23 and M24 run after M30 rather than being cancelled. Their tooling and
+packaging work is built and retained; only the sequencing changed. Validating
+and packaging a build known to need this work would have measured the wrong
+build, and the capture scenes and balance battery both need extending for the
+new AI, content, and art before that validation is worth trusting.

@@ -67,8 +67,8 @@ void DungeonResultState::render() {
     int y = boxY + 62;
     const Color label{200, 200, 215, 255};
     auto line = [&](const char* text, int value, Color color) {
-        DrawText(text, boxX + 22, y, 10, label);
-        DrawText(TextFormat("%+d", value), boxX + boxW - 70, y, 10, color);
+        ui::drawText(text, boxX + 22, y, 10, label);
+        ui::drawText(TextFormat("%+d", value), boxX + boxW - 70, y, 10, color);
         y += 13;
     };
     const Color plus{150, 220, 150, 255};

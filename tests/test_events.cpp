@@ -102,9 +102,11 @@ TEST_CASE("events: generated event rooms are well-formed dead ends", "[events]")
             }
         }
     }
-    // Events appear regularly and every kind shows up somewhere in the sample.
+    // Events appear regularly and every kind shows up somewhere in the sample
+    // (6 kinds since M30 added the rest-token event).
     REQUIRE(eventRooms > 100);
-    REQUIRE(kindsSeen.size() == 5);
+    REQUIRE(kindsSeen.size() == 6);
+    REQUIRE(kindsSeen.count(dungeon::RoomEventKind::RestToken) == 1);
     REQUIRE(trappedChests > 20);
 }
 

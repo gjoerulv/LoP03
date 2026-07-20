@@ -56,9 +56,15 @@ Adding/removing/bumping any dependency requires human approval (see CLAUDE.md).
 
 ## Build & test commands
 
-Build with **MSVC** from the Visual Studio developer environment: run
-`vcvars64.bat` (or open a "Developer PowerShell/Command Prompt for VS") so `cl`
-and the bundled CMake/Ninja are on `PATH`. **Do not use MinGW/GCC.**
+`README.md` owns the authoritative build instructions — read it rather than
+trusting a copy. The operational essentials:
+
+Build with **MSVC** from a Visual Studio developer environment. **Open
+"Developer PowerShell for VS 2022"** — `& "...\vcvars64.bat"` does *not*
+configure a PowerShell session (the batch file sets variables in a child `cmd`
+that exits immediately). To build from an already-open PowerShell, either run
+`Common7\Tools\Launch-VsDevShell.ps1 -Arch amd64`, or wrap each command:
+`cmd /c "call ""...\vcvars64.bat"" >nul && cmake ..."`. **Do not use MinGW/GCC.**
 
 Presets (M24, preferred):
 
@@ -92,7 +98,7 @@ CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
 Validation & release tooling (M23/M24):
 
 ```powershell
-.\build-msvc\CrystalDungeons.exe --capture out\dir   # 22 native-res scenes; fails on text overflow
+.\build-msvc\CrystalDungeons.exe --capture out\dir   # 23 native-res scenes; fails on text overflow
 build-msvc\crystal_tests.exe "[economy-report]" -s   # balance battery table
 build-msvc\crystal_tests.exe "[sim-report]" -s       # machine-readable JSON report
 powershell -ExecutionPolicy Bypass -File tools\package.ps1  # stage+validate+zip -> dist\
@@ -104,15 +110,24 @@ Asset generators (deterministic; reruns byte-identical):
 
 ## Gotchas (read these before you waste an hour)
 
-1. **Build with MSVC only.** This project is built with **MSVC / C++20** from a
-   Visual Studio developer environment. Do **not** use MinGW/GCC — a stray MinGW
-   `g++` on `PATH` is exactly what broke the first build attempt. Always pass
-   `-DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl` so the right compiler is used,
-   and confirm with `where cl`. No C++17 downgrade, no GCC 8.1 workarounds.
-2. **Initialize the VS environment first.** `cl` and the bundled Ninja are not on
-   a normal shell's `PATH`; run `vcvars64.bat` (or use a "Developer PowerShell/
-   Command Prompt for VS") before CMake, or configure can't find the compiler or
-   generator.
+1. **MSVC only, and initialize the VS environment first.** `cl` and the bundled
+   Ninja are not on a normal shell's `PATH` — without a developer environment,
+   configure fails with *"CMake was unable to find a build program corresponding
+   to Ninja"*. Verify with `where.exe cl` / `where.exe ninja` before configuring.
+   Always pass `-DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl` so a stray MinGW
+   `g++` on `PATH` can't be picked up (that broke the very first build). No C++17
+   downgrade, no GCC workarounds.
+2. **Never include `<windows.h>` in a TU that also sees raylib.** This broke the
+   build once already (a fatal-error `MessageBox` added to `main.cpp`). Win32
+   `wingdi.h`/`winuser.h` declare `Rectangle`, `DrawText`, and `CloseWindow`,
+   which collide with raylib's, and the `min`/`max` macros break `std::max`
+   (e.g. in `core/FadeController.hpp`). `WIN32_LEAN_AND_MEAN` does **not** help.
+   Put Win32 code in its own `.cpp` under `src/platform/` behind a header that
+   exposes only standard types — see `platform/FatalDialog.*` and
+   `platform/AtomicFile.cpp`. Also **do not** add an explicit `user32` link:
+   that puts `user32.lib` ahead of `raylib.lib` and yields
+   `LNK2005: CloseWindow already defined`; MSVC's default libs already cover it,
+   in the right order.
 3. **raylib + window required for GPU calls.** `LoadTexture`, `LoadFont`,
    `LoadRenderTexture`, audio init etc. need an initialized window/device. Keep
    that logic out of unit tests — tests must run headless. Put pure logic
@@ -137,7 +152,7 @@ Asset generators (deterministic; reruns byte-identical):
 10. **High warnings on project code only**, not on `_deps`. Don't "fix" warnings
     inside dependencies.
 11. **Screenshots: use the capture tool, not window automation.**
-    `CrystalDungeons.exe --capture <dir>` (debug builds) renders 22
+    `CrystalDungeons.exe --capture <dir>` (debug builds) renders 23
     deterministic scenes at native 426×240 and fails on text overflow —
     always prefer it. If live input driving is unavoidable, never use
     focus-dependent `SendKeys` (it leaks keystrokes — it happened); use
@@ -145,7 +160,7 @@ Asset generators (deterministic; reruns byte-identical):
     arrows, ~70ms between down/up) + `SetWindowPos` topmost+NOACTIVATE.
 12. **Generation changes need a version bump.** Anything that alters what a
     seed produces (generator code OR composition/data curves) bumps
-    `dungeon::kGenerationVersion` (currently 4) — the scoreboard tags it
+    `dungeon::kGenerationVersion` (currently 6) — the scoreboard tags it
     for comparability. Owner-gated.
 
 ## Architecture rules (enforce in review)
@@ -180,21 +195,28 @@ authorization to start the next.
 **Git:** never commit, push, amend, rebase, merge, tag, or force-update —
 inspection only. The owner handles all commits and pushes.
 
-Milestones: M1–M22 `complete (approved)` (M11–M22 during 2026-07-19/20).
-M23 Validation/playtesting/balance: `in progress` — tooling + tuning done,
-**awaiting owner-run external playtests** (`docs/playtest_protocol.md`);
-findings drive the hardening pass. M24 Release packaging: `in progress` —
-engineering done (v0.9.0 RC in `dist/`), final sign-off gated on M23 and
-the owner's clean-machine test; version bumps to 1.0.0 after playtests
-pass. Details: `docs/milestones.md` + one note per milestone under
-`docs/milestone_notes/`.
+Milestones: **M1–M29 `complete (approved)`**; **M30** (economy: paid rest &
+rest-token event) `implemented, awaiting manual approval`. The M25–M30 polish
+program — font/UI corrections, per-enemy art, environment/ambience identity,
+enmity AI + control skills, content expansion + class learnsets, and the paid
+inn — is delivered. **M23** (validation/playtesting/balance) and **M24**
+(release packaging) are deferred to run **after** M30: their tooling and
+packaging are built (v0.9.0 RC in `dist/`), awaiting owner-run external
+playtests (`docs/playtest_protocol.md`) and a clean-machine sign-off; version
+bumps to 1.0.0 after playtests pass. Details: `docs/milestones.md` + one note
+per milestone under `docs/milestone_notes/`.
 
 ## Verification checklist (before claiming done)
 
-- [ ] From a VS developer shell: `cmake -S . -B build-msvc -G Ninja
-      -DCMAKE_CXX_COMPILER=cl ...` configured without error.
-- [ ] `cmake --build build-msvc` compiled with no project warnings (deps may warn).
-- [ ] `ctest --test-dir build-msvc --output-on-failure` — all green.
+- [ ] From a VS developer shell: `cmake --preset msvc-debug` configured without
+      error.
+- [ ] `cmake --build --preset debug` compiled the **executable and the tests**
+      with no project warnings (deps may warn). Building only `crystal_tests`
+      hides link and `main.cpp` breakage — see gotcha 2.
+- [ ] `ctest --preset debug` — all green.
+- [ ] Release still builds: `cmake --preset msvc-release` +
+      `cmake --build --preset release`. Multi-config gating (`CRYSTAL_CAPTURE`,
+      `CRYSTAL_DEBUG_OVERLAY` excluded from Release) only breaks here.
 - [ ] App launches, window opens at correct aspect, scales cleanly, no crash on
       exit. (Human-validated if I can't see it.)
 - [ ] Milestone's listed deliverables all present.

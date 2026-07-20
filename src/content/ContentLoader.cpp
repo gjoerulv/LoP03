@@ -79,6 +79,8 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
             r.optEnum<StatusType>("statusEffect", parseStatusType, StatusType::None, "status type");
         d.statusMagnitude = r.optIntMin("statusMagnitude", 0, 0);
         d.statusDuration = r.optIntMin("statusDuration", 0, 0);
+        d.controlEffect =
+            r.optEnum<SkillEffect>("control", parseSkillEffect, SkillEffect::None, "control effect");
         d.description = r.optString("description");
         if (rep.errorCount() != before) {
             return;  // invalid entry; skip
@@ -101,6 +103,27 @@ void parseClasses(const Json& root, const std::string& source, ContentDatabase& 
         d.baseStats = r.reqStatBlock("baseStats");
         d.growth = r.optStatGrowth("growth");
         d.startingSkills = r.optStringArray("startingSkills");
+        // Optional level-gated learnset (M29): array of { skill, level >= 1 }.
+        if (const auto it = el.find("learnset"); it != el.end()) {
+            if (!it->is_array()) {
+                rep.add(source, ctx + ".learnset", "expected array");
+            } else {
+                int li = 0;
+                for (const auto& le : *it) {
+                    const std::string lctx = ctx + ".learnset[" + std::to_string(li) + "]";
+                    if (!le.is_object()) {
+                        rep.add(source, lctx, "expected object");
+                    } else {
+                        ObjectReader lr(le, lctx, source, rep);
+                        LearnEntry entry;
+                        entry.skill = lr.reqString("skill");
+                        entry.level = lr.reqIntMin("level", 1);
+                        d.learnset.push_back(std::move(entry));
+                    }
+                    ++li;
+                }
+            }
+        }
         if (rep.errorCount() != before) {
             return;
         }
@@ -237,6 +260,12 @@ void validateReferences(const ContentDatabase& db, LoadReport& rep) {
             if (!db.hasSkill(skill)) {
                 rep.add(source, "class '" + id + "'.startingSkills",
                         "references unknown skill '" + skill + "'");
+            }
+        }
+        for (const auto& entry : cls.learnset) {
+            if (!db.hasSkill(entry.skill)) {
+                rep.add(source, "class '" + id + "'.learnset",
+                        "references unknown skill '" + entry.skill + "'");
             }
         }
     }

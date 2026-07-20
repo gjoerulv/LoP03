@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,11 @@ struct EnemyTeam;
 // (no randomness), so battles are fully reproducible and unit-tested.
 
 namespace cd::battle {
+
+// Battle-resolution rules version (M28). Bumped when the outcome of a battle
+// for identical inputs changes (targeting/enmity/control skills), so the
+// scoreboard can flag runs played under different rules. 0 = pre-M28.
+inline constexpr int kBattleRulesVersion = 1;
 
 enum class Side { Party, Enemy };
 enum class Outcome { Ongoing, Victory, Defeat, Escaped };
@@ -52,6 +58,10 @@ struct Combatant {
     std::vector<std::string> skillIds;
     std::vector<StatusInstance> statuses;
     bool guarding = false;
+    // Redirect/intercept (M28): while set, this (party) unit takes single-target
+    // enemy hits aimed at its allies. Cleared at the unit's next turn, like
+    // guard.
+    bool intercepting = false;
     bool isBoss = false;
     // Boss archetype mechanics (M20, owner-approved; all deterministic).
     bool enrages = false;             // Brute: deals more damage below half HP
@@ -71,11 +81,25 @@ public:
     std::vector<Combatant> units;
     int turnsTaken = 0;
 
+    // Enmity (M28): global threat per unit (only party units accrue it; enemies
+    // read it to pick targets). Mutated only through the shared attack/useSkill
+    // paths, so live play and the Simulator stay in exact agreement. `rngSeed`
+    // seeds the small, deterministic targeting tie-break jitter (a pure hash of
+    // seed+turn+actor+candidate — no evolving RNG state to keep in sync).
+    std::vector<long> threat;
+    std::uint64_t rngSeed = 0;
+
     bool sideAlive(Side s) const;
     Outcome outcome() const;  // Victory / Defeat / Ongoing (Escaped is set by the caller)
     std::vector<int> aliveIndices(Side s) const;
 
-    void clearGuard(int unit);  // call at the start of a unit's turn
+    long threatOf(int unit) const;
+    void addThreat(int unit, long amount);
+    // Decays threat toward zero; call once at the top of each round in both the
+    // Simulator and BattleState so decay stays identical.
+    void beginRound();
+
+    void clearGuard(int unit);  // call at the start of a unit's turn (also clears intercept)
     // Applies poison, decrements durations, removes expired statuses. Returns a
     // log line (empty if nothing happened). Call at the start of a unit's turn.
     std::string tickStatuses(int unit);
@@ -98,8 +122,12 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
 // Alive units ordered by speed (desc), tie-broken Party-first then index.
 std::vector<int> turnOrder(const Battle& b);
 
-// Deterministic enemy action: heal a hurt ally if able, else use a damaging
-// skill (or basic attack) on the lowest-HP living party member.
+// Deterministic enemy action (M28): heal a hurt ally or apply a buff/debuff if
+// warranted, else pick a damaging skill (or basic attack) against the party
+// member that best matches this enemy's targeting profile (derived from its
+// role) — weighing accrued threat, kill pressure, and the backline, with a
+// small seeded tie-break. Pure and reproducible, so live play and the Simulator
+// agree exactly.
 struct EnemyChoice {
     bool useSkill = false;
     int target = -1;

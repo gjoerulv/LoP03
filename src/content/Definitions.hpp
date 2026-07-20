@@ -25,7 +25,18 @@ struct SkillDef {
     int statusMagnitude = 0;  // percent for buffs/debuffs, damage for poison
     int statusDuration = 0;   // turns
 
+    // Enmity-control effect (M28): None for ordinary skills; Taunt/Fade/Intercept
+    // manipulate the threat model instead of (or besides) dealing damage.
+    SkillEffect controlEffect = SkillEffect::None;
+
     std::string description;
+};
+
+// One level-gated skill grant on a class learnset (M29). The skill is known
+// once the character reaches `level`; `startingSkills` remain the level-1 set.
+struct LearnEntry {
+    std::string skill;  // skill id
+    int level = 1;      // >= 1
 };
 
 struct ClassDef {
@@ -34,7 +45,8 @@ struct ClassDef {
     std::string role;
     StatBlock baseStats;
     StatGrowth growth;
-    std::vector<std::string> startingSkills;  // skill ids
+    std::vector<std::string> startingSkills;  // skill ids (level-1 set)
+    std::vector<LearnEntry> learnset;         // level-gated grants (M29)
 };
 
 struct EnemyDef {

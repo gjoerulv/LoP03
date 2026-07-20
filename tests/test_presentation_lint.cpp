@@ -70,10 +70,28 @@ TEST_CASE("lint: every convention-derived texture id resolves in the manifest", 
                            "marker.enemy.normal", "marker.enemy.elite", "marker.enemy.boss",
                            "prop.chest", "prop.gate_marker", "prop.boss_marker",
                            "prop.event.shrine", "prop.event.spring", "prop.event.merchant",
-                           "prop.event.totem", "prop.event.omen", "actor.player.overworld",
+                           "prop.event.totem", "prop.event.omen", "prop.event.rest",
+                           "actor.player.overworld",
                            "actor.player.walk", "ui.frame.default"}) {
         INFO(id);
         CHECK(hasTexture(m, id));
+    }
+    // M26 definition-of-done guard: every content enemy/boss must resolve to
+    // its OWN battle sprite (BattleState prefers enemy.<id>.battle /
+    // boss.<id>.battle before the tier fallback). A missing per-id sprite is a
+    // failing result here, not a silent degrade to the generic tier image at
+    // runtime — so new content (M29) cannot ship without art.
+    for (const auto& [id, def] : db.enemies()) {
+        (void)def;
+        const std::string tex = "enemy." + id + ".battle";
+        INFO(tex);
+        CHECK(hasTexture(m, tex));
+    }
+    for (const auto& [id, def] : db.bosses()) {
+        (void)def;
+        const std::string tex = "boss." + id + ".battle";
+        INFO(tex);
+        CHECK(hasTexture(m, tex));
     }
 }
 

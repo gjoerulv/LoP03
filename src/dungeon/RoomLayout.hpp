@@ -20,8 +20,12 @@ namespace cd::dungeon {
 // fixed 26x15 room build; version 2 is the compact archetype system;
 // version 3 adds composition constraints, depth stat scaling, and room
 // events (M20); version 4 is the M23 early-ramp tuning (elite pressure
-// values in data/composition.json — owner-approved, battery-evidenced).
-inline constexpr int kGenerationVersion = 4;
+// values in data/composition.json — owner-approved, battery-evidenced);
+// version 5 enlarges the theme enemy/boss pools with the M29 content
+// expansion, so a given seed spawns a different roster (owner-approved);
+// version 6 adds the M30 RestToken room event to the event pool, changing
+// each seed's event shuffle/placement (owner-approved).
+inline constexpr int kGenerationVersion = 6;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

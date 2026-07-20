@@ -7,7 +7,12 @@
       "role": "durable physical attacker",
       "baseStats": { "hp": 120, "attack": 18, "magic": 4, "defense": 16, "speed": 8 },
       "growth": { "hp": 12.0, "attack": 2.0, "magic": 0.4, "defense": 1.6, "speed": 0.8 },
-      "startingSkills": ["strike", "cleave", "power_smash"]
+      "startingSkills": ["strike", "cleave", "power_smash", "redirect"],
+      "learnset": [
+        { "skill": "shield_bash", "level": 4 },
+        { "skill": "whirlwind", "level": 10 },
+        { "skill": "execute", "level": 16 }
+      ]
     },
     {
       "id": "ranger",
@@ -15,7 +20,13 @@
       "role": "fast precision attacker",
       "baseStats": { "hp": 90, "attack": 16, "magic": 6, "defense": 10, "speed": 16 },
       "growth": { "hp": 9.0, "attack": 1.8, "magic": 0.6, "defense": 1.0, "speed": 1.6 },
-      "startingSkills": ["precise_shot", "piercing_arrow", "venom_fang"]
+      "startingSkills": ["precise_shot", "piercing_arrow", "venom_fang"],
+      "learnset": [
+        { "skill": "aimed_shot", "level": 4 },
+        { "skill": "barrage", "level": 9 },
+        { "skill": "hamstring", "level": 13 },
+        { "skill": "focus", "level": 17 }
+      ]
     },
     {
       "id": "mage",
@@ -23,7 +34,12 @@
       "role": "elemental damage",
       "baseStats": { "hp": 70, "attack": 6, "magic": 20, "defense": 6, "speed": 11 },
       "growth": { "hp": 7.0, "attack": 0.6, "magic": 2.2, "defense": 0.6, "speed": 1.1 },
-      "startingSkills": ["fireball", "frost_lance", "spark"]
+      "startingSkills": ["fireball", "frost_lance", "spark", "fade"],
+      "learnset": [
+        { "skill": "stone_edge", "level": 4 },
+        { "skill": "arcane_burst", "level": 9 },
+        { "skill": "inferno", "level": 15 }
+      ]
     },
     {
       "id": "cleric",
@@ -31,7 +47,13 @@
       "role": "healing and support",
       "baseStats": { "hp": 85, "attack": 8, "magic": 16, "defense": 10, "speed": 10 },
       "growth": { "hp": 8.5, "attack": 0.8, "magic": 1.8, "defense": 1.0, "speed": 1.0 },
-      "startingSkills": ["mend", "group_mend", "greater_heal"]
+      "startingSkills": ["mend", "group_mend", "greater_heal"],
+      "learnset": [
+        { "skill": "renew", "level": 4 },
+        { "skill": "smite", "level": 8 },
+        { "skill": "radiance", "level": 13 },
+        { "skill": "holy_ray", "level": 18 }
+      ]
     },
     {
       "id": "rogue",
@@ -39,7 +61,12 @@
       "role": "speed and critical strikes",
       "baseStats": { "hp": 80, "attack": 14, "magic": 6, "defense": 8, "speed": 18 },
       "growth": { "hp": 8.0, "attack": 1.6, "magic": 0.6, "defense": 0.8, "speed": 1.8 },
-      "startingSkills": ["shadow_strike", "crippling_blow", "weaken"]
+      "startingSkills": ["shadow_strike", "crippling_blow", "weaken"],
+      "learnset": [
+        { "skill": "rend", "level": 4 },
+        { "skill": "execute", "level": 9 },
+        { "skill": "eviscerate", "level": 15 }
+      ]
     },
     {
       "id": "guardian",
@@ -47,7 +74,12 @@
       "role": "tank and defensive buffs",
       "baseStats": { "hp": 140, "attack": 12, "magic": 4, "defense": 20, "speed": 6 },
       "growth": { "hp": 14.0, "attack": 1.2, "magic": 0.4, "defense": 2.0, "speed": 0.6 },
-      "startingSkills": ["bulwark", "guard_aura", "battle_cry"]
+      "startingSkills": ["bulwark", "guard_aura", "battle_cry", "taunt"],
+      "learnset": [
+        { "skill": "shield_bash", "level": 5 },
+        { "skill": "intimidate", "level": 10 },
+        { "skill": "iron_will", "level": 16 }
+      ]
     }
   ]
 }

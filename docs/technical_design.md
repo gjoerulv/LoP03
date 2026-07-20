@@ -38,7 +38,7 @@ src/
   states/                 # GameState, StateStack, concrete states (menu/town/...)
   input/                  # InputAction, InputMap (+ raylib query factory)
   resource/               # ResourceManager (texture/font/sound cache, RAII)
-  platform/               # Paths (user-data dir, path sanitizing)
+  platform/            # Paths + AtomicFile (user-data dir, safe persistence)
   content/                # JSON content model: defs, enums, loaders, validators
   game/                   # runtime model: Character, Party, Inventory, derivation
   save/                   # SaveSystem: versioned JSON slots + autosave (defensive)
@@ -183,11 +183,14 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = 3.
+  `kGenerationVersion` = 6 (M29 enlarged the theme enemy/boss pools; M30 added
+  the RestToken event to the pool — each changes a seed's roster/events;
+  owner-approved bumps).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
-  (shrine/spring/merchant/challenge/wager) realized as an `EventChamber`
-  layout archetype with a solid event anchor; unguarded chests may be
+  (shrine/spring/merchant/challenge/wager/rest-token) realized as an
+  `EventChamber` layout archetype with a solid event anchor; unguarded chests
+  may be
   `trapped` (extra gold, party wounds on claim). `DungeonState` shows each
   event's full trade-off in the footer before Confirm and applies exactly
   what it stated; elite challenges run through the normal battle flow with
@@ -395,7 +398,7 @@ are reference-checked across files.
 | Type   | Required fields | Notable optional fields |
 |--------|-----------------|-------------------------|
 | skill  | `id`, `name`, `category`, `target` | `element`, `power`≥0, `mpCost`≥0, `description` |
-| class  | `id`, `name`, `baseStats`{hp≥1,attack,magic,defense,speed} | `role`, `growth`{floats}, `startingSkills`[skill ids] |
+| class  | `id`, `name`, `baseStats`{hp≥1,attack,magic,defense,speed} | `role`, `growth`{floats}, `startingSkills`[skill ids], `learnset`[{`skill`,`level`≥1}] |
 | enemy  | `id`, `name`, `stats`{…} | `tier`(normal/elite), `tags`[fast/magic/armored/poison], `skills`[ids], `xpReward`, `goldReward` |
 | item   | `id`, `name`, `type`(consumable/equipment/relic/scroll) | `slot`, `rarity`, `value`, `effect`, `effectAmount`, `statBonus`, `grantsSkill`, `description` |
 
@@ -412,8 +415,14 @@ Enums (string values): `Element`, `SkillCategory`, `SkillTarget`, `EnemyTag`,
   the valid entries around it. Duplicate ids are rejected.
 - Semantic rules: scrolls must set `grantsSkill`; equipment/relics need a real
   `slot`.
-- Cross-references: skill ids in `startingSkills`, enemy `skills`, and scroll
-  `grantsSkill` must exist.
+- Cross-references: skill ids in `startingSkills`, class `learnset`, enemy
+  `skills`, and scroll `grantsSkill` must exist.
+- **Class learnsets (M29):** the optional `learnset` grants a skill once a
+  character reaches its `level`. Skills are *derived, never stored* — a
+  combatant's usable set is `content::knownSkillsFor(cls, level)` =
+  `startingSkills` ∪ level-satisfied learnset entries (stable order, de-duped).
+  `buildBattle` resolves this once per battle for both live play and the
+  headless simulator, so they agree exactly and no save state is needed.
 - Bumping `version` or changing field meaning is a **public-schema change** —
   requires human approval (see `CLAUDE.md`).
 
@@ -427,6 +436,13 @@ Enums (string values): `Element`, `SkillCategory`, `SkillTarget`, `EnemyTag`,
 `SlotMenuState`); `TownMenuState` is a transparent pause overlay.
 `AppContext` now also carries `save::SaveSystem& saves` and the active
 `Party& party`.
+
+**Paid rest (M30).** `InnState` is a menu (no auto-heal): a paid rest costs
+`restCost(party)` = `kRestCostBase + kRestCostPerLevel*(highestLevel-1)` clamped
+to `[kRestCostBase, kRestCostMax]` (pure, in `game/Party`), disabled when
+unaffordable or already rested; a free rest spends one `Party.restTokens`.
+Tokens are granted by the `RoomEventKind::RestToken` dungeon event and persist
+via an optional `restTokens` save field (no `kSaveVersion` bump; absent = 0).
 
 ### Town (walkable)
 
@@ -500,7 +516,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 2; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 6; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).
@@ -538,9 +554,22 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
 - **Resolution (deterministic formulas):** physical `max(1, attack + power −
   def/2)`, magic `max(1, magic + power − def/4)`, both halved while guarding;
   heal `power + magic/2` (never resurrects); items apply Heal/RestoreMp/Revive/
-  Cure; revive restores a percentage of max HP. Skills spend MP. The enemy AI is
-  deterministic (heal a hurt ally if able, else damage the lowest-HP party
-  member). Variance/crits and status ailments are deferred to M7/M9.
+  Cure; revive restores a percentage of max HP. Skills spend MP.
+- **Enmity & targeting (M28).** `Battle` holds global `threat` per party member
+  (accrued inside the shared `attack`/`useSkill` from damage dealt and healing
+  done; decayed ×3/4 by `beginRound()`, called at each round start by both
+  `Simulator` and `BattleState`) and a per-encounter `rngSeed` derived from the
+  roster. `chooseEnemyAction` derives a targeting profile from `EnemyDef.role`
+  (bosses from archetype) and scores each living party member on threat, kill
+  pressure, and backline weight, with a **pure hash tie-break** (SplitMix64 of
+  `rngSeed`+round+actor+candidate) — so it stays a pure `const` query, is fully
+  reproducible, and live play and the Simulator agree exactly. Control skills
+  (`SkillEffect` Taunt/Fade/Intercept) spike/shed threat or set an intercept
+  flag (`Combatant.intercepting`, cleared with guard) that redirects single
+  enemy hits to the interceptor. All new state lives in `Battle` and is mutated
+  only through the shared methods, preserving the sim/live determinism contract.
+  A run's `ScoreEntry.battleRulesVersion` (`battle::kBattleRulesVersion`) tags
+  which rules resolved its battles. Variance/crits remain out of scope.
 - **Commands:** Attack, Skill, Item, Guard, Escape. Escape always succeeds (every
   encounter is escapable); escaping forfeits the gate/chest.
 - **Inventory:** `game/Inventory` (item id → count, insertion-ordered). Persisted
@@ -696,3 +725,13 @@ tested; raylib adapters live in `ui/UiDraw`.
   suite, which loads content, generates dungeons, and simulates a clear), and
   known limitations. The deliverable is `CrystalDungeons.exe` plus the `data/`
   folder copied beside it.
+
+## Release-hardening corrections (post-356619d audit)
+
+- `CRYSTAL_DEBUG_OVERLAY` and `CRYSTAL_CAPTURE` are configuration-aware generator-expression definitions and are never compiled for any Release configuration, including Visual Studio multi-config builds. `CRYSTAL_SHIPPING_BUILD` adds a compile-time guard against accidental linkage.
+- The `msvc-release` preset explicitly disables both development surfaces. Packaging independently scans the staged executable for debug/capture markers and verifies the PE machine type is AMD64.
+- Save slots, settings, tutorial progress, and scoreboard data use sibling-temp atomic replacement. Save slots retain one `.bak` generation. A failed write leaves the prior destination intact.
+- Scoreboard loading is transactional: malformed data does not replace already-valid in-memory entries.
+- Packaged builds write timestamped persistent logs under the user-data `logs` directory; fatal startup errors show a GUI dialog with the log path.
+- Dungeon generation compatibility is currently version 4.
+

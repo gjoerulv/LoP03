@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "audio/AudioManager.hpp"
+#include "battle/Battle.hpp"
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
@@ -119,8 +120,11 @@ DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dung
         teamTier_.push_back(danger::assess(team, dungeon_.depth, context_.content));
     }
     context_.fade.start();
-    context_.audio.setMusic(themeMusic(dungeon_.themeId));
-    context_.audio.setAmbience(themeAmbience(dungeon_.themeId));
+    // Theme music + ambience are applied in onEnter(), not here: entering the
+    // dungeon pops the Guild, which fires TownState::onResume and re-asserts
+    // the town audio *after* this constructor runs. onEnter() runs after that
+    // pop, so the dungeon audio wins (previously the ambience stayed on the
+    // town bed for the whole dungeon).
     enterRoom(dungeon_.startRoom, std::nullopt);
 }
 
@@ -343,6 +347,11 @@ void DungeonState::resolveEvent() {
             context_.audio.play(Sfx::Interact);
             message_ = "The omen accepts your dare. Finish without a death!";
             break;
+        case dungeon::RoomEventKind::RestToken:
+            context_.party.restTokens += 1;
+            context_.audio.play(Sfx::Interact);
+            message_ = "You pocket a free-rest token - redeem it at the inn.";
+            break;
         case dungeon::RoomEventKind::EliteChallenge:
         case dungeon::RoomEventKind::None:
             return;  // challenges resolve through battle, not here
@@ -383,6 +392,9 @@ std::string DungeonState::eventPromptText() const {
         case dungeon::RoomEventKind::ScoreWager:
             return input::prompt(map, InputAction::Confirm, device, "Accept the omen's wager") +
                    ": +150 score if no ally falls, -100 if one does";
+        case dungeon::RoomEventKind::RestToken:
+            return input::prompt(map, InputAction::Confirm, device, "Rest here") +
+                   " - pocket a free-rest token for the inn";
         case dungeon::RoomEventKind::EliteChallenge: {
             if (room.teamIndex < 0 ||
                 room.teamIndex >= static_cast<int>(dungeon_.teams.size())) {
@@ -416,7 +428,13 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &battleResult_));
 }
 
-void DungeonState::onEnter() { maybeTutorialPrompt(stack(), context_, tutorial::kDungeonFirst); }
+void DungeonState::onEnter() {
+    // Runs after the Guild pop's TownState::onResume, so these win and the
+    // dungeon actually gets its own theme music + ambience bed.
+    context_.audio.setMusic(themeMusic(dungeon_.themeId));
+    context_.audio.setAmbience(themeAmbience(dungeon_.themeId));
+    maybeTutorialPrompt(stack(), context_, tutorial::kDungeonFirst);
+}
 
 void DungeonState::onResume() {
     if (pendingKind_ == EncounterKind::None) {
@@ -426,10 +444,11 @@ void DungeonState::onResume() {
     pendingKind_ = EncounterKind::None;
     const battle::Outcome outcome = battleResult_.outcome;
 
-    // Returning from a battle: fade in and restore dungeon music (town states
-    // override it again if we end up leaving).
+    // Returning from a battle: fade in and restore the dungeon music *and*
+    // ambience (town states override them again if we end up leaving).
     context_.fade.start();
     context_.audio.setMusic(themeMusic(dungeon_.themeId));
+    context_.audio.setAmbience(themeAmbience(dungeon_.themeId));
 
     // Accumulate run statistics regardless of outcome.
     run_.battleTurns += battleResult_.rounds;
@@ -542,6 +561,7 @@ void DungeonState::completeDungeon() {
     entry.seed = dungeon_.seed;
     entry.generationVersion = dungeon::kGenerationVersion;
     entry.partyLevel = highestLevel(context_.party);
+    entry.battleRulesVersion = battle::kBattleRulesVersion;
     context_.scoreboard.add(entry);
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);
@@ -773,6 +793,11 @@ void DungeonState::render() {
                         c = Color{180, 110, 220, 255};
                         glyph = "?";
                         spriteId = "prop.event.omen";
+                        break;
+                    case dungeon::RoomEventKind::RestToken:
+                        c = Color{240, 170, 90, 255};
+                        glyph = "R";
+                        spriteId = "prop.event.rest";
                         break;
                     case dungeon::RoomEventKind::None:
                         break;

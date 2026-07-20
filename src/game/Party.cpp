@@ -94,6 +94,14 @@ void healFull(Party& party) {
     }
 }
 
+int restCost(const Party& party) {
+    const int level = std::max(1, highestLevel(party));
+    long cost = static_cast<long>(kRestCostBase) +
+                static_cast<long>(kRestCostPerLevel) * (level - 1);
+    cost = std::clamp<long>(cost, kRestCostBase, kRestCostMax);
+    return static_cast<int>(cost);
+}
+
 int highestLevel(const Party& party) {
     int best = 0;
     for (const Character& c : party.members) {

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "battle/Battle.hpp"
 #include "core/AppContext.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -57,7 +58,8 @@ void ScoreboardState::handleInput(const Input& input) {
 void ScoreboardState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 24, 255});
+    ui::drawSceneBackground(context_.resources, "bg.scoreboard", Color{16, 16, 24, 255},
+                            context_.virtualWidth, context_.virtualHeight);
     ui::drawTextCentered("Scoreboard", w / 2, 16, style::kFontScreenTitle, style::palette().text);
 
     const auto& entries = context_.scoreboard.entries();
@@ -73,13 +75,13 @@ void ScoreboardState::render() {
     }
 
     // Header.
-    DrawText("#", kRankX, kHeaderY, style::kFontBody, style::palette().textDim);
+    ui::drawText("#", kRankX, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Score", kScoreR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Turns", kTurnsR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Danger", kDangerR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Depth", kDepthR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Lv", kLvR, kHeaderY, style::kFontBody, style::palette().textDim);
-    DrawText("Theme", kThemeX, kHeaderY, style::kFontBody, style::palette().textDim);
+    ui::drawText("Theme", kThemeX, kHeaderY, style::kFontBody, style::palette().textDim);
 
     const int total = static_cast<int>(entries.size());
     const int first = scroll_.top();
@@ -89,7 +91,7 @@ void ScoreboardState::render() {
         const score::ScoreEntry& e = entries[static_cast<std::size_t>(i)];
         const int y = kRowsY + row * kRowH;
         const Color rowColor = e.noDeath ? Color{210, 230, 200, 255} : style::palette().text;
-        DrawText(TextFormat("%d", i + 1), kRankX, y, style::kFontBody, rowColor);
+        ui::drawText(TextFormat("%d", i + 1), kRankX, y, style::kFontBody, rowColor);
         ui::drawTextRight(TextFormat("%d", e.score), kScoreR, y, style::kFontBody, rowColor);
         ui::drawTextRight(TextFormat("%d", e.battleTurns), kTurnsR, y, style::kFontBody,
                           rowColor);
@@ -103,7 +105,15 @@ void ScoreboardState::render() {
         } else {
             ui::drawTextRight("-", kLvR, y, style::kFontBody, style::palette().textDim);
         }
-        std::string theme = e.theme + (e.noDeath ? "  *" : "");
+        std::string theme = e.theme;
+        if (e.noDeath) {
+            theme += "  *";
+        }
+        // Runs played under older battle rules (pre-M28 enmity/AI) are flagged
+        // so they are visibly distinguished, never silently ranked as equal.
+        if (e.battleRulesVersion < battle::kBattleRulesVersion) {
+            theme += " ~";
+        }
         ui::drawTextFitted(theme, kThemeX, y, w - kThemeX - 16, style::kFontBody, rowColor,
                            "scoreboard.theme");
     }
@@ -111,10 +121,10 @@ void ScoreboardState::render() {
     // The honest-comparison conditions (M19 policy): no hidden normalization;
     // players compare runs at matching conditions instead.
     const int legendY = kRowsY + count * kRowH + 4;
-    DrawText("* = no-death   Lv = party level ('-' = older run)", kRankX, legendY,
+    ui::drawText("* = no-death   Lv = party level ('-' = older run)", kRankX, legendY,
              style::kFontSmall, Color{150, 170, 150, 255});
-    DrawText("Compare runs at the same Depth and Lv.", kRankX, legendY + 10,
-             style::kFontSmall, style::palette().textDim);
+    ui::drawText("Compare at same Depth/Lv.  ~ = older battle rules (pre-M28).", kRankX,
+                 legendY + 10, style::kFontSmall, style::palette().textDim);
     if (scroll_.moreAbove() || scroll_.moreBelow(total, kVisibleRows)) {
         ui::drawTextRight(TextFormat("%d-%d of %d   Up/Down: Scroll", first + 1, first + count,
                                      total),

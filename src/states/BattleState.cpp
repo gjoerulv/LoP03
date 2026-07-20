@@ -76,6 +76,25 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
 
 void BattleState::onEnter() { maybeTutorialPrompt(stack(), context_, tutorial::kBattleFirst); }
 
+#ifdef CRYSTAL_CAPTURE
+void BattleState::captureEnterTargeting() {
+    order_ = battle::turnOrder(battle_);
+    orderPos_ = 0;
+    for (std::size_t i = 0; i < order_.size(); ++i) {
+        const int u = order_[static_cast<std::size_t>(i)];
+        if (battle_.units[static_cast<std::size_t>(u)].side == battle::Side::Party &&
+            battle_.units[static_cast<std::size_t>(u)].alive()) {
+            orderPos_ = static_cast<int>(i);
+            break;
+        }
+    }
+    pendingKind_ = PendingKind::Attack;
+    targetCandidates_ = battle_.aliveIndices(battle::Side::Enemy);
+    targetCursor_ = 0;
+    phase_ = Phase::ChooseTarget;
+}
+#endif
+
 int BattleState::enemyBaseY() const {
     int enemies = 0;
     for (const battle::Combatant& c : battle_.units) {
@@ -174,6 +193,7 @@ void BattleState::beginTurns() {
     order_ = battle::turnOrder(battle_);
     orderPos_ = 0;
     battle_.turnsTaken = 1;  // round 1
+    battle_.beginRound();    // enmity decay at round start (M28); mirrors Simulator
     startActorTurn();
 }
 
@@ -214,6 +234,7 @@ void BattleState::advanceTurn() {
             order_ = battle::turnOrder(battle_);
             orderPos_ = 0;
             ++battle_.turnsTaken;  // a new round begins
+            battle_.beginRound();  // enmity decay at round start (M28)
         }
         if (!order_.empty() && battle_.units[static_cast<std::size_t>(order_[static_cast<std::size_t>(orderPos_)])].alive()) {
             startActorTurn();
@@ -664,7 +685,6 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         }
     }
 
-    int nameY = y - 9;
     if (context_.resources.hasTexture(spriteId)) {
         const Texture2D& tex = context_.resources.texture(spriteId);
         const int sx = x + 20 - tex.width / 2;   // bottom-center on the old
@@ -679,7 +699,6 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
             DrawRectangleLines(sx - 2, sy - 2, tex.width + 4, tex.height + 4,
                                Color{240, 220, 120, 255});
         }
-        nameY = sy - 10;
     } else {
         const Color body = c.side == battle::Side::Enemy ? Color{170, 80, 90, 255}
                                                          : Color{90, 130, 190, 255};
@@ -692,10 +711,12 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         }
     }
     if (current) {
-        DrawText(">", x - 9, y + 3, 10, Color{240, 220, 120, 255});
+        ui::drawText(">", x - 9, y + 3, 10, Color{240, 220, 120, 255});
     }
 
-    DrawText(c.name.c_str(), x, nameY, 8, Fade(RAYWHITE, fade));
+    // Names are no longer painted over every sprite (M25 slice 2); a unit's
+    // name and judgment stats appear on the target-info panel while it is being
+    // targeted, and via Details.
     // HP bar (displayed value).
     const float hpFrac =
         c.maxHp > 0 ? static_cast<float>(shownHp) / static_cast<float>(c.maxHp) : 0.0f;
@@ -707,11 +728,15 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
             c.maxMp > 0 ? static_cast<float>(c.mp) / static_cast<float>(c.maxMp) : 0.0f;
         DrawRectangle(x, y + 21, 40, 2, Color{40, 40, 40, 255});
         DrawRectangle(x, y + 21, static_cast<int>(40 * mpFrac), 2, Color{90, 120, 210, 255});
-        DrawText(TextFormat("%d/%d", shownHp < 0 ? 0 : shownHp, c.maxHp), x + 44, y + 4, 8,
-                 RAYWHITE);
+        // HP and MP as numerals (M25 slice 3): MP is the resource that gates
+        // skills, so its exact value gets the same clarity as HP.
+        ui::drawText(TextFormat("HP %d/%d", shownHp < 0 ? 0 : shownHp, c.maxHp), x + 44, y + 4, 8,
+                     RAYWHITE);
+        ui::drawText(TextFormat("MP %d/%d", c.mp < 0 ? 0 : c.mp, c.maxMp), x + 44, y + 13, 8,
+                     Color{150, 175, 235, 255});
     }
     if (!shownAlive) {
-        DrawText("KO", x + 13, y + 4, 8, Fade(Color{220, 120, 120, 255}, fade));
+        ui::drawText("KO", x + 13, y + 4, 8, Fade(Color{220, 120, 120, 255}, fade));
     }
 
     if (!c.statuses.empty() && shownAlive) {
@@ -775,7 +800,7 @@ void BattleState::render() {
 
     // Floating damage / heal numbers.
     for (const FloatNumber& f : floats_) {
-        DrawText(f.text.c_str(), static_cast<int>(f.x) + shakeX, static_cast<int>(f.y), 10,
+        ui::drawText(f.text.c_str(), static_cast<int>(f.x) + shakeX, static_cast<int>(f.y), 10,
                  f.heal ? Color{120, 220, 120, 255} : Color{245, 120, 120, 255});
     }
 
@@ -856,10 +881,47 @@ void BattleState::render() {
             }
             break;
         }
-        case Phase::ChooseTarget:
-            ui::drawTextCentered(("Choose a target   " + backHint).c_str(), w / 2, panelY + 24,
-                                 style::kFontBody, style::palette().text);
+        case Phase::ChooseTarget: {
+            // Target-info panel (M25 slice 2): name, vitals, and the stats a
+            // player needs to judge a target — shown only for the currently
+            // targeted unit, in the dedicated bottom panel so it never collides
+            // with the side-specific status lines. M28 depends on this panel.
+            if (targetUnit >= 0) {
+                const battle::Combatant& t = battle_.units[static_cast<std::size_t>(targetUnit)];
+                ui::drawTextFitted("Target: " + t.name, kListX, panelY + 5, w - kListX - 96,
+                                   style::kFontHeading, style::palette().cursor,
+                                   "battle.target.name");
+                ui::drawTextRight(backHint, w - 10, panelY + 7, style::kFontBody,
+                                  style::palette().textDim);
+                std::string vitals = "HP " + std::to_string(t.hp < 0 ? 0 : t.hp) + "/" +
+                                     std::to_string(t.maxHp);
+                if (t.side == battle::Side::Party) {
+                    vitals += "     MP " + std::to_string(t.mp < 0 ? 0 : t.mp) + "/" +
+                              std::to_string(t.maxMp);
+                }
+                ui::drawTextFitted(vitals, kListX, panelY + 22, w - 2 * kListX, style::kFontBody,
+                                   style::palette().text, "battle.target.vitals");
+                const std::string stats =
+                    "ATK " + std::to_string(t.stats.attack) + "    MAG " +
+                    std::to_string(t.stats.magic) + "    DEF " + std::to_string(t.stats.defense) +
+                    "    SPD " + std::to_string(t.stats.speed);
+                ui::drawTextFitted(stats, kListX, panelY + 34, w - 2 * kListX, style::kFontBody,
+                                   style::palette().textDim, "battle.target.stats");
+                if (!t.statuses.empty()) {
+                    std::string line = "Status:";
+                    for (const battle::StatusInstance& s : t.statuses) {
+                        line += " " + std::string(statusShort(s.type)) + "(" +
+                                std::to_string(s.turns) + ")";
+                    }
+                    ui::drawTextFitted(line, kListX, panelY + 47, w - 2 * kListX, style::kFontSmall,
+                                       style::palette().textDim, "battle.target.status");
+                }
+            } else {
+                ui::drawTextCentered(("Choose a target   " + backHint).c_str(), w / 2,
+                                     panelY + 24, style::kFontBody, style::palette().text);
+            }
             break;
+        }
         case Phase::Resolve:
             ui::drawTextWrapped(message_, 16, panelY + 14, w - 32, style::kFontBody,
                                 style::palette().text, "battle.message", 3);

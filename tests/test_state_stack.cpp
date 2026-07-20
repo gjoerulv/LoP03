@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "audio/AudioRoles.hpp"
 #include "input/Input.hpp"
 #include "states/GameState.hpp"
 #include "states/StateStack.hpp"
@@ -63,7 +64,92 @@ private:
     bool done_ = false;
 };
 
+// Models a screen that asserts a scene ambience through a lifecycle hook, the
+// way TownState/DungeonState drive AudioManager::setAmbience. `when` chooses
+// whether the ambience is set from the constructor (the pre-M27b bug) or from
+// onEnter (the fix); `alsoOnResume` mirrors states that re-assert on resume.
+enum class SetWhen { Ctor, OnEnter };
+
+class AmbienceState : public GameState {
+public:
+    AmbienceState(StateStack& s, AmbienceTrack& active, AmbienceTrack track, SetWhen when,
+                  bool alsoOnResume)
+        : GameState(s), active_(active), track_(track), when_(when), alsoOnResume_(alsoOnResume) {
+        if (when_ == SetWhen::Ctor) {
+            active_ = track_;
+        }
+    }
+    void onEnter() override {
+        if (when_ == SetWhen::OnEnter) {
+            active_ = track_;
+        }
+    }
+    void onResume() override {
+        if (alsoOnResume_) {
+            active_ = track_;
+        }
+    }
+
+private:
+    AmbienceTrack& active_;
+    AmbienceTrack track_;
+    SetWhen when_;
+    bool alsoOnResume_;
+};
+
 }  // namespace
+
+// Regression guard for the M27 dungeon-ambience bug: entering a dungeon pops the
+// Guild (exposing Town, whose onResume re-asserts the town ambience) and pushes
+// the dungeon in one batch. The dungeon must set its audio in onEnter so it runs
+// after that resume and wins — otherwise the town bed plays for the whole run.
+TEST_CASE("stack: a pushed state's onEnter audio wins over the exposed state's onResume",
+          "[states][audio]") {
+    StateStack stack;
+    Record guild;
+    AmbienceTrack active = AmbienceTrack::None;
+
+    // Town on the stack, asserting the town ambience on enter and resume.
+    stack.pushState(std::make_unique<AmbienceState>(stack, active, AmbienceTrack::Town,
+                                                    SetWhen::OnEnter, /*alsoOnResume=*/true));
+    stack.applyPending();
+    REQUIRE(active == AmbienceTrack::Town);
+
+    // Enter the Guild (pushed above Town).
+    stack.pushState(make(stack, guild));
+    stack.applyPending();
+
+    // GuildState::enterDungeon pops the Guild and pushes the dungeon in one
+    // batch. The dungeon (fixed) sets its bed in onEnter.
+    stack.popState();
+    stack.pushState(std::make_unique<AmbienceState>(stack, active, AmbienceTrack::Keep,
+                                                    SetWhen::OnEnter, /*alsoOnResume=*/true));
+    stack.applyPending();
+
+    REQUIRE(active == AmbienceTrack::Keep);  // dungeon bed, not the town bed
+}
+
+TEST_CASE("stack: scene audio set only in the constructor is overridden (the bug this fixes)",
+          "[states][audio]") {
+    StateStack stack;
+    Record guild;
+    AmbienceTrack active = AmbienceTrack::None;
+
+    stack.pushState(std::make_unique<AmbienceState>(stack, active, AmbienceTrack::Town,
+                                                    SetWhen::OnEnter, /*alsoOnResume=*/true));
+    stack.applyPending();
+    stack.pushState(make(stack, guild));
+    stack.applyPending();
+
+    // The dungeon sets its bed only in the constructor (runs before the pop's
+    // Town::onResume), so the town ambience overrides it — the original defect.
+    stack.popState();
+    stack.pushState(std::make_unique<AmbienceState>(stack, active, AmbienceTrack::Keep,
+                                                    SetWhen::Ctor, /*alsoOnResume=*/false));
+    stack.applyPending();
+
+    REQUIRE(active == AmbienceTrack::Town);  // demonstrates why the ctor approach failed
+}
 
 TEST_CASE("stack: transitions are queued until applied", "[states]") {
     StateStack stack;

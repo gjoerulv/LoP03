@@ -1,5 +1,11 @@
 # Presentation Audit — Defect Register (M11)
 
+> **HISTORICAL — not an open defect list.** This register captured the M11
+> baseline. The milestones that consumed it (M12–M22) are all
+> `complete (approved)`; see `docs/milestones.md` for current status and
+> `docs/manual_test_matrix.md` for what still needs an owner pass. Do not plan
+> new work from the rows below without re-verifying against the current build.
+>
 > **M12 update (2026-07-19):** defects carry a `Fixed (M12)` / `Partial
 > (M12)` marker where the text-safety milestone addressed them; verification
 > is the owner's manual pass (rows in `docs/manual_test_matrix.md`).

@@ -38,11 +38,22 @@ std::uint64_t randomSeed() {
 
 GuildState::GuildState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {
-    menu_.setItems({{"Enter Dungeon", true},
-                    {"Theme", true},
-                    {"Depth", true},
-                    {"New Seed", true},
-                    {"Back", true}});
+    rebuild();
+}
+
+void GuildState::rebuild() {
+    // Theme/Depth values are composed into their own menu labels so the value
+    // sits on the row that changes it (M25 slice 4), following the
+    // SettingsState::volumeLabel idiom. ui::MenuItem carries no value field.
+    const int previous = menu_.cursor();
+    std::vector<ui::MenuItem> items;
+    items.push_back({"Enter Dungeon", true});
+    items.push_back({"Theme:  < " + currentThemeName() + " >", true});
+    items.push_back({"Depth:  < " + std::to_string(depth_) + " >", true});
+    items.push_back({"New Seed", true});
+    items.push_back({"Back", true});
+    menu_.setItems(std::move(items));
+    menu_.setCursor(previous);
 }
 
 void GuildState::onEnter() {
@@ -58,6 +69,7 @@ void GuildState::onEnter() {
         themeIndex_ = 0;
     }
     seed_ = randomSeed();
+    rebuild();  // themeIds_ now populated: refresh the inline Theme label
 }
 
 void GuildState::onResume() {
@@ -101,8 +113,10 @@ void GuildState::handleInput(const Input& input) {
         if (menu_.cursor() == kTheme && !themeIds_.empty()) {
             const int n = static_cast<int>(themeIds_.size());
             themeIndex_ = ((themeIndex_ + dir) % n + n) % n;
+            rebuild();  // reflect the new value inline immediately
         } else if (menu_.cursor() == kDepth) {
             depth_ = std::clamp(depth_ + dir, 1, kMaxDepth);
+            rebuild();
         }
     }
 
@@ -123,19 +137,18 @@ void GuildState::handleInput(const Input& input) {
 void GuildState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 26, 255});
+    ui::drawSceneBackground(context_.resources, "bg.guild", Color{16, 16, 26, 255},
+                            context_.virtualWidth, context_.virtualHeight);
 
     ui::drawTextCentered("Guild", w / 2, 18, 18, RAYWHITE);
     ui::drawTextCentered("Choose a dungeon and enter.", w / 2, 40, 10, Color{180, 180, 200, 255});
 
-    DrawText(TextFormat("Theme:  < %s >", currentThemeName().c_str()), 70, 78, 11,
-             Color{200, 200, 230, 255});
-    DrawText(TextFormat("Depth:  < %d >", depth_), 70, 96, 11, Color{200, 200, 230, 255});
-    DrawText(TextFormat("Seed:   %llu", static_cast<unsigned long long>(seed_)), 70, 114, 10,
-             Color{220, 220, 160, 255});
-
-    ui::drawMenu(menu_, 70, 140, 16, 11, RAYWHITE, Color{90, 90, 110, 255},
+    // Theme/Depth values render inline on their menu rows (composed in
+    // rebuild()); the seed is a non-adjustable readout below the list.
+    ui::drawMenu(menu_, 70, 66, 16, 11, RAYWHITE, Color{90, 90, 110, 255},
                  Color{240, 220, 120, 255});
+    ui::drawText(TextFormat("Seed:   %llu", static_cast<unsigned long long>(seed_)), 70, 150, 10,
+                 Color{220, 220, 160, 255});
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();

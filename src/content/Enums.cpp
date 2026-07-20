@@ -45,6 +45,13 @@ constexpr std::array<std::pair<std::string_view, SkillCategory>, 4> kSkillCatego
     {"support", SkillCategory::Support},
 }};
 
+constexpr std::array<std::pair<std::string_view, SkillEffect>, 4> kSkillEffects{{
+    {"none", SkillEffect::None},
+    {"taunt", SkillEffect::Taunt},
+    {"fade", SkillEffect::Fade},
+    {"intercept", SkillEffect::Intercept},
+}};
+
 constexpr std::array<std::pair<std::string_view, SkillTarget>, 5> kSkillTargets{{
     {"single_enemy", SkillTarget::SingleEnemy},
     {"all_enemies", SkillTarget::AllEnemies},
@@ -127,6 +134,9 @@ std::optional<Element> parseElement(std::string_view s) { return parseFrom(kElem
 std::optional<SkillCategory> parseSkillCategory(std::string_view s) {
     return parseFrom(kSkillCategories, s);
 }
+std::optional<SkillEffect> parseSkillEffect(std::string_view s) {
+    return parseFrom(kSkillEffects, s);
+}
 std::optional<SkillTarget> parseSkillTarget(std::string_view s) {
     return parseFrom(kSkillTargets, s);
 }
@@ -146,6 +156,7 @@ std::optional<BossArchetype> parseBossArchetype(std::string_view s) {
 
 const char* toString(Element v) { return nameFrom(kElements, v); }
 const char* toString(SkillCategory v) { return nameFrom(kSkillCategories, v); }
+const char* toString(SkillEffect v) { return nameFrom(kSkillEffects, v); }
 const char* toString(SkillTarget v) { return nameFrom(kSkillTargets, v); }
 const char* toString(EnemyTag v) { return nameFrom(kEnemyTags, v); }
 const char* toString(EnemyTier v) { return nameFrom(kEnemyTiers, v); }

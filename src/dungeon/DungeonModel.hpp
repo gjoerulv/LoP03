@@ -13,9 +13,12 @@ namespace cd::dungeon {
 
 enum class RoomType { Start, Normal, Treasure, Boss, Event };
 
-// Room events (M20, owner-approved set). TrappedChest is a chest flag, not
-// an event room. Every event shows its full trade-off before confirmation.
-enum class RoomEventKind { None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager };
+// Room events (M20, owner-approved set; M30 adds RestToken). TrappedChest is a
+// chest flag, not an event room. Every event shows its full trade-off before
+// confirmation.
+enum class RoomEventKind {
+    None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken
+};
 
 struct RoomEvent {
     RoomEventKind kind = RoomEventKind::None;

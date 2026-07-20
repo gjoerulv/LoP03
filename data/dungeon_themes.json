@@ -4,25 +4,25 @@
     {
       "id": "ruined_keep",
       "name": "Ruined Keep",
-      "normalEnemies": ["goblin_grunt", "skeleton_archer", "kobold_scout", "zombie", "bandit", "wild_boar", "war_drummer"],
-      "eliteEnemies": ["ogre_marauder", "troll_berserker", "iron_sentinel", "grave_chanter"],
+      "normalEnemies": ["goblin_grunt", "skeleton_archer", "kobold_scout", "zombie", "bandit", "wild_boar", "war_drummer", "corpse_hound", "sand_lurker", "standard_bearer"],
+      "eliteEnemies": ["ogre_marauder", "troll_berserker", "iron_sentinel", "grave_chanter", "bone_colossus"],
       "bosses": ["keep_warden", "rush_tyrant"],
       "description": "Crumbling halls held by brigands and the restless dead."
     },
     {
       "id": "crystal_mine",
       "name": "Crystal Mine",
-      "normalEnemies": ["stone_golem", "dark_acolyte", "frost_imp", "mud_crawler", "wisp", "cave_bat", "bog_shaman"],
-      "eliteEnemies": ["crystal_guardian", "iron_sentinel", "troll_berserker"],
-      "bosses": ["crystal_sorcerer"],
+      "normalEnemies": ["stone_golem", "dark_acolyte", "frost_imp", "mud_crawler", "wisp", "cave_bat", "bog_shaman", "rune_sentry", "gloom_priest", "mire_imp"],
+      "eliteEnemies": ["crystal_guardian", "iron_sentinel", "troll_berserker", "bone_colossus", "void_weaver"],
+      "bosses": ["crystal_sorcerer", "deep_king"],
       "description": "Glittering tunnels guarded by golems and frost-mages."
     },
     {
       "id": "hollow_forest",
       "name": "Hollow Forest",
-      "normalEnemies": ["venom_spider", "forest_wolf", "wild_boar", "zombie", "wisp", "cave_bat", "bog_shaman"],
-      "eliteEnemies": ["shadow_stalker", "plague_bearer", "troll_berserker", "grave_chanter"],
-      "bosses": ["hollow_commander", "rush_tyrant"],
+      "normalEnemies": ["venom_spider", "forest_wolf", "wild_boar", "zombie", "wisp", "cave_bat", "bog_shaman", "corpse_hound", "gloom_priest", "mire_imp"],
+      "eliteEnemies": ["shadow_stalker", "plague_bearer", "troll_berserker", "grave_chanter", "void_weaver"],
+      "bosses": ["hollow_commander", "rush_tyrant", "blight_matron"],
       "description": "A poisoned wood prowled by beasts and shadows."
     }
   ]

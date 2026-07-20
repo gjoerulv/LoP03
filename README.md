@@ -8,15 +8,19 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete playable build** (Milestones 1–10). Town hub,
-> seeded walkable dungeons, deterministic turn-based combat with status effects,
-> danger ratings, scoring + scoreboard, content (classes/enemies/elites/bosses/
-> items/skills/themes), equipment, XP/leveling, shops, and a controls screen
-> are all in. A post-M10 completion program (M11–M24) is underway — UI/text
-> safety, input remapping, replaceable assets, generated 16-bit-style art,
-> compact rooms, encounter variety, a full original soundscape, and (M22)
-> in-play onboarding + accessibility options are done; validation/balance
-> hardening and release packaging remain — see `docs/completion_roadmap.md`.
+> **Status: feature-complete, polished playable build.** Town hub, seeded
+> walkable dungeons, deterministic turn-based combat with status effects, an
+> enmity/targeting model with control skills, danger ratings, scoring +
+> scoreboard, content (classes/enemies/elites/bosses/items/skills/themes) with
+> level-based class learnsets, equipment, XP/leveling, shops, a paid inn, and a
+> controls screen are all in. The post-M10 completion program (M11–M22) and the
+> M25–M30 polish program — UI/text safety, input remapping, replaceable assets,
+> generated 16-bit-style art, compact rooms, encounter variety, a full original
+> soundscape, onboarding + accessibility, an original bitmap font, per-enemy
+> art, environment/ambience identity, smarter enemy AI, expanded content, and a
+> paid-rest economy — are delivered. Only the deferred **validation/balance
+> playtesting (M23)** and **release packaging/sign-off (M24)** remain — see
+> `docs/completion_roadmap.md` and `docs/milestones.md`.
 
 ## Requirements
 
@@ -31,13 +35,43 @@ music, or text. Built in **C++20** with **raylib**.
 
 ## Build & run
 
-Build from the **Visual Studio developer environment** so `cl` and the bundled
-CMake/Ninja are on `PATH`: open a **"Developer PowerShell for VS"** (or run
-`vcvars64.bat` in a normal shell first):
+Every command below must run from a **Visual Studio developer environment**, so
+that `cl` and the bundled Ninja are on `PATH`.
+
+**Recommended:** open **Developer PowerShell for VS 2022** from the Start menu
+and run the build commands there.
+
+Verify the environment before configuring — all three must resolve:
 
 ```powershell
-& "C:\Program Files\Microsoft Visual Studio\<edition>\VC\Auxiliary\Build\vcvars64.bat"
+where.exe cl
+where.exe ninja
+cmake --version          # 3.20 or newer
 ```
+
+<details>
+<summary>Alternatives if you are not using the Developer PowerShell shortcut</summary>
+
+**Bootstrap an existing PowerShell session.** `vcvars64.bat` cannot configure a
+PowerShell session — it sets variables in a child `cmd` process that are
+discarded when it exits, so `& "...\vcvars64.bat"` leaves your shell unchanged.
+Use Visual Studio's PowerShell entry point instead, which sets the variables in
+the *current* session (substitute your edition — `Community`, `Professional`, or
+`Enterprise`):
+
+```powershell
+$vsRoot = "C:\Program Files\Microsoft Visual Studio\2022\<edition>"
+& "$vsRoot\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
+```
+
+**Wrap a single command in `cmd`.** This configures only the wrapped command,
+not your PowerShell session, so each build command needs its own wrapper:
+
+```powershell
+cmd /c "call ""C:\Program Files\Microsoft Visual Studio\2022\<edition>\VC\Auxiliary\Build\vcvars64.bat"" >nul && cmake --preset msvc-debug"
+```
+
+</details>
 
 ### Presets (recommended, M24)
 
@@ -110,9 +144,10 @@ letterbox/pillarbox bars.
 
 1. **New Game** → pick 4 classes (Knight, Ranger, Mage, Cleric, Rogue, Guardian)
    and name them. You start with a little gold.
-2. In the **town**, walk to buildings: **Inn** (free full heal), **Item Shop**
-   (buy consumables), **Equip Shop** (buy + equip gear), **Training Hall** (pay
-   gold to level up), **Scoreboard**, **Save Point** (3 slots), and the **Guild**.
+2. In the **town**, walk to buildings: **Inn** (rest to full HP/MP for gold, or
+   free with a rest token), **Item Shop** (buy consumables), **Equip Shop**
+   (buy + equip gear), **Training Hall** (pay gold to level up), **Scoreboard**,
+   **Save Point** (3 slots), and the **Guild**.
 3. At the **Guild**, pick a theme + depth and enter a seeded dungeon. Entering
    autosaves.
 4. Walk the dungeon: enemy teams show a **danger tier**; fight them to clear
@@ -155,6 +190,13 @@ The headless test suite doubles as a smoke test — it loads the shipped content
 generates dungeons, and simulates a full clear:
 
 ```powershell
+ctest --preset debug      # or: ctest --preset release
+```
+
+Both presets already pass `--output-on-failure`. Without presets, point `ctest`
+at the build directory instead:
+
+```powershell
 ctest --test-dir build-msvc --output-on-failure
 ```
 
@@ -165,7 +207,8 @@ save round-trips via the Save Point + Continue.
 
 ## Known limitations
 
-- **Generated assets.** All art (16-bit-style pixel tiles/sprites) and all
+- **Generated assets.** All art (16-bit-style pixel tiles/sprites), the UI
+  **bitmap font** (an original pixel typeface + BMFont descriptors), and all
   audio (11 chiptune music tracks, 4 ambience beds, 15 SFX) are original and
   produced by deterministic in-repo generators (`tools/asset_gen/`). Every
   sound and visual role is replaceable without code via
@@ -191,5 +234,6 @@ generators in `tools/asset_gen/`; provenance is recorded in
 - [`docs/technical_design.md`](docs/technical_design.md) — architecture & conventions.
 - [`docs/milestones.md`](docs/milestones.md) — milestone ledger and status.
 - [`docs/completion_roadmap.md`](docs/completion_roadmap.md) — post-M10
-  completion program (M11–M24) direction and quality targets.
+  completion (M11–M24) and polish (M25–M30) program direction and quality
+  targets.
 - `CLAUDE.md` — the project's operating contract.

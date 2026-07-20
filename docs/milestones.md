@@ -30,8 +30,20 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ◐ in progress (tooling + tuning done; awaiting owner playtests) |
-| 24 | Release packaging & final release validation | ◐ in progress (engineering done; final sign-off gated on M23) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M30** (tooling + tuning already built) |
+| 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
+| 25 | UI corrections & battle HUD | ☑ complete (approved) |
+| 26 | Enemy visual identity | ☑ complete (approved) |
+| 27 | Environment & ambience identity | ☑ complete (approved) |
+| 28 | Enmity, AI diversity & control skills | ☑ complete (approved) |
+| 29 | Content expansion & class learnsets | ☑ complete (approved) |
+| 30 | Economy: paid rest & rest-token event | ◑ implemented, awaiting manual approval |
+
+**Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30,
+**then** M23 → M24. M23/M24 were deferred by the owner on 2026-07-20: the game
+is not release-ready, so validating and packaging it would have measured the
+wrong build. Their existing tooling and packaging work is retained, not
+discarded — only their position in the sequence changed.
 
 ## M1 — Project foundation
 
@@ -737,13 +749,14 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ◐ in progress — tooling, diagnostics, lint/mass/report
-  suites, and the sim-justified early-ramp tuning (generation v4) are
-  implemented (247/247 tests; 22 deterministic captures, byte-identical
-  reruns, zero overflow); the milestone now waits on the owner-run
-  external playtests per `docs/playtest_protocol.md`, whose findings feed
-  the hardening pass before status can advance (owner-confirmed flow,
-  2026-07-20).
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M30.** The
+  tooling, diagnostics, lint/mass/report suites, and sim-justified early-ramp
+  tuning (generation v4) are already implemented and remain in the tree; they
+  are not re-work. What changed is sequencing: playtesting a build with
+  known-stale gameplay and placeholder-grade enemy art would produce findings
+  about problems M25–M30 already exist to fix. Re-audit this note against the
+  post-M30 checkout before starting — the capture scene list and balance
+  battery will both need extending for the new AI, content, and art.
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -773,14 +786,15 @@ milestone is not automatic authorization to start the next.
 
 ## M24 — Release packaging & final release validation
 
-- **Status:** ◐ in progress — packaging engineering implemented
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs last, after M23.**
+  The packaging engineering is already implemented and stays in the tree
   (presets with static CRT, version 0.9.0 plumbing, generated icon +
   VERSIONINFO, one-command stage/validate/zip via tools/package.ps1;
-  package smoke-tested, capture-inert, both suites 247/247; owner
-  decisions 2026-07-20: v0.9.0 until playtests pass, plain zip,
-  emblem-generated icon). Final validation — the owner's clean-machine
-  smoke test and full-matrix pass on the packaged build — is gated on
-  M23's completion per the parallel-flow decision.
+  package smoke-tested, capture-inert; owner decisions 2026-07-20: v0.9.0
+  until playtests pass, plain zip, emblem-generated icon). Only the final
+  validation and sign-off are deferred. Note that M25–M30 add assets and
+  content, so the packaging manifest coverage and package-size expectations
+  must be re-checked before sign-off.
 - **Goal:** produce and validate a reproducible, clean, polished Windows
   release candidate.
 - **Player-facing outcome:** the final packaged game.
@@ -803,3 +817,226 @@ milestone is not automatic authorization to start the next.
   pass; release-candidate approval.
 - **Milestone note:** `docs/milestone_notes/M24_release_packaging.md`
 
+## Polish program (M25–M30)
+
+Authorized by the owner on 2026-07-20 after a hands-on review found the game
+not release-ready. Ten reported defects grouped into six milestones, ordered so
+that no work is designed against a system that is about to change: presentation
+corrections first, then art identity, then the combat-rules change, then content
+built for the new rules, then economy. Strategic framing lives in
+`docs/completion_roadmap.md` §12; per-milestone scope lives in the notes.
+
+Owner decisions taken at planning time (2026-07-20):
+
+- **Battle-rules comparability:** `ScoreEntry` gains a `battleRulesVersion`
+  field alongside `generationVersion`. `generationVersion` covers what a seed
+  *generates*; it does not cover how a battle *resolves*, and M28 changes the
+  latter for every encounter. Entries written before the field read as v0.
+- **Skill delivery:** classes gain a level-based learnset. Expanding
+  `startingSkills` was rejected — it hands every skill over at character
+  creation, bloating the battle menu and adding no progression.
+- **Ambience volume:** routed to the existing SFX slider. No new Settings
+  field, no save migration.
+- **Numbering:** new work is M25–M30; M23/M24 keep their numbers and run last.
+  Execution order is recorded in the status table above.
+
+**Note authoring is deliberately just-in-time.** Only
+`M25_ui_corrections_battle_hud.md` exists so far; the notes for M26–M30 are
+authored when the owner authorizes each milestone. A detailed note written six
+milestones ahead describes a repository that will not exist by the time anyone
+reads it, and the workflow already requires re-auditing a note against the
+current checkout before implementing from it. The scope summaries below are the
+commitment; each note adds the detail once the ground under it is stable.
+
+## M25 — UI corrections & battle HUD
+
+- **Status:** ☑ complete (approved by the owner 2026-07-20, after manual
+  testing; committed. Scope was amended to add a font-replacement slice — see
+  the note's §A.1 and as-implemented record §N. 252/252 tests; 23/23 capture
+  scenes overflow-clean; Debug + Release both build clean.)
+- **Goal:** fix the readability defects that make the game look unfinished, and
+  replace raylib's default font with an original bitmap font, at zero
+  simulation risk.
+- **Player-facing outcome:** no overlapping title text; battle sprites no
+  longer buried under always-on name labels; MP legible as numbers; Guild
+  values sit next to the controls that change them.
+- **Primary deliverables:**
+  - Title screen: resolve the version/content-line overlap (version at
+    `(4, h-12)` size 8 vs content at `(6, h-16)` size 10) and gate the content
+    line out of Release builds via the existing `CRYSTAL_SHIPPING_BUILD` guard.
+  - Battle: remove the unconditional name label above every sprite
+    (`BattleState.cpp`); surface name plus basic target info (HP, and the stats
+    needed to judge a target) only for the **currently targeted** unit.
+  - Battle: current/max MP as numerals for party members, matching the existing
+    HP numeral treatment.
+  - Guild: Theme/Depth/Seed values rendered inline with their menu rows,
+    following the `SettingsState::volumeLabel` idiom (`MenuItem` carries no
+    value field; values are composed into the label on rebuild).
+- **Out of scope:** any battle-rule, targeting, or content change; new art.
+- **Dependencies:** none. Can start immediately.
+- **Acceptance criteria:** no text overlap at 426x240 in any capture scene; the
+  content line is absent from a Release build and non-overlapping in Debug;
+  target info appears only on the targeted unit; MP numerals present; Guild
+  values adjacent to their controls.
+- **Automated validation:** full suite; capture run must stay overflow-clean.
+- **Owner manual validation:** title screen legibility; battle readability with
+  a full party and five enemies; Guild adjust feel.
+- **Milestone note:** `docs/milestone_notes/M25_ui_corrections_battle_hud.md`
+
+## M26 — Enemy visual identity
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing; committed. (27 per-id battle sprites; presentation-lint guard
+  added and verified to fail on a removed row; 252/252 tests; 23/23 capture
+  scenes clean; generator byte-identical on rerun — see the note's §M)
+- **Goal:** give every enemy and boss its own silhouette.
+- **Context:** the code already resolves `enemy.<sourceId>.battle` and
+  `boss.<sourceId>.battle` before falling back to the tier sprite
+  (`BattleState.cpp`). The manifest ships only `enemy.normal.battle`,
+  `enemy.elite.battle`, and `boss.generic.battle`, so 23 enemies and 4 bosses
+  collapse onto three images. **This milestone needs no gameplay code.**
+- **Primary deliverables:** distinct battle sprites for all 16 normal enemies,
+  7 elites, and 4 bosses, produced by `tools/asset_gen/`; manifest rows;
+  `assets/credits.md` provenance; tier fallbacks retained for future ids that
+  do not yet have art.
+- **Definition-of-done guard:** extend `tests/test_presentation_lint.cpp` so a
+  content enemy/boss id without a matching manifest sprite **fails the suite**,
+  rather than silently degrading to the tier image.
+- **Out of scope:** new enemies (M29); overworld/dungeon markers; animation.
+- **Dependencies:** none, but should precede M29 so new content inherits the
+  established art language.
+- **Acceptance criteria:** every shipped enemy and boss id resolves to its own
+  sprite; lint fails on a deliberately removed row; generators rerun
+  byte-identical.
+- **Owner manual validation:** visual distinctness and tier readability at
+  426x240; art direction acceptance.
+- **Milestone note:** `docs/milestone_notes/M26_enemy_visual_identity.md`
+
+## M27 — Environment & ambience identity
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing; committed. (Six service backgrounds, redesigned per-place
+  ambience beds, ambience routed to the SFX slider, and a fix for the dungeon
+  ambience never switching per theme; 254/254 tests incl. a StateStack
+  ambience-transition regression guard; 23/23 capture scenes clean; generators
+  byte-identical bar the intended changes — see the note's §K)
+- **Goal:** make town services and dungeon themes feel like distinct places.
+- **Context:** all six town service states draw a single
+  `ClearBackground(solid)`. Per-theme ambience *is* correctly wired
+  (`DungeonState::themeAmbience` maps mine/forest/keep) — the beds simply sound
+  too alike, and ambience volume is routed through `musicVolume_`
+  (`AudioManager.cpp`), so the Music slider controls it and no SFX-side control
+  exists.
+- **Primary deliverables:** non-intrusive background art for Inn, Item Shop,
+  Equip Shop, Training Hall, Scoreboard, and Guild — legibility of overlaid
+  text is the binding constraint; genuinely differentiated ambience beds per
+  theme; ambience volume routed to `sfxVolume`.
+- **Out of scope:** town tilemap/layout changes; new music tracks; a dedicated
+  ambience slider (explicitly rejected at planning).
+- **Dependencies:** none.
+- **Acceptance criteria:** every service screen keeps all text within contrast
+  and overflow budgets over its new background; the three theme beds are
+  distinguishable in a blind listen; the SFX slider demonstrably moves ambience
+  and the Music slider no longer does.
+- **Owner manual validation:** background intrusiveness, audio distinctness and
+  mix balance.
+- **Milestone note:** `docs/milestone_notes/M27_environment_ambience.md`
+
+## M28 — Enmity, AI diversity & control skills
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing; committed. (Global threat, role-derived profiles, small
+  seeded tie-break, control skills in class kits; `ScoreEntry.battleRulesVersion`
+  = 1. 265/265 tests incl. 10 new `[enmity]` tests; difficulty curve still
+  clearable/monotonic; Debug + Release clean; capture 23/23. See the note's §L.)
+- **Highest-risk milestone in the project.** It changes the outcome of every
+  battle, invalidates the tuned balance battery, and makes prior scores
+  incomparable.
+- **Goal:** replace predictable targeting with a threat model the player can
+  read and influence but not trivially exploit.
+- **Context:** `chooseEnemyAction` (`Battle.cpp`) scans for the lowest-HP living
+  party member with a deterministic index tie-break. There is no enmity concept
+  anywhere in the codebase. The consequence the owner reported: playing a mage
+  efficiently turns the mage into the tank.
+- **Primary deliverables:**
+  - An enmity/threat model in the pure sim — threat accrued from damage dealt,
+    healing done, and skill use, decaying over time.
+  - Per-enemy behaviour profiles (e.g. aggressive / opportunist / tactician /
+    protector) so different enemies weigh threat, low HP, and role differently.
+  - Seeded per-battle variance: unpredictable to the player, **fully
+    deterministic** given seed and inputs — the simulator and live play must
+    still agree exactly, as they do today via shared `tickStatuses`.
+  - New enmity-control skills (taunt / redirect / fade) giving deliberate
+    aggro management.
+  - `ScoreEntry.battleRulesVersion` + scoreboard display/filtering; pre-field
+    entries read as v0.
+  - Re-tuned balance battery and updated `[economy-report]` / `[sim-report]`
+    expectations.
+- **Out of scope:** new enemies or bosses (M29); boss mechanic rewrites beyond
+  what enmity requires.
+- **Dependencies:** M25 (targeting UI must already show target info, since
+  enmity is unreadable without it).
+- **Acceptance criteria:** identical seed + identical inputs still reproduce a
+  battle exactly; simulator and live play agree; no single-character
+  degenerate-tank strategy survives; taunt/redirect measurably redirect
+  targeting; scoreboard distinguishes rules versions.
+- **Owner manual validation:** whether battles feel less predictable without
+  feeling arbitrary; whether enmity is legible in play; difficulty balance.
+- **Milestone note:** `docs/milestone_notes/M28_enmity_ai.md`
+
+## M29 — Content expansion & class learnsets
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing; committed. (Derive-from-level learnset, `learnset` schema
+  field, +12 skills, +6 normal/+2 elite enemies, +2 bosses, gen-version bump
+  4→5. 274/274 tests incl. 9 new `[learnset]` tests; capture 23/23; Debug +
+  Release clean; difficulty curve still clearable. See the note's §L.)
+- **Goal:** more enemies, more bosses, and per-class skill growth — designed for
+  the M28 enmity roles, shipped at M26 art standard.
+- **Context:** current content is 16 normal enemies, 7 elites, 4 bosses, 28
+  skills. Each class has exactly 3 `startingSkills` and there is **no
+  level-based skill learning** — skills reach the player only at creation or via
+  3 chest scrolls.
+- **Primary deliverables:** additional enemies and bosses with distinct enmity
+  behaviour profiles and their own sprites; a per-class learnset (new content
+  schema field) granting skills at set levels; new skills per class; content
+  validator and loader coverage for the learnset.
+- **Out of scope:** changing the enmity model itself (M28); economy changes
+  (M30).
+- **Dependencies:** M26 (art language) and M28 (behaviour profiles) — both must
+  be `complete (approved)` first, or this work is designed against systems that
+  then change under it.
+- **Acceptance criteria:** every new enemy/boss has its own sprite and a
+  declared behaviour profile; learnset validates and round-trips through saves;
+  no existing save breaks; battle menus stay within layout budgets as skill
+  counts grow.
+- **Owner manual validation:** whether the additions feel varied; whether skill
+  pacing across levels is satisfying; balance.
+- **Milestone note:** `docs/milestone_notes/M29_content_learnsets.md`
+
+## M30 — Economy: paid rest & rest-token event
+
+- **Status:** ◑ implemented, awaiting manual approval (owner authorized and
+  approved the §D design 2026-07-20 — level-scaled inn cost, `Party.restTokens`
+  optional save field, new `RoomEventKind::RestToken`, gen-version bump 5→6.
+  279/279 tests incl. 4 new `[rest]` tests + a sim-backed affordability guard;
+  capture 23/23; Debug + Release clean. See the note's §K.)
+- **Goal:** make resting a real economic decision, and reward exploration with
+  relief from it.
+- **Context:** `InnState` is a bare `healFull(context_.party)` with no cost.
+  `RoomEventKind` already supports Shrine, HealingSpring, Merchant,
+  EliteChallenge, and ScoreWager, so the quest-item event extends a proven
+  system rather than introducing one.
+- **Primary deliverables:** gold cost for the inn (scaling rule to be decided in
+  the note, with the owner); a new room event granting a one-time free-rest
+  item; inventory/save support for that item; UI showing cost and token state.
+- **Out of scope:** wider shop or reward-curve rebalancing.
+- **Dependencies:** M28 and M29 — gold income depends on battle outcomes and
+  content, so tuning a cost before those settle would be tuning against a
+  moving target.
+- **Acceptance criteria:** inn cost is affordable but meaningful across depths
+  per simulation; the token grants exactly one free rest and persists across
+  save/load; declining a paid rest is never a soft-lock.
+- **Owner manual validation:** whether the cost changes decision-making without
+  becoming a grind; event discovery rate.
+- **Milestone note:** `docs/milestone_notes/M30_economy_rest.md`

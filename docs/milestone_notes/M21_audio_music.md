@@ -171,8 +171,9 @@ families; the M14 proof chime was regenerated into the SFX family.
 stable contract: `Sfx` (15), `MusicTrack` (11), `AmbienceTrack` (4), role
 ids, the synth-fallback map (new roles fall to the nearest M8 loop),
 per-role SFX rate-limit intervals, and the fade curve. `AudioManager`
-gains an ambience stream channel (file-or-silence, follows the music
-volume slider), a 0.25 s crossfade on music changes (synth tier hard-cuts;
+gains an ambience stream channel (file-or-silence, followed the music
+volume slider **at M21 — rerouted to the SFX slider in M27**), a 0.25 s
+crossfade on music changes (synth tier hard-cuts;
 switching back mid-fade restarts clean), one-shot jingle handling
 (non-loop stream frees the channel when done), and SFX rate limiting
 (first play always free). Manifest schema untouched (v2; `ambience` was

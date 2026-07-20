@@ -48,10 +48,24 @@ Party of 4, chosen and renamable at new game from 6 classes:
 
 Characters gain XP/levels; player gains gold/items.
 
+**Class learnsets (M29).** Each class begins with a small starting skill set and
+**learns further skills at set levels** along a curve, so a character visibly
+grows and its battle menu widens with progression. Known skills are *derived*
+from the class and the character's level (not stored), so leveling mid-run
+immediately unlocks the new options and no save is ever invalidated. By the
+level cap each class commands roughly six to seven skills.
+
 ## 5. Town hub (functional, not huge)
 
-Inn/heal · Item shop · Equipment shop · Guild/dungeon selection · Training
+Inn/rest · Item shop · Equipment shop · Guild/dungeon selection · Training
 hall/class info · Score board · Save/load point · minimal NPC dialogue.
+
+**The inn is a paid rest (M30).** A full HP/MP restore costs gold that scales
+with the highest party level (so it stays a real decision as income grows), or
+is free by spending a **rest token** earned from a dungeon event. The inn shows
+the cost and tokens held; declining is **never a soft-lock** — HP/MP persist,
+battles still pay gold, and the token is a relief valve, so a wounded, broke
+party can always earn its way back to health.
 
 ## 6. Dungeons
 
@@ -72,12 +86,13 @@ boss minions. Past depth 5 enemies also grow stronger (+6% stats per depth,
 capped +90%) so deep dungeons keep escalating; danger labels are computed
 from the scaled stats, so they never lie.
 
-**Room events (M20).** Dead-end event rooms offer real decisions whose full
-trade-off is shown **before** confirming: a shrine (gold for healing), a
+**Room events (M20, +M30).** Dead-end event rooms offer real decisions whose
+full trade-off is shown **before** confirming: a shrine (gold for healing), a
 one-use healing spring, a wandering merchant (one item at dungeon markup),
-an elite challenge (double danger score, no treasure), and an omen's score
+an elite challenge (double danger score, no treasure), an omen's score
 wager (+150 if you finish with no deaths, −100 if anyone falls — shown in
-the score breakdown). Some unguarded chests are visibly **trapped**: extra
+the score breakdown), and a **rest camp (M30)** that grants a free-rest token
+redeemable at the inn. Some unguarded chests are visibly **trapped**: extra
 gold, but claiming wounds the whole party.
 
 **Bosses are mechanically distinct (M20).** Each archetype has one
@@ -112,6 +127,22 @@ enemy team 1–5. Commands: **Attack, Skill/Magic, Item, Guard, Escape**. KO and
 revive exist; game over if all party KO. **Every** encounter (incl. bosses) is
 escapable. Escaping a normal battle forfeits that guarded chest/reward; escaping
 the boss or leaving the dungeon gives **0 dungeon score**.
+
+**Enmity & enemy targeting (M28).** Enemies no longer always pile onto the
+lowest-HP party member (which perversely made an efficiently-played mage the
+tank). Each party member accrues **threat** from the damage and healing they do;
+threat decays each round. Every enemy has a **targeting profile derived from its
+role** — *aggressive* chases threat, *opportunist* goes for the kill (low HP),
+*tactician* hunts the backline caster, *protector* peels for whoever most
+threatens its allies, *spread* prefers the healthiest for damage-over-time —
+plus a small **seeded tie-break** so targeting is readable but not perfectly
+predictable (fully deterministic and reproducible per encounter; the simulator
+and live play agree exactly). Players influence aggro with three **control
+skills**: **Taunt** (Guardian) forces foes onto the caster, **Fade** (Mage)
+sheds the caster's threat, and **Redirect** (Knight) makes the caster take
+single hits aimed at allies until its next turn. Because this changes how every
+battle resolves, scoreboard entries carry a **battle-rules version** and pre-M28
+runs are flagged as played under older rules (never silently ranked as equal).
 
 **Presentation (M18)** never changes results — it stages how the computed
 outcome is shown: a brief lunge, an impact beat (hit flash, small shake,
@@ -164,9 +195,12 @@ unique mechanic, escapable (but escaping fails the score). Archetypes:
 
 XP/levels, gold, shops/upgrades in town. Abandoned/failed dungeon → 0 dungeon
 score. Successful escape → keep basic XP/gold but no dungeon score. Death →
-return to town, 0 dungeon score, partial gold loss. Save/load required (JSON,
-versioned). Any dungeon suspend-save (if added) continues the same run and must
-not enable save-scumming.
+return to town, 0 dungeon score, partial gold loss. **Recovery is a paid loop
+(M30):** healing costs gold at the inn (or a free-rest token), so gold now has a
+recovery sink and attrition matters — but battles pay gold even without resting,
+so a broke party can always earn its way back and is never soft-locked.
+Save/load required (JSON, versioned). Any dungeon suspend-save (if added)
+continues the same run and must not enable save-scumming.
 
 ## 12b. Onboarding & accessibility (M22)
 
@@ -190,9 +224,11 @@ These are engineering bars, not formal WCAG claims.
 
 ## 13. First-complete-version content target
 
-6 classes · 12–18 enemy types · 6 elites · 3 boss archetypes · 30+ items/equipment
-· 8–12 skills/spells per broad category · 3 themes (**Ruined Keep, Crystal Mine,
-Hollow Forest**) · infinite seeded dungeons with depth scaling.
+6 classes (each with a level-based learnset) · 22 normal enemy types · 9 elites ·
+6 bosses across 4 archetypes · 30+ items/equipment · 43 skills/spells across the
+broad categories · 3 themes (**Ruined Keep, Crystal Mine, Hollow Forest**) ·
+infinite seeded dungeons with depth scaling. (Counts as of M29; the enemy/boss
+roster and skill list grow with content milestones.)
 
 ## 14. Open design questions (decide with human when reached)
 

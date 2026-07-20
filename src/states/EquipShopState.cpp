@@ -326,7 +326,8 @@ void EquipShopState::handleInput(const Input& input) {
 void EquipShopState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 24, 255});
+    ui::drawSceneBackground(context_.resources, "bg.equip_shop", Color{16, 16, 24, 255},
+                            context_.virtualWidth, context_.virtualHeight);
     ui::drawTextCentered("Equipment Shop", w / 2, 14, style::kFontScreenTitle, style::palette().text);
     ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 14, 14, style::kFontMenu,
                       style::palette().gold);
@@ -339,7 +340,7 @@ void EquipShopState::render() {
         case Phase::EquipSlot: hint = "Choose a slot."; break;
         case Phase::EquipItem: hint = "Choose an item to equip."; break;
     }
-    DrawText(hint, 20, 36, style::kFontBody, style::palette().textDim);
+    ui::drawText(hint, 20, 36, style::kFontBody, style::palette().textDim);
     if (!message_.empty()) {
         ui::drawTextFitted(message_, 20, 50, w - 40, style::kFontBody, style::palette().success,
                            "equipshop.message");

@@ -1,6 +1,7 @@
 # Crystal Dungeons — deterministic audio generator (M15 slice music; M21 full
 # soundscape). Synthesizes all music loops and jingles (square lead + triangle
-# bass, art_bible §9), the four ambience beds (shaped noise), and the fifteen
+# bass, art_bible §9), the four ambience beds (layered: noise bed + drones +
+# recurring events, each place with its own identity), and the fifteen
 # SFX roles as 22050 Hz 16-bit mono WAVs under assets/audio/. Fully original;
 # reruns are byte-identical.
 
@@ -223,54 +224,118 @@ WriteWav 'result.wav' @($lead, $bass) $total
 
 # ============================ M21 ambience ============================
 
-# Shaped-noise beds: xorshift white noise through a one-pole lowpass, with a
-# whole-cycle amplitude LFO (seam-consistent) and optional deterministic sine
-# chirps (birds/drips), normalized quiet.
-function WriteAmbience([string]$name, [double]$seconds, [double]$lp, [double]$lfoCycles,
-                       [double]$lfoDepth, [object[]]$chirps, [uint32]$seed) {
-  $total = [int]($rate * $seconds)
-  $mix = New-Object double[] $total
-  $state = $seed; $y = 0.0
+# Layered ambience (M27): each bed is defined by its own recognizable elements
+# (a distinct drone character plus recurring, above-the-bed events), not just a
+# filtered-noise variant, so the four places are clearly different to the ear.
+
+# Filtered xorshift-noise bed. hpAmt>0 subtracts a slow component (brighter -
+# wind/rustle); lfo is a whole-cycle amplitude swell; fast is a quicker flutter
+# (leaf rustle). Returns a float[] scaled to $level.
+function AmbNoise([int]$total, [uint32]$seed, [double]$lp, [double]$hpAmt,
+                  [double]$lfoCyc, [double]$lfoDep, [double]$fastCyc, [double]$fastDep, [double]$level) {
+  $out = New-Object double[] $total
+  $state = $seed; $y = 0.0; $ys = 0.0
   for ($i = 0; $i -lt $total; $i++) {
     $state = $state -bxor ($state -shl 13); $state = $state -band 0xFFFFFFFF
     $state = $state -bxor ($state -shr 17)
     $state = $state -bxor ($state -shl 5);  $state = $state -band 0xFFFFFFFF
     $x = (($state -band 0xFFFF) / 32768.0) - 1.0
     $y += $lp * ($x - $y)
+    $v = $y
+    if ($hpAmt -gt 0.0) { $ys += 0.02 * ($y - $ys); $v = $y - $hpAmt * $ys }
     $t = $i / [double]$total
-    $lfo = 1.0 - $lfoDepth * 0.5 + $lfoDepth * 0.5 * [math]::Sin(2.0 * [math]::PI * $lfoCycles * $t)
-    $mix[$i] = $y * $lfo
+    $env = 1.0 - $lfoDep * 0.5 + $lfoDep * 0.5 * [math]::Sin(2.0 * [math]::PI * $lfoCyc * $t)
+    if ($fastDep -gt 0.0) { $env *= (1.0 - $fastDep * 0.5 + $fastDep * 0.5 * [math]::Sin(2.0 * [math]::PI * $fastCyc * $t)) }
+    $out[$i] = $v * $env * $level
   }
-  foreach ($c in $chirps) {
-    $start = [int]($rate * $c[0]); $f0 = $c[1]; $f1 = $c[2]
-    $len = [int]($rate * $c[3]); $amp = $c[4]
-    for ($i = 0; $i -lt $len -and ($start + $i) -lt $total; $i++) {
-      $frac = $i / [double]$len
-      $f = $f0 + ($f1 - $f0) * $frac
-      $env = [math]::Exp(-4.0 * $frac)
-      $mix[$start + $i] += $amp * $env * [math]::Sin(2.0 * [math]::PI * $f * $i / $rate)
-    }
+  return , $out  # comma keeps it a Double[]; a bare return unrolls to Object[],
+                 # which the [double[]] event params would then copy (losing the
+                 # in-place drone/bird/drip/hoot mixing).
+}
+
+# Seam-consistent drone (frequency snapped to whole cycles over the loop).
+function AmbDrone([double[]]$mix, [double]$freq, [double]$amp, [string]$wave) {
+  $total = $mix.Length; $seconds = $total / [double]$rate
+  $cyc = [math]::Max(1, [math]::Round($freq * $seconds)); $f = $cyc / $seconds
+  for ($i = 0; $i -lt $total; $i++) {
+    $ph = ($f * $i / $rate) % 1.0
+    $v = if ($wave -eq 'tri') { 4.0 * [math]::Abs($ph - 0.5) - 1.0 } else { [math]::Sin(2.0 * [math]::PI * $ph) }
+    $mix[$i] += $amp * $v
   }
-  SaveWav (Join-Path $ambDir $name) $mix 0.5
+}
+
+# One gliding tone with soft attack + exponential decay and a half-strength
+# octave, mixed in at $sec. The building block for the event synths below.
+function AmbTone([double[]]$mix, [double]$sec, [double]$f0, [double]$f1, [double]$dur,
+                 [double]$amp, [double]$atk, [double]$harm) {
+  $total = $mix.Length; $start = [int]($rate * $sec); $len = [int]($rate * $dur)
+  for ($i = 0; $i -lt $len -and ($start + $i) -lt $total -and ($start + $i) -ge 0; $i++) {
+    $frac = $i / [double]$len
+    $f = $f0 + ($f1 - $f0) * $frac
+    $a = if ($frac -lt $atk) { $frac / $atk } else { [math]::Exp(-3.5 * ($frac - $atk)) }
+    $ph = $f * $i / $rate
+    $s = [math]::Sin(2.0 * [math]::PI * $ph) + $harm * [math]::Sin(4.0 * [math]::PI * $ph)
+    $mix[$start + $i] += $amp * $a * $s
+  }
+}
+
+# Bright three-note bird whistle (town).
+function AmbBird([double[]]$mix, [double]$sec, [double]$amp, [double]$b) {
+  AmbTone $mix  $sec           $b          ($b * 0.92) 0.09  $amp        0.15 0.3
+  AmbTone $mix ($sec + 0.12)  ($b * 1.18) ($b * 1.05) 0.08 ($amp * 0.9) 0.12 0.3
+  AmbTone $mix ($sec + 0.22)  ($b * 0.86) ($b * 0.98) 0.10 ($amp * 0.8) 0.12 0.25
+}
+
+# Water drip: a quick high plink and a fainter, lower echo tap (mine).
+function AmbDrip([double[]]$mix, [double]$sec, [double]$amp) {
+  AmbTone $mix  $sec          2300 1500 0.06  $amp         0.02 0.4
+  AmbTone $mix ($sec + 0.11)  1900 1250 0.05 ($amp * 0.35) 0.02 0.3
+}
+
+# Low two-note owl hoot (forest).
+function AmbHoot([double[]]$mix, [double]$sec, [double]$amp) {
+  AmbTone $mix  $sec          360 340 0.18  $amp        0.25 0.2
+  AmbTone $mix ($sec + 0.30)  330 315 0.22 ($amp * 0.9) 0.30 0.2
 }
 
 Write-Output 'Generating ambience beds...'
-# Town: light breeze + two bright bird chirps.
-WriteAmbience 'town.wav' 10.0 0.12 3 0.4 @(
-  @(2.8, 2200, 1800, 0.12, 0.5), @(6.3, 1900, 2400, 0.10, 0.4)
-) 0x21B2C3D4
-# Ruined Keep: hollow low wind, slow swell.
-WriteAmbience 'keep.wav' 12.0 0.03 2 0.6 @() 0x3EEFCAFE
-# Crystal Mine: faint hum with sparse echoing drips.
-WriteAmbience 'mine.wav' 12.0 0.05 2 0.3 @(
-  @(1.7, 1400, 900, 0.09, 0.7), @(1.9, 1400, 900, 0.07, 0.3),
-  @(4.9, 1600, 1000, 0.09, 0.6), @(5.1, 1600, 1000, 0.07, 0.25),
-  @(8.6, 1300, 850, 0.09, 0.65), @(8.8, 1300, 850, 0.07, 0.28)
-) 0x0DDBA11
-# Hollow Forest: leaf rustle with low bird calls.
-WriteAmbience 'forest.wav' 10.0 0.18 5 0.5 @(
-  @(3.4, 1400, 1100, 0.14, 0.35), @(7.2, 1250, 1500, 0.12, 0.3)
-) 0x70E57000
+
+# TOWN - airy daytime settlement: a soft bright breeze, defined by frequent
+# melodic bird whistles that sit clearly above the bed.
+$tt = [int]($rate * 10.0)
+$town = AmbNoise $tt 0x21B2C3D4 0.16 0.7 3 0.4 0 0 0.055
+foreach ($s in 1.3, 3.1, 4.9, 6.5, 8.2) { AmbBird $town $s 0.7 (2200 + 260 * [math]::Sin($s * 1.7)) }
+SaveWav (Join-Path $ambDir 'town.wav') $town 0.5
+
+# RUINED KEEP - cavernous ruin: a loud, hollow, slowly beating low drone
+# (audible fundamental + a detuned partner + sub-octave) with distant moans.
+$kt = [int]($rate * 12.0)
+$keep = AmbNoise $kt 0x3EEFCAFE 0.02 0.0 1 0.7 0 0 0.13
+AmbDrone $keep 98.0 0.34 'sine'
+AmbDrone $keep 99.0 0.30 'sine'
+AmbDrone $keep 49.0 0.20 'sine'
+AmbTone  $keep 4.5 150 70 2.6 0.26 0.3 0.15
+AmbTone  $keep 9.2 135 62 2.4 0.22 0.3 0.15
+SaveWav (Join-Path $ambDir 'keep.wav') $keep 0.5
+
+# CRYSTAL MINE - enclosed crystal cavern: a steady metallic hum (fundamental +
+# octave + bright partial) under regular, clearly audible echoing water drips.
+$mt = [int]($rate * 12.0)
+$mine = AmbNoise $mt 0x0DDBA11 0.05 0.0 2 0.2 0 0 0.045
+AmbDrone $mine 146.8 0.11 'sine'
+AmbDrone $mine 293.7 0.06 'sine'
+AmbDrone $mine 440.0 0.03 'tri'
+foreach ($s in 1.2, 2.7, 4.1, 5.6, 7.0, 8.4, 9.9, 11.3) { AmbDrip $mine $s 0.75 }
+SaveWav (Join-Path $ambDir 'mine.wav') $mine 0.5
+
+# HOLLOW FOREST - living woods: a busy, bright, fluttering leaf rustle with low
+# owl hoots and the odd high insect tick.
+$ft = [int]($rate * 10.0)
+$forest = AmbNoise $ft 0x70E57000 0.24 0.85 6 0.45 47 0.5 0.13
+foreach ($s in 2.1, 5.4, 8.3) { AmbHoot $forest $s 0.6 }
+AmbTone $forest 3.9 3200 3600 0.05 0.28 0.05 0.2
+AmbTone $forest 7.1 3400 3000 0.05 0.24 0.05 0.2
+SaveWav (Join-Path $ambDir 'forest.wav') $forest 0.5
 
 # ============================ M21 SFX ============================
 

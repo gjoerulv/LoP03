@@ -1,3 +1,15 @@
+# Current packaged-build release validation
+
+The older rows below are retained as historical baseline evidence and are **not** a final M24 pass. Record the current packaged-build run using `docs/release_hardening_manual_checklist.md`.
+
+- Build SHA: _not run_
+- Package version: _not run_
+- Tester/date: _not run_
+- Display/input cases: _not run_
+- Final result: _not run_
+
+---
+
 # Manual Test Matrix (M11 baseline)
 
 > Companion to `docs/presentation_audit.md`. Status legend: **pass** /
@@ -6,9 +18,47 @@
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M27 update:** environment & ambience identity. Each of the six town
+> services (Inn, Item Shop, Equip Shop, Training Hall, Scoreboard, Guild) now
+> draws its own full-screen background instead of a flat fill — verify at W1–W6
+> that every one reads as a distinct place **and every line of text stays
+> readable over it** (the binding constraint); watch for any `[ui-overflow]`.
+> Ambience: a blind listen should distinguish the town / Ruined Keep / Crystal
+> Mine / Hollow Forest beds — each has its own signature: **town** a quiet
+> breeze with frequent high bird whistles; **keep** a loud, hollow, beating low
+> drone; **mine** a metallic hum under regular echoing water drips; **forest** a
+> busy bright leaf rustle with low owl hoots. **The bed must switch per theme:**
+> enter Ruined Keep / Crystal Mine / Hollow Forest dungeons from the Guild and
+> confirm the ambience changes to that theme's bed (this was broken — the town
+> bed used to play in every dungeon), and returning to town switches back.
+> **Slider reroute (supersedes the M21-update note):** the
+> **SFX** slider now moves ambience volume and the **Music** slider no longer
+> does (music still follows Music) — check both in a dungeon. Missing-background
+> drill: delete a `assets/textures/backgrounds/*.png` from the build → that
+> service falls back to its old flat fill, no crash.
+>
+> **M25 update:** UI corrections + original bitmap font. Text now renders
+> through a generated bitmap font (`font.ui.{small,main,title}`), not raylib's
+> default — do a legibility pass across **every** screen at W1–W6 and judge the
+> typography (owner art call); it should read as one clean pixel typeface, crisp
+> at the small HUD sizes. The four reported defects (verify by eye; the
+> `--capture` run is overflow-clean at 23/23 scenes incl. the new
+> `23_battle_targeting`): (1) **Title** — the version stamp and the
+> `Content: …` diagnostic sit on separate rows with no overlap in Debug, and
+> the content line is **absent from a Release build** (`cmake --preset
+> msvc-release`) while the version stamp remains; (2) **Battle** — no name is
+> painted over any sprite; selecting a target shows a target-info panel (name,
+> HP/MP, ATK/MAG/DEF/SPD, statuses) for the targeted unit only, not colliding
+> with the status lines; check it with a full party vs a 5-enemy team; (3)
+> **Battle MP** — every party member shows `HP c/m` and `MP c/m` numerals
+> (check at full, partial, and zero MP); (4) **Guild** — Theme and Depth values
+> render inline on their menu rows and update as you press Left/Right; the seed
+> is a separate readout. Missing-font drill: delete `assets/fonts/*.fnt` from
+> the build's assets → text falls back to the default font, no crash.
+>
 > **M23 update:** validation + playtesting. The capture set
 > (`build-msvc\CrystalDungeons.exe --capture docs\screenshots\m23_captures`)
-> replaces ad-hoc screenshots: 22 deterministic native-res scenes,
+> replaces ad-hoc screenshots: 23 deterministic native-res scenes,
 > self-checking for text overflow — review it for visual regressions after
 > any UI change. External playtests follow `docs/playtest_protocol.md`
 > (six profiles, uncoached, observation sheets); their findings are the
@@ -66,6 +116,22 @@
 > the telegraphed mechanic visibly happens (rage announcement, empowered
 > magic after minion kills, one rally below half HP, doubled opening blow).
 > Captures: `docs/screenshots/m20_events/`.
+>
+> **M30 update:** the **Inn is now a paid rest** (row 12). Check: the cost is
+> shown and scales up as the party levels; resting deducts gold and fully
+> restores HP/MP; "Rest" is disabled with a clear reason when you cannot afford
+> it or are already rested (never a dead end); leaving with Back is fine. Find
+> the new **rest-camp event** in a dungeon (campfire marker "R"), confirm it
+> grants a **free-rest token**, return to town, and spend the token at the inn
+> for a free full rest (the token row appears only when one is held). Load a
+> **pre-M30 save** and confirm it works with zero tokens.
+>
+> **M29 update:** classes now **learn skills as they level**. Check the battle
+> **Skill** menu gains entries at the learn levels (e.g. Knight → Shield Bash 4,
+> Whirlwind 10, Execute 16); the new enemies/bosses (Corpse Hound, Gloom Priest,
+> Rune Sentry, Bone Colossus, Void Weaver, The Deep King, The Blight Matron,
+> …) read clearly at native resolution and their roles behave (healers heal,
+> disruptors debuff-and-blast, buffers buff their side).
 >
 > **M19 update:** the scoreboard gains an **Lv** column (party level at
 > completion; "-" for pre-M19 runs) and a two-line legend stating the

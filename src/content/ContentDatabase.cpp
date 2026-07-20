@@ -1,5 +1,7 @@
 #include "content/ContentDatabase.hpp"
 
+#include <algorithm>
+
 namespace cd::content {
 
 namespace {
@@ -55,6 +57,28 @@ void ContentDatabase::clear() {
     items_.clear();
     bosses_.clear();
     themes_.clear();
+}
+
+std::vector<std::string> knownSkillsFor(const ClassDef& cls, int level) {
+    const int lv = level < 1 ? 1 : level;
+    std::vector<std::string> result = cls.startingSkills;  // level-1 set, order kept
+
+    // Learnset entries available at this level, stably ordered by ascending
+    // level (ties keep declaration order via stable_sort).
+    std::vector<const LearnEntry*> available;
+    for (const LearnEntry& e : cls.learnset) {
+        if (e.level <= lv) {
+            available.push_back(&e);
+        }
+    }
+    std::stable_sort(available.begin(), available.end(),
+                     [](const LearnEntry* a, const LearnEntry* b) { return a->level < b->level; });
+    for (const LearnEntry* e : available) {
+        if (std::find(result.begin(), result.end(), e->skill) == result.end()) {
+            result.push_back(e->skill);
+        }
+    }
+    return result;
 }
 
 }  // namespace cd::content

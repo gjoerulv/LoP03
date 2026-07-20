@@ -203,6 +203,9 @@ int run(const char* outDir) {
         const fs::path assetsRoot = bundledDir("assets");
         resources.setCatalog(&manifest, assetsRoot);
         resources.reload();
+        // Validate overflow against the real bitmap font (M25), not the default.
+        ui::setFonts(&resources.font("font.ui.small"), &resources.font("font.ui.main"),
+                     &resources.font("font.ui.title"));
 
         Party party = makeCaptureParty(content);
         save::SaveSystem saves(content, scratch / "saves");
@@ -239,6 +242,7 @@ int run(const char* outDir) {
             top.seed = 18446744073709551615ull;  // widest seed
             top.generationVersion = 4;
             top.partyLevel = 50;
+            top.battleRulesVersion = 1;
             scoreboard.add(top);
             score::ScoreEntry legacy;
             legacy.score = 100;
@@ -256,6 +260,7 @@ int run(const char* outDir) {
                 mid.seed = 1000u + static_cast<std::uint64_t>(i);
                 mid.generationVersion = 4;
                 mid.partyLevel = 5 + i;
+                mid.battleRulesVersion = 1;
                 scoreboard.add(mid);
             }
         }
@@ -296,6 +301,7 @@ int run(const char* outDir) {
              }},
             {"07_inn",
              [](StateStack& s, AppContext& c) {
+                 c.party.restTokens = 1;  // exercise the token row for overflow (M30)
                  s.pushState(std::make_unique<TownState>(s, c));
                  s.pushState(std::make_unique<InnState>(s, c));
              }},
@@ -350,6 +356,18 @@ int run(const char* outDir) {
                  battle::Battle b =
                      battle::buildBattle(c.party, makeBossTeam(c.content), c.content);
                  s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot));
+             }},
+            {"23_battle_targeting",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // Drive the battle into target selection so the M25 target-info
+                 // panel (name, vitals, judgment stats, statuses) is covered by
+                 // the overflow check with maximal content.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 applyCaptureStatuses(b);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
              }},
             {"19_result",
              [](StateStack& s, AppContext& c) {

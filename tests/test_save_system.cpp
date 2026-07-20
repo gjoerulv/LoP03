@@ -183,6 +183,7 @@ TEST_CASE("save: inventory round-trips; missing inventory loads empty", "[save]"
     Party p;
     p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan"));
     p.inventory.add("potion", 4);
+    p.restTokens = 3;  // M30
 
     content::LoadReport rep;
     REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
@@ -191,8 +192,10 @@ TEST_CASE("save: inventory round-trips; missing inventory loads empty", "[save]"
     content::LoadReport rep2;
     REQUIRE(saves.load(save::SaveSlot::Manual1, loaded, rep2));
     REQUIRE(loaded.inventory.count("potion") == 4);
+    REQUIRE(loaded.restTokens == 3);  // M30 round-trips
 
-    // Backward compatibility: a save with no inventory field still loads (empty).
+    // Backward compatibility: a save with no inventory/restTokens field still
+    // loads (empty inventory, zero tokens).
     writeFile(saves.slotPath(save::SaveSlot::Manual2),
               R"({"version":1,"gold":0,"party":[
                  {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4}]})");
@@ -200,6 +203,7 @@ TEST_CASE("save: inventory round-trips; missing inventory loads empty", "[save]"
     content::LoadReport rep3;
     REQUIRE(saves.load(save::SaveSlot::Manual2, old, rep3));
     REQUIRE(old.inventory.empty());
+    REQUIRE(old.restTokens == 0);  // M30 absent -> 0
 
     fs::remove_all(dir);
 }

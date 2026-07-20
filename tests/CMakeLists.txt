@@ -15,8 +15,12 @@ add_executable(crystal_tests
     test_accessibility.cpp
     test_presentation_lint.cpp
     test_paths.cpp
+    test_atomic_file.cpp
+    test_fatal_dialog.cpp
     test_content_validation.cpp
     test_content_loader.cpp
+    test_learnset.cpp
+    test_rest.cpp
     test_menu.cpp
     test_text_input.cpp
     test_text_layout.cpp
@@ -28,6 +32,7 @@ add_executable(crystal_tests
     test_room_layout.cpp
     test_inventory.cpp
     test_battle.cpp
+    test_enmity.cpp
     test_battle_sequencer.cpp
     test_boss_mechanics.cpp
     test_danger.cpp

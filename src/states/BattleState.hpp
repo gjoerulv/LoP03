@@ -27,6 +27,13 @@ public:
     void update(float dt) override;
     void render() override;
 
+#ifdef CRYSTAL_CAPTURE
+    // Capture-only (M25): force the target-selection phase (first party member
+    // attacking the first living enemy) so the target-info panel renders
+    // deterministically for the overflow check. Not present in shipping builds.
+    void captureEnterTargeting();
+#endif
+
 private:
     enum class Phase { Intro, Command, ChooseTarget, ChooseSkill, ChooseItem, Resolve, Done };
     enum class PendingKind { Attack, Skill, Item };

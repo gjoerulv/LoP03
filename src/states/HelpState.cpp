@@ -48,7 +48,9 @@ void HelpState::render() {
 
     const int col1W = kCol2X - kCol1X - 8;
     const int col2W = kCol3X - kCol2X - 8;
-    const int col3W = w - kCol3X - style::kSafeMargin - 4;
+    // Rightmost column: take the full remaining width to the safe margin so
+    // the widest gamepad label ("D-Pad Right or Stick") fits the M25 font.
+    const int col3W = w - kCol3X - style::kSafeMargin;
     const InputMap& map = context_.input.map();
 
     int y = 42;
