@@ -18,6 +18,7 @@ struct Party {
     std::vector<Character> members;
     Inventory inventory;
     int gold = 0;
+    int restTokens = 0;  // free-rest tokens from dungeon events (M30)
 
     bool empty() const { return members.empty(); }
     std::size_t size() const { return members.size(); }
@@ -41,6 +42,14 @@ Character createCharacter(const content::ClassDef& cls, std::string name, int le
 
 // Restores every member to full HP/MP.
 void healFull(Party& party);
+
+// Paid rest (M30). The inn cost scales with the highest party level so a full
+// rest stays a real decision as income grows: kBase + kPerLevel*(level-1),
+// clamped to [kBase, kMax]. Constants live here for balance tuning.
+inline constexpr int kRestCostBase = 20;
+inline constexpr int kRestCostPerLevel = 12;
+inline constexpr int kRestCostMax = 500;
+int restCost(const Party& party);
 
 // Highest level among living/all members (0 if empty) — used for save summaries.
 int highestLevel(const Party& party);

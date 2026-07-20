@@ -36,8 +36,8 @@
 | 26 | Enemy visual identity | ☑ complete (approved) |
 | 27 | Environment & ambience identity | ☑ complete (approved) |
 | 28 | Enmity, AI diversity & control skills | ☑ complete (approved) |
-| 29 | Content expansion & class learnsets | ◑ implemented, awaiting manual approval |
-| 30 | Economy: paid rest & rest-token event | ☐ planned |
+| 29 | Content expansion & class learnsets | ☑ complete (approved) |
+| 30 | Economy: paid rest & rest-token event | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30,
 **then** M23 → M24. M23/M24 were deferred by the owner on 2026-07-20: the game
@@ -986,11 +986,11 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M29 — Content expansion & class learnsets
 
-- **Status:** ◑ implemented, awaiting manual approval (owner authorized and
-  approved the §D design 2026-07-20 — derive-from-level learnset, `learnset`
-  schema field, +12 skills, +6 normal/+2 elite enemies, +2 bosses, gen-version
-  bump 4→5. 274/274 tests incl. 9 new `[learnset]` tests; capture 23/23;
-  Debug + Release clean; difficulty curve still clearable. See the note's §L.)
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing; committed. (Derive-from-level learnset, `learnset` schema
+  field, +12 skills, +6 normal/+2 elite enemies, +2 bosses, gen-version bump
+  4→5. 274/274 tests incl. 9 new `[learnset]` tests; capture 23/23; Debug +
+  Release clean; difficulty curve still clearable. See the note's §L.)
 - **Goal:** more enemies, more bosses, and per-class skill growth — designed for
   the M28 enmity roles, shipped at M26 art standard.
 - **Context:** current content is 16 normal enemies, 7 elites, 4 bosses, 28
@@ -1016,7 +1016,11 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M30 — Economy: paid rest & rest-token event
 
-- **Status:** planned
+- **Status:** ◑ implemented, awaiting manual approval (owner authorized and
+  approved the §D design 2026-07-20 — level-scaled inn cost, `Party.restTokens`
+  optional save field, new `RoomEventKind::RestToken`, gen-version bump 5→6.
+  279/279 tests incl. 4 new `[rest]` tests + a sim-backed affordability guard;
+  capture 23/23; Debug + Release clean. See the note's §K.)
 - **Goal:** make resting a real economic decision, and reward exploration with
   relief from it.
 - **Context:** `InnState` is a bare `healFull(context_.party)` with no cost.

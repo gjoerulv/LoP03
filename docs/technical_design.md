@@ -183,12 +183,14 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = 5 (M29 enlarged the theme enemy/boss pools, so a
-  seed spawns a different roster; owner-approved bump).
+  `kGenerationVersion` = 6 (M29 enlarged the theme enemy/boss pools; M30 added
+  the RestToken event to the pool — each changes a seed's roster/events;
+  owner-approved bumps).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
-  (shrine/spring/merchant/challenge/wager) realized as an `EventChamber`
-  layout archetype with a solid event anchor; unguarded chests may be
+  (shrine/spring/merchant/challenge/wager/rest-token) realized as an
+  `EventChamber` layout archetype with a solid event anchor; unguarded chests
+  may be
   `trapped` (extra gold, party wounds on claim). `DungeonState` shows each
   event's full trade-off in the footer before Confirm and applies exactly
   what it stated; elite challenges run through the normal battle flow with
@@ -435,6 +437,13 @@ Enums (string values): `Element`, `SkillCategory`, `SkillTarget`, `EnemyTag`,
 `AppContext` now also carries `save::SaveSystem& saves` and the active
 `Party& party`.
 
+**Paid rest (M30).** `InnState` is a menu (no auto-heal): a paid rest costs
+`restCost(party)` = `kRestCostBase + kRestCostPerLevel*(highestLevel-1)` clamped
+to `[kRestCostBase, kRestCostMax]` (pure, in `game/Party`), disabled when
+unaffordable or already rested; a free rest spends one `Party.restTokens`.
+Tokens are granted by the `RoomEventKind::RestToken` dungeon event and persist
+via an optional `restTokens` save field (no `kSaveVersion` bump; absent = 0).
+
 ### Town (walkable)
 
 A fixed single-screen **26×15** tilemap (16px tiles) built by `town::buildTown()`.
@@ -507,7 +516,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 5; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 6; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).

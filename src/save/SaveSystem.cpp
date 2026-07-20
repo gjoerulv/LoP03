@@ -54,6 +54,7 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   Json root;
   root["version"] = kSaveVersion;
   root["gold"] = party.gold;
+  root["restTokens"] = party.restTokens;  // M30 (optional; old saves read 0)
 
   Json members = Json::array();
   for (const Character& c : party.members) {
@@ -118,6 +119,7 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
 
   Party loaded;
   loaded.gold = rootReader.optIntMin("gold", 0, 0);
+  loaded.restTokens = rootReader.optIntMin("restTokens", 0, 0);  // M30
 
   auto partyIt = root.find("party");
   if (partyIt == root.end() || !partyIt->is_array()) {

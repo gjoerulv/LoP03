@@ -200,6 +200,35 @@ TEST_CASE("economy: training is a real sink, battles a real income", "[economy]"
     REQUIRE(s.xp >= xpToNext(1));
 }
 
+TEST_CASE("economy: a paid rest is affordable but not trivial across depths", "[economy]") {
+    const content::ContentDatabase db = loadContent();
+    for (int depth : {1, 3, 5, 8}) {
+        int worstLv = 0;
+        ClearStats sample;
+        for (std::uint64_t seed : {11ull, 222ull, 3333ull}) {
+            const dungeon::Dungeon d = dungeon::generate(seed, depth, db, "ruined_keep");
+            const int lv = clearingLevel(db, d);
+            if (lv > worstLv) {
+                worstLv = lv;
+                sample = simulateClear(db, d, std::min(lv, kMaxLevel));
+            }
+        }
+        const Party p = makeParty(db, worstLv);
+        const int cost = restCost(p);
+        INFO("depth " << depth << " clear lv " << worstLv << " income " << sample.gold << " rest "
+                      << cost);
+        // Affordable: clearing a depth at its clearing level funds several full
+        // rests — so a broke, wounded party can always earn its way back to
+        // health (M30 no-soft-lock guarantee), even at depth 1.
+        REQUIRE(sample.gold >= cost * 3);
+        // Not trivial: a rest never drops below the base cost.
+        REQUIRE(cost >= kRestCostBase);
+        // Cheaper than converting gold to power (one party training level), so
+        // resting stays a distinct decision from leveling.
+        REQUIRE(cost < trainPartyCost(worstLv));
+    }
+}
+
 TEST_CASE("economy: class identity survives leveling", "[economy]") {
     const content::ContentDatabase db = loadContent();
     for (int level : {1, 10, 25, 50}) {

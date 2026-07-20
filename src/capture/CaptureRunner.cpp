@@ -301,6 +301,7 @@ int run(const char* outDir) {
              }},
             {"07_inn",
              [](StateStack& s, AppContext& c) {
+                 c.party.restTokens = 1;  // exercise the token row for overflow (M30)
                  s.pushState(std::make_unique<TownState>(s, c));
                  s.pushState(std::make_unique<InnState>(s, c));
              }},

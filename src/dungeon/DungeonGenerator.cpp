@@ -403,10 +403,10 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
 
     // --- Event side rooms (M20): dead-end rooms offering visible decisions.
     {
-        std::array<RoomEventKind, 5> kinds{RoomEventKind::Shrine, RoomEventKind::HealingSpring,
+        std::array<RoomEventKind, 6> kinds{RoomEventKind::Shrine, RoomEventKind::HealingSpring,
                                            RoomEventKind::Merchant, RoomEventKind::EliteChallenge,
-                                           RoomEventKind::ScoreWager};
-        for (int i = 4; i > 0; --i) {
+                                           RoomEventKind::ScoreWager, RoomEventKind::RestToken};
+        for (int i = 5; i > 0; --i) {
             std::swap(kinds[static_cast<std::size_t>(i)],
                       kinds[static_cast<std::size_t>(rng.range(0, i))]);
         }
@@ -484,6 +484,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                 }
                 case RoomEventKind::HealingSpring:
                 case RoomEventKind::ScoreWager:
+                case RoomEventKind::RestToken:
                 case RoomEventKind::None:
                     break;
             }

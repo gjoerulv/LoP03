@@ -117,6 +117,22 @@ The older rows below are retained as historical baseline evidence and are **not*
 > magic after minion kills, one rally below half HP, doubled opening blow).
 > Captures: `docs/screenshots/m20_events/`.
 >
+> **M30 update:** the **Inn is now a paid rest** (row 12). Check: the cost is
+> shown and scales up as the party levels; resting deducts gold and fully
+> restores HP/MP; "Rest" is disabled with a clear reason when you cannot afford
+> it or are already rested (never a dead end); leaving with Back is fine. Find
+> the new **rest-camp event** in a dungeon (campfire marker "R"), confirm it
+> grants a **free-rest token**, return to town, and spend the token at the inn
+> for a free full rest (the token row appears only when one is held). Load a
+> **pre-M30 save** and confirm it works with zero tokens.
+>
+> **M29 update:** classes now **learn skills as they level**. Check the battle
+> **Skill** menu gains entries at the learn levels (e.g. Knight → Shield Bash 4,
+> Whirlwind 10, Execute 16); the new enemies/bosses (Corpse Hound, Gloom Priest,
+> Rune Sentry, Bone Colossus, Void Weaver, The Deep King, The Blight Matron,
+> …) read clearly at native resolution and their roles behave (healers heal,
+> disruptors debuff-and-blast, buffers buff their side).
+>
 > **M19 update:** the scoreboard gains an **Lv** column (party level at
 > completion; "-" for pre-M19 runs) and a two-line legend stating the
 > comparison conditions. Rows 18/19 checks: Lv shows for new runs and "-"

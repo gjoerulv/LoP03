@@ -57,8 +57,15 @@ level cap each class commands roughly six to seven skills.
 
 ## 5. Town hub (functional, not huge)
 
-Inn/heal · Item shop · Equipment shop · Guild/dungeon selection · Training
+Inn/rest · Item shop · Equipment shop · Guild/dungeon selection · Training
 hall/class info · Score board · Save/load point · minimal NPC dialogue.
+
+**The inn is a paid rest (M30).** A full HP/MP restore costs gold that scales
+with the highest party level (so it stays a real decision as income grows), or
+is free by spending a **rest token** earned from a dungeon event. The inn shows
+the cost and tokens held; declining is **never a soft-lock** — HP/MP persist,
+battles still pay gold, and the token is a relief valve, so a wounded, broke
+party can always earn its way back to health.
 
 ## 6. Dungeons
 
@@ -79,12 +86,13 @@ boss minions. Past depth 5 enemies also grow stronger (+6% stats per depth,
 capped +90%) so deep dungeons keep escalating; danger labels are computed
 from the scaled stats, so they never lie.
 
-**Room events (M20).** Dead-end event rooms offer real decisions whose full
-trade-off is shown **before** confirming: a shrine (gold for healing), a
+**Room events (M20, +M30).** Dead-end event rooms offer real decisions whose
+full trade-off is shown **before** confirming: a shrine (gold for healing), a
 one-use healing spring, a wandering merchant (one item at dungeon markup),
-an elite challenge (double danger score, no treasure), and an omen's score
+an elite challenge (double danger score, no treasure), an omen's score
 wager (+150 if you finish with no deaths, −100 if anyone falls — shown in
-the score breakdown). Some unguarded chests are visibly **trapped**: extra
+the score breakdown), and a **rest camp (M30)** that grants a free-rest token
+redeemable at the inn. Some unguarded chests are visibly **trapped**: extra
 gold, but claiming wounds the whole party.
 
 **Bosses are mechanically distinct (M20).** Each archetype has one
@@ -187,9 +195,12 @@ unique mechanic, escapable (but escaping fails the score). Archetypes:
 
 XP/levels, gold, shops/upgrades in town. Abandoned/failed dungeon → 0 dungeon
 score. Successful escape → keep basic XP/gold but no dungeon score. Death →
-return to town, 0 dungeon score, partial gold loss. Save/load required (JSON,
-versioned). Any dungeon suspend-save (if added) continues the same run and must
-not enable save-scumming.
+return to town, 0 dungeon score, partial gold loss. **Recovery is a paid loop
+(M30):** healing costs gold at the inn (or a free-rest token), so gold now has a
+recovery sink and attrition matters — but battles pay gold even without resting,
+so a broke party can always earn its way back and is never soft-locked.
+Save/load required (JSON, versioned). Any dungeon suspend-save (if added)
+continues the same run and must not enable save-scumming.
 
 ## 12b. Onboarding & accessibility (M22)
 

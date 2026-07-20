@@ -2,10 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / audited
-  2026-07-20 against the current checkout (HEAD `872782c` "M28"; working tree
-  clean at authoring). §D decisions approved (`I agree 100%`, 2026-07-20);
-  as-implemented record in §L.
+- **Status:** ☑ complete (approved by the owner 2026-07-20 after manual
+  testing; committed). Authored / audited 2026-07-20 against the then-current
+  checkout (HEAD `872782c` "M28"). §D decisions approved (`I agree 100%`,
+  2026-07-20); as-implemented record in §L.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`.
 - **Authorization:** the owner authorized beginning M29 on 2026-07-20 after

@@ -124,6 +124,7 @@
     { "id": "prop.event.merchant", "type": "texture", "path": "textures/props/event_merchant.png" },
     { "id": "prop.event.totem", "type": "texture", "path": "textures/props/event_totem.png" },
     { "id": "prop.event.omen", "type": "texture", "path": "textures/props/event_omen.png" },
+    { "id": "prop.event.rest", "type": "texture", "path": "textures/props/event_rest.png" },
     { "id": "marker.enemy.normal", "type": "texture", "path": "textures/props/enemy_normal.png" },
     { "id": "marker.enemy.elite", "type": "texture", "path": "textures/props/enemy_elite.png" },
     { "id": "marker.enemy.boss", "type": "texture", "path": "textures/props/enemy_boss.png" },

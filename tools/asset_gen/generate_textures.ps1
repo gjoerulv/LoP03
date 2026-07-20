@@ -437,6 +437,14 @@ P $b 4 3 $PAL.glint; P $b 6 5 $PAL.glint
 FR $b 4 10 4 1 $PAL.night3                                         # shadow
 Outline $b; SaveImg $b 'props/event_omen.png'
 
+$b = New-Img 12 12                                                # rest: campfire (M30)
+$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
+$g.FillPolygon((New-Object System.Drawing.SolidBrush(C $PAL.gold)), [System.Drawing.Point[]]@((New-Object System.Drawing.Point(6, 2)), (New-Object System.Drawing.Point(9, 7)), (New-Object System.Drawing.Point(3, 7)))); $g.Dispose()
+FR $b 5 4 2 3 $PAL.danger                                          # flame core
+P $b 6 3 $PAL.glint
+FR $b 2 8 8 2 $PAL.earth2; FR $b 3 9 6 1 $PAL.earth1               # logs
+Outline $b; SaveImg $b 'props/event_rest.png'
+
 Write-Output 'Generating M26 per-enemy battle sprites...'
 
 # Per-id battle sprites (art_bible §3/§5): normal & elite 24x24, boss 32x32,

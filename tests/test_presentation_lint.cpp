@@ -70,7 +70,8 @@ TEST_CASE("lint: every convention-derived texture id resolves in the manifest", 
                            "marker.enemy.normal", "marker.enemy.elite", "marker.enemy.boss",
                            "prop.chest", "prop.gate_marker", "prop.boss_marker",
                            "prop.event.shrine", "prop.event.spring", "prop.event.merchant",
-                           "prop.event.totem", "prop.event.omen", "actor.player.overworld",
+                           "prop.event.totem", "prop.event.omen", "prop.event.rest",
+                           "actor.player.overworld",
                            "actor.player.walk", "ui.frame.default"}) {
         INFO(id);
         CHECK(hasTexture(m, id));
