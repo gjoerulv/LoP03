@@ -313,6 +313,14 @@ int run(const char* outDir) {
              [](StateStack& s, AppContext& c) {
                  s.pushState(std::make_unique<EquipShopState>(s, c));
              }},
+            {"24_equip_categories",
+             [](StateStack& s, AppContext& c) {
+                 // M31: open straight into the buy-category menu (Weapons /
+                 // Armor / Accessories) so the new category UI is overflow-checked.
+                 auto state = std::make_unique<EquipShopState>(s, c);
+                 state->captureEnterBuyCategory();
+                 s.pushState(std::move(state));
+             }},
             {"10_training_hall",
              [](StateStack& s, AppContext& c) {
                  s.pushState(std::make_unique<TrainingHallState>(s, c));

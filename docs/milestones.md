@@ -37,13 +37,20 @@
 | 27 | Environment & ambience identity | ☑ complete (approved) |
 | 28 | Enmity, AI diversity & control skills | ☑ complete (approved) |
 | 29 | Content expansion & class learnsets | ☑ complete (approved) |
-| 30 | Economy: paid rest & rest-token event | ◑ implemented, awaiting manual approval |
+| 30 | Economy: paid rest & rest-token event | ☑ complete (approved) |
+| 31 | Equip-shop category split | ◑ implemented, awaiting manual approval |
+| 32 | Town ladder (7 towns, travel, scaling, score bonus) | ☐ planned |
+| 33 | Stakes-escalation penalty | ☐ planned |
+| 34 | Black market & legendary gear | ☐ planned |
 
-**Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30,
-**then** M23 → M24. M23/M24 were deferred by the owner on 2026-07-20: the game
-is not release-ready, so validating and packaging it would have measured the
-wrong build. Their existing tooling and packaging work is retained, not
-discarded — only their position in the sequence changed.
+**Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
+**M31 → M32 → M33 → M34**, **then** M23 → M24. M23/M24 were deferred by the
+owner on 2026-07-20: the game is not release-ready, so validating and packaging
+it would have measured the wrong build. Their existing tooling and packaging
+work is retained, not discarded — only their position in the sequence changed.
+The M31–M34 expansion program (towns, stakes, black market, shop categories)
+was authorized by the owner on 2026-07-20 as the content/systems work the game
+needs before M23/M24 are worth running; see the program section below.
 
 ## M1 — Project foundation
 
@@ -1016,11 +1023,11 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M30 — Economy: paid rest & rest-token event
 
-- **Status:** ◑ implemented, awaiting manual approval (owner authorized and
-  approved the §D design 2026-07-20 — level-scaled inn cost, `Party.restTokens`
-  optional save field, new `RoomEventKind::RestToken`, gen-version bump 5→6.
-  279/279 tests incl. 4 new `[rest]` tests + a sim-backed affordability guard;
-  capture 23/23; Debug + Release clean. See the note's §K.)
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing (level-scaled inn cost, `Party.restTokens` optional save field,
+  new `RoomEventKind::RestToken`, gen-version bump 5→6. 279/279 tests incl. 4
+  new `[rest]` tests + a sim-backed affordability guard; capture 23/23; Debug +
+  Release clean. See the note's §K.). This closes the M25–M30 polish program.
 - **Goal:** make resting a real economic decision, and reward exploration with
   relief from it.
 - **Context:** `InnState` is a bare `healFull(context_.party)` with no cost.
@@ -1040,3 +1047,188 @@ commitment; each note adds the detail once the ground under it is stable.
 - **Owner manual validation:** whether the cost changes decision-making without
   becoming a grind; event discovery rate.
 - **Milestone note:** `docs/milestone_notes/M30_economy_rest.md`
+
+## Expansion program (M31–M34)
+
+Authorized by the owner on 2026-07-20. M25–M30 delivered identity and economy;
+the game now needs **more content and connected systems** before M23/M24
+validation and packaging are worth running. Four owner-specified features, in a
+deliberate order so each is built on stable ground: shop categories first
+(risk-free), then the town ladder (the structural spine), then the stakes
+penalty that reads the ladder, then the black market whose spawn trigger is the
+stakes-raise event. Strategic framing lives in `docs/completion_roadmap.md` §13;
+per-milestone scope lives in the notes.
+
+**Execution order:** M31 → M32 → M33 → M34, **then** M23 → M24 (re-audited for
+the new content). Cross-cutting rules for every milestone in this program:
+
+- All schema motion is **optional-field, defensive-load, no format bumps** — the
+  precedent every milestone since M16 has followed. Old saves and scoreboards
+  load with safe defaults.
+- Score-affecting conditions are **tagged and displayed, never normalized**
+  (M19 comparability policy); ranking logic is untouched.
+- Determinism is inviolable: town 1 generation stays byte-identical
+  (`generationVersion` unchanged at 6), battle *rules* are untouched
+  (`battleRulesVersion` stays 1) except where a milestone explicitly changes and
+  tags them, and simulator ↔ live agreement must hold.
+- Statuses stop at `implemented, awaiting manual approval` with a manual
+  checklist per `docs/milestone_completion_template.md`; the owner approves each
+  before the next begins.
+
+Owner decisions taken at planning time (2026-07-20, via Q&A; recorded in the
+plan):
+
+- **Town ladder (7 towns).** Enemy stat scaling per town:
+  **+0 / 25 / 50 / 75 / 100 / 150 / 200 %** (towns 1–7). Score bonus per town:
+  **+0 / 10 / 20 / 30 / 40 / 50 / 100 %** (town 6 corrected from a duplicate
+  +100 % in the first draft). Bottom-right town exit → next town, bottom-left →
+  previous; unique exterior art and music per town, music growing more sinister.
+- **Town access by completion.** Completing at least one dungeon in town N
+  unlocks the exit to town N+1; the highest unlocked town persists in the save;
+  travelling backward is always free.
+- **Stakes escalation.** A run's stakes = `(townIndex, depth)`, compared
+  **lexicographically, town first**. Each **completed** run is compared to the
+  **previous completed run**: not strictly higher → the score penalty grows one
+  step (**−15 % per offense, stacking to a −90 % cap**); strictly higher → the
+  penalty **resets to 0**. Retreats/wipes (**score-0 runs**) neither grow the
+  penalty nor move the baseline.
+- **Black-market currency.** A **new Legendary-token currency** (distinct from
+  M30 rest tokens), won from **optional elite fights** in dungeons
+  (`RoomEventKind::EliteChallenge`, +1 per victory). The market appears after a
+  stakes-raising completion in town ≥ 2 (20 %, seeded), selling one legendary
+  piece for **≥ 5000 gold or 3 legendary tokens**.
+
+**Note authoring is just-in-time.** Only the M31 note is authored so far; M32–M34
+notes are written when the owner authorizes each milestone and re-audited against
+the then-current checkout. The scope summaries below are the commitment.
+
+## M31 — Equip-shop category split
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against HEAD `4be4d43`. A new `BuyCategory` phase in
+  `EquipShopState` feeds a slot-filtered `Buy` list via a pure, headless-tested
+  `equipShopBuyIds` filter (`states/EquipShopFilter.hpp`); relics resolve under
+  Accessories with no data change; Cancel walks back one step. No pricing,
+  stock, equip-flow, save, scoreboard, generation, or battle change.
+  **283/283 tests** (was 279; +4 new `[equipshop]` cases), battle and simulator
+  tests **unmodified**; `--capture` **24/24** overflow-clean with a new
+  `24_equip_categories` scene; presentation lint green; Debug + Release build
+  clean. See the note's §K.
+- **Goal:** split the single "Buy Gear" list into **Buy Weapons / Buy Armor /
+  Buy Accessories**, with relics filed under Accessories, so the buy list is
+  browsable as it grows.
+- **Context:** `EquipShopState` has one `Phase::Buy` that lists every equippable
+  item (`ItemType::Equipment` + `ItemType::Relic`) sorted by id. `EquipSlot` is
+  Weapon/Armor/Accessory; relics carry `slot: accessory`, so a slot filter files
+  them under Accessories for free. No pricing, stock, or equip-flow change.
+- **Primary deliverables:** a `BuyCategory` step in the existing `Phase` machine
+  feeding a slot-filtered `Phase::Buy`; Cancel walks back one step
+  (Buy → Category → Menu); a pure, headless-testable category-filter function; a
+  capture scene for the category menu.
+- **Out of scope:** any pricing, stock, equip-flow, or content change; new art
+  (the shop reuses its M27 background).
+- **Dependencies:** none. Can start immediately.
+- **Acceptance criteria:** each category lists exactly its slot's items (relics
+  under Accessories); Cancel is a single step back at every level; full suite
+  green from the 279 baseline; capture overflow-clean with the new scene;
+  presentation lint green; battle and simulator tests pass **unmodified**.
+- **Owner manual validation:** category-menu navigation feel with keyboard and
+  gamepad.
+- **Milestone note:** `docs/milestone_notes/M31_equip_shop_categories.md`
+
+## M32 — Town ladder (7 towns, travel, scaling, score bonus)
+
+- **Status:** ☐ planned — the structural milestone; M33/M34 build on it. Do not
+  begin without explicit owner authorization; the note is authored just-in-time.
+- **Goal:** a chain of seven towns, each harder and higher-scoring, with free
+  travel between unlocked towns and a town-indexed difficulty and score bonus.
+- **Primary deliverables:** `currentTown` (1–7) and `highestUnlockedTown` on the
+  session, persisted as **optional** save fields (old saves → 1/1); bottom-left/
+  bottom-right exit tiles in `buildTown()` (present only for an existing
+  previous/next town, next shown locked until unlocked); a town stat-scale input
+  folded multiplicatively into each team's `statScalePct` (town 1 = ×1.00 →
+  byte-identical, `generationVersion` unchanged); a visible `townBonus` scoring
+  row on the full subtotal and an optional `townIndex` `ScoreEntry` tag
+  (0 = legacy → town 1); unlock-by-completion (`highestUnlockedTown =
+  max(…, N+1)`, cap 7); 7 exterior art variants + 7 town music tracks via
+  `tools/asset_gen/`, `MusicTrack::Town` becoming town-indexed with base-track
+  fallback; presentation lint extended so every town resolves its art + music.
+- **Ladder values (owner-decided):** enemy stats +0/25/50/75/100/150/200 %,
+  score bonus +0/10/20/30/40/50/100 % across towns 1–7.
+- **Out of scope:** stakes penalty (M33); black market (M34); scaling XP/gold
+  rewards with town (score is the climb's reward — flagged for owner veto in the
+  note).
+- **Dependencies:** M31 approved.
+- **Acceptance criteria:** every `pushState(TownState)` path respects
+  `currentTown`; town 1 output byte-identical to today; danger display stays
+  honest; determinism tests extended across the town dimension; sim battery shows
+  a town × depth clearability grid (town 7 clearable by a strong endgame party,
+  town 2 by a modest one); battle/simulator tests unmodified.
+- **Owner manual validation:** travel feel, per-town distinctness, music
+  progression, difficulty of towns 2–3 in play.
+- **Milestone note:** `docs/milestone_notes/M32_town_ladder.md` (authored at
+  authorization).
+
+## M33 — Stakes-escalation penalty
+
+- **Status:** ☐ planned — depends on M32. A pure state machine plus visible
+  scoring. Authored just-in-time; do not begin without owner authorization.
+- **Goal:** a score penalty that grows when a run does not raise the stakes and
+  clears when it does, pushing the player to climb rather than farm a safe town.
+- **Primary deliverables:** a pure stakes state machine (previous completed
+  `(townIndex, depth)` + penalty steps) implementing the owner rule below,
+  persisted as **optional** save fields that travel with the autosave-on-entry so
+  reloading cannot shed the penalty; a `stakesPenalty` `ScoreBreakdown` row
+  (applied after the town bonus, same subtotal rules, pure + tested); an optional
+  `stakesPenaltyPct` `ScoreEntry` tag shown on the scoreboard and result screen;
+  Guild forewarning UI showing the penalty the configured run will incur, live as
+  Theme/Depth change; an M22 tutorial prompt on first penalty.
+- **Stakes rule (owner-decided):** stakes = `(townIndex, depth)`, compared
+  lexicographically town-first against the previous **completed** run; not
+  strictly higher → penalty +15 % (cap −90 %); strictly higher → reset to 0;
+  score-0 runs (retreat/wipe) neither grow the penalty nor move the baseline.
+- **Out of scope:** the black market (M34); any ranking/normalization change
+  (penalty is tagged and displayed, never normalized).
+- **Dependencies:** M32 approved.
+- **Acceptance criteria:** state-machine table tests (raise/repeat/cap/reset/
+  score-0) pass; save round-trip preserves penalty state; scoring rows are
+  visible and honest (M19 bar); capture scenes for Guild-with-penalty and
+  result-with-penalty-row overflow-clean; battle/simulator tests unmodified.
+- **Owner manual validation:** whether the penalty drives escalation without
+  feeling punitive; Guild forewarning clarity.
+- **Milestone note:** `docs/milestone_notes/M33_stakes_penalty.md` (authored at
+  authorization).
+
+## M34 — Black market & legendary gear
+
+- **Status:** ☐ planned — depends on M32 + M33 (its spawn trigger is M33's
+  stakes-raise event). Authored just-in-time; do not begin without owner
+  authorization.
+- **Goal:** a rare, save-scum-proof black-market NPC selling one legendary piece,
+  bought with gold or a new Legendary-token currency won from optional elite
+  fights — a reward for climbing and taking optional risks.
+- **Primary deliverables:** `Party.legendaryTokens` (**optional** save field, old
+  saves → 0) awarded +1 on `RoomEventKind::EliteChallenge` victory, shown in the
+  event prompt/result and where gold is shown in town screens that accept it; new
+  `Rarity::Legendary` `items.json` rows (~5, one or two per slot, budgets clearly
+  above Epic but sim-validated against the town-7 battery); a spawn rule that on a
+  stakes-raising completed run in town ≥ 2 rolls **20 % derived deterministically
+  from that run's dungeon seed** (reload cannot reroll), spawning the market at a
+  seeded free tile in the current town, its state (present, town, item id, price)
+  persisted and cleared on purchase or re-rolled by the next completed run; an NPC
+  + purchase flow reusing the building-door prompt, offering **≥ 5000 gold or 3
+  legendary tokens**, declining never blocking; an M22 tutorial prompt on first
+  encounter.
+- **Out of scope:** any change to the elite-fight mechanic itself beyond the
+  token award; a broader currency/vendor framework.
+- **Dependencies:** M32 + M33 approved.
+- **Acceptance criteria:** token award/round-trip and spawn determinism (same run
+  → same outcome) tested; purchase paths (gold/tokens/insufficient) and save
+  compat covered; capture scene with the NPC present overflow-clean; lint covers
+  the new sprite/manifest rows; an economy/attainability sim report shows the
+  price is reachable and legendaries do not trivialize runs (M19 exploit analysis
+  re-run); battle/simulator tests unmodified.
+- **Owner manual validation:** discovery excitement, price feel, legendary
+  balance.
+- **Milestone note:** `docs/milestone_notes/M34_black_market.md` (authored at
+  authorization).

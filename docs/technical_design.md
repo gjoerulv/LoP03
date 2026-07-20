@@ -636,6 +636,14 @@ clamps hp/mp — called on equip changes and on load. The Equip Shop
 as optional per-member fields (save version unchanged at `1`; unknown ids are
 dropped on load).
 
+The buy flow is browsed by category (M31): "Buy Gear" opens a `BuyCategory`
+phase (Weapons / Armor / Accessories) that feeds a slot-filtered `Buy` list —
+relics carry `slot: accessory` so they file under Accessories with no special
+case. The slot filter is the pure, raylib-free `equipShopBuyIds`
+(`states/EquipShopFilter.hpp`), unit-tested headlessly (`[equipshop]`), and is
+the same "equippable" definition the equip flow uses. Categories are a browse
+aid only: no pricing, stock, equip, save, or content change.
+
 ### Theme/depth generation
 
 `generate(seed, depth, db, themeId)` draws enemy and boss pools from the chosen

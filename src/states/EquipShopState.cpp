@@ -8,6 +8,7 @@
 #include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "states/DetailsOverlayState.hpp"
+#include "states/EquipShopFilter.hpp"
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
@@ -24,6 +25,8 @@ namespace style = ui::style;
 
 namespace {
 const char* const kSlotNames[3] = {"Weapon", "Armor", "Accessory"};
+// Buy-list categories (M31), parallel to slotEnum(0..2): Weapon/Armor/Accessory.
+const char* const kCategoryNames[3] = {"Weapons", "Armor", "Accessories"};
 
 constexpr int kListX = 40;
 constexpr int kListY = 64;
@@ -81,18 +84,32 @@ std::string& slotRef(Character& c, int slot) {
     }
 }
 
-bool isEquippable(const content::ItemDef& item) {
-    return item.type == content::ItemType::Equipment || item.type == content::ItemType::Relic;
+// Player-facing name of the current buy category (M31), for hints/footers.
+const char* categoryLabel(content::EquipSlot s) {
+    switch (s) {
+        case content::EquipSlot::Weapon: return "Weapons";
+        case content::EquipSlot::Armor: return "Armor";
+        case content::EquipSlot::Accessory: return "Accessories";
+        case content::EquipSlot::None: break;
+    }
+    return "Gear";
 }
 }  // namespace
 
 EquipShopState::EquipShopState(StateStack& stack, AppContext& context)
-    : GameState(stack), context_(context) {}
-
-void EquipShopState::onEnter() {
-    phase_ = Phase::Menu;
+    : GameState(stack), context_(context) {
+    // Populate the top menu at construction (phase_ defaults to Menu). Doing it
+    // here rather than in onEnter lets the capture hook force a phase that
+    // onEnter would otherwise reset, matching BattleState's capture pattern.
     rebuild();
 }
+
+#ifdef CRYSTAL_CAPTURE
+void EquipShopState::captureEnterBuyCategory() {
+    phase_ = Phase::BuyCategory;
+    rebuild();
+}
+#endif
 
 void EquipShopState::rebuild() {
     rowIds_.clear();
@@ -102,14 +119,14 @@ void EquipShopState::rebuild() {
         case Phase::Menu:
             items = {{"Buy Gear", true}, {"Equip Party", !context_.party.empty()}, {"Back", true}};
             break;
-        case Phase::Buy: {
-            std::vector<std::string> ids;
-            for (const auto& [id, def] : context_.content.items()) {
-                if (isEquippable(def)) {
-                    ids.push_back(id);
-                }
+        case Phase::BuyCategory:
+            for (const char* name : kCategoryNames) {
+                items.push_back({name, true});
             }
-            std::sort(ids.begin(), ids.end());
+            break;
+        case Phase::Buy: {
+            const std::vector<std::string> ids =
+                equipShopBuyIds(context_.content, buyCategory_);
             for (const std::string& id : ids) {
                 const content::ItemDef* it = context_.content.findItem(id);
                 rowIds_.push_back(id);
@@ -143,7 +160,7 @@ void EquipShopState::rebuild() {
             std::vector<std::string> ids;
             for (const ItemStack& s : context_.party.inventory.stacks) {
                 const content::ItemDef* it = context_.content.findItem(s.itemId);
-                if (it != nullptr && isEquippable(*it) && it->slot == slotEnum(selectedSlot_)) {
+                if (it != nullptr && isEquippableItem(*it) && it->slot == slotEnum(selectedSlot_)) {
                     ids.push_back(s.itemId);
                 }
             }
@@ -170,13 +187,18 @@ void EquipShopState::confirm() {
     switch (phase_) {
         case Phase::Menu:
             if (cursor == 0) {
-                phase_ = Phase::Buy;
+                phase_ = Phase::BuyCategory;
             } else if (cursor == 1) {
                 phase_ = Phase::EquipChar;
             } else {
                 stack().popState();
                 return;
             }
+            rebuild();
+            break;
+        case Phase::BuyCategory:
+            buyCategory_ = slotEnum(cursor);  // 0 weapon, 1 armor, 2 accessory
+            phase_ = Phase::Buy;
             rebuild();
             break;
         case Phase::Buy: {
@@ -315,8 +337,9 @@ void EquipShopState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Cancel)) {
         switch (phase_) {
             case Phase::Menu: stack().popState(); break;
-            case Phase::Buy:
+            case Phase::BuyCategory:
             case Phase::EquipChar: phase_ = Phase::Menu; rebuild(); break;
+            case Phase::Buy: phase_ = Phase::BuyCategory; rebuild(); break;
             case Phase::EquipSlot: phase_ = Phase::EquipChar; rebuild(); break;
             case Phase::EquipItem: phase_ = Phase::EquipSlot; rebuild(); break;
         }
@@ -332,10 +355,16 @@ void EquipShopState::render() {
     ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 14, 14, style::kFontMenu,
                       style::palette().gold);
 
+    std::string buyHint;
     const char* hint = "Confirm: Select   Cancel: Back";
     switch (phase_) {
         case Phase::Menu: hint = "Buy gear or equip your party."; break;
-        case Phase::Buy: hint = "Confirm: Buy   Cancel: Back"; break;
+        case Phase::BuyCategory: hint = "Choose a category to browse."; break;
+        case Phase::Buy:
+            buyHint = std::string("Buy ") + categoryLabel(buyCategory_) +
+                      "   Confirm: Buy   Cancel: Back";
+            hint = buyHint.c_str();
+            break;
         case Phase::EquipChar: hint = "Choose a party member."; break;
         case Phase::EquipSlot: hint = "Choose a slot."; break;
         case Phase::EquipItem: hint = "Choose an item to equip."; break;

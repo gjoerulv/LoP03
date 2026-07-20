@@ -551,3 +551,58 @@ packaging work is built and retained; only the sequencing changed. Validating
 and packaging a build known to need this work would have measured the wrong
 build, and the capture scenes and balance battery both need extending for the
 new AI, content, and art before that validation is worth trusting.
+
+## 13. Expansion program (M31–M34) — direction
+
+Added 2026-07-20, after the M25–M30 polish program closed. Direction and quality
+bars only; scope lives in `docs/milestones.md` and the per-milestone notes.
+
+### Why this phase exists
+
+M25–M30 gave the game identity and a real economy, but the loop is still short:
+one town, one difficulty band, and no reason to push past a comfortable depth.
+This program adds **connected systems that reward climbing** — a seven-town
+ladder that raises both difficulty and score, a stakes penalty that erodes the
+score of a run that does not escalate, and a rare black market that turns
+optional risk into legendary gear — plus a small usability fix (shop categories)
+that the growing item list needs. It is content and systems, not a new genre:
+the town → prepare → seeded dungeon → boss → score → upgrade loop is unchanged;
+towns are new hubs onto the same loop, not a world map or a story campaign.
+
+### Quality bars for this phase
+
+Additional to §4, §5, §9 and §10, which all still apply:
+
+1. **Climbing is the only intended power fantasy.** Higher towns pay in **score**,
+   not in a better farm. XP/gold rewards do not scale with town unless the owner
+   explicitly decides otherwise; a top town must never become the optimal place
+   to grind, or the stakes system it anchors is meaningless.
+2. **Escalation must read before it bites.** The stakes penalty is forewarned in
+   the Guild for the run being configured and shown, itemized, on the result and
+   scoreboard. A penalty the player discovers only after the run is punitive, not
+   tactical — M19's "visible and honest" bar is the acceptance line.
+3. **Save-scum resistance where a reward is at stake.** The black-market roll and
+   the stakes baseline are derived from committed run state (dungeon seed,
+   autosaved penalty), so reloading cannot reroll a bad outcome or shed a
+   penalty. Randomness the player can farm by reloading is a defect, not content.
+4. **Determinism and comparability are non-negotiable.** Town 1 generation stays
+   byte-identical (`generationVersion` unchanged); battle rules stay untouched
+   (`battleRulesVersion` unchanged) — town scaling changes combat *inputs*,
+   visibly tagged, not the *rules*. New score-affecting conditions (town bonus,
+   stakes penalty) are tagged and displayed, never normalized. Simulator and live
+   play still agree exactly.
+5. **Distinctness carries up the ladder.** Each town must be identifiable by
+   exterior art and music without reading a label, and its music grows more
+   sinister as the chain deepens — the M25–M30 distinctness bar, extended to
+   towns. The presentation lint proves every town resolves its art and audio.
+
+### Ordering rationale
+
+Shop categories (M31) first: risk-free, independently valuable, and it touches no
+system the later milestones depend on. The town ladder (M32) is the structural
+spine — `currentTown`, travel, and town-scaled difficulty/score — and both later
+milestones read it, so it precedes them. The stakes penalty (M33) needs the
+`(town, depth)` stakes vector M32 introduces. The black market (M34) is last
+because its spawn trigger *is* M33's stakes-raise event and its legendaries must
+be balanced against M32's town-7 difficulty. M23 → M24 run after M34, re-audited
+for all the new content.
