@@ -71,7 +71,8 @@ void TrainingHallState::handleInput(const Input& input) {
 void TrainingHallState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 24, 255});
+    ui::drawSceneBackground(context_.resources, "bg.training_hall", Color{16, 16, 24, 255},
+                            context_.virtualWidth, context_.virtualHeight);
     ui::drawTextCentered("Training Hall", w / 2, 14, 16, RAYWHITE);
     ui::drawText(TextFormat("Gold: %d", context_.party.gold), w - 110, 14, 11,
              Color{230, 220, 150, 255});

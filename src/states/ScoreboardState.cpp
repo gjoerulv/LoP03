@@ -57,7 +57,8 @@ void ScoreboardState::handleInput(const Input& input) {
 void ScoreboardState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 24, 255});
+    ui::drawSceneBackground(context_.resources, "bg.scoreboard", Color{16, 16, 24, 255},
+                            context_.virtualWidth, context_.virtualHeight);
     ui::drawTextCentered("Scoreboard", w / 2, 16, style::kFontScreenTitle, style::palette().text);
 
     const auto& entries = context_.scoreboard.entries();

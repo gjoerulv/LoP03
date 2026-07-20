@@ -28,7 +28,8 @@ void InnState::handleInput(const Input& input) {
 void InnState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{20, 16, 24, 255});
+    ui::drawSceneBackground(context_.resources, "bg.inn", Color{20, 16, 24, 255},
+                            context_.virtualWidth, context_.virtualHeight);
 
     const int boxW = 320;
     const int boxH = 170;

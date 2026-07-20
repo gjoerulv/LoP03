@@ -29,6 +29,13 @@ long overflowEvents();
 void drawFramedPanel(ResourceManager& resources, int x, int y, int w, int h, Color fill,
                      Color border);
 
+// Full-screen scene background (M27): fills `fallback`, then draws the catalog
+// texture `id` scaled to the virtual screen if present. A missing texture
+// leaves only the fallback fill, so a state never regresses below its old
+// solid ClearBackground.
+void drawSceneBackground(ResourceManager& resources, const std::string& id, Color fallback,
+                         int w, int h);
+
 // Installs the active UI fonts (M25): text is rendered with the base font
 // whose native size is nearest the requested size, so pixel glyphs stay crisp
 // (small=8, main=10, title=20). Any pointer may be null and any size with no

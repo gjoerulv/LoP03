@@ -672,4 +672,76 @@ FR $b 2 12 3 8 $PAL.bossD; FR $b 27 12 3 8 $PAL.bossD
 FR $b 8 30 5 2 $PAL.bossD; FR $b 19 30 5 2 $PAL.bossD
 SaveEnemy $b 'boss_rush_tyrant'
 
+Write-Output 'Generating M27 service backgrounds...'
+
+# Full-screen (426x240) service backgrounds. Legibility is the binding
+# constraint (art_bible §7): each is a distinct dark tinted gradient + a
+# low-alpha themed motif biased to the top/edges, so overlaid light text keeps
+# its contrast. Graphics fills (fast) instead of per-pixel SetPixel. Appended
+# and RNG-reseeded so existing/enemy PNGs stay byte-identical.
+$script:rng = 27270000
+$BW = 426; $BH = 240
+
+function Ca([int]$a, [string]$hex) { $c = C $hex; [System.Drawing.Color]::FromArgb($a, $c.R, $c.G, $c.B) }
+function New-Bg([string]$topHex, [string]$botHex) {
+  $b = New-Object System.Drawing.Bitmap($BW, $BH, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+  $g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
+  $rect = New-Object System.Drawing.Rectangle(0, 0, $BW, $BH)
+  $grad = New-Object System.Drawing.Drawing2D.LinearGradientBrush($rect, (C $topHex), (C $botHex), 90.0)
+  $g.FillRectangle($grad, $rect); $grad.Dispose()
+  $g.FillRectangle((New-Object System.Drawing.SolidBrush(Ca 70 '#0E0C14')), 0, $BH - 26, $BW, 26)
+  return @($b, $g)
+}
+function GFill($g, [int]$a, [string]$hex, [int]$x, [int]$y, [int]$w, [int]$h) {
+  $g.FillRectangle((New-Object System.Drawing.SolidBrush(Ca $a $hex)), $x, $y, $w, $h)
+}
+function GEll($g, [int]$a, [string]$hex, [int]$x, [int]$y, [int]$w, [int]$h) {
+  $g.FillEllipse((New-Object System.Drawing.SolidBrush(Ca $a $hex)), $x, $y, $w, $h)
+}
+function Motes($b, [int]$n, [string]$hex) {
+  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BW); $y = [int]((Rnd) * ($BH - 40)); P $b $x $y $hex }
+}
+function SaveBg($pair, [string]$name) { $pair[1].Dispose(); SaveImg $pair[0] "backgrounds/$name.png" }
+
+# Inn - warm restful interior: lantern glow + a bed by the wall.
+$r = New-Bg '#241A18' '#150F0D'
+GEll $r[1] 30 '#8A6D48' 300 6 130 104; GEll $r[1] 46 $PAL.gold 332 20 82 66; GEll $r[1] 70 $PAL.gold 356 34 34 30
+GFill $r[1] 40 $PAL.earth2 4 154 78 34; GFill $r[1] 60 $PAL.earth3 4 154 30 13
+Motes $r[0] 34 $PAL.earth3; SaveBg $r 'inn'
+
+# Item Shop - cool market stall: shelf bands + goods on the side walls.
+$r = New-Bg '#16182A' '#0D0F18'
+foreach ($sy in 40, 78, 116, 154) { GFill $r[1] 34 $PAL.wat2 0 $sy 70 4; GFill $r[1] 34 $PAL.wat2 356 $sy 70 4 }
+foreach ($bx in 8, 22, 36, 50) { GFill $r[1] 46 $PAL.wat3 $bx 30 8 8; GFill $r[1] 46 $PAL.wat3 (368 + $bx - 8) 68 8 10 }
+Motes $r[0] 26 $PAL.wat3; SaveBg $r 'item_shop'
+
+# Equip Shop - steel forge: hanging arms up top + an anvil block low.
+$r = New-Bg '#1E2028' '#101218'
+foreach ($hx in 30, 70, 356, 396) { GFill $r[1] 40 $PAL.stone3 $hx 0 3 40; GFill $r[1] 46 $PAL.stone4 ($hx - 6) 34 15 10 }
+GFill $r[1] 40 $PAL.stone3 176 196 74 22; GFill $r[1] 46 $PAL.stone2 168 190 90 8; GFill $r[1] 34 $PAL.stone4 200 176 26 16
+GEll $r[1] 34 $PAL.danger 356 150 60 46; Motes $r[0] 22 $PAL.stone4; SaveBg $r 'equip_shop'
+
+# Training Hall - martial dojo: faint crossed blades + a wall target.
+$r = New-Bg '#241618' '#140D0F'
+GFill $r[1] 26 $PAL.clsKnight 40 30 8 180; GFill $r[1] 26 $PAL.clsKnight 378 30 8 180
+$r[1].TranslateTransform(213, 120); $r[1].RotateTransform(35)
+GFill $r[1] 24 $PAL.stone4 -120 -4 240 8; $r[1].RotateTransform(-70); GFill $r[1] 24 $PAL.stone4 -120 -4 240 8
+$r[1].ResetTransform()
+GEll $r[1] 34 $PAL.maroon 348 18 66 66; GEll $r[1] 40 $PAL.danger 366 36 30 30; GEll $r[1] 55 $PAL.gold 378 48 6 6
+Motes $r[0] 22 $PAL.maroon; SaveBg $r 'training_hall'
+
+# Scoreboard - hall of honor: violet glow + flanking pillars.
+$r = New-Bg '#1A1626' '#100C18'
+GEll $r[1] 34 $PAL.violet 150 -40 126 110
+foreach ($px in 18, 386) { GFill $r[1] 40 $PAL.stone3 $px 24 22 190; GFill $r[1] 50 $PAL.stone4 ($px - 4) 22 30 8; GFill $r[1] 50 $PAL.stone4 ($px - 4) 206 30 8 }
+GFill $r[1] 40 $PAL.gold 24 26 10 186; GFill $r[1] 40 $PAL.gold 392 26 10 186
+Motes $r[0] 24 $PAL.violet; SaveBg $r 'scoreboard'
+
+# Guild - adventurers' lodge: hanging banner + map pins.
+$r = New-Bg '#16201A' '#0D140E'
+GFill $r[1] 40 $PAL.veg2 190 0 46 44; $r[1].FillPolygon((New-Object System.Drawing.SolidBrush(Ca 40 $PAL.veg2)), [System.Drawing.Point[]]@((New-Object System.Drawing.Point(190, 44)), (New-Object System.Drawing.Point(236, 44)), (New-Object System.Drawing.Point(213, 58))))
+GFill $r[1] 55 $PAL.veg3 206 12 14 14
+foreach ($p in @(@(60, 70), @(120, 150), @(330, 90), @(370, 170), @(90, 190))) { GEll $r[1] 45 $PAL.gold $p[0] $p[1] 6 6 }
+Motes $r[0] 26 $PAL.veg3; SaveBg $r 'guild'
+
 Write-Output 'Texture generation complete.'

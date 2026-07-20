@@ -30,7 +30,7 @@
     { "id": "music.result", "type": "music", "path": "audio/music/result.wav", "loop": true, "volume": 0.75 },
 
     { "id": "ambience.town", "type": "ambience", "path": "audio/ambience/town.wav", "loop": true, "volume": 0.3 },
-    { "id": "ambience.keep", "type": "ambience", "path": "audio/ambience/keep.wav", "loop": true, "volume": 0.35 },
+    { "id": "ambience.keep", "type": "ambience", "path": "audio/ambience/keep.wav", "loop": true, "volume": 0.24 },
     { "id": "ambience.mine", "type": "ambience", "path": "audio/ambience/mine.wav", "loop": true, "volume": 0.32 },
     { "id": "ambience.forest", "type": "ambience", "path": "audio/ambience/forest.wav", "loop": true, "volume": 0.3 },
 
@@ -117,6 +117,13 @@
     { "id": "marker.enemy.normal", "type": "texture", "path": "textures/props/enemy_normal.png" },
     { "id": "marker.enemy.elite", "type": "texture", "path": "textures/props/enemy_elite.png" },
     { "id": "marker.enemy.boss", "type": "texture", "path": "textures/props/enemy_boss.png" },
+
+    { "id": "bg.inn", "type": "texture", "path": "textures/backgrounds/inn.png" },
+    { "id": "bg.item_shop", "type": "texture", "path": "textures/backgrounds/item_shop.png" },
+    { "id": "bg.equip_shop", "type": "texture", "path": "textures/backgrounds/equip_shop.png" },
+    { "id": "bg.training_hall", "type": "texture", "path": "textures/backgrounds/training_hall.png" },
+    { "id": "bg.scoreboard", "type": "texture", "path": "textures/backgrounds/scoreboard.png" },
+    { "id": "bg.guild", "type": "texture", "path": "textures/backgrounds/guild.png" },
 
     { "id": "ui.frame.default", "type": "texture", "path": "textures/ui/frame_default.png" },
     { "id": "ui.emblem.crystal", "type": "texture", "path": "textures/ui/emblem_crystal.png" },

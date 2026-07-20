@@ -18,6 +18,21 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M27 update:** environment & ambience identity. Each of the six town
+> services (Inn, Item Shop, Equip Shop, Training Hall, Scoreboard, Guild) now
+> draws its own full-screen background instead of a flat fill — verify at W1–W6
+> that every one reads as a distinct place **and every line of text stays
+> readable over it** (the binding constraint); watch for any `[ui-overflow]`.
+> Ambience: a blind listen should distinguish the town / Ruined Keep / Crystal
+> Mine / Hollow Forest beds — each has its own signature: **town** a quiet
+> breeze with frequent high bird whistles; **keep** a loud, hollow, beating low
+> drone; **mine** a metallic hum under regular echoing water drips; **forest** a
+> busy bright leaf rustle with low owl hoots. **Slider reroute (supersedes the M21-update note):** the
+> **SFX** slider now moves ambience volume and the **Music** slider no longer
+> does (music still follows Music) — check both in a dungeon. Missing-background
+> drill: delete a `assets/textures/backgrounds/*.png` from the build → that
+> service falls back to its old flat fill, no crash.
+>
 > **M25 update:** UI corrections + original bitmap font. Text now renders
 > through a generated bitmap font (`font.ui.{small,main,title}`), not raylib's
 > default — do a legibility pass across **every** screen at W1–W6 and judge the

@@ -84,6 +84,12 @@ reserved for their meanings and never decorative.
   Crystal Mine = supports/rails/clusters; Hollow Forest = roots/organic
   boundaries. Grayscale composition must still distinguish them.
 - Decorative density stays low near doors, markers, and paths.
+- **Town service screens (M27):** each of the six services (Inn, Item Shop,
+  Equip Shop, Training Hall, Scoreboard, Guild) has its own full-screen
+  background — a distinct dark tinted gradient plus a low-contrast themed motif
+  biased to the top/edges. Legibility of overlaid text is the binding
+  constraint (§7): the base stays near the prior flat fill so M12 contrast
+  holds, and a missing background falls back to that flat fill.
 
 ## 7. UI ornament
 

@@ -110,6 +110,19 @@ void drawFramedPanel(ResourceManager& resources, int x, int y, int w, int h, Col
                       Vector2{0, 0}, 0.0f, WHITE);
 }
 
+void drawSceneBackground(ResourceManager& resources, const std::string& id, Color fallback,
+                         int w, int h) {
+    ClearBackground(fallback);
+    if (!resources.hasTexture(id)) {
+        return;
+    }
+    const Texture2D& tex = resources.texture(id);
+    DrawTexturePro(tex,
+                   Rectangle{0, 0, static_cast<float>(tex.width), static_cast<float>(tex.height)},
+                   Rectangle{0, 0, static_cast<float>(w), static_cast<float>(h)}, Vector2{0, 0},
+                   0.0f, WHITE);
+}
+
 int measureText(const std::string& text, int fontSize) {
     return measureWidth(text.c_str(), fontSize);
 }

@@ -34,7 +34,7 @@
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ◑ implemented, awaiting manual approval |
-| 27 | Environment & ambience identity | ☐ planned |
+| 27 | Environment & ambience identity | ◑ implemented, awaiting manual approval |
 | 28 | Enmity, AI diversity & control skills | ☐ planned |
 | 29 | Content expansion & class learnsets | ☐ planned |
 | 30 | Economy: paid rest & rest-token event | ☐ planned |
@@ -914,7 +914,10 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M27 — Environment & ambience identity
 
-- **Status:** planned
+- **Status:** implemented, awaiting manual approval (owner authorized
+  2026-07-20; six service backgrounds, retuned ambience beds, ambience routed
+  to the SFX slider; 252/252 tests; 23/23 capture scenes clean; generators
+  byte-identical bar the intended changes — see the note's §K)
 - **Goal:** make town services and dungeon themes feel like distinct places.
 - **Context:** all six town service states draw a single
   `ClearBackground(solid)`. Per-theme ambience *is* correctly wired

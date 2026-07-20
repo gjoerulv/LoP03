@@ -137,7 +137,8 @@ void GuildState::handleInput(const Input& input) {
 void GuildState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 26, 255});
+    ui::drawSceneBackground(context_.resources, "bg.guild", Color{16, 16, 26, 255},
+                            context_.virtualWidth, context_.virtualHeight);
 
     ui::drawTextCentered("Guild", w / 2, 18, 18, RAYWHITE);
     ui::drawTextCentered("Choose a dungeon and enter.", w / 2, 40, 10, Color{180, 180, 200, 255});
