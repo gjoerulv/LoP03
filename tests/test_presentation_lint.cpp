@@ -75,6 +75,23 @@ TEST_CASE("lint: every convention-derived texture id resolves in the manifest", 
         INFO(id);
         CHECK(hasTexture(m, id));
     }
+    // M26 definition-of-done guard: every content enemy/boss must resolve to
+    // its OWN battle sprite (BattleState prefers enemy.<id>.battle /
+    // boss.<id>.battle before the tier fallback). A missing per-id sprite is a
+    // failing result here, not a silent degrade to the generic tier image at
+    // runtime — so new content (M29) cannot ship without art.
+    for (const auto& [id, def] : db.enemies()) {
+        (void)def;
+        const std::string tex = "enemy." + id + ".battle";
+        INFO(tex);
+        CHECK(hasTexture(m, tex));
+    }
+    for (const auto& [id, def] : db.bosses()) {
+        (void)def;
+        const std::string tex = "boss." + id + ".battle";
+        INFO(tex);
+        CHECK(hasTexture(m, tex));
+    }
 }
 
 TEST_CASE("lint: names are present and descriptions fit the 2-line detail region",

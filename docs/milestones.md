@@ -33,7 +33,7 @@
 | 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M30** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
-| 26 | Enemy visual identity | ☐ planned |
+| 26 | Enemy visual identity | ◑ implemented, awaiting manual approval |
 | 27 | Environment & ambience identity | ☐ planned |
 | 28 | Enmity, AI diversity & control skills | ☐ planned |
 | 29 | Content expansion & class learnsets | ☐ planned |
@@ -850,10 +850,10 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M25 — UI corrections & battle HUD
 
-- **Status:** implemented, awaiting manual approval (owner authorized
-  2026-07-20; scope amended to add a font-replacement slice — see the note's
-  §A.1 and as-implemented record §N. 252/252 tests; 23/23 capture scenes
-  overflow-clean; Debug + Release both build clean)
+- **Status:** ☑ complete (approved by the owner 2026-07-20, after manual
+  testing; committed. Scope was amended to add a font-replacement slice — see
+  the note's §A.1 and as-implemented record §N. 252/252 tests; 23/23 capture
+  scenes overflow-clean; Debug + Release both build clean.)
 - **Goal:** fix the readability defects that make the game look unfinished, and
   replace raylib's default font with an original bitmap font, at zero
   simulation risk.
@@ -885,7 +885,10 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M26 — Enemy visual identity
 
-- **Status:** planned
+- **Status:** implemented, awaiting manual approval (owner authorized
+  2026-07-20; 27 per-id battle sprites; presentation-lint guard added and
+  verified to fail on a removed row; 252/252 tests; 23/23 capture scenes clean;
+  generator byte-identical on rerun — see the note's §M)
 - **Goal:** give every enemy and boss its own silhouette.
 - **Context:** the code already resolves `enemy.<sourceId>.battle` and
   `boss.<sourceId>.battle` before falling back to the tier sprite

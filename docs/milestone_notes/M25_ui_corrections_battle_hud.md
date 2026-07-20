@@ -2,7 +2,7 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval
+- **Status:** complete (approved by the owner 2026-07-20, after manual testing)
 - **Last reviewed repository commit:** `a9960b4` (working tree clean; code
   unchanged since `aa5a8aa`). Re-audited 2026-07-20 against the current
   checkout: every code reference in §B/§F/§G was confirmed still accurate, and
