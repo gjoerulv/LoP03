@@ -31,13 +31,43 @@ music, or text. Built in **C++20** with **raylib**.
 
 ## Build & run
 
-Build from the **Visual Studio developer environment** so `cl` and the bundled
-CMake/Ninja are on `PATH`: open a **"Developer PowerShell for VS"** (or run
-`vcvars64.bat` in a normal shell first):
+Every command below must run from a **Visual Studio developer environment**, so
+that `cl` and the bundled Ninja are on `PATH`.
+
+**Recommended:** open **Developer PowerShell for VS 2022** from the Start menu
+and run the build commands there.
+
+Verify the environment before configuring — all three must resolve:
 
 ```powershell
-& "C:\Program Files\Microsoft Visual Studio\<edition>\VC\Auxiliary\Build\vcvars64.bat"
+where.exe cl
+where.exe ninja
+cmake --version          # 3.20 or newer
 ```
+
+<details>
+<summary>Alternatives if you are not using the Developer PowerShell shortcut</summary>
+
+**Bootstrap an existing PowerShell session.** `vcvars64.bat` cannot configure a
+PowerShell session — it sets variables in a child `cmd` process that are
+discarded when it exits, so `& "...\vcvars64.bat"` leaves your shell unchanged.
+Use Visual Studio's PowerShell entry point instead, which sets the variables in
+the *current* session (substitute your edition — `Community`, `Professional`, or
+`Enterprise`):
+
+```powershell
+$vsRoot = "C:\Program Files\Microsoft Visual Studio\2022\<edition>"
+& "$vsRoot\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
+```
+
+**Wrap a single command in `cmd`.** This configures only the wrapped command,
+not your PowerShell session, so each build command needs its own wrapper:
+
+```powershell
+cmd /c "call ""C:\Program Files\Microsoft Visual Studio\2022\<edition>\VC\Auxiliary\Build\vcvars64.bat"" >nul && cmake --preset msvc-debug"
+```
+
+</details>
 
 ### Presets (recommended, M24)
 

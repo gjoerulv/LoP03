@@ -64,6 +64,7 @@ add_library(crystal_core STATIC
     src/resource/ResourceManager.cpp
     src/platform/Paths.cpp
     src/platform/AtomicFile.cpp
+    src/platform/FatalDialog.cpp
     src/content/Enums.cpp
     src/content/LoadReport.cpp
     src/content/JsonValidation.cpp
@@ -119,6 +120,13 @@ target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"
 target_link_libraries(crystal_core PUBLIC raylib nlohmann_json::nlohmann_json)
 set_project_warnings(crystal_core)
 
+# NOTE: do not add an explicit `user32` link here or on CrystalDungeons.
+# MessageBox (src/platform/FatalDialog.cpp) resolves from user32.lib in MSVC's
+# default standard libraries, which the linker places *after* raylib.lib.
+# Naming user32 explicitly moves it ahead of raylib and breaks the link with
+# "LNK2005: CloseWindow already defined in user32.lib" -- raylib's rcore.c
+# defines its own CloseWindow.
+
 # Configuration-aware guards are mandatory: CMAKE_BUILD_TYPE is empty for
 # multi-configuration generators such as Visual Studio.
 target_compile_definitions(crystal_core PUBLIC
@@ -148,7 +156,6 @@ endif()
 # in Debug. The GUI subsystem normally expects WinMain, so point the entry point
 # back at the standard main() we provide.
 if(WIN32)
-    target_link_libraries(CrystalDungeons PRIVATE user32)
     set_target_properties(CrystalDungeons PROPERTIES
         WIN32_EXECUTABLE $<CONFIG:Release>)
     if(MSVC)

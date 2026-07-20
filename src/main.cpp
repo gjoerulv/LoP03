@@ -1,18 +1,13 @@
-#include <cstdio>
 #include <exception>
 #include <filesystem>
 #include <string>
 #include <string_view>
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
-
 #include "capture/CaptureRunner.hpp"
 #include "core/Application.hpp"
 #include "core/Log.hpp"
 #include "core/Version.hpp"
+#include "platform/FatalDialog.hpp"
 #include "platform/Paths.hpp"
 
 #if defined(CRYSTAL_SHIPPING_BUILD) && \
@@ -22,18 +17,22 @@
 
 namespace {
 
-void showFatalError(std::string_view message) {
-    std::string text = "Crystal Dungeons could not continue.\n\n";
-    text.append(message);
-    const std::filesystem::path logPath = cd::log::currentLogPath();
-    if (!logPath.empty()) {
-        text += "\n\nDiagnostic log:\n" + logPath.string();
+// Composes the player-facing text and hands it to the platform dialog. The raw
+// message is already in the log by this point; this adds the log location so a
+// player can find the diagnostics.
+void showFatalError(std::string_view message) noexcept {
+    try {
+        std::string text = "Crystal Dungeons could not continue.\n\n";
+        text.append(message);
+        const std::filesystem::path logPath = cd::log::currentLogPath();
+        if (!logPath.empty()) {
+            text += "\n\nDiagnostic log:\n" + logPath.string();
+        }
+        cd::platform::showFatalDialog(text);
+    } catch (...) {
+        // Composing the friendly text failed; still surface the raw message.
+        cd::platform::showFatalDialog(message);
     }
-#ifdef _WIN32
-    MessageBoxA(nullptr, text.c_str(), "Crystal Dungeons - Fatal Error", MB_OK | MB_ICONERROR);
-#else
-    std::fprintf(stderr, "%s\n", text.c_str());
-#endif
 }
 
 } // namespace
