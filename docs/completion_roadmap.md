@@ -488,3 +488,66 @@ web or platform standards.
 - raylib 6.0 examples and API reference:
   - https://www.raylib.com/examples.html
   - https://www.raylib.com/cheatsheet/raylib_cheatsheet_v6.0.pdf
+
+## 12. Polish program (M25–M30) — direction
+
+Added 2026-07-20, after an owner review found the game not release-ready and
+deferred M23/M24 behind this work. Direction and quality bars only; scope lives
+in `docs/milestones.md` and the per-milestone notes.
+
+### Why this phase exists
+
+The completion program (M11–M24) delivered systems, safety, and replaceability.
+What it did not deliver is *identity*: enemies share three sprites across 27
+definitions, town services are flat colour fields, and every enemy in the game
+makes the same decision every turn. The result reads as a well-built prototype
+rather than a finished game. Two defect classes dominate:
+
+- **Visual sameness.** Presentation contracts are correct and the fallbacks work
+  exactly as designed — but a fallback used everywhere becomes the art
+  direction. Per-enemy art was always a manifest drop-in; nobody dropped it in.
+- **Tactical staleness.** Deterministic lowest-HP targeting is readable and
+  testable, and it made M5–M22 possible. It also means the optimal play is to
+  keep one character wounded, which inverts party roles: an efficiently played
+  mage becomes the tank.
+
+### Quality bars for this phase
+
+Additional to §4, §5, §9 and §10, which all still apply:
+
+1. **Distinctness is a requirement, not a polish item.** Every enemy, boss,
+   service screen, and dungeon theme must be identifiable without reading its
+   name. Tier-generic fallbacks remain in the code as a safety net, but shipping
+   content relying on one is a defect the lint suite must catch.
+2. **Unpredictable must not mean random.** Enemy behaviour should be hard for a
+   player to exploit and impossible for the simulator to disagree about. Seeded
+   variance yes; nondeterminism never. The simulator and live play must continue
+   to produce identical outcomes from identical inputs.
+3. **Player agency over threat.** Removing exploitable targeting is only half
+   the change. If the player cannot deliberately influence who gets attacked,
+   the result is frustration rather than tactics — the control skills are part
+   of the AI change, not a follow-up.
+4. **Score history stays honest.** M19's principle holds: runs are never
+   silently normalised. A battle-rules change is as comparability-breaking as a
+   generation change and gets its own version tag, because a player comparing
+   two runs is entitled to know which rules produced each.
+5. **Progression should have texture.** Content volume alone does not fix
+   staleness. Skills arriving over levels give a run shape that a larger flat
+   roster does not.
+
+### Ordering rationale
+
+Presentation corrections (M25) first: they are risk-free, independently
+valuable, and M28's enmity model is unreadable without the target-info UI that
+M25 introduces. Art identity (M26) before content expansion (M29), so new
+enemies inherit an established language rather than setting one. The combat
+rules change (M28) before content built for it (M29), so behaviour profiles
+exist before enemies are designed around them. Economy (M30) last, because gold
+income depends on battle outcomes and content — tuning a rest cost before those
+settle is tuning against a moving target.
+
+M23 and M24 run after M30 rather than being cancelled. Their tooling and
+packaging work is built and retained; only the sequencing changed. Validating
+and packaging a build known to need this work would have measured the wrong
+build, and the capture scenes and balance battery both need extending for the
+new AI, content, and art before that validation is worth trusting.
