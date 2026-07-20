@@ -4,15 +4,19 @@
 #include <memory>
 #include <utility>
 
+#include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "content/LoadReport.hpp"
 #include "core/AppContext.hpp"
 #include "dungeon/DungeonGenerator.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "save/SaveSystem.hpp"
 #include "states/DungeonState.hpp"
 #include "states/StateStack.hpp"
+#include "states/TutorialPromptState.hpp"
+#include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
 
 namespace cd {
@@ -42,6 +46,8 @@ GuildState::GuildState(StateStack& stack, AppContext& context)
 }
 
 void GuildState::onEnter() {
+    context_.audio.setMusic(MusicTrack::Guild);  // preparation scene (M21)
+    maybeTutorialPrompt(stack(), context_, tutorial::kGuildPrepare);
     themeIds_.clear();
     for (const auto& [id, def] : context_.content.themes()) {
         (void)def;
@@ -52,6 +58,12 @@ void GuildState::onEnter() {
         themeIndex_ = 0;
     }
     seed_ = randomSeed();
+}
+
+void GuildState::onResume() {
+    // Back from the dungeon (or a submenu): restore the preparation scene.
+    context_.audio.setMusic(MusicTrack::Guild);
+    context_.audio.setAmbience(AmbienceTrack::None);
 }
 
 std::string GuildState::currentThemeName() const {
@@ -76,15 +88,15 @@ void GuildState::enterDungeon() {
 }
 
 void GuildState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
     }
 
-    const int dir = (input.pressed(InputAction::MoveRight) ? 1 : 0) -
-                    (input.pressed(InputAction::MoveLeft) ? 1 : 0);
+    const int dir = (input.navPressed(InputAction::MoveRight) ? 1 : 0) -
+                    (input.navPressed(InputAction::MoveLeft) ? 1 : 0);
     if (dir != 0) {
         if (menu_.cursor() == kTheme && !themeIds_.empty()) {
             const int n = static_cast<int>(themeIds_.size());
@@ -125,8 +137,14 @@ void GuildState::render() {
     ui::drawMenu(menu_, 70, 140, 16, 11, RAYWHITE, Color{90, 90, 110, 255},
                  Color{240, 220, 120, 255});
 
-    ui::drawTextCentered("Left/Right adjusts Theme & Depth. Entering autosaves. Cancel: Back",
-                         w / 2, h - 14, 9, Color{150, 150, 170, 255});
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    const std::string footer =
+        "[" + input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
+        input::primaryLabel(map, InputAction::MoveRight, device) +
+        "] Adjust Theme & Depth. Entering autosaves. " +
+        input::prompt(map, InputAction::Cancel, device, "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, h - 14, 9, Color{150, 150, 170, 255});
 }
 
 }  // namespace cd

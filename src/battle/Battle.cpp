@@ -146,6 +146,26 @@ void Battle::clearGuard(int unit) {
 std::string Battle::tickStatuses(int unit) {
     std::string log;
     Combatant& c = units[static_cast<std::size_t>(unit)];
+
+    // Commander rally (M20): once, at the start of its turn below half HP,
+    // fallen minions rise at half strength. Runs here because both the
+    // battle screen and the simulator call tickStatuses at turn start, so
+    // play and simulation stay identical.
+    if (c.ralliesMinions && !c.rallied && c.alive() && c.hp * 2 < c.maxHp) {
+        c.rallied = true;
+        int raised = 0;
+        for (Combatant& u : units) {
+            if (&u != &c && u.side == c.side && !u.isBoss && !u.alive()) {
+                u.hp = std::max(1, u.maxHp / 2);
+                ++raised;
+            }
+        }
+        if (raised > 0) {
+            log += c.name + " rallies the fallen - " + std::to_string(raised) +
+                   (raised == 1 ? " minion rises anew!" : " minions rise anew!");
+        }
+    }
+
     if (c.statuses.empty()) {
         return log;
     }
@@ -172,11 +192,23 @@ std::string Battle::tickStatuses(int unit) {
 std::string Battle::attack(int actor, int target) {
     Combatant& a = units[static_cast<std::size_t>(actor)];
     Combatant& t = units[static_cast<std::size_t>(target)];
-    const int dmg = physicalDamage(a, t, 0);
+    const bool opener = a.rushOpener && !a.actedOnce;
+    a.actedOnce = true;
+    int dmg = physicalDamage(a, t, 0);
+    if (opener) {
+        dmg *= 2;  // Rush: opening fury
+    }
     applyDamage(t, dmg);
     std::string log = a.name + " attacks " + t.name + " for " + std::to_string(dmg) + ".";
+    if (opener) {
+        log += " (opening fury!)";
+    }
     if (!t.alive()) {
         log += " " + t.name + " is KO'd!";
+    }
+    if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
+        a.enrageAnnounced = true;
+        log = a.name + " flies into a rage! " + log;
     }
     return log;
 }
@@ -202,7 +234,21 @@ std::vector<int> Battle::resolveTargets(const content::SkillDef& skill, int acto
 std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillDef& skill) {
     Combatant& a = units[static_cast<std::size_t>(actor)];
     a.mp = std::max(0, a.mp - skill.mpCost);
+    const bool opener = a.rushOpener && !a.actedOnce;
+    a.actedOnce = true;
+    // Sorcerer empowerment: +25% magic damage per fallen same-side ally.
+    int empowerPct = 0;
+    if (a.empowersOnAllyFall) {
+        for (const Combatant& u : units) {
+            if (&u != &a && u.side == a.side && !u.alive()) {
+                empowerPct += 25;
+            }
+        }
+    }
     std::string log = a.name + " uses " + skill.name + ".";
+    if (empowerPct > 0) {
+        log += " (empowered +" + std::to_string(empowerPct) + "%)";
+    }
 
     for (int ti : resolveTargets(skill, actor, primaryTarget)) {
         if (ti < 0 || ti >= static_cast<int>(units.size())) {
@@ -211,7 +257,10 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
         Combatant& t = units[static_cast<std::size_t>(ti)];
         switch (skill.category) {
             case content::SkillCategory::Physical: {
-                const int dmg = physicalDamage(a, t, skill.power);
+                int dmg = physicalDamage(a, t, skill.power);
+                if (opener) {
+                    dmg *= 2;  // Rush: opening fury
+                }
                 applyDamage(t, dmg);
                 log += " " + t.name + " takes " + std::to_string(dmg) + ".";
                 if (!t.alive()) {
@@ -220,7 +269,11 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                 break;
             }
             case content::SkillCategory::Magic: {
-                const int dmg = magicDamage(a, t, skill.power);
+                int dmg = magicDamage(a, t, skill.power);
+                dmg = dmg * (100 + empowerPct) / 100;
+                if (opener) {
+                    dmg *= 2;  // Rush: opening fury
+                }
                 applyDamage(t, dmg);
                 log += " " + t.name + " takes " + std::to_string(dmg) + ".";
                 if (!t.alive()) {
@@ -245,6 +298,10 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             addStatus(t, skill.statusEffect, skill.statusMagnitude, skill.statusDuration);
             log += " " + t.name + ": " + statusLabel(skill.statusEffect) + ".";
         }
+    }
+    if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
+        a.enrageAnnounced = true;
+        log = a.name + " flies into a rage! " + log;
     }
     return log;
 }
@@ -314,6 +371,18 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         b.units.push_back(std::move(u));
     }
 
+    // Depth stat scaling (M20 composition): applied identically here and in
+    // the danger assessment, so labels never lie about what spawns.
+    const auto scaled = [&team](const content::StatBlock& base) {
+        content::StatBlock s = base;
+        s.maxHp = s.maxHp * team.statScalePct / 100;
+        s.attack = s.attack * team.statScalePct / 100;
+        s.magic = s.magic * team.statScalePct / 100;
+        s.defense = s.defense * team.statScalePct / 100;
+        s.speed = s.speed * team.statScalePct / 100;
+        return s;
+    };
+
     // Boss combatant (built from a BossDef; its minions follow below).
     if (!team.bossId.empty()) {
         if (const content::BossDef* boss = db.findBoss(team.bossId)) {
@@ -321,12 +390,15 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             u.side = Side::Enemy;
             u.sourceId = boss->id;
             u.name = boss->name;
-            u.stats = boss->stats;
-            u.hp = u.maxHp = boss->stats.maxHp;
-            u.mp = u.maxMp = deriveMaxMp(boss->stats.magic);
+            u.stats = scaled(boss->stats);
+            u.hp = u.maxHp = u.stats.maxHp < 1 ? 1 : u.stats.maxHp;
+            u.mp = u.maxMp = deriveMaxMp(u.stats.magic);
             u.skillIds = boss->skills;
             u.isBoss = true;
             u.enrages = boss->archetype == content::BossArchetype::Brute;
+            u.empowersOnAllyFall = boss->archetype == content::BossArchetype::Sorcerer;
+            u.ralliesMinions = boss->archetype == content::BossArchetype::Commander;
+            u.rushOpener = boss->archetype == content::BossArchetype::Rush;
             u.telegraph = boss->telegraph;
             b.units.push_back(std::move(u));
         }
@@ -346,9 +418,9 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         Combatant u;
         u.side = Side::Enemy;
         u.sourceId = id;
-        u.stats = def->stats;
-        u.hp = u.maxHp = def->stats.maxHp;
-        u.mp = u.maxMp = deriveMaxMp(def->stats.magic);
+        u.stats = scaled(def->stats);
+        u.hp = u.maxHp = u.stats.maxHp < 1 ? 1 : u.stats.maxHp;
+        u.mp = u.maxMp = deriveMaxMp(u.stats.magic);
         u.skillIds = def->skills;
         u.isBoss = false;  // minions are not the boss
         u.name = def->name;
@@ -423,6 +495,29 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
             return choice;
         }
     }
+    // Support skills (M20: makes the buffer/debuffer role real): cast a
+    // buff/debuff whose status the target does not already carry. Statuses
+    // expire, so this recurs but never spams while one is active.
+    for (const std::string& sid : self.skillIds) {
+        const content::SkillDef* skill = db.findSkill(sid);
+        if (skill == nullptr || skill->mpCost > self.mp ||
+            skill->category != content::SkillCategory::Support ||
+            skill->statusEffect == content::StatusType::None) {
+            continue;
+        }
+        const bool onEnemy = skill->target == content::SkillTarget::SingleEnemy;
+        const int ti = onEnemy ? targetParty : actor;
+        if (ti < 0) {
+            continue;
+        }
+        if (statusSum(b.units[static_cast<std::size_t>(ti)], skill->statusEffect) == 0) {
+            choice.useSkill = true;
+            choice.skillId = sid;
+            choice.target = ti;
+            return choice;
+        }
+    }
+
     for (const std::string& sid : self.skillIds) {
         const content::SkillDef* skill = db.findSkill(sid);
         if (skill == nullptr || skill->mpCost > self.mp) {

@@ -11,8 +11,12 @@ music, or text. Built in **C++20** with **raylib**.
 > **Status: feature-complete playable build** (Milestones 1–10). Town hub,
 > seeded walkable dungeons, deterministic turn-based combat with status effects,
 > danger ratings, scoring + scoreboard, content (classes/enemies/elites/bosses/
-> items/skills/themes), equipment, XP/leveling, shops, placeholder audio, and a
-> controls screen are all in. Art and audio are intentionally placeholder.
+> items/skills/themes), equipment, XP/leveling, shops, and a controls screen
+> are all in. A post-M10 completion program (M11–M24) is underway — UI/text
+> safety, input remapping, replaceable assets, generated 16-bit-style art,
+> compact rooms, encounter variety, a full original soundscape, and (M22)
+> in-play onboarding + accessibility options are done; validation/balance
+> hardening and release packaging remain — see `docs/completion_roadmap.md`.
 
 ## Requirements
 
@@ -35,7 +39,30 @@ CMake/Ninja are on `PATH`: open a **"Developer PowerShell for VS"** (or run
 & "C:\Program Files\Microsoft Visual Studio\<edition>\VC\Auxiliary\Build\vcvars64.bat"
 ```
 
-### Ninja (recommended)
+### Presets (recommended, M24)
+
+```powershell
+cmake --preset msvc-debug      # development: debug overlay + capture CLI
+cmake --build --preset debug
+.\build-msvc\CrystalDungeons.exe
+
+cmake --preset msvc-release    # shipping: static CRT, no capture CLI
+cmake --build --preset release
+```
+
+The release preset links the **static MSVC runtime**, so the packaged exe
+runs on a Windows machine without Visual Studio or the VC++ redistributable.
+To build the full distribution zip (stage + validate + archive):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\package.ps1
+# -> dist\CrystalDungeons-<version>-win64.zip
+```
+
+The version is set once in `CMakeLists.txt` `project(VERSION ...)` and flows
+into the exe metadata, the title screen, and the package name.
+
+### Ninja without presets
 
 ```powershell
 cmake -S . -B build-msvc -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
@@ -43,10 +70,9 @@ cmake --build build-msvc
 .\build-msvc\CrystalDungeons.exe
 ```
 
-Use `-DCMAKE_BUILD_TYPE=Debug` for a debug build. `-DCMAKE_*_COMPILER=cl` forces
-MSVC so no other compiler on `PATH` is picked by mistake. CMake copies the `data/`
-folder next to the executable; the **deliverable is `CrystalDungeons.exe` plus the
-`data/` folder beside it**.
+`-DCMAKE_*_COMPILER=cl` forces MSVC so no other compiler on `PATH` is picked
+by mistake. CMake copies `data/` and `assets/` next to the executable; the
+**deliverable is the staged folder produced by `tools\package.ps1`**.
 
 ### Visual Studio generator (alternative)
 
@@ -58,17 +84,27 @@ cmake --build build-msvc --config Release
 
 ## Controls
 
+Default bindings — everything except text-delete and the debug toggle is
+**remappable in-game** under **Main Menu → Settings** (also reachable from the
+pause menus). Settings, volumes, window mode, battle/message speed, effect
+intensity, and the high-contrast palette persist in `settings.json` in the
+user data folder; one-time tutorial-prompt progress persists in
+`tutorial.json` beside it (toggle or reset in Settings).
+
 | Action                | Keyboard               | Gamepad            |
 |-----------------------|------------------------|--------------------|
 | Move / Navigate       | Arrows or WASD         | D-Pad / Left Stick |
 | Confirm               | Enter or Space         | A                  |
 | Cancel / Back         | Esc or Backspace       | B                  |
 | Menu / Pause          | Tab                    | Start              |
-| Adjust (Guild theme/depth, etc.) | Left / Right | D-Pad L/R          |
+| Details / Info        | C                      | Y                  |
+| Adjust (Guild, Settings) | Left / Right        | D-Pad L/R / Stick  |
+| Delete (name entry)   | Backspace              | X                  |
 | Toggle debug overlay  | F1                     | —                  |
 
-The same list is in-game under **Main Menu → Controls**. The window is resizable;
-the 426×240 image always scales to fit with letterbox/pillarbox bars.
+The in-game list (**Main Menu → Controls**) always shows your *current*
+bindings. The window is resizable; the 426×240 image always scales to fit with
+letterbox/pillarbox bars.
 
 ## How to play
 
@@ -94,7 +130,7 @@ the 426×240 image always scales to fit with letterbox/pillarbox bars.
 src/
   core/      Application loop, AppContext, config, FadeController (transitions)
   render/    VirtualScreen (426x240 scaling), Viewport, raylib RAII wrappers
-  audio/     AudioManager (synthesized placeholder SFX + music)
+  audio/     AudioManager (manifest-driven music/ambience/SFX, synth fallback)
   input/     action mapping (keyboard + gamepad)
   resource/  cached textures/fonts with graceful fallback
   platform/  user-data paths, path sanitizing
@@ -129,9 +165,12 @@ save round-trips via the Save Point + Continue.
 
 ## Known limitations
 
-- **Placeholder art and audio.** Tiles, characters, and enemies are colored
-  rectangles/glyphs; SFX and music are simple synthesized tones. Both are
-  isolated and easy to replace (audio degrades to silence if unavailable).
+- **Generated assets.** All art (16-bit-style pixel tiles/sprites) and all
+  audio (11 chiptune music tracks, 4 ambience beds, 15 SFX) are original and
+  produced by deterministic in-repo generators (`tools/asset_gen/`). Every
+  sound and visual role is replaceable without code via
+  `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload
+  with F5); missing files fall back to synthesized placeholders or silence.
 - Status effects are a focused set (poison + attack/defense buffs/debuffs).
   Bosses use stats, skills, minions, telegraph text, and a Brute enrage; dynamic
   summons and true multi-wave "rush" are not implemented.
@@ -141,12 +180,16 @@ save round-trips via the Save Point + Continue.
 ## Originality & assets
 
 All content (names, classes, enemies, bosses, items, skills, themes, story
-flavor, UI) is original to this project. No copyrighted assets are used. Audio
-and tile/sprite visuals are generated in code as placeholders.
+flavor, UI) is original to this project. No copyrighted assets are used. All
+audio and tile/sprite visuals are original, produced by the deterministic
+generators in `tools/asset_gen/`; provenance is recorded in
+`assets/credits.md`.
 
 ## Documentation
 
 - [`docs/game_design.md`](docs/game_design.md) — what the game is and why.
 - [`docs/technical_design.md`](docs/technical_design.md) — architecture & conventions.
-- [`docs/milestones.md`](docs/milestones.md) — roadmap and status.
+- [`docs/milestones.md`](docs/milestones.md) — milestone ledger and status.
+- [`docs/completion_roadmap.md`](docs/completion_roadmap.md) — post-M10
+  completion program (M11–M24) direction and quality targets.
 - `CLAUDE.md` — the project's operating contract.

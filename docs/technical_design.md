@@ -29,11 +29,11 @@ CMakeLists.txt            # root build
 cmake/                    # Dependencies.cmake, CompilerWarnings.cmake
 docs/                     # design + technical + milestones (source of truth)
 data/                     # JSON content (populated M2+)
-assets/                   # textures/audio/fonts placeholders (M8); .gitkeep for now
+assets/                   # manifest.json + generated textures/audio + credits.md
 src/
   main.cpp
   core/                   # Application, AppContext, GameConfig, Log, Geometry, FadeController
-  audio/                  # AudioManager: synthesized placeholder SFX + music
+  audio/                  # AudioManager + AudioRoles: manifest-driven audio, synth fallback
   render/                 # VirtualScreen, Viewport (pure), RaylibRAII
   states/                 # GameState, StateStack, concrete states (menu/town/...)
   input/                  # InputAction, InputMap (+ raylib query factory)
@@ -87,19 +87,249 @@ function** (no raylib) returning scale + destination rect, and is unit-tested.
 
 ### Input layer
 
-`InputAction` is the gameplay-facing enum. `InputMap` holds key/gamepad bindings
-per action. Resolution is **pure**: `InputMap::isDown/isPressed/isReleased(action,
-const InputQuery&)`, where `InputQuery` is a set of callbacks. Production uses
-`makeRaylibInputQuery()` (wraps raylib polling); tests inject fakes. The `Input`
-facade (owned by `Application`) refreshes the query each frame and is passed to
-states as `const Input&`.
+`InputAction` is the gameplay-facing enum (with stable serialization names and
+display names). `InputMap` holds key/gamepad bindings per action; `InputQuery`
+is a set of injected callbacks (keys, buttons, axes, text codepoints, pressed-
+key queue) so everything below tests headlessly with fakes; production uses
+`makeRaylibInputQuery()`.
 
-### Resources
+The `Input` facade (owned by `Application`) computes a per-frame action model
+in `update(dt)` (M13): unified key/button/left-stick down states (stick with
+0.5-enter/0.35-release hysteresis), its own press/release edges, hold-repeat
+navigation (`navPressed`, 0.35s delay / 90ms interval — menus use it,
+Confirm/Cancel never repeat), suppression of held input across state
+transitions and remap listens (`suppressUntilRelease`, triggered by
+`Application` on stack-top changes), and active-device tracking that drives
+prompt labels. Supporting pure modules: `input/PromptLabels` (binding →
+"[Tab] Pause"-style labels; all prompts and the generated Controls page use
+them), `input/Remap` (swap-with-donor conflict policy, Esc reserved,
+never-unbound invariants).
 
-`ResourceManager` caches by key and owns raylib handles via RAII wrappers
-(`RaylibRAII.hpp`). Missing/failed loads log a warning and return a generated
-**placeholder** (e.g., magenta checkerboard texture) — never crash. Requires an
-initialized window, so it is exercised at runtime, not in unit tests.
+### Settings (M13)
+
+`settings::SettingsStore` persists a versioned `settings.json` (v1) in the
+user data dir: master/music/SFX volumes (applied via
+`AudioManager::setVolumes`), borderless-window mode (applied self-healing per
+frame), battle speed (scales the battle resolve pause), message speed (scales
+transient message durations), and both devices' remappable bindings. Loading
+is defensive (ObjectReader/LoadReport): missing file = silent defaults;
+malformed/foreign-version = reported defaults; a binding set that would
+strand the keyboard restores that action's defaults. Parse/serialize are
+string-based and headless-tested.
+
+### Resources & the asset manifest (M14)
+
+Presentation assets resolve through `assets/manifest.json` (schema v1
+owner-approved at M14; v2 animation entries owner-approved at M17; the loader
+accepts both. Parsing/validation is raylib-free in `src/assets/AssetManifest`
+and headless-tested, including a test that validates the shipped manifest).
+States request **stable logical IDs** — never file paths. `ResourceManager`
+caches by id and owns raylib handles via RAII wrappers (`RaylibRAII.hpp`);
+unknown ids / missing files / failed loads log a warning and return a
+generated **placeholder** (magenta checker) or the default font — never crash.
+`AudioManager` resolves its fixed roles (`sfx.*`, `music.*`, `ambience.*`;
+tables in `src/audio/AudioRoles.hpp` since M21) against the same catalog:
+manifest file → synthesized tone → silence (owner-approved order);
+file music uses raylib music streams. Reload model (owner-approved): callers
+cache nothing and re-fetch by id; the debug-only F5 `ReloadAssets` action
+re-resolves the catalog and restarts the current track. CMake copies `assets/`
+beside the executable like `data/`; provenance lives in `assets/credits.md`.
+Authoring guide: `docs/asset_pipeline.md`.
+
+M15 ships the first real catalog content: deterministic generators under
+`tools/asset_gen/` produce the slice's tiles/sprites/UI/music per
+`docs/art_bible.md`. Render paths key off the catalog per element (town and
+themed dungeon tiles via `tiles.<theme>.*` — `Dungeon.themeId` carries the
+content id — player/battle sprites with specific-id-then-generic lookup,
+`ui::drawFramedPanel` nine-patch) and keep the pre-asset colored-shape
+drawing as the fallback for roles without art, so themes and enemies gain
+art incrementally without code changes.
+
+### Animation & exploration presentation (M17)
+
+Manifest v2 adds `"animation"` entries: a horizontal frame strip inside a
+catalog texture (`texture`, `row`, `frameCount`, `frameWidth`/`Height`,
+`frameTime`, `loop`). Validation drops malformed entries and any animation
+whose strip texture is missing (`dropDanglingAnimations`, re-run after file
+checks); a shipped-manifest test also parses PNG headers to prove every
+strip fits its texture. Playback is pure and allocation-free
+(`render/Animation.hpp`: `frameAt` wraps or holds, `frameRect` indexes the
+strip); states keep their own clocks (walk clock resets while standing so
+frame 0 is the stand pose; a free-running world clock drives indicator
+pulses). `render/SpriteDraw` draws animation frames or static textures
+**centered on the collision-rect center**, so visual bounds are independent
+of collision bounds (art can change size freely; collision never reads
+texture dimensions).
+
+Draw-order rule (town + dungeon): tiles (with deterministic sparse accent
+variants) → world sprites (markers, then the player) → overlay pass (danger
+labels, the pulsing facing-brackets indicator) → HUD/minimap/footer. World
+sprites stay tile-bounded, overlays always draw above them — no depth
+sorting is needed or performed. Team markers select a silhouette by
+stat-derived danger tier (normal / horned elite for Dangerous+Deadly /
+crowned boss), with the M15 prop sprites and colored glyph rectangles as
+fallbacks; the tier is also always shown as the text label, so shape+text
+carry the information without color.
+
+### Composition, events & boss mechanics (M20)
+
+- **Roles & constraints:** `EnemyDef.role` is required content
+  (`enemies.json`); `data/composition.json` (v1, validated with repair-or-
+  report semantics, defaults = the shipped curves) externalizes team-size
+  and elite-chance depth curves, the support cap, the damage minimum, boss
+  minion bounds, and depth stat scaling. `makeTeam` fills slots from
+  constraint-filtered candidate lists (sorted pools, so composition is
+  deterministic per seed); an elite pool that cannot satisfy a rule falls
+  back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
+  carries the depth multiplier into both `buildBattle` and
+  `danger::teamThreat`, so displayed danger always matches the fight.
+  `kGenerationVersion` = 3.
+- **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
+  kinds unique per dungeon) carry a `RoomEvent`
+  (shrine/spring/merchant/challenge/wager) realized as an `EventChamber`
+  layout archetype with a solid event anchor; unguarded chests may be
+  `trapped` (extra gold, party wounds on claim). `DungeonState` shows each
+  event's full trade-off in the footer before Confirm and applies exactly
+  what it stated; elite challenges run through the normal battle flow with
+  an `EncounterKind::Challenge` that credits danger twice. The wager flows
+  through `RunSummary.wagerAccepted` → `ScoreBreakdown.wager` (+150
+  no-death / −100 otherwise, completed runs only) and the result panel
+  grows a line for it.
+- **Boss mechanics** (deterministic, in the pure sim, mirrored identically
+  by play and simulator because both share `tickStatuses` at turn start):
+  Brute enrage ×1.5 below half HP with a once-only announcement; Sorcerer
+  +25% magic per fallen ally (logged as "empowered"); Commander revives
+  fallen minions at half HP once, below half HP; Rush doubles its first
+  action's damage. Enemy AI also casts Support skills whose status the
+  target lacks — making buffer/debuffer enemies (and Commander kits) real.
+
+### Presets, versioning & packaging (M24)
+
+`CMakePresets.json` defines `msvc-debug` (dev: debug overlay + capture
+CLI) and `msvc-release` (shipping: `CMAKE_MSVC_RUNTIME_LIBRARY=
+MultiThreaded` with `CMP0091` forced NEW so raylib matches — the exe's
+import table carries only OS DLLs and runs without the VC++
+redistributable; verified via dumpbin). The version lives once in
+`project(VERSION)` and is configured into `generated/core/Version.hpp`
+(title-screen stamp) and `packaging/CrystalDungeons.rc.in` (Windows
+VERSIONINFO + icon; the multi-size `packaging/crystal.ico` is generated
+from the approved emblem by `tools/asset_gen/generate_icon.ps1`).
+`tools/package.ps1` is the one-command release path: preset build →
+stage exe + `data/` + `assets/` + player README + LICENSES → validate
+(required files, every manifest path resolves inside the package, no
+debug artifacts, capture strings absent from the exe, exe
+ProductVersion matches) → zip `dist/CrystalDungeons-<version>-win64.zip`.
+Release builds cap raylib's log level at warnings (`NDEBUG`). User data
+stays in `paths::userDataDir()` for dev and packaged builds alike.
+
+### Validation tooling (M23)
+
+Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
+<outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
+is not Release) renders 22 scenario states — every screen family, all
+three themes, five-enemy and boss battles, worst-case 12-char names,
+maximal score breakdowns, the tutorial/Details overlays, High Contrast —
+to the real 426×240 virtual screen in a hidden window, exports native-res
+PNGs (`VirtualScreen::exportImage`), and **fails (nonzero exit) if any
+scene raises a text-overflow diagnostic** (`ui::overflowEvents()`, a
+running counter behind the M12 fitted/wrapped helpers). All mutable state
+lives in a scratch temp dir; player data is never touched; reruns are
+byte-identical (hash-verified). **Lint:** `tests/test_presentation_lint.cpp`
+resolves every convention-derived texture id (per-theme tiles, per-class
+battle actors, tier fallbacks, markers, props) against the shipped
+manifest, checks name/description/telegraph budgets with a conservative
+measure (it caught two over-budget boss telegraphs on first run), and
+validates 2000+ generated rooms against the full M16 invariant set.
+**Reports:** `crystal_tests "[sim-report]" -s` emits reproducible JSON —
+progression bands per depth and outlier encounters (teams needing > 2× the
+median rounds at the dungeon's clearing level). The M23 tuning
+(composition.json elite pressure; `kGenerationVersion` 4) moved the
+clearing curve from 1/1/1/1/3/5/9/11 to 1/1/1/2/3/7/9/11 (depths
+1/2/3/4/5/6/8/10).
+
+### Onboarding & accessibility (M22)
+
+Tutorial: `src/tutorial/Tutorial.*` is raylib-free — a constexpr beat table
+(9 beats, stable ids), `Progress {enabled, seen}` with defensive
+parse/serialize (malformed or foreign-version `tutorial.json` → fresh
+state, reported, never a crash; unknown seen ids survive round trips), and
+`TutorialStore::takeBeat` which marks-and-saves on first fire so a prompt
+shows at most once even across crashes. `TutorialPromptState` and the M22
+`DetailsOverlayState` are transparent overlay states (`rendersBelow()`
+only): the scene below freezes and dims, one Confirm dismisses. Beats are
+triggered from `onEnter`/`onResume`/`update` — never constructors, whose
+queued pushes would order the overlay underneath the state being built.
+`Details` is a new remappable `InputAction` (keyboard C, gamepad Y;
+additive to the bindings schema — old settings files keep the default).
+The UI palette moved behind `style::palette()` (see `ui_style_guide.md`
+§4): standard table byte-identical to the old constants, high-contrast
+table selected by `settings.highContrast` (optional field, absent = off).
+Save-overwrite and quit-to-title arm on first Confirm and execute on the
+second. Tests: `tests/test_tutorial.cpp` (round-trip, malformed, take-once
+store semantics on a temp file, beat-text wrap lint with a conservative
+measure) and `tests/test_accessibility.cpp` (palette equivalence/switch,
+settings round-trip, Details action schema + defaults).
+
+### Audio architecture (M21)
+
+The full soundscape ships through the M14 catalog — 30 original WAVs (11
+music, 4 ambience, 15 SFX) produced by the deterministic
+`tools/asset_gen/generate_audio.ps1` (byte-identical reruns; provenance in
+`assets/credits.md`). The stable contract is `src/audio/AudioRoles.hpp`
+(raylib-free): `Sfx`/`MusicTrack`/`AmbienceTrack` enums, role-id tables,
+the synth-fallback map, per-role SFX rate-limit intervals, and the fade
+curve — all headless-tested against the shipped manifest
+(`tests/test_audio.cpp`, including RIFF-header validation of every file).
+`AudioManager` gains a second streamed channel for ambience (file-or-
+silence, governed by the music volume slider), a 0.25 s crossfade on music
+changes, one-shot victory/defeat jingles (`loop:false`; when the file is
+missing the matching stinger SFX plays so battle end is never silent), and
+rate limiting so held movement keys yield a step cadence and rapid menu
+scrolling stays clean. Scene mapping: title/town/guild tracks, per-theme
+dungeon music + ambience (owner decision; `themeMusic`/`themeAmbience` in
+`DungeonState`), boss battles use `music.boss` via the existing
+`bossBattle_` flag, and the result screen plays `music.result`. Battle SFX
+are typed at the presentation layer only (`stageNumbers` picks
+physical/magic/status codes from the resolved `SkillDef`) — the sim is
+untouched. No gameplay information is sound-only; the muted game plays
+identically.
+
+### Score comparability & economy audit (M19)
+
+`ScoreEntry` carries two optional comparability tags, both loaded with
+absent-defaults and written without a scoreboard format bump:
+`generationVersion` (M16) and `partyLevel` (M19; highest party level at
+completion, 0 = legacy shown as "-"). Ranking (`ranksAbove`) never reads
+them — they make comparison conditions visible instead of normalizing.
+The economy evidence battery lives in `tests/test_economy.cpp`: pure
+score-incentive guards (fewer turns always better; stalling and escapes
+always cost; unfinished runs score 0 regardless of loot) plus data-driven
+sims (depth-by-level clearing curve, income vs Training Hall costs, class
+identity at levels 1–50). An on-demand analysis table prints via
+`crystal_tests "[economy-report]" -s`. The M19 audit found no exploit
+loops and left all data values unchanged; the depth>6 difficulty plateau
+it exposed is deferred to M20's composition constraints (changing team
+composition would change published seed meaning).
+
+### Battle presentation sequencer (M18)
+
+The simulation stays synchronous and deterministic; `render/BattleSequencer`
+(pure, time-injected, headless-tested) only paces how an already-final
+result becomes visible: **Windup** (acting unit leans toward the foe) →
+**Impact** (hit units brighten, small screen shake, floating numbers +
+SFX appear, and the *displayed* HP commits) → **Settle** (the message pause,
+`resolveSeconds`). `BattleState` keeps a `displayHp_` mirror so bars, KO
+tags, and enemy fade-outs update at the impact beat rather than instantly;
+fallen enemies sink away over 0.4s while party members stay visible for
+revives. Battle speed scales the staging (Fast halves it; Instant skips
+windup/impact entirely) and Confirm always skips the whole sequence — the
+commit still fires exactly once, so no information is ever lost by
+skipping. `effectFlash`/`effectShake` (M18 settings, full/reduced/off)
+gate the impact effects; flash is a decaying brighten pulse, never a
+strobe. The sim/presentation boundary is enforced by tests: every
+pre-existing battle and simulator test passes unmodified, and the
+sequencer's own tests cover stage ordering, speed scaling, skip semantics,
+one-shot commits, and settings honoring.
 
 ### Paths & safety
 
@@ -254,15 +484,47 @@ and unit-tested. `dungeon::generate(seed, depth, db)` returns a `Dungeon`:
 **Determinism rule:** to keep generation reproducible, iterate the (unordered)
 content DB into **sorted** id pools before any RNG-driven selection.
 
+### Compact room realization (Milestone 16)
+
+Topology and room realization are separate systems. `dungeon::generate` keeps
+deciding connectivity, gates, teams, chests, and the boss exactly as above;
+`dungeon/RoomLayout` (pure, unit-tested) turns each graph room into a compact
+layout:
+
+- **Archetypes** classified from immutable topology facts (`classifyRoom`):
+  Entry, Corridor, Crossroads, GateChamber, TreasureAlcove, TreasureVault,
+  BossAntechamber, BossArena. Owner-approved dimension ranges: common
+  chambers 9–15 × 7–11 tiles, corridors 9–13 long × 5–7 wide (long axis along
+  the door pair), boss arena 15–19 × 11–13; global bounds 5..19 × 5..13.
+- **Derived room-local seeds:** `roomLocalSeed(dungeonSeed,
+  kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
+  a per-room `Rng`. Realization **never draws from the topology RNG**, so
+  presentation changes cannot alter what a published seed means.
+  `kGenerationVersion` (currently 2; 1 = the pre-M16 fixed 26×15 rooms) is
+  folded into the hash and recorded on new score entries as an optional
+  `generationVersion` field — no scoreboard format bump; absent = pre-M16
+  (owner decision 2026-07-19).
+- **Layout contents:** closed border walls, centered two-tile door gaps per
+  wall (`doorGap`/`interiorGap`), sparse landmark pillars filtered by a
+  keep-clear mask (door lanes, anchors, spawns), and anchors for chest,
+  chest guard, and boss. RNG draw order depends only on immutable topology,
+  so a cleared gate or defeated guard never reshapes a room.
+- **Validation:** `validateLayout` BFS-checks every configuration a player
+  can experience (fully open, pristine gates-closed, and each cleared-gate
+  entry): doors, chest, and spawns reachable; gate/guard/boss blocks
+  face-able. Mass tests validate thousands of rooms across seeds, depths,
+  and themes; a safety net drops obstacles rather than ship an invalid room.
+
 ### Walkable presentation & flow
 
-`DungeonState` renders one room at a time as a single-screen tilemap (reusing
-`town::Tilemap`/`resolveMove`): walls with door gaps, walk room-to-room. **Gated
-doors are solid** (blocked by a team marker) until the battle milestone, so M4
-exercises generation, exploration, team/chest inspection, and the retreat flow —
-not combat. Entry: Guild → seed → autosave → dungeon; pause → Retreat to town.
-Danger tiers and dungeon score are intentionally absent until M6 (no
-hand-authored danger).
+`DungeonState` realizes all layouts once at dungeon entry (from pristine
+state) and composes each room's `town::Tilemap` from the layout base plus
+live overlays (door gaps carved unless gated; gate/guard/boss marker blocks
+while their encounters stand). Rooms draw centered in the exploration
+viewport (origin offset; render-only — movement and interaction stay in
+room-local space, reusing `resolveMove`). Entering through a door spawns you
+on that door's interior tile; the start room uses the layout's center spawn.
+Entry: Guild → seed → autosave → dungeon; pause → Retreat to town.
 
 ## 10. Combat (Milestone 5)
 
@@ -385,7 +647,41 @@ a geared level-1 party can down a depth-1 boss, and a simulated full clear score
 positively. No coefficients needed tuning. Malformed-data and save-compatibility
 coverage was extended (bosses/themes parsers; minimal/old saves; dropped gear).
 
-## 15. Leveling, shops & packaging (Milestone 10)
+## 15. UI layout & text safety (Milestone 12)
+
+Text placement is measured, never guessed (M12). The pure layer is headless-
+tested; raylib adapters live in `ui/UiDraw`.
+
+- **`ui/TextLayout`** (pure): injectable `TextMeasure`; `wrapText` does greedy
+  word wrap with long-token breaking (UTF-8-boundary safe) and preserves
+  explicit newlines; `lineHeight(fontSize)` is the single line-spacing rule.
+- **`ui/ScrollWindow`** (pure, header-only): scrolling window over vertical
+  lists — `follow` keeps a cursor visible (menus), `scrollBy` free-scrolls
+  (scoreboard); `moreAbove/moreBelow` drive the arrow indicators.
+- **`ui/UiStyle.hpp`**: named font roles (TitleHero 22 / ScreenTitle 16 /
+  Heading 14 / MenuLarge 14 / Menu 11 / Body 10 / Small 8), spacing, shared
+  colors. States use roles, not ad-hoc numbers, as they are migrated.
+- **`ui/UiDraw` additions**: `measureText`/`raylibMeasure()`;
+  `drawTextRight`; `drawTextFitted` (fits-or-clips + logs); `drawTextWrapped`
+  (bounded lines + logs); `drawMenuScrolled` (window slice + arrows).
+- **Overflow diagnostics:** any bounded draw that cannot fit reports
+  `[ui-overflow] site: 'text' Wpx > Mpx` once per site/text via `cd::log` and
+  scissor-clips instead of spilling. Silent truncation is prohibited; the log
+  line is the regression tripwire until M23 automates capture.
+- **Migrated in M12:** Help; battle bottom panel (command menu now fits — it
+  previously drew its last row off-screen; skill/item lists scroll in 4 rows
+  with the selected entry's description in the right column; 5-enemy columns
+  start higher and enemy statuses sit beside the unit); equip/item shops
+  (scrolling lists + selected-item detail line); scoreboard (right-aligned
+  numeric columns, depth column, free scrolling); town/dungeon HUD backdrops
+  sized to measured text; dungeon fight prompt includes the team name; title
+  menu centered on measured labels; result-panel pitch; Inn/Training Hall
+  drop `%-N s` pseudo-columns. Debug overlay now starts hidden (F1 toggles).
+- **Not yet migrated** (fit today, tracked in the audit register): party
+  creation, save slots, Guild, pause menus. Hard-coded control-prompt strings
+  everywhere are M13 scope (binding-derived labels).
+
+## 16. Leveling, shops & packaging (Milestone 10)
 
 - **XP/leveling (`game/Party`):** `xpToNext(level)` defines the curve;
   `grantXp`/`grantPartyXp` add XP, level up (capped at `kMaxLevel`), recompute

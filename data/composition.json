@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "team": {
+    "minSize": 2,
+    "deepMinSize": 3,
+    "deepMinDepth": 3,
+    "maxSizeBase": 2,
+    "maxSizePerDepths": 2,
+    "maxSizeCap": 5,
+    "elitePctPerDepth": 12,
+    "elitePctMax": 70,
+    "maxSupport": 1,
+    "minDamage": 1
+  },
+  "boss": { "minMinions": 1, "maxMinions": 3 },
+  "statScale": { "startDepth": 5, "pctPerDepth": 6, "pctMax": 90 }
+}

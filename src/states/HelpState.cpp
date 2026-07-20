@@ -1,27 +1,32 @@
 #include "states/HelpState.hpp"
 
+#include <string>
+
 #include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
+namespace style = ui::style;
+
 namespace {
-struct Row {
-    const char* action;
-    const char* keyboard;
-    const char* gamepad;
-};
-constexpr Row kRows[] = {
-    {"Move / Navigate", "Arrows or WASD", "D-Pad / Left Stick"},
-    {"Confirm", "Enter or Space", "A"},
-    {"Cancel / Back", "Esc or Backspace", "B"},
-    {"Menu / Pause", "Tab", "Start"},
-    {"Adjust (Guild)", "Left / Right", "D-Pad L/R"},
-    {"Toggle debug overlay", "F1", "-"},
+// Column layout (x positions) inside the 426px virtual screen.
+constexpr int kCol1X = 28;
+constexpr int kCol2X = 168;
+constexpr int kCol3X = 312;
+
+// The actions shown on the controls page, generated from the LIVE bindings
+// (M13): remapping is always reflected here.
+constexpr InputAction kShownActions[] = {
+    InputAction::MoveUp,    InputAction::MoveDown, InputAction::MoveLeft,
+    InputAction::MoveRight, InputAction::Confirm,  InputAction::Cancel,
+    InputAction::Menu,      InputAction::TextBackspace, InputAction::ToggleDebug,
 };
 }  // namespace
 
@@ -39,24 +44,39 @@ void HelpState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ClearBackground(Color{16, 16, 26, 255});
-    ui::drawTextCentered("Controls", w / 2, 18, 18, RAYWHITE);
+    ui::drawTextCentered("Controls", w / 2, 14, style::kFontScreenTitle, style::palette().text);
 
-    const int x = 40;
-    int y = 56;
-    DrawText("Action", x, y, 10, Color{170, 170, 200, 255});
-    DrawText("Keyboard", x + 130, y, 10, Color{170, 170, 200, 255});
-    DrawText("Gamepad", x + 270, y, 10, Color{170, 170, 200, 255});
-    y += 18;
-    for (const Row& r : kRows) {
-        DrawText(r.action, x, y, 10, RAYWHITE);
-        DrawText(r.keyboard, x + 130, y, 10, Color{200, 210, 230, 255});
-        DrawText(r.gamepad, x + 270, y, 10, Color{200, 210, 230, 255});
-        y += 16;
+    const int col1W = kCol2X - kCol1X - 8;
+    const int col2W = kCol3X - kCol2X - 8;
+    const int col3W = w - kCol3X - style::kSafeMargin - 4;
+    const InputMap& map = context_.input.map();
+
+    int y = 42;
+    ui::drawTextFitted("Action", kCol1X, y, col1W, style::kFontBody, style::palette().textDim,
+                       "help.header");
+    ui::drawTextFitted("Keyboard", kCol2X, y, col2W, style::kFontBody, style::palette().textDim,
+                       "help.header");
+    ui::drawTextFitted("Gamepad", kCol3X, y, col3W, style::kFontBody, style::palette().textDim,
+                       "help.header");
+    y += 17;
+    for (InputAction a : kShownActions) {
+        ui::drawTextFitted(std::string(actionDisplayName(a)), kCol1X, y, col1W,
+                           style::kFontBody, style::palette().text, "help.action");
+        ui::drawTextFitted(input::allLabels(map, a, ActiveDevice::Keyboard), kCol2X, y, col2W,
+                           style::kFontBody, Color{200, 210, 230, 255}, "help.keyboard");
+        ui::drawTextFitted(input::allLabels(map, a, ActiveDevice::Gamepad), kCol3X, y, col3W,
+                           style::kFontBody, Color{200, 210, 230, 255}, "help.gamepad");
+        y += 15;
     }
 
-    ui::drawTextCentered("The window is resizable; the image always scales to fit.", w / 2, h - 30,
-                         9, Color{160, 160, 180, 255});
-    ui::drawTextCentered("Cancel: Back", w / 2, h - 14, 10, Color{150, 150, 170, 255});
+    ui::drawTextWrapped(
+        "Bindings can be changed under Settings. The window is resizable; the image always "
+        "scales to fit.",
+        kCol1X, h - 36, w - 2 * kCol1X, 9, Color{160, 160, 180, 255}, "help.note", 2);
+    const std::string footer =
+        input::prompt(map, InputAction::Cancel, context_.input.activeDevice(), "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, style::kFontBody,
+                         style::palette().textHint);
 }
 
 }  // namespace cd

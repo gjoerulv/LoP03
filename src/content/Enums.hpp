@@ -18,6 +18,11 @@ enum class EnemyTag { Fast, Magic, Armored, Poison };
 
 enum class EnemyTier { Normal, Elite };
 
+// Tactical role for composition constraints (M20): what an enemy contributes
+// to a team, distinct from tier and tags. Healer/Buffer count as "support"
+// (capped per team); Bruiser/Sniper count as "damage" (required per team).
+enum class EnemyRole { Bruiser, Sniper, Healer, Buffer, Protector, Attrition, Disruptor };
+
 enum class ItemType { Consumable, Equipment, Relic, Scroll };
 
 enum class EquipSlot { None, Weapon, Armor, Accessory };
@@ -37,6 +42,7 @@ std::optional<SkillCategory> parseSkillCategory(std::string_view s);
 std::optional<SkillTarget> parseSkillTarget(std::string_view s);
 std::optional<EnemyTag> parseEnemyTag(std::string_view s);
 std::optional<EnemyTier> parseEnemyTier(std::string_view s);
+std::optional<EnemyRole> parseEnemyRole(std::string_view s);
 std::optional<ItemType> parseItemType(std::string_view s);
 std::optional<EquipSlot> parseEquipSlot(std::string_view s);
 std::optional<Rarity> parseRarity(std::string_view s);
@@ -49,6 +55,15 @@ const char* toString(SkillCategory v);
 const char* toString(SkillTarget v);
 const char* toString(EnemyTag v);
 const char* toString(EnemyTier v);
+const char* toString(EnemyRole v);
+
+// Role groupings used by the composition constraints.
+inline bool isSupportRole(EnemyRole r) {
+    return r == EnemyRole::Healer || r == EnemyRole::Buffer;
+}
+inline bool isDamageRole(EnemyRole r) {
+    return r == EnemyRole::Bruiser || r == EnemyRole::Sniper;
+}
 const char* toString(ItemType v);
 const char* toString(EquipSlot v);
 const char* toString(Rarity v);

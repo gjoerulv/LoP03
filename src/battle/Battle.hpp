@@ -53,7 +53,14 @@ struct Combatant {
     std::vector<StatusInstance> statuses;
     bool guarding = false;
     bool isBoss = false;
-    bool enrages = false;        // Brute boss: deals more damage below half HP
+    // Boss archetype mechanics (M20, owner-approved; all deterministic).
+    bool enrages = false;             // Brute: deals more damage below half HP
+    bool enrageAnnounced = false;     // Brute: the rage line is shown once
+    bool empowersOnAllyFall = false;  // Sorcerer: magic +25% per fallen ally
+    bool ralliesMinions = false;      // Commander: one rally below half HP
+    bool rallied = false;
+    bool rushOpener = false;          // Rush: its first action deals double damage
+    bool actedOnce = false;
     std::string telegraph;       // boss intro line
 
     bool alive() const { return hp > 0; }

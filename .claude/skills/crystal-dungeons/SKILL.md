@@ -19,17 +19,21 @@ driven mainly by **fewest battle turns**. Audience: **fans of 16-bit JRPGs and
 roguelites who want real tactical depth with a readable UI** (medium difficulty;
 score-chasing is rewarding but not mandatory). Not a story JRPG, not an FF clone.
 
-## Source-of-truth map
+## Source-of-truth map (authority order, highest first)
 
-- `CLAUDE.md` — operating contract (authoritative).
-- `docs/game_design.md` — what the game is and why.
-- `docs/technical_design.md` — architecture, conventions, build.
-- `docs/milestones.md` — milestone list + current status (update every milestone).
-- `README.md` — how a human builds/runs.
-- This skill — workflow, gotchas, verification, when to ask the human.
+1. `CLAUDE.md` — operating contract (authoritative).
+2. Approved active `docs/milestone_notes/MXX_*.md` — current milestone scope.
+3. `docs/milestones.md` — milestone ledger + status (update every milestone).
+4. `docs/game_design.md` — what the game is and why.
+5. `docs/technical_design.md` — architecture, conventions, build.
+6. `docs/completion_roadmap.md` — long-term direction; **never** authorization
+   to work ahead.
+7. Supporting docs (`README.md`, style/control/asset/test docs,
+   `docs/milestone_completion_template.md`). This skill — workflow, gotchas.
 
-At session start: read `CLAUDE.md`, then the four docs above, then inspect the
-repo, then identify the current milestone and whether it is complete.
+At session start: read `CLAUDE.md`, then the docs above, then inspect the repo
+(current HEAD + working tree), then identify the current milestone and whether
+it is complete.
 
 ## Pinned dependencies (do NOT float to master)
 
@@ -56,32 +60,47 @@ Build with **MSVC** from the Visual Studio developer environment: run
 `vcvars64.bat` (or open a "Developer PowerShell/Command Prompt for VS") so `cl`
 and the bundled CMake/Ninja are on `PATH`. **Do not use MinGW/GCC.**
 
-Ninja (preferred):
+Presets (M24, preferred):
+
+```powershell
+cmake --preset msvc-debug          # -> build-msvc (overlay + capture CLI)
+cmake --build --preset debug
+ctest --preset debug               # or: build-msvc\crystal_tests.exe
+.\build-msvc\CrystalDungeons.exe
+
+cmake --preset msvc-release        # -> build-msvc-rel (static CRT, no capture)
+cmake --build --preset release
+```
+
+Raw Ninja (equivalent to msvc-debug):
 
 ```powershell
 cmake -S . -B build-msvc -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 cmake --build build-msvc
 ctest --test-dir build-msvc --output-on-failure
-.\build-msvc\CrystalDungeons.exe
-```
-
-Visual Studio generator (alternative; match your installed VS version):
-
-```powershell
-cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
-cmake --build build-msvc --config Debug
-ctest --test-dir build-msvc -C Debug --output-on-failure
-.\build-msvc\Debug\CrystalDungeons.exe
 ```
 
 `-DCMAKE_*_COMPILER=cl` forces MSVC so a stray compiler on `PATH` can't be picked
 up by mistake (that is what broke the first build attempt). First configure
-downloads + compiles raylib/Catch2 — slow once, then cached in `build-msvc/_deps`.
+downloads + compiles raylib/Catch2 — slow once, then cached per build dir.
 Network is required for the **first** configure only.
 
 CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
-`-DCRYSTAL_WARNINGS_AS_ERRORS=OFF` (default OFF),
-`-DCRYSTAL_ENABLE_DEBUG_OVERLAY=ON` (default ON).
+`-DCRYSTAL_WARNINGS_AS_ERRORS=OFF`, `-DCRYSTAL_ENABLE_DEBUG_OVERLAY=ON`,
+`-DCRYSTAL_ENABLE_CAPTURE=ON` (capture CLI; always excluded from Release).
+
+Validation & release tooling (M23/M24):
+
+```powershell
+.\build-msvc\CrystalDungeons.exe --capture out\dir   # 22 native-res scenes; fails on text overflow
+build-msvc\crystal_tests.exe "[economy-report]" -s   # balance battery table
+build-msvc\crystal_tests.exe "[sim-report]" -s       # machine-readable JSON report
+powershell -ExecutionPolicy Bypass -File tools\package.ps1  # stage+validate+zip -> dist\
+```
+
+Asset generators (deterministic; reruns byte-identical):
+`tools\asset_gen\generate_textures.ps1`, `generate_audio.ps1`,
+`generate_icon.ps1`. Every asset needs a row in `assets/credits.md`.
 
 ## Gotchas (read these before you waste an hour)
 
@@ -117,6 +136,17 @@ CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
    traversal: sanitize all relative paths (`paths::sanitizeRelative`).
 10. **High warnings on project code only**, not on `_deps`. Don't "fix" warnings
     inside dependencies.
+11. **Screenshots: use the capture tool, not window automation.**
+    `CrystalDungeons.exe --capture <dir>` (debug builds) renders 22
+    deterministic scenes at native 426×240 and fails on text overflow —
+    always prefer it. If live input driving is unavoidable, never use
+    focus-dependent `SendKeys` (it leaks keystrokes — it happened); use
+    `PostMessage` WM_KEYDOWN/UP to the game's HWND (extended-key bit for
+    arrows, ~70ms between down/up) + `SetWindowPos` topmost+NOACTIVATE.
+12. **Generation changes need a version bump.** Anything that alters what a
+    seed produces (generator code OR composition/data curves) bumps
+    `dungeon::kGenerationVersion` (currently 4) — the scoreboard tags it
+    for comparability. Owner-gated.
 
 ## Architecture rules (enforce in review)
 
@@ -129,18 +159,35 @@ CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
 
 ## Milestone workflow
 
-1. Read contract + docs + repo. Identify current milestone; confirm prior one is
-   approved.
-2. Post a concrete implementation plan **before** coding.
-3. Implement **only** the current milestone. No smuggling next-milestone work.
-4. Build + run tests (or give exact unverified commands + expected output).
-5. Update docs if behavior/design changed.
-6. Post the **Milestone Completion Report** (9 sections, see CLAUDE.md) and
-   **stop** for human approval.
+Statuses (only these): `planned` · `in progress` · `implemented, awaiting
+manual approval` · `complete (approved)` · `blocked`. **Only the owner sets
+`complete (approved)`**, after manual testing; Claude's terminal state is
+`implemented, awaiting manual approval`. Approval of one milestone is not
+authorization to start the next.
 
-Milestones: 1 Foundation · 2 Data model · 3 Town shell · 4 Dungeon gen ·
-5 Battle MVP · 6 Danger+scoring · 7 Content · 8 Presentation · 9 Balance/validation ·
-10 Packaging.
+1. Read contract + docs + repo (HEAD, working tree). Identify current
+   milestone; confirm the prior one is `complete (approved)`.
+2. **Re-audit the milestone note against the current checkout** before
+   planning; refresh it if stale. Post a concrete plan **before** coding; get
+   owner authorization to begin.
+3. Implement **only** the approved slices. Routine engineering decisions are
+   autonomous; escalate per the CLAUDE.md mandatory-escalation list.
+4. Build + run tests (or give exact unverified commands + expected output).
+5. Update all affected docs — documentation is part of the implementation.
+6. Report using `docs/milestone_completion_template.md`, set the status to
+   `implemented, awaiting manual approval`, and **stop** for owner approval.
+
+**Git:** never commit, push, amend, rebase, merge, tag, or force-update —
+inspection only. The owner handles all commits and pushes.
+
+Milestones: M1–M22 `complete (approved)` (M11–M22 during 2026-07-19/20).
+M23 Validation/playtesting/balance: `in progress` — tooling + tuning done,
+**awaiting owner-run external playtests** (`docs/playtest_protocol.md`);
+findings drive the hardening pass. M24 Release packaging: `in progress` —
+engineering done (v0.9.0 RC in `dist/`), final sign-off gated on M23 and
+the owner's clean-machine test; version bumps to 1.0.0 after playtests
+pass. Details: `docs/milestones.md` + one note per milestone under
+`docs/milestone_notes/`.
 
 ## Verification checklist (before claiming done)
 
@@ -159,6 +206,10 @@ Milestones: 1 Foundation · 2 Data model · 3 Town shell · 4 Dungeon gen ·
 
 - Claiming a build/test passed without running it.
 - Implementing beyond the approved milestone.
+- Marking a milestone `complete (approved)` without the owner's manual
+  approval, or treating one approval as authorization for the next milestone.
+- Committing or pushing (the owner owns Git history).
+- Implementing from a stale milestone note without re-auditing it first.
 - Hand-authoring danger labels instead of deriving from stats (M6).
 - Scoring that rewards farming/stalling instead of fewest turns.
 - Copyrighted names/assets sneaking in. Everything original.

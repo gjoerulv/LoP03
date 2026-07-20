@@ -20,21 +20,27 @@ InputMap::InputMap() {
     bindKey(InputAction::Cancel, KEY_BACKSPACE);
     bindKey(InputAction::Cancel, KEY_ESCAPE);
     bindKey(InputAction::Menu, KEY_TAB);
-    bindKey(InputAction::Pause, KEY_P);
+    bindKey(InputAction::Details, KEY_C);
+    bindKey(InputAction::TextBackspace, KEY_BACKSPACE);  // text editing only
     bindKey(InputAction::ToggleDebug, KEY_F1);
+    bindKey(InputAction::ReloadAssets, KEY_F5);  // consumed in debug builds only
     // Quit has no default key: Esc/Backspace map to Cancel, whose meaning is
     // contextual per state (resume an overlay, or leave the title). Quit stays
     // reserved for an explicit, unambiguous quit affordance later.
+    // (The former Pause action was removed in M13: it was bound but consumed
+    // nowhere — audit CTRL-021.)
 
     // Gamepad defaults (Xbox-style layout via raylib's generic mapping).
+    // The left stick maps to Move* via axes in the Input facade, not here.
     bindButton(InputAction::MoveUp, GAMEPAD_BUTTON_LEFT_FACE_UP);
     bindButton(InputAction::MoveDown, GAMEPAD_BUTTON_LEFT_FACE_DOWN);
     bindButton(InputAction::MoveLeft, GAMEPAD_BUTTON_LEFT_FACE_LEFT);
     bindButton(InputAction::MoveRight, GAMEPAD_BUTTON_LEFT_FACE_RIGHT);
-    bindButton(InputAction::Confirm, GAMEPAD_BUTTON_RIGHT_FACE_DOWN);   // A
-    bindButton(InputAction::Cancel, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);   // B
-    bindButton(InputAction::Menu, GAMEPAD_BUTTON_MIDDLE_RIGHT);         // Start
-    bindButton(InputAction::Pause, GAMEPAD_BUTTON_MIDDLE_LEFT);         // Select/Back
+    bindButton(InputAction::Confirm, GAMEPAD_BUTTON_RIGHT_FACE_DOWN);       // A
+    bindButton(InputAction::Cancel, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);       // B
+    bindButton(InputAction::Menu, GAMEPAD_BUTTON_MIDDLE_RIGHT);             // Start
+    bindButton(InputAction::Details, GAMEPAD_BUTTON_RIGHT_FACE_UP);         // Y
+    bindButton(InputAction::TextBackspace, GAMEPAD_BUTTON_RIGHT_FACE_LEFT);  // X
 }
 
 void InputMap::clear(InputAction action) {

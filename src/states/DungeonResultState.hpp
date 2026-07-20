@@ -14,6 +14,7 @@ public:
     DungeonResultState(StateStack& stack, AppContext& context, score::RunSummary summary,
                        int score);
 
+    void onEnter() override;  // first-result tutorial beat
     void handleInput(const Input& input) override;
     void render() override;
 

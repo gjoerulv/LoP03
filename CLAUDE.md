@@ -2,7 +2,7 @@
 
 ## Project Identity
 
-This project is a complete 16-bit-inspired turn-based JRPG roguelite built in C++20 with raylib.
+This project is a feature-complete 16-bit-inspired turn-based JRPG roguelite built in C++20 with raylib. The post-M10 program focuses on turning the playable prototype into a polished, readable, configurable release without replacing its proven core systems.
 
 Working title: `Crystal Dungeons`.
 
@@ -23,12 +23,48 @@ Do not continue to the next milestone until the human explicitly approves.
 At the start of every session:
 
 1. Read this file.
-2. Read `docs/game_design.md`, `docs/technical_design.md`, `docs/milestones.md`, and any current milestone notes if they exist.
+2. Read `docs/game_design.md`, `docs/technical_design.md`, `docs/milestones.md`, `docs/completion_roadmap.md`, and the current milestone note if one exists.
 3. Inspect the repository before proposing changes.
 4. Identify the current milestone and whether it is complete.
 5. Verify build/test commands before claiming work is complete.
 
 If these docs do not exist yet, create them during the appropriate early milestone and keep them updated.
+
+### Document Authority and Scope
+
+Documentation authority order, highest first:
+
+1. `CLAUDE.md` — this repository operating contract.
+2. The approved current milestone note under `docs/milestone_notes/` — current implementation scope.
+3. `docs/milestones.md` — milestone ledger and status.
+4. `docs/game_design.md` — authoritative game behavior.
+5. `docs/technical_design.md` — authoritative architecture.
+6. `docs/completion_roadmap.md` — long-term strategic direction.
+7. Supporting authoring, validation, control, asset, and test documents.
+
+The completion roadmap defines strategic direction and quality targets. It does not authorize work from later milestones. Do not combine UI, input, asset, room-generation, battle-presentation, content, audio, accessibility, and release work into one unapproved pass.
+
+Where documents conflict:
+
+* Do not silently choose the most convenient interpretation.
+* Identify the conflict explicitly.
+* Use the authority order above where it resolves the issue.
+* Escalate material product or architecture conflicts to the human.
+* Update the stale document after the decision is resolved.
+
+If a milestone requires a product, architecture, dependency, save-format, public-schema, or expensive-to-reverse decision, stop and ask the human.
+
+### Milestone Status Vocabulary
+
+`docs/milestones.md` and every milestone note use exactly these statuses:
+
+* `planned`
+* `in progress`
+* `implemented, awaiting manual approval`
+* `complete (approved)`
+* `blocked`
+
+Claude must never mark a milestone `complete (approved)` based only on builds, tests, screenshots, simulations, or its own review. Only the project owner can approve a milestone, after manual testing. When Claude finishes implementing a milestone, it sets `implemented, awaiting manual approval` and stops. After the owner explicitly approves, Claude updates the status to `complete (approved)`.
 
 ## Human Collaboration Rules
 
@@ -73,6 +109,122 @@ Human validation is required for:
 * Audio/music acceptability
 * Whether a milestone satisfies the intended player experience
 * Any test that requires actually playing the game if you cannot run or view it
+
+## Autonomous Operating Model
+
+These rules govern how Claude Code sessions plan, implement, validate, document, and close milestones.
+
+### Repository Inspection
+
+Before planning or editing a milestone:
+
+* Inspect current HEAD and the working tree.
+* Read the active milestone documents.
+* Inspect the relevant implementation and tests.
+* Verify that documented assumptions still hold against the actual code.
+
+Every milestone note must be re-audited and refined against the then-current repository before implementation of that milestone begins. Notes describe the repository as it was when last reviewed; do not implement from a stale note.
+
+### Self-Directed Implementation
+
+Once the owner has approved a milestone plan, Claude may execute the approved milestone slices without asking permission for routine implementation details.
+
+Claude should make reasonable local engineering decisions autonomously where they:
+
+* remain inside approved scope;
+* do not change player-facing rules;
+* do not introduce a new dependency;
+* do not alter a public schema unexpectedly;
+* do not break save compatibility;
+* do not invalidate deterministic behavior;
+* do not create a major architectural commitment.
+
+Do not escalate trivial implementation choices.
+
+### Mandatory Escalation
+
+Claude must stop and ask the owner before:
+
+* changing the approved player experience;
+* changing combat, scoring, progression, or dungeon rules outside approved scope;
+* adding or replacing major dependencies;
+* performing a major architectural rewrite;
+* changing public JSON schemas beyond the approved plan;
+* changing save compatibility policy;
+* changing deterministic seed behavior;
+* changing the virtual resolution or core rendering assumptions;
+* adopting a final art direction not already approved;
+* deleting or replacing substantial historical documentation;
+* expanding into a later milestone.
+
+### Testing Responsibility
+
+Claude must run all practical automated tests relevant to its changes.
+
+Claude must not claim that automated tests prove:
+
+* visual quality;
+* control intuitiveness;
+* game balance;
+* enjoyment;
+* accessibility in practice;
+* release readiness.
+
+Those require owner review or external playtesting.
+
+### Documentation Responsibility
+
+Documentation is part of the implementation, not optional cleanup.
+
+Before declaring a milestone implementation finished, Claude must:
+
+1. Update the active milestone note with the actual implementation.
+2. Record deviations from the original plan.
+3. Update architecture and design documents affected by the change.
+4. Update content, control, asset, save, or validation documentation where relevant.
+5. Update `docs/milestones.md`.
+6. Set the milestone to `implemented, awaiting manual approval`.
+7. Provide the owner with a manual test checklist.
+8. Report automated build and test results.
+
+Claude must not leave documentation knowingly describing superseded behavior.
+
+### Approval Responsibility
+
+Only the owner may approve a milestone. After receiving explicit approval, Claude should:
+
+1. Update the milestone to `complete (approved)`.
+2. Record the approval date where the ledger records dates.
+3. Update the completion summary.
+4. Confirm whether the next milestone note needs refinement.
+5. Stop, unless the owner also authorizes starting the next milestone.
+
+Approval of one milestone is not automatic authorization to implement the next milestone.
+
+### Git Responsibility
+
+Claude must not:
+
+* commit;
+* push;
+* amend commits;
+* rebase;
+* merge;
+* create tags;
+* force-update branches.
+
+Claude may inspect Git status, diffs, history, and the current HEAD. The project owner handles all Git commits and pushes.
+
+### Working-Tree Discipline
+
+Claude must:
+
+* preserve unrelated owner changes;
+* avoid destructive resets;
+* avoid broad formatting churn;
+* avoid editing unrelated files;
+* report pre-existing modifications before changing overlapping files;
+* keep changes reviewable.
 
 ## Skill Requirement
 
@@ -398,7 +550,7 @@ Prefer:
 
 ## Rendering and Presentation
 
-Target:
+Current baseline:
 
 * Internal resolution: 426×240
 * Clean scaling to the window
@@ -407,25 +559,39 @@ Target:
 * Party on right, enemies on left
 * Original 16-bit-inspired UI windows
 
-Placeholder sprites are acceptable.
+The core loop now works. Post-M10 work may invest in presentation, but only through approved milestones and stable interfaces.
 
-Do not use copyrighted assets.
+Required completion targets:
 
-Do not spend excessive time on polish before the core loop works.
+* Every required player-facing text element must fit its assigned region or use an explicit wrap, scroll, page, or details mechanism.
+* Text placement must use measured bounds; do not estimate width from character count.
+* Focus, selection, danger, rarity, and status must not rely on color alone.
+* Keyboard and gamepad prompts must reflect active bindings once remapping exists.
+* Standard dungeon rooms must become compact, purposeful layouts rather than automatically filling the full exploration screen.
+* Graphics, fonts, animations, music, ambience, and SFX must be selected through stable logical asset identifiers and external presentation data.
+* Missing assets must degrade safely and visibly/silently as appropriate.
+* Human validation is mandatory for readability, control feel, art direction, animation timing, and audio quality.
+
+The 426×240 virtual resolution remains the approved baseline. Changing it is a cross-cutting player-facing decision and requires explicit human approval after evidence from the UI-layout milestone.
+
+Placeholder assets are acceptable only as temporary fallbacks or inside an approved implementation slice. They are not the final presentation target.
+
+Do not use copyrighted assets or imitate a protected game's sprites, music, UI layout, characters, maps, or other distinctive expression.
 
 ## Audio
 
-Provide placeholder music and sound effects.
+The synthesized placeholder audio remains a safe fallback until the final-audio milestone.
 
-Audio requirements:
+Completion requirements:
 
-* Easy to replace later
-* Isolated under an assets/audio-style structure
-* Graceful failure if audio is missing
-* No hard crash on failed audio load
-* Replacing audio should not require code changes if filenames/formats remain compatible
-
-Music and SFX do not need final creative direction yet.
+* Music, ambience, and SFX must be referenced by logical IDs and resolved through external asset metadata.
+* Replacing an audio file for an existing logical role must not require a C++ change.
+* Use raylib's streaming music support for final music where appropriate.
+* Provide separate master, music, and SFX controls.
+* Missing or invalid audio must degrade to silence without crashing.
+* State transitions must not stack music tracks or leak resources.
+* All shipped audio must have clear provenance, licensing, and attribution records.
+* No essential gameplay information may be conveyed by sound alone.
 
 ## Security and Robustness
 
@@ -538,9 +704,17 @@ Work in order. Stop after each milestone.
 * Clean project structure
 * Final playable build target
 
+### Post-M10 Completion Program
+
+The detailed post-M10 milestone index and status live in `docs/milestones.md`. Strategic direction and quality targets live in `docs/completion_roadmap.md`. The active `docs/milestone_notes/MXX_*.md` file defines the exact current slice.
+
+M10 was manually tested and explicitly approved by the owner on 2026-07-19. The completion program runs M11 through M24; every milestone from M11 onward has exactly one authoritative note under `docs/milestone_notes/`. Before starting any milestone, re-audit and refresh its note against the then-current repository, obtain the owner's explicit authorization to begin, complete only that milestone, report using `docs/milestone_completion_template.md`, and stop.
+
+Do not copy the full post-M10 roadmap into this operating contract or treat the roadmap as approval to work ahead.
+
 ## Milestone Completion Report Format
 
-At the end of every milestone, report:
+Use `docs/milestone_completion_template.md` as the full report template. In summary, at the end of every milestone, report:
 
 1. Completed work
 2. Files created/changed
@@ -601,19 +775,11 @@ A milestone is done only when:
 - No unrelated refactors are included
 - No next-milestone work is smuggled in
 
-## Current First Task
+## Current Task Selection
 
-If the project has no skill yet:
-1. Interview the human only for material ambiguities.
-2. Always include recommended answers.
-3. Create `.claude/skills/crystal-dungeons/SKILL.md`.
-4. Stop for approval if the human wants to review the skill.
-
-After the skill is approved:
-1. Start Milestone 1 only.
-2. Provide the Milestone 1 implementation plan.
-3. Implement Milestone 1.
-4. Run/build/test where possible.
-5. Report completion using the milestone report format.
-6. Stop and wait for approval.
-```
+1. Determine the current milestone and approval state from `docs/milestones.md`.
+2. Read the active milestone note, if one exists.
+3. Inspect the current checkout before planning.
+4. Do not restart historical milestones or follow stale task text from earlier project phases.
+5. M1–M10 are all `complete (approved)`; M10 was approved by the owner on 2026-07-19 (last planning review at commit `a316f244e870718aa27d9995dc871e11572ad429`). The next milestone is M11, status `planned`.
+6. Do not begin M11 without the owner's explicit authorization. When authorized, first re-audit `docs/milestone_notes/M11_completion_baseline.md` against the current checkout, then complete only M11, report using `docs/milestone_completion_template.md`, and stop.

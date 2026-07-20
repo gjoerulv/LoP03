@@ -22,6 +22,7 @@ public:
 private:
     AppContext& context_;
     ui::Menu menu_;
+    bool quitArmed_ = false;  // M22: quit-to-title needs a second Confirm
 };
 
 }  // namespace cd

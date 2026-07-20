@@ -11,7 +11,9 @@
 #include "core/FadeController.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "resource/ResourceManager.hpp"
 #include "states/EquipShopState.hpp"
 #include "states/GuildState.hpp"
 #include "states/InnState.hpp"
@@ -20,7 +22,10 @@
 #include "states/TrainingHallState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
+#include "states/TutorialPromptState.hpp"
+#include "tutorial/Tutorial.hpp"
 #include "states/TownMenuState.hpp"
+#include "render/SpriteDraw.hpp"
 #include "town/Movement.hpp"
 #include "ui/UiDraw.hpp"
 
@@ -44,6 +49,29 @@ Color tileColor(town::Tile tile) {
     return BLACK;
 }
 
+const char* tileTextureId(town::Tile tile) {
+    switch (tile) {
+        case town::Tile::Ground: return "tiles.town.ground";
+        case town::Tile::Path: return "tiles.town.path";
+        case town::Tile::Grass: return "tiles.town.grass";
+        case town::Tile::Tree: return "tiles.town.tree";
+        case town::Tile::Water: return "tiles.town.water";
+        case town::Tile::Building: return "tiles.town.building";
+        case town::Tile::Door: return "tiles.town.door";
+    }
+    return "";
+}
+
+const char* walkAnimId(render::Facing f) {
+    switch (f) {
+        case render::Facing::Down: return "anim.player.walk.down";
+        case render::Facing::Up: return "anim.player.walk.up";
+        case render::Facing::Left: return "anim.player.walk.left";
+        case render::Facing::Right: return "anim.player.walk.right";
+    }
+    return "anim.player.walk.down";
+}
+
 }  // namespace
 
 TownState::TownState(StateStack& stack, AppContext& context)
@@ -56,11 +84,18 @@ TownState::TownState(StateStack& stack, AppContext& context)
 void TownState::onEnter() {
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Town);
+    context_.audio.setAmbience(AmbienceTrack::Town);
+    maybeTutorialPrompt(stack(), context_, tutorial::kTownWelcome);
 }
 
 void TownState::onResume() {
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Town);
+    context_.audio.setAmbience(AmbienceTrack::Town);
+    // Fires once, after the player has seen their first run's reckoning.
+    if (context_.tutorial.state.seen.count(tutorial::kResultFirst) > 0) {
+        maybeTutorialPrompt(stack(), context_, tutorial::kTownReturn);
+    }
 }
 
 const town::Building* TownState::buildingAtPlayerTile() const {
@@ -120,7 +155,8 @@ void TownState::handleInput(const Input& input) {
 
 void TownState::update(float dt) {
     const float length = std::sqrt(moveX_ * moveX_ + moveY_ * moveY_);
-    if (length > 0.0001f) {
+    moving_ = length > 0.0001f;
+    if (moving_) {
         const float nx = moveX_ / length;
         const float ny = moveY_ / length;
         facing_ = Vec2{nx, ny};
@@ -128,6 +164,10 @@ void TownState::update(float dt) {
             town::resolveMove(player_, nx * kPlayerSpeed * dt, ny * kPlayerSpeed * dt, town_.map);
         player_.x = moved.x;
         player_.y = moved.y;
+        walkTime_ += dt;
+        context_.audio.play(Sfx::Step);  // cadence via the role's rate limit
+    } else {
+        walkTime_ = 0.0f;  // stand frame
     }
     nearDoor_ = buildingAtPlayerTile();
 }
@@ -139,7 +179,18 @@ void TownState::render() {
     ClearBackground(BLACK);
     for (int ty = 0; ty < map.height(); ++ty) {
         for (int tx = 0; tx < map.width(); ++tx) {
-            DrawRectangle(tx * ts, ty * ts, ts, ts, tileColor(map.at(tx, ty)));
+            const town::Tile tile = map.at(tx, ty);
+            const char* id = tileTextureId(tile);
+            // Deterministic accent variant: occasional flower patches on grass.
+            if (tile == town::Tile::Grass && (tx * 31 + ty * 17) % 11 == 0 &&
+                context_.resources.hasTexture("tiles.town.flowers")) {
+                id = "tiles.town.flowers";
+            }
+            if (context_.resources.hasTexture(id)) {
+                DrawTexture(context_.resources.texture(id), tx * ts, ty * ts, WHITE);
+            } else {
+                DrawRectangle(tx * ts, ty * ts, ts, ts, tileColor(tile));
+            }
         }
     }
 
@@ -149,31 +200,54 @@ void TownState::render() {
         ui::drawTextCentered(b.name.c_str(), cx, b.y * ts - 9, 8, Color{225, 225, 235, 255});
     }
 
-    // Player + facing tick.
-    DrawRectangle(static_cast<int>(player_.x), static_cast<int>(player_.y),
-                  static_cast<int>(player_.w), static_cast<int>(player_.h),
-                  Color{236, 224, 128, 255});
-    DrawRectangle(static_cast<int>(player_.x + player_.w * 0.5f + facing_.x * 4.0f - 1.0f),
-                  static_cast<int>(player_.y + player_.h * 0.5f + facing_.y * 4.0f - 1.0f), 3, 3,
-                  Color{60, 50, 30, 255});
+    // Player: directional walk animation, then static sprite, then rectangle
+    // (with the old facing tick, which the sprites encode themselves).
+    const float pcx = player_.x + player_.w * 0.5f;
+    const float pcy = player_.y + player_.h * 0.5f;
+    const render::Facing facing = render::facingFrom(facing_.x, facing_.y);
+    if (!render::drawAnimationCentered(context_.resources, walkAnimId(facing),
+                                       moving_ ? walkTime_ : 0.0f, pcx, pcy) &&
+        !render::drawTextureCentered(context_.resources, "actor.player.overworld", pcx, pcy)) {
+        DrawRectangle(static_cast<int>(player_.x), static_cast<int>(player_.y),
+                      static_cast<int>(player_.w), static_cast<int>(player_.h),
+                      Color{236, 224, 128, 255});
+        DrawRectangle(static_cast<int>(pcx + facing_.x * 4.0f - 1.0f),
+                      static_cast<int>(pcy + facing_.y * 4.0f - 1.0f), 3, 3,
+                      Color{60, 50, 30, 255});
+    }
 
-    // Party HUD (top-left).
-    DrawRectangle(2, 2, 150, 12, Color{0, 0, 0, 140});
+    // Party HUD (top-left); the backdrop is sized to the measured text so
+    // long names never spill past it.
     std::string hud = "Party:";
     for (const Character& c : context_.party.members) {
         hud += " " + c.name;
     }
-    DrawText(hud.c_str(), 5, 4, 8, RAYWHITE);
+    const int hudW = ui::measureText(hud, 8) + 6;
+    DrawRectangle(2, 2, hudW, 12, Color{0, 0, 0, 140});
+    ui::drawTextFitted(hud, 5, 4, context_.virtualWidth - 10, 8, RAYWHITE, "town.hud");
 
-    // Interaction prompt.
+    // Interaction prompt, generated from the live bindings (M13).
+    const int h = context_.virtualHeight;
+    const InputMap& bindings = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
     if (nearDoor_ != nullptr) {
-        const int h = context_.virtualHeight;
         DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
-        ui::drawTextCentered(TextFormat("Confirm: Enter %s   |   Menu: Pause", nearDoor_->name.c_str()),
-                             context_.virtualWidth / 2, h - 13, 8, Color{240, 230, 160, 255});
+        const std::string text =
+            input::prompt(bindings, InputAction::Confirm, device, "Enter " + nearDoor_->name) +
+            "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
+                             Color{240, 230, 160, 255});
     } else {
-        const int h = context_.virtualHeight;
-        ui::drawTextCentered("Arrows/WASD: Move   Menu: Pause", context_.virtualWidth / 2, h - 13, 8,
+        const std::string moveLabel =
+            device == ActiveDevice::Keyboard
+                ? input::primaryLabel(bindings, InputAction::MoveUp, device) + "/" +
+                      input::primaryLabel(bindings, InputAction::MoveDown, device) + "/" +
+                      input::primaryLabel(bindings, InputAction::MoveLeft, device) + "/" +
+                      input::primaryLabel(bindings, InputAction::MoveRight, device)
+                : "D-Pad/Stick";
+        const std::string text = "[" + moveLabel + "] Move   " +
+                                 input::prompt(bindings, InputAction::Menu, device, "Pause");
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
                              Color{170, 170, 190, 255});
     }
 }

@@ -23,6 +23,10 @@ public:
     int width() const { return width_; }
     int height() const { return height_; }
 
+    // Writes the current target as a PNG at native resolution (already
+    // y-corrected). Used by the M23 capture tooling; safe anywhere.
+    bool exportImage(const char* path) const;
+
 private:
     int width_;
     int height_;

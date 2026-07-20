@@ -146,7 +146,7 @@ TEST_CASE("validation: enemy tags and tiers parse, bad tags reported", "[content
     LoadReport rep;
     Json good = parse(R"({"version":1,"enemies":[
         {"id":"bat","name":"Bat","stats":{"hp":18,"attack":8,"magic":0,"defense":2,"speed":15},
-         "tier":"normal","tags":["fast","poison"]}]})");
+         "tier":"normal","role":"disruptor","tags":["fast","poison"]}]})");
     parseEnemies(good, "mem", db, rep);
     REQUIRE(rep.ok());
     const EnemyDef* bat = db.findEnemy("bat");

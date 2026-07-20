@@ -9,11 +9,22 @@
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
+
+namespace style = ui::style;
+
+namespace {
+constexpr int kListX = 50;
+constexpr int kListY = 48;
+constexpr int kListItemH = 14;
+constexpr int kVisibleRows = 10;
+}  // namespace
 
 ItemShopState::ItemShopState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {}
@@ -40,17 +51,19 @@ void ItemShopState::rebuild() {
     const int previous = menu_.cursor();
     menu_.setItems(std::move(items));
     menu_.setCursor(previous);
+    scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
 }
 
 void ItemShopState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
         context_.audio.play(Sfx::Move);
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
         context_.audio.play(Sfx::Move);
     }
+    scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
     if (input.pressed(InputAction::Confirm) && !ids_.empty()) {
         const content::ItemDef* it =
             context_.content.findItem(ids_[static_cast<std::size_t>(menu_.cursor())]);
@@ -62,7 +75,7 @@ void ItemShopState::handleInput(const Input& input) {
                 message_ = "Bought " + it->name;
                 rebuild();
             } else {
-                context_.audio.play(Sfx::Cancel);
+                context_.audio.play(Sfx::Error);
                 message_ = "Not enough gold for " + it->name;
             }
         }
@@ -77,18 +90,34 @@ void ItemShopState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ClearBackground(Color{16, 16, 24, 255});
-    ui::drawTextCentered("Item Shop", w / 2, 14, 16, RAYWHITE);
-    DrawText(TextFormat("Gold: %d", context_.party.gold), w - 110, 14, 11,
-             Color{230, 220, 150, 255});
-
-    ui::drawMenu(menu_, 50, 44, 14, 11, RAYWHITE, Color{90, 90, 110, 255},
-                 Color{240, 220, 120, 255});
-
+    ui::drawTextCentered("Item Shop", w / 2, 14, style::kFontScreenTitle, style::palette().text);
+    ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 14, 14, style::kFontMenu,
+                      style::palette().gold);
     if (!message_.empty()) {
-        ui::drawTextCentered(message_.c_str(), w / 2, h - 30, 10, Color{170, 220, 170, 255});
+        ui::drawTextFitted(message_, 20, 32, w - 40, style::kFontBody, style::palette().success,
+                           "itemshop.message");
     }
-    ui::drawTextCentered("Confirm: Buy    Cancel: Back", w / 2, h - 14, 10,
-                         Color{150, 150, 170, 255});
+
+    ui::drawMenuScrolled(menu_, scroll_, kVisibleRows, kListX, kListY, kListItemH,
+                         style::kFontMenu, 300, style::palette().text, style::palette().disabled, style::palette().cursor,
+                         "itemshop.list");
+
+    // Description of the selected consumable.
+    if (!ids_.empty()) {
+        const content::ItemDef* it =
+            context_.content.findItem(ids_[static_cast<std::size_t>(menu_.cursor())]);
+        if (it != nullptr && !it->description.empty()) {
+            ui::drawTextWrapped(it->description, 20, h - 52, w - 40, style::kFontBody,
+                                style::palette().success, "itemshop.detail", 2);
+        }
+    }
+
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    const std::string footer = input::prompt(map, InputAction::Confirm, device, "Buy") +
+                               "    " + input::prompt(map, InputAction::Cancel, device, "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, style::kFontBody,
+                         style::palette().textHint);
 }
 
 }  // namespace cd

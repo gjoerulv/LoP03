@@ -1,9 +1,9 @@
 #include "resource/ResourceManager.hpp"
 
-#include <filesystem>
+#include <utility>
 
+#include "assets/AssetManifest.hpp"
 #include "core/Log.hpp"
-#include "platform/Paths.hpp"
 
 namespace cd {
 
@@ -12,6 +12,11 @@ namespace fs = std::filesystem;
 ResourceManager::ResourceManager() {
     // The default font ships inside raylib; copy the struct but never unload it.
     defaultFont_ = GetFontDefault();
+}
+
+void ResourceManager::setCatalog(const assets::AssetManifest* manifest, fs::path root) {
+    manifest_ = manifest;
+    root_ = std::move(root);
 }
 
 TextureHandle ResourceManager::makePlaceholderTexture() const {
@@ -30,53 +35,66 @@ const Texture2D& ResourceManager::placeholder() {
     return placeholder_.get();
 }
 
-const Texture2D& ResourceManager::texture(const std::string& key, const std::string& assetPath) {
-    if (auto it = textures_.find(key); it != textures_.end()) {
+bool ResourceManager::hasTexture(const std::string& id) const {
+    if (manifest_ == nullptr) {
+        return false;
+    }
+    const assets::AssetEntry* entry = manifest_->find(id);
+    return entry != nullptr && entry->type == assets::AssetType::Texture;
+}
+
+const assets::AssetEntry* ResourceManager::animation(const std::string& id) const {
+    if (manifest_ == nullptr) {
+        return nullptr;
+    }
+    const assets::AssetEntry* entry = manifest_->find(id);
+    return entry != nullptr && entry->type == assets::AssetType::Animation ? entry : nullptr;
+}
+
+const Texture2D& ResourceManager::texture(const std::string& id) {
+    if (auto it = textures_.find(id); it != textures_.end()) {
         return it->second.get();
     }
 
-    // Resolve and validate the asset path before touching the filesystem.
+    // Resolve the logical id through the catalog (paths were sanitized and
+    // existence-checked at manifest load).
     TextureHandle handle;
-    if (auto safe = paths::sanitizeRelative(assetPath)) {
-        const fs::path full = fs::path(assetRoot_) / *safe;
-        std::error_code ec;
-        if (fs::exists(full, ec) && !ec) {
-            Texture2D tex = LoadTexture(full.string().c_str());
-            if (tex.id != 0) {
-                SetTextureFilter(tex, TEXTURE_FILTER_POINT);
-                handle = TextureHandle(tex);
-            }
+    const assets::AssetEntry* entry = manifest_ != nullptr ? manifest_->find(id) : nullptr;
+    if (entry != nullptr && entry->type == assets::AssetType::Texture) {
+        const fs::path full = root_ / entry->path;
+        Texture2D tex = LoadTexture(full.string().c_str());
+        if (tex.id != 0) {
+            SetTextureFilter(tex, entry->filter == "bilinear" ? TEXTURE_FILTER_BILINEAR
+                                                              : TEXTURE_FILTER_POINT);
+            handle = TextureHandle(tex);
         }
     }
 
     if (!handle.valid()) {
-        log::warn("ResourceManager: using placeholder for texture '" + key + "' (path '" +
-                  assetPath + "')");
+        log::warn("ResourceManager: using placeholder for texture id '" + id + "'");
         handle = makePlaceholderTexture();
     }
 
-    auto [it, _] = textures_.emplace(key, std::move(handle));
+    auto [it, _] = textures_.emplace(id, std::move(handle));
     return it->second.get();
 }
 
-const Font& ResourceManager::font(const std::string& key, const std::string& assetPath, int size) {
-    if (auto it = fonts_.find(key); it != fonts_.end()) {
+const Font& ResourceManager::font(const std::string& id) {
+    if (auto it = fonts_.find(id); it != fonts_.end()) {
         return it->second.get();
     }
 
-    if (auto safe = paths::sanitizeRelative(assetPath)) {
-        const fs::path full = fs::path(assetRoot_) / *safe;
-        std::error_code ec;
-        if (fs::exists(full, ec) && !ec) {
-            Font f = LoadFontEx(full.string().c_str(), size, nullptr, 0);
-            if (f.texture.id != 0) {
-                auto [it, _] = fonts_.emplace(key, FontHandle(f));
-                return it->second.get();
-            }
+    const assets::AssetEntry* entry = manifest_ != nullptr ? manifest_->find(id) : nullptr;
+    if (entry != nullptr && entry->type == assets::AssetType::Font) {
+        const fs::path full = root_ / entry->path;
+        Font f = LoadFontEx(full.string().c_str(), entry->fontSize, nullptr, 0);
+        if (f.texture.id != 0) {
+            auto [it, _] = fonts_.emplace(id, FontHandle(f));
+            return it->second.get();
         }
     }
 
-    log::warn("ResourceManager: using default font for '" + key + "' (path '" + assetPath + "')");
+    log::warn("ResourceManager: using default font for id '" + id + "'");
     return defaultFont_;
 }
 

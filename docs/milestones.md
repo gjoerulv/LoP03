@@ -1,7 +1,10 @@
 # Crystal Dungeons — Milestones
 
-> Work in order. **Stop after each milestone and wait for human approval.**
-> Status legend: ☐ not started · ◐ in progress · ☑ complete (human-approved).
+> Work in order. **Stop after each milestone and wait for owner approval.**
+> Status legend: ☐ planned · ◐ in progress · ◑ implemented, awaiting manual
+> approval · ☑ complete (approved) · ⊘ blocked.
+> Only the project owner can set `complete (approved)`, after manual testing;
+> builds, tests, screenshots, or simulations alone never justify it.
 
 | #  | Milestone                         | Status |
 |----|-----------------------------------|--------|
@@ -14,7 +17,21 @@
 | 7  | Content pass                      | ☑ complete (approved) |
 | 8  | Presentation pass                 | ☑ complete (approved) |
 | 9  | Balancing & validation pass       | ☑ complete (approved) |
-| 10 | Release packaging pass            | ◐ implemented, awaiting approval |
+| 10 | Release packaging pass            | ☑ complete (approved) |
+| 11 | Completion baseline & presentation audit | ☑ complete (approved) |
+| 12 | UI layout & text-safety foundation | ☑ complete (approved) |
+| 13 | Input consistency, remapping & settings | ☑ complete (approved) |
+| 14 | Asset manifest & replaceable resources | ☑ complete (approved) |
+| 15 | Art-direction vertical slice       | ☑ complete (approved) |
+| 16 | Compact dungeon-room system        | ☑ complete (approved) |
+| 17 | Exploration visuals & animation    | ☑ complete (approved) |
+| 18 | Battle presentation & game feel    | ☑ complete (approved) |
+| 19 | Progression, economy & score-integrity hardening | ☑ complete (approved) |
+| 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
+| 21 | Final music, ambience & sound effects | ☑ complete (approved) |
+| 22 | Onboarding & accessibility         | ☑ complete (approved) |
+| 23 | Automated visual validation, playtesting & balance hardening | ◐ in progress (tooling + tuning done; awaiting owner playtests) |
+| 24 | Release packaging & final release validation | ◐ in progress (engineering done; final sign-off gated on M23) |
 
 ## M1 — Project foundation
 
@@ -315,3 +332,474 @@ Implemented:
   `xpReward` in shipped data. 125 tests total, all passing.
 
 The full Milestone 1–10 plan is complete: a feature-complete, playable build.
+
+**Approved by the owner on 2026-07-19 after manual testing.**
+
+## Post-M10 completion program
+
+M10 was manually tested and **approved by the owner on 2026-07-19**. The
+completion program runs M11–M24. The strategic rationale, non-negotiable
+requirements, cross-cutting engineering rules, and quality targets are in
+`docs/completion_roadmap.md`. Every milestone below has exactly one
+authoritative note under `docs/milestone_notes/`; that note must be re-audited
+and refreshed against the then-current repository before the milestone begins.
+
+Documentation authority order (highest first): `CLAUDE.md`; the approved active
+milestone note; this ledger; `docs/game_design.md`; `docs/technical_design.md`;
+`docs/completion_roadmap.md`; supporting documents. The roadmap does not
+authorize implementation from future milestones.
+
+**Do not begin M11 until the owner explicitly authorizes it.** Approval of one
+milestone is not automatic authorization to start the next.
+
+## M11 — Completion baseline & presentation audit
+
+- **Status:** ☑ complete (approved by the owner 2026-07-19; audited commit
+  `8271871`; outputs: `docs/presentation_audit.md`, `docs/ui_style_guide.md`,
+  `docs/control_standard.md`, `docs/asset_pipeline.md`,
+  `docs/manual_test_matrix.md`, 7 baseline screenshots; 24-defect register —
+  1 Blocker, 7 High. Approval includes the recommended M12-a slice.)
+- **Goal:** verify the approved M10 baseline and convert vague polish goals into
+  a prioritized, evidence-based defect register before changing production code.
+- **Player-facing outcome:** none — the game is unchanged; this milestone is an
+  audit.
+- **Engineering outcome:** verified build/test baseline; complete screen/flow
+  inventory; prioritized defect register; initial UI, control, asset, and
+  manual-test contracts.
+- **Primary deliverables:** `docs/presentation_audit.md`,
+  `docs/ui_style_guide.md`, `docs/control_standard.md`,
+  `docs/asset_pipeline.md`, `docs/manual_test_matrix.md`; screenshots where
+  tooling permits; evidence-based M12-a recommendation.
+- **Out of scope:** any production-code change; UI implementation;
+  remapping/settings; asset schema/API changes; art/audio replacement;
+  room-generation changes; combat/content/economy changes.
+- **Dependencies:** M10 approved (satisfied 2026-07-19).
+- **Acceptance criteria:** all major screens, dynamic variants, and
+  maximum-content risks inventoried; observed defects distinguished from
+  static-analysis risks; defect priorities owner-approved; no later milestone
+  begun.
+- **Automated validation:** existing test suite built and run green at the
+  audited commit (or honestly reported unverified with exact commands).
+- **Owner manual validation:** review the defect register, priorities, and the
+  recommended M12-a slice; approve or amend.
+- **Milestone note:** `docs/milestone_notes/M11_completion_baseline.md`
+
+## M12 — UI layout & text-safety foundation
+
+- **Status:** ☑ complete (approved by the owner 2026-07-19; base commit
+  `5311ef9`; 144/144 tests; see the note's §N for the as-implemented record
+  and deviations)
+- **Goal:** replace fixed-coordinate text assumptions with a small measured
+  layout/text system and migrate screens in reviewable families so required
+  text never clips or overlaps.
+- **Player-facing outcome:** readable text everywhere; scrolling/paged lists;
+  visible focus; no clipped or overlapping required information.
+- **Engineering outcome:** pure, testable text-measurement/wrapping and layout
+  primitives in `src/ui/`; typography and spacing conventions; migrated screen
+  families with overflow diagnostics.
+- **Primary deliverables:** font-aware measurement, wrapping, line-height,
+  long-token handling, overflow diagnostics; insets/alignment/stacks/panels/
+  list-viewport/scroll policy; typography roles, spacing scale,
+  focus/disabled/danger conventions; screen-family migrations with
+  long/empty/maximum-data tests.
+- **Out of scope:** final art direction; control-remapping work; room-system
+  rewrite; final content/audio; any virtual-resolution change (separate owner
+  decision).
+- **Dependencies:** M11 defect register and initial UI style guide.
+- **Acceptance criteria:** zero unintended overflow in the manual matrix; every
+  dynamic list scrolls or paginates; focus remains visible; no required
+  information silently ellipsized; 426×240 baseline retained unless separately
+  approved.
+- **Automated validation:** pure layout/wrapping/scroll unit tests including
+  long, empty, and maximum-data cases; full suite green.
+- **Owner manual validation:** readability pass over migrated screens at
+  supported window sizes/shapes with keyboard and gamepad.
+- **Milestone note:** `docs/milestone_notes/M12_ui_text_safety.md`
+
+## M13 — Input consistency, remapping & settings
+
+- **Status:** ☑ complete (approved by the owner 2026-07-19; base commit
+  `a247b09`; 173/173 tests; see the note's §N for the as-implemented record
+  and deviations)
+- **Goal:** make all menus and gameplay predictable with keyboard and
+  controller, make prompts reflect active bindings, and persist settings.
+- **Player-facing outcome:** consistent Confirm/Cancel semantics; remappable
+  keyboard and gamepad controls; an options menu; prompts that match the
+  player's actual bindings.
+- **Engineering outcome:** no raw-input reads in production states; navigation
+  repeat, deadzone/hysteresis, transition-input suppression; active-device
+  tracking; binding-derived prompt labels; versioned defensive settings
+  persistence.
+- **Primary deliverables:** semantic-action audit and removal of raw-input
+  exceptions; stable navigation feel; binding-derived prompts; settings file in
+  the user data dir; keyboard/gamepad remapping with conflict recovery; initial
+  display/audio/gameplay/accessibility options.
+- **Out of scope:** final UI theme; new gameplay actions beyond what current
+  screens need; audio content.
+- **Dependencies:** M12 layout primitives (settings/remapping screens are
+  list-heavy).
+- **Acceptance criteria:** complete keyboard-only and gamepad-only runs; D-pad
+  and left stick navigate all UIs; remapping cannot strand the player;
+  malformed settings and controller disconnect recover safely.
+- **Automated validation:** binding-resolution and conflict tests; settings
+  round-trip and malformed-file tests; full suite green.
+- **Owner manual validation:** keyboard-only run, gamepad-only run, remap +
+  prompt check, controller-disconnect check.
+- **Milestone note:** `docs/milestone_notes/M13_input_settings.md`
+
+## M14 — Asset manifest & replaceable resources
+
+- **Status:** ☑ complete (approved by the owner 2026-07-19; base commit
+  `67689b4`; schema v1 owner-approved 2026-07-19; 181/181 tests; see the
+  note's §N)
+- **Goal:** centralize presentation identity in a validated, versioned external
+  asset manifest so states request logical IDs instead of file paths.
+- **Player-facing outcome:** none directly (placeholders remain); groundwork
+  that makes all later art/audio replaceable.
+- **Engineering outcome:** approved manifest schema v1; raylib-free
+  loader/validator; logical-ID `ResourceManager` interface; file-backed
+  `AudioManager` with safe synthesized/silent fallback; no presentation paths
+  in states.
+- **Primary deliverables:** versioned `assets/manifest.json` schema;
+  loader/validator with clear errors; texture/font/music/ambience/SFX
+  metadata; manual development reload; packaging and attribution/license
+  policy.
+- **Out of scope:** producing final assets; art direction; final audio content.
+- **Dependencies:** M11 asset-pipeline decision record; **owner approval of the
+  manifest schema before it is frozen (public-schema decision)**.
+- **Acceptance criteria:** replacing a texture, font, music track, or SFX for
+  an existing role requires no C++ edit; duplicate/missing IDs, unsafe paths,
+  and bad metadata are clear validation errors; missing optional assets do not
+  crash; no state contains a presentation file path.
+- **Automated validation:** manifest validation tests (duplicates, missing
+  required IDs, unsafe paths, malformed metadata); fallback tests; full suite
+  green.
+- **Owner manual validation:** swap one placeholder asset via the manifest
+  alone and confirm it appears; delete an optional asset and confirm safe
+  fallback.
+- **Milestone note:** `docs/milestone_notes/M14_asset_pipeline.md`
+
+## M15 — Art-direction vertical slice
+
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. The approval is the art-direction gate: the generated
+  in-project direction (art bible + slice) is authorized for M17/M21
+  production. (181/181 tests; captures in `docs/screenshots/m15_slice/`; see
+  the note's §N.)
+- **Goal:** prove the final visual/audio direction and its production cost on
+  one coherent slice before creating the full asset set.
+- **Player-facing outcome:** one polished path through the game: title, one
+  town area/service, one compact Ruined Keep room, one normal battle, one boss
+  battle, one result screen, with representative music/SFX.
+- **Engineering outcome:** approved art bible and pixel-grid conventions; slice
+  assets flowing entirely through the M14 manifest; validated production
+  workflow and per-asset effort estimates.
+- **Primary deliverables:** art bible; vertical-slice assets; representative
+  manifest-driven music/SFX; readability and scaling review.
+- **Out of scope:** full asset production; remaining themes and screens; any
+  gameplay change.
+- **Dependencies:** M12 layout, M14 manifest; coordination with M16 room-size
+  ranges for the compact-room preview; owner approval of the art direction.
+- **Acceptance criteria:** owner approves the art bible and the coherent slice;
+  assets readable at native resolution and supported scaling modes; all assets
+  original or correctly licensed; full production has not started before this
+  gate.
+- **Automated validation:** manifest/lint checks over slice assets; full suite
+  green.
+- **Owner manual validation:** review the slice at native resolution and
+  representative window sizes; grayscale readability check; approve or reject
+  the direction.
+- **Milestone note:** `docs/milestone_notes/M15_art_direction_vertical_slice.md`
+
+## M16 — Compact dungeon-room system
+
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. (193/193 tests; mass validation of thousands of
+  generated rooms; captures in `docs/screenshots/m16_rooms/`; see the note's
+  §N. Owner decisions executed: optional `generationVersion` score field
+  without a format bump; the 8 topology-derived archetypes.)
+- **Goal:** separate dungeon topology from compact room realization and replace
+  the fixed 26×15 full-screen room assumption.
+- **Player-facing outcome:** compact, purposeful rooms with readable entrances,
+  landmarks, and interactables instead of screen-filling boxes.
+- **Engineering outcome:** room archetypes with data-defined bounded
+  dimensions; a layout model (local tiles, door anchors, spawn points,
+  collision, markers, prop zones, draw origin); derived room-local
+  deterministic seeds; flood-fill/BFS validation.
+- **Primary deliverables:** archetype and layout systems; room validation;
+  score/generator-version decision if reproducibility semantics change;
+  representative compact-room human testing.
+- **Out of scope:** final environment art (M17); room events (M20); topology
+  rule changes (gates, main path, boss placement stay as designed).
+- **Dependencies:** M11 audit; M15 room-scale evidence; **owner decision on a
+  generation-version/score-schema field if published seed semantics change**.
+- **Acceptance criteria:** standard rooms no longer fill the exploration
+  screen; at least five archetypes appear across representative runs; large
+  generation samples pass connectivity and progression invariants; same seed
+  plus generation version is stable.
+- **Automated validation:** mass generation tests (thousands of rooms) for
+  connectivity, reachability, spawn validity, and gate/boss invariants;
+  determinism tests; full suite green.
+- **Owner manual validation:** walk representative rooms of each archetype with
+  keyboard and gamepad; confirm navigation and interactables are immediately
+  legible.
+- **Milestone note:** `docs/milestone_notes/M16_compact_dungeon_rooms.md`
+
+## M17 — Exploration visuals & animation
+
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. (201/201 tests; captures in
+  `docs/screenshots/m17_explore/`; see the note's §N. Owner decisions
+  executed: manifest v2 animation schema; all three themes in one pass with
+  a single review.)
+- **Goal:** produce final-quality town/dungeon characters, enemies, tiles,
+  props, animations, effects, and theme atmosphere on the stable asset and
+  room systems.
+- **Player-facing outcome:** real art and animation in town and dungeons;
+  visually distinct themes; readable interactables.
+- **Engineering outcome:** animation metadata and renderer; visual bounds
+  separated from collision bounds; stable deterministic draw layers;
+  interaction indicators that do not rely on color alone.
+- **Primary deliverables:** player and visible-enemy sprites; theme-specific
+  environment sets; restrained glows/particles/overlays; animation fallback
+  behavior.
+- **Out of scope:** battle presentation (M18); audio content (M21); room-layout
+  changes (M16 is done).
+- **Dependencies:** M14 manifest, M15 approved art bible, M16 compact rooms.
+- **Acceptance criteria:** silhouettes and interactables readable at native
+  resolution; themes differ through shape/composition rather than hue alone;
+  decoration does not obscure exits, hazards, enemies, or chests; collision is
+  unaffected by texture dimensions; missing animations fall back safely.
+- **Automated validation:** animation-metadata validation; asset lint;
+  collision-independence tests; full suite green.
+- **Owner manual validation:** walkthrough of each theme; grayscale readability
+  check; decoration-density check.
+- **Milestone note:** `docs/milestone_notes/M17_exploration_presentation.md`
+
+## M18 — Battle presentation & game feel
+
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. (208/208 tests, battle/simulator tests unmodified;
+  live-battle captures in `docs/screenshots/m18_battle/`; see the note's §N.
+  Owner decision executed: optional `effectFlash`/`effectShake` settings
+  fields, no version bump.)
+- **Goal:** make deterministic combat clear, fast, and satisfying without
+  undermining fewest-turn score play.
+- **Player-facing outcome:** readable battle information hierarchy; short
+  impactful action feedback; configurable battle speed and effect intensity.
+- **Engineering outcome:** presentation timing fully separated from simulation
+  results; effect configuration honored through M13 settings; no change to
+  deterministic outcomes.
+- **Primary deliverables:** redesigned information hierarchy (active
+  combatant/target/status/cost/telegraph); short action sequences, hit
+  feedback, particles, KO/victory feedback; configurable flash, shake, and
+  battle speed (Normal/Fast/near-instant).
+- **Out of scope:** combat rule changes; balance tuning (M19/M23); audio
+  content (M21).
+- **Dependencies:** M12 layout, M13 settings, M14 manifest, M15 art direction.
+- **Acceptance criteria:** source, target, effect, and result are always
+  clear; Fast mode materially reduces downtime; reduced-effect options work;
+  combat remains understandable muted; deterministic outcomes unchanged.
+- **Automated validation:** existing battle/simulator tests stay green
+  (identical outcomes); presentation-configuration tests; full suite green.
+- **Owner manual validation:** battles at each speed with keyboard and gamepad;
+  a status-heavy battle and a five-enemy battle; reduced-effect settings check.
+- **Milestone note:** `docs/milestone_notes/M18_battle_presentation.md`
+
+## M19 — Progression, economy & score-integrity hardening
+
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-19
+  after manual testing. (216/216 tests; audit found no exploit loops and no
+  tuning warranted — values unchanged; the depth>6 difficulty plateau is
+  documented and deferred to M20; capture in `docs/screenshots/m19_score/`;
+  see the note's §N. Owner decisions executed: `partyLevel` comparability
+  tag + visible conditions; economy rules kept.)
+- **Goal:** audit and tune the existing XP/leveling, Training Hall, shops,
+  equipment, and scoring so progression supports replay without presenting
+  incomparable runs as equivalent.
+- **Player-facing outcome:** a tuned economy; visible, honest score-comparison
+  conditions on the scoreboard.
+- **Engineering outcome:** simulation-backed tuning evidence; an explicit
+  score-comparability policy (segmented/tagged by run conditions rather than
+  opaque normalization); values remain data-driven.
+- **Primary deliverables:** XP/gold/purchase/failure simulations and human-run
+  evidence; class and equipment growth review; exploit/dominant-path analysis;
+  score-comparability policy; data-driven tuning changes.
+- **Out of scope:** new content (M20); new mechanics; reimplementing XP.
+- **Dependencies:** stable presentation (M12–M18); **owner approval for any
+  scoreboard/save schema addition** (e.g., run-condition tags).
+- **Acceptance criteria:** no obvious farming or economy exploit; Training
+  Hall and battle XP have distinct, defensible roles; class identities remain
+  meaningful; score conditions are visible and honest.
+- **Automated validation:** expanded simulator reports; economy/XP-curve
+  tests; scoreboard compatibility tests; full suite green.
+- **Owner manual validation:** progression sessions attempting the identified
+  exploit paths; scoreboard comprehension check.
+- **Milestone note:** `docs/milestone_notes/M19_progression_economy_scoring.md`
+
+## M20 — Encounter & dungeon-content variety
+
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-20
+  after manual testing. (228/228 tests; the depth plateau is fixed —
+  clearing levels now 1/3/5/9/11 at depths 1/5/6/8/10; captures in
+  `docs/screenshots/m20_events/`; see the note's §N. Owner decisions
+  executed in full: role taxonomy + composition.json + depth scaling +
+  generation v3; all six events; one sim mechanic per boss archetype.)
+- **Goal:** add targeted tactical variety after the presentation and room
+  foundations are stable.
+- **Player-facing outcome:** more distinct enemy teams, a small set of
+  meaningful room events with visible trade-offs, and mechanically
+  distinguishable bosses.
+- **Engineering outcome:** encounter-role taxonomy; externalized composition
+  constraints; event system built on M16 rooms; boss mechanic/telegraph/
+  escalation improvements.
+- **Primary deliverables:** role taxonomy and composition rules in data; a
+  limited room-event set; dungeon modifiers only where risk/reward is clear;
+  boss identity improvements.
+- **Out of scope:** quantity-first content production; new game modes; story
+  content.
+- **Dependencies:** M16 rooms; M17/M18 presentation; M19 scoring policy.
+- **Acceptance criteria:** generated teams cannot violate composition rules;
+  events create real decisions with risk/reward visible before confirmation;
+  representative bosses are mechanically distinguishable; new content fills
+  identified role gaps rather than chasing quantity.
+- **Automated validation:** composition-constraint validation; generation
+  tests; content lint; full suite green.
+- **Owner manual validation:** representative runs across themes/depths; blind
+  boss-distinction check.
+- **Milestone note:** `docs/milestone_notes/M20_content_variety.md`
+
+## M21 — Final music, ambience & sound effects
+
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-20
+  after the manual listening pass. (235/235 tests; 30 original WAVs — 11
+  music incl. per-theme dungeon tracks and one-shot victory/defeat
+  jingles, 4 ambience beds, 15 SFX — all deterministic, manifest-driven,
+  provenance-recorded; ambience channel + crossfades + SFX rate limiting
+  in `AudioManager`; smoke-tested incl. the missing-file drill; see the
+  note's §N. Owner decisions 2026-07-20: in-project generated sourcing;
+  per-theme dungeon music; fanfare/dirge jingles at battle end.)
+- **Goal:** replace synthesized placeholders with coherent original/licensed
+  audio delivered through the asset manifest.
+- **Player-facing outcome:** real music, ambience, and sound effects across
+  every scene, with persistent volume controls.
+- **Engineering outcome:** streamed music; clean loops and transitions; mixing;
+  safe silence fallback; provenance/license records for every shipped asset.
+- **Primary deliverables:**
+  title/town/preparation/dungeon/battle/boss/victory/defeat/result music
+  states; town and per-theme ambience; complete UI/exploration/battle SFX
+  families; mixing and persistent volume controls.
+- **Out of scope:** gameplay changes; new audio-driven mechanics.
+- **Dependencies:** M14 manifest; M13 volume settings; M15 approved direction.
+- **Acceptance criteria:** no stacked tracks, clicks, clipping, or hard
+  crashes; audio replaceable without C++; the game remains understandable
+  muted; every shipped asset has provenance and license/attribution records.
+- **Automated validation:** manifest audio validation; missing-audio fallback
+  tests; full suite green.
+- **Owner manual validation:** listen through all scenes and transitions; loop
+  seam check; maximum-volume clipping check; full run with audio muted.
+- **Milestone note:** `docs/milestone_notes/M21_audio_music.md`
+
+## M22 — Onboarding & accessibility
+
+- **Status:** ☑ complete (approved) — approved by the owner on 2026-07-20
+  after manual testing. (244/244 tests; 9 one-time contextual prompts
+  persisted in tutorial.json with disable/reset in Settings; remappable
+  Details action with contextual panels in
+  battle/dungeon/result/scoreboard/equip shop; high-contrast palette
+  behind style::palette(); save-overwrite and quit-to-title
+  second-Confirm guards; see the note's §N. Owner decisions 2026-07-20:
+  contextual one-time prompts; own tutorial.json; Details action +
+  palette accessor approved.)
+- **Goal:** teach the game through play and remove avoidable barriers while
+  retaining tactical challenge.
+- **Player-facing outcome:** progressive contextual onboarding; in-game
+  Details help; high-contrast and reduced-motion options; configurable message
+  pacing.
+- **Engineering outcome:** defensively persisted, resettable tutorial state;
+  accessibility options honored across all screens; non-color and non-audio
+  information alternatives.
+- **Primary deliverables:** progressive onboarding;
+  revisit/disable/reset tutorial controls; Details help for
+  stats/status/danger/score/equipment; high-contrast and reduced
+  motion/flash/shake options; message pacing; clear error and
+  destructive-action handling.
+- **Out of scope:** difficulty redesign; new mechanics; balance changes.
+- **Dependencies:** M13 settings; M12 layout; M18 battle presentation.
+- **Acceptance criteria:** a new tester completes depth 1 without external
+  instruction; critical mechanics are explained in-game; accessibility cases
+  pass the manual matrix; settings are reachable before New Game.
+- **Automated validation:** tutorial-state persistence and reset tests;
+  settings tests; full suite green.
+- **Owner manual validation:** fresh-player observation; accessibility-option
+  runs (high contrast, reduced motion, pacing).
+- **Milestone note:** `docs/milestone_notes/M22_onboarding_accessibility.md`
+
+## M23 — Automated visual validation, playtesting & balance hardening
+
+- **Status:** ◐ in progress — tooling, diagnostics, lint/mass/report
+  suites, and the sim-justified early-ramp tuning (generation v4) are
+  implemented (247/247 tests; 22 deterministic captures, byte-identical
+  reruns, zero overflow); the milestone now waits on the owner-run
+  external playtests per `docs/playtest_protocol.md`, whose findings feed
+  the hardening pass before status can advance (owner-confirmed flow,
+  2026-07-20).
+- **Goal:** make representative presentation states reproducible, prevent
+  layout/asset/room/balance regressions, and harden balance with observed
+  external playtesting evidence.
+- **Player-facing outcome:** fixes for the control, readability, navigation,
+  score-comprehension, and balance problems that playtests surface.
+- **Engineering outcome:** deterministic debug/capture scenarios;
+  native-resolution screenshot capture; UI bounds/overlap/overflow
+  diagnostics; presentation-content linting; large-scale room validation;
+  expanded machine-readable simulation reports.
+- **Primary deliverables:** the validation tooling above; observed
+  keyboard-first, controller-first, and new-player playtests; final balance
+  and pacing changes backed by evidence.
+- **Out of scope:** release packaging (M24); new features or content.
+- **Dependencies:** M12–M22 substantially complete so representative captures
+  and playtests reflect the real game.
+- **Acceptance criteria:** unintended overflow and missing required assets
+  fail validation; representative captures are reproducible; thousands of
+  generated rooms pass invariants; repeated usability and balance defects from
+  playtests are fixed, not documented away; no dominant strategy trivializes
+  representative runs; debug tooling is excluded or safely disabled in
+  Release.
+- **Automated validation:** the new validation suites themselves plus the full
+  test suite, all green.
+- **Owner manual validation:** run/observe the external playtests; review the
+  capture set and balance reports; approve the fixes.
+- **Milestone note:** `docs/milestone_notes/M23_validation_playtesting_balance.md`
+
+## M24 — Release packaging & final release validation
+
+- **Status:** ◐ in progress — packaging engineering implemented
+  (presets with static CRT, version 0.9.0 plumbing, generated icon +
+  VERSIONINFO, one-command stage/validate/zip via tools/package.ps1;
+  package smoke-tested, capture-inert, both suites 247/247; owner
+  decisions 2026-07-20: v0.9.0 until playtests pass, plain zip,
+  emblem-generated icon). Final validation — the owner's clean-machine
+  smoke test and full-matrix pass on the packaged build — is gated on
+  M23's completion per the parallel-flow decision.
+- **Goal:** produce and validate a reproducible, clean, polished Windows
+  release candidate.
+- **Player-facing outcome:** the final packaged game.
+- **Engineering outcome:** reproducible Release preset/build; packaged `data/`
+  and `assets/` trees; version metadata, icon, credits, and licenses; clean
+  logs; stable save/settings paths.
+- **Primary deliverables:** Release build configuration/preset; packaged
+  distribution layout; credits/licenses; known limitations; clean-machine
+  smoke test; final manual-test-matrix sign-off.
+- **Out of scope:** feature, content, or balance changes other than
+  release-blocking fixes.
+- **Dependencies:** M23 complete; all prior milestones `complete (approved)`.
+- **Acceptance criteria:** packaged build runs on a machine without Visual
+  Studio; no debug presentation, unlicensed asset, or unintended placeholder
+  ships; final manual matrix signed off; the owner explicitly approves the
+  release candidate.
+- **Automated validation:** Release-configuration build plus full test suite;
+  packaging/layout validation.
+- **Owner manual validation:** clean-machine smoke test; final manual-matrix
+  pass; release-candidate approval.
+- **Milestone note:** `docs/milestone_notes/M24_release_packaging.md`
+

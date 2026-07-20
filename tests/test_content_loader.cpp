@@ -64,7 +64,7 @@ TEST_CASE("loader: an enemy referencing an unknown skill is reported", "[content
     LoadReport rep;
     parseSkills(parse(kSkills), "skills", db, rep);
     parseEnemies(parse(R"({"version":1,"enemies":[
-        {"id":"goblin","name":"Goblin",
+        {"id":"goblin","name":"Goblin","role":"bruiser",
          "stats":{"hp":20,"attack":8,"magic":0,"defense":3,"speed":9},
          "skills":["ghost_skill"]}]})"),
                  "enemies", db, rep);
@@ -136,7 +136,7 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     REQUIRE(ok);
     REQUIRE(db.classCount() == 6);
     REQUIRE(db.skillCount() == 28);
-    REQUIRE(db.enemyCount() == 20);
+    REQUIRE(db.enemyCount() == 23);  // 16 normals + 7 elites (M20 gap fills)
     REQUIRE(db.itemCount() == 36);
     REQUIRE(db.bossCount() == 4);
     REQUIRE(db.themeCount() == 3);

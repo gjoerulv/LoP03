@@ -1,6 +1,7 @@
 #include "states/BattleState.hpp"
 
 #include <algorithm>
+#include <memory>
 #include <utility>
 
 #include "audio/AudioManager.hpp"
@@ -11,13 +12,28 @@
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
+#include "input/PromptLabels.hpp"
+#include "resource/ResourceManager.hpp"
+#include "settings/Settings.hpp"
+#include "states/DetailsOverlayState.hpp"
 #include "states/StateStack.hpp"
+#include "states/TutorialPromptState.hpp"
+#include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
+namespace style = ui::style;
+
 namespace {
-constexpr float kResolveTime = 0.9f;
+
+// Bottom-panel layout (M12): everything must fit inside the 60px panel.
+constexpr int kPanelH = 60;
+constexpr int kListX = 24;       // command/skill/item lists (cursor at x-10)
+constexpr int kListItemH = 12;
+constexpr int kListRows = 4;     // visible rows in skill/item lists (scrolled)
+constexpr int kInfoX = 150;      // right column: actor line + descriptions
 
 bool skillNeedsTarget(content::SkillTarget t) {
     return t == content::SkillTarget::SingleEnemy || t == content::SkillTarget::SingleAlly;
@@ -48,8 +64,28 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
         }
     }
     message_ = bossBattle_ ? "A boss appears!" : "A battle begins!";
+    displayHp_.reserve(battle_.units.size());
+    for (const battle::Combatant& c : battle_.units) {
+        displayHp_.push_back(c.hp);
+    }
+    hitFlags_.assign(battle_.units.size(), 0);
+    koFade_.assign(battle_.units.size(), 1.0f);
     context_.fade.start();
-    context_.audio.setMusic(MusicTrack::Battle);
+    context_.audio.setMusic(bossBattle_ ? MusicTrack::Boss : MusicTrack::Battle);
+}
+
+void BattleState::onEnter() { maybeTutorialPrompt(stack(), context_, tutorial::kBattleFirst); }
+
+int BattleState::enemyBaseY() const {
+    int enemies = 0;
+    for (const battle::Combatant& c : battle_.units) {
+        if (c.side == battle::Side::Enemy) {
+            ++enemies;
+        }
+    }
+    // Five enemy rows only fit above the bottom panel when the column starts
+    // higher (the turn counter lives top-right, so this space is free).
+    return enemies >= 5 ? 20 : 36;
 }
 
 void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
@@ -64,14 +100,16 @@ void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     }
     if (battle_.units[static_cast<std::size_t>(index)].side == battle::Side::Enemy) {
         outX = 36;
-        outY = 36 + enemyRow * 34;
+        outY = enemyBaseY() + enemyRow * 34;
     } else {
         outX = context_.virtualWidth - 110;
         outY = 36 + partyRow * 34;
     }
 }
 
-void BattleState::spawnNumbers(const std::vector<int>& hpBefore) {
+void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
+                               bool statusAction) {
+    hitFlags_.assign(battle_.units.size(), 0);
     bool anyDamage = false;
     bool anyHeal = false;
     bool anyKo = false;
@@ -89,23 +127,40 @@ void BattleState::spawnNumbers(const std::vector<int>& hpBefore) {
         f.timer = 0.9f;
         f.heal = delta > 0;
         f.text = delta > 0 ? "+" + std::to_string(delta) : std::to_string(-delta);
-        floats_.push_back(std::move(f));
+        pendingFloats_.push_back(std::move(f));
         if (delta > 0) {
             anyHeal = true;
         } else {
             anyDamage = true;
+            hitFlags_[i] = 1;  // brightened during the impact beat
         }
         if (hpBefore[i] > 0 && battle_.units[i].hp <= 0) {
             anyKo = true;
         }
     }
-    if (anyKo) {
-        context_.audio.play(Sfx::Ko);
-    } else if (anyDamage) {
-        context_.audio.play(Sfx::Hit);
-    } else if (anyHeal) {
-        context_.audio.play(Sfx::Heal);
+    pendingSfx_ = anyKo ? 3 : (anyDamage ? damageSfx : (anyHeal ? 1 : (statusAction ? 5 : 0)));
+}
+
+void BattleState::commitPresentation() {
+    for (FloatNumber& f : pendingFloats_) {
+        floats_.push_back(std::move(f));
     }
+    pendingFloats_.clear();
+    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        if (battle_.units[i].hp > 0 && displayHp_[i] <= 0) {
+            koFade_[i] = 1.0f;  // revived (Commander rally, revive items): rise again
+        }
+        displayHp_[i] = battle_.units[i].hp;
+    }
+    switch (pendingSfx_) {
+        case 5: context_.audio.play(Sfx::Status); break;
+        case 4: context_.audio.play(Sfx::HitMagic); break;
+        case 3: context_.audio.play(Sfx::Ko); break;
+        case 2: context_.audio.play(Sfx::Hit); break;
+        case 1: context_.audio.play(Sfx::Heal); break;
+        default: break;
+    }
+    pendingSfx_ = 0;
 }
 
 int BattleState::currentActor() const {
@@ -135,7 +190,8 @@ void BattleState::startActorTurn() {
         hpBefore.push_back(u.hp);
     }
     const std::string tick = battle_.tickStatuses(actor);
-    spawnNumbers(hpBefore);
+    stageNumbers(hpBefore);
+    commitPresentation();  // status ticks are not action-staged; show at once
     if (!battle_.units[static_cast<std::size_t>(actor)].alive()) {
         message_ = tick;
         afterAction();  // poison felled the unit; skip its action
@@ -206,6 +262,8 @@ void BattleState::buildSkillMenu() {
         items.push_back({s->name + "  (MP " + std::to_string(s->mpCost) + ")", affordable});
     }
     skillMenu_.setItems(std::move(items));
+    skillScroll_.reset();
+    skillScroll_.follow(static_cast<int>(skillMenu_.size()), kListRows, skillMenu_.cursor());
 }
 
 void BattleState::buildItemMenu() {
@@ -217,6 +275,8 @@ void BattleState::buildItemMenu() {
         items.push_back({name + "  x" + std::to_string(context_.party.inventory.count(id)), true});
     }
     itemMenu_.setItems(std::move(items));
+    itemScroll_.reset();
+    itemScroll_.follow(static_cast<int>(itemMenu_.size()), kListRows, itemMenu_.cursor());
 }
 
 void BattleState::onCommand() {
@@ -296,6 +356,8 @@ void BattleState::executePending(int targetUnit) {
     for (const battle::Combatant& u : battle_.units) {
         hpBefore.push_back(u.hp);
     }
+    int damageSfx = 2;
+    bool statusAction = false;
     switch (pendingKind_) {
         case PendingKind::Attack:
             message_ = battle_.attack(actor, targetUnit);
@@ -303,6 +365,8 @@ void BattleState::executePending(int targetUnit) {
         case PendingKind::Skill:
             if (const content::SkillDef* s = context_.content.findSkill(pendingSkillId_)) {
                 message_ = battle_.useSkill(actor, targetUnit, *s);
+                damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
+                statusAction = s->statusEffect != content::StatusType::None;
             }
             break;
         case PendingKind::Item:
@@ -312,7 +376,7 @@ void BattleState::executePending(int targetUnit) {
             }
             break;
     }
-    spawnNumbers(hpBefore);
+    stageNumbers(hpBefore, damageSfx, statusAction);
     afterAction();
 }
 
@@ -323,16 +387,20 @@ void BattleState::executeEnemy(int actor) {
         hpBefore.push_back(u.hp);
     }
     const battle::EnemyChoice choice = battle::chooseEnemyAction(battle_, actor, context_.content);
+    int damageSfx = 2;
+    bool statusAction = false;
     if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);
+            damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
+            statusAction = s->statusEffect != content::StatusType::None;
         }
     } else if (choice.target >= 0) {
         message_ = battle_.attack(actor, choice.target);
     } else {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
     }
-    spawnNumbers(hpBefore);
+    stageNumbers(hpBefore, damageSfx, statusAction);
     afterAction();
 }
 
@@ -343,7 +411,15 @@ void BattleState::afterAction() {
         }
     }
     phase_ = Phase::Resolve;
-    timer_ = kResolveTime;
+    // Stage the presentation of the already-final result: windup and impact
+    // only when something was actually hit/healed, then the speed-scaled
+    // message pause. Confirm always skips the whole sequence.
+    lungeUnit_ = currentActor();
+    render::BattleStageParams params;
+    params.speed = context_.settings.values.battleSpeed;
+    params.flash = context_.settings.values.effectFlash;
+    params.shake = context_.settings.values.effectShake;
+    seq_.start(!pendingFloats_.empty(), settings::resolveSeconds(params.speed), params);
 }
 
 void BattleState::finish() {
@@ -367,7 +443,9 @@ std::string BattleState::outcomeMessage() const {
         case battle::Outcome::Victory:
             return bossBattle_ ? "Victory! The dungeon boss is defeated!" : "Victory!";
         case battle::Outcome::Defeat:
-            return "The party has fallen...";
+            // Defeat consequences are stated, not silent (UI-INFO-014).
+            return "The party has fallen... You are carried back to town; "
+                   "half your gold is lost and the run is forfeit.";
         case battle::Outcome::Escaped:
             return "Escaped!";
         case battle::Outcome::Ongoing:
@@ -376,9 +454,47 @@ std::string BattleState::outcomeMessage() const {
     return "";
 }
 
+void BattleState::openDetails() {
+    // The focused unit: the highlighted target while aiming, else the actor.
+    int unit = currentActor();
+    if (phase_ == Phase::ChooseTarget && !targetCandidates_.empty()) {
+        unit = targetCandidates_[static_cast<std::size_t>(targetCursor_)];
+    }
+    const battle::Combatant& c = battle_.units[static_cast<std::size_t>(unit)];
+    std::string body = c.name + " - HP " + std::to_string(c.hp) + "/" +
+                       std::to_string(c.maxHp);
+    if (c.side == battle::Side::Party) {
+        body += "  MP " + std::to_string(c.mp) + "/" + std::to_string(c.maxMp);
+    }
+    body += "\nATK " + std::to_string(c.stats.attack) + "  MAG " +
+            std::to_string(c.stats.magic) + "  DEF " + std::to_string(c.stats.defense) +
+            "  SPD " + std::to_string(c.stats.speed);
+    if (c.guarding) {
+        body += "\nGuarding: incoming damage is halved this round.";
+    }
+    if (c.statuses.empty()) {
+        body += "\nNo active statuses.";
+    } else {
+        body += "\nStatuses:";
+        for (const battle::StatusInstance& s : c.statuses) {
+            body += " " + std::string(statusShort(s.type)) + "(" + std::to_string(s.turns) +
+                    " turns)";
+        }
+    }
+    body +=
+        "\n\nPSN: poison, damage at the start of each turn. ATK+/ATK-: attack "
+        "raised/lowered. DEF+/DEF-: defense raised/lowered.\nTurn order "
+        "follows Speed. Guard halves damage. Escape forfeits the guarded "
+        "reward - and every battle turn counts against your score.";
+    stack().pushState(
+        std::make_unique<DetailsOverlayState>(stack(), context_, "Battle Details", body));
+}
+
 void BattleState::handleInput(const Input& input) {
-    const bool up = input.pressed(InputAction::MoveUp) || input.pressed(InputAction::MoveLeft);
-    const bool down = input.pressed(InputAction::MoveDown) || input.pressed(InputAction::MoveRight);
+    // Up/Down only: Left/Right are reserved for future columns/adjust
+    // (control standard; M13 dropped the old Left/Right aliases).
+    const bool up = input.navPressed(InputAction::MoveUp);
+    const bool down = input.navPressed(InputAction::MoveDown);
 
     if (phase_ != Phase::Resolve) {
         if (up || down) {
@@ -390,6 +506,14 @@ void BattleState::handleInput(const Input& input) {
     }
     if (input.pressed(InputAction::Cancel)) {
         context_.audio.play(Sfx::Cancel);
+    }
+
+    // Contextual Details (M22): explain the focused unit and the status
+    // shorthand whenever the player is choosing, never mid-resolve.
+    if (phase_ != Phase::Resolve && phase_ != Phase::Done &&
+        input.pressed(InputAction::Details)) {
+        openDetails();
+        return;
     }
 
     switch (phase_) {
@@ -406,6 +530,10 @@ void BattleState::handleInput(const Input& input) {
         case Phase::ChooseSkill:
             if (up) skillMenu_.moveUp();
             if (down) skillMenu_.moveDown();
+            if (up || down) {
+                skillScroll_.follow(static_cast<int>(skillMenu_.size()), kListRows,
+                                    skillMenu_.cursor());
+            }
             if (input.pressed(InputAction::Confirm)) onSkillChosen();
             if (input.pressed(InputAction::Cancel)) {
                 phase_ = Phase::Command;
@@ -414,6 +542,10 @@ void BattleState::handleInput(const Input& input) {
         case Phase::ChooseItem:
             if (up) itemMenu_.moveUp();
             if (down) itemMenu_.moveDown();
+            if (up || down) {
+                itemScroll_.follow(static_cast<int>(itemMenu_.size()), kListRows,
+                                   itemMenu_.cursor());
+            }
             if (input.pressed(InputAction::Confirm)) onItemChosen();
             if (input.pressed(InputAction::Cancel)) {
                 phase_ = Phase::Command;
@@ -438,7 +570,7 @@ void BattleState::handleInput(const Input& input) {
             break;
         case Phase::Resolve:
             if (input.pressed(InputAction::Confirm)) {
-                timer_ = 0.0f;  // skip the pause
+                seq_.skip();  // skip windup/impact/pause; the result still shows
             }
             break;
         case Phase::Done:
@@ -450,61 +582,139 @@ void BattleState::handleInput(const Input& input) {
 }
 
 void BattleState::update(float dt) {
-    for (FloatNumber& f : floats_) {
-        f.y -= 22.0f * dt;
-        f.timer -= dt;
+    // Floating numbers hold still during the impact beat (a brief hit-stop)
+    // and rise otherwise.
+    if (seq_.stage() != render::BattleStage::Impact) {
+        for (FloatNumber& f : floats_) {
+            f.y -= 22.0f * dt;
+            f.timer -= dt;
+        }
+        floats_.erase(std::remove_if(floats_.begin(), floats_.end(),
+                                     [](const FloatNumber& f) { return f.timer <= 0.0f; }),
+                      floats_.end());
     }
-    floats_.erase(std::remove_if(floats_.begin(), floats_.end(),
-                                 [](const FloatNumber& f) { return f.timer <= 0.0f; }),
-                  floats_.end());
+    // Fallen enemies sink away once their shown HP reaches zero; party
+    // members stay visible (they can be revived).
+    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        if (battle_.units[i].side == battle::Side::Enemy && displayHp_[i] <= 0 &&
+            koFade_[i] > 0.0f) {
+            koFade_[i] = std::max(0.0f, koFade_[i] - dt / 0.4f);
+        }
+    }
 
     if (phase_ != Phase::Resolve) {
         return;
     }
-    timer_ -= dt;
-    if (timer_ > 0.0f) {
+    seq_.update(dt);
+    if (seq_.takeCommit()) {
+        commitPresentation();
+    }
+    if (!seq_.finished()) {
         return;
     }
+    lungeUnit_ = -1;
     const battle::Outcome o = battle_.outcome();
     if (o != battle::Outcome::Ongoing) {
         result_ = o;
         phase_ = Phase::Done;
         message_ = outcomeMessage();
-        context_.audio.play(o == battle::Outcome::Victory ? Sfx::Victory : Sfx::Defeat);
+        // One-shot jingle on the music channel (M21); if its file is missing
+        // the AudioManager falls back to the matching stinger SFX.
+        context_.audio.setMusic(o == battle::Outcome::Victory ? MusicTrack::Victory
+                                                             : MusicTrack::Defeat);
     } else {
         advanceTurn();
     }
 }
 
-void BattleState::drawUnit(const battle::Combatant& c, int x, int y, bool current,
+void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, bool current,
                            bool targeted) const {
-    const Color body = c.side == battle::Side::Enemy ? Color{170, 80, 90, 255}
-                                                     : Color{90, 130, 190, 255};
-    DrawRectangle(x, y, 40, 16, c.alive() ? body : Color{60, 60, 70, 255});
-    if (targeted) {
-        DrawRectangleLines(x - 2, y - 2, 44, 20, Color{240, 220, 120, 255});
+    // Everything drawn here shows the *displayed* HP state, which commits at
+    // the sequencer's impact beat — the sim result itself is already final.
+    const int shownHp = displayHp_[static_cast<std::size_t>(index)];
+    const bool shownAlive = shownHp > 0;
+    const float fade = koFade_[static_cast<std::size_t>(index)];
+    if (c.side == battle::Side::Enemy && fade <= 0.0f) {
+        return;  // fully sunk after its KO was shown
+    }
+    if (index == lungeUnit_) {
+        // Acting unit leans toward the foe during windup/impact.
+        x += static_cast<int>(seq_.lunge() * 4.0f) * (c.side == battle::Side::Party ? -1 : 1);
+    }
+    const float flash =
+        hitFlags_[static_cast<std::size_t>(index)] != 0 ? seq_.flashStrength() : 0.0f;
+
+    // Sprite lookup: a specific id first (per-enemy art is a manifest
+    // drop-in), then the tier-generic sprite, then the pre-asset rectangle.
+    std::string spriteId;
+    if (c.side == battle::Side::Party) {
+        spriteId = "actor." + c.sourceId + ".battle";
+    } else if (c.isBoss) {
+        spriteId = "boss." + c.sourceId + ".battle";
+        if (!context_.resources.hasTexture(spriteId)) {
+            spriteId = "boss.generic.battle";
+        }
+    } else {
+        spriteId = "enemy." + c.sourceId + ".battle";
+        if (!context_.resources.hasTexture(spriteId)) {
+            const content::EnemyDef* def = context_.content.findEnemy(c.sourceId);
+            spriteId = (def != nullptr && def->tier == content::EnemyTier::Elite)
+                           ? "enemy.elite.battle"
+                           : "enemy.normal.battle";
+        }
+    }
+
+    int nameY = y - 9;
+    if (context_.resources.hasTexture(spriteId)) {
+        const Texture2D& tex = context_.resources.texture(spriteId);
+        const int sx = x + 20 - tex.width / 2;   // bottom-center on the old
+        const int sy = y + 16 - tex.height;      // 40x16 footprint
+        Color tint = shownAlive ? WHITE : Color{110, 110, 125, 255};
+        tint.a = static_cast<unsigned char>(255.0f * fade);
+        DrawTexture(tex, sx, sy, tint);
+        if (flash > 0.0f) {
+            DrawRectangle(sx, sy, tex.width, tex.height, Fade(WHITE, 0.55f * flash));
+        }
+        if (targeted) {
+            DrawRectangleLines(sx - 2, sy - 2, tex.width + 4, tex.height + 4,
+                               Color{240, 220, 120, 255});
+        }
+        nameY = sy - 10;
+    } else {
+        const Color body = c.side == battle::Side::Enemy ? Color{170, 80, 90, 255}
+                                                         : Color{90, 130, 190, 255};
+        DrawRectangle(x, y, 40, 16, Fade(shownAlive ? body : Color{60, 60, 70, 255}, fade));
+        if (flash > 0.0f) {
+            DrawRectangle(x, y, 40, 16, Fade(WHITE, 0.55f * flash));
+        }
+        if (targeted) {
+            DrawRectangleLines(x - 2, y - 2, 44, 20, Color{240, 220, 120, 255});
+        }
     }
     if (current) {
         DrawText(">", x - 9, y + 3, 10, Color{240, 220, 120, 255});
     }
 
-    DrawText(c.name.c_str(), x, y - 9, 8, RAYWHITE);
-    // HP bar.
-    const float hpFrac = c.maxHp > 0 ? static_cast<float>(c.hp) / static_cast<float>(c.maxHp) : 0.0f;
-    DrawRectangle(x, y + 17, 40, 3, Color{40, 40, 40, 255});
-    DrawRectangle(x, y + 17, static_cast<int>(40 * hpFrac), 3, Color{90, 200, 110, 255});
+    DrawText(c.name.c_str(), x, nameY, 8, Fade(RAYWHITE, fade));
+    // HP bar (displayed value).
+    const float hpFrac =
+        c.maxHp > 0 ? static_cast<float>(shownHp) / static_cast<float>(c.maxHp) : 0.0f;
+    DrawRectangle(x, y + 17, 40, 3, Fade(Color{40, 40, 40, 255}, fade));
+    DrawRectangle(x, y + 17, static_cast<int>(40 * (hpFrac < 0.0f ? 0.0f : hpFrac)), 3,
+                  Fade(Color{90, 200, 110, 255}, fade));
     if (c.side == battle::Side::Party) {
         const float mpFrac =
             c.maxMp > 0 ? static_cast<float>(c.mp) / static_cast<float>(c.maxMp) : 0.0f;
         DrawRectangle(x, y + 21, 40, 2, Color{40, 40, 40, 255});
         DrawRectangle(x, y + 21, static_cast<int>(40 * mpFrac), 2, Color{90, 120, 210, 255});
-        DrawText(TextFormat("%d/%d", c.hp, c.maxHp), x + 44, y + 4, 8, RAYWHITE);
+        DrawText(TextFormat("%d/%d", shownHp < 0 ? 0 : shownHp, c.maxHp), x + 44, y + 4, 8,
+                 RAYWHITE);
     }
-    if (!c.alive()) {
-        DrawText("KO", x + 13, y + 4, 8, Color{220, 120, 120, 255});
+    if (!shownAlive) {
+        DrawText("KO", x + 13, y + 4, 8, Fade(Color{220, 120, 120, 255}, fade));
     }
 
-    if (!c.statuses.empty() && c.alive()) {
+    if (!c.statuses.empty() && shownAlive) {
         std::string line;
         for (const battle::StatusInstance& s : c.statuses) {
             if (!line.empty()) {
@@ -512,7 +722,16 @@ void BattleState::drawUnit(const battle::Combatant& c, int x, int y, bool curren
             }
             line += statusShort(s.type);
         }
-        DrawText(line.c_str(), x, y + 24, 8, Color{200, 160, 220, 255});
+        // Party rows have HP text to the right, so their statuses sit below;
+        // enemy rows use the open field to the right, keeping tall enemy
+        // columns clear of the bottom panel.
+        if (c.side == battle::Side::Party) {
+            ui::drawTextFitted(line, x, y + 24, 100, 8, Color{200, 160, 220, 255},
+                               "battle.status.party");
+        } else {
+            ui::drawTextFitted(line, x + 44, y + 4, 120, 8, Color{200, 160, 220, 255},
+                               "battle.status.enemy");
+        }
     }
 }
 
@@ -531,69 +750,126 @@ void BattleState::render() {
     if (phase_ == Phase::ChooseTarget && !targetCandidates_.empty()) {
         targetUnit = targetCandidates_[static_cast<std::size_t>(targetCursor_)];
     }
+    // Screen shake (impact beat only; honors the shake setting) offsets the
+    // battlefield, never the UI panel.
+    const int shakeX = seq_.shakeOffset();
+    const int enemyY0 = enemyBaseY();
     for (std::size_t i = 0; i < battle_.units.size(); ++i) {
         const battle::Combatant& c = battle_.units[i];
         const bool isCurrent = partyTurn && static_cast<int>(i) == actor;
         const bool isTarget = static_cast<int>(i) == targetUnit;
         if (c.side == battle::Side::Enemy) {
-            drawUnit(c, 36, 36 + enemyRow * 34, isCurrent, isTarget);
+            drawUnit(c, static_cast<int>(i), 36 + shakeX, enemyY0 + enemyRow * 34, isCurrent,
+                     isTarget);
             ++enemyRow;
         } else {
-            drawUnit(c, w - 110, 36 + partyRow * 34, isCurrent, isTarget);
+            drawUnit(c, static_cast<int>(i), w - 110 + shakeX, 36 + partyRow * 34, isCurrent,
+                     isTarget);
             ++partyRow;
         }
     }
 
-    DrawText(TextFormat("Turns: %d", battle_.turnsTaken), 6, 6, 8, Color{170, 170, 190, 255});
+    // Turn counter top-right: the top-left is needed by tall enemy columns.
+    ui::drawTextRight(TextFormat("Turns: %d", battle_.turnsTaken), w - 6, 6, 8,
+                      style::palette().textDim);
 
     // Floating damage / heal numbers.
     for (const FloatNumber& f : floats_) {
-        DrawText(f.text.c_str(), static_cast<int>(f.x), static_cast<int>(f.y), 10,
+        DrawText(f.text.c_str(), static_cast<int>(f.x) + shakeX, static_cast<int>(f.y), 10,
                  f.heal ? Color{120, 220, 120, 255} : Color{245, 120, 120, 255});
     }
 
-    // Bottom panel.
-    const int panelY = h - 64;
-    ui::drawPanel(4, panelY, w - 8, 60, Color{24, 22, 34, 240}, Color{120, 120, 160, 255});
+    // Bottom panel: lists live in the left column (scrolled to kListRows),
+    // the actor line and selected-entry description in the right column.
+    const int panelY = h - kPanelH - 4;
+    ui::drawFramedPanel(context_.resources, 4, panelY, w - 8, kPanelH, Color{24, 22, 34, 240},
+                        Color{120, 120, 160, 255});
+    const int infoW = w - kInfoX - 12;
+    const int listLabelW = kInfoX - kListX - 18;
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    const std::string backHint = input::prompt(map, InputAction::Cancel, device, "Back") +
+                                 "  " +
+                                 input::prompt(map, InputAction::Details, device, "Details");
 
     switch (phase_) {
         case Phase::Intro:
-            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 8, 12, RAYWHITE);
+            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 6, 12, style::palette().text);
             if (!bossTelegraph_.empty()) {
-                ui::drawTextCentered(bossTelegraph_.c_str(), w / 2, panelY + 28, 9,
-                                     Color{225, 170, 170, 255});
+                ui::drawTextWrapped(bossTelegraph_, 16, panelY + 22, w - 32, style::kFontBody,
+                                    Color{225, 170, 170, 255}, "battle.telegraph", 2);
             }
-            ui::drawTextCentered("Confirm to begin", w / 2, panelY + 44, 10,
-                                 Color{200, 200, 160, 255});
+            ui::drawTextCentered(
+                input::prompt(map, InputAction::Confirm, device, "Begin").c_str(), w / 2,
+                panelY + 48, style::kFontBody, Color{200, 200, 160, 255});
             break;
         case Phase::Command:
-            DrawText(TextFormat("%s's turn", battle_.units[static_cast<std::size_t>(actor)].name.c_str()),
-                     12, panelY + 6, 10, RAYWHITE);
-            ui::drawMenu(commandMenu_, 24, panelY + 22, 12, 10, RAYWHITE, Color{90, 90, 110, 255},
-                         Color{240, 220, 120, 255});
+            ui::drawMenu(commandMenu_, kListX, panelY + 5, 11, style::kFontBody, style::palette().text,
+                         style::palette().disabled, style::palette().cursor);
+            ui::drawTextFitted(
+                TextFormat("%s's turn",
+                           battle_.units[static_cast<std::size_t>(actor)].name.c_str()),
+                kInfoX, panelY + 6, infoW, style::kFontBody, style::palette().text, "battle.actor");
+            // Say *why* a grayed command is unavailable.
+            if (!commandMenu_.currentEnabled()) {
+                const char* why = commandMenu_.cursor() == 1 ? "No skills learned."
+                                  : commandMenu_.cursor() == 2 ? "No usable items."
+                                                               : "";
+                ui::drawTextFitted(why, kInfoX, panelY + 20, infoW, style::kFontBody,
+                                   style::palette().textDim, "battle.why");
+            }
             break;
-        case Phase::ChooseSkill:
-            DrawText("Skill:", 12, panelY + 6, 10, RAYWHITE);
-            ui::drawMenu(skillMenu_, 24, panelY + 20, 11, 10, RAYWHITE, Color{90, 90, 110, 255},
-                         Color{240, 220, 120, 255});
+        case Phase::ChooseSkill: {
+            ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,
+                                 kListItemH, style::kFontBody, listLabelW, style::palette().text,
+                                 style::palette().disabled, style::palette().cursor, "battle.skills");
+            ui::drawTextFitted("Choose a skill   " + backHint, kInfoX, panelY + 6, infoW,
+                               style::kFontBody, style::palette().textDim, "battle.skillhint");
+            if (!skillIds_.empty()) {
+                const std::string& sid =
+                    skillIds_[static_cast<std::size_t>(skillMenu_.cursor())];
+                if (const content::SkillDef* s = context_.content.findSkill(sid)) {
+                    if (!s->description.empty()) {
+                        ui::drawTextWrapped(s->description, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::palette().success,
+                                            "battle.skilldesc", 2);
+                    }
+                }
+            }
             break;
-        case Phase::ChooseItem:
-            DrawText("Item:", 12, panelY + 6, 10, RAYWHITE);
-            ui::drawMenu(itemMenu_, 24, panelY + 20, 11, 10, RAYWHITE, Color{90, 90, 110, 255},
-                         Color{240, 220, 120, 255});
+        }
+        case Phase::ChooseItem: {
+            ui::drawMenuScrolled(itemMenu_, itemScroll_, kListRows, kListX, panelY + 6,
+                                 kListItemH, style::kFontBody, listLabelW, style::palette().text,
+                                 style::palette().disabled, style::palette().cursor, "battle.items");
+            ui::drawTextFitted("Choose an item   " + backHint, kInfoX, panelY + 6, infoW,
+                               style::kFontBody, style::palette().textDim, "battle.itemhint");
+            if (!itemIds_.empty()) {
+                const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
+                if (const content::ItemDef* it = context_.content.findItem(iid)) {
+                    if (!it->description.empty()) {
+                        ui::drawTextWrapped(it->description, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::palette().success,
+                                            "battle.itemdesc", 2);
+                    }
+                }
+            }
             break;
+        }
         case Phase::ChooseTarget:
-            ui::drawTextCentered("Choose a target  (Cancel: back)", w / 2, panelY + 24, 10,
-                                 RAYWHITE);
+            ui::drawTextCentered(("Choose a target   " + backHint).c_str(), w / 2, panelY + 24,
+                                 style::kFontBody, style::palette().text);
             break;
         case Phase::Resolve:
-            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 24, 10, RAYWHITE);
+            ui::drawTextWrapped(message_, 16, panelY + 14, w - 32, style::kFontBody,
+                                style::palette().text, "battle.message", 3);
             break;
         case Phase::Done:
-            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 16, 12,
-                                 Color{240, 230, 160, 255});
-            ui::drawTextCentered("Confirm to continue", w / 2, panelY + 40, 10,
-                                 Color{200, 200, 160, 255});
+            ui::drawTextWrapped(message_, 16, panelY + 10, w - 32, 12,
+                                Color{240, 230, 160, 255}, "battle.outcome", 2);
+            ui::drawTextCentered(
+                input::prompt(map, InputAction::Confirm, device, "Continue").c_str(), w / 2,
+                panelY + 44, style::kFontBody, Color{200, 200, 160, 255});
             break;
     }
 }

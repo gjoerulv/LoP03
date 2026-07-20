@@ -11,7 +11,18 @@
 
 namespace cd::dungeon {
 
-enum class RoomType { Start, Normal, Treasure, Boss };
+enum class RoomType { Start, Normal, Treasure, Boss, Event };
+
+// Room events (M20, owner-approved set). TrappedChest is a chest flag, not
+// an event room. Every event shows its full trade-off before confirmation.
+enum class RoomEventKind { None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager };
+
+struct RoomEvent {
+    RoomEventKind kind = RoomEventKind::None;
+    bool resolved = false;
+    int goldCost = 0;       // shrine offering / merchant price
+    std::string itemId;     // merchant: the offered item
+};
 
 enum class Dir { North, East, South, West };
 inline constexpr int kDirCount = 4;
@@ -26,6 +37,10 @@ struct EnemyTeam {
     std::vector<std::string> tags;      // aggregated unique tags (display)
     bool isBoss = false;
     std::string bossId;  // for boss teams: the BossDef id (enemyIds are its minions)
+    // Depth stat scaling (M20, composition.json): 100 = base stats. Applied
+    // when combatants are built and when danger is assessed, so displayed
+    // danger always matches what the player will fight.
+    int statScalePct = 100;
 
     int count() const { return static_cast<int>(enemyIds.size()) + (bossId.empty() ? 0 : 1); }
 };
@@ -34,6 +49,7 @@ struct Chest {
     bool present = false;
     bool guarded = false;
     bool opened = false;
+    bool trapped = false;  // visible trap: extra gold, taking it wounds the party
     int gold = 0;
     std::string itemId;  // optional item reward (may be empty)
     std::string rarity;  // display string for the item, if any
@@ -51,7 +67,8 @@ struct Room {
     RoomType type = RoomType::Normal;
     std::array<Door, kDirCount> doors{};
     Chest chest{};
-    int teamIndex = -1;  // a team occupying the room (chest guard, or the boss)
+    RoomEvent event{};   // for RoomType::Event side rooms
+    int teamIndex = -1;  // a team occupying the room (chest guard, elite challenge, or the boss)
     bool visited = false;
 
     bool hasDoor(Dir d) const { return doors[static_cast<std::size_t>(d)].neighbor >= 0; }
@@ -63,6 +80,7 @@ struct Dungeon {
     std::uint64_t seed = 0;
     int depth = 1;
     std::string themeName;
+    std::string themeId;  // content id ("ruined_keep"); presentation keys off it
     int gridW = 0;
     int gridH = 0;
 

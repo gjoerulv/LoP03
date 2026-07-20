@@ -42,10 +42,54 @@ struct EnemyDef {
     std::string name;
     StatBlock stats;
     EnemyTier tier = EnemyTier::Normal;
+    EnemyRole role = EnemyRole::Bruiser;  // required in data (M20 taxonomy)
     std::vector<EnemyTag> tags;
     std::vector<std::string> skills;  // skill ids
     int xpReward = 0;
     int goldReward = 0;
+};
+
+// Externalized team-composition constraints (data/composition.json, M20).
+// The generator derives every curve from these; it never hard-codes them.
+struct CompositionDef {
+    // Normal-team size: min (deepMinSize once depth >= deepMinDepth) up to
+    // min(maxSizeCap, maxSizeBase + depth / maxSizePerDepths).
+    int minSize = 2;
+    int deepMinSize = 3;
+    int deepMinDepth = 4;
+    int maxSizeBase = 2;
+    int maxSizePerDepths = 2;
+    int maxSizeCap = 5;
+    // Elite share: min(elitePctMax, elitePctPerDepth * depth) percent.
+    int elitePctPerDepth = 9;
+    int elitePctMax = 70;
+    // Role rules per normal team.
+    int maxSupport = 1;   // healers + buffers
+    int minDamage = 1;    // bruisers + snipers
+    // Boss minion count bounds (clamping the BossDef list).
+    int minMinions = 0;
+    int maxMinions = 3;
+    // Enemy stat scaling: +pctPerDepth% per depth beyond startDepth, capped.
+    int scaleStartDepth = 5;
+    int scalePctPerDepth = 6;
+    int scalePctMax = 90;
+
+    int teamSizeMin(int depth) const { return depth >= deepMinDepth ? deepMinSize : minSize; }
+    int teamSizeMax(int depth) const {
+        const int grown = maxSizeBase + depth / (maxSizePerDepths < 1 ? 1 : maxSizePerDepths);
+        return grown > maxSizeCap ? maxSizeCap : grown;
+    }
+    int eliteChancePct(int depth) const {
+        const int pct = elitePctPerDepth * depth;
+        return pct > elitePctMax ? elitePctMax : pct;
+    }
+    int statScalePct(int depth) const {
+        if (depth <= scaleStartDepth) {
+            return 0;
+        }
+        const int pct = (depth - scaleStartDepth) * scalePctPerDepth;
+        return pct > scalePctMax ? scalePctMax : pct;
+    }
 };
 
 struct ItemDef {

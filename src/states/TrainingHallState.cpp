@@ -8,6 +8,7 @@
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -22,13 +23,14 @@ void TrainingHallState::onEnter() { rebuild(); }
 int TrainingHallState::trainingCost(int level) const { return 40 + level * 30; }
 
 void TrainingHallState::rebuild() {
+    // No %-padding: it cannot align a variable-width font (audit UI-TEXT-017).
     std::vector<ui::MenuItem> items;
     for (const Character& c : context_.party.members) {
         if (c.level >= kMaxLevel) {
-            items.push_back({TextFormat("%-10s  Lv.%d  (max)", c.name.c_str(), c.level), false});
+            items.push_back({TextFormat("%s  Lv.%d  (max)", c.name.c_str(), c.level), false});
         } else {
             items.push_back(
-                {TextFormat("%-10s  Lv.%d  ->  %dg", c.name.c_str(), c.level, trainingCost(c.level)),
+                {TextFormat("%s  Lv.%d  ->  %dg", c.name.c_str(), c.level, trainingCost(c.level)),
                  true});
         }
     }
@@ -38,11 +40,11 @@ void TrainingHallState::rebuild() {
 }
 
 void TrainingHallState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::MoveUp)) {
+    if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
         context_.audio.play(Sfx::Move);
     }
-    if (input.pressed(InputAction::MoveDown)) {
+    if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
         context_.audio.play(Sfx::Move);
     }
@@ -56,7 +58,7 @@ void TrainingHallState::handleInput(const Input& input) {
             message_ = c.name + " trained to Lv." + std::to_string(c.level) + "!";
             rebuild();
         } else {
-            context_.audio.play(Sfx::Cancel);
+            context_.audio.play(Sfx::Error);
             message_ = "Not enough gold to train " + c.name;
         }
     }
@@ -82,8 +84,11 @@ void TrainingHallState::render() {
     if (!message_.empty()) {
         ui::drawTextCentered(message_.c_str(), w / 2, h - 30, 10, Color{170, 220, 170, 255});
     }
-    ui::drawTextCentered("Confirm: Train    Cancel: Back", w / 2, h - 14, 10,
-                         Color{150, 150, 170, 255});
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    const std::string footer = input::prompt(map, InputAction::Confirm, device, "Train") +
+                               "    " + input::prompt(map, InputAction::Cancel, device, "Back");
+    ui::drawTextCentered(footer.c_str(), w / 2, h - 14, 10, Color{150, 150, 170, 255});
 }
 
 }  // namespace cd

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "assets/AssetManifest.hpp"
 #include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
@@ -10,7 +11,9 @@
 #include "resource/ResourceManager.hpp"
 #include "save/SaveSystem.hpp"
 #include "score/Scoreboard.hpp"
+#include "settings/Settings.hpp"
 #include "states/StateStack.hpp"
+#include "tutorial/Tutorial.hpp"
 
 namespace cd {
 
@@ -24,6 +27,7 @@ public:
 
 private:
     void loadContent();
+    void loadAssets();  // (re)loads the manifest and re-points resources/audio
     void processFrame();
     void drawDebugOverlay() const;
 
@@ -38,14 +42,20 @@ private:
     WindowGuard window_;
     VirtualScreen screen_;
     ResourceManager resources_;
+    assets::AssetManifest manifest_;
+    std::filesystem::path assetsDir_;
     content::ContentDatabase content_;
     Party party_;
     save::SaveSystem saves_;
     score::Scoreboard scoreboard_;
     AudioManager audio_;
     FadeController fade_;
-    AppContext context_;
+    // input_, settings_, and tutorial_ are declared before context_ because
+    // the context holds references to them.
     Input input_;
+    settings::SettingsStore settings_;
+    tutorial::TutorialStore tutorial_;
+    AppContext context_;
     StateStack stack_;
     bool debugOverlay_;
 };

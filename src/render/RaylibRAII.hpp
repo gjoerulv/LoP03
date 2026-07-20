@@ -127,6 +127,46 @@ private:
     bool valid_ = false;
 };
 
+class MusicHandle {
+public:
+    MusicHandle() = default;
+    explicit MusicHandle(Music music) : music_(music), valid_(true) {}
+    ~MusicHandle() { reset(); }
+
+    MusicHandle(const MusicHandle&) = delete;
+    MusicHandle& operator=(const MusicHandle&) = delete;
+
+    MusicHandle(MusicHandle&& other) noexcept { moveFrom(other); }
+    MusicHandle& operator=(MusicHandle&& other) noexcept {
+        if (this != &other) {
+            reset();
+            moveFrom(other);
+        }
+        return *this;
+    }
+
+    bool valid() const { return valid_; }
+    Music& get() { return music_; }  // non-const: raylib mutates stream state
+    const Music& get() const { return music_; }
+
+    void reset() {
+        if (valid_) {
+            UnloadMusicStream(music_);
+            valid_ = false;
+        }
+    }
+
+private:
+    void moveFrom(MusicHandle& other) {
+        music_ = other.music_;
+        valid_ = other.valid_;
+        other.valid_ = false;
+    }
+
+    Music music_{};
+    bool valid_ = false;
+};
+
 class FontHandle {
 public:
     FontHandle() = default;

@@ -37,6 +37,11 @@ public:
     const std::unordered_map<std::string, BossDef>& bosses() const { return bosses_; }
     const std::unordered_map<std::string, DungeonThemeDef>& themes() const { return themes_; }
 
+    // Team-composition constraints (M20). Defaults apply until
+    // data/composition.json is loaded.
+    const CompositionDef& composition() const { return composition_; }
+    void setComposition(const CompositionDef& c) { composition_ = c; }
+
     std::size_t skillCount() const { return skills_.size(); }
     std::size_t classCount() const { return classes_.size(); }
     std::size_t enemyCount() const { return enemies_.size(); }
@@ -54,6 +59,7 @@ private:
     std::unordered_map<std::string, ItemDef> items_;
     std::unordered_map<std::string, BossDef> bosses_;
     std::unordered_map<std::string, DungeonThemeDef> themes_;
+    CompositionDef composition_;
 };
 
 }  // namespace cd::content

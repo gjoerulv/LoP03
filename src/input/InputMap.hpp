@@ -22,6 +22,13 @@ struct InputQuery {
     std::function<bool(int gamepad, int button)> buttonPressed;
     std::function<bool(int gamepad, int button)> buttonReleased;
     std::function<bool(int gamepad)> gamepadAvailable;
+    // Analog axis value in [-1, 1] (raylib GAMEPAD_AXIS_*). Optional.
+    std::function<float(int gamepad, int axis)> axisValue;
+    // Drains one queued text codepoint (0 = none). Optional; used for text entry.
+    std::function<int()> nextChar;
+    // Drains one queued pressed key code (0 = none). Optional; used by the
+    // remap screen's listen-for-input flow.
+    std::function<int()> nextKeyPressed;
     int gamepad = 0;
 };
 

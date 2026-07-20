@@ -54,6 +54,8 @@ bool Scoreboard::save(content::LoadReport& report) const {
         j["depth"] = e.depth;
         j["theme"] = e.theme;
         j["seed"] = e.seed;
+        j["generationVersion"] = e.generationVersion;
+        j["partyLevel"] = e.partyLevel;
         arr.push_back(std::move(j));
     }
     root["entries"] = std::move(arr);
@@ -117,6 +119,8 @@ bool Scoreboard::load(content::LoadReport& report) {
         e.noDeath = er.optInt("noDeath", 0) != 0;
         e.depth = er.optIntMin("depth", 1, 1);
         e.theme = er.optString("theme");
+        e.generationVersion = er.optIntMin("generationVersion", 0, 0);
+        e.partyLevel = er.optIntMin("partyLevel", 0, 0);
         if (auto seedIt = element.find("seed");
             seedIt != element.end() && seedIt->is_number_unsigned()) {
             e.seed = seedIt->get<std::uint64_t>();

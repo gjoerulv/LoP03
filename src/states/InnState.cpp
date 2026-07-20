@@ -1,9 +1,10 @@
-#include "states/InnState.hpp"
+﻿#include "states/InnState.hpp"
 
 #include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -33,21 +34,26 @@ void InnState::render() {
     const int boxH = 170;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
-    ui::drawPanel(boxX, boxY, boxW, boxH, Color{30, 24, 40, 255}, Color{200, 170, 120, 255});
+    ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{30, 24, 40, 255}, Color{200, 170, 120, 255});
 
     ui::drawTextCentered("Inn", w / 2, boxY + 12, 18, RAYWHITE);
     ui::drawTextCentered("The party rests. HP and MP fully restored.", w / 2, boxY + 38, 10,
                          Color{200, 200, 170, 255});
 
+    // Two real columns; space-padding cannot align a variable-width font.
     int y = boxY + 62;
     for (const Character& c : context_.party.members) {
-        DrawText(TextFormat("%-12s Lv.%d", c.name.c_str(), c.level), boxX + 20, y, 10, RAYWHITE);
-        DrawText(TextFormat("HP %d/%d   MP %d/%d", c.hp, c.maxHp, c.mp, c.maxMp), boxX + 150, y, 10,
-                 Color{170, 220, 170, 255});
+        ui::drawTextFitted(TextFormat("%s  Lv.%d", c.name.c_str(), c.level), boxX + 20, y, 124,
+                           10, RAYWHITE, "inn.name");
+        DrawText(TextFormat("HP %d/%d   MP %d/%d", c.hp, c.maxHp, c.mp, c.maxMp), boxX + 150, y,
+                 10, Color{170, 220, 170, 255});
         y += 18;
     }
 
-    ui::drawTextCentered("Cancel: Back", w / 2, boxY + boxH - 20, 10, Color{160, 150, 140, 255});
+    ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
+                                       context_.input.activeDevice(), "Back")
+                             .c_str(),
+                         w / 2, boxY + boxH - 20, 10, Color{160, 150, 140, 255});
 }
 
 }  // namespace cd

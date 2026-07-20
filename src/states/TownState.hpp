@@ -32,6 +32,8 @@ private:
     const town::Building* nearDoor_ = nullptr;
     float moveX_ = 0.0f;
     float moveY_ = 0.0f;
+    float walkTime_ = 0.0f;  // walk-cycle clock; 0 while standing (stand frame)
+    bool moving_ = false;
 };
 
 }  // namespace cd
