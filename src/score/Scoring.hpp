@@ -20,6 +20,9 @@ struct RunSummary {
     // stake is fixed and shown before accepting; unfinished runs still
     // score 0.
     bool wagerAccepted = false;
+    // Town-ladder score bonus (M32): a percent applied to the whole subtotal for
+    // clearing a higher town. 0 for town 1 / legacy runs -> no change.
+    int townBonusPct = 0;
 };
 
 struct ScoreBreakdown {
@@ -32,6 +35,7 @@ struct ScoreBreakdown {
     int noDeathBonus = 0;
     int escapePenalty = 0;
     int wager = 0;  // +150 / -100 / 0 (M20 wager event)
+    int townBonus = 0;  // town-ladder bonus applied to the subtotal (M32)
     int total = 0;
 };
 

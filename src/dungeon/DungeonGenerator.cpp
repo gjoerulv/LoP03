@@ -9,6 +9,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/Enums.hpp"
 #include "dungeon/Rng.hpp"
+#include "game/WorldLadder.hpp"
 
 namespace cd::dungeon {
 
@@ -145,11 +146,11 @@ std::vector<std::string> slotCandidates(const std::vector<std::string>& pool,
 }
 
 EnemyTeam makeTeam(Rng& rng, const Pools& pools, int depth, bool boss,
-                   const content::ContentDatabase& db) {
+                   const content::ContentDatabase& db, int town) {
     const content::CompositionDef& comp = db.composition();
     EnemyTeam team;
     team.isBoss = boss;
-    team.statScalePct = 100 + comp.statScalePct(depth);
+    team.statScalePct = combineTownScale(100 + comp.statScalePct(depth), town);
 
     const auto& normals = pools.normalEnemies;
     const auto& elites = pools.eliteEnemies.empty() ? pools.normalEnemies : pools.eliteEnemies;
@@ -235,14 +236,16 @@ void connect(Dungeon& d, int a, int b) {
 }  // namespace
 
 Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& db,
-                 std::string themeId) {
+                 std::string themeId, int town) {
     Rng rng(seed);
     const content::DungeonThemeDef* theme = themeId.empty() ? nullptr : db.findTheme(themeId);
     const Pools pools = buildPools(db, theme);
+    const int townIdx = clampTown(town);
 
     Dungeon d;
     d.seed = seed;
     d.depth = depth < 1 ? 1 : depth;
+    d.town = townIdx;
     d.themeName = theme != nullptr ? theme->name : "Dungeon";
     d.themeId = theme != nullptr ? theme->id : "";
     d.gridW = kGridW;
@@ -322,7 +325,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
         const int ra = d.mainPath[static_cast<std::size_t>(t)];
         const int rb = d.mainPath[static_cast<std::size_t>(t + 1)];
         const int teamIdx = static_cast<int>(d.teams.size());
-        d.teams.push_back(makeTeam(rng, pools, d.depth, false, db));
+        d.teams.push_back(makeTeam(rng, pools, d.depth, false, db, townIdx));
         const Dir dir = directionBetween(d.rooms[ra], d.rooms[rb]);
         d.rooms[ra].door(dir).gated = true;
         d.rooms[ra].door(dir).teamIndex = teamIdx;
@@ -336,7 +339,8 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
         const int teamIdx = static_cast<int>(d.teams.size());
         EnemyTeam bossTeam;
         bossTeam.isBoss = true;
-        bossTeam.statScalePct = 100 + db.composition().statScalePct(d.depth);
+        bossTeam.statScalePct =
+            combineTownScale(100 + db.composition().statScalePct(d.depth), townIdx);
         if (const content::BossDef* boss = pickBoss(rng, theme, db)) {
             bossTeam.bossId = boss->id;
             bossTeam.name = boss->name;
@@ -349,7 +353,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                 addTags(db, id, bossTeam.tags);
             }
         } else {
-            bossTeam = makeTeam(rng, pools, d.depth, true, db);  // fallback: strong elite
+            bossTeam = makeTeam(rng, pools, d.depth, true, db, townIdx);  // fallback: strong elite
         }
         d.teams.push_back(std::move(bossTeam));
         d.rooms[static_cast<std::size_t>(d.bossRoom)].teamIndex = teamIdx;
@@ -395,7 +399,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
             makeChest(rng, guarded, d.depth, pools, db);
         if (guarded) {
             const int teamIdx = static_cast<int>(d.teams.size());
-            d.teams.push_back(makeTeam(rng, pools, d.depth, false, db));
+            d.teams.push_back(makeTeam(rng, pools, d.depth, false, db, townIdx));
             d.rooms[static_cast<std::size_t>(sideIndex)].teamIndex = teamIdx;
         }
         ++created;
@@ -464,7 +468,8 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                         pools.eliteEnemies.empty() ? pools.normalEnemies : pools.eliteEnemies;
                     if (!elitePool.empty()) {
                         EnemyTeam ct;
-                        ct.statScalePct = 100 + db.composition().statScalePct(d.depth);
+                        ct.statScalePct =
+                            combineTownScale(100 + db.composition().statScalePct(d.depth), townIdx);
                         const int n = rng.range(1, 2);
                         for (int e = 0; e < n; ++e) {
                             ct.enemyIds.push_back(elitePool[static_cast<std::size_t>(rng.range(

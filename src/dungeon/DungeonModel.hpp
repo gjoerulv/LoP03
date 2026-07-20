@@ -82,6 +82,7 @@ struct Room {
 struct Dungeon {
     std::uint64_t seed = 0;
     int depth = 1;
+    int town = 1;  // town ladder index (M32); scales enemy stats + score bonus
     std::string themeName;
     std::string themeId;  // content id ("ruined_keep"); presentation keys off it
     int gridW = 0;

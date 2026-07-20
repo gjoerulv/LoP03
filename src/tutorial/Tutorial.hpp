@@ -29,6 +29,7 @@ inline constexpr const char* kEventFirst = "event_first";
 inline constexpr const char* kVictoryFirst = "victory_first";
 inline constexpr const char* kResultFirst = "result_first";
 inline constexpr const char* kTownReturn = "town_return";
+inline constexpr const char* kFirstTravel = "first_travel";  // M32 town ladder
 
 struct Beat {
     const char* id;
@@ -79,6 +80,11 @@ inline constexpr Beat kBeats[] = {
      "Spend your spoils: the shops sell gear and supplies, the Training "
      "Hall levels a character instantly for gold, and the Inn heals for "
      "free. Deeper dungeons pay better - when you are ready."},
+    {kFirstTravel, "The road onward",
+     "Towns form a chain. The road at the bottom right leads to the next "
+     "town - tougher foes, but a higher score bonus on every run. The road "
+     "at the bottom left returns the way you came. Clear one dungeon in a "
+     "town to open the road onward from it."},
 };
 inline constexpr std::size_t kBeatCount = sizeof(kBeats) / sizeof(kBeats[0]);
 

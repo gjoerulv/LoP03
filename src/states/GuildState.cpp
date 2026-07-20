@@ -9,6 +9,7 @@
 #include "content/LoadReport.hpp"
 #include "core/AppContext.hpp"
 #include "dungeon/DungeonGenerator.hpp"
+#include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -94,7 +95,8 @@ void GuildState::enterDungeon() {
     context_.saves.autosave(context_.party, report);
 
     const std::string themeId = themeIds_.empty() ? "" : themeIds_[static_cast<std::size_t>(themeIndex_)];
-    dungeon::Dungeon dungeon = dungeon::generate(seed_, depth_, context_.content, themeId);
+    dungeon::Dungeon dungeon =
+        dungeon::generate(seed_, depth_, context_.content, themeId, context_.party.currentTown);
     stack().popState();  // leave the Guild
     stack().pushState(std::make_unique<DungeonState>(stack(), context_, std::move(dungeon)));
 }
@@ -138,7 +140,7 @@ void GuildState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ui::drawSceneBackground(context_.resources, "bg.guild", Color{16, 16, 26, 255},
-                            context_.virtualWidth, context_.virtualHeight);
+                            context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
 
     ui::drawTextCentered("Guild", w / 2, 18, 18, RAYWHITE);
     ui::drawTextCentered("Choose a dungeon and enter.", w / 2, 40, 10, Color{180, 180, 200, 255});

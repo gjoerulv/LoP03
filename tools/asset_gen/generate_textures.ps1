@@ -837,4 +837,50 @@ GFill $r[1] 55 $PAL.veg3 206 12 14 14
 foreach ($p in @(@(60, 70), @(120, 150), @(330, 90), @(370, 170), @(90, 190))) { GEll $r[1] 45 $PAL.gold $p[0] $p[1] 6 6 }
 Motes $r[0] 26 $PAL.veg3; SaveBg $r 'guild'
 
+# ============================ M32 town-ladder variants ============================
+# Per-town exterior tiles and per-town service interiors (owner: per-town
+# interiors). Each higher town shades the town-1 base art progressively darker
+# and more sinister via a ColorMatrix (fast, deterministic) - a palette
+# progression, not new layouts. Town 1 keeps the base files unchanged, so this
+# section only ADDS PNGs and existing outputs stay byte-identical.
+Write-Output 'Generating M32 town-ladder variants...'
+
+# Per-town shade: result = base*(darken*(1-blend)) + tint*blend. Darker and more
+# tinted toward a sinister hue as the town index climbs (towns 2..7).
+$townDarken = @{ 2=0.90; 3=0.84; 4=0.78; 5=0.72; 6=0.66; 7=0.60 }
+$townBlend  = @{ 2=0.10; 3=0.15; 4=0.20; 5=0.26; 6=0.32; 7=0.40 }
+$townTint   = @{ 2='#26364E'; 3='#2C3A2A'; 4='#1E2A44'; 5='#2E2442'; 6='#3A2030'; 7='#280E1A' }
+
+function ShadeCopy([string]$srcRel, [string]$dstRel, [int]$town) {
+  $srcPath = Join-Path $outRoot $srcRel
+  $src = [System.Drawing.Bitmap]::FromFile($srcPath)
+  $dst = New-Object System.Drawing.Bitmap($src.Width, $src.Height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+  $g = [System.Drawing.Graphics]::FromImage($dst)
+  $g.SmoothingMode = 'None'; $g.PixelOffsetMode = 'Half'; $g.InterpolationMode = 'NearestNeighbor'
+  $f = $townDarken[$town]; $b = $townBlend[$town]; $t = C $townTint[$town]
+  $s = $f * (1.0 - $b)
+  $cm = New-Object System.Drawing.Imaging.ColorMatrix
+  $cm.Matrix00 = $s; $cm.Matrix11 = $s; $cm.Matrix22 = $s
+  $cm.Matrix40 = ($t.R / 255.0) * $b; $cm.Matrix41 = ($t.G / 255.0) * $b; $cm.Matrix42 = ($t.B / 255.0) * $b
+  $ia = New-Object System.Drawing.Imaging.ImageAttributes
+  $ia.SetColorMatrix($cm)
+  $rect = New-Object System.Drawing.Rectangle(0, 0, $src.Width, $src.Height)
+  $g.DrawImage($src, $rect, 0, 0, $src.Width, $src.Height, [System.Drawing.GraphicsUnit]::Pixel, $ia)
+  $g.Dispose(); $ia.Dispose(); $src.Dispose()
+  SaveImg $dst $dstRel
+}
+
+# Defining exterior tiles (ground/grass/path/tree/building); water/door/flowers
+# keep the base and fall back in-engine. Plus all six service interiors.
+$townTiles = 'ground', 'grass', 'path', 'tree', 'building'
+$townBgs = 'inn', 'item_shop', 'equip_shop', 'training_hall', 'scoreboard', 'guild'
+foreach ($town in 2, 3, 4, 5, 6, 7) {
+  foreach ($k in $townTiles) {
+    ShadeCopy "environments/town_$k.png" "environments/town${town}_$k.png" $town
+  }
+  foreach ($p in $townBgs) {
+    ShadeCopy "backgrounds/$p.png" "backgrounds/${p}_t${town}.png" $town
+  }
+}
+
 Write-Output 'Texture generation complete.'

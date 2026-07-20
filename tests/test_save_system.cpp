@@ -208,6 +208,48 @@ TEST_CASE("save: inventory round-trips; missing inventory loads empty", "[save]"
     fs::remove_all(dir);
 }
 
+TEST_CASE("save: town-ladder fields round-trip and default/clamp safely (M32)", "[save]") {
+    const content::ContentDatabase db = makeDb();
+    const fs::path dir = makeTempDir();
+    const save::SaveSystem saves(db, dir);
+
+    Party p;
+    p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan"));
+    p.currentTown = 3;
+    p.highestUnlockedTown = 5;
+
+    content::LoadReport rep;
+    REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
+    Party loaded;
+    content::LoadReport rep2;
+    REQUIRE(saves.load(save::SaveSlot::Manual1, loaded, rep2));
+    REQUIRE(loaded.currentTown == 3);
+    REQUIRE(loaded.highestUnlockedTown == 5);
+
+    // Backward compatibility: a pre-M32 save with no town fields loads as 1/1.
+    writeFile(saves.slotPath(save::SaveSlot::Manual2),
+              R"({"version":1,"gold":0,"party":[
+                 {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4}]})");
+    Party legacy;
+    content::LoadReport rep3;
+    REQUIRE(saves.load(save::SaveSlot::Manual2, legacy, rep3));
+    REQUIRE(legacy.currentTown == 1);
+    REQUIRE(legacy.highestUnlockedTown == 1);
+
+    // Defensive: an out-of-range / inconsistent file clamps to [1,7] and keeps
+    // currentTown <= highestUnlockedTown (a tampered file can't strand travel).
+    writeFile(saves.slotPath(save::SaveSlot::Manual3),
+              R"({"version":1,"gold":0,"currentTown":9,"highestUnlockedTown":2,"party":[
+                 {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4}]})");
+    Party clamped;
+    content::LoadReport rep4;
+    REQUIRE(saves.load(save::SaveSlot::Manual3, clamped, rep4));
+    REQUIRE(clamped.highestUnlockedTown == 2);
+    REQUIRE(clamped.currentTown == 2);  // 9 -> 7 -> clamped down to highestUnlocked
+
+    fs::remove_all(dir);
+}
+
 TEST_CASE("save: a minimal save with no equipment still loads", "[save]") {
     const content::ContentDatabase db = makeDb();
     const fs::path dir = makeTempDir();

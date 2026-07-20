@@ -19,6 +19,11 @@ struct Party {
     Inventory inventory;
     int gold = 0;
     int restTokens = 0;  // free-rest tokens from dungeon events (M30)
+    // Town ladder (M32). currentTown is where the party stands (1..kTownCount);
+    // highestUnlockedTown is the furthest reachable town. Both saved as optional
+    // fields, old saves load as 1/1. Rules live in game/WorldLadder.hpp.
+    int currentTown = 1;
+    int highestUnlockedTown = 1;
 
     bool empty() const { return members.empty(); }
     std::size_t size() const { return members.size(); }

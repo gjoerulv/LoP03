@@ -88,7 +88,8 @@ void InnState::handleInput(const Input& input) {
 void InnState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ui::drawSceneBackground(context_.resources, "bg.inn", Color{20, 16, 24, 255}, w, h);
+    ui::drawSceneBackground(context_.resources, "bg.inn", Color{20, 16, 24, 255}, w, h,
+                            context_.party.currentTown);
 
     ui::drawTextCentered("Inn", w / 2, 14, 16, RAYWHITE);
     ui::drawText(TextFormat("Gold: %d", context_.party.gold), w - 150, 12, 11,

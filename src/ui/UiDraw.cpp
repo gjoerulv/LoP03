@@ -123,6 +123,18 @@ void drawSceneBackground(ResourceManager& resources, const std::string& id, Colo
                    0.0f, WHITE);
 }
 
+void drawSceneBackground(ResourceManager& resources, const std::string& id, Color fallback,
+                         int w, int h, int town) {
+    if (town >= 2) {
+        const std::string variant = id + "." + std::to_string(town);
+        if (resources.hasTexture(variant)) {
+            drawSceneBackground(resources, variant, fallback, w, h);
+            return;
+        }
+    }
+    drawSceneBackground(resources, id, fallback, w, h);
+}
+
 int measureText(const std::string& text, int fontSize) {
     return measureWidth(text.c_str(), fontSize);
 }

@@ -13,6 +13,7 @@
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
 #include "game/Party.hpp"
+#include "game/WorldLadder.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "score/ScoreEntry.hpp"
@@ -547,8 +548,14 @@ void DungeonState::completeDungeon() {
     summary.noDeath = run_.noDeath;
     summary.escapes = run_.escapes;
     summary.wagerAccepted = run_.wagerAccepted;
+    summary.townBonusPct = townScoreBonusPct(dungeon_.town);  // M32 town ladder
 
     const int total = score::computeScore(summary);
+
+    // M32: completing a run unlocks the next town (persisted in the live party;
+    // saved on the next save/autosave, like the run's gold and XP).
+    context_.party.highestUnlockedTown =
+        unlockAfterClear(context_.party.highestUnlockedTown, dungeon_.town);
 
     score::ScoreEntry entry;
     entry.score = total;
@@ -562,6 +569,7 @@ void DungeonState::completeDungeon() {
     entry.generationVersion = dungeon::kGenerationVersion;
     entry.partyLevel = highestLevel(context_.party);
     entry.battleRulesVersion = battle::kBattleRulesVersion;
+    entry.townIndex = dungeon_.town;  // M32
     context_.scoreboard.add(entry);
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);

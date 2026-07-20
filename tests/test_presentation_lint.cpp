@@ -10,6 +10,7 @@
 #include "content/LoadReport.hpp"
 #include "dungeon/DungeonGenerator.hpp"
 #include "dungeon/RoomLayout.hpp"
+#include "game/WorldLadder.hpp"
 #include "ui/TextLayout.hpp"
 
 // M23 presentation-content lint: every logical asset id the render code
@@ -41,6 +42,11 @@ AssetManifest loadShippedManifest() {
 bool hasTexture(const AssetManifest& m, const std::string& id) {
     const cd::assets::AssetEntry* e = m.find(id);
     return e != nullptr && e->type == cd::assets::AssetType::Texture;
+}
+
+bool hasMusic(const AssetManifest& m, const std::string& id) {
+    const cd::assets::AssetEntry* e = m.find(id);
+    return e != nullptr && e->type == cd::assets::AssetType::Music;
 }
 
 }  // namespace
@@ -92,6 +98,31 @@ TEST_CASE("lint: every convention-derived texture id resolves in the manifest", 
         const std::string tex = "boss." + id + ".battle";
         INFO(tex);
         CHECK(hasTexture(m, tex));
+    }
+}
+
+TEST_CASE("lint: every town resolves its per-town art and music (M32)", "[lint]") {
+    const AssetManifest m = loadShippedManifest();
+    // Town 1 uses the base ids (tiles.town.<kind>, bg.<place>, music.town) which
+    // the other lint cases and the shipped set already cover. Towns 2..7 must
+    // each resolve their own exterior tiles, six service interiors, and music -
+    // a missing variant is a failing result, not a silent fallback in play.
+    for (int town = 2; town <= cd::kTownCount; ++town) {
+        const std::string t = std::to_string(town);
+        for (const char* kind : {"ground", "grass", "path", "tree", "building"}) {
+            const std::string id = "tiles.town." + t + "." + kind;
+            INFO(id);
+            CHECK(hasTexture(m, id));
+        }
+        for (const char* place :
+             {"inn", "item_shop", "equip_shop", "training_hall", "scoreboard", "guild"}) {
+            const std::string id = "bg." + std::string(place) + "." + t;
+            INFO(id);
+            CHECK(hasTexture(m, id));
+        }
+        const std::string mus = "music.town." + t;
+        INFO(mus);
+        CHECK(hasMusic(m, mus));
     }
 }
 

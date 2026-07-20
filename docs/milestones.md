@@ -38,8 +38,8 @@
 | 28 | Enmity, AI diversity & control skills | ☑ complete (approved) |
 | 29 | Content expansion & class learnsets | ☑ complete (approved) |
 | 30 | Economy: paid rest & rest-token event | ☑ complete (approved) |
-| 31 | Equip-shop category split | ◑ implemented, awaiting manual approval |
-| 32 | Town ladder (7 towns, travel, scaling, score bonus) | ☐ planned |
+| 31 | Equip-shop category split | ☑ complete (approved) |
+| 32 | Town ladder (7 towns, travel, scaling, score bonus) | ◑ implemented, awaiting manual approval |
 | 33 | Stakes-escalation penalty | ☐ planned |
 | 34 | Black market & legendary gear | ☐ planned |
 
@@ -1104,8 +1104,8 @@ the then-current checkout. The scope summaries below are the commitment.
 
 ## M31 — Equip-shop category split
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against HEAD `4be4d43`. A new `BuyCategory` phase in
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing; committed (`09cf458`). A new `BuyCategory` phase in
   `EquipShopState` feeds a slot-filtered `Buy` list via a pure, headless-tested
   `equipShopBuyIds` filter (`states/EquipShopFilter.hpp`); relics resolve under
   Accessories with no data change; Cancel walks back one step. No pricing,
@@ -1138,8 +1138,19 @@ the then-current checkout. The scope summaries below are the commitment.
 
 ## M32 — Town ladder (7 towns, travel, scaling, score bonus)
 
-- **Status:** ☐ planned — the structural milestone; M33/M34 build on it. Do not
-  begin without explicit owner authorization; the note is authored just-in-time.
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against HEAD `09cf458`. Seven-town ladder: `currentTown` +
+  `highestUnlockedTown` optional save fields; per-town enemy-stat scaling folded
+  into `statScalePct` (town 1 byte-identical, `generationVersion` stays 6);
+  visible `townBonus` scoring + optional `ScoreEntry.townIndex` tag; bottom-left/
+  right road exits with unlock-by-completion; per-town exterior palette, per-town
+  service interiors, and progressively darker town music via `tools/asset_gen/`
+  (72 new assets, existing byte-identical); town-indexed art/music resolution
+  with base fallback; §D owner decisions confirmed (flat rewards, per-town
+  interiors, absolute danger). **293/293 tests** (+10 M32 incl. a town × depth
+  balance battery and extended lint), battle & simulator tests **unmodified**;
+  `--capture` **25/25** overflow-clean; Debug + Release clean. See the note's §K.
+  The structural milestone; M33/M34 build on it.
 - **Goal:** a chain of seven towns, each harder and higher-scoring, with free
   travel between unlocked towns and a town-indexed difficulty and score bonus.
 - **Primary deliverables:** `currentTown` (1–7) and `highestUnlockedTown` on the

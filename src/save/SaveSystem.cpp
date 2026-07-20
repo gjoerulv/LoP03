@@ -11,6 +11,7 @@
 #include "content/ContentLoader.hpp"
 #include "content/JsonValidation.hpp"
 #include "game/Party.hpp"
+#include "game/WorldLadder.hpp"
 
 namespace cd::save {
 namespace fs = std::filesystem;
@@ -55,6 +56,8 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["version"] = kSaveVersion;
   root["gold"] = party.gold;
   root["restTokens"] = party.restTokens;  // M30 (optional; old saves read 0)
+  root["currentTown"] = party.currentTown;              // M32 (optional; old -> 1)
+  root["highestUnlockedTown"] = party.highestUnlockedTown;  // M32 (optional; old -> 1)
 
   Json members = Json::array();
   for (const Character& c : party.members) {
@@ -120,6 +123,12 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   Party loaded;
   loaded.gold = rootReader.optIntMin("gold", 0, 0);
   loaded.restTokens = rootReader.optIntMin("restTokens", 0, 0);  // M30
+  // M32 town ladder: optional, clamped to [1, kTownCount]; current town can
+  // never exceed the highest unlocked town (defensive against a tampered file).
+  loaded.highestUnlockedTown =
+      clampTown(rootReader.optIntMin("highestUnlockedTown", 1, 1));
+  loaded.currentTown = std::clamp(clampTown(rootReader.optIntMin("currentTown", 1, 1)),
+                                  1, loaded.highestUnlockedTown);
 
   auto partyIt = root.find("party");
   if (partyIt == root.end() || !partyIt->is_array()) {

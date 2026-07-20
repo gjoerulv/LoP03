@@ -23,13 +23,18 @@ public:
 
 private:
     const town::Building* buildingAtPlayerTile() const;
+    const town::TownExit* exitAtPlayerTile() const;
     void enterLocation(const town::Building& building);
+    void buildForCurrentTown();   // (re)build the layout for party.currentTown
+    void travelTo(int destTown);  // M32: switch towns in place (fade + music)
+    void applyTownAudio();        // town-indexed music + ambience
 
     AppContext& context_;
     town::TownLayout town_;
     Rect player_;
     Vec2 facing_{0.0f, 1.0f};
     const town::Building* nearDoor_ = nullptr;
+    const town::TownExit* nearExit_ = nullptr;
     float moveX_ = 0.0f;
     float moveY_ = 0.0f;
     float walkTime_ = 0.0f;  // walk-cycle clock; 0 while standing (stand frame)

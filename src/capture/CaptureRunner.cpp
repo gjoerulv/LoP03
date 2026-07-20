@@ -163,6 +163,7 @@ score::RunSummary maximalRunSummary() {
     run.noDeath = false;  // shows the wager-lost line
     run.escapes = 3;
     run.wagerAccepted = true;
+    run.townBonusPct = 100;  // M32: max town bonus -> the fullest breakdown panel
     return run;
 }
 
@@ -243,6 +244,7 @@ int run(const char* outDir) {
             top.generationVersion = 4;
             top.partyLevel = 50;
             top.battleRulesVersion = 1;
+            top.townIndex = 7;  // M32: exercise the "T7" tag in the fitted theme column
             scoreboard.add(top);
             score::ScoreEntry legacy;
             legacy.score = 100;
@@ -398,6 +400,16 @@ int run(const char* outDir) {
             {"22_town_high_contrast",
              [](StateStack& s, AppContext& c) {
                  ui::style::setHighContrast(true);
+                 s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"25_town_ladder",
+             [](StateStack& s, AppContext& c) {
+                 // M32: a mid-ladder town shows the per-town exterior palette, the
+                 // Town n/7 indicator, and both exit signposts (previous unlocked,
+                 // next still locked). Placed last so the town-index mutation does
+                 // not leak into the town-1 scenes above.
+                 c.party.currentTown = 6;
+                 c.party.highestUnlockedTown = 6;  // next (town 7) exit reads locked
                  s.pushState(std::make_unique<TownState>(s, c));
              }},
         };

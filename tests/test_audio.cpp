@@ -189,7 +189,7 @@ TEST_CASE("every shipped audio file is a valid PCM16 mono 22050 Hz WAV", "[audio
         CHECK(info.dataBytes > 0);
         CHECK(info.dataBytes + 44 == std::filesystem::file_size(entry.path()));
     }
-    CHECK(files == 30);  // 11 music + 4 ambience + 15 sfx (M21)
+    CHECK(files == 36);  // 11 music + 6 town-ladder variants (M32) + 4 ambience + 15 sfx
 }
 
 TEST_CASE("every shipped audio family has a provenance record in credits.md", "[audio]") {

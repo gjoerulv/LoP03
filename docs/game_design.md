@@ -67,6 +67,21 @@ the cost and tokens held; declining is **never a soft-lock** — HP/MP persist,
 battles still pay gold, and the token is a relief valve, so a wounded, broke
 party can always earn its way back to health.
 
+**The town ladder (M32).** Town is not a single place but a chain of **seven**
+towns, each harder and higher-scoring. The bottom-right road leads to the next
+town, the bottom-left back to the previous one; travel between reached towns is
+free and instant (fade + a darker, more sinister music track per town). A
+higher town multiplies every enemy team's stats — **+0/25/50/75/100/150/200 %**
+across towns 1–7 (composed on top of depth scaling; danger labels rise
+honestly) — and grants a **visible score bonus** on the whole run subtotal —
+**+0/10/20/30/40/50/100 %**. XP and gold rewards do **not** scale with town, so
+the top town is never the best farm; the climb pays in score. Access is earned:
+completing at least one dungeon in a town unlocks the road to the next, and the
+furthest reached town persists in the save. Old saves start in town 1. Each town
+has its own exterior and service-interior art and its own theme track; the three
+dungeon themes are unchanged (towns scale difficulty, they do not retheme
+dungeons).
+
 ## 6. Dungeons
 
 Deterministically generated from a **seed**, using a **room graph/grid** (not
@@ -170,9 +185,13 @@ optional danger defeated → (4) most treasure → (5) fastest real time (final
 tie-break only).
 
 Score components: base completion, **battle-turn penalty**, escape penalty where
-relevant, chest bonus, boss-defeat bonus, danger bonus, no-death bonus. Design
-guard: **never** reward farming/stalling or actions that undercut the
-fewest-turns premise.
+relevant, chest bonus, boss-defeat bonus, danger bonus, no-death bonus, and — as
+a final multiplier on the whole subtotal — the **town-ladder bonus** (M32,
++10 % per town above town 1, up to +100 %). The town a run was cleared in is
+recorded as an optional `townIndex` tag and shown on the scoreboard as "T#" (a
+comparability tag like depth and level, never used for ranking); *compare runs
+at the same Town, Depth and Lv*. Design guard: **never** reward farming/stalling
+or actions that undercut the fewest-turns premise.
 
 ## 10. Chests & rewards
 
