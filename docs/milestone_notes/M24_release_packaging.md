@@ -23,6 +23,9 @@
   4. (Flow) M24 engineering runs in parallel with the open M23; the final
      manual-matrix sign-off and release-candidate acceptance wait for
      M23's completion.
+  5. The owner reviewed and approved the interim packaging engineering
+     (2026-07-20); this does not advance the milestone status — final
+     acceptance still requires the §J validation on the packaged build.
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M24 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.

@@ -60,32 +60,47 @@ Build with **MSVC** from the Visual Studio developer environment: run
 `vcvars64.bat` (or open a "Developer PowerShell/Command Prompt for VS") so `cl`
 and the bundled CMake/Ninja are on `PATH`. **Do not use MinGW/GCC.**
 
-Ninja (preferred):
+Presets (M24, preferred):
+
+```powershell
+cmake --preset msvc-debug          # -> build-msvc (overlay + capture CLI)
+cmake --build --preset debug
+ctest --preset debug               # or: build-msvc\crystal_tests.exe
+.\build-msvc\CrystalDungeons.exe
+
+cmake --preset msvc-release        # -> build-msvc-rel (static CRT, no capture)
+cmake --build --preset release
+```
+
+Raw Ninja (equivalent to msvc-debug):
 
 ```powershell
 cmake -S . -B build-msvc -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 cmake --build build-msvc
 ctest --test-dir build-msvc --output-on-failure
-.\build-msvc\CrystalDungeons.exe
-```
-
-Visual Studio generator (alternative; match your installed VS version):
-
-```powershell
-cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
-cmake --build build-msvc --config Debug
-ctest --test-dir build-msvc -C Debug --output-on-failure
-.\build-msvc\Debug\CrystalDungeons.exe
 ```
 
 `-DCMAKE_*_COMPILER=cl` forces MSVC so a stray compiler on `PATH` can't be picked
 up by mistake (that is what broke the first build attempt). First configure
-downloads + compiles raylib/Catch2 — slow once, then cached in `build-msvc/_deps`.
+downloads + compiles raylib/Catch2 — slow once, then cached per build dir.
 Network is required for the **first** configure only.
 
 CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
-`-DCRYSTAL_WARNINGS_AS_ERRORS=OFF` (default OFF),
-`-DCRYSTAL_ENABLE_DEBUG_OVERLAY=ON` (default ON).
+`-DCRYSTAL_WARNINGS_AS_ERRORS=OFF`, `-DCRYSTAL_ENABLE_DEBUG_OVERLAY=ON`,
+`-DCRYSTAL_ENABLE_CAPTURE=ON` (capture CLI; always excluded from Release).
+
+Validation & release tooling (M23/M24):
+
+```powershell
+.\build-msvc\CrystalDungeons.exe --capture out\dir   # 22 native-res scenes; fails on text overflow
+build-msvc\crystal_tests.exe "[economy-report]" -s   # balance battery table
+build-msvc\crystal_tests.exe "[sim-report]" -s       # machine-readable JSON report
+powershell -ExecutionPolicy Bypass -File tools\package.ps1  # stage+validate+zip -> dist\
+```
+
+Asset generators (deterministic; reruns byte-identical):
+`tools\asset_gen\generate_textures.ps1`, `generate_audio.ps1`,
+`generate_icon.ps1`. Every asset needs a row in `assets/credits.md`.
 
 ## Gotchas (read these before you waste an hour)
 
@@ -121,12 +136,17 @@ CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
    traversal: sanitize all relative paths (`paths::sanitizeRelative`).
 10. **High warnings on project code only**, not on `_deps`. Don't "fix" warnings
     inside dependencies.
-11. **Driving the game for screenshots:** never use focus-dependent
-    `SendKeys` — it leaks keystrokes into whatever app has focus (it
-    happened). Use `PostMessage` WM_KEYDOWN/WM_KEYUP addressed to the game's
-    HWND (arrows need the extended-key bit, ~70ms between down/up so GLFW
-    sees both) plus `SetWindowPos` topmost+`SWP_NOACTIVATE` so
-    `CopyFromScreen` actually sees the game. Proper capture tooling is M23.
+11. **Screenshots: use the capture tool, not window automation.**
+    `CrystalDungeons.exe --capture <dir>` (debug builds) renders 22
+    deterministic scenes at native 426×240 and fails on text overflow —
+    always prefer it. If live input driving is unavoidable, never use
+    focus-dependent `SendKeys` (it leaks keystrokes — it happened); use
+    `PostMessage` WM_KEYDOWN/UP to the game's HWND (extended-key bit for
+    arrows, ~70ms between down/up) + `SetWindowPos` topmost+NOACTIVATE.
+12. **Generation changes need a version bump.** Anything that alters what a
+    seed produces (generator code OR composition/data curves) bumps
+    `dungeon::kGenerationVersion` (currently 4) — the scoreboard tags it
+    for comparability. Owner-gated.
 
 ## Architecture rules (enforce in review)
 
@@ -160,13 +180,14 @@ authorization to start the next.
 **Git:** never commit, push, amend, rebase, merge, tag, or force-update —
 inspection only. The owner handles all commits and pushes.
 
-Milestones: M1–M10 complete (approved; M10 on 2026-07-19). Post-M10 program:
-M11 Baseline audit · M12 UI/text safety · M13 Input/settings · M14 Asset
-manifest · M15 Art vertical slice · M16 Compact rooms · M17 Exploration
-visuals · M18 Battle presentation · M19 Progression/score integrity ·
-M20 Content variety · M21 Final audio · M22 Onboarding/accessibility ·
-M23 Validation/playtesting/balance · M24 Release packaging. Details:
-`docs/milestones.md` + one note per milestone under `docs/milestone_notes/`.
+Milestones: M1–M22 `complete (approved)` (M11–M22 during 2026-07-19/20).
+M23 Validation/playtesting/balance: `in progress` — tooling + tuning done,
+**awaiting owner-run external playtests** (`docs/playtest_protocol.md`);
+findings drive the hardening pass. M24 Release packaging: `in progress` —
+engineering done (v0.9.0 RC in `dist/`), final sign-off gated on M23 and
+the owner's clean-machine test; version bumps to 1.0.0 after playtests
+pass. Details: `docs/milestones.md` + one note per milestone under
+`docs/milestone_notes/`.
 
 ## Verification checklist (before claiming done)
 
