@@ -163,7 +163,8 @@ score::RunSummary maximalRunSummary() {
     run.noDeath = false;  // shows the wager-lost line
     run.escapes = 3;
     run.wagerAccepted = true;
-    run.townBonusPct = 100;  // M32: max town bonus -> the fullest breakdown panel
+    run.townBonusPct = 100;      // M32: max town bonus
+    run.stakesPenaltyPct = 90;   // M33: max penalty -> town-bonus + penalty rows, fullest panel
     return run;
 }
 
@@ -411,6 +412,15 @@ int run(const char* outDir) {
                  c.party.currentTown = 6;
                  c.party.highestUnlockedTown = 6;  // next (town 7) exit reads locked
                  s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"26_guild_penalty",
+             [](StateStack& s, AppContext& c) {
+                 // M33: a Guild whose configured run does not raise the stakes,
+                 // so the forewarning shows a penalty. Placed after the town
+                 // scenes; the stakes mutation does not leak into earlier scenes.
+                 c.party.currentTown = 1;
+                 c.party.stakes = {1, 20, 3};  // prev (town 1, depth 20), 3 steps -> -60%
+                 s.pushState(std::make_unique<GuildState>(s, c));
              }},
         };
 

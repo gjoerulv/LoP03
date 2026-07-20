@@ -186,12 +186,25 @@ tie-break only).
 
 Score components: base completion, **battle-turn penalty**, escape penalty where
 relevant, chest bonus, boss-defeat bonus, danger bonus, no-death bonus, and — as
-a final multiplier on the whole subtotal — the **town-ladder bonus** (M32,
-+10 % per town above town 1, up to +100 %). The town a run was cleared in is
-recorded as an optional `townIndex` tag and shown on the scoreboard as "T#" (a
-comparability tag like depth and level, never used for ranking); *compare runs
-at the same Town, Depth and Lv*. Design guard: **never** reward farming/stalling
-or actions that undercut the fewest-turns premise.
+percentages of the whole subtotal — the **town-ladder bonus** (M32, +10 % per
+town above town 1, up to +100 %) and the **stakes penalty** (M33, subtracted).
+The town a run was cleared in is recorded as an optional `townIndex` tag and
+shown on the scoreboard as "T#" (a comparability tag like depth and level, never
+used for ranking); *compare runs at the same Town, Depth and Lv*. Design guard:
+**never** reward farming/stalling or actions that undercut the fewest-turns
+premise.
+
+**Stakes escalation (M33).** A run's *stakes* is its `(town, depth)`, compared
+town-first against your **previous completed run**. If a completed run does **not**
+raise the stakes above the last one, it loses score — **−15 % per repeat,
+stacking to a −90 % floor** — and each further non-raising run deepens it.
+Clearing a run that **does** raise the stakes (a higher town, or a deeper dungeon
+at the same town) **resets the penalty to zero**. Retreats and wipes (score-0
+runs) don't count either way. The Guild **forewarns** the penalty the configured
+run will incur, updating live as you change Depth ("Stakes penalty: −30 % — raise
+town or depth to clear"), the result screen itemizes it, and the penalty state is
+saved and travels with the entry autosave, so reloading can't shed it. This
+pushes the player to keep climbing rather than farm one comfortable stake.
 
 ## 10. Chests & rewards
 

@@ -691,6 +691,31 @@ everywhere, so pre-M32 behaviour, seeds, and scores are unchanged.
   (existing outputs byte-identical); the presentation lint requires every town
   to resolve its tiles, interiors, and music.
 
+### Stakes escalation (Milestone 33)
+
+Pure rules in `game/StakesLadder.hpp` (`StakesState { prevTown, prevDepth,
+penaltySteps }`, `stakesRaised`, `stakesPenaltyPct`, `afterCompletedRun`,
+`clampStakesSteps`; constants 15 / 6 / 90). A run's stakes is `(town, depth)`,
+compared town-first against the previous completed run; a non-raising completed
+run grows the penalty one 15 % step (cap 90 %), a raising one resets it, and the
+baseline moves to each completed run's stakes.
+
+- **State/save.** `Party.stakes` (a `StakesState`), persisted as three optional
+  fields (old saves → fresh zero state; New Game resets it). No `kSaveVersion`
+  bump.
+- **Scoring.** `RunSummary.stakesPenaltyPct` → `ScoreBreakdown.stakesPenalty`
+  (`max(0,subtotal) * pct/100`), subtracted **after** the town bonus on the same
+  non-negative subtotal: `total = max(0, subtotal + townBonus − stakesPenalty)`;
+  pct 0 leaves the score unchanged. `ScoreEntry.stakesPenaltyPct` is an optional
+  comparability tag (never used for ranking).
+- **Wiring.** `DungeonState::completeDungeon` reads the penalty from the
+  **pre-run** `party.stakes` (equal to the Guild forewarning), applies it, then
+  advances `party.stakes` via `afterCompletedRun` only when `total > 0`. The
+  Guild renders the forewarning live from `party.stakes` + `currentTown` + the
+  depth picker and fires the `kFirstPenalty` beat; the result screen shows a
+  penalty row. Save-scum resistance comes from the entry autosave capturing the
+  pre-run state — the penalty is a pure function of persisted state.
+
 ## 13. Presentation (Milestone 8)
 
 - **Audio (`audio/AudioManager`):** SFX and looping music are **synthesized at

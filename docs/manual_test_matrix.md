@@ -290,6 +290,10 @@ sound fires.
 | 39 | Per-town identity (M32) | visit towns 1/4/7 exteriors + each service interior | not run | not run | every service keeps text within contrast/overflow over its per-town background | n/a | music grows more sinister town to town | — | not run |
 | 40 | Town score bonus (M32) | clear a run in town ≥ 2; check the result "Town bonus (+N%)" row and the scoreboard "T#" tag | not run | not run | result panel fits the extra row; T# fits the Theme column | n/a | n/a | 19_result.png, 12_scoreboard.png | not run |
 | 41 | Unlock + old-save compat (M32) | complete a dungeon (unlocks next town); load a pre-M32 save (starts in town 1) | not run | not run | n/a | n/a | n/a | — | not run |
+| 42 | Guild stakes forewarning (M33) | after a completed run, re-open the Guild; change Depth left/right and watch the penalty line update; raise depth above last run to clear it | not run | not run | "-N% (raise town or depth to clear)" fits + updates live | n/a | n/a | 26_guild_penalty.png | not run |
+| 43 | Stakes penalty on result (M33) | clear a run that does not raise the stakes | not run | not run | result panel fits the "Stakes penalty (-N%)" row (also with town bonus) | n/a | n/a | 19_result.png | not run |
+| 44 | Stakes save-scum resistance (M33) | with a penalty pending, enter a dungeon (autosaves), reload that autosave, re-enter same config | not run | not run | penalty is the same after reload (not shed) | n/a | n/a | — | not run |
+| 45 | Stakes reset + New Game (M33) | raise town/depth to clear the penalty; start a New Game and confirm it begins with no penalty | not run | not run | n/a | n/a | n/a | — | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

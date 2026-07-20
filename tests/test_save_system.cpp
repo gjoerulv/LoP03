@@ -217,6 +217,7 @@ TEST_CASE("save: town-ladder fields round-trip and default/clamp safely (M32)", 
     p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan"));
     p.currentTown = 3;
     p.highestUnlockedTown = 5;
+    p.stakes = {4, 7, 3};  // M33: prev stakes (town 4, depth 7), 3 penalty steps
 
     content::LoadReport rep;
     REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
@@ -225,8 +226,12 @@ TEST_CASE("save: town-ladder fields round-trip and default/clamp safely (M32)", 
     REQUIRE(saves.load(save::SaveSlot::Manual1, loaded, rep2));
     REQUIRE(loaded.currentTown == 3);
     REQUIRE(loaded.highestUnlockedTown == 5);
+    REQUIRE(loaded.stakes.prevTown == 4);       // M33 round-trips
+    REQUIRE(loaded.stakes.prevDepth == 7);
+    REQUIRE(loaded.stakes.penaltySteps == 3);
 
-    // Backward compatibility: a pre-M32 save with no town fields loads as 1/1.
+    // Backward compatibility: a pre-M32/M33 save with no town/stakes fields loads
+    // as 1/1 and a fresh (zero) stakes state.
     writeFile(saves.slotPath(save::SaveSlot::Manual2),
               R"({"version":1,"gold":0,"party":[
                  {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4}]})");
@@ -235,6 +240,8 @@ TEST_CASE("save: town-ladder fields round-trip and default/clamp safely (M32)", 
     REQUIRE(saves.load(save::SaveSlot::Manual2, legacy, rep3));
     REQUIRE(legacy.currentTown == 1);
     REQUIRE(legacy.highestUnlockedTown == 1);
+    REQUIRE(legacy.stakes.prevTown == 0);
+    REQUIRE(legacy.stakes.penaltySteps == 0);
 
     // Defensive: an out-of-range / inconsistent file clamps to [1,7] and keeps
     // currentTown <= highestUnlockedTown (a tampered file can't strand travel).

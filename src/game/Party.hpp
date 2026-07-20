@@ -6,6 +6,7 @@
 #include "content/Definitions.hpp"
 #include "game/Character.hpp"
 #include "game/Inventory.hpp"
+#include "game/StakesLadder.hpp"
 
 namespace cd {
 
@@ -24,6 +25,10 @@ struct Party {
     // fields, old saves load as 1/1. Rules live in game/WorldLadder.hpp.
     int currentTown = 1;
     int highestUnlockedTown = 1;
+    // Stakes escalation (M33): the previous completed run's stakes + penalty
+    // steps. Saved as optional fields (old saves -> fresh state). See
+    // game/StakesLadder.hpp.
+    StakesState stakes;
 
     bool empty() const { return members.empty(); }
     std::size_t size() const { return members.size(); }

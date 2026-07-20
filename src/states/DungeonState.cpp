@@ -549,6 +549,12 @@ void DungeonState::completeDungeon() {
     summary.escapes = run_.escapes;
     summary.wagerAccepted = run_.wagerAccepted;
     summary.townBonusPct = townScoreBonusPct(dungeon_.town);  // M32 town ladder
+    // M33: the stakes penalty this run incurs is a function of the PRE-run stakes
+    // state (unchanged since the Guild forewarned it), so compute it before the
+    // state advances below.
+    const int stakesPct =
+        stakesPenaltyPct(context_.party.stakes, dungeon_.town, dungeon_.depth);
+    summary.stakesPenaltyPct = stakesPct;
 
     const int total = score::computeScore(summary);
 
@@ -556,6 +562,13 @@ void DungeonState::completeDungeon() {
     // saved on the next save/autosave, like the run's gold and XP).
     context_.party.highestUnlockedTown =
         unlockAfterClear(context_.party.highestUnlockedTown, dungeon_.town);
+    // M33: advance the stakes baseline/penalty on a scoring completion. A
+    // completed-but-zero run (extreme turn penalty) is treated like a score-0
+    // run: it does not move the baseline (owner rule).
+    if (total > 0) {
+        context_.party.stakes =
+            afterCompletedRun(context_.party.stakes, dungeon_.town, dungeon_.depth);
+    }
 
     score::ScoreEntry entry;
     entry.score = total;
@@ -570,6 +583,7 @@ void DungeonState::completeDungeon() {
     entry.partyLevel = highestLevel(context_.party);
     entry.battleRulesVersion = battle::kBattleRulesVersion;
     entry.townIndex = dungeon_.town;  // M32
+    entry.stakesPenaltyPct = stakesPct;  // M33
     context_.scoreboard.add(entry);
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);

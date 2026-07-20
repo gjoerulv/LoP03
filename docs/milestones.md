@@ -39,8 +39,8 @@
 | 29 | Content expansion & class learnsets | ☑ complete (approved) |
 | 30 | Economy: paid rest & rest-token event | ☑ complete (approved) |
 | 31 | Equip-shop category split | ☑ complete (approved) |
-| 32 | Town ladder (7 towns, travel, scaling, score bonus) | ◑ implemented, awaiting manual approval |
-| 33 | Stakes-escalation penalty | ☐ planned |
+| 32 | Town ladder (7 towns, travel, scaling, score bonus) | ☑ complete (approved) |
+| 33 | Stakes-escalation penalty | ◑ implemented, awaiting manual approval |
 | 34 | Black market & legendary gear | ☐ planned |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
@@ -1138,8 +1138,10 @@ the then-current checkout. The scope summaries below are the commitment.
 
 ## M32 — Town ladder (7 towns, travel, scaling, score bonus)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against HEAD `09cf458`. Seven-town ladder: `currentTown` +
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing (incl. two unlock-flow fixes found in that pass — New Game world
+  reset + on-return exit-lock refresh, see the note's §K); committed (`25f5e1e`).
+  Implemented / audited against HEAD `09cf458`. Seven-town ladder: `currentTown` +
   `highestUnlockedTown` optional save fields; per-town enemy-stat scaling folded
   into `statScalePct` (town 1 byte-identical, `generationVersion` stays 6);
   visible `townBonus` scoring + optional `ScoreEntry.townIndex` tag; bottom-left/
@@ -1182,8 +1184,19 @@ the then-current checkout. The scope summaries below are the commitment.
 
 ## M33 — Stakes-escalation penalty
 
-- **Status:** ☐ planned — depends on M32. A pure state machine plus visible
-  scoring. Authored just-in-time; do not begin without owner authorization.
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against HEAD `25f5e1e`. Pure stakes state machine
+  (`game/StakesLadder.hpp`): stakes = `(town, depth)` compared town-first vs the
+  previous completed run; not-higher → −15 %/step to a −90 % cap; strictly higher
+  → reset; score-0/completed-zero runs don't move the baseline. Persisted as
+  optional `Party.stakes` save fields (old saves → fresh; New Game resets them);
+  visible `stakesPenalty` scoring row (subtracted after the town bonus, same
+  subtotal rules) + optional `ScoreEntry.stakesPenaltyPct` tag; Guild forewarning
+  updating live with depth; `kFirstPenalty` tutorial; result-screen penalty row.
+  **299/299 tests** (+6 `[stakes]` cases), battle & simulator tests **unmodified**;
+  `--capture` **26/26** overflow-clean (new `26_guild_penalty` scene); Debug +
+  Release clean. `battleRulesVersion` 1 / `generationVersion` 6 unchanged. See the
+  note's §K.
 - **Goal:** a score penalty that grows when a run does not raise the stakes and
   clears when it does, pushing the player to climb rather than farm a safe town.
 - **Primary deliverables:** a pure stakes state machine (previous completed

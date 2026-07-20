@@ -29,6 +29,7 @@ add_executable(crystal_tests
     test_save_system.cpp
     test_town.cpp
     test_town_ladder.cpp
+    test_stakes_ladder.cpp
     test_dungeon.cpp
     test_room_layout.cpp
     test_inventory.cpp

@@ -122,6 +122,12 @@ void GuildState::handleInput(const Input& input) {
         }
     }
 
+    // M33: the first time the configured run would incur a stakes penalty, teach
+    // it (fired here, never from render). maybeTutorialPrompt shows it at most once.
+    if (stakesPenaltyPct(context_.party.stakes, context_.party.currentTown, depth_) > 0) {
+        maybeTutorialPrompt(stack(), context_, tutorial::kFirstPenalty);
+    }
+
     if (input.pressed(InputAction::Cancel)) {
         stack().popState();
         return;
@@ -151,6 +157,18 @@ void GuildState::render() {
                  Color{240, 220, 120, 255});
     ui::drawText(TextFormat("Seed:   %llu", static_cast<unsigned long long>(seed_)), 70, 150, 10,
                  Color{220, 220, 160, 255});
+
+    // M33 stakes forewarning: the penalty this run (currentTown + chosen depth)
+    // will incur, updating live as Depth changes; matches what completeDungeon
+    // applies. Honest and shown before entering (M19).
+    const int pen = stakesPenaltyPct(context_.party.stakes, context_.party.currentTown, depth_);
+    if (pen > 0) {
+        ui::drawText(TextFormat("Stakes penalty: -%d%%  (raise town or depth to clear)", pen), 70,
+                     168, 10, Color{230, 150, 150, 255});
+    } else {
+        ui::drawText("No stakes penalty - this run raises the stakes.", 70, 168, 10,
+                     Color{150, 210, 150, 255});
+    }
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();

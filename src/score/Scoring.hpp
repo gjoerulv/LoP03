@@ -23,6 +23,9 @@ struct RunSummary {
     // Town-ladder score bonus (M32): a percent applied to the whole subtotal for
     // clearing a higher town. 0 for town 1 / legacy runs -> no change.
     int townBonusPct = 0;
+    // Stakes-escalation penalty (M33): a percent (0..90) subtracted from the
+    // subtotal for a run that did not raise the stakes. 0 -> no change.
+    int stakesPenaltyPct = 0;
 };
 
 struct ScoreBreakdown {
@@ -36,6 +39,7 @@ struct ScoreBreakdown {
     int escapePenalty = 0;
     int wager = 0;  // +150 / -100 / 0 (M20 wager event)
     int townBonus = 0;  // town-ladder bonus applied to the subtotal (M32)
+    int stakesPenalty = 0;  // stakes penalty subtracted from the subtotal (M33, >= 0)
     int total = 0;
 };
 

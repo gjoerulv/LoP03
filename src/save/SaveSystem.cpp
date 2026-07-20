@@ -58,6 +58,9 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["restTokens"] = party.restTokens;  // M30 (optional; old saves read 0)
   root["currentTown"] = party.currentTown;              // M32 (optional; old -> 1)
   root["highestUnlockedTown"] = party.highestUnlockedTown;  // M32 (optional; old -> 1)
+  root["stakesPrevTown"] = party.stakes.prevTown;          // M33 (optional; old -> 0)
+  root["stakesPrevDepth"] = party.stakes.prevDepth;        // M33
+  root["stakesPenaltySteps"] = party.stakes.penaltySteps;  // M33
 
   Json members = Json::array();
   for (const Character& c : party.members) {
@@ -129,6 +132,10 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
       clampTown(rootReader.optIntMin("highestUnlockedTown", 1, 1));
   loaded.currentTown = std::clamp(clampTown(rootReader.optIntMin("currentTown", 1, 1)),
                                   1, loaded.highestUnlockedTown);
+  // M33 stakes: optional, non-negative; steps clamped to [0, kStakesPenaltyMaxSteps].
+  loaded.stakes.prevTown = rootReader.optIntMin("stakesPrevTown", 0, 0);
+  loaded.stakes.prevDepth = rootReader.optIntMin("stakesPrevDepth", 0, 0);
+  loaded.stakes.penaltySteps = clampStakesSteps(rootReader.optIntMin("stakesPenaltySteps", 0, 0));
 
   auto partyIt = root.find("party");
   if (partyIt == root.end() || !partyIt->is_array()) {

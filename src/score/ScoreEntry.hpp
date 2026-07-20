@@ -34,6 +34,10 @@ struct ScoreEntry {
     // before the ladder existed, displayed as town 1. Optional in the file, no
     // format bump; shown for context, never used for ranking.
     int townIndex = 0;
+    // Stakes-escalation penalty percent applied to this run (M33). 0 = no penalty
+    // (or a legacy/raising run). Optional in the file, no format bump; a
+    // comparability tag, never used for ranking.
+    int stakesPenaltyPct = 0;
 };
 
 }  // namespace cd::score
