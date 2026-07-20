@@ -58,7 +58,7 @@ The older rows below are retained as historical baseline evidence and are **not*
 >
 > **M23 update:** validation + playtesting. The capture set
 > (`build-msvc\CrystalDungeons.exe --capture docs\screenshots\m23_captures`)
-> replaces ad-hoc screenshots: 22 deterministic native-res scenes,
+> replaces ad-hoc screenshots: 23 deterministic native-res scenes,
 > self-checking for text overflow — review it for visual regressions after
 > any UI change. External playtests follow `docs/playtest_protocol.md`
 > (six profiles, uncoached, observation sheets); their findings are the

@@ -225,7 +225,7 @@ These are engineering bars, not formal WCAG claims.
 ## 13. First-complete-version content target
 
 6 classes (each with a level-based learnset) · 22 normal enemy types · 9 elites ·
-6 bosses across 3 archetypes · 30+ items/equipment · 43 skills/spells across the
+6 bosses across 4 archetypes · 30+ items/equipment · 43 skills/spells across the
 broad categories · 3 themes (**Ruined Keep, Crystal Mine, Hollow Forest**) ·
 infinite seeded dungeons with depth scaling. (Counts as of M29; the enemy/boss
 roster and skill list grow with content milestones.)

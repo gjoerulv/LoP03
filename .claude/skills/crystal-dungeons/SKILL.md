@@ -98,7 +98,7 @@ CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
 Validation & release tooling (M23/M24):
 
 ```powershell
-.\build-msvc\CrystalDungeons.exe --capture out\dir   # 22 native-res scenes; fails on text overflow
+.\build-msvc\CrystalDungeons.exe --capture out\dir   # 23 native-res scenes; fails on text overflow
 build-msvc\crystal_tests.exe "[economy-report]" -s   # balance battery table
 build-msvc\crystal_tests.exe "[sim-report]" -s       # machine-readable JSON report
 powershell -ExecutionPolicy Bypass -File tools\package.ps1  # stage+validate+zip -> dist\
@@ -152,7 +152,7 @@ Asset generators (deterministic; reruns byte-identical):
 10. **High warnings on project code only**, not on `_deps`. Don't "fix" warnings
     inside dependencies.
 11. **Screenshots: use the capture tool, not window automation.**
-    `CrystalDungeons.exe --capture <dir>` (debug builds) renders 22
+    `CrystalDungeons.exe --capture <dir>` (debug builds) renders 23
     deterministic scenes at native 426×240 and fails on text overflow —
     always prefer it. If live input driving is unavoidable, never use
     focus-dependent `SendKeys` (it leaks keystrokes — it happened); use
@@ -160,7 +160,7 @@ Asset generators (deterministic; reruns byte-identical):
     arrows, ~70ms between down/up) + `SetWindowPos` topmost+NOACTIVATE.
 12. **Generation changes need a version bump.** Anything that alters what a
     seed produces (generator code OR composition/data curves) bumps
-    `dungeon::kGenerationVersion` (currently 4) — the scoreboard tags it
+    `dungeon::kGenerationVersion` (currently 6) — the scoreboard tags it
     for comparability. Owner-gated.
 
 ## Architecture rules (enforce in review)
@@ -195,14 +195,16 @@ authorization to start the next.
 **Git:** never commit, push, amend, rebase, merge, tag, or force-update —
 inspection only. The owner handles all commits and pushes.
 
-Milestones: M1–M22 `complete (approved)` (M11–M22 during 2026-07-19/20).
-M23 Validation/playtesting/balance: `in progress` — tooling + tuning done,
-**awaiting owner-run external playtests** (`docs/playtest_protocol.md`);
-findings drive the hardening pass. M24 Release packaging: `in progress` —
-engineering done (v0.9.0 RC in `dist/`), final sign-off gated on M23 and
-the owner's clean-machine test; version bumps to 1.0.0 after playtests
-pass. Details: `docs/milestones.md` + one note per milestone under
-`docs/milestone_notes/`.
+Milestones: **M1–M29 `complete (approved)`**; **M30** (economy: paid rest &
+rest-token event) `implemented, awaiting manual approval`. The M25–M30 polish
+program — font/UI corrections, per-enemy art, environment/ambience identity,
+enmity AI + control skills, content expansion + class learnsets, and the paid
+inn — is delivered. **M23** (validation/playtesting/balance) and **M24**
+(release packaging) are deferred to run **after** M30: their tooling and
+packaging are built (v0.9.0 RC in `dist/`), awaiting owner-run external
+playtests (`docs/playtest_protocol.md`) and a clean-machine sign-off; version
+bumps to 1.0.0 after playtests pass. Details: `docs/milestones.md` + one note
+per milestone under `docs/milestone_notes/`.
 
 ## Verification checklist (before claiming done)
 
