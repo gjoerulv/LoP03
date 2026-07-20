@@ -185,6 +185,13 @@ The headless test suite doubles as a smoke test — it loads the shipped content
 generates dungeons, and simulates a full clear:
 
 ```powershell
+ctest --preset debug      # or: ctest --preset release
+```
+
+Both presets already pass `--output-on-failure`. Without presets, point `ctest`
+at the build directory instead:
+
+```powershell
 ctest --test-dir build-msvc --output-on-failure
 ```
 
