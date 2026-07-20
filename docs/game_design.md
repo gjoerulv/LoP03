@@ -48,6 +48,13 @@ Party of 4, chosen and renamable at new game from 6 classes:
 
 Characters gain XP/levels; player gains gold/items.
 
+**Class learnsets (M29).** Each class begins with a small starting skill set and
+**learns further skills at set levels** along a curve, so a character visibly
+grows and its battle menu widens with progression. Known skills are *derived*
+from the class and the character's level (not stored), so leveling mid-run
+immediately unlocks the new options and no save is ever invalidated. By the
+level cap each class commands roughly six to seven skills.
+
 ## 5. Town hub (functional, not huge)
 
 Inn/heal · Item shop · Equipment shop · Guild/dungeon selection · Training
@@ -206,9 +213,11 @@ These are engineering bars, not formal WCAG claims.
 
 ## 13. First-complete-version content target
 
-6 classes · 12–18 enemy types · 6 elites · 3 boss archetypes · 30+ items/equipment
-· 8–12 skills/spells per broad category · 3 themes (**Ruined Keep, Crystal Mine,
-Hollow Forest**) · infinite seeded dungeons with depth scaling.
+6 classes (each with a level-based learnset) · 22 normal enemy types · 9 elites ·
+6 bosses across 3 archetypes · 30+ items/equipment · 43 skills/spells across the
+broad categories · 3 themes (**Ruined Keep, Crystal Mine, Hollow Forest**) ·
+infinite seeded dungeons with depth scaling. (Counts as of M29; the enemy/boss
+roster and skill list grow with content milestones.)
 
 ## 14. Open design questions (decide with human when reached)
 

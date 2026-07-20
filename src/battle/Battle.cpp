@@ -521,7 +521,10 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         u.mp = c.mp;
         u.maxMp = c.maxMp;
         if (const content::ClassDef* cls = db.findClass(c.classId)) {
-            u.skillIds = cls->startingSkills;
+            // M29: usable skills are the class learnset resolved at the
+            // character's level (startingSkills + level-gated grants), derived
+            // identically here for live play and the headless simulator.
+            u.skillIds = content::knownSkillsFor(*cls, c.level);
         }
         b.units.push_back(std::move(u));
     }

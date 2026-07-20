@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "content/Definitions.hpp"
 
@@ -61,5 +62,14 @@ private:
     std::unordered_map<std::string, DungeonThemeDef> themes_;
     CompositionDef composition_;
 };
+
+// Skills a character of `level` knows: the class's `startingSkills` (the level-1
+// set) plus every learnset entry whose `level` is <= the character's level, in a
+// stable order (startingSkills first, then learnset by ascending level then
+// declaration order), de-duplicated. Pure and level-deterministic — the single
+// source of a party member's usable skills (M29). Because skills are derived,
+// not stored, this keeps the simulator and live play in exact agreement and
+// requires no save state.
+std::vector<std::string> knownSkillsFor(const ClassDef& cls, int level);
 
 }  // namespace cd::content

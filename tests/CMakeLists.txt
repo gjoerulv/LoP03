@@ -19,6 +19,7 @@ add_executable(crystal_tests
     test_fatal_dialog.cpp
     test_content_validation.cpp
     test_content_loader.cpp
+    test_learnset.cpp
     test_menu.cpp
     test_text_input.cpp
     test_text_layout.cpp

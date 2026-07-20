@@ -2,7 +2,7 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval
+- **Status:** ☑ complete (approved by the owner 2026-07-20 after manual testing; committed)
 - **Authored / audited:** 2026-07-20 against the current checkout (HEAD is the
   M25 approval commit; working tree otherwise clean). Every code/data reference
   below was read at that point.

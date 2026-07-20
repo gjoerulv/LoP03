@@ -92,6 +92,12 @@
     { "id": "enemy.forest_wolf.battle", "type": "texture", "path": "textures/enemies/forest_wolf.png" },
     { "id": "enemy.bog_shaman.battle", "type": "texture", "path": "textures/enemies/bog_shaman.png" },
     { "id": "enemy.war_drummer.battle", "type": "texture", "path": "textures/enemies/war_drummer.png" },
+    { "id": "enemy.corpse_hound.battle", "type": "texture", "path": "textures/enemies/corpse_hound.png" },
+    { "id": "enemy.sand_lurker.battle", "type": "texture", "path": "textures/enemies/sand_lurker.png" },
+    { "id": "enemy.gloom_priest.battle", "type": "texture", "path": "textures/enemies/gloom_priest.png" },
+    { "id": "enemy.rune_sentry.battle", "type": "texture", "path": "textures/enemies/rune_sentry.png" },
+    { "id": "enemy.standard_bearer.battle", "type": "texture", "path": "textures/enemies/standard_bearer.png" },
+    { "id": "enemy.mire_imp.battle", "type": "texture", "path": "textures/enemies/mire_imp.png" },
 
     { "id": "enemy.ogre_marauder.battle", "type": "texture", "path": "textures/enemies/ogre_marauder.png" },
     { "id": "enemy.troll_berserker.battle", "type": "texture", "path": "textures/enemies/troll_berserker.png" },
@@ -100,11 +106,15 @@
     { "id": "enemy.plague_bearer.battle", "type": "texture", "path": "textures/enemies/plague_bearer.png" },
     { "id": "enemy.iron_sentinel.battle", "type": "texture", "path": "textures/enemies/iron_sentinel.png" },
     { "id": "enemy.grave_chanter.battle", "type": "texture", "path": "textures/enemies/grave_chanter.png" },
+    { "id": "enemy.bone_colossus.battle", "type": "texture", "path": "textures/enemies/bone_colossus.png" },
+    { "id": "enemy.void_weaver.battle", "type": "texture", "path": "textures/enemies/void_weaver.png" },
 
     { "id": "boss.keep_warden.battle", "type": "texture", "path": "textures/enemies/boss_keep_warden.png" },
     { "id": "boss.crystal_sorcerer.battle", "type": "texture", "path": "textures/enemies/boss_crystal_sorcerer.png" },
     { "id": "boss.hollow_commander.battle", "type": "texture", "path": "textures/enemies/boss_hollow_commander.png" },
     { "id": "boss.rush_tyrant.battle", "type": "texture", "path": "textures/enemies/boss_rush_tyrant.png" },
+    { "id": "boss.deep_king.battle", "type": "texture", "path": "textures/enemies/boss_deep_king.png" },
+    { "id": "boss.blight_matron.battle", "type": "texture", "path": "textures/enemies/boss_blight_matron.png" },
 
     { "id": "prop.chest", "type": "texture", "path": "textures/props/chest.png" },
     { "id": "prop.gate_marker", "type": "texture", "path": "textures/props/gate_marker.png" },

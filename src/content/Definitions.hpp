@@ -32,13 +32,21 @@ struct SkillDef {
     std::string description;
 };
 
+// One level-gated skill grant on a class learnset (M29). The skill is known
+// once the character reaches `level`; `startingSkills` remain the level-1 set.
+struct LearnEntry {
+    std::string skill;  // skill id
+    int level = 1;      // >= 1
+};
+
 struct ClassDef {
     std::string id;
     std::string name;
     std::string role;
     StatBlock baseStats;
     StatGrowth growth;
-    std::vector<std::string> startingSkills;  // skill ids
+    std::vector<std::string> startingSkills;  // skill ids (level-1 set)
+    std::vector<LearnEntry> learnset;         // level-gated grants (M29)
 };
 
 struct EnemyDef {

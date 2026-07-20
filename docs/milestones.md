@@ -33,10 +33,10 @@
 | 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M30** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
-| 26 | Enemy visual identity | ◑ implemented, awaiting manual approval |
-| 27 | Environment & ambience identity | ◑ implemented, awaiting manual approval |
-| 28 | Enmity, AI diversity & control skills | ◑ implemented, awaiting manual approval |
-| 29 | Content expansion & class learnsets | ☐ planned |
+| 26 | Enemy visual identity | ☑ complete (approved) |
+| 27 | Environment & ambience identity | ☑ complete (approved) |
+| 28 | Enmity, AI diversity & control skills | ☑ complete (approved) |
+| 29 | Content expansion & class learnsets | ◑ implemented, awaiting manual approval |
 | 30 | Economy: paid rest & rest-token event | ☐ planned |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30,
@@ -885,10 +885,10 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M26 — Enemy visual identity
 
-- **Status:** implemented, awaiting manual approval (owner authorized
-  2026-07-20; 27 per-id battle sprites; presentation-lint guard added and
-  verified to fail on a removed row; 252/252 tests; 23/23 capture scenes clean;
-  generator byte-identical on rerun — see the note's §M)
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing; committed. (27 per-id battle sprites; presentation-lint guard
+  added and verified to fail on a removed row; 252/252 tests; 23/23 capture
+  scenes clean; generator byte-identical on rerun — see the note's §M)
 - **Goal:** give every enemy and boss its own silhouette.
 - **Context:** the code already resolves `enemy.<sourceId>.battle` and
   `boss.<sourceId>.battle` before falling back to the tier sprite
@@ -914,12 +914,12 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M27 — Environment & ambience identity
 
-- **Status:** implemented, awaiting manual approval (owner authorized
-  2026-07-20; six service backgrounds, redesigned per-place ambience beds,
-  ambience routed to the SFX slider, and a fix for the dungeon ambience never
-  switching per theme; 254/254 tests incl. a StateStack ambience-transition
-  regression guard; 23/23 capture scenes clean; generators byte-identical bar
-  the intended changes — see the note's §K)
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing; committed. (Six service backgrounds, redesigned per-place
+  ambience beds, ambience routed to the SFX slider, and a fix for the dungeon
+  ambience never switching per theme; 254/254 tests incl. a StateStack
+  ambience-transition regression guard; 23/23 capture scenes clean; generators
+  byte-identical bar the intended changes — see the note's §K)
 - **Goal:** make town services and dungeon themes feel like distinct places.
 - **Context:** all six town service states draw a single
   `ClearBackground(solid)`. Per-theme ambience *is* correctly wired
@@ -944,8 +944,8 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M28 — Enmity, AI diversity & control skills
 
-- **Status:** implemented, awaiting manual approval (owner authorized and
-  approved the design 2026-07-20 — global threat, role-derived profiles, small
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing; committed. (Global threat, role-derived profiles, small
   seeded tie-break, control skills in class kits; `ScoreEntry.battleRulesVersion`
   = 1. 265/265 tests incl. 10 new `[enmity]` tests; difficulty curve still
   clearable/monotonic; Debug + Release clean; capture 23/23. See the note's §L.)
@@ -986,7 +986,11 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M29 — Content expansion & class learnsets
 
-- **Status:** planned
+- **Status:** ◑ implemented, awaiting manual approval (owner authorized and
+  approved the §D design 2026-07-20 — derive-from-level learnset, `learnset`
+  schema field, +12 skills, +6 normal/+2 elite enemies, +2 bosses, gen-version
+  bump 4→5. 274/274 tests incl. 9 new `[learnset]` tests; capture 23/23;
+  Debug + Release clean; difficulty curve still clearable. See the note's §L.)
 - **Goal:** more enemies, more bosses, and per-class skill growth — designed for
   the M28 enmity roles, shipped at M26 art standard.
 - **Context:** current content is 16 normal enemies, 7 elites, 4 bosses, 28

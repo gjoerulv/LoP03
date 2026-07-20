@@ -2,8 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — design approved and
-  implemented 2026-07-20.
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-20 after
+  manual testing; committed (design approved and implemented 2026-07-20).
 
 ### Owner decisions (2026-07-20, all recommendations accepted)
 

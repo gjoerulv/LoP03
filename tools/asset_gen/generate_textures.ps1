@@ -672,6 +672,91 @@ FR $b 2 12 3 8 $PAL.bossD; FR $b 27 12 3 8 $PAL.bossD
 FR $b 8 30 5 2 $PAL.bossD; FR $b 19 30 5 2 $PAL.bossD
 SaveEnemy $b 'boss_rush_tyrant'
 
+Write-Output 'Generating M29 expansion battle sprites...'
+
+# M29 content expansion: 8 new enemies (24x24) + 2 new bosses (32x32), same
+# art_bible conventions and helpers as the M26 set. Reseeded so these are stable
+# and the existing M26 sprites (already written above) stay byte-identical.
+$script:rng = 29290000
+
+$b = New-Img 24 24                                                # corpse_hound: undead canine
+Ell $b 3 9 14 8 $PAL.veg1; Ell $b 4 12 12 5 $PAL.veg0
+Ell $b 14 7 8 7 $PAL.veg1; FR $b 20 9 2 2 $PAL.veg0; Eyes $b 18 9 $PAL.danger
+P $b 15 5 $PAL.veg1; P $b 19 5 $PAL.veg1; FR $b 2 12 3 2 $PAL.night2
+FR $b 6 13 1 3 $bone; FR $b 9 13 1 3 $bone
+FR $b 5 16 2 6 $PAL.veg0; FR $b 9 16 2 6 $PAL.veg0; FR $b 13 16 2 6 $PAL.veg0
+SaveEnemy $b 'corpse_hound'
+
+$b = New-Img 24 24                                                # sand_lurker: coiled poison serpent
+Ell $b 4 12 15 7 $PAL.earth2; Ell $b 5 14 13 4 $PAL.earth1
+Ell $b 14 8 8 7 $PAL.earth2; FR $b 20 10 2 2 $PAL.earth1; Eyes $b 18 10 $PAL.violet
+P $b 15 6 $PAL.violet; P $b 17 6 $PAL.violet; P $b 3 10 $PAL.veg3; FR $b 4 11 2 2 $PAL.veg3
+Speckle $b 5 13 13 5 $PAL.violet 0.10
+SaveEnemy $b 'sand_lurker'
+
+$b = New-Img 24 24                                                # gloom_priest: robed healer + cross
+FR $b 9 4 7 6 $PAL.night2; FR $b 9 8 7 2 $PAL.night1; Eyes $b 11 7 $PAL.heal
+FR $b 6 10 13 11 $PAL.night3; FR $b 6 10 13 1 $PAL.stone1; FR $b 10 12 5 9 $PAL.stone1
+FR $b 17 5 2 16 $PAL.earth2; Ell $b 15 2 5 5 $PAL.heal; P $b 17 4 $PAL.glint
+FR $b 11 13 3 1 $PAL.heal; FR $b 12 12 1 3 $PAL.heal
+SaveEnemy $b 'gloom_priest'
+
+$b = New-Img 24 24                                                # rune_sentry: armored rune construct
+FR $b 6 6 12 15 $PAL.stone3; FR $b 7 7 10 13 $PAL.stone2; FR $b 6 6 12 2 $PAL.stone4
+FR $b 9 3 6 5 $PAL.stone3; Eyes $b 11 5 $PAL.cyan
+FR $b 10 10 4 7 $PAL.night2; FR $b 11 11 2 5 $PAL.cyan; P $b 12 12 $PAL.glint
+FR $b 3 9 3 8 $PAL.stone3; FR $b 18 9 3 8 $PAL.stone3
+FR $b 7 21 3 2 $PAL.stone4; FR $b 13 21 3 2 $PAL.stone4
+SaveEnemy $b 'rune_sentry'
+
+$b = New-Img 24 24                                                # standard_bearer: soldier + banner
+FR $b 10 6 6 6 $PAL.earth3; FR $b 10 8 6 2 $PAL.night1; Eyes $b 12 8 $PAL.gold
+FR $b 8 12 9 9 $PAL.earth1; FR $b 8 12 9 1 $PAL.earth2; FR $b 11 14 3 7 $PAL.maroonD
+FR $b 4 3 2 19 $PAL.earth2; FR $b 6 4 7 8 $PAL.maroon; FR $b 6 4 7 1 $PAL.gold; P $b 12 5 $PAL.gold
+FR $b 8 20 3 2 $PAL.night2; FR $b 13 20 3 2 $PAL.night2
+SaveEnemy $b 'standard_bearer'
+
+$b = New-Img 24 24                                                # mire_imp: winged poison imp
+Ell $b 9 10 9 8 $PAL.veg2; Ell $b 10 12 6 4 $PAL.veg1
+Ell $b 14 6 7 7 $PAL.veg2; Eyes $b 17 8 $PAL.violet
+foreach ($s in @(@(9, -1), @(15, 1))) { $x = $s[0]; $d = $s[1]; for ($k = 0; $k -lt 5; $k++) { P $b ($x + $d * $k) (9 + $k) $PAL.veg0 } }
+P $b 16 4 $PAL.violet; P $b 19 4 $PAL.violet; Speckle $b 10 11 6 6 $PAL.violet 0.12
+FR $b 10 18 2 3 $PAL.veg1; FR $b 14 18 2 3 $PAL.veg1
+SaveEnemy $b 'mire_imp'
+
+$b = New-Img 24 24                                                # bone_colossus: giant skeletal wall
+Ell $b 3 8 18 14 $bone; Ell $b 5 11 14 10 $boneD
+Ell $b 12 3 10 9 $bone; Horns $b 14 3; Eyes $b 17 7 $PAL.violet
+for ($j = 10; $j -lt 20; $j++) { $rc = if ($j % 2) { $bone } else { $boneD }; FR $b 6 $j 12 1 $rc }
+FR $b 9 12 6 1 $PAL.violet; FR $b 2 10 2 9 $bone; FR $b 20 10 2 9 $bone
+FR $b 6 21 4 2 $boneD; FR $b 13 21 4 2 $boneD
+SaveEnemy $b 'bone_colossus'
+
+$b = New-Img 24 24                                                # void_weaver: dark disruptor mage
+FR $b 9 4 7 6 $PAL.night2; FR $b 9 8 7 2 $PAL.night1; Eyes $b 11 7 $PAL.violet
+FR $b 6 10 13 11 $PAL.night3; FR $b 6 10 13 1 $PAL.violet; FR $b 10 12 5 9 $PAL.night2
+Horns $b 12 3; FR $b 8 12 9 1 $PAL.violet
+FR $b 18 5 2 16 $PAL.night1; Ell $b 15 2 6 6 $PAL.violet; P $b 17 4 $PAL.glint
+Speckle $b 7 11 11 9 $PAL.violet 0.08
+SaveEnemy $b 'void_weaver'
+
+$b = New-Img 32 32                                                # deep_king: crowned crystal colossus + axe
+Ell $b 4 9 22 21 $PAL.stone2; Ell $b 7 13 17 16 $PAL.stone1
+Ell $b 15 3 14 13 $PAL.stone2; Crown $b 18 2; Eyes $b 22 8 $PAL.cyan
+FR $b 10 15 13 2 $PAL.cyan; FR $b 6 12 3 7 $PAL.cyan; P $b 6 11 $PAL.glint
+FR $b 12 12 3 8 $PAL.cyan; P $b 13 11 $PAL.glint
+FR $b 3 6 3 16 $PAL.earth2; FR $b 1 3 7 5 $PAL.stone4; P $b 3 5 $PAL.glint
+FR $b 9 30 5 2 $PAL.stone3; FR $b 19 30 5 2 $PAL.stone3
+SaveEnemy $b 'boss_deep_king'
+
+$b = New-Img 32 32                                                # blight_matron: plague witch + staff
+FR $b 9 6 10 7 $PAL.veg2; FR $b 10 11 8 2 $PAL.night1; Eyes $b 12 9 $PAL.violet
+FR $b 6 12 17 18 $PAL.veg1; FR $b 6 12 17 2 $PAL.veg2; FR $b 12 15 5 15 $PAL.veg0
+Crown $b 11 5; FR $b 22 4 2 26 $PAL.earth2
+Ell $b 19 1 8 8 $PAL.veg3; Ell $b 21 3 4 4 $PAL.violet; P $b 22 4 $PAL.glint
+Speckle $b 7 14 15 15 $PAL.violet 0.08; FR $b 8 15 12 1 $PAL.violet
+SaveEnemy $b 'boss_blight_matron'
+
 Write-Output 'Generating M27 service backgrounds...'
 
 # Full-screen (426x240) service backgrounds. Legibility is the binding

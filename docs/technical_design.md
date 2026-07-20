@@ -183,7 +183,8 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = 4.
+  `kGenerationVersion` = 5 (M29 enlarged the theme enemy/boss pools, so a
+  seed spawns a different roster; owner-approved bump).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager) realized as an `EventChamber`
@@ -395,7 +396,7 @@ are reference-checked across files.
 | Type   | Required fields | Notable optional fields |
 |--------|-----------------|-------------------------|
 | skill  | `id`, `name`, `category`, `target` | `element`, `power`≥0, `mpCost`≥0, `description` |
-| class  | `id`, `name`, `baseStats`{hp≥1,attack,magic,defense,speed} | `role`, `growth`{floats}, `startingSkills`[skill ids] |
+| class  | `id`, `name`, `baseStats`{hp≥1,attack,magic,defense,speed} | `role`, `growth`{floats}, `startingSkills`[skill ids], `learnset`[{`skill`,`level`≥1}] |
 | enemy  | `id`, `name`, `stats`{…} | `tier`(normal/elite), `tags`[fast/magic/armored/poison], `skills`[ids], `xpReward`, `goldReward` |
 | item   | `id`, `name`, `type`(consumable/equipment/relic/scroll) | `slot`, `rarity`, `value`, `effect`, `effectAmount`, `statBonus`, `grantsSkill`, `description` |
 
@@ -412,8 +413,14 @@ Enums (string values): `Element`, `SkillCategory`, `SkillTarget`, `EnemyTag`,
   the valid entries around it. Duplicate ids are rejected.
 - Semantic rules: scrolls must set `grantsSkill`; equipment/relics need a real
   `slot`.
-- Cross-references: skill ids in `startingSkills`, enemy `skills`, and scroll
-  `grantsSkill` must exist.
+- Cross-references: skill ids in `startingSkills`, class `learnset`, enemy
+  `skills`, and scroll `grantsSkill` must exist.
+- **Class learnsets (M29):** the optional `learnset` grants a skill once a
+  character reaches its `level`. Skills are *derived, never stored* — a
+  combatant's usable set is `content::knownSkillsFor(cls, level)` =
+  `startingSkills` ∪ level-satisfied learnset entries (stable order, de-duped).
+  `buildBattle` resolves this once per battle for both live play and the
+  headless simulator, so they agree exactly and no save state is needed.
 - Bumping `version` or changing field meaning is a **public-schema change** —
   requires human approval (see `CLAUDE.md`).
 
@@ -500,7 +507,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 4; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 5; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).

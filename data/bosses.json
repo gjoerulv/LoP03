@@ -48,6 +48,30 @@
       "xpReward": 240,
       "goldReward": 160,
       "description": "A tyrant who throws wave upon wave of minions."
+    },
+    {
+      "id": "deep_king",
+      "name": "The Deep King",
+      "archetype": "brute",
+      "stats": { "hp": 340, "attack": 28, "magic": 8, "defense": 18, "speed": 7 },
+      "skills": ["power_smash", "sunder"],
+      "minions": ["stone_golem", "crystal_guardian"],
+      "telegraph": "The Deep King hefts its greataxe. Below half health its blows redouble - break it quickly.",
+      "xpReward": 230,
+      "goldReward": 150,
+      "description": "A crowned colossus that rules the deepest crystal seams."
+    },
+    {
+      "id": "blight_matron",
+      "name": "The Blight Matron",
+      "archetype": "sorcerer",
+      "stats": { "hp": 240, "attack": 10, "magic": 26, "defense": 12, "speed": 11 },
+      "skills": ["venom_mist", "blizzard", "weaken"],
+      "minions": ["venom_spider", "plague_bearer"],
+      "telegraph": "Spores swirl about the Matron. Each fallen servant feeds her blight - fell the mistress first.",
+      "xpReward": 215,
+      "goldReward": 150,
+      "description": "A plague-witch who festers in the hollow wood."
     }
   ]
 }

@@ -35,6 +35,21 @@
 
     { "id": "taunt", "name": "Taunt", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "taunt", "description": "Goad the enemy into striking you instead of your allies." },
     { "id": "fade", "name": "Fade", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "fade", "description": "Slip from the enemy's attention, shedding their focus." },
-    { "id": "redirect", "name": "Redirect", "category": "support", "target": "self", "power": 0, "mpCost": 4, "control": "intercept", "description": "Guard your allies, taking single blows meant for them until your next turn." }
+    { "id": "redirect", "name": "Redirect", "category": "support", "target": "self", "power": 0, "mpCost": 4, "control": "intercept", "description": "Guard your allies, taking single blows meant for them until your next turn." },
+
+    { "id": "shield_bash", "name": "Shield Bash", "category": "physical", "target": "single_enemy", "power": 12, "mpCost": 5, "statusEffect": "defense_down", "statusMagnitude": 20, "statusDuration": 3, "description": "A shield blow that batters down a foe's guard." },
+    { "id": "execute", "name": "Execute", "category": "physical", "target": "single_enemy", "power": 21, "mpCost": 9, "description": "A finishing strike aimed to end the fight." },
+    { "id": "aimed_shot", "name": "Aimed Shot", "category": "physical", "target": "single_enemy", "power": 18, "mpCost": 6, "description": "A slow, deadly precise shot." },
+    { "id": "barrage", "name": "Barrage", "category": "physical", "target": "all_enemies", "power": 9, "mpCost": 9, "description": "A volley that peppers every foe." },
+    { "id": "hamstring", "name": "Hamstring", "category": "physical", "target": "single_enemy", "power": 8, "mpCost": 6, "statusEffect": "attack_down", "statusMagnitude": 25, "statusDuration": 3, "description": "Cripple a foe's strength." },
+    { "id": "rend", "name": "Rend", "category": "physical", "target": "single_enemy", "power": 11, "mpCost": 5, "statusEffect": "poison", "statusMagnitude": 5, "statusDuration": 3, "description": "A deep cut that bleeds." },
+    { "id": "eviscerate", "name": "Eviscerate", "category": "physical", "target": "single_enemy", "power": 24, "mpCost": 10, "description": "A brutal killing blow." },
+
+    { "id": "arcane_burst", "name": "Arcane Burst", "category": "magic", "target": "single_enemy", "power": 17, "mpCost": 7, "description": "A blast of raw arcane force." },
+    { "id": "smite", "name": "Smite", "category": "magic", "target": "single_enemy", "element": "holy", "power": 12, "mpCost": 6, "description": "Strike a foe with holy force." },
+    { "id": "radiance", "name": "Radiance", "category": "magic", "target": "all_enemies", "element": "holy", "power": 10, "mpCost": 12, "description": "Searing light burns every foe." },
+
+    { "id": "intimidate", "name": "Intimidate", "category": "support", "target": "all_enemies", "power": 0, "mpCost": 10, "statusEffect": "attack_down", "statusMagnitude": 20, "statusDuration": 3, "description": "Cow every foe into weaker blows." },
+    { "id": "iron_will", "name": "Iron Will", "category": "support", "target": "self", "power": 0, "mpCost": 8, "statusEffect": "defense_up", "statusMagnitude": 60, "statusDuration": 4, "description": "Steel yourself against all harm." }
   ]
 }
