@@ -31,7 +31,7 @@
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
 | 23 | Automated visual validation, playtesting & balance hardening | ◐ in progress (tooling + tuning done; awaiting owner playtests) |
-| 24 | Release packaging & final release validation | ☐ planned |
+| 24 | Release packaging & final release validation | ◐ in progress (engineering done; final sign-off gated on M23) |
 
 ## M1 — Project foundation
 
@@ -773,7 +773,14 @@ milestone is not automatic authorization to start the next.
 
 ## M24 — Release packaging & final release validation
 
-- **Status:** ☐ planned
+- **Status:** ◐ in progress — packaging engineering implemented
+  (presets with static CRT, version 0.9.0 plumbing, generated icon +
+  VERSIONINFO, one-command stage/validate/zip via tools/package.ps1;
+  package smoke-tested, capture-inert, both suites 247/247; owner
+  decisions 2026-07-20: v0.9.0 until playtests pass, plain zip,
+  emblem-generated icon). Final validation — the owner's clean-machine
+  smoke test and full-matrix pass on the packaged build — is gated on
+  M23's completion per the parallel-flow decision.
 - **Goal:** produce and validate a reproducible, clean, polished Windows
   release candidate.
 - **Player-facing outcome:** the final packaged game.

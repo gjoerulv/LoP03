@@ -1,0 +1,13 @@
+#pragma once
+
+// Generated from CMake project(VERSION) — do not edit; the single version
+// source is the project() call in CMakeLists.txt (M24).
+
+namespace cd::version {
+
+inline constexpr const char* kString = "@PROJECT_VERSION@";
+inline constexpr int kMajor = @PROJECT_VERSION_MAJOR@;
+inline constexpr int kMinor = @PROJECT_VERSION_MINOR@;
+inline constexpr int kPatch = @PROJECT_VERSION_PATCH@;
+
+}  // namespace cd::version

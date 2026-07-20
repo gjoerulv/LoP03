@@ -39,7 +39,30 @@ CMake/Ninja are on `PATH`: open a **"Developer PowerShell for VS"** (or run
 & "C:\Program Files\Microsoft Visual Studio\<edition>\VC\Auxiliary\Build\vcvars64.bat"
 ```
 
-### Ninja (recommended)
+### Presets (recommended, M24)
+
+```powershell
+cmake --preset msvc-debug      # development: debug overlay + capture CLI
+cmake --build --preset debug
+.\build-msvc\CrystalDungeons.exe
+
+cmake --preset msvc-release    # shipping: static CRT, no capture CLI
+cmake --build --preset release
+```
+
+The release preset links the **static MSVC runtime**, so the packaged exe
+runs on a Windows machine without Visual Studio or the VC++ redistributable.
+To build the full distribution zip (stage + validate + archive):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\package.ps1
+# -> dist\CrystalDungeons-<version>-win64.zip
+```
+
+The version is set once in `CMakeLists.txt` `project(VERSION ...)` and flows
+into the exe metadata, the title screen, and the package name.
+
+### Ninja without presets
 
 ```powershell
 cmake -S . -B build-msvc -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
@@ -47,10 +70,9 @@ cmake --build build-msvc
 .\build-msvc\CrystalDungeons.exe
 ```
 
-Use `-DCMAKE_BUILD_TYPE=Debug` for a debug build. `-DCMAKE_*_COMPILER=cl` forces
-MSVC so no other compiler on `PATH` is picked by mistake. CMake copies the `data/`
-folder next to the executable; the **deliverable is `CrystalDungeons.exe` plus the
-`data/` folder beside it**.
+`-DCMAKE_*_COMPILER=cl` forces MSVC so no other compiler on `PATH` is picked
+by mistake. CMake copies `data/` and `assets/` next to the executable; the
+**deliverable is the staged folder produced by `tools\package.ps1`**.
 
 ### Visual Studio generator (alternative)
 

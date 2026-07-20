@@ -203,6 +203,25 @@ carry the information without color.
   action's damage. Enemy AI also casts Support skills whose status the
   target lacks — making buffer/debuffer enemies (and Commander kits) real.
 
+### Presets, versioning & packaging (M24)
+
+`CMakePresets.json` defines `msvc-debug` (dev: debug overlay + capture
+CLI) and `msvc-release` (shipping: `CMAKE_MSVC_RUNTIME_LIBRARY=
+MultiThreaded` with `CMP0091` forced NEW so raylib matches — the exe's
+import table carries only OS DLLs and runs without the VC++
+redistributable; verified via dumpbin). The version lives once in
+`project(VERSION)` and is configured into `generated/core/Version.hpp`
+(title-screen stamp) and `packaging/CrystalDungeons.rc.in` (Windows
+VERSIONINFO + icon; the multi-size `packaging/crystal.ico` is generated
+from the approved emblem by `tools/asset_gen/generate_icon.ps1`).
+`tools/package.ps1` is the one-command release path: preset build →
+stage exe + `data/` + `assets/` + player README + LICENSES → validate
+(required files, every manifest path resolves inside the package, no
+debug artifacts, capture strings absent from the exe, exe
+ProductVersion matches) → zip `dist/CrystalDungeons-<version>-win64.zip`.
+Release builds cap raylib's log level at warnings (`NDEBUG`). User data
+stays in `paths::userDataDir()` for dev and packaged builds alike.
+
 ### Validation tooling (M23)
 
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture

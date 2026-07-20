@@ -1,0 +1,40 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": { "major": 3, "minor": 20, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "msvc-debug",
+      "displayName": "MSVC Debug (Ninja)",
+      "description": "Development build: debug overlay + capture CLI compiled in.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-msvc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      }
+    },
+    {
+      "name": "msvc-release",
+      "displayName": "MSVC Release (Ninja, static CRT)",
+      "description": "Release build for packaging: static MSVC runtime so the exe runs without the VC++ redistributable; debug overlay stays available behind F1, capture CLI excluded.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-msvc-rel",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded",
+        "CMAKE_POLICY_DEFAULT_CMP0091": "NEW"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "debug", "configurePreset": "msvc-debug" },
+    { "name": "release", "configurePreset": "msvc-release" }
+  ],
+  "testPresets": [
+    { "name": "debug", "configurePreset": "msvc-debug", "output": { "outputOnFailure": true } },
+    { "name": "release", "configurePreset": "msvc-release", "output": { "outputOnFailure": true } }
+  ]
+}

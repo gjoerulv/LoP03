@@ -2,9 +2,27 @@
 
 ## A. Status and authority
 
-- **Status:** planned
-- **Last reviewed repository commit:**
-  `a316f244e870718aa27d9995dc871e11572ad429` (2026-07-19).
+- **Status:** in progress (packaging engineering; final validation gated
+  on M23 per the owner's parallel-flow decision, 2026-07-20)
+- **Last reviewed repository commit:** M22/M23-interim commit HEAD
+  (2026-07-20). Re-audit: no `CMakePresets.json`; no version metadata,
+  icon, or packaging script; the build defaults to the **DLL runtime**
+  (`/MD`) — a clean machine without the VC++ redistributable would not
+  launch the exe (fixed via static runtime in the Release preset); logs go
+  through raylib TraceLog to stdout (invisible in the WIN32 Release app);
+  `resolveBundledDir` finds `data/`/`assets/` beside the exe, so the
+  staged layout needs no path work; user data stays in
+  `paths::userDataDir()` regardless of install location.
+- **Owner decisions (2026-07-20):**
+  1. **Version 0.9.0** for the release candidate; the bump to 1.0.0
+     happens only after the M23 playtests complete and the owner approves.
+  2. **Plain zip folder** distribution
+     (`CrystalDungeons-<version>-win64.zip`); no installer.
+  3. **Icon generated from the approved crystal emblem** by the
+     in-project deterministic generator.
+  4. (Flow) M24 engineering runs in parallel with the open M23; the final
+     manual-matrix sign-off and release-candidate acceptance wait for
+     M23's completion.
 - **Relationship to `docs/milestones.md`:** single authoritative detailed scope
   for the M24 ledger entry; the ledger holds status. On conflict, follow the
   authority order in `CLAUDE.md`.
@@ -132,3 +150,40 @@ game from M11–M23 needs a reproducible, clean, validated distribution.
 - `docs/technical_design.md` — presets/packaging section.
 - `docs/completion_roadmap.md` — program closure note.
 - Completion report per `docs/milestone_completion_template.md`.
+
+## N. Interim as-implemented record (2026-07-20 — engineering done)
+
+**Presets & runtime (slice 1).** `CMakePresets.json`: `msvc-debug` and
+`msvc-release` (Ninja, `cl` forced). The release preset links the
+**static MSVC runtime** (`CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded`,
+`CMP0091` forced NEW so raylib matches) — the re-audit found the default
+`/MD` build would not launch without the VC++ redistributable, exactly
+the works-on-dev-machine trap §L warned about. Proof: the staged exe's
+import table lists only `WINMM/KERNEL32/USER32/GDI32/SHELL32`.
+
+**Version & identity (slice 2).** Single source `project(VERSION 0.9.0)`
+(owner decision: 1.0.0 only after the M23 playtests pass) configured into
+`generated/core/Version.hpp` — shown bottom-left on the title screen —
+and `packaging/CrystalDungeons.rc.in` (VERSIONINFO + icon).
+`tools/asset_gen/generate_icon.ps1` builds `packaging/crystal.ico`
+(16/32/48/256, classic 32bpp DIB entries) from the approved emblem.
+Release builds cap raylib logging at warnings.
+
+**Packaging (slice 2/3).** `tools/package.ps1`: preset build → stage
+`CrystalDungeons.exe` + `data/` + `assets/` + player `README.txt` +
+`LICENSES.txt` (raylib zlib, nlohmann MIT, original-content statement;
+Catch2 is test-only and does not ship) → **validate** (all required
+files; every manifest path resolves inside the package; no
+.pdb/.ilk/.exp/.lib; capture strings absent from the exe; exe
+ProductVersion matches the project version) → zip
+`dist/CrystalDungeons-0.9.0-win64.zip` (6.1 MB). `dist/` is gitignored.
+
+**Verification (slice 4, machine-side).** Staged exe launches from the
+dist folder and exits clean (exe-relative `data`/`assets` resolution
+confirmed); `--capture` is inert in the packaged build (starts the game,
+never the tool); Debug and Release suites both 247/247.
+
+**Remaining (gated on M23 + owner):** clean-machine smoke test on a
+Windows box without dev tooling, the full manual-matrix pass on the
+packaged build, the 0.9.0→1.0.0 bump, and the explicit release-candidate
+acceptance. Roadmap closure notes wait for actual closure.

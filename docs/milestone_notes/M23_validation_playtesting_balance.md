@@ -232,3 +232,9 @@ reasons).
 **Interim status:** `in progress`. Next: the owner runs the playtests and
 returns filled observation sheets; triage + hardening + capture re-run
 complete the milestone.
+
+**Owner decision (2026-07-20, after the interim report):** M24's
+packaging engineering proceeds **in parallel** while this milestone stays
+open for the playtests; playtest findings land here as hardening (or as
+release-blocking fixes under M24's scope). M24's final matrix sign-off
+and release-candidate approval wait until M23 completes.

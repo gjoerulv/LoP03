@@ -7,6 +7,7 @@
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
+#include "core/Version.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "resource/ResourceManager.hpp"
@@ -106,6 +107,7 @@ void MainMenuState::render() {
     ui::drawTextCentered("CRYSTAL DUNGEONS", w / 2, 50, 22, RAYWHITE);
     ui::drawTextCentered("a 16-bit-inspired dungeon-score roguelite", w / 2, 78, 10,
                          Color{170, 170, 200, 255});
+    DrawText(TextFormat("v%s", version::kString), 4, h - 12, 8, Color{120, 120, 150, 255});
 
     // Center the menu block on its widest label (measured, not guessed).
     int menuW = 0;

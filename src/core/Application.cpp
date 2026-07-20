@@ -37,6 +37,11 @@ std::filesystem::path resolveDataDir() { return resolveBundledDir("data"); }
 }  // namespace
 
 Application::WindowGuard::WindowGuard() {
+#ifdef NDEBUG
+    // Release hygiene (M24): raylib's INFO chatter stays out of the shipped
+    // build; project warnings/errors still surface.
+    SetTraceLogLevel(LOG_WARNING);
+#endif
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(config::kWindowWidth, config::kWindowHeight, config::kWindowTitle);
     SetWindowMinSize(config::kVirtualWidth, config::kVirtualHeight);
