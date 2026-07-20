@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "audio/AudioManager.hpp"
+#include "battle/Battle.hpp"
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
@@ -552,6 +553,7 @@ void DungeonState::completeDungeon() {
     entry.seed = dungeon_.seed;
     entry.generationVersion = dungeon::kGenerationVersion;
     entry.partyLevel = highestLevel(context_.party);
+    entry.battleRulesVersion = battle::kBattleRulesVersion;
     context_.scoreboard.add(entry);
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);

@@ -1,6 +1,7 @@
 #include "battle/Battle.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <unordered_map>
 
 #include "content/ContentDatabase.hpp"
@@ -106,6 +107,95 @@ void applyHeal(Combatant& d, int amount) {
     d.hp = std::min(d.maxHp, d.hp + amount);
 }
 
+// --- M28 enmity/targeting helpers ---
+
+// SplitMix64 mix — the basis for the deterministic targeting tie-break.
+std::uint64_t mix64(std::uint64_t x) {
+    x += 0x9E3779B97F4A7C15ull;
+    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ull;
+    x = (x ^ (x >> 27)) * 0x94D049BB133111EBull;
+    return x ^ (x >> 31);
+}
+
+// Small deterministic jitter in [0, range) from the battle seed + round + acting
+// enemy + candidate. Pure, so a given encounter always resolves identically and
+// live play and the Simulator agree. Only breaks near-ties (range is small).
+long targetJitter(std::uint64_t seed, int turn, int actor, int candidate, int range) {
+    if (range <= 1) {
+        return 0;
+    }
+    const std::uint64_t h = mix64(seed ^ mix64(static_cast<std::uint64_t>(turn) * 0x1000193ull) ^
+                                  mix64(static_cast<std::uint64_t>(actor) * 0x100000001B3ull) ^
+                                  mix64(static_cast<std::uint64_t>(candidate) * 0x9E3779B1ull));
+    return static_cast<long>(h % static_cast<std::uint64_t>(range));
+}
+
+// Redirect (M28): an enemy's single-target hit aimed at a party member is taken
+// by an intercepting ally instead, if there is one.
+int redirectTarget(const std::vector<Combatant>& units, int actor, int target) {
+    if (actor < 0 || target < 0 || target >= static_cast<int>(units.size())) {
+        return target;
+    }
+    if (units[static_cast<std::size_t>(actor)].side != Side::Enemy) {
+        return target;
+    }
+    const Combatant& t = units[static_cast<std::size_t>(target)];
+    if (t.side != Side::Party || t.intercepting) {
+        return target;
+    }
+    for (std::size_t i = 0; i < units.size(); ++i) {
+        const Combatant& u = units[i];
+        if (u.side == Side::Party && u.alive() && u.intercepting) {
+            return static_cast<int>(i);
+        }
+    }
+    return target;
+}
+
+// An enemy's targeting profile, derived from its role (bosses from archetype).
+enum class TargetProfile { Aggressive, Opportunist, Tactician, Protector, Spread };
+
+TargetProfile profileFor(const Combatant& self, const content::ContentDatabase& db) {
+    if (self.isBoss) {
+        if (const content::BossDef* boss = db.findBoss(self.sourceId)) {
+            switch (boss->archetype) {
+                case content::BossArchetype::Brute: return TargetProfile::Aggressive;
+                case content::BossArchetype::Sorcerer: return TargetProfile::Tactician;
+                case content::BossArchetype::Commander: return TargetProfile::Protector;
+                case content::BossArchetype::Rush: return TargetProfile::Aggressive;
+            }
+        }
+        return TargetProfile::Aggressive;
+    }
+    if (const content::EnemyDef* def = db.findEnemy(self.sourceId)) {
+        switch (def->role) {
+            case content::EnemyRole::Bruiser: return TargetProfile::Aggressive;
+            case content::EnemyRole::Sniper: return TargetProfile::Opportunist;
+            case content::EnemyRole::Disruptor: return TargetProfile::Tactician;
+            case content::EnemyRole::Healer: return TargetProfile::Tactician;
+            case content::EnemyRole::Buffer: return TargetProfile::Tactician;
+            case content::EnemyRole::Protector: return TargetProfile::Protector;
+            case content::EnemyRole::Attrition: return TargetProfile::Spread;
+        }
+    }
+    return TargetProfile::Opportunist;  // default keeps the old "go for the weak" feel
+}
+
+// How attractive party member `c` is to an enemy with profile `p` (higher wins).
+long targetScore(TargetProfile p, const Combatant& c, long threat) {
+    const long missing = static_cast<long>(c.maxHp - c.hp);            // kill pressure
+    const long dps = std::max(c.stats.attack, c.stats.magic);         // how dangerous
+    const long caster = c.stats.magic;                                // backline weight
+    switch (p) {
+        case TargetProfile::Aggressive: return 2 * threat + 4 * dps;
+        case TargetProfile::Opportunist: return 3 * missing + threat + 2 * dps;
+        case TargetProfile::Tactician: return 4 * caster + threat;
+        case TargetProfile::Protector: return 3 * threat + dps;
+        case TargetProfile::Spread: return 2 * static_cast<long>(c.hp) + threat;  // healthiest
+    }
+    return threat;
+}
+
 }  // namespace
 
 bool Battle::sideAlive(Side s) const {
@@ -137,9 +227,31 @@ std::vector<int> Battle::aliveIndices(Side s) const {
     return out;
 }
 
+long Battle::threatOf(int unit) const {
+    if (unit < 0 || unit >= static_cast<int>(threat.size())) {
+        return 0;
+    }
+    return threat[static_cast<std::size_t>(unit)];
+}
+
+void Battle::addThreat(int unit, long amount) {
+    if (unit < 0 || unit >= static_cast<int>(threat.size())) {
+        return;
+    }
+    threat[static_cast<std::size_t>(unit)] =
+        std::max<long>(0, threat[static_cast<std::size_t>(unit)] + amount);
+}
+
+void Battle::beginRound() {
+    for (long& t : threat) {
+        t = t * 3 / 4;  // recency decay; keeps threat bounded and recent-weighted
+    }
+}
+
 void Battle::clearGuard(int unit) {
     if (unit >= 0 && unit < static_cast<int>(units.size())) {
         units[static_cast<std::size_t>(unit)].guarding = false;
+        units[static_cast<std::size_t>(unit)].intercepting = false;
     }
 }
 
@@ -190,6 +302,7 @@ std::string Battle::tickStatuses(int unit) {
 }
 
 std::string Battle::attack(int actor, int target) {
+    target = redirectTarget(units, actor, target);  // intercept redirects enemy hits (M28)
     Combatant& a = units[static_cast<std::size_t>(actor)];
     Combatant& t = units[static_cast<std::size_t>(target)];
     const bool opener = a.rushOpener && !a.actedOnce;
@@ -199,6 +312,9 @@ std::string Battle::attack(int actor, int target) {
         dmg *= 2;  // Rush: opening fury
     }
     applyDamage(t, dmg);
+    if (a.side == Side::Party) {
+        addThreat(actor, dmg);  // dealing damage draws enmity (M28)
+    }
     std::string log = a.name + " attacks " + t.name + " for " + std::to_string(dmg) + ".";
     if (opener) {
         log += " (opening fury!)";
@@ -232,6 +348,7 @@ std::vector<int> Battle::resolveTargets(const content::SkillDef& skill, int acto
 }
 
 std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillDef& skill) {
+    primaryTarget = redirectTarget(units, actor, primaryTarget);  // M28 intercept
     Combatant& a = units[static_cast<std::size_t>(actor)];
     a.mp = std::max(0, a.mp - skill.mpCost);
     const bool opener = a.rushOpener && !a.actedOnce;
@@ -250,6 +367,35 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
         log += " (empowered +" + std::to_string(empowerPct) + "%)";
     }
 
+    // Enmity-control effects (M28): manipulate the threat model / intercept.
+    switch (skill.controlEffect) {
+        case content::SkillEffect::Taunt: {
+            long maxParty = 0;
+            for (std::size_t i = 0; i < units.size(); ++i) {
+                if (units[i].side == Side::Party) {
+                    maxParty = std::max(maxParty, threatOf(static_cast<int>(i)));
+                }
+            }
+            if (actor >= 0 && actor < static_cast<int>(threat.size())) {
+                threat[static_cast<std::size_t>(actor)] = maxParty + 150;
+            }
+            log += " Foes are goaded into targeting " + a.name + "!";
+            break;
+        }
+        case content::SkillEffect::Fade:
+            if (actor >= 0 && actor < static_cast<int>(threat.size())) {
+                threat[static_cast<std::size_t>(actor)] = threatOf(actor) / 4;
+            }
+            log += " " + a.name + " slips out of the enemy's focus.";
+            break;
+        case content::SkillEffect::Intercept:
+            a.intercepting = true;
+            log += " " + a.name + " stands ready to shield the party.";
+            break;
+        case content::SkillEffect::None:
+            break;
+    }
+
     for (int ti : resolveTargets(skill, actor, primaryTarget)) {
         if (ti < 0 || ti >= static_cast<int>(units.size())) {
             continue;
@@ -262,6 +408,9 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                     dmg *= 2;  // Rush: opening fury
                 }
                 applyDamage(t, dmg);
+                if (a.side == Side::Party) {
+                    addThreat(actor, dmg);  // M28 enmity
+                }
                 log += " " + t.name + " takes " + std::to_string(dmg) + ".";
                 if (!t.alive()) {
                     log += " " + t.name + " is KO'd!";
@@ -275,6 +424,9 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                     dmg *= 2;  // Rush: opening fury
                 }
                 applyDamage(t, dmg);
+                if (a.side == Side::Party) {
+                    addThreat(actor, dmg);  // M28 enmity
+                }
                 log += " " + t.name + " takes " + std::to_string(dmg) + ".";
                 if (!t.alive()) {
                     log += " " + t.name + " is KO'd!";
@@ -285,6 +437,9 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                 if (t.alive()) {
                     const int amt = healValue(a, skill.power);
                     applyHeal(t, amt);
+                    if (a.side == Side::Party) {
+                        addThreat(actor, amt);  // healing draws enmity too (M28)
+                    }
                     log += " " + t.name + " recovers " + std::to_string(amt) + " HP.";
                 }
                 break;
@@ -432,6 +587,20 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         b.units.push_back(std::move(u));
     }
 
+    // Enmity state (M28): zero threat, plus a per-encounter seed derived purely
+    // from the roster so the targeting tie-break is reproducible and identical
+    // in live play and the Simulator.
+    b.threat.assign(b.units.size(), 0);
+    std::uint64_t seed = 0xC0FFEE1234567890ull;
+    for (const Combatant& u : b.units) {
+        for (char ch : u.name) {
+            seed = seed * 131 + static_cast<unsigned char>(ch);
+        }
+        seed = seed * 131 + static_cast<std::uint64_t>(u.maxHp);
+        seed = seed * 131 + static_cast<std::uint64_t>(u.stats.speed);
+    }
+    b.rngSeed = seed;
+
     return b;
 }
 
@@ -459,18 +628,27 @@ std::vector<int> turnOrder(const Battle& b) {
 EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::ContentDatabase& db) {
     EnemyChoice choice;
 
-    // Lowest-HP living party member (deterministic tie-break by index).
+    const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+
+    // Pick the party target that best matches this enemy's profile (M28):
+    // threat, kill pressure, and backline weight, with a small seeded tie-break.
+    // Replaces the old "lowest HP always" rule that turned an efficient mage
+    // into the party's tank.
+    const TargetProfile profile = profileFor(self, db);
     int targetParty = -1;
+    long bestScore = 0;
     for (std::size_t i = 0; i < b.units.size(); ++i) {
         const Combatant& u = b.units[i];
-        if (u.side == Side::Party && u.alive()) {
-            if (targetParty < 0 || u.hp < b.units[static_cast<std::size_t>(targetParty)].hp) {
-                targetParty = static_cast<int>(i);
-            }
+        if (u.side != Side::Party || !u.alive()) {
+            continue;
+        }
+        const long score = targetScore(profile, u, b.threatOf(static_cast<int>(i))) +
+                           targetJitter(b.rngSeed, b.turnsTaken, actor, static_cast<int>(i), 24);
+        if (targetParty < 0 || score > bestScore) {
+            bestScore = score;
+            targetParty = static_cast<int>(i);
         }
     }
-
-    const Combatant& self = b.units[static_cast<std::size_t>(actor)];
 
     // Prefer healing a badly hurt ally if a heal skill is affordable.
     int hurtAlly = -1;

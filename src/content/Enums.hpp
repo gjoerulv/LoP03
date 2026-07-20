@@ -12,6 +12,11 @@ enum class Element { None, Fire, Ice, Lightning, Earth, Holy, Dark };
 
 enum class SkillCategory { Physical, Magic, Heal, Support };
 
+// Enmity-control effect a skill carries (M28), independent of its category.
+// None = ordinary skill. Taunt spikes the caster's threat, Fade sheds it,
+// Intercept makes the caster take hits aimed at allies until its next turn.
+enum class SkillEffect { None, Taunt, Fade, Intercept };
+
 enum class SkillTarget { SingleEnemy, AllEnemies, SingleAlly, AllAllies, Self };
 
 enum class EnemyTag { Fast, Magic, Armored, Poison };
@@ -39,6 +44,7 @@ enum class BossArchetype { Brute, Sorcerer, Commander, Rush };
 // error with context). toString is the inverse and always returns a stable id.
 std::optional<Element> parseElement(std::string_view s);
 std::optional<SkillCategory> parseSkillCategory(std::string_view s);
+std::optional<SkillEffect> parseSkillEffect(std::string_view s);
 std::optional<SkillTarget> parseSkillTarget(std::string_view s);
 std::optional<EnemyTag> parseEnemyTag(std::string_view s);
 std::optional<EnemyTier> parseEnemyTier(std::string_view s);
@@ -52,6 +58,7 @@ std::optional<BossArchetype> parseBossArchetype(std::string_view s);
 
 const char* toString(Element v);
 const char* toString(SkillCategory v);
+const char* toString(SkillEffect v);
 const char* toString(SkillTarget v);
 const char* toString(EnemyTag v);
 const char* toString(EnemyTier v);

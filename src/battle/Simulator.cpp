@@ -92,6 +92,7 @@ SimResult simulate(Battle battle, const content::ContentDatabase& db, int maxRou
     int rounds = 0;
     while (battle.outcome() == Outcome::Ongoing && rounds < maxRounds) {
         ++rounds;
+        battle.beginRound();  // enmity decay at round start (M28); mirrors BattleState
         const std::vector<int> order = turnOrder(battle);
         for (int actor : order) {
             if (!battle.units[static_cast<std::size_t>(actor)].alive()) {

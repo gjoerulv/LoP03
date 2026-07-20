@@ -31,6 +31,10 @@
     { "id": "battle_cry", "name": "Battle Cry", "category": "support", "target": "all_allies", "power": 0, "mpCost": 8, "statusEffect": "attack_up", "statusMagnitude": 25, "statusDuration": 3, "description": "Rally the party to strike harder." },
     { "id": "focus", "name": "Focus", "category": "support", "target": "self", "power": 0, "mpCost": 6, "statusEffect": "attack_up", "statusMagnitude": 40, "statusDuration": 3, "description": "Sharpen your aim and resolve." },
     { "id": "weaken", "name": "Weaken", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "attack_down", "statusMagnitude": 30, "statusDuration": 3, "description": "Sap a foe's strength." },
-    { "id": "sunder", "name": "Sunder", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "defense_down", "statusMagnitude": 30, "statusDuration": 3, "description": "Shatter a foe's defenses." }
+    { "id": "sunder", "name": "Sunder", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "defense_down", "statusMagnitude": 30, "statusDuration": 3, "description": "Shatter a foe's defenses." },
+
+    { "id": "taunt", "name": "Taunt", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "taunt", "description": "Goad the enemy into striking you instead of your allies." },
+    { "id": "fade", "name": "Fade", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "fade", "description": "Slip from the enemy's attention, shedding their focus." },
+    { "id": "redirect", "name": "Redirect", "category": "support", "target": "self", "power": 0, "mpCost": 4, "control": "intercept", "description": "Guard your allies, taking single blows meant for them until your next turn." }
   ]
 }

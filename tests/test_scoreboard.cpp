@@ -123,6 +123,27 @@ TEST_CASE("scoreboard: partyLevel comparability tag round-trips", "[score]") {
   fs::remove_all(dir);
 }
 
+TEST_CASE("scoreboard: battleRulesVersion round-trips; absent loads as pre-M28", "[score]") {
+  const fs::path dir = makeTempDir();
+  const fs::path file = dir / "scoreboard.json";
+  {
+    score::Scoreboard board(file);
+    score::ScoreEntry e = entry(1300, 8);
+    e.battleRulesVersion = 1;
+    board.add(e);
+    content::LoadReport rep;
+    REQUIRE(board.save(rep));
+  }
+  {
+    score::Scoreboard board(file);
+    content::LoadReport rep;
+    REQUIRE(board.load(rep));
+    REQUIRE(board.entries().size() == 1);
+    REQUIRE(board.entries()[0].battleRulesVersion == 1);
+  }
+  fs::remove_all(dir);
+}
+
 TEST_CASE("scoreboard: generationVersion round-trips", "[score]") {
   const fs::path dir = makeTempDir();
   const fs::path file = dir / "scoreboard.json";

@@ -7,7 +7,7 @@
       "role": "durable physical attacker",
       "baseStats": { "hp": 120, "attack": 18, "magic": 4, "defense": 16, "speed": 8 },
       "growth": { "hp": 12.0, "attack": 2.0, "magic": 0.4, "defense": 1.6, "speed": 0.8 },
-      "startingSkills": ["strike", "cleave", "power_smash"]
+      "startingSkills": ["strike", "cleave", "power_smash", "redirect"]
     },
     {
       "id": "ranger",
@@ -23,7 +23,7 @@
       "role": "elemental damage",
       "baseStats": { "hp": 70, "attack": 6, "magic": 20, "defense": 6, "speed": 11 },
       "growth": { "hp": 7.0, "attack": 0.6, "magic": 2.2, "defense": 0.6, "speed": 1.1 },
-      "startingSkills": ["fireball", "frost_lance", "spark"]
+      "startingSkills": ["fireball", "frost_lance", "spark", "fade"]
     },
     {
       "id": "cleric",
@@ -47,7 +47,7 @@
       "role": "tank and defensive buffs",
       "baseStats": { "hp": 140, "attack": 12, "magic": 4, "defense": 20, "speed": 6 },
       "growth": { "hp": 14.0, "attack": 1.2, "magic": 0.4, "defense": 2.0, "speed": 0.6 },
-      "startingSkills": ["bulwark", "guard_aura", "battle_cry"]
+      "startingSkills": ["bulwark", "guard_aura", "battle_cry", "taunt"]
     }
   ]
 }

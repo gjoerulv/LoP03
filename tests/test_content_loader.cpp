@@ -135,7 +135,7 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     INFO(rep.summary());
     REQUIRE(ok);
     REQUIRE(db.classCount() == 6);
-    REQUIRE(db.skillCount() == 28);
+    REQUIRE(db.skillCount() == 31);  // +3 M28 control skills (taunt/fade/redirect)
     REQUIRE(db.enemyCount() == 23);  // 16 normals + 7 elites (M20 gap fills)
     REQUIRE(db.itemCount() == 36);
     REQUIRE(db.bossCount() == 4);

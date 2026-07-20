@@ -193,6 +193,7 @@ void BattleState::beginTurns() {
     order_ = battle::turnOrder(battle_);
     orderPos_ = 0;
     battle_.turnsTaken = 1;  // round 1
+    battle_.beginRound();    // enmity decay at round start (M28); mirrors Simulator
     startActorTurn();
 }
 
@@ -233,6 +234,7 @@ void BattleState::advanceTurn() {
             order_ = battle::turnOrder(battle_);
             orderPos_ = 0;
             ++battle_.turnsTaken;  // a new round begins
+            battle_.beginRound();  // enmity decay at round start (M28)
         }
         if (!order_.empty() && battle_.units[static_cast<std::size_t>(order_[static_cast<std::size_t>(orderPos_)])].alive()) {
             startActorTurn();

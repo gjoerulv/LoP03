@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "battle/Battle.hpp"
 #include "core/AppContext.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -104,7 +105,15 @@ void ScoreboardState::render() {
         } else {
             ui::drawTextRight("-", kLvR, y, style::kFontBody, style::palette().textDim);
         }
-        std::string theme = e.theme + (e.noDeath ? "  *" : "");
+        std::string theme = e.theme;
+        if (e.noDeath) {
+            theme += "  *";
+        }
+        // Runs played under older battle rules (pre-M28 enmity/AI) are flagged
+        // so they are visibly distinguished, never silently ranked as equal.
+        if (e.battleRulesVersion < battle::kBattleRulesVersion) {
+            theme += " ~";
+        }
         ui::drawTextFitted(theme, kThemeX, y, w - kThemeX - 16, style::kFontBody, rowColor,
                            "scoreboard.theme");
     }
@@ -114,8 +123,8 @@ void ScoreboardState::render() {
     const int legendY = kRowsY + count * kRowH + 4;
     ui::drawText("* = no-death   Lv = party level ('-' = older run)", kRankX, legendY,
              style::kFontSmall, Color{150, 170, 150, 255});
-    ui::drawText("Compare runs at the same Depth and Lv.", kRankX, legendY + 10,
-             style::kFontSmall, style::palette().textDim);
+    ui::drawText("Compare at same Depth/Lv.  ~ = older battle rules (pre-M28).", kRankX,
+                 legendY + 10, style::kFontSmall, style::palette().textDim);
     if (scroll_.moreAbove() || scroll_.moreBelow(total, kVisibleRows)) {
         ui::drawTextRight(TextFormat("%d-%d of %d   Up/Down: Scroll", first + 1, first + count,
                                      total),

@@ -25,6 +25,10 @@ struct SkillDef {
     int statusMagnitude = 0;  // percent for buffs/debuffs, damage for poison
     int statusDuration = 0;   // turns
 
+    // Enmity-control effect (M28): None for ordinary skills; Taunt/Fade/Intercept
+    // manipulate the threat model instead of (or besides) dealing damage.
+    SkillEffect controlEffect = SkillEffect::None;
+
     std::string description;
 };
 

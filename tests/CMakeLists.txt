@@ -30,6 +30,7 @@ add_executable(crystal_tests
     test_room_layout.cpp
     test_inventory.cpp
     test_battle.cpp
+    test_enmity.cpp
     test_battle_sequencer.cpp
     test_boss_mechanics.cpp
     test_danger.cpp

@@ -25,6 +25,11 @@ struct ScoreEntry {
     // file, no format bump. Ranking never uses it — it makes comparison
     // conditions visible, not normalized.
     int partyLevel = 0;
+    // Battle-rules version the run was played under (see
+    // battle::kBattleRulesVersion). 0 = recorded before the M28 enmity/AI
+    // change, when battles resolved differently. Optional in the file, no format
+    // bump; a comparability tag like the two above, never used for ranking.
+    int battleRulesVersion = 0;
 };
 
 }  // namespace cd::score

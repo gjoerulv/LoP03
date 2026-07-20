@@ -113,6 +113,22 @@ revive exist; game over if all party KO. **Every** encounter (incl. bosses) is
 escapable. Escaping a normal battle forfeits that guarded chest/reward; escaping
 the boss or leaving the dungeon gives **0 dungeon score**.
 
+**Enmity & enemy targeting (M28).** Enemies no longer always pile onto the
+lowest-HP party member (which perversely made an efficiently-played mage the
+tank). Each party member accrues **threat** from the damage and healing they do;
+threat decays each round. Every enemy has a **targeting profile derived from its
+role** — *aggressive* chases threat, *opportunist* goes for the kill (low HP),
+*tactician* hunts the backline caster, *protector* peels for whoever most
+threatens its allies, *spread* prefers the healthiest for damage-over-time —
+plus a small **seeded tie-break** so targeting is readable but not perfectly
+predictable (fully deterministic and reproducible per encounter; the simulator
+and live play agree exactly). Players influence aggro with three **control
+skills**: **Taunt** (Guardian) forces foes onto the caster, **Fade** (Mage)
+sheds the caster's threat, and **Redirect** (Knight) makes the caster take
+single hits aimed at allies until its next turn. Because this changes how every
+battle resolves, scoreboard entries carry a **battle-rules version** and pre-M28
+runs are flagged as played under older rules (never silently ranked as equal).
+
 **Presentation (M18)** never changes results — it stages how the computed
 outcome is shown: a brief lunge, an impact beat (hit flash, small shake,
 damage numbers, HP bars updating), then the message. Because score play means

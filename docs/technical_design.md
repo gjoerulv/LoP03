@@ -538,9 +538,22 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
 - **Resolution (deterministic formulas):** physical `max(1, attack + power −
   def/2)`, magic `max(1, magic + power − def/4)`, both halved while guarding;
   heal `power + magic/2` (never resurrects); items apply Heal/RestoreMp/Revive/
-  Cure; revive restores a percentage of max HP. Skills spend MP. The enemy AI is
-  deterministic (heal a hurt ally if able, else damage the lowest-HP party
-  member). Variance/crits and status ailments are deferred to M7/M9.
+  Cure; revive restores a percentage of max HP. Skills spend MP.
+- **Enmity & targeting (M28).** `Battle` holds global `threat` per party member
+  (accrued inside the shared `attack`/`useSkill` from damage dealt and healing
+  done; decayed ×3/4 by `beginRound()`, called at each round start by both
+  `Simulator` and `BattleState`) and a per-encounter `rngSeed` derived from the
+  roster. `chooseEnemyAction` derives a targeting profile from `EnemyDef.role`
+  (bosses from archetype) and scores each living party member on threat, kill
+  pressure, and backline weight, with a **pure hash tie-break** (SplitMix64 of
+  `rngSeed`+round+actor+candidate) — so it stays a pure `const` query, is fully
+  reproducible, and live play and the Simulator agree exactly. Control skills
+  (`SkillEffect` Taunt/Fade/Intercept) spike/shed threat or set an intercept
+  flag (`Combatant.intercepting`, cleared with guard) that redirects single
+  enemy hits to the interceptor. All new state lives in `Battle` and is mutated
+  only through the shared methods, preserving the sim/live determinism contract.
+  A run's `ScoreEntry.battleRulesVersion` (`battle::kBattleRulesVersion`) tags
+  which rules resolved its battles. Variance/crits remain out of scope.
 - **Commands:** Attack, Skill, Item, Guard, Escape. Escape always succeeds (every
   encounter is escapable); escaping forfeits the gate/chest.
 - **Inventory:** `game/Inventory` (item id → count, insertion-ordered). Persisted

@@ -35,7 +35,7 @@
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ◑ implemented, awaiting manual approval |
 | 27 | Environment & ambience identity | ◑ implemented, awaiting manual approval |
-| 28 | Enmity, AI diversity & control skills | ☐ planned |
+| 28 | Enmity, AI diversity & control skills | ◑ implemented, awaiting manual approval |
 | 29 | Content expansion & class learnsets | ☐ planned |
 | 30 | Economy: paid rest & rest-token event | ☐ planned |
 
@@ -944,7 +944,11 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M28 — Enmity, AI diversity & control skills
 
-- **Status:** planned
+- **Status:** implemented, awaiting manual approval (owner authorized and
+  approved the design 2026-07-20 — global threat, role-derived profiles, small
+  seeded tie-break, control skills in class kits; `ScoreEntry.battleRulesVersion`
+  = 1. 265/265 tests incl. 10 new `[enmity]` tests; difficulty curve still
+  clearable/monotonic; Debug + Release clean; capture 23/23. See the note's §L.)
 - **Highest-risk milestone in the project.** It changes the outcome of every
   battle, invalidates the tuned balance battery, and makes prior scores
   incomparable.

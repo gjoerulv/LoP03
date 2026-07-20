@@ -79,6 +79,8 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
             r.optEnum<StatusType>("statusEffect", parseStatusType, StatusType::None, "status type");
         d.statusMagnitude = r.optIntMin("statusMagnitude", 0, 0);
         d.statusDuration = r.optIntMin("statusDuration", 0, 0);
+        d.controlEffect =
+            r.optEnum<SkillEffect>("control", parseSkillEffect, SkillEffect::None, "control effect");
         d.description = r.optString("description");
         if (rep.errorCount() != before) {
             return;  // invalid entry; skip

@@ -242,6 +242,7 @@ int run(const char* outDir) {
             top.seed = 18446744073709551615ull;  // widest seed
             top.generationVersion = 4;
             top.partyLevel = 50;
+            top.battleRulesVersion = 1;
             scoreboard.add(top);
             score::ScoreEntry legacy;
             legacy.score = 100;
@@ -259,6 +260,7 @@ int run(const char* outDir) {
                 mid.seed = 1000u + static_cast<std::uint64_t>(i);
                 mid.generationVersion = 4;
                 mid.partyLevel = 5 + i;
+                mid.battleRulesVersion = 1;
                 scoreboard.add(mid);
             }
         }
