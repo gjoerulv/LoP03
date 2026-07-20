@@ -1,5 +1,7 @@
 #include "resource/ResourceManager.hpp"
 
+#include <cctype>
+#include <string>
 #include <utility>
 
 #include "assets/AssetManifest.hpp"
@@ -87,8 +89,20 @@ const Font& ResourceManager::font(const std::string& id) {
     const assets::AssetEntry* entry = manifest_ != nullptr ? manifest_->find(id) : nullptr;
     if (entry != nullptr && entry->type == assets::AssetType::Font) {
         const fs::path full = root_ / entry->path;
-        Font f = LoadFontEx(full.string().c_str(), entry->fontSize, nullptr, 0);
-        if (f.texture.id != 0) {
+        std::string ext = full.extension().string();
+        for (char& ch : ext) {
+            ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        }
+        // LoadFontEx handles TTF/OTF (rasterized at fontSize); LoadFont
+        // dispatches by extension internally and reads BMFont (.fnt) atlases,
+        // whose glyph pixels must render 1:1 (nearest, not smoothed).
+        Font f = (ext == ".ttf" || ext == ".otf")
+                     ? LoadFontEx(full.string().c_str(), entry->fontSize, nullptr, 0)
+                     : LoadFont(full.string().c_str());
+        // A valid load has its own texture. LoadBMFont reverts to the shared
+        // default font on a missing atlas page; never wrap/own that texture.
+        if (f.texture.id != 0 && f.texture.id != defaultFont_.texture.id) {
+            SetTextureFilter(f.texture, TEXTURE_FILTER_POINT);
             auto [it, _] = fonts_.emplace(id, FontHandle(f));
             return it->second.get();
         }

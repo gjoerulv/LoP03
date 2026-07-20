@@ -73,13 +73,13 @@ void ScoreboardState::render() {
     }
 
     // Header.
-    DrawText("#", kRankX, kHeaderY, style::kFontBody, style::palette().textDim);
+    ui::drawText("#", kRankX, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Score", kScoreR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Turns", kTurnsR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Danger", kDangerR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Depth", kDepthR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Lv", kLvR, kHeaderY, style::kFontBody, style::palette().textDim);
-    DrawText("Theme", kThemeX, kHeaderY, style::kFontBody, style::palette().textDim);
+    ui::drawText("Theme", kThemeX, kHeaderY, style::kFontBody, style::palette().textDim);
 
     const int total = static_cast<int>(entries.size());
     const int first = scroll_.top();
@@ -89,7 +89,7 @@ void ScoreboardState::render() {
         const score::ScoreEntry& e = entries[static_cast<std::size_t>(i)];
         const int y = kRowsY + row * kRowH;
         const Color rowColor = e.noDeath ? Color{210, 230, 200, 255} : style::palette().text;
-        DrawText(TextFormat("%d", i + 1), kRankX, y, style::kFontBody, rowColor);
+        ui::drawText(TextFormat("%d", i + 1), kRankX, y, style::kFontBody, rowColor);
         ui::drawTextRight(TextFormat("%d", e.score), kScoreR, y, style::kFontBody, rowColor);
         ui::drawTextRight(TextFormat("%d", e.battleTurns), kTurnsR, y, style::kFontBody,
                           rowColor);
@@ -111,9 +111,9 @@ void ScoreboardState::render() {
     // The honest-comparison conditions (M19 policy): no hidden normalization;
     // players compare runs at matching conditions instead.
     const int legendY = kRowsY + count * kRowH + 4;
-    DrawText("* = no-death   Lv = party level ('-' = older run)", kRankX, legendY,
+    ui::drawText("* = no-death   Lv = party level ('-' = older run)", kRankX, legendY,
              style::kFontSmall, Color{150, 170, 150, 255});
-    DrawText("Compare runs at the same Depth and Lv.", kRankX, legendY + 10,
+    ui::drawText("Compare runs at the same Depth and Lv.", kRankX, legendY + 10,
              style::kFontSmall, style::palette().textDim);
     if (scroll_.moreAbove() || scroll_.moreBelow(total, kVisibleRows)) {
         ui::drawTextRight(TextFormat("%d-%d of %d   Up/Down: Scroll", first + 1, first + count,

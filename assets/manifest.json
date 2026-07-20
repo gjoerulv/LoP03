@@ -34,6 +34,10 @@
     { "id": "ambience.mine", "type": "ambience", "path": "audio/ambience/mine.wav", "loop": true, "volume": 0.32 },
     { "id": "ambience.forest", "type": "ambience", "path": "audio/ambience/forest.wav", "loop": true, "volume": 0.3 },
 
+    { "id": "font.ui.small", "type": "font", "path": "fonts/font_small.fnt", "size": 8 },
+    { "id": "font.ui.main", "type": "font", "path": "fonts/font_main.fnt", "size": 10 },
+    { "id": "font.ui.title", "type": "font", "path": "fonts/font_title.fnt", "size": 20 },
+
     { "id": "tiles.town.ground", "type": "texture", "path": "textures/environments/town_ground.png" },
     { "id": "tiles.town.grass", "type": "texture", "path": "textures/environments/town_grass.png" },
     { "id": "tiles.town.path", "type": "texture", "path": "textures/environments/town_path.png" },

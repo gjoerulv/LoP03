@@ -29,7 +29,19 @@ long overflowEvents();
 void drawFramedPanel(ResourceManager& resources, int x, int y, int w, int h, Color fill,
                      Color border);
 
-// Measurement against the active raylib font (requires an initialized window).
+// Installs the active UI fonts (M25): text is rendered with the base font
+// whose native size is nearest the requested size, so pixel glyphs stay crisp
+// (small=8, main=10, title=20). Any pointer may be null and any size with no
+// installed font falls back to raylib's default font — a missing font asset
+// never crashes. Non-owning: the fonts must outlive use, and setFonts must be
+// called again after a ResourceManager reload invalidates them.
+void setFonts(const Font* small, const Font* main, const Font* title);
+
+// Left-aligned single line at (x, y) in the active font (DrawTextEx).
+void drawText(const std::string& text, int x, int y, int fontSize, Color color);
+void drawText(const char* text, int x, int y, int fontSize, Color color);
+
+// Measurement against the active font (requires an initialized window).
 int measureText(const std::string& text, int fontSize);
 // The same measurement as an injectable TextMeasure for TextLayout calls.
 const TextMeasure& raylibMeasure();

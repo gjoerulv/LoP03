@@ -45,7 +45,7 @@ void InnState::render() {
     for (const Character& c : context_.party.members) {
         ui::drawTextFitted(TextFormat("%s  Lv.%d", c.name.c_str(), c.level), boxX + 20, y, 124,
                            10, RAYWHITE, "inn.name");
-        DrawText(TextFormat("HP %d/%d   MP %d/%d", c.hp, c.maxHp, c.mp, c.maxMp), boxX + 150, y,
+        ui::drawText(TextFormat("HP %d/%d   MP %d/%d", c.hp, c.maxHp, c.mp, c.maxMp), boxX + 150, y,
                  10, Color{170, 220, 170, 255});
         y += 18;
     }

@@ -25,6 +25,7 @@ public:
 
 private:
     void enterDungeon();
+    void rebuild();  // composes Theme/Depth values into their menu labels (M25)
     std::string currentThemeName() const;
 
     AppContext& context_;

@@ -11,6 +11,7 @@
 #include "platform/Paths.hpp"
 #include "raylib.h"
 #include "states/MainMenuState.hpp"
+#include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
 
 namespace cd {
@@ -146,6 +147,11 @@ void Application::loadAssets() {
   }
   resources_.setCatalog(&manifest_, assetsDir_);
   resources_.reload();
+  // Install the active UI fonts by logical id (M25). Missing ids resolve to
+  // the default font, so this never crashes; re-run after every reload because
+  // reload() invalidates the cached Font references.
+  ui::setFonts(&resources_.font("font.ui.small"), &resources_.font("font.ui.main"),
+               &resources_.font("font.ui.title"));
   audio_.applyManifest(manifest_, assetsDir_);
 }
 
@@ -216,10 +222,9 @@ void Application::processFrame() {
 #ifdef CRYSTAL_DEBUG_OVERLAY
 void Application::drawDebugOverlay() const {
   DrawRectangle(4, 4, 168, 64, Color{0, 0, 0, 170});
-  DrawText(TextFormat("FPS: %d", GetFPS()), 12, 10, 16, GREEN);
-  DrawText(TextFormat("States: %d", static_cast<int>(stack_.size())), 12, 30, 16,
-           GREEN);
-  DrawText("F1: toggle overlay", 12, 50, 10, Color{180, 180, 180, 255});
+  ui::drawText(TextFormat("FPS: %d", GetFPS()), 12, 10, 16, GREEN);
+  ui::drawText(TextFormat("States: %d", static_cast<int>(stack_.size())), 12, 30, 16, GREEN);
+  ui::drawText("F1: toggle overlay", 12, 50, 10, Color{180, 180, 180, 255});
 }
 #endif
 

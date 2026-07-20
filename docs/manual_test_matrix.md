@@ -18,6 +18,25 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M25 update:** UI corrections + original bitmap font. Text now renders
+> through a generated bitmap font (`font.ui.{small,main,title}`), not raylib's
+> default — do a legibility pass across **every** screen at W1–W6 and judge the
+> typography (owner art call); it should read as one clean pixel typeface, crisp
+> at the small HUD sizes. The four reported defects (verify by eye; the
+> `--capture` run is overflow-clean at 23/23 scenes incl. the new
+> `23_battle_targeting`): (1) **Title** — the version stamp and the
+> `Content: …` diagnostic sit on separate rows with no overlap in Debug, and
+> the content line is **absent from a Release build** (`cmake --preset
+> msvc-release`) while the version stamp remains; (2) **Battle** — no name is
+> painted over any sprite; selecting a target shows a target-info panel (name,
+> HP/MP, ATK/MAG/DEF/SPD, statuses) for the targeted unit only, not colliding
+> with the status lines; check it with a full party vs a 5-enemy team; (3)
+> **Battle MP** — every party member shows `HP c/m` and `MP c/m` numerals
+> (check at full, partial, and zero MP); (4) **Guild** — Theme and Depth values
+> render inline on their menu rows and update as you press Left/Right; the seed
+> is a separate readout. Missing-font drill: delete `assets/fonts/*.fnt` from
+> the build's assets → text falls back to the default font, no crash.
+>
 > **M23 update:** validation + playtesting. The capture set
 > (`build-msvc\CrystalDungeons.exe --capture docs\screenshots\m23_captures`)
 > replaces ad-hoc screenshots: 22 deterministic native-res scenes,

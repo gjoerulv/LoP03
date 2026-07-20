@@ -203,6 +203,9 @@ int run(const char* outDir) {
         const fs::path assetsRoot = bundledDir("assets");
         resources.setCatalog(&manifest, assetsRoot);
         resources.reload();
+        // Validate overflow against the real bitmap font (M25), not the default.
+        ui::setFonts(&resources.font("font.ui.small"), &resources.font("font.ui.main"),
+                     &resources.font("font.ui.title"));
 
         Party party = makeCaptureParty(content);
         save::SaveSystem saves(content, scratch / "saves");
@@ -350,6 +353,18 @@ int run(const char* outDir) {
                  battle::Battle b =
                      battle::buildBattle(c.party, makeBossTeam(c.content), c.content);
                  s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot));
+             }},
+            {"23_battle_targeting",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // Drive the battle into target selection so the M25 target-info
+                 // panel (name, vitals, judgment stats, statuses) is covered by
+                 // the overflow check with maximal content.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 applyCaptureStatuses(b);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
              }},
             {"19_result",
              [](StateStack& s, AppContext& c) {

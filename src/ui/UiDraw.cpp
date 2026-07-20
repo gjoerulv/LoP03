@@ -14,6 +14,39 @@ namespace {
 // the M23 capture tool asserts a zero delta per rendered scene.
 long gOverflowEvents = 0;
 
+// Active bitmap fonts (M25). Non-owning; installed by setFonts after each
+// manifest load. Null until then -> the default font is used, so headless and
+// pre-load paths never crash.
+const Font* gFontSmall = nullptr;
+const Font* gFontMain = nullptr;
+const Font* gFontTitle = nullptr;
+
+// Spacing is baked into each glyph's advance, so the DrawTextEx/MeasureTextEx
+// inter-glyph spacing is zero — one convention, in one place.
+constexpr float kSpacing = 0.0f;
+
+// Picks the base font whose native size is nearest the requested size so pixel
+// glyphs render close to 1:1 (small=8, main=10, title=20). Falls back to the
+// default font whenever the chosen slot is not installed.
+const Font& activeFont(int fontSize) {
+    const Font* chosen = fontSize <= 9 ? gFontSmall : (fontSize <= 15 ? gFontMain : gFontTitle);
+    if (chosen == nullptr) {
+        chosen = gFontMain != nullptr ? gFontMain : (gFontSmall != nullptr ? gFontSmall : gFontTitle);
+    }
+    static const Font fallback = GetFontDefault();
+    return chosen != nullptr ? *chosen : fallback;
+}
+
+void drawTextRaw(const char* text, int x, int y, int fontSize, Color color) {
+    DrawTextEx(activeFont(fontSize), text, Vector2{static_cast<float>(x), static_cast<float>(y)},
+               static_cast<float>(fontSize), kSpacing, color);
+}
+
+int measureWidth(const char* text, int fontSize) {
+    return static_cast<int>(
+        MeasureTextEx(activeFont(fontSize), text, static_cast<float>(fontSize), kSpacing).x);
+}
+
 // Overflow diagnostics: report each unique (site, text) once so a per-frame
 // render loop cannot spam the log. Small and bounded by the game's own text.
 void reportOverflowOnce(const char* site, const std::string& text, int width, int maxWidth) {
@@ -29,6 +62,20 @@ void reportOverflowOnce(const char* site, const std::string& text, int width, in
 }  // namespace
 
 long overflowEvents() { return gOverflowEvents; }
+
+void setFonts(const Font* small, const Font* main, const Font* title) {
+    gFontSmall = small;
+    gFontMain = main;
+    gFontTitle = title;
+}
+
+void drawText(const std::string& text, int x, int y, int fontSize, Color color) {
+    drawTextRaw(text.c_str(), x, y, fontSize, color);
+}
+
+void drawText(const char* text, int x, int y, int fontSize, Color color) {
+    drawTextRaw(text, x, y, fontSize, color);
+}
 
 void drawPanel(int x, int y, int w, int h, Color fill, Color border) {
     DrawRectangle(x, y, w, h, fill);
@@ -64,36 +111,36 @@ void drawFramedPanel(ResourceManager& resources, int x, int y, int w, int h, Col
 }
 
 int measureText(const std::string& text, int fontSize) {
-    return MeasureText(text.c_str(), fontSize);
+    return measureWidth(text.c_str(), fontSize);
 }
 
 const TextMeasure& raylibMeasure() {
     static const TextMeasure measure = [](const std::string& text, int fontSize) {
-        return MeasureText(text.c_str(), fontSize);
+        return measureWidth(text.c_str(), fontSize);
     };
     return measure;
 }
 
 void drawTextCentered(const char* text, int centerX, int y, int fontSize, Color color) {
-    const int width = MeasureText(text, fontSize);
-    DrawText(text, centerX - width / 2, y, fontSize, color);
+    const int width = measureWidth(text, fontSize);
+    drawTextRaw(text, centerX - width / 2, y, fontSize, color);
 }
 
 void drawTextRight(const std::string& text, int rightX, int y, int fontSize, Color color) {
-    const int width = MeasureText(text.c_str(), fontSize);
-    DrawText(text.c_str(), rightX - width, y, fontSize, color);
+    const int width = measureWidth(text.c_str(), fontSize);
+    drawTextRaw(text.c_str(), rightX - width, y, fontSize, color);
 }
 
 void drawTextFitted(const std::string& text, int x, int y, int maxWidth, int fontSize,
                     Color color, const char* site) {
-    const int width = MeasureText(text.c_str(), fontSize);
+    const int width = measureWidth(text.c_str(), fontSize);
     if (width <= maxWidth) {
-        DrawText(text.c_str(), x, y, fontSize, color);
+        drawTextRaw(text.c_str(), x, y, fontSize, color);
         return;
     }
     reportOverflowOnce(site, text, width, maxWidth);
     BeginScissorMode(x, y, maxWidth, lineHeight(fontSize));
-    DrawText(text.c_str(), x, y, fontSize, color);
+    drawTextRaw(text.c_str(), x, y, fontSize, color);
     EndScissorMode();
 }
 
@@ -108,7 +155,7 @@ int drawTextWrapped(const std::string& text, int x, int y, int maxWidth, int fon
                                maxLines * step);
             break;
         }
-        DrawText(line.c_str(), x, y + drawn * step, fontSize, color);
+        drawTextRaw(line.c_str(), x, y + drawn * step, fontSize, color);
         ++drawn;
     }
     return y + drawn * step;
@@ -123,9 +170,9 @@ void drawMenu(const Menu& menu, int x, int y, int itemHeight, int fontSize, Colo
         Color color = items[i].enabled ? normal : disabled;
         if (isCursor && items[i].enabled) {
             color = cursor;
-            DrawText(">", x - 10, rowY, fontSize, cursor);
+            drawTextRaw(">", x - 10, rowY, fontSize, cursor);
         }
-        DrawText(items[i].label.c_str(), x, rowY, fontSize, color);
+        drawTextRaw(items[i].label.c_str(), x, rowY, fontSize, color);
     }
 }
 
@@ -144,7 +191,7 @@ void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleR
         Color color = items[static_cast<std::size_t>(i)].enabled ? normal : disabled;
         if (isCursor && items[static_cast<std::size_t>(i)].enabled) {
             color = cursor;
-            DrawText(">", x - 10, rowY, fontSize, cursor);
+            drawTextRaw(">", x - 10, rowY, fontSize, cursor);
         }
         drawTextFitted(items[static_cast<std::size_t>(i)].label, x, rowY, maxLabelWidth, fontSize,
                        color, site);

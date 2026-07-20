@@ -36,8 +36,16 @@ shipped; renaming one is a schema-level decision.
 - `path` — relative to `assets/`, sanitized (no absolute paths, drives, `..`).
   Animation entries have **no path**; they reference a texture entry by id.
 - Per-type optional metadata: texture `filter` (`nearest`|`bilinear`,
-  default nearest); font `size` (default 10); music/ambience `loop`
-  (default true); music/ambience/sfx `volume` (0..1 multiplier, default 1).
+  default nearest); font `size` (default 10; used only to rasterize TTF/OTF —
+  a BMFont `.fnt` atlas carries its own base size in the file); music/ambience
+  `loop` (default true); music/ambience/sfx `volume` (0..1 multiplier,
+  default 1).
+- **Fonts (M25):** `ResourceManager::font` dispatches by extension —
+  `.ttf`/`.otf` via `LoadFontEx` at `size`, `.fnt` (AngelCode BMFont) via
+  `LoadFont` — and forces point filtering. A missing/failed font falls back to
+  raylib's default font (never a crash). The UI installs its fonts with
+  `ui::setFonts` after each manifest load and draws through the `DrawTextEx`
+  wrappers in `src/ui/UiDraw`.
 - Animation entries (v2, owner-approved 2026-07-19): `texture` (the strip),
   `row` (default 0), `frameCount`, `frameWidth`, `frameHeight` (required,
   ≥ 1), `frameTime` seconds (default 0.15, > 0), `loop` (default true;
@@ -90,6 +98,21 @@ slider.
 
 Texture/font roles follow the same pattern (placeholder checker / default
 font as fallback); visual role names are assigned in M15/M17 as art lands.
+
+**Fonts (M25):** the shipped UI font is original, produced by
+`tools/asset_gen/generate_font.ps1` (deterministic — reruns are byte-identical),
+which emits one 5×7 proportional glyph design (printable ASCII 32–126) as a PNG
+atlas + three BMFont `.fnt` descriptors sharing it:
+
+| Role id | File | Base size (`lineHeight`) | Used for |
+|---|---|---|---|
+| `font.ui.small` | `fonts/font_small.fnt` | 8 | HUD/caption text (size 8) |
+| `font.ui.main` | `fonts/font_main.fnt` | 10 | body/menu text (size 10–15) |
+| `font.ui.title` | `fonts/font_title.fnt` (2× atlas) | 20 | headings/title (size ≥ 16) |
+
+`ui::setFonts` picks the base whose native size is nearest the requested size,
+so pixel glyphs stay crisp at the dominant sizes and scale from the nearest
+base (point-filtered) elsewhere.
 
 ## 4. How to add or replace an asset
 

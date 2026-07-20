@@ -202,7 +202,8 @@ save round-trips via the Save Point + Continue.
 
 ## Known limitations
 
-- **Generated assets.** All art (16-bit-style pixel tiles/sprites) and all
+- **Generated assets.** All art (16-bit-style pixel tiles/sprites), the UI
+  **bitmap font** (an original pixel typeface + BMFont descriptors), and all
   audio (11 chiptune music tracks, 4 ambience beds, 15 SFX) are original and
   produced by deterministic in-repo generators (`tools/asset_gen/`). Every
   sound and visual role is replaceable without code via

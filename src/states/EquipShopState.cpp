@@ -339,7 +339,7 @@ void EquipShopState::render() {
         case Phase::EquipSlot: hint = "Choose a slot."; break;
         case Phase::EquipItem: hint = "Choose an item to equip."; break;
     }
-    DrawText(hint, 20, 36, style::kFontBody, style::palette().textDim);
+    ui::drawText(hint, 20, 36, style::kFontBody, style::palette().textDim);
     if (!message_.empty()) {
         ui::drawTextFitted(message_, 20, 50, w - 40, style::kFontBody, style::palette().success,
                            "equipshop.message");

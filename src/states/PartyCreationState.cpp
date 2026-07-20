@@ -156,26 +156,26 @@ void PartyCreationState::render() {
         const int y = baseY + i * 24;
         const bool selected = cursor_ == i;
         if (selected) {
-            DrawText(">", 36, y, 12, yellow);
+            ui::drawText(">", 36, y, 12, yellow);
         }
         std::string nameText = slots_[static_cast<std::size_t>(i)].name.value();
         if (editing_ && selected) {
             nameText += (std::fmod(caretTimer_, 1.0f) < 0.5f) ? "_" : " ";
         }
-        DrawText(nameText.c_str(), 54, y, 12, selected ? yellow : RAYWHITE);
+        ui::drawText(nameText.c_str(), 54, y, 12, selected ? yellow : RAYWHITE);
 
         const content::ClassDef* cls =
             classes_[static_cast<std::size_t>(slots_[static_cast<std::size_t>(i)].classIndex)];
-        DrawText(TextFormat("<  %s  >", cls->name.c_str()), 190, y, 12,
+        ui::drawText(TextFormat("<  %s  >", cls->name.c_str()), 190, y, 12,
                  selected ? yellow : Color{170, 190, 220, 255});
     }
 
     const int beginY = baseY + 4 * 24 + 10;
     const bool beginSel = cursor_ == kBeginRow;
     if (beginSel) {
-        DrawText(">", 36, beginY, 12, yellow);
+        ui::drawText(">", 36, beginY, 12, yellow);
     }
-    DrawText("Begin Adventure", 54, beginY, 12, beginSel ? yellow : RAYWHITE);
+    ui::drawText("Begin Adventure", 54, beginY, 12, beginSel ? yellow : RAYWHITE);
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();

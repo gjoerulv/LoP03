@@ -32,7 +32,7 @@
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
 | 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M30** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
-| 25 | UI corrections & battle HUD | ☐ planned |
+| 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☐ planned |
 | 27 | Environment & ambience identity | ☐ planned |
 | 28 | Enmity, AI diversity & control skills | ☐ planned |
@@ -850,9 +850,13 @@ commitment; each note adds the detail once the ground under it is stable.
 
 ## M25 — UI corrections & battle HUD
 
-- **Status:** planned
-- **Goal:** fix the readability defects that make the game look unfinished, at
-  zero simulation risk.
+- **Status:** implemented, awaiting manual approval (owner authorized
+  2026-07-20; scope amended to add a font-replacement slice — see the note's
+  §A.1 and as-implemented record §N. 252/252 tests; 23/23 capture scenes
+  overflow-clean; Debug + Release both build clean)
+- **Goal:** fix the readability defects that make the game look unfinished, and
+  replace raylib's default font with an original bitmap font, at zero
+  simulation risk.
 - **Player-facing outcome:** no overlapping title text; battle sprites no
   longer buried under always-on name labels; MP legible as numbers; Guild
   values sit next to the controls that change them.

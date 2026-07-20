@@ -107,7 +107,9 @@ void MainMenuState::render() {
     ui::drawTextCentered("CRYSTAL DUNGEONS", w / 2, 50, 22, RAYWHITE);
     ui::drawTextCentered("a 16-bit-inspired dungeon-score roguelite", w / 2, 78, 10,
                          Color{170, 170, 200, 255});
-    DrawText(TextFormat("v%s", version::kString), 4, h - 12, 8, Color{120, 120, 150, 255});
+    // Version stamp: always present, including Release — players reporting bugs
+    // need a build to cite (M25 slice 1). Bottom-left, its own row.
+    ui::drawText(TextFormat("v%s", version::kString), 4, h - 10, 8, Color{120, 120, 150, 255});
 
     // Center the menu block on its widest label (measured, not guessed).
     int menuW = 0;
@@ -117,11 +119,16 @@ void MainMenuState::render() {
     ui::drawMenu(menu_, w / 2 - menuW / 2, 120, 22, 14, RAYWHITE, Color{90, 90, 110, 255},
                  Color{240, 220, 120, 255});
 
+    // Developer diagnostic: Debug/dev builds only, removed from Release via the
+    // CRYSTAL_SHIPPING_BUILD guard (M25 slice 1). Its own row (size 8) one line
+    // above the version stamp, so the two never overlap.
+#ifndef CRYSTAL_SHIPPING_BUILD
     const content::ContentDatabase& db = context_.content;
-    DrawText(TextFormat("Content: %d classes  %d enemies  %d items",
-                        static_cast<int>(db.classCount()), static_cast<int>(db.enemyCount()),
-                        static_cast<int>(db.itemCount())),
-             6, h - 16, 10, Color{120, 120, 140, 255});
+    ui::drawText(TextFormat("Content: %d classes  %d enemies  %d items",
+                            static_cast<int>(db.classCount()), static_cast<int>(db.enemyCount()),
+                            static_cast<int>(db.itemCount())),
+                 4, h - 20, 8, Color{120, 120, 140, 255});
+#endif
 }
 
 }  // namespace cd
