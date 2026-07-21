@@ -36,8 +36,16 @@ ScoreBreakdown scoreBreakdown(const RunSummary& run) {
         b.wager = run.noDeath ? kWagerWin : -kWagerLoss;
     }
 
-    b.total = std::max(0, b.base + b.bossBonus - b.turnPenalty + b.chestBonus + b.dangerBonus +
-                              b.treasureBonus + b.noDeathBonus - b.escapePenalty + b.wager);
+    // Town-ladder bonus (M32) and stakes penalty (M33): both are percentages of
+    // the (non-negative) subtotal; the bonus is added and the penalty subtracted,
+    // penalty after the bonus. pct 0 on both (town 1 / legacy / a stakes-raising
+    // run) => total identical to pre-M32/M33.
+    const int subtotal = b.base + b.bossBonus - b.turnPenalty + b.chestBonus + b.dangerBonus +
+                         b.treasureBonus + b.noDeathBonus - b.escapePenalty + b.wager;
+    const int posSubtotal = std::max(0, subtotal);
+    b.townBonus = posSubtotal * std::max(0, run.townBonusPct) / 100;
+    b.stakesPenalty = posSubtotal * std::max(0, run.stakesPenaltyPct) / 100;
+    b.total = std::max(0, subtotal + b.townBonus - b.stakesPenalty);
     return b;
 }
 

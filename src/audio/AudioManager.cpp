@@ -246,6 +246,46 @@ void AudioManager::setMusic(MusicTrack track) {
     startCurrent();
 }
 
+void AudioManager::loadTownMusicSlot() {
+    if (!ready_) {
+        return;
+    }
+    const std::size_t townIdx = musicIndex(MusicTrack::Town);
+    if (townIdx >= kMusicCount) {
+        return;
+    }
+    fileMusic_[townIdx].reset();
+    fileMusicVolume_[townIdx] = 1.0f;
+    const std::size_t v = static_cast<std::size_t>(townMusic_ - 1);
+    if (v >= kTownMusicVariants || townMusicRel_[v].empty()) {
+        return;  // no file resolves: synth fallback (kSynthMusicIndex[Town] = 0)
+    }
+    Music music = LoadMusicStream((assetsRoot_ / townMusicRel_[v]).string().c_str());
+    if (IsMusicValid(music)) {
+        music.looping = true;
+        fileMusic_[townIdx] = MusicHandle(music);
+        fileMusicVolume_[townIdx] = townMusicVol_[v];
+    }
+}
+
+void AudioManager::setTown(int town) {
+    const int maxTown = static_cast<int>(kTownMusicVariants);
+    const int t = town < 1 ? 1 : (town > maxTown ? maxTown : town);
+    if (t == townMusic_) {
+        return;
+    }
+    const bool wasPlaying = ready_ && enabled_ && current_ == MusicTrack::Town;
+    if (ready_ && current_ == MusicTrack::Town) {
+        cancelFade();
+        stopCurrent();
+    }
+    townMusic_ = t;
+    loadTownMusicSlot();
+    if (wasPlaying) {
+        startCurrent();  // restart Town music on the new variant stream
+    }
+}
+
 void AudioManager::stopAmbience() {
     if (!ready_ || currentAmbience_ == AmbienceTrack::None) {
         return;
@@ -440,6 +480,31 @@ void AudioManager::applyManifest(const assets::AssetManifest& manifest,
             log::warn("AudioManager: could not load '" + entry->path + "' for role " +
                       audio::kAmbienceIds[i] + "; ambience stays silent");
         }
+    }
+
+    // M32 town-music variants: town 1 = base `music.town` (already loaded above);
+    // towns 2..7 = `music.town.<n>` when present, else fall back to the base
+    // path. Stored as relative paths so a town switch can (re)load one stream.
+    assetsRoot_ = root;
+    const assets::AssetEntry* base = manifest.find("music.town");
+    const bool baseOk = base != nullptr && base->type == assets::AssetType::Music;
+    const std::string basePath = baseOk ? base->path : std::string();
+    const float baseVol = baseOk ? base->volume : 1.0f;
+    for (std::size_t t = 0; t < kTownMusicVariants; ++t) {
+        townMusicRel_[t] = basePath;
+        townMusicVol_[t] = baseVol;
+        if (t == 0) {
+            continue;  // town 1 is the base track
+        }
+        const std::string id = "music.town." + std::to_string(t + 1);
+        const assets::AssetEntry* e = manifest.find(id);
+        if (e != nullptr && e->type == assets::AssetType::Music) {
+            townMusicRel_[t] = e->path;
+            townMusicVol_[t] = e->volume;
+        }
+    }
+    if (townMusic_ != 1) {
+        loadTownMusicSlot();  // rebind the Town slot to the active town's variant
     }
 
     current_ = MusicTrack::None;

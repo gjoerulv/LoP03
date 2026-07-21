@@ -36,6 +36,12 @@ void drawFramedPanel(ResourceManager& resources, int x, int y, int w, int h, Col
 void drawSceneBackground(ResourceManager& resources, const std::string& id, Color fallback,
                          int w, int h);
 
+// Town-scoped variant (M32): draws "<id>.<town>" when that per-town texture
+// exists (town >= 2), otherwise the base "<id>" — so service interiors vary per
+// town with a safe fallback to their shared background.
+void drawSceneBackground(ResourceManager& resources, const std::string& id, Color fallback,
+                         int w, int h, int town);
+
 // Installs the active UI fonts (M25): text is rendered with the base font
 // whose native size is nearest the requested size, so pixel glyphs stay crisp
 // (small=8, main=10, title=20). Any pointer may be null and any size with no

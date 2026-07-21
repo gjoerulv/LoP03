@@ -26,11 +26,14 @@ function NoteHz([string]$n) {
 }
 
 # Renders one channel: sequence of @(note, beats) at $bpm into a float array.
-function Render([object[]]$seq, [double]$bpm, [string]$wave, [double]$amp, [int]$total) {
+# $semi transposes every note by that many semitones (M32 darker town variants);
+# it defaults to 0 so all pre-existing calls render byte-identically.
+function Render([object[]]$seq, [double]$bpm, [string]$wave, [double]$amp, [int]$total, [double]$semi = 0.0) {
   $out = New-Object double[] $total
   $pos = 0
   foreach ($step in $seq) {
     $hz = NoteHz $step[0]
+    if ($semi -ne 0.0 -and $hz -gt 0.0) { $hz *= [math]::Pow(2.0, $semi / 12.0) }
     $len = [int]($rate * 60.0 / $bpm * $step[1])
     for ($i = 0; $i -lt $len -and ($pos + $i) -lt $total; $i++) {
       if ($hz -le 0) { continue }
@@ -76,16 +79,21 @@ function WriteWav([string]$name, [double[][]]$channels, [int]$total) {
 Write-Output 'Generating music loops...'
 
 # --- Town: calm major arpeggios, 104 BPM, 16 beats (~9.2s) ---
+# The lead/bass sequences are captured in variables so the M32 town-ladder
+# variants (below) can re-render them transposed/slowed without duplicating the
+# notes. town.wav itself is unchanged (same sequences, bpm, waves, amps).
 $bpm = 104.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
+$townLeadSeq = @(
   @('C5',0.5),@('E5',0.5),@('G5',0.5),@('E5',0.5), @('A4',0.5),@('C5',0.5),@('E5',0.5),@('C5',0.5),
   @('F4',0.5),@('A4',0.5),@('C5',0.5),@('A4',0.5), @('G4',0.5),@('B4',0.5),@('D5',0.5),@('B4',0.5),
   @('C5',0.5),@('E5',0.5),@('G5',0.5),@('C6',0.5), @('A4',0.5),@('E5',0.5),@('C5',0.5),@('A4',0.5),
   @('F4',0.5),@('C5',0.5),@('A4',0.5),@('F4',0.5), @('G4',0.5),@('D5',0.5),@('B4',1.0)
-) $bpm 'square' 0.30 $total
-$bass = Render @(
+)
+$townBassSeq = @(
   @('C3',2),@('A2',2),@('F2',2),@('G2',2), @('C3',2),@('A2',2),@('F2',2),@('G2',2)
-) $bpm 'tri' 0.26 $total
+)
+$lead = Render $townLeadSeq $bpm 'square' 0.30 $total
+$bass = Render $townBassSeq $bpm 'tri' 0.26 $total
 WriteWav 'town.wav' @($lead, $bass) $total
 
 # --- Dungeon (Ruined Keep): sparse minor with drone, 80 BPM, 16 beats (~12s) ---
@@ -390,5 +398,22 @@ WriteSfx 'chest.wav'     @(@('sine', 784, 784, 0.06, 0.5, 2.0), @('sine', 988, 9
 WriteSfx 'step.wav'      (,@('noise', 0, 0, 0.028, 0.3, 6.0)) 0.3
 WriteSfx 'door.wav'      @(@('sine', 180, 120, 0.08, 0.6, 3.0), @('noise', 0, 0, 0.03, 0.2, 6.0)) 0.55
 WriteSfx 'interact.wav'  (,@('sine', 659, 880, 0.09, 0.5, 3.0)) 0.55
+
+# ============================ M32 town-ladder music ============================
+# The town theme, progressively darker for towns 2..7: lower register, slower,
+# softer, and a mellower triangle lead in the deepest towns. Reuses the town
+# lead/bass sequences (captured above); town 1 keeps town.wav. Only ADDS files.
+Write-Output 'Generating M32 town-ladder music variants...'
+$townSemi  = @{ 2=-2.0; 3=-4.0; 4=-5.0; 5=-7.0; 6=-9.0; 7=-12.0 }
+$townTempo = @{ 2=0.98; 3=0.95; 4=0.92; 5=0.88; 6=0.84; 7=0.80 }
+$townAmp   = @{ 2=0.30; 3=0.30; 4=0.29; 5=0.28; 6=0.27; 7=0.26 }
+$townWave  = @{ 2='square'; 3='square'; 4='square'; 5='tri'; 6='tri'; 7='tri' }
+foreach ($t in 2, 3, 4, 5, 6, 7) {
+  $tbpm = 104.0 * $townTempo[$t]
+  $ttotal = [int]($rate * 60.0 / $tbpm * 16)
+  $tlead = Render $townLeadSeq $tbpm $townWave[$t] $townAmp[$t] $ttotal $townSemi[$t]
+  $tbass = Render $townBassSeq $tbpm 'tri' 0.28 $ttotal $townSemi[$t]
+  WriteWav "town_$t.wav" @($tlead, $tbass) $ttotal
+}
 
 Write-Output 'Audio generation complete.'

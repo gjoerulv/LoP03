@@ -2,7 +2,11 @@
 
 ## A. Status and authority
 
-- **Status:** in progress
+- **Status:** planned — deferred 2026-07-20; runs **after M34** (the tooling
+  described below is already built and stays in the tree). Re-audit this note
+  against the post-M34 checkout before starting: the capture scenes and the
+  balance battery need extending for the M25–M34 systems (enmity AI, new
+  content, town ladder, stakes penalty, black market).
 - **Last reviewed repository commit:** M22 approval HEAD (2026-07-20).
   Re-audit: no capture/scenario tooling exists (window-screenshot
   automation only, from milestone verification); UiDraw's fitted/wrapped

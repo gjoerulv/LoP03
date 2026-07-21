@@ -23,13 +23,28 @@ struct Building {
     int h = 0;
 };
 
+// A road out of town (M32): stand on the tile and Confirm to travel. The
+// bottom-left exit leads to the previous town, the bottom-right to the next.
+struct TownExit {
+    int tileX = 0;
+    int tileY = 0;
+    int destTown = 1;     // town index to travel to
+    bool toNext = false;  // true = next/east (higher), false = previous/west
+    bool locked = false;  // next-town exit shown but not yet unlocked
+};
+
 struct TownLayout {
     Tilemap map;
     Vec2 spawnPixel;
     std::vector<Building> buildings;
+    std::vector<TownExit> exits;
 };
 
-// Builds the fixed single-screen town (26x15 tiles, fits 426x240).
-TownLayout buildTown();
+// Builds the single-screen town (26x15 tiles, fits 426x240). `town` labels the
+// exits; a previous-town exit appears when `hasPrev`, a next-town exit when
+// `hasNext` (rendered locked until `nextUnlocked`). The default (town 1, no
+// exits) reproduces the pre-M32 single-town layout byte-for-byte.
+TownLayout buildTown(int town = 1, bool hasPrev = false, bool hasNext = false,
+                     bool nextUnlocked = false);
 
 }  // namespace cd::town

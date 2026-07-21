@@ -90,7 +90,7 @@ void ItemShopState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ui::drawSceneBackground(context_.resources, "bg.item_shop", Color{16, 16, 24, 255},
-                            context_.virtualWidth, context_.virtualHeight);
+                            context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
     ui::drawTextCentered("Item Shop", w / 2, 14, style::kFontScreenTitle, style::palette().text);
     ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 14, 14, style::kFontMenu,
                       style::palette().gold);

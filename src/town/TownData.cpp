@@ -17,7 +17,7 @@ const char* locationName(LocationId id) {
     return "?";
 }
 
-TownLayout buildTown() {
+TownLayout buildTown(int town, bool hasPrev, bool hasNext, bool nextUnlocked) {
     constexpr int kW = 26;
     constexpr int kH = 15;
     Tilemap map(kW, kH, Tile::Ground);
@@ -57,8 +57,24 @@ TownLayout buildTown() {
     place(LocationId::Scoreboard, "Scoreboard", 7, 11, 3, 2, false, 1);
     place(LocationId::SavePoint, "Save Point", 16, 11, 3, 2, false, 1);
 
+    // Town-ladder exits (M32): a road down to a gap in the tree border. The exit
+    // trigger tile sits on the border row; the tile above is a short path so the
+    // gap reads as a road leaving town. Only added when a neighbour town exists.
+    std::vector<TownExit> exits;
+    auto carveExit = [&](int col, int destTown, bool toNext, bool locked) {
+        map.set(col, kH - 2, Tile::Path);   // road
+        map.set(col, kH - 1, Tile::Door);   // gate in the border
+        exits.push_back({col, kH - 1, destTown, toNext, locked});
+    };
+    if (hasPrev) {
+        carveExit(2, town - 1, false, false);
+    }
+    if (hasNext) {
+        carveExit(kW - 3, town + 1, true, !nextUnlocked);
+    }
+
     const Vec2 spawn{12.0f * Tilemap::kTileSize, 8.0f * Tilemap::kTileSize};
-    return TownLayout{std::move(map), spawn, std::move(buildings)};
+    return TownLayout{std::move(map), spawn, std::move(buildings), std::move(exits)};
 }
 
 }  // namespace cd::town

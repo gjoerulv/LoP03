@@ -28,6 +28,9 @@ add_executable(crystal_tests
     test_party.cpp
     test_save_system.cpp
     test_town.cpp
+    test_town_ladder.cpp
+    test_stakes_ladder.cpp
+    test_black_market.cpp
     test_dungeon.cpp
     test_room_layout.cpp
     test_inventory.cpp
@@ -40,6 +43,7 @@ add_executable(crystal_tests
     test_scoreboard.cpp
     test_status.cpp
     test_equipment.cpp
+    test_equip_shop_filter.cpp
     test_fade.cpp
     test_balance.cpp
     test_economy.cpp

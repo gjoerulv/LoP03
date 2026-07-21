@@ -29,6 +29,9 @@ inline constexpr const char* kEventFirst = "event_first";
 inline constexpr const char* kVictoryFirst = "victory_first";
 inline constexpr const char* kResultFirst = "result_first";
 inline constexpr const char* kTownReturn = "town_return";
+inline constexpr const char* kFirstTravel = "first_travel";    // M32 town ladder
+inline constexpr const char* kFirstPenalty = "first_penalty";  // M33 stakes penalty
+inline constexpr const char* kFirstMarket = "first_market";    // M34 black market
 
 struct Beat {
     const char* id;
@@ -79,6 +82,21 @@ inline constexpr Beat kBeats[] = {
      "Spend your spoils: the shops sell gear and supplies, the Training "
      "Hall levels a character instantly for gold, and the Inn heals for "
      "free. Deeper dungeons pay better - when you are ready."},
+    {kFirstTravel, "The road onward",
+     "Towns form a chain. The road at the bottom right leads to the next "
+     "town - tougher foes, but a higher score bonus on every run. The road "
+     "at the bottom left returns the way you came. Clear one dungeon in a "
+     "town to open the road onward from it."},
+    {kFirstPenalty, "Raising the stakes",
+     "A run that does not raise the stakes loses score - another 15% each "
+     "time, down to a 90% floor. Raise the town or the depth above your last "
+     "cleared run to reset it. The Guild shows the penalty before you enter, "
+     "so you are never surprised."},
+    {kFirstMarket, "The black market",
+     "A hooded dealer sometimes appears after a stakes-raising run, selling one "
+     "legendary piece for gold or for legendary tokens - which you earn from "
+     "optional elite challenges in dungeons. Buy it or walk away; the offer "
+     "keeps until you do."},
 };
 inline constexpr std::size_t kBeatCount = sizeof(kBeats) / sizeof(kBeats[0]);
 

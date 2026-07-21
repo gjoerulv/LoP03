@@ -11,6 +11,7 @@
 #include "content/ContentLoader.hpp"
 #include "content/JsonValidation.hpp"
 #include "game/Party.hpp"
+#include "game/WorldLadder.hpp"
 
 namespace cd::save {
 namespace fs = std::filesystem;
@@ -55,6 +56,18 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["version"] = kSaveVersion;
   root["gold"] = party.gold;
   root["restTokens"] = party.restTokens;  // M30 (optional; old saves read 0)
+  root["currentTown"] = party.currentTown;              // M32 (optional; old -> 1)
+  root["highestUnlockedTown"] = party.highestUnlockedTown;  // M32 (optional; old -> 1)
+  root["stakesPrevTown"] = party.stakes.prevTown;          // M33 (optional; old -> 0)
+  root["stakesPrevDepth"] = party.stakes.prevDepth;        // M33
+  root["stakesPenaltySteps"] = party.stakes.penaltySteps;  // M33
+  root["legendaryTokens"] = party.legendaryTokens;         // M34 (optional; old -> 0)
+  root["blackMarketPresent"] = party.blackMarket.present ? 1 : 0;  // M34
+  root["blackMarketTown"] = party.blackMarket.town;
+  root["blackMarketItem"] = party.blackMarket.itemId;
+  root["blackMarketPrice"] = party.blackMarket.priceGold;
+  root["blackMarketTileX"] = party.blackMarket.tileX;
+  root["blackMarketTileY"] = party.blackMarket.tileY;
 
   Json members = Json::array();
   for (const Character& c : party.members) {
@@ -120,6 +133,28 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   Party loaded;
   loaded.gold = rootReader.optIntMin("gold", 0, 0);
   loaded.restTokens = rootReader.optIntMin("restTokens", 0, 0);  // M30
+  // M32 town ladder: optional, clamped to [1, kTownCount]; current town can
+  // never exceed the highest unlocked town (defensive against a tampered file).
+  loaded.highestUnlockedTown =
+      clampTown(rootReader.optIntMin("highestUnlockedTown", 1, 1));
+  loaded.currentTown = std::clamp(clampTown(rootReader.optIntMin("currentTown", 1, 1)),
+                                  1, loaded.highestUnlockedTown);
+  // M33 stakes: optional, non-negative; steps clamped to [0, kStakesPenaltyMaxSteps].
+  loaded.stakes.prevTown = rootReader.optIntMin("stakesPrevTown", 0, 0);
+  loaded.stakes.prevDepth = rootReader.optIntMin("stakesPrevDepth", 0, 0);
+  loaded.stakes.penaltySteps = clampStakesSteps(rootReader.optIntMin("stakesPenaltySteps", 0, 0));
+  // M34 black market: optional; an offer whose item the content no longer knows
+  // is dropped (like unknown equipment ids), so a stale save never dangles.
+  loaded.legendaryTokens = rootReader.optIntMin("legendaryTokens", 0, 0);
+  loaded.blackMarket.present = rootReader.optIntMin("blackMarketPresent", 0, 0) != 0;
+  loaded.blackMarket.town = rootReader.optIntMin("blackMarketTown", 0, 0);
+  loaded.blackMarket.itemId = rootReader.optString("blackMarketItem");
+  loaded.blackMarket.priceGold = rootReader.optIntMin("blackMarketPrice", 0, 0);
+  loaded.blackMarket.tileX = rootReader.optIntMin("blackMarketTileX", 0, 0);
+  loaded.blackMarket.tileY = rootReader.optIntMin("blackMarketTileY", 0, 0);
+  if (loaded.blackMarket.present && db_.findItem(loaded.blackMarket.itemId) == nullptr) {
+    loaded.blackMarket = BlackMarketOffer{};
+  }
 
   auto partyIt = root.find("party");
   if (partyIt == root.end() || !partyIt->is_array()) {

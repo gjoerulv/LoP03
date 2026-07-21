@@ -59,6 +59,8 @@ bool Scoreboard::save(content::LoadReport& report) const {
     j["generationVersion"] = e.generationVersion;
     j["partyLevel"] = e.partyLevel;
     j["battleRulesVersion"] = e.battleRulesVersion;
+    j["townIndex"] = e.townIndex;  // M32 (optional; legacy entries read 0)
+    j["stakesPenaltyPct"] = e.stakesPenaltyPct;  // M33 (optional; legacy read 0)
     arr.push_back(std::move(j));
   }
   root["entries"] = std::move(arr);
@@ -123,6 +125,8 @@ bool Scoreboard::load(content::LoadReport& report) {
     e.generationVersion = er.optIntMin("generationVersion", 0, 0);
     e.partyLevel = er.optIntMin("partyLevel", 0, 0);
     e.battleRulesVersion = er.optIntMin("battleRulesVersion", 0, 0);
+    e.townIndex = er.optIntMin("townIndex", 0, 0);  // M32
+    e.stakesPenaltyPct = er.optIntMin("stakesPenaltyPct", 0, 0);  // M33
     if (auto seedIt = element.find("seed");
         seedIt != element.end() && seedIt->is_number_unsigned()) {
       e.seed = seedIt->get<std::uint64_t>();

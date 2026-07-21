@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <filesystem>
+#include <string>
 
 #include "audio/AudioRoles.hpp"
 #include "render/RaylibRAII.hpp"
@@ -32,6 +33,11 @@ public:
 
     void play(Sfx id);
     void setMusic(MusicTrack track);
+    // Selects which town-music variant backs MusicTrack::Town (M32). Town 1 is
+    // the base `music.town`; towns 2..7 use `music.town.<n>` when present, else
+    // fall back to the base track. Rebinds the Town stream and, if Town music is
+    // playing, restarts it on the new variant. No-op when the town is unchanged.
+    void setTown(int town);
     void setAmbience(AmbienceTrack track);
     void update();  // call each frame; streams, loops, and fades
     void setEnabled(bool enabled);
@@ -69,6 +75,11 @@ private:
     void stopAmbience();
     void startAmbience();
     void cancelFade();
+    // (Re)binds the MusicTrack::Town file stream to the current town variant
+    // (M32); safe no-op fallback to synth when neither file resolves.
+    void loadTownMusicSlot();
+
+    static constexpr std::size_t kTownMusicVariants = 7;  // matches kTownCount
 
     DeviceGuard device_;
     bool ready_ = false;
@@ -88,6 +99,14 @@ private:
 
     MusicTrack current_ = MusicTrack::None;
     AmbienceTrack currentAmbience_ = AmbienceTrack::None;
+
+    // Town-music variants (M32): the active town, the manifest-resolved relative
+    // path + volume per town (index 0 = town 1 = base `music.town`), and the
+    // assets root so a variant can be (re)loaded on a town switch.
+    int townMusic_ = 1;
+    std::filesystem::path assetsRoot_;
+    std::array<std::string, kTownMusicVariants> townMusicRel_{};
+    std::array<float, kTownMusicVariants> townMusicVol_{};
 
     // Crossfade state: index into fileMusic_ still fading out, or -1.
     int fadingIndex_ = -1;

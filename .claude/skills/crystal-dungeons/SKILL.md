@@ -98,7 +98,7 @@ CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
 Validation & release tooling (M23/M24):
 
 ```powershell
-.\build-msvc\CrystalDungeons.exe --capture out\dir   # 23 native-res scenes; fails on text overflow
+.\build-msvc\CrystalDungeons.exe --capture out\dir   # all registered native-res scenes; fails on text overflow
 build-msvc\crystal_tests.exe "[economy-report]" -s   # balance battery table
 build-msvc\crystal_tests.exe "[sim-report]" -s       # machine-readable JSON report
 powershell -ExecutionPolicy Bypass -File tools\package.ps1  # stage+validate+zip -> dist\
@@ -152,8 +152,9 @@ Asset generators (deterministic; reruns byte-identical):
 10. **High warnings on project code only**, not on `_deps`. Don't "fix" warnings
     inside dependencies.
 11. **Screenshots: use the capture tool, not window automation.**
-    `CrystalDungeons.exe --capture <dir>` (debug builds) renders 23
-    deterministic scenes at native 426×240 and fails on text overflow —
+    `CrystalDungeons.exe --capture <dir>` (debug builds) renders every
+    registered deterministic scene at native 426×240 and fails on text
+    overflow —
     always prefer it. If live input driving is unavoidable, never use
     focus-dependent `SendKeys` (it leaks keystrokes — it happened); use
     `PostMessage` WM_KEYDOWN/UP to the game's HWND (extended-key bit for
@@ -195,16 +196,15 @@ authorization to start the next.
 **Git:** never commit, push, amend, rebase, merge, tag, or force-update —
 inspection only. The owner handles all commits and pushes.
 
-Milestones: **M1–M29 `complete (approved)`**; **M30** (economy: paid rest &
-rest-token event) `implemented, awaiting manual approval`. The M25–M30 polish
-program — font/UI corrections, per-enemy art, environment/ambience identity,
-enmity AI + control skills, content expansion + class learnsets, and the paid
-inn — is delivered. **M23** (validation/playtesting/balance) and **M24**
-(release packaging) are deferred to run **after** M30: their tooling and
-packaging are built (v0.9.0 RC in `dist/`), awaiting owner-run external
-playtests (`docs/playtest_protocol.md`) and a clean-machine sign-off; version
-bumps to 1.0.0 after playtests pass. Details: `docs/milestones.md` + one note
-per milestone under `docs/milestone_notes/`.
+Milestones: `docs/milestones.md` is the single source for statuses — trust it
+over any restatement, including this one. Everything through **M34** (the
+M31–M34 towns/stakes/black-market expansion) is `complete (approved)`; only the
+deliberately deferred **M23** (validation/playtesting/balance) and **M24**
+(release packaging) remain, and they run **last, after M34**: their tooling and
+packaging are built (v0.9.0 RC flow), awaiting owner-run external playtests
+(`docs/playtest_protocol.md`) and a clean-machine sign-off; version bumps to
+1.0.0 after playtests pass. Details: `docs/milestones.md` + one note per
+milestone under `docs/milestone_notes/`.
 
 ## Verification checklist (before claiming done)
 

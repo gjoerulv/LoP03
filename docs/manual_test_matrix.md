@@ -261,7 +261,8 @@ sound fires.
 | 11 | Quit to Title (unsaved) | progress since last save | not run | not run | n/a | n/a | — | — | not run — expect no confirm (CTRL-011) |
 | 12 | Inn | hurt party, then full | not run | not run | check %-pad columns (UI-TEXT-017) | n/a | heal sfx | 12_inn.png | not run |
 | 13 | Item shop | buy; not-enough-gold; owned counts | not run | not run | not run | not run | confirm/cancel sfx | 13_item_shop.png | not run |
-| 14 | Equip shop: buy list | scroll to last of 25 items | not run | not run | **expect fail(UI-TEXT-001)** | **expect fail** | not run | 14_equip_buy_overflow.png | not run |
+| 14 | Equip shop: buy by category (M31) | Buy Gear → Weapons / Armor / Accessories → browse a filtered list; confirm the current-category name shows in the hint; Cancel steps back one level each (Buy→Category→Menu) | not run | not run | category menu + each filtered list fit (≤9 rows; capture-verified clean) | check cursor on each level | confirm/cancel sfx | 24_equip_categories.png, 09_equip_shop.png | not run |
+| 14b | Equip shop: relics under Accessories (M31) | open Buy Accessories; confirm the 4 relics (Ember Charm, Titan Heart, Assassin Sigil, Guardian Crest) appear and are absent from Weapons/Armor | not run | not run | relic names fit rows | not run | not run | — | not run |
 | 15 | Equip shop: equip flow | char→slot→item, unequip, swap | not run | not run | not run | not run | not run | 15_equip_flow.png | not run |
 | 16 | Training hall | affordable, poor, max-level rows | not run | not run | check pad columns | pass? | heal sfx | 16_training_hall.png | not run |
 | 17 | Guild | each theme; depth 1 and 20; reroll | not run | not run | 20-digit seed fits? | not run | not run | 17_guild.png | not run |
@@ -284,6 +285,20 @@ sound fires.
 | 34 | Controller disconnect | unplug pad in a menu and in town | n/a | not run | n/a | recovers to KB? | n/a | — | not run |
 | 35 | Audio-device failure | launch with audio device disabled | not run | n/a | n/a | n/a | silent no-crash | — | not run |
 | 36 | Window scaling W2–W6 | rows 1,3,4,9,20,25 at each case | not run | not run | letterbox clean; no blur at W6? | n/a | n/a | 33_scaling_<case>.png | not run |
+| 37 | Town travel (M32) | walk to the bottom-right road, Confirm to advance a town; bottom-left to go back; confirm fade + darker music each step | not run | not run | "Town n/7" indicator + exit signposts legible | travel prompt on the exit tile | town track changes per town | 25_town_ladder.png | not run |
+| 38 | Locked next-town exit (M32) | in a town whose next is not yet unlocked, stand on the right road | not run | not run | "Clear a dungeon... open the road onward" hint fits | "Locked" signpost shown | error sfx on Confirm | 25_town_ladder.png | not run |
+| 39 | Per-town identity (M32) | visit towns 1/4/7 exteriors + each service interior | not run | not run | every service keeps text within contrast/overflow over its per-town background | n/a | music grows more sinister town to town | — | not run |
+| 40 | Town score bonus (M32) | clear a run in town ≥ 2; check the result "Town bonus (+N%)" row and the scoreboard "T#" tag | not run | not run | result panel fits the extra row; T# fits the Theme column | n/a | n/a | 19_result.png, 12_scoreboard.png | not run |
+| 41 | Unlock + old-save compat (M32) | complete a dungeon (unlocks next town); load a pre-M32 save (starts in town 1) | not run | not run | n/a | n/a | n/a | — | not run |
+| 42 | Guild stakes forewarning (M33) | after a completed run, re-open the Guild; change Depth left/right and watch the penalty line update; raise depth above last run to clear it | not run | not run | "-N% (raise town or depth to clear)" fits + updates live | n/a | n/a | 26_guild_penalty.png | not run |
+| 43 | Stakes penalty on result (M33) | clear a run that does not raise the stakes | not run | not run | result panel fits the "Stakes penalty (-N%)" row (also with town bonus) | n/a | n/a | 19_result.png | not run |
+| 44 | Stakes save-scum resistance (M33) | with a penalty pending, enter a dungeon (autosaves), reload that autosave, re-enter same config | not run | not run | penalty is the same after reload (not shed) | n/a | n/a | — | not run |
+| 45 | Stakes reset + New Game (M33) | raise town/depth to clear the penalty; start a New Game and confirm it begins with no penalty | not run | not run | n/a | n/a | n/a | — | not run |
+| 46 | Legendary tokens (M34) | win an optional elite challenge in a dungeon; confirm "+1 legendary token" and the count on the market screen | not run | not run | token message fits | n/a | victory sfx | — | not run |
+| 47 | Black-market spawn (M34) | in town 2+, do stakes-raising runs until the dealer appears (~20%); confirm the NPC + "Black Market" label + prompt | not run | not run | NPC label + prompt legible | prompt on the NPC tile | confirm sfx | 25_town_ladder.png | not run |
+| 48 | Black-market purchase (M34) | open the market; buy with gold, and (another spawn) with 3 tokens; confirm insufficient rows disable; declining leaves the offer | not run | not run | item stats/desc fit; gold/tokens clear of the title | rows disable when unaffordable | confirm/error sfx | 27_black_market.png | not run |
+| 49 | Market save-scum + persistence (M34) | after a spawn, reload the entry autosave and replay the same run — same outcome; the offer persists until bought | not run | not run | n/a | n/a | n/a | — | not run |
+| 50 | Legendary balance (M34) | equip legendaries; confirm they are a clear upgrade yet a low-level party still cannot walk over town 7 | not run | not run | n/a | n/a | n/a | — | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

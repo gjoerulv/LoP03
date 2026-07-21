@@ -4,6 +4,7 @@
 
 #include "battle/Battle.hpp"
 #include "core/AppContext.hpp"
+#include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -20,14 +21,16 @@ namespace style = ui::style;
 
 namespace {
 // Column layout: numeric columns are right-aligned at fixed edges (space
-// padding cannot align a variable-width font); the theme fills the rest.
-constexpr int kRankX = 40;       // left edge, "#"
-constexpr int kScoreR = 126;     // right edge of Score
-constexpr int kTurnsR = 178;     // right edge of Turns
-constexpr int kDangerR = 230;    // right edge of Danger
-constexpr int kDepthR = 270;     // right edge of Depth
-constexpr int kLvR = 304;        // right edge of Lv (M19 comparability tag)
-constexpr int kThemeX = 318;     // left edge of Theme
+// padding cannot align a variable-width font); the theme fills the rest. The
+// block was shifted ~16px left in M32 to widen the theme column so the town tag
+// (T#) fits alongside the longest theme + no-death marker.
+constexpr int kRankX = 24;       // left edge, "#"
+constexpr int kScoreR = 110;     // right edge of Score
+constexpr int kTurnsR = 162;     // right edge of Turns
+constexpr int kDangerR = 214;    // right edge of Danger
+constexpr int kDepthR = 254;     // right edge of Depth
+constexpr int kLvR = 288;        // right edge of Lv (M19 comparability tag)
+constexpr int kThemeX = 302;     // left edge of Theme
 constexpr int kHeaderY = 44;
 constexpr int kRowsY = 60;
 constexpr int kRowH = 13;
@@ -59,7 +62,7 @@ void ScoreboardState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     ui::drawSceneBackground(context_.resources, "bg.scoreboard", Color{16, 16, 24, 255},
-                            context_.virtualWidth, context_.virtualHeight);
+                            context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
     ui::drawTextCentered("Scoreboard", w / 2, 16, style::kFontScreenTitle, style::palette().text);
 
     const auto& entries = context_.scoreboard.entries();
@@ -106,6 +109,11 @@ void ScoreboardState::render() {
             ui::drawTextRight("-", kLvR, y, style::kFontBody, style::palette().textDim);
         }
         std::string theme = e.theme;
+        // Town-ladder tag (M32): shown only for town >= 2, so town-1 and legacy
+        // (townIndex 0) rows read exactly as before. Fits the flexible column.
+        if (e.townIndex >= 2) {
+            theme = "T" + std::to_string(e.townIndex) + " " + theme;
+        }
         if (e.noDeath) {
             theme += "  *";
         }
@@ -121,7 +129,7 @@ void ScoreboardState::render() {
     // The honest-comparison conditions (M19 policy): no hidden normalization;
     // players compare runs at matching conditions instead.
     const int legendY = kRowsY + count * kRowH + 4;
-    ui::drawText("* = no-death   Lv = party level ('-' = older run)", kRankX, legendY,
+    ui::drawText("* = no-death   Lv = party level   T# = town", kRankX, legendY,
              style::kFontSmall, Color{150, 170, 150, 255});
     ui::drawText("Compare at same Depth/Lv.  ~ = older battle rules (pre-M28).", kRankX,
                  legendY + 10, style::kFontSmall, style::palette().textDim);

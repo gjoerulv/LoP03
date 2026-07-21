@@ -208,6 +208,77 @@ TEST_CASE("save: inventory round-trips; missing inventory loads empty", "[save]"
     fs::remove_all(dir);
 }
 
+TEST_CASE("save: town-ladder fields round-trip and default/clamp safely (M32)", "[save]") {
+    const content::ContentDatabase db = makeDb();
+    const fs::path dir = makeTempDir();
+    const save::SaveSystem saves(db, dir);
+
+    Party p;
+    p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan"));
+    p.currentTown = 3;
+    p.highestUnlockedTown = 5;
+    p.stakes = {4, 7, 3};  // M33: prev stakes (town 4, depth 7), 3 penalty steps
+    p.legendaryTokens = 4;  // M34
+    p.blackMarket = {true, 3, "iron_sword", 5750, 5, 7};  // M34 offer (item known to makeDb)
+
+    content::LoadReport rep;
+    REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
+    Party loaded;
+    content::LoadReport rep2;
+    REQUIRE(saves.load(save::SaveSlot::Manual1, loaded, rep2));
+    REQUIRE(loaded.currentTown == 3);
+    REQUIRE(loaded.highestUnlockedTown == 5);
+    REQUIRE(loaded.stakes.prevTown == 4);       // M33 round-trips
+    REQUIRE(loaded.stakes.prevDepth == 7);
+    REQUIRE(loaded.stakes.penaltySteps == 3);
+    REQUIRE(loaded.legendaryTokens == 4);       // M34 round-trips
+    REQUIRE(loaded.blackMarket.present);
+    REQUIRE(loaded.blackMarket.town == 3);
+    REQUIRE(loaded.blackMarket.itemId == "iron_sword");
+    REQUIRE(loaded.blackMarket.priceGold == 5750);
+    REQUIRE(loaded.blackMarket.tileX == 5);
+    REQUIRE(loaded.blackMarket.tileY == 7);
+
+    // Defensive: an offer whose item the content no longer knows is dropped.
+    Party stale;
+    stale.members.push_back(createCharacter(*db.findClass("knight"), "Rolan"));
+    stale.blackMarket = {true, 2, "does_not_exist", 5000, 5, 7};
+    content::LoadReport repS;
+    REQUIRE(saves.save(save::SaveSlot::Manual3, stale, repS));
+    Party staleLoaded;
+    content::LoadReport repS2;
+    REQUIRE(saves.load(save::SaveSlot::Manual3, staleLoaded, repS2));
+    REQUIRE_FALSE(staleLoaded.blackMarket.present);  // dropped, not dangling
+
+    // Backward compatibility: a pre-M32/M33 save with no town/stakes fields loads
+    // as 1/1 and a fresh (zero) stakes state.
+    writeFile(saves.slotPath(save::SaveSlot::Manual2),
+              R"({"version":1,"gold":0,"party":[
+                 {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4}]})");
+    Party legacy;
+    content::LoadReport rep3;
+    REQUIRE(saves.load(save::SaveSlot::Manual2, legacy, rep3));
+    REQUIRE(legacy.currentTown == 1);
+    REQUIRE(legacy.highestUnlockedTown == 1);
+    REQUIRE(legacy.stakes.prevTown == 0);
+    REQUIRE(legacy.stakes.penaltySteps == 0);
+    REQUIRE(legacy.legendaryTokens == 0);       // M34 absent -> 0
+    REQUIRE_FALSE(legacy.blackMarket.present);  // M34 absent -> no offer
+
+    // Defensive: an out-of-range / inconsistent file clamps to [1,7] and keeps
+    // currentTown <= highestUnlockedTown (a tampered file can't strand travel).
+    writeFile(saves.slotPath(save::SaveSlot::Manual3),
+              R"({"version":1,"gold":0,"currentTown":9,"highestUnlockedTown":2,"party":[
+                 {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4}]})");
+    Party clamped;
+    content::LoadReport rep4;
+    REQUIRE(saves.load(save::SaveSlot::Manual3, clamped, rep4));
+    REQUIRE(clamped.highestUnlockedTown == 2);
+    REQUIRE(clamped.currentTown == 2);  // 9 -> 7 -> clamped down to highestUnlocked
+
+    fs::remove_all(dir);
+}
+
 TEST_CASE("save: a minimal save with no equipment still loads", "[save]") {
     const content::ContentDatabase db = makeDb();
     const fs::path dir = makeTempDir();

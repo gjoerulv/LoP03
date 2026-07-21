@@ -51,8 +51,10 @@ void DungeonResultState::render() {
     const int boxW = 300;
     // The panel grows with its line count (escapes and the M20 wager are
     // conditional) so the breakdown never crowds the footer (UI-LAYOUT-018).
-    const int lineCount =
-        6 + (summary_.escapes > 0 ? 1 : 0) + (summary_.wagerAccepted ? 1 : 0);
+    const int lineCount = 6 + (summary_.escapes > 0 ? 1 : 0) +
+                          (summary_.wagerAccepted ? 1 : 0) +
+                          (summary_.townBonusPct > 0 ? 1 : 0) +        // M32 town bonus
+                          (summary_.stakesPenaltyPct > 0 ? 1 : 0);     // M33 stakes penalty
     const int boxH = std::max(190, 62 + lineCount * 13 + 34);
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
@@ -85,6 +87,13 @@ void DungeonResultState::render() {
     if (summary_.wagerAccepted) {
         line(b.wager >= 0 ? "Omen wager won" : "Omen wager lost", b.wager,
              b.wager >= 0 ? plus : minus);
+    }
+    if (summary_.townBonusPct > 0) {
+        line(TextFormat("Town bonus (+%d%%)", summary_.townBonusPct), b.townBonus, plus);
+    }
+    if (summary_.stakesPenaltyPct > 0) {
+        line(TextFormat("Stakes penalty (-%d%%)", summary_.stakesPenaltyPct), -b.stakesPenalty,
+             minus);
     }
 
     ui::drawTextCentered((input::prompt(context_.input.map(), InputAction::Confirm,

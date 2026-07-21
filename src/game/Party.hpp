@@ -4,8 +4,10 @@
 #include <vector>
 
 #include "content/Definitions.hpp"
+#include "game/BlackMarket.hpp"
 #include "game/Character.hpp"
 #include "game/Inventory.hpp"
+#include "game/StakesLadder.hpp"
 
 namespace cd {
 
@@ -19,6 +21,20 @@ struct Party {
     Inventory inventory;
     int gold = 0;
     int restTokens = 0;  // free-rest tokens from dungeon events (M30)
+    // Town ladder (M32). currentTown is where the party stands (1..kTownCount);
+    // highestUnlockedTown is the furthest reachable town. Both saved as optional
+    // fields, old saves load as 1/1. Rules live in game/WorldLadder.hpp.
+    int currentTown = 1;
+    int highestUnlockedTown = 1;
+    // Stakes escalation (M33): the previous completed run's stakes + penalty
+    // steps. Saved as optional fields (old saves -> fresh state). See
+    // game/StakesLadder.hpp.
+    StakesState stakes;
+    // Black market (M34): a currency won from optional elite fights, and the
+    // current legendary offer (if any). Both saved as optional fields (old saves
+    // -> 0 / no offer). See game/BlackMarket.hpp.
+    int legendaryTokens = 0;
+    BlackMarketOffer blackMarket;
 
     bool empty() const { return members.empty(); }
     std::size_t size() const { return members.size(); }

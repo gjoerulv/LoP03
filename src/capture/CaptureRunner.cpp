@@ -31,6 +31,7 @@
 #include "score/Scoring.hpp"
 #include "settings/Settings.hpp"
 #include "states/BattleState.hpp"
+#include "states/BlackMarketState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
@@ -163,6 +164,8 @@ score::RunSummary maximalRunSummary() {
     run.noDeath = false;  // shows the wager-lost line
     run.escapes = 3;
     run.wagerAccepted = true;
+    run.townBonusPct = 100;      // M32: max town bonus
+    run.stakesPenaltyPct = 90;   // M33: max penalty -> town-bonus + penalty rows, fullest panel
     return run;
 }
 
@@ -243,6 +246,7 @@ int run(const char* outDir) {
             top.generationVersion = 4;
             top.partyLevel = 50;
             top.battleRulesVersion = 1;
+            top.townIndex = 7;  // M32: exercise the "T7" tag in the fitted theme column
             scoreboard.add(top);
             score::ScoreEntry legacy;
             legacy.score = 100;
@@ -312,6 +316,14 @@ int run(const char* outDir) {
             {"09_equip_shop",
              [](StateStack& s, AppContext& c) {
                  s.pushState(std::make_unique<EquipShopState>(s, c));
+             }},
+            {"24_equip_categories",
+             [](StateStack& s, AppContext& c) {
+                 // M31: open straight into the buy-category menu (Weapons /
+                 // Armor / Accessories) so the new category UI is overflow-checked.
+                 auto state = std::make_unique<EquipShopState>(s, c);
+                 state->captureEnterBuyCategory();
+                 s.pushState(std::move(state));
              }},
             {"10_training_hall",
              [](StateStack& s, AppContext& c) {
@@ -391,6 +403,35 @@ int run(const char* outDir) {
              [](StateStack& s, AppContext& c) {
                  ui::style::setHighContrast(true);
                  s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"25_town_ladder",
+             [](StateStack& s, AppContext& c) {
+                 // M32: a mid-ladder town shows the per-town exterior palette, the
+                 // Town n/7 indicator, and both exit signposts (previous unlocked,
+                 // next still locked). Placed last so the town-index mutation does
+                 // not leak into the town-1 scenes above.
+                 c.party.currentTown = 6;
+                 c.party.highestUnlockedTown = 6;  // next (town 7) exit reads locked
+                 c.party.blackMarket = {true, 6, "dawnforged_blade", 6500, 16, 6};  // M34 NPC
+                 s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"26_guild_penalty",
+             [](StateStack& s, AppContext& c) {
+                 // M33: a Guild whose configured run does not raise the stakes,
+                 // so the forewarning shows a penalty. Placed after the town
+                 // scenes; the stakes mutation does not leak into earlier scenes.
+                 c.party.currentTown = 1;
+                 c.party.stakes = {1, 20, 3};  // prev (town 1, depth 20), 3 steps -> -60%
+                 s.pushState(std::make_unique<GuildState>(s, c));
+             }},
+            {"27_black_market",
+             [](StateStack& s, AppContext& c) {
+                 // M34: the purchase screen with the longest legendary name +
+                 // description and an affordable token row, to overflow-check the
+                 // stat/description regions.
+                 c.party.legendaryTokens = 3;
+                 c.party.blackMarket = {true, 1, "titanforged_heart", 8750, 16, 6};
+                 s.pushState(std::make_unique<BlackMarketState>(s, c));
              }},
         };
 
