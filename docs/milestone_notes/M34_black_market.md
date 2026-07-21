@@ -2,9 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** in progress — authored / re-audited 2026-07-21 against HEAD
-  `5b751e7` ("M33"). Owner authorized beginning M34 on 2026-07-21 after approving
-  M33. As-implemented record in §K.
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after
+  manual testing. Authored / re-audited 2026-07-21 against HEAD `5b751e7`
+  ("M33"). Owner authorized beginning M34 on 2026-07-21 after approving M33.
+  As-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. **Final milestone of the
   M31–M34 expansion program.** Depends on M32 (town ladder) + M33 (its spawn
@@ -148,7 +149,7 @@ and a note that the expansion program is complete and M23 → M24 are next.
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. No new owner decisions arose
+- **Status:** complete (approved 2026-07-21). No new owner decisions arose
   (the currency, 20 %, town ≥ 2, and ≥ 5000 g / 3 tokens were locked at planning);
   the §D routine choices were taken as written.
 - **Legendary tokens.** `Party.legendaryTokens` (optional save field, old → 0);
@@ -179,7 +180,8 @@ and a note that the expansion program is complete and M23 → M24 are next.
   whose item the content no longer knows is dropped on load. No `kSaveVersion`
   bump.
 - **Validation (this session, VS 2022 / MSVC 14.44, `build-msvc`).** Debug build
-  clean; full suite **307/307** (31165 assertions), incl. 8 new M34 cases
+  clean; full suite **309/309** (re-verified 2026-07-21 at `cc1e93d`; an
+  earlier draft of this record undercounted 307/+8), incl. 10 new M34 cases
   (`[blackmarket]` spawn/price/tile/roster, save round-trip + defensive drop,
   legendary stat-upgrade + no-trivialization balance, equip-shop legendary
   exclusion); battle & simulator tests **unmodified and green**. `--capture`

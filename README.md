@@ -18,7 +18,10 @@ music, or text. Built in **C++20** with **raylib**.
 > generated 16-bit-style art, compact rooms, encounter variety, a full original
 > soundscape, onboarding + accessibility, an original bitmap font, per-enemy
 > art, environment/ambience identity, smarter enemy AI, expanded content, and a
-> paid-rest economy — are delivered. Only the deferred **validation/balance
+> paid-rest economy — are delivered, as is the **M31–M34 expansion**: a
+> seven-town difficulty ladder with per-town art and music, a stakes-escalation
+> score rule, a black market selling legendary gear for gold or elite-challenge
+> tokens, and categorized equip shopping. Only the deferred **validation/balance
 > playtesting (M23)** and **release packaging/sign-off (M24)** remain — see
 > `docs/completion_roadmap.md` and `docs/milestones.md`.
 
@@ -146,18 +149,26 @@ letterbox/pillarbox bars.
    and name them. You start with a little gold.
 2. In the **town**, walk to buildings: **Inn** (rest to full HP/MP for gold, or
    free with a rest token), **Item Shop** (buy consumables), **Equip Shop**
-   (buy + equip gear), **Training Hall** (pay gold to level up), **Scoreboard**,
-   **Save Point** (3 slots), and the **Guild**.
+   (buy by category + equip gear), **Training Hall** (pay gold to level up),
+   **Scoreboard**, **Save Point** (3 slots), and the **Guild**. Roads at the
+   bottom corners connect **seven towns**: each later town raises enemy stats
+   (up to +200 %) and score bonus (up to +100 %); clearing a dungeon in a town
+   unlocks the road onward.
 3. At the **Guild**, pick a theme + depth and enter a seeded dungeon. Entering
    autosaves.
 4. Walk the dungeon: enemy teams show a **danger tier**; fight them to clear
    **gates** (≥3 before the boss) and chest guards. Win battles to earn **XP and
    gold**; open chests for loot.
 5. Beat the **boss** to clear the dungeon and post a **score** (driven mainly by
-   *fewest battle turns*, plus danger defeated, treasure, and a no-death bonus).
+   *fewest battle turns*, plus danger defeated, treasure, a no-death bonus, and
+   the town's score bonus). Runs that fail to raise your **stakes** — (town,
+   depth) vs your last completed run — lose 15 % per repeat (to a −90 % cap);
+   the Guild shows the exact penalty before you enter.
 6. **Retreat** any time (you keep XP/gold but score 0). **Defeat** returns you to
-   town with half your gold. Upgrade, then dive deeper — runs scale with depth and
-   seed, endlessly.
+   town with half your gold. Upgrade, then dive deeper — runs scale with depth,
+   town, and seed, endlessly. A stakes-raising clear in town 2+ can (20 %,
+   seeded) spawn a **black market** selling one legendary piece for gold or
+   **legendary tokens** won in optional elite challenges.
 
 ## Project layout
 
@@ -209,7 +220,7 @@ save round-trips via the Save Point + Continue.
 
 - **Generated assets.** All art (16-bit-style pixel tiles/sprites), the UI
   **bitmap font** (an original pixel typeface + BMFont descriptors), and all
-  audio (11 chiptune music tracks, 4 ambience beds, 15 SFX) are original and
+  audio (17 chiptune music tracks, 4 ambience beds, 15 SFX) are original and
   produced by deterministic in-repo generators (`tools/asset_gen/`). Every
   sound and visual role is replaceable without code via
   `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload
@@ -218,7 +229,8 @@ save round-trips via the Save Point + Continue.
   Bosses use stats, skills, minions, telegraph text, and a Brute enrage; dynamic
   summons and true multi-wave "rush" are not implemented.
 - Equipment has no per-class restrictions; the economy is lightly tuned.
-- Single fixed town; no per-character portraits.
+- The seven towns share one fixed layout (exterior palette, service interiors,
+  and music vary per town); no per-character portraits.
 
 ## Originality & assets
 

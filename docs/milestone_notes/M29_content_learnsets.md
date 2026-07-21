@@ -212,7 +212,7 @@ notes for the new skills/enemies/bosses; balance-report expectations.
 
 ## L. As-implemented record (2026-07-20)
 
-- **Status:** implemented, awaiting manual approval. Owner approved all §D
+- **Status:** complete (approved 2026-07-20). Owner approved all §D
   recommendations (`I agree 100%`, 2026-07-20).
 - **Schema + derivation.** `ClassDef` gained `std::vector<LearnEntry> learnset`
   (`LearnEntry { std::string skill; int level; }`). `parseClasses` reads the

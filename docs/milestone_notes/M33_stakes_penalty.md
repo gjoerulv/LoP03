@@ -2,9 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** in progress — authored / re-audited 2026-07-21 against HEAD
-  `25f5e1e` ("M32"). Owner authorized beginning M33 on 2026-07-21 after approving
-  M32. As-implemented record in §K.
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after
+  manual testing. Authored / re-audited 2026-07-21 against HEAD `25f5e1e`
+  ("M32"). Owner authorized beginning M33 on 2026-07-21 after approving M32.
+  As-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. Third milestone of the
   **M31–M34 expansion program**; depends on M32 (the `(town, depth)` stakes
@@ -171,7 +172,7 @@ rows (Guild forewarning, result penalty row, save-scum check).
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. No new owner decisions arose
+- **Status:** complete (approved 2026-07-21). No new owner decisions arose
   (the stakes rule was locked at planning; the score-combination math follows the
   plan's "after the town bonus, on the same subtotal rules" — §D.2).
 - **State machine (pure).** `game/StakesLadder.hpp`: `StakesState { prevTown,

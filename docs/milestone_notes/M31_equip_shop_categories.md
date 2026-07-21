@@ -2,8 +2,9 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / re-audited
-  2026-07-21 against the current checkout (HEAD `4be4d43`, working tree clean).
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after
+  manual testing. Authored / re-audited 2026-07-21 against the then-current
+  checkout (HEAD `4be4d43`, working tree clean).
   As-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. This is the first
@@ -161,7 +162,7 @@ category flow + a category-menu row).
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. No owner-gated decisions
+- **Status:** complete (approved 2026-07-21). No owner-gated decisions
   arose (§D); the routine choices there were taken as written.
 - **Pure filter.** New raylib-free header `src/states/EquipShopFilter.hpp`:
   `isEquippableItem(ItemDef)` (Equipment or Relic) and `equipShopBuyIds(db,

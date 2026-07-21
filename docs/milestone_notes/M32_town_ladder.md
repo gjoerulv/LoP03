@@ -2,7 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** in progress — authored / re-audited 2026-07-21 against HEAD
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after
+  manual testing. Authored / re-audited 2026-07-21 against HEAD
   `09cf458` ("M31"). Owner authorized beginning M32 on 2026-07-21 after approving
   M31; §D decisions confirmed via Q&A the same day (see §D). As-implemented
   record in §K.
@@ -199,7 +200,7 @@ art + audio docs for the new generator output; `assets/credits.md` provenance;
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. §D decisions confirmed by
+- **Status:** complete (approved 2026-07-21). §D decisions confirmed by
   the owner 2026-07-21: **flat rewards**, **per-town interiors** (owner overrode
   the "shared" recommendation), **absolute danger tiers**.
 - **Ladder rules (pure).** `game/WorldLadder.hpp`: `kTownCount=7`, `clampTown`,

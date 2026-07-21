@@ -546,7 +546,8 @@ exist before enemies are designed around them. Economy (M30) last, because gold
 income depends on battle outcomes and content — tuning a rest cost before those
 settle is tuning against a moving target.
 
-M23 and M24 run after M30 rather than being cancelled. Their tooling and
+M23 and M24 run after M30 (since extended to after M34 — see §13) rather than
+being cancelled. Their tooling and
 packaging work is built and retained; only the sequencing changed. Validating
 and packaging a build known to need this work would have measured the wrong
 build, and the capture scenes and balance battery both need extending for the

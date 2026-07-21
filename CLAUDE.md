@@ -11,7 +11,7 @@ raylib. A focused dungeon-score game, not a broad story JRPG.
 
 Core loop: town hub → prepare party → seeded dungeon → visible enemy teams
 guarding gates and chests → boss → score driven mainly by fewest battle turns →
-upgrade → repeat.
+upgrade → repeat, escalating across a seven-town difficulty/score ladder.
 
 **Originality is a hard constraint.** The game is inspired by the clarity,
 readable UI, side-view battles, party identity, and atmosphere of 16-bit JRPGs.

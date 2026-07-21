@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M30** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M34** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -41,7 +41,7 @@
 | 31 | Equip-shop category split | ☑ complete (approved) |
 | 32 | Town ladder (7 towns, travel, scaling, score bonus) | ☑ complete (approved) |
 | 33 | Stakes-escalation penalty | ☑ complete (approved) |
-| 34 | Black market & legendary gear | ◑ implemented, awaiting manual approval |
+| 34 | Black market & legendary gear | ☑ complete (approved) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, **then** M23 → M24. M23/M24 were deferred by the
@@ -756,14 +756,17 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M30.** The
-  tooling, diagnostics, lint/mass/report suites, and sim-justified early-ramp
-  tuning (generation v4) are already implemented and remain in the tree; they
-  are not re-work. What changed is sequencing: playtesting a build with
-  known-stale gameplay and placeholder-grade enemy art would produce findings
-  about problems M25–M30 already exist to fix. Re-audit this note against the
-  post-M30 checkout before starting — the capture scene list and balance
-  battery will both need extending for the new AI, content, and art.
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M34** (the
+  deferral was extended the same day when the owner authorized the M31–M34
+  expansion). The tooling, diagnostics, lint/mass/report suites, and
+  sim-justified early-ramp tuning (generation v4) are already implemented and
+  remain in the tree; they are not re-work. What changed is sequencing:
+  playtesting a build with known-stale gameplay and placeholder-grade enemy
+  art would produce findings about problems M25–M34 already exist to fix.
+  Re-audit this note against the post-M34 checkout before starting — the
+  capture scene list and balance battery will both need extending for the new
+  AI, content, art, and the M31–M34 systems (town ladder, stakes penalty,
+  black market).
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -1098,9 +1101,9 @@ plan):
   stakes-raising completion in town ≥ 2 (20 %, seeded), selling one legendary
   piece for **≥ 5000 gold or 3 legendary tokens**.
 
-**Note authoring is just-in-time.** Only the M31 note is authored so far; M32–M34
-notes are written when the owner authorizes each milestone and re-audited against
-the then-current checkout. The scope summaries below are the commitment.
+**Note authoring was just-in-time.** All four notes exist, each authored when
+the owner authorized its milestone and re-audited against the then-current
+checkout; each carries its as-implemented record (§K).
 
 ## M31 — Equip-shop category split
 
@@ -1226,13 +1229,14 @@ the then-current checkout. The scope summaries below are the commitment.
 
 ## M34 — Black market & legendary gear
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against HEAD `5b751e7`. New Legendary-token currency (+1 per elite-
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing; committed (`cc1e93d`). Implemented / audited 2026-07-21
+  against HEAD `5b751e7`. New Legendary-token currency (+1 per elite-
   challenge victory, `Party.legendaryTokens`); 5 `Rarity::Legendary` items (shop-
   excluded, black-market only); a seeded 20 % black-market spawn after a stakes-
   raising completed run in town ≥ 2 (reload-proof, `game/BlackMarket.hpp`);
   a hooded-dealer NPC in town → `BlackMarketState` purchase screen (gold or 3
-  tokens); all state optional-save with New-Game reset. **307/307 tests** (+8
+  tokens); all state optional-save with New-Game reset. **309/309 tests** (+10
   M34 incl. spawn determinism, save round-trip, and a legendary-balance/
   no-trivialization check), battle & simulator tests **unmodified**; `--capture`
   **27/27** overflow-clean (new market screen + NPC); Debug + Release clean;

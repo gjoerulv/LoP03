@@ -2,8 +2,9 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / audited
-  2026-07-20 against the then-current checkout (HEAD `2eaff28` "M29"). §D
+- **Status:** complete (approved) — approved by the owner 2026-07-20 after
+  manual testing. Authored / audited 2026-07-20 against the then-current
+  checkout (HEAD `2eaff28` "M29"). §D
   decisions approved (`I agree 100%`, 2026-07-20); as-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`.
@@ -150,7 +151,7 @@ balance-report expectations; `docs/manual_test_matrix.md` rows.
 
 ## K. As-implemented record (2026-07-20)
 
-- **Status:** implemented, awaiting manual approval. Owner approved all §D
+- **Status:** complete (approved 2026-07-20). Owner approved all §D
   recommendations (`I agree 100%`, 2026-07-20).
 - **Cost model.** `restCost(party)` (pure, in `game/Party`) =
   `kRestCostBase(20) + kRestCostPerLevel(12)*(highestLevel-1)`, clamped to
