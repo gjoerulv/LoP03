@@ -218,6 +218,7 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.minions = r.optStringArray("minions");
         d.passives = r.optStringArray("passives");  // M36 (optional)
         d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
+        d.immuneToConfusion = r.optBool("immuneToConfusion", false);  // M40 (the King)
         d.telegraph = r.optString("telegraph");
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);

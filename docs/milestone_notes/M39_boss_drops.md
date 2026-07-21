@@ -2,10 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / re-audited and
-  implemented 2026-07-21 against HEAD `c9e78a4` (the working tree holds the
-  approved-and-committed M38). Owner authorized beginning M39 after approving M38.
-  As-implemented record in §K. Only the owner sets `complete (approved)`.
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after manual
+  testing; committed. Authored / re-audited and implemented 2026-07-21 against HEAD
+  `c9e78a4` (the working tree held the approved-and-committed M38). Owner authorized
+  beginning M39 after approving M38. As-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. Fifth milestone of the
   M35–M42 endgame program. A **post-battle reward roll only**: no change to how a

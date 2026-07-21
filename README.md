@@ -24,10 +24,11 @@ music, or text. Built in **C++20** with **raylib**.
 > tokens, and categorized equip shopping. The **M35–M42 endgame program**
 > (statuses v2, passives, per-town content, boss drops, a castle with the King,
 > story, and enrichment features) is underway — **M35** (statuses + to-hit layer),
-> **M36** (10 passive skills), **M37** (per-town equipment), and **M38** (12
-> per-town enemies + 6 per-town bosses, each with its own sprite and status/passive
-> kit) are approved, and **M39** (seeded, reload-proof boss legendary & token
-> drops on deep, high-town clears) is implemented and awaiting approval. The
+> **M36** (10 passive skills), **M37** (per-town equipment), **M38** (12 per-town
+> enemies + 6 per-town bosses), and **M39** (seeded, reload-proof boss legendary &
+> token drops) are approved, and **M40** (the castle above the seven towns, with
+> Boss Rush / Endless Rush / the Hollow King challenges, its own records and rewards
+> kept outside the dungeon scoreboard) is implemented and awaiting approval. The
 > deferred
 > **validation/balance playtesting (M23)** and **release packaging/sign-off
 > (M24)** run last — see `docs/completion_roadmap.md` and `docs/milestones.md`.
@@ -181,6 +182,12 @@ letterbox/pillarbox bars.
    town, and seed, endlessly. A stakes-raising clear in town 2+ can (20 %,
    seeded) spawn a **black market** selling one legendary piece for gold or
    **legendary tokens** won in optional elite challenges.
+7. Clear any **town-7 dungeon** to open the northern road to the **castle** — a
+   place above the ladder with the **King's three challenges**: the **Boss Rush**
+   (all 12 bosses back-to-back, no free healing), the **Endless Rush** (escalating
+   waves, survive as long as you can), and **the Hollow King** himself (the hardest
+   fight — immune to blind/silence/confusion, beat him for a unique legendary and a
+   title). The castle keeps its **own records**, separate from your dungeon scores.
 
 ## Project layout
 

@@ -77,6 +77,7 @@
     { "id": "worldbreaker_axe", "name": "Worldbreaker Axe", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 6000, "statBonus": { "attack": 24 }, "description": "An axe that has cracked the world." },
     { "id": "voidpiercer_rod", "name": "Voidpiercer Rod", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 6000, "statBonus": { "magic": 22 }, "description": "A rod that pierces the void itself." },
     { "id": "kingsbane_spear", "name": "Kingsbane Spear", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 6500, "statBonus": { "attack": 22, "speed": 3 }, "description": "The spear that felled a tyrant king." },
+    { "id": "sovereigns_regalia", "name": "Sovereign's Regalia", "type": "equipment", "slot": "accessory", "rarity": "legendary", "value": 9000, "statBonus": { "attack": 10, "magic": 10, "defense": 10, "speed": 4, "hp": 40 }, "description": "The regalia of the Hollow King, won only by breaking his throne." },
 
     { "id": "scroll_fireball", "name": "Scroll: Fireball", "type": "scroll", "rarity": "rare", "value": 180, "grantsSkill": "fireball", "description": "Teaches the Fireball skill." },
     { "id": "scroll_greater_heal", "name": "Scroll: Greater Heal", "type": "scroll", "rarity": "rare", "value": 200, "grantsSkill": "greater_heal", "description": "Teaches the Greater Heal skill." },

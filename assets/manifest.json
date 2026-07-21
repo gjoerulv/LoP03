@@ -34,6 +34,8 @@
     { "id": "music.victory", "type": "music", "path": "audio/music/victory.wav", "loop": false, "volume": 0.85 },
     { "id": "music.defeat", "type": "music", "path": "audio/music/defeat.wav", "loop": false, "volume": 0.8 },
     { "id": "music.result", "type": "music", "path": "audio/music/result.wav", "loop": true, "volume": 0.75 },
+    { "id": "music.castle", "type": "music", "path": "audio/music/castle.wav", "loop": true, "volume": 0.8 },
+    { "id": "music.king", "type": "music", "path": "audio/music/king.wav", "loop": true, "volume": 0.85 },
 
     { "id": "ambience.town", "type": "ambience", "path": "audio/ambience/town.wav", "loop": true, "volume": 0.3 },
     { "id": "ambience.keep", "type": "ambience", "path": "audio/ambience/keep.wav", "loop": true, "volume": 0.24 },
@@ -173,6 +175,7 @@
     { "id": "boss.rush_tyrant.battle", "type": "texture", "path": "textures/enemies/boss_rush_tyrant.png" },
     { "id": "boss.deep_king.battle", "type": "texture", "path": "textures/enemies/boss_deep_king.png" },
     { "id": "boss.blight_matron.battle", "type": "texture", "path": "textures/enemies/boss_blight_matron.png" },
+    { "id": "boss.the_hollow_king.battle", "type": "texture", "path": "textures/enemies/boss_the_hollow_king.png" },
 
     { "id": "prop.chest", "type": "texture", "path": "textures/props/chest.png" },
     { "id": "prop.gate_marker", "type": "texture", "path": "textures/props/gate_marker.png" },

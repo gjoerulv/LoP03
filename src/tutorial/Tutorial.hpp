@@ -32,6 +32,8 @@ inline constexpr const char* kTownReturn = "town_return";
 inline constexpr const char* kFirstTravel = "first_travel";    // M32 town ladder
 inline constexpr const char* kFirstPenalty = "first_penalty";  // M33 stakes penalty
 inline constexpr const char* kFirstMarket = "first_market";    // M34 black market
+inline constexpr const char* kFirstCastle = "first_castle";        // M40 castle
+inline constexpr const char* kFirstChallenge = "first_challenge";  // M40 challenges
 
 struct Beat {
     const char* id;
@@ -97,6 +99,15 @@ inline constexpr Beat kBeats[] = {
      "legendary piece for gold or for legendary tokens - which you earn from "
      "optional elite challenges in dungeons. Buy it or walk away; the offer "
      "keeps until you do."},
+    {kFirstCastle, "The castle",
+     "Above the seven towns stands the castle. Here wait the King's three "
+     "challenges - the Boss Rush, the Endless Rush, and the Hollow King himself. "
+     "The castle keeps its own records, apart from your dungeon scores."},
+    {kFirstChallenge, "The King's challenges",
+     "A challenge gives NO free healing between fights - bring items and spend "
+     "them wisely. Each pays a one-time reward the first time you clear it; the "
+     "King grants a unique legendary and a title. Fall, and you simply return to "
+     "the castle to try again."},
 };
 inline constexpr std::size_t kBeatCount = sizeof(kBeats) / sizeof(kBeats[0]);
 

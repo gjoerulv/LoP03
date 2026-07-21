@@ -56,8 +56,12 @@ const char* statusShort(content::StatusType t) {
 }  // namespace
 
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
-                         battle::BattleResult* resultSlot)
-    : GameState(stack), context_(context), battle_(std::move(battle)), resultSlot_(resultSlot) {
+                         battle::BattleResult* resultSlot, MusicTrack musicOverride)
+    : GameState(stack),
+      context_(context),
+      battle_(std::move(battle)),
+      resultSlot_(resultSlot),
+      musicOverride_(musicOverride) {
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Enemy && c.isBoss) {
             bossBattle_ = true;
@@ -74,7 +78,9 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
     hitFlags_.assign(battle_.units.size(), 0);
     koFade_.assign(battle_.units.size(), 1.0f);
     context_.fade.start();
-    context_.audio.setMusic(bossBattle_ ? MusicTrack::Boss : MusicTrack::Battle);
+    context_.audio.setMusic(musicOverride_ != MusicTrack::None
+                                ? musicOverride_
+                                : (bossBattle_ ? MusicTrack::Boss : MusicTrack::Battle));
 }
 
 void BattleState::onEnter() { maybeTutorialPrompt(stack(), context_, tutorial::kBattleFirst); }
@@ -239,8 +245,14 @@ void BattleState::startActorTurn() {
     }
     battle_.clearGuard(actor);
     if (battle_.units[static_cast<std::size_t>(actor)].side == battle::Side::Party) {
-        phase_ = Phase::Command;
-        buildCommandMenu();
+        // Confusion (M35): a confused character takes no player input — it lashes
+        // out at a seeded random ally automatically, just like an enemy's turn.
+        if (battle::isConfused(battle_.units[static_cast<std::size_t>(actor)])) {
+            executeConfused(actor);
+        } else {
+            phase_ = Phase::Command;
+            buildCommandMenu();
+        }
     } else {
         executeEnemy(actor);
     }
@@ -452,6 +464,21 @@ void BattleState::executeEnemy(int actor) {
     afterAction();
 }
 
+void BattleState::executeConfused(int actor) {
+    std::vector<int> hpBefore;
+    hpBefore.reserve(battle_.units.size());
+    for (const battle::Combatant& u : battle_.units) {
+        hpBefore.push_back(u.hp);
+    }
+    // attack() performs the confusion redirect internally (a seeded random same-side
+    // target), so the nominal target only needs to be valid; use any living enemy.
+    const std::vector<int> foes = battle_.aliveIndices(battle::Side::Enemy);
+    const int nominal = foes.empty() ? actor : foes.front();
+    message_ = battle_.attack(actor, nominal);
+    stageNumbers(hpBefore, 2, false);
+    afterAction();
+}
+
 void BattleState::afterAction() {
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Party && c.hp <= 0) {
@@ -520,14 +547,18 @@ void BattleState::openDetails() {
     if (c.guarding) {
         body += "\nGuarding: incoming damage is halved this round.";
     }
-    if (c.statuses.empty()) {
+    std::string statusList;
+    for (const battle::StatusInstance& s : c.statuses) {
+        if (battle::isImmuneTo(c, s.type)) {
+            continue;  // M40: immune statuses are not shown
+        }
+        statusList += " " + std::string(statusShort(s.type)) + "(" + std::to_string(s.turns) +
+                      " turns)";
+    }
+    if (statusList.empty()) {
         body += "\nNo active statuses.";
     } else {
-        body += "\nStatuses:";
-        for (const battle::StatusInstance& s : c.statuses) {
-            body += " " + std::string(statusShort(s.type)) + "(" + std::to_string(s.turns) +
-                    " turns)";
-        }
+        body += "\nStatuses:" + statusList;
     }
     // Passive skills (M36): name and, for a single passive, its description.
     for (const std::string& pid : c.passiveIds) {
@@ -778,6 +809,9 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
     if (!c.statuses.empty() && shownAlive) {
         std::string line;
         for (const battle::StatusInstance& s : c.statuses) {
+            if (battle::isImmuneTo(c, s.type)) {
+                continue;  // M40: an immune unit never reads as afflicted
+            }
             if (!line.empty()) {
                 line += " ";
             }
@@ -944,12 +978,15 @@ void BattleState::render() {
                 ui::drawTextFitted(stats, kListX, panelY + 34, w - 2 * kListX, style::kFontBody,
                                    style::palette().textDim, "battle.target.stats");
                 std::string line;
-                if (!t.statuses.empty()) {
-                    line = "Status:";
-                    for (const battle::StatusInstance& s : t.statuses) {
-                        line += " " + std::string(statusShort(s.type)) + "(" +
-                                std::to_string(s.turns) + ")";
+                for (const battle::StatusInstance& s : t.statuses) {
+                    if (battle::isImmuneTo(t, s.type)) {
+                        continue;  // M40: immune statuses are not shown
                     }
+                    if (line.empty()) {
+                        line = "Status:";
+                    }
+                    line += " " + std::string(statusShort(s.type)) + "(" +
+                            std::to_string(s.turns) + ")";
                 }
                 // A revealed passive (M36): show the foe/ally's passive by name.
                 if (!t.passiveIds.empty()) {

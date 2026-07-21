@@ -126,6 +126,18 @@ float ObjectReader::optFloat(const char* key, float fallback) {
     return p->get<float>();
 }
 
+bool ObjectReader::optBool(const char* key, bool fallback) {
+    const Json* p = find(key);
+    if (p == nullptr) {
+        return fallback;
+    }
+    if (!p->is_boolean()) {
+        err(key, "expected boolean");
+        return fallback;
+    }
+    return p->get<bool>();
+}
+
 std::vector<std::string> ObjectReader::optStringArray(const char* key) {
     std::vector<std::string> out;
     const Json* p = find(key);

@@ -5,6 +5,7 @@
 
 #include "content/Definitions.hpp"
 #include "game/BlackMarket.hpp"
+#include "game/Castle.hpp"
 #include "game/Character.hpp"
 #include "game/Inventory.hpp"
 #include "game/StakesLadder.hpp"
@@ -35,6 +36,12 @@ struct Party {
     // -> 0 / no offer). See game/BlackMarket.hpp.
     int legendaryTokens = 0;
     BlackMarketOffer blackMarket;
+    // Castle (M40): whether the road from town 7 to the castle is open (set by a
+    // town-7 dungeon clear), and the party's castle-challenge records + earned
+    // King title. All optional save fields (old saves -> locked / no records);
+    // kept entirely separate from the dungeon scoreboard. See game/Castle.hpp.
+    bool castleUnlocked = false;
+    CastleRecords castleRecords;
 
     bool empty() const { return members.empty(); }
     std::size_t size() const { return members.size(); }

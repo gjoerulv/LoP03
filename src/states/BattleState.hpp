@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "audio/AudioRoles.hpp"
 #include "battle/Battle.hpp"
 #include "render/BattleSequencer.hpp"
 #include "states/GameState.hpp"
@@ -19,8 +20,10 @@ struct AppContext;
 // outcome in the provided slot, and pops.
 class BattleState : public GameState {
 public:
+    // `musicOverride` (M40) replaces the default Boss/Battle track for this fight
+    // (e.g. the King's own theme); None keeps the default.
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
-                battle::BattleResult* resultSlot);
+                battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None);
 
     void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
@@ -52,6 +55,7 @@ private:
     void onItemChosen();
     void executePending(int targetUnit);
     void executeEnemy(int actor);
+    void executeConfused(int actor);  // M35: a confused party member auto-attacks an ally
     void afterAction();
     void finish();
     std::string outcomeMessage() const;
@@ -82,6 +86,7 @@ private:
     AppContext& context_;
     battle::Battle battle_;
     battle::BattleResult* resultSlot_;
+    MusicTrack musicOverride_ = MusicTrack::None;
     battle::Outcome result_ = battle::Outcome::Ongoing;
     bool bossBattle_ = false;
     bool koOccurred_ = false;

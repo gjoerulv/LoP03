@@ -122,7 +122,11 @@ and falls back to the generic tier sprite (`enemy.normal/elite.battle`,
 `boss.generic.battle`, retained) only for ids without bespoke art.
 `tests/test_presentation_lint.cpp` enforces this: a content id missing its
 `enemy.<id>.battle` / `boss.<id>.battle` row **fails** `[lint]`, so new content
-cannot ship without art.
+cannot ship without art. (Later milestones add more per-id sprites the same way —
+e.g. M40's `boss.the_hollow_king.battle` — plus M40's two castle music tracks
+`music.castle` / `music.king`; every addition is recorded in `assets/credits.md`
+and, for sprites/music appended to the generators, ordered last so their shared
+RNG never shifts earlier files' bytes.)
 
 **Service backgrounds (M27):** six full-screen (426×240) service backgrounds —
 `bg.inn`, `bg.item_shop`, `bg.equip_shop`, `bg.training_hall`, `bg.scoreboard`,

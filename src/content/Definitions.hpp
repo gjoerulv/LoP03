@@ -149,6 +149,7 @@ struct BossDef {
     std::vector<std::string> minions;   // enemy ids fighting alongside the boss
     std::vector<std::string> passives;  // passive ids (M36; bosses may carry several)
     int minTown = 1;                    // per-town gating (M38): chosen only at town >= minTown
+    bool immuneToConfusion = false;     // M40: bespoke status immunity (the King)
     std::string telegraph;              // flavor line shown when the battle begins
     int xpReward = 0;
     int goldReward = 0;

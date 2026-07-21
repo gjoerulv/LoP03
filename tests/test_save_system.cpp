@@ -345,6 +345,47 @@ TEST_CASE("save: town-ladder fields round-trip and default/clamp safely (M32)", 
     fs::remove_all(dir);
 }
 
+TEST_CASE("save: castle unlock + records + King title round-trip (M40)", "[save]") {
+    const content::ContentDatabase db = makeDb();
+    const fs::path dir = makeTempDir();
+    const save::SaveSystem saves(db, dir);
+
+    Party p;
+    p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan"));
+    p.castleUnlocked = true;
+    p.castleRecords.bossRushBestTurns = 44;
+    p.castleRecords.endlessBestWave = 12;
+    p.castleRecords.kingDefeated = true;
+    p.castleRecords.kingBestTurns = 18;
+    p.castleRecords.kingTitle = kKingTitle;
+
+    content::LoadReport rep;
+    REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
+    Party loaded;
+    content::LoadReport rep2;
+    REQUIRE(saves.load(save::SaveSlot::Manual1, loaded, rep2));
+    REQUIRE(loaded.castleUnlocked);
+    REQUIRE(loaded.castleRecords.bossRushBestTurns == 44);
+    REQUIRE(loaded.castleRecords.endlessBestWave == 12);
+    REQUIRE(loaded.castleRecords.kingDefeated);
+    REQUIRE(loaded.castleRecords.kingBestTurns == 18);
+    REQUIRE(loaded.castleRecords.kingTitle == std::string(kKingTitle));
+
+    // Backward compatibility: a save with no castle fields loads locked / no records.
+    writeFile(saves.slotPath(save::SaveSlot::Manual2),
+              R"({"version":1,"gold":0,"party":[
+                 {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4}]})");
+    Party legacy;
+    content::LoadReport rep3;
+    REQUIRE(saves.load(save::SaveSlot::Manual2, legacy, rep3));
+    REQUIRE_FALSE(legacy.castleUnlocked);
+    REQUIRE_FALSE(legacy.castleRecords.kingDefeated);
+    REQUIRE(legacy.castleRecords.bossRushBestTurns == 0);
+    REQUIRE(legacy.castleRecords.kingTitle.empty());
+
+    fs::remove_all(dir);
+}
+
 TEST_CASE("save: a minimal save with no equipment still loads", "[save]") {
     const content::ContentDatabase db = makeDb();
     const fs::path dir = makeTempDir();

@@ -16,6 +16,7 @@
 #include "raylib.h"
 #include "resource/ResourceManager.hpp"
 #include "states/BlackMarketState.hpp"
+#include "states/CastleState.hpp"
 #include "states/EquipShopState.hpp"
 #include "states/GuildState.hpp"
 #include "states/InnState.hpp"
@@ -101,7 +102,9 @@ void TownState::buildForCurrentTown() {
     const bool hasPrev = town > 1;
     const bool hasNext = town < kTownCount;
     const bool nextUnlocked = context_.party.highestUnlockedTown > town;
-    town_ = town::buildTown(town, hasPrev, hasNext, nextUnlocked);
+    const bool hasCastle = town == kTownCount;  // M40: the castle road leaves town 7
+    town_ = town::buildTown(town, hasPrev, hasNext, nextUnlocked, hasCastle,
+                            context_.party.castleUnlocked);
     // Center the player body inside the spawn tile.
     const float inset = (town::Tilemap::kTileSize - kPlayerSize) * 0.5f;
     player_ = Rect{town_.spawnPixel.x + inset, town_.spawnPixel.y + inset, kPlayerSize, kPlayerSize};
@@ -144,8 +147,11 @@ void TownState::onResume() {
     // rather than rebuilding — which would teleport the player off a shop door.
     const int town = clampTown(context_.party.currentTown);
     for (town::TownExit& e : town_.exits) {
-        if (e.toNext) {
+        if (e.toNext && !e.toCastle) {
             e.locked = context_.party.highestUnlockedTown <= town;
+        }
+        if (e.toCastle) {  // M40: a town-7 clear opens the castle road in place
+            e.locked = !context_.party.castleUnlocked;
         }
     }
     // Fires once, after the player has seen their first run's reckoning.
@@ -236,6 +242,9 @@ void TownState::handleInput(const Input& input) {
         } else if (nearExit_ != nullptr) {
             if (nearExit_->locked) {
                 context_.audio.play(Sfx::Error);  // road not yet open; hint is on screen
+            } else if (nearExit_->toCastle) {
+                context_.audio.play(Sfx::Door);  // M40: climb to the castle (not a town)
+                stack().pushState(std::make_unique<CastleState>(stack(), context_));
             } else {
                 travelTo(nearExit_->destTown);
             }
@@ -304,14 +313,20 @@ void TownState::render() {
         ui::drawTextCentered(b.name.c_str(), cx, b.y * ts - 9, 8, Color{225, 225, 235, 255});
     }
 
-    // Exit signposts above each road out (M32).
+    // Exit signposts by each road out (M32; the M40 castle road is at the top).
     for (const town::TownExit& e : town_.exits) {
         const int cx = e.tileX * ts + ts / 2;
-        const std::string label = e.locked ? "Locked"
-                                  : e.toNext ? "Town " + std::to_string(e.destTown) + " >"
-                                             : "< Town " + std::to_string(e.destTown);
+        std::string label;
+        if (e.toCastle) {
+            label = e.locked ? "Castle (locked)" : "^ Castle";
+        } else {
+            label = e.locked ? "Locked"
+                    : e.toNext ? "Town " + std::to_string(e.destTown) + " >"
+                               : "< Town " + std::to_string(e.destTown);
+        }
         const Color col = e.locked ? Color{150, 120, 120, 255} : Color{240, 230, 160, 255};
-        ui::drawTextCentered(label.c_str(), cx, (e.tileY - 1) * ts - 1, 8, col);
+        const int labelY = e.toCastle ? (e.tileY + 1) * ts + 1 : (e.tileY - 1) * ts - 1;
+        ui::drawTextCentered(label.c_str(), cx, labelY, 8, col);
     }
 
     // Black-market NPC (M34): a hooded dealer at the offer's seeded plaza tile.
@@ -383,7 +398,11 @@ void TownState::render() {
         DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
         std::string text;
         if (nearExit_->locked) {
-            text = "Clear a dungeon in this town to open the road onward";
+            text = nearExit_->toCastle
+                       ? "Clear a town-7 dungeon to open the road to the castle"
+                       : "Clear a dungeon in this town to open the road onward";
+        } else if (nearExit_->toCastle) {
+            text = input::prompt(bindings, InputAction::Confirm, device, "Enter the Castle");
         } else {
             text = input::prompt(bindings, InputAction::Confirm, device,
                                  "Travel to Town " + std::to_string(nearExit_->destTown));

@@ -19,6 +19,10 @@ std::string slotLabel(save::SaveSystem& saves, save::SaveSlot slot) {
     std::string label = save::slotDisplayName(slot);
     if (auto s = saves.summary(slot)) {
         label += TextFormat("  -  Lv.%d  party %d  %dg", s->highestLevel, s->partySize, s->gold);
+        // M40: a party that has beaten the King carries a visible title here.
+        if (!s->kingTitle.empty()) {
+            label += "  -  " + s->kingTitle;
+        }
     } else {
         label += "  -  (empty)";
     }

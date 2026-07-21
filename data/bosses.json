@@ -160,6 +160,20 @@
       "xpReward": 280,
       "goldReward": 190,
       "description": "The seventh town's dread ruler, master of every affliction."
+    },
+    {
+      "id": "the_hollow_king",
+      "name": "The Hollow King",
+      "archetype": "brute",
+      "stats": { "hp": 560, "attack": 18, "magic": 22, "defense": 18, "speed": 13 },
+      "skills": ["blinding_curse", "silencing_word", "maddening_gaze", "withering_touch", "sovereigns_cataclysm", "sovereign_smite"],
+      "minions": [],
+      "passives": ["keen_senses", "clarity", "counter_attack"],
+      "immuneToConfusion": true,
+      "telegraph": "The Hollow King rises - blind, silence, and confusion break upon him, yet he lays every affliction on you.",
+      "xpReward": 500,
+      "goldReward": 300,
+      "description": "The sovereign of the castle above the seven towns - the hardest foe in the realm. Fought only in his throne room; his regalia is won nowhere else."
     }
   ]
 }

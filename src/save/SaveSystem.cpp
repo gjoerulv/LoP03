@@ -68,6 +68,12 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["blackMarketPrice"] = party.blackMarket.priceGold;
   root["blackMarketTileX"] = party.blackMarket.tileX;
   root["blackMarketTileY"] = party.blackMarket.tileY;
+  root["castleUnlocked"] = party.castleUnlocked;                        // M40 (optional; old -> false)
+  root["castleBossRushBestTurns"] = party.castleRecords.bossRushBestTurns;
+  root["castleEndlessBestWave"] = party.castleRecords.endlessBestWave;
+  root["castleKingDefeated"] = party.castleRecords.kingDefeated;
+  root["castleKingBestTurns"] = party.castleRecords.kingBestTurns;
+  root["castleKingTitle"] = party.castleRecords.kingTitle;
 
   Json members = Json::array();
   for (const Character& c : party.members) {
@@ -157,6 +163,14 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   if (loaded.blackMarket.present && db_.findItem(loaded.blackMarket.itemId) == nullptr) {
     loaded.blackMarket = BlackMarketOffer{};
   }
+  // M40 castle: optional; old saves load locked with no records. Records are
+  // non-negative; the King title is free text (defensive-loaded like any string).
+  loaded.castleUnlocked = rootReader.optBool("castleUnlocked", false);
+  loaded.castleRecords.bossRushBestTurns = rootReader.optIntMin("castleBossRushBestTurns", 0, 0);
+  loaded.castleRecords.endlessBestWave = rootReader.optIntMin("castleEndlessBestWave", 0, 0);
+  loaded.castleRecords.kingDefeated = rootReader.optBool("castleKingDefeated", false);
+  loaded.castleRecords.kingBestTurns = rootReader.optIntMin("castleKingBestTurns", 0, 0);
+  loaded.castleRecords.kingTitle = rootReader.optString("castleKingTitle");
 
   auto partyIt = root.find("party");
   if (partyIt == root.end() || !partyIt->is_array()) {
@@ -270,6 +284,7 @@ std::optional<SlotSummary> SaveSystem::summary(SaveSlot slot) const {
   s.partySize = static_cast<int>(tmp.size());
   s.highestLevel = highestLevel(tmp);
   s.gold = tmp.gold;
+  s.kingTitle = tmp.castleRecords.kingTitle;  // M40
   return s;
 }
 

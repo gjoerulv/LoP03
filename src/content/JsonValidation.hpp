@@ -41,6 +41,9 @@ public:
     // Accepts integer or floating JSON numbers.
     float optFloat(const char* key, float fallback);
 
+    // Optional boolean (absent -> fallback; non-bool -> error + fallback).
+    bool optBool(const char* key, bool fallback);
+
     // String arrays (each element validated as a string).
     std::vector<std::string> optStringArray(const char* key);
 

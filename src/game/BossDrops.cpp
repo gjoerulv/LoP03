@@ -4,12 +4,16 @@
 
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
+#include "game/Castle.hpp"  // kKingLegendaryId (the King-only unique is not in the pool)
 
 namespace cd {
 
 std::vector<std::string> legendaryDropPool(const content::ContentDatabase& content) {
     std::vector<std::string> ids;
     for (const auto& [id, def] : content.items()) {
+        if (id == kKingLegendaryId) {
+            continue;  // M40: the King's unique regalia is won only from the King
+        }
         if (def.rarity == content::Rarity::Legendary &&
             (def.type == content::ItemType::Equipment ||
              def.type == content::ItemType::Relic)) {

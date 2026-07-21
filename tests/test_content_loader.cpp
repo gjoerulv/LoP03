@@ -135,10 +135,10 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     INFO(rep.summary());
     REQUIRE(ok);
     REQUIRE(db.classCount() == 6);
-    REQUIRE(db.skillCount() == 48);  // +5 M35 status skills (smoke/flash/silence/bewilder/purify)
+    REQUIRE(db.skillCount() == 54);  // +6 M40 King damage+debuff skills
     REQUIRE(db.enemyCount() == 43);  // +12 M38 per-town enemies (4 normal + 8 elite)
-    REQUIRE(db.itemCount() == 68);  // +27 M37 (24 per-town pieces + 3 legendary weapons)
-    REQUIRE(db.bossCount() == 12);  // +6 M38 per-town bosses (towns 2-7)
+    REQUIRE(db.itemCount() == 69);  // +1 M40 King unique legendary (sovereigns_regalia)
+    REQUIRE(db.bossCount() == 13);  // +1 M40 The Hollow King
     REQUIRE(db.themeCount() == 3);
     REQUIRE(db.findClass("knight") != nullptr);
     REQUIRE(db.hasSkill("fireball"));

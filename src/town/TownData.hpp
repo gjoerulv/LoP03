@@ -28,9 +28,10 @@ struct Building {
 struct TownExit {
     int tileX = 0;
     int tileY = 0;
-    int destTown = 1;     // town index to travel to
-    bool toNext = false;  // true = next/east (higher), false = previous/west
-    bool locked = false;  // next-town exit shown but not yet unlocked
+    int destTown = 1;      // town index to travel to (ignored when toCastle)
+    bool toNext = false;   // true = next/east (higher), false = previous/west
+    bool locked = false;   // exit shown but not yet unlocked
+    bool toCastle = false; // M40: the road from town 7 up to the castle (not a town)
 };
 
 struct TownLayout {
@@ -44,7 +45,11 @@ struct TownLayout {
 // exits; a previous-town exit appears when `hasPrev`, a next-town exit when
 // `hasNext` (rendered locked until `nextUnlocked`). The default (town 1, no
 // exits) reproduces the pre-M32 single-town layout byte-for-byte.
+// `hasCastle` adds the northern road to the castle (town 7 only), shown locked
+// until `castleUnlocked` (M40). The default (town 1, no exits) reproduces the
+// pre-M32 single-town layout byte-for-byte.
 TownLayout buildTown(int town = 1, bool hasPrev = false, bool hasNext = false,
-                     bool nextUnlocked = false);
+                     bool nextUnlocked = false, bool hasCastle = false,
+                     bool castleUnlocked = false);
 
 }  // namespace cd::town

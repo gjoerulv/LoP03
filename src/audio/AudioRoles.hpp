@@ -44,8 +44,10 @@ enum class MusicTrack {
     Victory,
     Defeat,
     Result,
+    Castle,       // M40: the castle place
+    KingBattle,   // M40: the King fight
 };
-inline constexpr std::size_t kMusicCount = 11;  // excludes None
+inline constexpr std::size_t kMusicCount = 13;  // excludes None
 
 enum class AmbienceTrack {
     None,
@@ -69,7 +71,8 @@ inline constexpr std::array<const char*, kMusicCount> kMusicIds = {
     "music.title",         "music.town",         "music.guild",
     "music.dungeon.keep",  "music.dungeon.mine", "music.dungeon.forest",
     "music.battle",        "music.boss",         "music.victory",
-    "music.defeat",        "music.result",
+    "music.defeat",        "music.result",       "music.castle",
+    "music.king",
 };
 
 inline constexpr std::array<const char*, kAmbienceCount> kAmbienceIds = {
@@ -98,6 +101,8 @@ inline constexpr std::array<int, kMusicCount> kSynthMusicIndex = {
     2,          // Boss
     -1, -1,     // Victory / Defeat (jingles fall back to stinger SFX)
     0,          // Result
+    0,          // Castle (town-tier synth fallback)
+    2,          // KingBattle (battle-tier synth fallback)
 };
 
 // Minimum seconds between accepted plays of the same SFX role. Guards rapid

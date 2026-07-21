@@ -90,6 +90,10 @@ void applyChoice(Battle& b, int actor, const EnemyChoice& choice,
 }  // namespace
 
 SimResult simulate(Battle battle, const content::ContentDatabase& db, int maxRounds) {
+    return simulateInPlace(battle, db, maxRounds);
+}
+
+SimResult simulateInPlace(Battle& battle, const content::ContentDatabase& db, int maxRounds) {
     int rounds = 0;
     while (battle.outcome() == Outcome::Ongoing && rounds < maxRounds) {
         ++rounds;

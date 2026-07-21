@@ -1029,4 +1029,18 @@ Crown $b 12 4; FR $b 25 3 2 27 $PAL.stone3; Ell $b 21 0 9 9 $PAL.violet; Ell $b 
 Speckle $b 7 14 18 15 $PAL.violet 0.10
 SaveEnemy $b 'boss_dread_sovereign'
 
+# --- M40 the castle's King (appended last: its speckle RNG never shifts earlier
+#     files' bytes) ---
+$b = New-Img 32 32                                                # the_hollow_king: sovereign of the castle
+Ell $b 3 7 26 23 $PAL.violet; Ell $b 6 11 20 18 $PAL.night2      # dark royal frame
+FR $b 10 4 12 9 $PAL.night1; Eyes $b 14 8 $PAL.gold             # crowned head, gold gaze
+Crown $b 11 2                                                     # a grander crown
+FR $b 8 13 16 17 $PAL.night2; FR $b 8 13 16 2 $PAL.gold          # robe with gold trim
+FR $b 13 16 6 14 $PAL.violet                                     # central sash
+FR $b 1 12 4 16 $PAL.night1; FR $b 27 12 4 16 $PAL.night1        # broad shoulders
+Ell $b 20 0 11 10 $PAL.gold; Ell $b 22 2 7 6 $PAL.danger        # wreathed orb-scepter
+FR $b 8 30 6 2 $PAL.night1; FR $b 18 30 6 2 $PAL.night1          # feet
+Speckle $b 6 11 20 18 $PAL.violet 0.10
+SaveEnemy $b 'boss_the_hollow_king'
+
 Write-Output 'Texture generation complete.'

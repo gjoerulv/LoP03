@@ -46,8 +46,8 @@
 | 36 | Passive skills | ☑ complete (approved) |
 | 37 | Per-town equipment | ☑ complete (approved) |
 | 38 | Per-town enemies & bosses | ☑ complete (approved) |
-| 39 | Boss legendary & token drops | ◑ implemented, awaiting manual approval |
-| 40 | The castle & the King's challenges | ☐ planned |
+| 39 | Boss legendary & token drops | ☑ complete (approved) |
+| 40 | The castle & the King's challenges | ◑ implemented, awaiting manual approval |
 | 41 | Story NPCs & lore | ☐ planned |
 | 42 | Enrichment: bestiary, victory stats, achievements | ☐ planned |
 
@@ -1507,7 +1507,8 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M39 — Boss legendary & token drops
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing; committed. Implemented / audited
   2026-07-21 against the post-M38 checkout; owner authorized beginning M39 after
   approving M38. New pure `game/BossDrops` module (reusing the M34
   `blackMarketHash` primitive, distinct salts): on a boss kill in **town ≥ 3 and
@@ -1540,7 +1541,25 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M40 — The castle & the King's challenges
 
-- **Status:** ☐ planned — **direction only.** The endgame milestone.
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against the post-M39 checkout; owner authorized beginning M40 after
+  approving M39. `kCastleTown = 8` as a distinct place (never a ladder town); a
+  town-7 clear opens the northern road to a `CastleState` throne hall with the
+  King's three challenges, its own records/rewards, kept entirely outside the
+  dungeon scoreboard. New Hollow King boss (Keen Senses + Clarity + Counter Attack,
+  immune to all three control statuses via a new confusion-immunity flag; kit
+  inflicting every status), unique King-only legendary + a visible title, two new
+  music tracks + a King sprite, no free healing in the gauntlets. Sim-tuned so a
+  maxed party beats the King (hard), clears the Boss Rush no-heal, and reaches a
+  sane Endless wave. Owner playtest fixes folded in: immune statuses no longer
+  display, and the King's debuffs now deal damage (damaging Support skills + a
+  six-skill damage+status kit) — both byte-identical for existing battles. No
+  `kSaveVersion` / `kBattleRulesVersion` (3) / `kGenerationVersion` (8) change.
+  **361/361 tests** (+13), `--capture` **35/35** overflow-clean (3 new castle
+  scenes), Debug + Release clean. **Deviation:** the
+  castle is a menu-driven hub, not a walkable tilemap (flagged for owner veto — see
+  the note's §K). Milestone note: `docs/milestone_notes/M40_castle_king.md`.
+- **(original scope below)** — the endgame milestone.
 - **Goal:** a castle above the town-7 ceiling with a King and three challenges,
   its own records and rewards, kept entirely outside the dungeon scoreboard.
 - **Primary deliverables:** `kCastleTown = 8` as a **distinct place, not a ladder

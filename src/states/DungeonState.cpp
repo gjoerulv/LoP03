@@ -568,6 +568,10 @@ void DungeonState::completeDungeon() {
     // saved on the next save/autosave, like the run's gold and XP).
     context_.party.highestUnlockedTown =
         unlockAfterClear(context_.party.highestUnlockedTown, dungeon_.town);
+    // M40: clearing any town-7 dungeon opens the road up to the castle.
+    if (dungeon_.town >= kTownCount) {
+        context_.party.castleUnlocked = true;
+    }
     // M33: advance the stakes baseline/penalty on a scoring completion. A
     // completed-but-zero run (extreme turn penalty) is treated like a score-0
     // run: it does not move the baseline (owner rule).

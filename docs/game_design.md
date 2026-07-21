@@ -173,10 +173,11 @@ the boss or leaving the dungeon gives **0 dungeon score**.
 buffs/debuffs, three afflictions deepen the tactics. **Blind** makes a unit's
 physical attacks usually miss (the game's first to-hit roll — magic and items are
 unaffected). **Silence** blocks MP-cost skills (basic attacks and items still
-work). **Confusion** makes a unit's basic attack strike a seeded random member of
-its own side — and a confused unit is **snapped out of it the moment it takes
-damage**, so hitting a confused ally (or letting a foe strike your confused
-member) is a real counter. All three are fully deterministic (seeded off the
+work). **Confusion** takes over a unit's turn entirely: it acts automatically —
+**no player input for a confused character** — lashing out with a basic attack at
+a seeded random member of its own side. A confused unit is **snapped out of it the
+moment it takes damage**, so hitting a confused ally (or letting a foe strike your
+confused member) is a real counter. All three are fully deterministic (seeded off the
 battle, so live play and the simulator agree exactly), applied by class skills (a
 Rogue and Ranger blind, a Mage silence and confusion) and enemy kits (disruptors,
 sorcerers, and several bosses now weave them in where the role fits), and all are
@@ -278,6 +279,27 @@ result screen. The rates are tuned (sim-tabulated) to reward deep, high-town
 clears without replacing the black market: one top clear's expected token drip is
 worth less than a market purchase, and most top clears still drop no legendary, so
 scarcity holds. Boss drops never affect the score (they are a post-battle reward).
+
+**The castle & the King (M40).** Clearing any **town-7 dungeon** opens a road that
+climbs from town 7 up to the **castle** — a distinct place above the seven-town
+ladder (not a town: no shops, dungeons, stakes, or score bonus). The castle hosts
+an inn, a save point, the party's **castle records**, and the **King's three
+challenges**, each a step above normal play and each paying a **one-time first-clear
+reward**:
+
+- **Boss Rush** — the full 12-boss roster, back to back, with **no free healing
+  between fights** (items and skills still work). Record: fewest total turns.
+- **Endless Rush** — deterministic escalating waves; survive as long as you can, no
+  free healing. Record: best wave reached.
+- **The Hollow King** — the hardest fight in the game. A bespoke boss above every
+  town-7 foe, immune to Blind, Silence, **and** Confusion, striking your afflicted
+  party harder as the fight wears on, with a kit that inflicts every status. Beating
+  him the first time grants a **unique legendary** (the Sovereign's Regalia, won
+  nowhere else), a **visible title**, gold, and tokens.
+
+Castle records live **entirely apart from the dungeon scoreboard** (score
+comparability is preserved); challenges never touch your dungeon score, stakes, or
+the scoreboard. Travel back to town is free.
 
 ## 11. Bosses
 

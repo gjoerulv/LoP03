@@ -739,7 +739,21 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                 break;
             }
             case content::SkillCategory::Support:
-                break;  // effect comes from the applied status below
+                // M40 (owner refinement): a Support skill with power also wounds an
+                // enemy target (magic), so a debuff-curse deals damage, not only a
+                // status. Every shipped Support skill is power 0, so this is inert
+                // for all prior content (battles stay byte-identical).
+                if (skill.power > 0 && t.side != a.side && t.alive()) {
+                    std::string extra;
+                    const int base = magicDamage(a, t, skill.power);
+                    const int dealt = dealMagic(actor, ti, base, extra);
+                    log += " " + t.name + " takes " + std::to_string(dealt) + ".";
+                    if (!t.alive()) {
+                        log += " " + t.name + " is KO'd!";
+                    }
+                    log += extra;
+                }
+                break;  // status still applied below
         }
 
         // Cleanse (M35): strip every negative status from an ally target, so a
@@ -866,6 +880,7 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             u.ralliesMinions = boss->archetype == content::BossArchetype::Commander;
             u.rushOpener = boss->archetype == content::BossArchetype::Rush;
             u.telegraph = boss->telegraph;
+            u.confusionImmune = boss->immuneToConfusion;  // M40 (the King)
             applyPassives(u, boss->passives, db);  // M36 (bosses may carry several)
             b.units.push_back(std::move(u));
         }

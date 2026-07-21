@@ -100,6 +100,7 @@ struct Combatant {
     int firstStrikeBonusPct = 0;          // First Strike: bonus on the first damaging action
     bool blindImmune = false;             // Keen Senses
     bool silenceImmune = false;           // Clarity
+    bool confusionImmune = false;         // M40: the King (bespoke BossDef immunity)
     bool counterAttack = false;           // Counter Attack
     bool counteredThisRound = false;      // reset by beginRound
     bool ironWill = false;                // Iron Will
@@ -184,14 +185,26 @@ inline bool hasStatus(const Combatant& c, content::StatusType t) {
     }
     return false;
 }
-inline bool isConfused(const Combatant& c) { return hasStatus(c, content::StatusType::Confusion); }
-// Silence/Blind respect the M36 immunity passives (Clarity / Keen Senses), so an
-// immune unit is never treated as afflicted anywhere the queries are used.
+// Confusion/Silence/Blind respect immunity (M40 confusionImmune, M36 Clarity /
+// Keen Senses), so an immune unit is never treated as afflicted anywhere the
+// queries are used. No existing content sets confusionImmune, so every prior
+// battle resolves byte-identically.
+inline bool isConfused(const Combatant& c) {
+    return hasStatus(c, content::StatusType::Confusion) && !c.confusionImmune;
+}
 inline bool isSilenced(const Combatant& c) {
     return hasStatus(c, content::StatusType::Silence) && !c.silenceImmune;
 }
 inline bool isBlinded(const Combatant& c) {
     return hasStatus(c, content::StatusType::Blind) && !c.blindImmune;
+}
+// M40: whether this unit is immune to a status type. A stored status the unit is
+// immune to has no effect (the queries above ignore it), so it must never be shown
+// as afflicted either — display sites skip statuses for which this is true.
+inline bool isImmuneTo(const Combatant& c, content::StatusType t) {
+    return (t == content::StatusType::Blind && c.blindImmune) ||
+           (t == content::StatusType::Silence && c.silenceImmune) ||
+           (t == content::StatusType::Confusion && c.confusionImmune);
 }
 
 // M35: may this combatant cast this skill? False only if silenced and the skill

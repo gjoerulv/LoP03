@@ -20,6 +20,7 @@
 #include "core/FadeController.hpp"
 #include "core/GameConfig.hpp"
 #include "dungeon/DungeonGenerator.hpp"
+#include "game/Castle.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -32,6 +33,8 @@
 #include "settings/Settings.hpp"
 #include "states/BattleState.hpp"
 #include "states/BlackMarketState.hpp"
+#include "states/CastleChallengeState.hpp"
+#include "states/CastleState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
@@ -497,6 +500,42 @@ int run(const char* outDir) {
                  drops.legendaryId = "titanforged_heart";  // longest legendary name
                  s.pushState(std::make_unique<DungeonResultState>(
                      s, c, run, score::computeScore(run), drops));
+             }},
+            {"33_castle_hub",
+             [](StateStack& s, AppContext& c) {
+                 // M40: the castle throne hall with a full records panel (earned
+                 // title) to overflow-check the hub layout.
+                 c.party.castleUnlocked = true;
+                 c.party.castleRecords.bossRushBestTurns = 44;
+                 c.party.castleRecords.endlessBestWave = 17;
+                 c.party.castleRecords.kingDefeated = true;
+                 c.party.castleRecords.kingBestTurns = 18;
+                 c.party.castleRecords.kingTitle = kKingTitle;
+                 s.pushState(std::make_unique<CastleState>(s, c));
+             }},
+            {"34_king_battle",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M40: the King fight (its own sprite + telegraph), the hardest
+                 // battle in the game. The King is dealt all three control statuses
+                 // it is immune to -> they must NOT show as labels (display fix).
+                 battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 for (battle::Combatant& u : b.units) {
+                     if (u.side == battle::Side::Enemy) {
+                         u.statuses.push_back({content::StatusType::Blind, 0, 4});
+                         u.statuses.push_back({content::StatusType::Silence, 0, 4});
+                         u.statuses.push_back({content::StatusType::Confusion, 0, 4});
+                     }
+                 }
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::KingBattle));
+             }},
+            {"35_castle_result",
+             [](StateStack& s, AppContext& c) {
+                 // M40: the challenge result overlay with the longest reward text
+                 // (a King first-clear), to overflow-check the panel.
+                 auto st = std::make_unique<CastleChallengeState>(s, c, CastleChallenge::King);
+                 st->captureKingReward();
+                 s.pushState(std::move(st));
              }},
         };
 

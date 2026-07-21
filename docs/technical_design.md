@@ -851,6 +851,61 @@ content-free and unit-tested; the content pool + assembled roll live in the `.cp
   `kBattleRulesVersion` and `kGenerationVersion` untouched (a post-battle reward
   roll changes neither battle resolution nor generated content).
 
+### The castle & the King's challenges (Milestone 40)
+
+Pure rules in `game/Castle.hpp` (+ `.cpp`). **`kCastleTown = 8` is a distinct place,
+never a ladder town** — it is never assigned to `Party.currentTown` and never passed
+through `WorldLadder`/`clampTown` (which cap at 7), so no town array is touched. The
+castle is reached, and left, only through its own states.
+
+- **Unlock & travel.** `Party.castleUnlocked` (optional save field) is set in
+  `DungeonState::completeDungeon` on any town-7 clear. `town::buildTown` gains a
+  northern **castle road** in town 7 (a `TownExit` with `toCastle = true`), shown
+  locked until unlocked and refreshed in `TownState::onResume` exactly like the M32
+  next-town road; standing on it pushes `CastleState` (not `travelTo`). Travel back
+  is a free pop.
+- **`CastleState`** is a menu-driven throne hall (Boss Rush / Endless Rush / the King
+  / inn / save / leave) that shows the party's `CastleRecords`; the Jester spot is
+  reserved here for M41. (A walkable castle with a bespoke tileset is a deliberate
+  deferral — see the note's §K.)
+- **`CastleChallengeState`** runs a challenge as a sequence of `BattleState`s with
+  **persistent HP/MP** (no free healing; `BattleState` writes hp/mp back to the party
+  between fights). Boss Rush enumerates `bossRushOrder` (the 12 bosses, King-excluded,
+  sorted) at `kBossRushScalePct`; Endless builds `endlessWaveTeam` from a fixed seed
+  (`kEndlessSeed`, blackMarketHash stream) with escalating scale/size; the King is
+  `kingTeam` at `kKingScalePct` with `MusicTrack::KingBattle` (a new optional
+  `BattleState` music override). On finish it updates the records, pays the one-time
+  first-clear reward (the King also adds the unique `sovereigns_regalia` — excluded
+  from `legendaryDropPool` so it drops nowhere else — and the title), and shows a
+  result overlay. Scales are **sim-tuned** (`[castle]` / `[castle-report]`): the King
+  is beatable by a maxed party but a real war of attrition, the Boss Rush clears
+  no-heal, Endless reaches a sane wave then overwhelms.
+- **The King's Confusion immunity.** A new `Combatant.confusionImmune` (default false)
+  resolved from an optional `BossDef.immuneToConfusion`; `isConfused` respects it,
+  mirroring the M36 Blind/Silence immunities. No existing content sets it, so every
+  prior battle resolves byte-identically — no `kBattleRulesVersion` bump. Combined
+  with the King's Keen Senses + Clarity passives, he is immune to all three control
+  statuses.
+- **Immune statuses are hidden (display).** A stored status a unit is immune to has
+  no effect (the effect queries already ignore it), so it must not read as afflicted
+  either. `battle::isImmuneTo(combatant, type)` gates the three status-display sites
+  (per-unit HUD badges, target-info panel, Details overlay). Display-only — resolution
+  is unchanged.
+- **The King's damaging debuffs.** A `Support`-category skill with `power > 0` now
+  also deals that power as magic damage to an enemy target (the effect switch's
+  `Support` case), so a debuff-curse wounds as well as afflicts. Every shipped Support
+  skill is power 0, so this is inert for all prior content (battles byte-identical, no
+  version bump); only the King's six bespoke damaging curses use it. This is what
+  makes the King deal damage every turn rather than spending turns on effect-less
+  debuffs (the enemy AI prefers Support debuffs).
+- **Records & audio.** `CastleRecords` (bossRushBestTurns / endlessBestWave /
+  kingDefeated / kingBestTurns / kingTitle) are optional Party save fields, defensively
+  loaded (old saves → locked / no records), and surfaced on the castle hub and the
+  load-screen slot summary — never in the dungeon `Scoreboard`. Two new tracks
+  (`MusicTrack::Castle`, `MusicTrack::KingBattle`) with manifest rows + synth fallback.
+- **Versions.** `kSaveVersion`, `kBattleRulesVersion` (3), and `kGenerationVersion` (8)
+  all unchanged.
+
 ## 13. Presentation (Milestone 8)
 
 - **Audio (`audio/AudioManager`):** SFX and looping music are **synthesized at
