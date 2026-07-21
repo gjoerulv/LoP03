@@ -528,10 +528,11 @@ void DungeonState::onResume() {
             run_.dangerDefeated +=
                 danger::tierWeight(teamTier_[static_cast<std::size_t>(pendingTeamIndex_)]);
         }
+        context_.party.legendaryTokens += 1;  // M34: elite fights fund the black market
         room.teamIndex = -1;
         room.event.resolved = true;
         buildRoom();
-        message_ = "Challenge won - double danger credited." + reward;
+        message_ = "Challenge won - double danger, +1 legendary token." + reward;
         messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Boss) {
         completeDungeon();
@@ -555,6 +556,10 @@ void DungeonState::completeDungeon() {
     const int stakesPct =
         stakesPenaltyPct(context_.party.stakes, dungeon_.town, dungeon_.depth);
     summary.stakesPenaltyPct = stakesPct;
+    // M34: whether this run raises the stakes (the black-market spawn trigger),
+    // read from the PRE-run state before it advances below.
+    const bool raisedStakes =
+        stakesRaised(context_.party.stakes, dungeon_.town, dungeon_.depth);
 
     const int total = score::computeScore(summary);
 
@@ -568,6 +573,35 @@ void DungeonState::completeDungeon() {
     if (total > 0) {
         context_.party.stakes =
             afterCompletedRun(context_.party.stakes, dungeon_.town, dungeon_.depth);
+    }
+
+    // M34: a stakes-raising completed run in town >= 2 may spawn the black
+    // market, seeded from this run so reloading the entry autosave cannot reroll
+    // it. The offer persists in the party save until purchased; a later hit
+    // replaces it. Only reached on a real completion (total > 0).
+    if (blackMarketShouldSpawn(total > 0, raisedStakes, dungeon_.town, dungeon_.seed,
+                               dungeon_.depth)) {
+        std::vector<std::string> legendaryIds;
+        for (const auto& [id, def] : context_.content.items()) {
+            if (def.rarity == content::Rarity::Legendary &&
+                (def.type == content::ItemType::Equipment ||
+                 def.type == content::ItemType::Relic)) {
+                legendaryIds.push_back(id);
+            }
+        }
+        std::sort(legendaryIds.begin(), legendaryIds.end());
+        if (!legendaryIds.empty()) {
+            BlackMarketOffer offer;
+            offer.present = true;
+            offer.town = dungeon_.town;
+            offer.itemId = legendaryIds[static_cast<std::size_t>(
+                blackMarketItemIndex(dungeon_.seed, static_cast<int>(legendaryIds.size())))];
+            offer.priceGold = blackMarketPriceGold(dungeon_.town);
+            const MarketTile mt = kBlackMarketTiles[blackMarketTileIndex(dungeon_.seed)];
+            offer.tileX = mt.x;
+            offer.tileY = mt.y;
+            context_.party.blackMarket = offer;
+        }
     }
 
     score::ScoreEntry entry;

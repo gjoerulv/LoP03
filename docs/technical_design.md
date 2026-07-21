@@ -716,6 +716,30 @@ baseline moves to each completed run's stakes.
   penalty row. Save-scum resistance comes from the entry autosave capturing the
   pre-run state — the penalty is a pure function of persisted state.
 
+### Black market & legendary gear (Milestone 34)
+
+Pure rules in `game/BlackMarket.hpp` (`BlackMarketOffer`, `blackMarketRolls`,
+`blackMarketPriceGold`, `blackMarketTileIndex`/`blackMarketItemIndex`, candidate
+plaza tiles, constants). All outcomes are deterministic functions of the run's
+dungeon seed (+ stakes), so a reload cannot reroll them.
+
+- **Currency & content.** `Party.legendaryTokens` (+1 per `EncounterKind::Challenge`
+  victory) and 5 `Rarity::Legendary` `items.json` rows. Legendaries are excluded
+  from the equip shop (`equipShopBuyIds` skips the rarity) so the market is their
+  only source, but remain equippable once owned.
+- **Spawn.** `DungeonState::completeDungeon`, after the M33 stakes update, sets
+  `party.blackMarket` (a `BlackMarketOffer`: present/town/itemId/price/tile) when
+  the run raised the stakes in town ≥ 2, `total > 0`, and `blackMarketRolls` hits.
+  The offer persists in the save until purchased; a later hit replaces it.
+- **NPC & purchase.** `TownState` draws the NPC (`actor.market.overworld`) and
+  prompts when the player stands on the offer's tile in its town;
+  `BlackMarketState` is the purchase screen (gold or `kBlackMarketTokenPrice`
+  tokens), granting the item and clearing the offer. `kFirstMarket` teaches it.
+- **Save.** `legendaryTokens` + the offer fields are optional (old saves → 0 / no
+  offer); an offer whose item the content no longer knows is dropped on load. No
+  `kSaveVersion` bump; `generationVersion`/`battleRulesVersion` untouched (the
+  market is a post-run town event).
+
 ## 13. Presentation (Milestone 8)
 
 - **Audio (`audio/AudioManager`):** SFX and looping music are **synthesized at

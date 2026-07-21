@@ -883,4 +883,17 @@ foreach ($town in 2, 3, 4, 5, 6, 7) {
   }
 }
 
+# ============================ M34 black-market NPC ============================
+# A hooded dealer overworld sprite (12x12), distinct from the brown dungeon
+# merchant: dark cloak, violet trim, a glint of gold. Uses no speckle RNG, so it
+# does not affect any other file's bytes.
+Write-Output 'Generating M34 black-market NPC...'
+$b = New-Img 12 12
+FR $b 4 1 4 3 $PAL.bossBody; FR $b 4 3 4 1 $PAL.night1            # hood + face shadow
+FR $b 3 4 6 5 $PAL.night3                                          # cloak
+FR $b 3 4 6 1 $PAL.violet                                          # violet trim
+P $b 5 5 $PAL.gold; P $b 6 6 $PAL.glint                            # coin glint
+FR $b 4 9 2 2 $PAL.night1; FR $b 6 9 2 2 $PAL.night1              # boots
+Outline $b; SaveImg $b 'actors/market_npc.png'
+
 Write-Output 'Texture generation complete.'

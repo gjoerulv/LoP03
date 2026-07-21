@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "content/Definitions.hpp"
+#include "game/BlackMarket.hpp"
 #include "game/Character.hpp"
 #include "game/Inventory.hpp"
 #include "game/StakesLadder.hpp"
@@ -29,6 +30,11 @@ struct Party {
     // steps. Saved as optional fields (old saves -> fresh state). See
     // game/StakesLadder.hpp.
     StakesState stakes;
+    // Black market (M34): a currency won from optional elite fights, and the
+    // current legendary offer (if any). Both saved as optional fields (old saves
+    // -> 0 / no offer). See game/BlackMarket.hpp.
+    int legendaryTokens = 0;
+    BlackMarketOffer blackMarket;
 
     bool empty() const { return members.empty(); }
     std::size_t size() const { return members.size(); }

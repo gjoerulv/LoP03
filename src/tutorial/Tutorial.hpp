@@ -31,6 +31,7 @@ inline constexpr const char* kResultFirst = "result_first";
 inline constexpr const char* kTownReturn = "town_return";
 inline constexpr const char* kFirstTravel = "first_travel";    // M32 town ladder
 inline constexpr const char* kFirstPenalty = "first_penalty";  // M33 stakes penalty
+inline constexpr const char* kFirstMarket = "first_market";    // M34 black market
 
 struct Beat {
     const char* id;
@@ -91,6 +92,11 @@ inline constexpr Beat kBeats[] = {
      "time, down to a 90% floor. Raise the town or the depth above your last "
      "cleared run to reset it. The Guild shows the penalty before you enter, "
      "so you are never surprised."},
+    {kFirstMarket, "The black market",
+     "A hooded dealer sometimes appears after a stakes-raising run, selling one "
+     "legendary piece for gold or for legendary tokens - which you earn from "
+     "optional elite challenges in dungeons. Buy it or walk away; the offer "
+     "keeps until you do."},
 };
 inline constexpr std::size_t kBeatCount = sizeof(kBeats) / sizeof(kBeats[0]);
 

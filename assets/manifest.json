@@ -102,6 +102,7 @@
 
     { "id": "actor.player.overworld", "type": "texture", "path": "textures/actors/player_overworld.png" },
     { "id": "actor.player.walk", "type": "texture", "path": "textures/actors/player_walk.png" },
+    { "id": "actor.market.overworld", "type": "texture", "path": "textures/actors/market_npc.png" },
     { "id": "actor.knight.battle", "type": "texture", "path": "textures/actors/knight_battle.png" },
     { "id": "actor.ranger.battle", "type": "texture", "path": "textures/actors/ranger_battle.png" },
     { "id": "actor.mage.battle", "type": "texture", "path": "textures/actors/mage_battle.png" },

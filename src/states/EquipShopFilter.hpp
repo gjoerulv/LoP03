@@ -24,14 +24,16 @@ inline bool isEquippableItem(const content::ItemDef& item) {
            item.type == content::ItemType::Relic;
 }
 
-// Ids of every equippable item in `slot`, sorted for a stable menu order. The
-// three category calls (Weapon/Armor/Accessory) partition the equippable roster
-// exactly — no item is dropped or listed twice.
+// Ids of every equippable item in `slot` the shop STOCKS, sorted for a stable
+// menu order. Legendary gear (M34) is excluded — it is sold only by the black
+// market, though it remains equippable once owned. The three category calls
+// (Weapon/Armor/Accessory) partition the stocked roster exactly.
 inline std::vector<std::string> equipShopBuyIds(const content::ContentDatabase& content,
                                                 content::EquipSlot slot) {
     std::vector<std::string> ids;
     for (const auto& [id, def] : content.items()) {
-        if (isEquippableItem(def) && def.slot == slot) {
+        if (isEquippableItem(def) && def.slot == slot &&
+            def.rarity != content::Rarity::Legendary) {
             ids.push_back(id);
         }
     }

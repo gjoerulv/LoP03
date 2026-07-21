@@ -75,6 +75,16 @@ void gearUp(Party& party, const content::ContentDatabase& db) {
     }
 }
 
+// Full legendary loadout (M34 black-market gear), the aspirational endgame kit.
+void legendaryUp(Party& party, const content::ContentDatabase& db) {
+    for (Character& c : party.members) {
+        c.weapon = (c.classId == "mage") ? "stormcaller_rod" : "dawnforged_blade";
+        c.armor = "aegis_eternal";
+        c.accessory = "titanforged_heart";
+        refreshCharacter(c, db);
+    }
+}
+
 }  // namespace
 
 TEST_CASE("balance: a starting party can clear a depth-1 gate", "[balance]") {
@@ -207,6 +217,53 @@ TEST_CASE("balance: a strong endgame party clears the top town", "[balance][town
     INFO("town7 boss outcome=" << static_cast<int>(r.outcome) << " rounds=" << r.rounds
                                << " partyHp%=" << r.partyHpFraction());
     REQUIRE(r.outcome == battle::Outcome::Victory);
+}
+
+// ---- M34 legendary-gear balance ----
+
+TEST_CASE("balance: legendary gear out-stats the best epic gear", "[balance][blackmarket]") {
+    const content::ContentDatabase db = loadContent();
+    // A deterministic stat comparison (combat outcomes carry enmity/turn-order
+    // noise): the same character in the best epic-tier loadout vs full
+    // legendaries. Legendaries must be a clear step up so the market is worth it.
+    Character epic = createCharacter(*db.findClass("knight"), "Epic", 30);
+    epic.weapon = "war_hammer";
+    epic.armor = "plate_armor";
+    epic.accessory = "titan_heart";
+    refreshCharacter(epic, db);
+
+    Character leg = createCharacter(*db.findClass("knight"), "Legend", 30);
+    leg.weapon = "dawnforged_blade";
+    leg.armor = "aegis_eternal";
+    leg.accessory = "titanforged_heart";
+    refreshCharacter(leg, db);
+
+    CHECK(leg.stats.attack > epic.stats.attack);
+    CHECK(leg.stats.defense > epic.stats.defense);
+    CHECK(leg.maxHp > epic.maxHp);
+}
+
+TEST_CASE("balance: legendaries do not let level trivialize the top town",
+          "[balance][blackmarket]") {
+    const content::ContentDatabase db = loadContent();
+    const dungeon::Dungeon d = dungeon::generate(4242, 6, db, "ruined_keep", 7);  // town 7
+    const int bossTeam = d.rooms[static_cast<std::size_t>(d.bossRoom)].teamIndex;
+    REQUIRE(bossTeam >= 0);
+
+    Party strong = makeParty(db, 50);
+    legendaryUp(strong, db);
+    Party weak = makeParty(db, 12);
+    legendaryUp(weak, db);
+
+    battle::Battle bs = battle::buildBattle(strong, d.teams[static_cast<std::size_t>(bossTeam)], db);
+    battle::Battle bw = battle::buildBattle(weak, d.teams[static_cast<std::size_t>(bossTeam)], db);
+    const battle::SimResult rs = battle::simulate(bs, db);
+    const battle::SimResult rw = battle::simulate(bw, db);
+    INFO("strong hp%=" << rs.partyHpFraction() << " weak hp%=" << rw.partyHpFraction());
+    // Even in full legendaries, a low-level party fares clearly worse against the
+    // town-7 boss than an endgame one: level still dominates gear, so legendaries
+    // help without trivializing the climb.
+    CHECK(rs.partyHpFraction() > rw.partyHpFraction());
 }
 
 #endif  // CRYSTAL_TEST_DATA_DIR

@@ -212,6 +212,17 @@ Useful chests; most valuable are **guarded** (show enemy danger, chest rarity,
 "fight to claim"); some minor chests unguarded. Rewards: consumables, equipment,
 gold, relics/accessories, rare class skill scrolls.
 
+**Black market & legendary gear (M34).** Optional **elite challenges** in
+dungeons (a room event) pay, on victory, **one legendary token** on top of their
+double danger score. After a **stakes-raising** completed run in **town 2 or
+higher**, there is a **20 % chance** (seeded from the run, so a reload can't
+reroll it) that a hooded **black-market dealer** appears in that town, offering a
+single **legendary** piece — gear a clear step above Epic, sold **nowhere else**
+— for **5000+ gold or 3 legendary tokens**. Declining costs nothing and the
+offer waits until bought; a later stakes-raising hit replaces it. Legendaries are
+aspirational endgame gear (sim-validated not to trivialize the top town), the
+prize for climbing and taking optional risks.
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1

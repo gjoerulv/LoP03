@@ -31,6 +31,7 @@
 #include "score/Scoring.hpp"
 #include "settings/Settings.hpp"
 #include "states/BattleState.hpp"
+#include "states/BlackMarketState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
@@ -411,6 +412,7 @@ int run(const char* outDir) {
                  // not leak into the town-1 scenes above.
                  c.party.currentTown = 6;
                  c.party.highestUnlockedTown = 6;  // next (town 7) exit reads locked
+                 c.party.blackMarket = {true, 6, "dawnforged_blade", 6500, 16, 6};  // M34 NPC
                  s.pushState(std::make_unique<TownState>(s, c));
              }},
             {"26_guild_penalty",
@@ -421,6 +423,15 @@ int run(const char* outDir) {
                  c.party.currentTown = 1;
                  c.party.stakes = {1, 20, 3};  // prev (town 1, depth 20), 3 steps -> -60%
                  s.pushState(std::make_unique<GuildState>(s, c));
+             }},
+            {"27_black_market",
+             [](StateStack& s, AppContext& c) {
+                 // M34: the purchase screen with the longest legendary name +
+                 // description and an affordable token row, to overflow-check the
+                 // stat/description regions.
+                 c.party.legendaryTokens = 3;
+                 c.party.blackMarket = {true, 1, "titanforged_heart", 8750, 16, 6};
+                 s.pushState(std::make_unique<BlackMarketState>(s, c));
              }},
         };
 

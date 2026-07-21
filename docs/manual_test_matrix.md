@@ -294,6 +294,11 @@ sound fires.
 | 43 | Stakes penalty on result (M33) | clear a run that does not raise the stakes | not run | not run | result panel fits the "Stakes penalty (-N%)" row (also with town bonus) | n/a | n/a | 19_result.png | not run |
 | 44 | Stakes save-scum resistance (M33) | with a penalty pending, enter a dungeon (autosaves), reload that autosave, re-enter same config | not run | not run | penalty is the same after reload (not shed) | n/a | n/a | — | not run |
 | 45 | Stakes reset + New Game (M33) | raise town/depth to clear the penalty; start a New Game and confirm it begins with no penalty | not run | not run | n/a | n/a | n/a | — | not run |
+| 46 | Legendary tokens (M34) | win an optional elite challenge in a dungeon; confirm "+1 legendary token" and the count on the market screen | not run | not run | token message fits | n/a | victory sfx | — | not run |
+| 47 | Black-market spawn (M34) | in town 2+, do stakes-raising runs until the dealer appears (~20%); confirm the NPC + "Black Market" label + prompt | not run | not run | NPC label + prompt legible | prompt on the NPC tile | confirm sfx | 25_town_ladder.png | not run |
+| 48 | Black-market purchase (M34) | open the market; buy with gold, and (another spawn) with 3 tokens; confirm insufficient rows disable; declining leaves the offer | not run | not run | item stats/desc fit; gold/tokens clear of the title | rows disable when unaffordable | confirm/error sfx | 27_black_market.png | not run |
+| 49 | Market save-scum + persistence (M34) | after a spawn, reload the entry autosave and replay the same run — same outcome; the offer persists until bought | not run | not run | n/a | n/a | n/a | — | not run |
+| 50 | Legendary balance (M34) | equip legendaries; confirm they are a clear upgrade yet a low-level party still cannot walk over town 7 | not run | not run | n/a | n/a | n/a | — | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

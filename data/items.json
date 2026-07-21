@@ -39,6 +39,12 @@
     { "id": "assassin_sigil", "name": "Assassin Sigil", "type": "relic", "slot": "accessory", "rarity": "epic", "value": 520, "statBonus": { "attack": 8, "speed": 4 }, "description": "A sigil prized by killers." },
     { "id": "guardian_crest", "name": "Guardian Crest", "type": "relic", "slot": "accessory", "rarity": "epic", "value": 540, "statBonus": { "defense": 10, "hp": 20 }, "description": "An ancient crest of protection." },
 
+    { "id": "dawnforged_blade", "name": "Dawnforged Blade", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 5000, "statBonus": { "attack": 20, "speed": 2 }, "description": "A blade lit with the first dawn." },
+    { "id": "stormcaller_rod", "name": "Stormcaller Rod", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 5000, "statBonus": { "magic": 18, "hp": 12 }, "description": "A rod that calls down the storm." },
+    { "id": "aegis_eternal", "name": "Aegis Eternal", "type": "equipment", "slot": "armor", "rarity": "legendary", "value": 5000, "statBonus": { "defense": 18, "hp": 40 }, "description": "Plate that has never once yielded." },
+    { "id": "crown_of_ages", "name": "Crown of Ages", "type": "equipment", "slot": "accessory", "rarity": "legendary", "value": 5000, "statBonus": { "attack": 6, "magic": 6, "defense": 6, "speed": 3 }, "description": "A crown worn by forgotten kings." },
+    { "id": "titanforged_heart", "name": "Titanforged Heart", "type": "relic", "slot": "accessory", "rarity": "legendary", "value": 5000, "statBonus": { "defense": 8, "hp": 90 }, "description": "A relic pulsing with a titan's blood." },
+
     { "id": "scroll_fireball", "name": "Scroll: Fireball", "type": "scroll", "rarity": "rare", "value": 180, "grantsSkill": "fireball", "description": "Teaches the Fireball skill." },
     { "id": "scroll_greater_heal", "name": "Scroll: Greater Heal", "type": "scroll", "rarity": "rare", "value": 200, "grantsSkill": "greater_heal", "description": "Teaches the Greater Heal skill." },
     { "id": "scroll_whirlwind", "name": "Scroll: Whirlwind", "type": "scroll", "rarity": "rare", "value": 190, "grantsSkill": "whirlwind", "description": "Teaches the Whirlwind skill." }

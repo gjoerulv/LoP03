@@ -55,6 +55,12 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
         }
     }
     for (const auto& [id, def] : db.items()) {
+        // Legendary gear is black-market only (M34): never a chest/merchant drop.
+        // Excluding it also keeps the chest pool identical to pre-M34 content, so
+        // the same seed still yields the same dungeon (generationVersion stays 6).
+        if (def.rarity == content::Rarity::Legendary) {
+            continue;
+        }
         p.items.push_back(id);
         if (def.type == content::ItemType::Consumable) {
             p.consumables.push_back(id);

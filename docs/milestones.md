@@ -40,8 +40,8 @@
 | 30 | Economy: paid rest & rest-token event | ☑ complete (approved) |
 | 31 | Equip-shop category split | ☑ complete (approved) |
 | 32 | Town ladder (7 towns, travel, scaling, score bonus) | ☑ complete (approved) |
-| 33 | Stakes-escalation penalty | ◑ implemented, awaiting manual approval |
-| 34 | Black market & legendary gear | ☐ planned |
+| 33 | Stakes-escalation penalty | ☑ complete (approved) |
+| 34 | Black market & legendary gear | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, **then** M23 → M24. M23/M24 were deferred by the
@@ -1184,8 +1184,9 @@ the then-current checkout. The scope summaries below are the commitment.
 
 ## M33 — Stakes-escalation penalty
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against HEAD `25f5e1e`. Pure stakes state machine
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing; committed (`5b751e7`). Implemented / audited against HEAD
+  `25f5e1e`. Pure stakes state machine
   (`game/StakesLadder.hpp`): stakes = `(town, depth)` compared town-first vs the
   previous completed run; not-higher → −15 %/step to a −90 % cap; strictly higher
   → reset; score-0/completed-zero runs don't move the baseline. Persisted as
@@ -1225,9 +1226,18 @@ the then-current checkout. The scope summaries below are the commitment.
 
 ## M34 — Black market & legendary gear
 
-- **Status:** ☐ planned — depends on M32 + M33 (its spawn trigger is M33's
-  stakes-raise event). Authored just-in-time; do not begin without owner
-  authorization.
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against HEAD `5b751e7`. New Legendary-token currency (+1 per elite-
+  challenge victory, `Party.legendaryTokens`); 5 `Rarity::Legendary` items (shop-
+  excluded, black-market only); a seeded 20 % black-market spawn after a stakes-
+  raising completed run in town ≥ 2 (reload-proof, `game/BlackMarket.hpp`);
+  a hooded-dealer NPC in town → `BlackMarketState` purchase screen (gold or 3
+  tokens); all state optional-save with New-Game reset. **307/307 tests** (+8
+  M34 incl. spawn determinism, save round-trip, and a legendary-balance/
+  no-trivialization check), battle & simulator tests **unmodified**; `--capture`
+  **27/27** overflow-clean (new market screen + NPC); Debug + Release clean;
+  `generationVersion` 6 / `battleRulesVersion` 1 unchanged. The final milestone
+  of the M31–M34 expansion program. See the note's §K.
 - **Goal:** a rare, save-scum-proof black-market NPC selling one legendary piece,
   bought with gold or a new Legendary-token currency won from optional elite
   fights — a reward for climbing and taking optional risks.

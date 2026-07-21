@@ -53,18 +53,19 @@ TEST_CASE("equipshop: shipped roster partitions cleanly into the three categorie
     CHECK(isSorted(armor));
     CHECK(isSorted(accessories));
 
-    // The three categories partition the equippable roster exactly: no item is
-    // dropped, and none appears in two lists.
-    std::size_t equippable = 0;
+    // The three categories partition the SHOP-STOCKED roster exactly: no stocked
+    // item is dropped or listed twice. Legendary gear (M34) is not stocked (it is
+    // black-market only), so it is excluded from the expected count.
+    std::size_t stocked = 0;
     for (const auto& [id, def] : db.items()) {
         (void)id;
-        if (isEquippableItem(def)) {
-            ++equippable;
+        if (isEquippableItem(def) && def.rarity != Rarity::Legendary) {
+            ++stocked;
         }
     }
-    CHECK(weapons.size() + armor.size() + accessories.size() == equippable);
+    CHECK(weapons.size() + armor.size() + accessories.size() == stocked);
 
-    // No consumable or scroll ever reaches a buy category.
+    // No consumable, scroll, or legendary ever reaches a buy category.
     for (const std::vector<std::string>* list : {&weapons, &armor, &accessories}) {
         for (const std::string& id : *list) {
             const ItemDef* it = db.findItem(id);
@@ -72,8 +73,23 @@ TEST_CASE("equipshop: shipped roster partitions cleanly into the three categorie
             CHECK(isEquippableItem(*it));
             CHECK(it->type != ItemType::Consumable);
             CHECK(it->type != ItemType::Scroll);
+            CHECK(it->rarity != Rarity::Legendary);
         }
     }
+}
+
+TEST_CASE("equipshop: legendary gear is black-market only, never stocked", "[equipshop]") {
+    const ContentDatabase db = loadShippedContent();
+    int legendaries = 0;
+    for (const auto& [id, def] : db.items()) {
+        if (def.rarity == Rarity::Legendary && isEquippableItem(def)) {
+            ++legendaries;
+            for (EquipSlot slot : {EquipSlot::Weapon, EquipSlot::Armor, EquipSlot::Accessory}) {
+                CHECK_FALSE(contains(equipShopBuyIds(db, slot), id));
+            }
+        }
+    }
+    CHECK(legendaries > 0);  // the shipped roster has legendaries (M34)
 }
 
 TEST_CASE("equipshop: each id lands only in the category matching its slot",
@@ -97,15 +113,20 @@ TEST_CASE("equipshop: relics file under Accessories, not their own category",
 
     int relics = 0;
     for (const auto& [id, def] : db.items()) {
-        if (def.type == ItemType::Relic) {
-            ++relics;
-            CHECK(def.slot == EquipSlot::Accessory);  // data invariant the filter relies on
-            CHECK(contains(accessories, id));
-            CHECK_FALSE(contains(weapons, id));
-            CHECK_FALSE(contains(armor, id));
+        if (def.type != ItemType::Relic) {
+            continue;
         }
+        CHECK(def.slot == EquipSlot::Accessory);  // data invariant the filter relies on
+        if (def.rarity == Rarity::Legendary) {
+            CHECK_FALSE(contains(accessories, id));  // legendary relics are black-market only
+            continue;
+        }
+        ++relics;
+        CHECK(contains(accessories, id));
+        CHECK_FALSE(contains(weapons, id));
+        CHECK_FALSE(contains(armor, id));
     }
-    CHECK(relics > 0);  // the shipped roster has relics, so the test is meaningful
+    CHECK(relics > 0);  // the shipped roster has non-legendary relics
 }
 
 TEST_CASE("equipshop: filter ignores consumables and scrolls in hand-built content",

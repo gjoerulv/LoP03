@@ -103,6 +103,7 @@ add_library(crystal_core STATIC
     src/states/InnState.cpp
     src/states/ItemShopState.cpp
     src/states/TrainingHallState.cpp
+    src/states/BlackMarketState.cpp
     src/states/GuildState.cpp
     src/states/DungeonState.cpp
     src/states/DungeonMenuState.cpp

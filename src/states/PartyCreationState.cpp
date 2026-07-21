@@ -66,11 +66,13 @@ void PartyCreationState::begin() {
     context_.party.gold = 150;  // a little starting gold for the shops
     // A New Game is a clean slate: don't inherit session state from a party that
     // was in memory from a prior Continue/play (M32 town ladder + M30 tokens +
-    // M33 stakes).
+    // M33 stakes + M34 black market).
     context_.party.restTokens = 0;
     context_.party.currentTown = 1;
     context_.party.highestUnlockedTown = 1;
     context_.party.stakes = StakesState{};
+    context_.party.legendaryTokens = 0;
+    context_.party.blackMarket = BlackMarketOffer{};
     for (std::size_t i = 0; i < slots_.size(); ++i) {
         std::string name = slots_[i].name.trimmed();
         if (name.empty()) {

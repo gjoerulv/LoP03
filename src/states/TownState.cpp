@@ -15,6 +15,7 @@
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "resource/ResourceManager.hpp"
+#include "states/BlackMarketState.hpp"
 #include "states/EquipShopState.hpp"
 #include "states/GuildState.hpp"
 #include "states/InnState.hpp"
@@ -165,6 +166,21 @@ const town::TownExit* TownState::exitAtPlayerTile() const {
     return nullptr;
 }
 
+bool TownState::blackMarketHere() const {
+    return context_.party.blackMarket.present &&
+           context_.party.blackMarket.town == clampTown(context_.party.currentTown);
+}
+
+bool TownState::onBlackMarketTile() const {
+    if (!blackMarketHere()) {
+        return false;
+    }
+    const int ts = town::Tilemap::kTileSize;
+    const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
+    const int ty = static_cast<int>((player_.y + player_.h * 0.5f) / ts);
+    return tx == context_.party.blackMarket.tileX && ty == context_.party.blackMarket.tileY;
+}
+
 const town::Building* TownState::buildingAtPlayerTile() const {
     const int ts = town::Tilemap::kTileSize;
     const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
@@ -214,6 +230,9 @@ void TownState::handleInput(const Input& input) {
         if (nearDoor_ != nullptr) {
             context_.audio.play(Sfx::Confirm);
             enterLocation(*nearDoor_);
+        } else if (nearMarket_) {
+            context_.audio.play(Sfx::Confirm);
+            stack().pushState(std::make_unique<BlackMarketState>(stack(), context_));
         } else if (nearExit_ != nullptr) {
             if (nearExit_->locked) {
                 context_.audio.play(Sfx::Error);  // road not yet open; hint is on screen
@@ -246,6 +265,7 @@ void TownState::update(float dt) {
     }
     nearDoor_ = buildingAtPlayerTile();
     nearExit_ = nearDoor_ == nullptr ? exitAtPlayerTile() : nullptr;
+    nearMarket_ = (nearDoor_ == nullptr && nearExit_ == nullptr) && onBlackMarketTile();
 }
 
 void TownState::render() {
@@ -294,6 +314,19 @@ void TownState::render() {
         ui::drawTextCentered(label.c_str(), cx, (e.tileY - 1) * ts - 1, 8, col);
     }
 
+    // Black-market NPC (M34): a hooded dealer at the offer's seeded plaza tile.
+    if (blackMarketHere()) {
+        const int mx = context_.party.blackMarket.tileX;
+        const int my = context_.party.blackMarket.tileY;
+        const float mcx = mx * ts + ts * 0.5f;
+        const float mcy = my * ts + ts * 0.5f;
+        if (!render::drawTextureCentered(context_.resources, "actor.market.overworld", mcx, mcy)) {
+            DrawRectangle(mx * ts + 3, my * ts + 2, ts - 6, ts - 4, Color{120, 70, 150, 255});
+        }
+        ui::drawTextCentered("Black Market", mx * ts + ts / 2, my * ts - 9, 8,
+                             Color{210, 170, 240, 255});
+    }
+
     // Player: directional walk animation, then static sprite, then rectangle
     // (with the old facing tick, which the sprites encode themselves).
     const float pcx = player_.x + player_.w * 0.5f;
@@ -339,6 +372,13 @@ void TownState::render() {
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
         ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
                              Color{240, 230, 160, 255});
+    } else if (nearMarket_) {
+        DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
+        const std::string text =
+            input::prompt(bindings, InputAction::Confirm, device, "Browse the Black Market") +
+            "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
+                             Color{215, 175, 245, 255});
     } else if (nearExit_ != nullptr) {
         DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
         std::string text;
