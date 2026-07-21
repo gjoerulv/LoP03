@@ -44,9 +44,9 @@ TEST_CASE("equipshop: shipped roster partitions cleanly into the three categorie
           "[equipshop]") {
     const ContentDatabase db = loadShippedContent();
 
-    const std::vector<std::string> weapons = equipShopBuyIds(db, EquipSlot::Weapon);
-    const std::vector<std::string> armor = equipShopBuyIds(db, EquipSlot::Armor);
-    const std::vector<std::string> accessories = equipShopBuyIds(db, EquipSlot::Accessory);
+    const std::vector<std::string> weapons = equipShopBuyIds(db, EquipSlot::Weapon, 7);
+    const std::vector<std::string> armor = equipShopBuyIds(db, EquipSlot::Armor, 7);
+    const std::vector<std::string> accessories = equipShopBuyIds(db, EquipSlot::Accessory, 7);
 
     // Every category is sorted for a stable menu order.
     CHECK(isSorted(weapons));
@@ -85,7 +85,7 @@ TEST_CASE("equipshop: legendary gear is black-market only, never stocked", "[equ
         if (def.rarity == Rarity::Legendary && isEquippableItem(def)) {
             ++legendaries;
             for (EquipSlot slot : {EquipSlot::Weapon, EquipSlot::Armor, EquipSlot::Accessory}) {
-                CHECK_FALSE(contains(equipShopBuyIds(db, slot), id));
+                CHECK_FALSE(contains(equipShopBuyIds(db, slot, 7), id));
             }
         }
     }
@@ -96,7 +96,7 @@ TEST_CASE("equipshop: each id lands only in the category matching its slot",
           "[equipshop]") {
     const ContentDatabase db = loadShippedContent();
     for (EquipSlot slot : {EquipSlot::Weapon, EquipSlot::Armor, EquipSlot::Accessory}) {
-        for (const std::string& id : equipShopBuyIds(db, slot)) {
+        for (const std::string& id : equipShopBuyIds(db, slot, 7)) {
             const ItemDef* it = db.findItem(id);
             REQUIRE(it != nullptr);
             CHECK(it->slot == slot);
@@ -107,9 +107,9 @@ TEST_CASE("equipshop: each id lands only in the category matching its slot",
 TEST_CASE("equipshop: relics file under Accessories, not their own category",
           "[equipshop]") {
     const ContentDatabase db = loadShippedContent();
-    const std::vector<std::string> accessories = equipShopBuyIds(db, EquipSlot::Accessory);
-    const std::vector<std::string> weapons = equipShopBuyIds(db, EquipSlot::Weapon);
-    const std::vector<std::string> armor = equipShopBuyIds(db, EquipSlot::Armor);
+    const std::vector<std::string> accessories = equipShopBuyIds(db, EquipSlot::Accessory, 7);
+    const std::vector<std::string> weapons = equipShopBuyIds(db, EquipSlot::Weapon, 7);
+    const std::vector<std::string> armor = equipShopBuyIds(db, EquipSlot::Armor, 7);
 
     int relics = 0;
     for (const auto& [id, def] : db.items()) {
@@ -161,9 +161,46 @@ TEST_CASE("equipshop: filter ignores consumables and scrolls in hand-built conte
     scroll.slot = EquipSlot::None;
     db.addItem(scroll);
 
-    CHECK(equipShopBuyIds(db, EquipSlot::Weapon) == std::vector<std::string>{"sword"});
-    CHECK(equipShopBuyIds(db, EquipSlot::Armor).empty());
-    CHECK(equipShopBuyIds(db, EquipSlot::Accessory) == std::vector<std::string>{"relic"});
+    CHECK(equipShopBuyIds(db, EquipSlot::Weapon, 7) == std::vector<std::string>{"sword"});
+    CHECK(equipShopBuyIds(db, EquipSlot::Armor, 7).empty());
+    CHECK(equipShopBuyIds(db, EquipSlot::Accessory, 7) == std::vector<std::string>{"relic"});
     // None-slot consumables/scrolls are never buyable gear.
-    CHECK(equipShopBuyIds(db, EquipSlot::None).empty());
+    CHECK(equipShopBuyIds(db, EquipSlot::None, 7).empty());
+}
+
+TEST_CASE("equipshop: per-town gear is stocked only once its town is reached (M37)",
+          "[equipshop]") {
+    ContentDatabase db;
+    ItemDef t1;  // town-1 blade (default minTown)
+    t1.id = "t1_blade";
+    t1.name = "T1 Blade";
+    t1.type = ItemType::Equipment;
+    t1.slot = EquipSlot::Weapon;
+    db.addItem(t1);
+    ItemDef t4;  // town-4 blade
+    t4.id = "t4_blade";
+    t4.name = "T4 Blade";
+    t4.type = ItemType::Equipment;
+    t4.slot = EquipSlot::Weapon;
+    t4.minTown = 4;
+    db.addItem(t4);
+
+    CHECK(equipShopBuyIds(db, EquipSlot::Weapon, 1) == std::vector<std::string>{"t1_blade"});
+    CHECK(equipShopBuyIds(db, EquipSlot::Weapon, 3) == std::vector<std::string>{"t1_blade"});
+    // At town 4 both are stocked (sorted order).
+    CHECK(equipShopBuyIds(db, EquipSlot::Weapon, 4) ==
+          std::vector<std::string>{"t1_blade", "t4_blade"});
+    CHECK(equipShopBuyIds(db, EquipSlot::Weapon, 7) ==
+          std::vector<std::string>{"t1_blade", "t4_blade"});
+}
+
+TEST_CASE("equipshop: the shipped roster grows from town 1 to town 7 (M37)", "[equipshop]") {
+    const ContentDatabase db = loadShippedContent();
+    const std::size_t t1 = equipShopBuyIds(db, EquipSlot::Weapon, 1).size() +
+                           equipShopBuyIds(db, EquipSlot::Armor, 1).size() +
+                           equipShopBuyIds(db, EquipSlot::Accessory, 1).size();
+    const std::size_t t7 = equipShopBuyIds(db, EquipSlot::Weapon, 7).size() +
+                           equipShopBuyIds(db, EquipSlot::Armor, 7).size() +
+                           equipShopBuyIds(db, EquipSlot::Accessory, 7).size();
+    CHECK(t7 > t1);  // per-town gear (M37) unlocks as the ladder is climbed
 }

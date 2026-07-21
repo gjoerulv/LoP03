@@ -176,6 +176,7 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         d.slot = r.optEnum<EquipSlot>("slot", parseEquipSlot, EquipSlot::None, "equip slot");
         d.rarity = r.optEnum<Rarity>("rarity", parseRarity, Rarity::Common, "rarity");
         d.value = r.optIntMin("value", 0, 0);
+        d.minTown = r.optIntMin("minTown", 1, 1);  // M37 (default 1)
         d.effect = r.optEnum<ConsumableEffect>("effect", parseConsumableEffect,
                                                ConsumableEffect::None, "consumable effect");
         d.effectAmount = r.optIntMin("effectAmount", 0, 0);

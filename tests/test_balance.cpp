@@ -227,13 +227,13 @@ TEST_CASE("balance: legendary gear out-stats the best epic gear", "[balance][bla
     // noise): the same character in the best epic-tier loadout vs full
     // legendaries. Legendaries must be a clear step up so the market is worth it.
     Character epic = createCharacter(*db.findClass("knight"), "Epic", 30);
-    epic.weapon = "war_hammer";
-    epic.armor = "plate_armor";
+    epic.weapon = "sunforged_greatblade";  // M37: the best epic weapon (town 7)
+    epic.armor = "bulwark_of_ages";        // M37: the best epic armor (town 7)
     epic.accessory = "titan_heart";
     refreshCharacter(epic, db);
 
     Character leg = createCharacter(*db.findClass("knight"), "Legend", 30);
-    leg.weapon = "dawnforged_blade";
+    leg.weapon = "worldbreaker_axe";  // M37: the strongest legendary weapon
     leg.armor = "aegis_eternal";
     leg.accessory = "titanforged_heart";
     refreshCharacter(leg, db);

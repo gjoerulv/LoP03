@@ -30,7 +30,8 @@ struct Pools {
     std::vector<std::string> consumables;  // merchant offers (M20)
 };
 
-Pools buildPools(const content::ContentDatabase& db, const content::DungeonThemeDef* theme) {
+Pools buildPools(const content::ContentDatabase& db, const content::DungeonThemeDef* theme,
+                 int town) {
     Pools p;
     if (theme != nullptr) {
         for (const std::string& id : theme->normalEnemies) {
@@ -56,9 +57,12 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
     }
     for (const auto& [id, def] : db.items()) {
         // Legendary gear is black-market only (M34): never a chest/merchant drop.
-        // Excluding it also keeps the chest pool identical to pre-M34 content, so
-        // the same seed still yields the same dungeon (generationVersion stays 6).
         if (def.rarity == content::Rarity::Legendary) {
+            continue;
+        }
+        // Per-town gating (M37): a chest reward only offers gear unlocked at this
+        // town, so higher-town gear appears only in higher-town dungeons.
+        if (def.minTown > town) {
             continue;
         }
         p.items.push_back(id);
@@ -245,8 +249,8 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                  std::string themeId, int town) {
     Rng rng(seed);
     const content::DungeonThemeDef* theme = themeId.empty() ? nullptr : db.findTheme(themeId);
-    const Pools pools = buildPools(db, theme);
     const int townIdx = clampTown(town);
+    const Pools pools = buildPools(db, theme, townIdx);  // M37: chest gear gated by town
 
     Dungeon d;
     d.seed = seed;
@@ -463,7 +467,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                         ev.itemId = pools.consumables[static_cast<std::size_t>(rng.range(
                             0, static_cast<int>(pools.consumables.size()) - 1))];
                         if (const content::ItemDef* it = db.findItem(ev.itemId)) {
-                            ev.goldCost = it->value * 130 / 100;  // dungeon markup
+                            ev.goldCost = it->value * 75 / 100;  // M37: a bargain, not a markup
                         }
                     } else {
                         ev.kind = RoomEventKind::HealingSpring;  // no stock: degrade

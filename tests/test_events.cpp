@@ -85,11 +85,15 @@ TEST_CASE("events: generated event rooms are well-formed dead ends", "[events]")
                     case dungeon::RoomEventKind::Shrine:
                         REQUIRE(r.event.goldCost == 40 + 20 * depth);
                         break;
-                    case dungeon::RoomEventKind::Merchant:
+                    case dungeon::RoomEventKind::Merchant: {
                         REQUIRE_FALSE(r.event.itemId.empty());
                         REQUIRE(r.event.goldCost > 0);
-                        REQUIRE(db.findItem(r.event.itemId) != nullptr);
+                        const content::ItemDef* mit = db.findItem(r.event.itemId);
+                        REQUIRE(mit != nullptr);
+                        // M37: the merchant sells at 75% of value (a bargain, not a markup).
+                        REQUIRE(r.event.goldCost == mit->value * 75 / 100);
                         break;
+                    }
                     case dungeon::RoomEventKind::EliteChallenge:
                         REQUIRE(r.teamIndex >= 0);
                         REQUIRE(r.teamIndex < static_cast<int>(d.teams.size()));

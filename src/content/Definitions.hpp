@@ -123,7 +123,8 @@ struct ItemDef {
     ItemType type = ItemType::Consumable;
     EquipSlot slot = EquipSlot::None;  // for equipment/relics
     Rarity rarity = Rarity::Common;
-    int value = 0;  // gold value (>= 0)
+    int value = 0;      // gold value (>= 0)
+    int minTown = 1;    // per-town gating (M37): stocked/dropped only at town >= minTown
 
     // Consumable behavior.
     ConsumableEffect effect = ConsumableEffect::None;

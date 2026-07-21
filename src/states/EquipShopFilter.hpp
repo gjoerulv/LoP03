@@ -24,16 +24,18 @@ inline bool isEquippableItem(const content::ItemDef& item) {
            item.type == content::ItemType::Relic;
 }
 
-// Ids of every equippable item in `slot` the shop STOCKS, sorted for a stable
-// menu order. Legendary gear (M34) is excluded — it is sold only by the black
-// market, though it remains equippable once owned. The three category calls
-// (Weapon/Armor/Accessory) partition the stocked roster exactly.
+// Ids of every equippable item in `slot` the shop STOCKS at `town`, sorted for a
+// stable menu order. Legendary gear (M34) is excluded — it is sold only by the
+// black market, though it remains equippable once owned. Per-town gear (M37) is
+// stocked only once `minTown <= town`, so higher-town gear appears as the ladder
+// is climbed. The three category calls (Weapon/Armor/Accessory) partition the
+// stocked roster exactly.
 inline std::vector<std::string> equipShopBuyIds(const content::ContentDatabase& content,
-                                                content::EquipSlot slot) {
+                                                content::EquipSlot slot, int town) {
     std::vector<std::string> ids;
     for (const auto& [id, def] : content.items()) {
         if (isEquippableItem(def) && def.slot == slot &&
-            def.rarity != content::Rarity::Legendary) {
+            def.rarity != content::Rarity::Legendary && def.minTown <= town) {
             ids.push_back(id);
         }
     }

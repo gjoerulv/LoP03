@@ -2,11 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / re-audited and
-  implemented 2026-07-21 against HEAD `94c79a1` ("M35"). Owner authorized beginning
-  M36 after approving M35; the note-time catalog + price decisions were confirmed
-  (all 10 passives, flat 1000 g). As-implemented record in §K. Only the owner sets
-  `complete (approved)`.
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after manual
+  testing; committed. Authored / re-audited and implemented 2026-07-21 against HEAD
+  `94c79a1` ("M35"). The note-time catalog + price decisions were confirmed (all 10
+  passives, flat 1000 g). As-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. Second milestone of the
   M35–M42 endgame program; builds directly on M35's seeded to-hit layer (Evasion

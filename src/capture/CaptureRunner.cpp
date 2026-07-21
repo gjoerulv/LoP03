@@ -462,6 +462,16 @@ int run(const char* outDir) {
                  state->captureEnterTargeting();
                  s.pushState(std::move(state));
              }},
+            {"30_equip_shop_max",
+             [](StateStack& s, AppContext& c) {
+                 // M37: the buy list at town 7 (max stock) with the per-town gear
+                 // and longest names, to overflow-check the scrolling list.
+                 c.party.currentTown = 7;
+                 c.party.gold = 9999;
+                 auto state = std::make_unique<EquipShopState>(s, c);
+                 state->captureEnterBuyList(content::EquipSlot::Weapon);
+                 s.pushState(std::move(state));
+             }},
         };
 
         for (const Scenario& scenario : scenarios) {

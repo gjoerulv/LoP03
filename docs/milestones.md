@@ -43,8 +43,8 @@
 | 33 | Stakes-escalation penalty | ☑ complete (approved) |
 | 34 | Black market & legendary gear | ☑ complete (approved) |
 | 35 | Status effects & battle rules v2 | ☑ complete (approved) |
-| 36 | Passive skills | ◑ implemented, awaiting manual approval |
-| 37 | Per-town equipment | ☐ planned |
+| 36 | Passive skills | ☑ complete (approved) |
+| 37 | Per-town equipment | ◑ implemented, awaiting manual approval |
 | 38 | Per-town enemies & bosses | ☐ planned |
 | 39 | Boss legendary & token drops | ☐ planned |
 | 40 | The castle & the King's challenges | ☐ planned |
@@ -1416,10 +1416,10 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M36 — Passive skills
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against HEAD `94c79a1`; owner authorized beginning M36 after approving
-  M35. Final catalog + prices confirmed at note time (all 10 passives, flat 1000 g;
-  see the note's §D). **334/334 tests** (+13: 12 `[passive]` + 1 `[save]`),
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing; committed. Implemented / audited 2026-07-21 against HEAD
+  `94c79a1`. Final catalog + prices confirmed at note time (all 10 passives, flat
+  1000 g; see the note's §D). **334/334 tests** (+13: 12 `[passive]` + 1 `[save]`),
   `--capture` **29/29** overflow-clean (2 new scenes), Debug + Release clean,
   `kBattleRulesVersion` 3 / `kGenerationVersion` 6 / `kSaveVersion` unchanged. The
   program's last battle-rules change. See the note's §K. Milestone note:
@@ -1446,7 +1446,15 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M37 — Per-town equipment
 
-- **Status:** ☐ planned — **direction only.**
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against HEAD `98a11e0`; owner authorized beginning M37 after approving
+  M36. `ItemDef.minTown` gates the Equip Shop + chest pools by town; 24 per-town
+  pieces (towns 2–7) + 3 legendary weapons; dungeon merchant now sells at 75 % of
+  value; `dungeon::kGenerationVersion` **6 → 7**. **336/336 tests** (+2
+  `[equipshop]`), `--capture` **30/30** overflow-clean (new max-stock scene),
+  Debug + Release clean; clearability grid unchanged. See the note's §K.
+  Milestone note: `docs/milestone_notes/M37_per_town_equipment.md`.
+- **(original scope below)** — **direction only.**
 - **Goal:** town-gated equipment so gear power tracks the ladder, plus the
   dungeon-merchant discount.
 - **Primary deliverables:** `ItemDef.minTown` (default 1); `equipShopBuyIds` gains

@@ -183,9 +183,9 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = 6 (M29 enlarged the theme enemy/boss pools; M30 added
-  the RestToken event to the pool — each changes a seed's roster/events;
-  owner-approved bumps).
+  `kGenerationVersion` = **7** (M29 enlarged the theme enemy/boss pools; M30 added
+  the RestToken event; **M37 gave the merchant a 75 % bargain and gated chest gear
+  by town** — each changes a seed's roster/events/rewards; owner-approved bumps).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager/rest-token) realized as an
@@ -516,7 +516,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 6; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 7; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).
@@ -692,6 +692,17 @@ case. The slot filter is the pure, raylib-free `equipShopBuyIds`
 the same "equippable" definition the equip flow uses. Categories are a browse
 aid only: no pricing, stock, equip, save, or content change.
 
+**Per-town equipment (M37).** `ItemDef.minTown` (optional, default 1) gates gear
+by the town ladder: `equipShopBuyIds(content, slot, town)` stocks only
+`minTown ≤ town`, so the Equip Shop grows as the ladder is climbed, and
+`buildPools(db, theme, town)` filters chest candidates the same way (legendaries
+stay excluded). 24 new per-town pieces (towns 2–7, priced below the legendary
+tier) plus 3 new legendary weapons (black-market/drop pool) ship in `items.json`.
+The dungeon **Merchant** event now sells at `value * 75 / 100` (a bargain, was a
+130 % markup). The merchant price and the town-gated chest pool both change a
+seed's generated output, so `dungeon::kGenerationVersion` is **7**; `minTown` is
+content (no `kSaveVersion` / `kBattleRulesVersion` change).
+
 ### Theme/depth generation
 
 `generate(seed, depth, db, themeId)` draws enemy and boss pools from the chosen
@@ -715,8 +726,10 @@ everywhere, so pre-M32 behaviour, seeds, and scores are unchanged.
 - **Generation.** `generate(seed, depth, db, themeId, town=1)` and
   `makeTeam(..., town)` fold the town multiplier into every team's
   `statScalePct` via `combineTownScale = (100+depthScale) * townScalePct/100`.
-  Town does not touch the RNG stream, so town-1 output is byte-identical and
-  `kGenerationVersion` stays **6**. `Dungeon.town` records the run's town.
+  Town does not touch the RNG stream, so town-1 output was byte-identical at M32
+  (`kGenerationVersion` 6). **M37 superseded that:** the merchant discount and the
+  town-gated chest pool change generated output for every town (including town 1),
+  bumping `kGenerationVersion` to **7**. `Dungeon.town` records the run's town.
 - **Scoring.** `RunSummary.townBonusPct` → `ScoreBreakdown.townBonus` (a percent
   of the non-negative subtotal, applied once over everything incl. the wager;
   pure and tested). `ScoreEntry.townIndex` is an optional comparability tag

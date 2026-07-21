@@ -310,6 +310,10 @@ sound fires.
 | 58 | Passive effects in battle (M36) | equip and try each: Counter, Evasion, Spell Ward, Thorns, Lifedrink, Clarity, Iron Will, First Strike, Bodyguard, Keen Senses | not run | not run | each reads clearly (Miss!, counter/thorns/drain/shield lines, MP tick, survive-at-1, acts first) | n/a | n/a | - | not run |
 | 59 | Foe passive reveal (M36) | target an elite/boss that carries a passive; open Details | not run | not run | target panel + Details show "Passive: name" and effect | reveal on the targeted foe | n/a | 29_battle_passive_reveal.png | not run |
 | 60 | Passive save round-trip (M36) | equip passives, save, Continue; also load a pre-M36 save | not run | not run | owned + equipped persist; old save loads with none | n/a | n/a | - | not run |
+| 61 | Per-town gear unlock (M37) | Equip Shop at town 2 vs town 5 vs town 7; note the growing weapon/armor/accessory lists | not run | not run | higher towns stock more gear; buy list scrolls cleanly at max stock; long names fit | n/a | n/a | 30_equip_shop_max.png | not run |
+| 62 | Gear power curve (M37) | buy and equip per-town gear as you climb; compare to legendaries | not run | not run | each town's gear is an upgrade; prices gate without grinding; legendaries still the peak | n/a | n/a | - | not run |
+| 63 | Merchant bargain (M37) | find a dungeon Merchant event; check the price vs the item's shop value | not run | not run | merchant sells at ~75% of value (a bargain), shown before buying | n/a | n/a | - | not run |
+| 64 | Generation comparability (M37) | run a dungeon; check the scoreboard shows the run under gen v7 | not run | not run | scoreboard tags the generation version; old entries read their own version | n/a | n/a | 12_scoreboard.png | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

@@ -91,7 +91,12 @@ higher town multiplies every enemy team's stats — **+0/25/50/75/100/150/200 %*
 across towns 1–7 (composed on top of depth scaling; danger labels rise
 honestly) — and grants a **visible score bonus** on the whole run subtotal —
 **+0/10/20/30/40/50/100 %**. XP and gold rewards do **not** scale with town, so
-the top town is never the best farm; the climb pays in score. Access is earned:
+the top town is never the best farm; the climb pays in score. **Per-town gear
+(M37):** each town from 2 to 7 unlocks its own equipment at the Equip Shop
+(stronger weapons/armor/accessories, priced to gate — sim-validated affordable
+against depth-driven income, and kept below the legendary tier) and adds pieces
+to the dungeon chest pools, so climbing the ladder opens a real gear progression
+to match the rising difficulty. Access is earned:
 completing at least one dungeon in a town unlocks the road to the next, and the
 furthest reached town persists in the save. Old saves start in town 1. Each town
 has its own exterior and service-interior art and its own theme track; the three
@@ -119,8 +124,9 @@ from the scaled stats, so they never lie.
 
 **Room events (M20, +M30).** Dead-end event rooms offer real decisions whose
 full trade-off is shown **before** confirming: a shrine (gold for healing), a
-one-use healing spring, a wandering merchant (one item at dungeon markup),
-an elite challenge (double danger score, no treasure), an omen's score
+one-use healing spring, a wandering merchant (one item at a **bargain — 75 % of
+value** (M37), a reward for exploring, not a tax), an elite challenge (double
+danger score, no treasure), an omen's score
 wager (+150 if you finish with no deaths, −100 if anyone falls — shown in
 the score breakdown), and a **rest camp (M30)** that grants a free-rest token
 redeemable at the inn. Some unguarded chests are visibly **trapped**: extra
