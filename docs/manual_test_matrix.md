@@ -299,6 +299,12 @@ sound fires.
 | 48 | Black-market purchase (M34) | open the market; buy with gold, and (another spawn) with 3 tokens; confirm insufficient rows disable; declining leaves the offer | not run | not run | item stats/desc fit; gold/tokens clear of the title | rows disable when unaffordable | confirm/error sfx | 27_black_market.png | not run |
 | 49 | Market save-scum + persistence (M34) | after a spawn, reload the entry autosave and replay the same run — same outcome; the offer persists until bought | not run | not run | n/a | n/a | n/a | — | not run |
 | 50 | Legendary balance (M34) | equip legendaries; confirm they are a clear upgrade yet a low-level party still cannot walk over town 7 | not run | not run | n/a | n/a | n/a | — | not run |
+| 51 | Blind status (M35) | blind an enemy (Rogue Smoke Screen L7 / Ranger Flash Arrow L11); watch its physical attacks | not run | not run | "Miss!" floater + BLD label read clearly; ~3 of 4 attacks miss | n/a | n/a | 17_battle_five_enemies.png | not run |
+| 52 | Silence status (M35) | silence an enemy caster (Mage Silence L7); also get a party member silenced | not run | not run | silenced MP skills greyed with "[Silenced]"; SIL label shown; foe stops casting | n/a | n/a | 23_battle_targeting.png | not run |
+| 53 | Confusion status (M35) | confuse an enemy (Mage Bewilder L12); also a confused party member; then hit a confused unit | not run | not run | "is confused and attacks" its own side; CNF label; CNF **clears when the unit takes damage** | n/a | n/a | 17_battle_five_enemies.png | not run |
+| 56 | Status potency (M35) | poison a foe and watch a tick; note how long any status lingers | not run | not run | poison tick deals ~2x the old amount; statuses last ~2x as long | n/a | n/a | — | not run |
+| 54 | Cure / Purify (M35) | afflict the party, then use a Remedy item and the Cleric's Purify (L10) | not run | not run | all afflictions (poison/blind/silence/confusion/debuffs) lifted; buffs kept | n/a | heal sfx | — | not run |
+| 55 | Stakes re-tune (M35) | do a non-raising completed run, then repeat it several times | not run | not run | Guild + result show -30% then -60/-90/-99% (was -15/-90) | n/a | n/a | 26_guild_penalty.png, 19_result.png | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

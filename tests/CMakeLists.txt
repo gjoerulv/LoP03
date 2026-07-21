@@ -42,6 +42,7 @@ add_executable(crystal_tests
     test_scoring.cpp
     test_scoreboard.cpp
     test_status.cpp
+    test_status_v2.cpp
     test_equipment.cpp
     test_equip_shop_filter.cpp
     test_fade.cpp

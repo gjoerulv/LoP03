@@ -12,10 +12,12 @@ enum class Element { None, Fire, Ice, Lightning, Earth, Holy, Dark };
 
 enum class SkillCategory { Physical, Magic, Heal, Support };
 
-// Enmity-control effect a skill carries (M28), independent of its category.
+// Enmity-control / utility effect a skill carries, independent of its category.
 // None = ordinary skill. Taunt spikes the caster's threat, Fade sheds it,
-// Intercept makes the caster take hits aimed at allies until its next turn.
-enum class SkillEffect { None, Taunt, Fade, Intercept };
+// Intercept makes the caster take hits aimed at allies until its next turn (M28).
+// Cleanse strips every negative status from the skill's ally targets (M35), so a
+// heal skill can double as a cure.
+enum class SkillEffect { None, Taunt, Fade, Intercept, Cleanse };
 
 enum class SkillTarget { SingleEnemy, AllEnemies, SingleAlly, AllAllies, Self };
 
@@ -36,7 +38,20 @@ enum class Rarity { Common, Uncommon, Rare, Epic, Legendary };
 
 enum class ConsumableEffect { None, Heal, Revive, RestoreMp, Cure };
 
-enum class StatusType { None, Poison, AttackUp, AttackDown, DefenseUp, DefenseDown };
+// M35 adds Confusion (basic-attacks its own side), Silence (no MP-cost skills),
+// and Blind (physical attacks usually miss). All three are duration-only
+// (no magnitude) and are stripped by Cure like the other negative statuses.
+enum class StatusType {
+    None,
+    Poison,
+    AttackUp,
+    AttackDown,
+    DefenseUp,
+    DefenseDown,
+    Confusion,
+    Silence,
+    Blind
+};
 
 enum class BossArchetype { Brute, Sorcerer, Commander, Rush };
 

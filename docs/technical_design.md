@@ -570,6 +570,27 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   only through the shared methods, preserving the sim/live determinism contract.
   A run's `ScoreEntry.battleRulesVersion` (`battle::kBattleRulesVersion`) tags
   which rules resolved its battles. Variance/crits remain out of scope.
+- **Statuses & to-hit v2 (M35).** `StatusType` gains **Confusion / Silence /
+  Blind** (duration-only, magnitude 0). Confusion redirects a basic `attack` to a
+  seeded random member of the actor's own side; Silence blocks MP-cost skills
+  (guarded in `useSkill` and honoured by the battle menu, `chooseEnemyAction`, and
+  the Simulator party AI via the pure `canCast`); Blind gives a physical attack a
+  75 % miss (`kBlindMissPct`) — the game's first to-hit roll, and magic/items are
+  exempt. The new randomness rides a **shared per-action roll cursor**
+  (`Battle.rollCursor`, advanced by `nextRandom` only when a status gates a roll),
+  so a status-free battle stays byte-identical to the M28 rules and both drivers
+  evolve the stream in lockstep (`turnsTaken` — frozen at 0 in the Simulator — is
+  never used for it). Misses are recorded in `Battle.lastMissed` for the "Miss!"
+  floaters. `SkillEffect::Cleanse` lets a skill strip an ally's negative statuses
+  (Cleric's Purify), and the `Cure` consumable clears the new afflictions too.
+  **Owner balance tune (2026-07-21):** every applied status lasts
+  `kStatusDurationMult`× its authored duration (2×, in `addStatus`), poison ticks
+  `kPoisonDamageMult`× its authored magnitude (2×, in `tickStatuses`), and
+  **Confusion is cleared the instant its bearer takes attack/skill damage** (in
+  the shared `applyDamage` chokepoint, so sim/live agree and the poison DoT —
+  which bypasses `applyDamage` — does not clear it). Statuses live only inside a
+  `Battle` (never serialized), so no save bump; `battle::kBattleRulesVersion` is
+  **2**.
 - **Commands:** Attack, Skill, Item, Guard, Escape. Escape always succeeds (every
   encounter is escapable); escaping forfeits the gate/chest.
 - **Inventory:** `game/Inventory` (item id → count, insertion-ordered). Persisted
@@ -618,11 +639,14 @@ a `ScoreEntry`, and shows `DungeonResultState` before returning to town. The tow
 
 ### Status effects (`battle/`)
 
-A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down).
-Skills/items apply them to their targets; `Battle::tickStatuses` (called at each
-unit's turn start) deals poison and ages durations. Buffs/debuffs scale the
-effective attack/defense used in the damage formulas; `Cure`/antidotes strip
-poison and debuffs. A **Brute** boss `enrages` (×1.5 attack below half HP) and
+A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down, and the
+M35 Confusion/Silence/Blind). Skills/items apply them to their targets;
+`Battle::tickStatuses` (called at each unit's turn start) deals poison and ages
+durations. Buffs/debuffs scale the effective attack/defense used in the damage
+formulas; `Cure`/Remedy items and `SkillEffect::Cleanse` (the Cleric's Purify)
+strip every negative status (poison, debuffs, and the M35 afflictions). See §10's
+M35 bullet for the Confusion/Silence/Blind behaviour and the seeded to-hit stream.
+A **Brute** boss `enrages` (×1.5 attack below half HP) and
 shows a telegraph line; **Commander/Rush** bosses field a fixed minion team
 (dynamic summons / true waves are deferred). The base (no-status, non-boss)
 formulas are unchanged, so prior battle tests still hold.

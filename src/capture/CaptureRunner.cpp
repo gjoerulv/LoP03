@@ -136,18 +136,24 @@ dungeon::EnemyTeam makeBossTeam(const content::ContentDatabase& db) {
     return team;
 }
 
-// Applies a spread of statuses so battle rows show every tag at once.
+// Applies a spread of statuses so battle rows show every tag at once, including
+// the M35 Confusion/Silence/Blind (duration-only, magnitude 0) and a stacked row
+// to stress the status-line width with the wider labels.
 void applyCaptureStatuses(battle::Battle& b) {
     using content::StatusType;
     int i = 0;
     for (battle::Combatant& u : b.units) {
-        switch (i % 4) {
+        switch (i % 7) {
             case 0: u.statuses.push_back({StatusType::Poison, 5, 3}); break;
             case 1: u.statuses.push_back({StatusType::AttackUp, 25, 2}); break;
             case 2: u.statuses.push_back({StatusType::DefenseDown, 25, 2}); break;
+            case 3: u.statuses.push_back({StatusType::Blind, 0, 3}); break;     // M35
+            case 4: u.statuses.push_back({StatusType::Silence, 0, 3}); break;   // M35
+            case 5: u.statuses.push_back({StatusType::Confusion, 0, 2}); break;  // M35
             default:
                 u.statuses.push_back({StatusType::Poison, 3, 2});
                 u.statuses.push_back({StatusType::DefenseUp, 25, 1});
+                u.statuses.push_back({StatusType::Blind, 0, 2});  // widest: 3 stacked labels
                 break;
         }
         ++i;
@@ -165,7 +171,7 @@ score::RunSummary maximalRunSummary() {
     run.escapes = 3;
     run.wagerAccepted = true;
     run.townBonusPct = 100;      // M32: max town bonus
-    run.stakesPenaltyPct = 90;   // M33: max penalty -> town-bonus + penalty rows, fullest panel
+    run.stakesPenaltyPct = 99;   // M33/M35: max penalty (-99%) -> town-bonus + penalty rows, fullest panel
     return run;
 }
 
@@ -421,7 +427,7 @@ int run(const char* outDir) {
                  // so the forewarning shows a penalty. Placed after the town
                  // scenes; the stakes mutation does not leak into earlier scenes.
                  c.party.currentTown = 1;
-                 c.party.stakes = {1, 20, 3};  // prev (town 1, depth 20), 3 steps -> -60%
+                 c.party.stakes = {1, 20, 1};  // prev (town 1, depth 20); 1 prior step -> forewarns -60% (M35: 30/step)
                  s.pushState(std::make_unique<GuildState>(s, c));
              }},
             {"27_black_market",

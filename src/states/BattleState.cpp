@@ -46,6 +46,9 @@ const char* statusShort(content::StatusType t) {
         case content::StatusType::AttackDown: return "ATK-";
         case content::StatusType::DefenseUp: return "DEF+";
         case content::StatusType::DefenseDown: return "DEF-";
+        case content::StatusType::Confusion: return "CNF";
+        case content::StatusType::Silence: return "SIL";
+        case content::StatusType::Blind: return "BLD";
         case content::StatusType::None: return "";
     }
     return "";
@@ -156,6 +159,23 @@ void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
         if (hpBefore[i] > 0 && battle_.units[i].hp <= 0) {
             anyKo = true;
         }
+    }
+    // "Miss!" floaters for Blind misses (M35): the missed units took no HP delta,
+    // so they are surfaced here from the action's recorded miss list.
+    for (int mi : battle_.lastMissed) {
+        if (mi < 0 || mi >= static_cast<int>(battle_.units.size())) {
+            continue;
+        }
+        int mx = 0;
+        int my = 0;
+        unitScreenPos(mi, mx, my);
+        FloatNumber f;
+        f.x = static_cast<float>(mx) + 14.0f;
+        f.y = static_cast<float>(my);
+        f.timer = 0.9f;
+        f.heal = false;
+        f.text = "Miss!";
+        pendingFloats_.push_back(std::move(f));
     }
     pendingSfx_ = anyKo ? 3 : (anyDamage ? damageSfx : (anyHeal ? 1 : (statusAction ? 5 : 0)));
 }
@@ -279,8 +299,15 @@ void BattleState::buildSkillMenu() {
             items.push_back({sid, false});
             continue;
         }
-        const bool affordable = a.mp >= s->mpCost;
-        items.push_back({s->name + "  (MP " + std::to_string(s->mpCost) + ")", affordable});
+        // Silence (M35): MP-cost skills are blocked and labelled so the player
+        // sees *why* they are greyed (non-color-alone, M22).
+        const bool silencedBlocked = !battle::canCast(a, *s);
+        const bool enabled = a.mp >= s->mpCost && !silencedBlocked;
+        std::string label = s->name + "  (MP " + std::to_string(s->mpCost) + ")";
+        if (silencedBlocked) {
+            label += "  [Silenced]";
+        }
+        items.push_back({std::move(label), enabled});
     }
     skillMenu_.setItems(std::move(items));
     skillScroll_.reset();
@@ -504,9 +531,11 @@ void BattleState::openDetails() {
     }
     body +=
         "\n\nPSN: poison, damage at the start of each turn. ATK+/ATK-: attack "
-        "raised/lowered. DEF+/DEF-: defense raised/lowered.\nTurn order "
-        "follows Speed. Guard halves damage. Escape forfeits the guarded "
-        "reward - and every battle turn counts against your score.";
+        "raised/lowered. DEF+/DEF-: defense raised/lowered. CNF: confused, "
+        "attacks its own side. SIL: silenced, cannot use MP skills. BLD: blinded, "
+        "physical attacks usually miss.\nTurn order follows Speed. Guard halves "
+        "damage. Escape forfeits the guarded reward - and every battle turn "
+        "counts against your score.";
     stack().pushState(
         std::make_unique<DetailsOverlayState>(stack(), context_, "Battle Details", body));
 }

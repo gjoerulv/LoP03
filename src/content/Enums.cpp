@@ -45,11 +45,12 @@ constexpr std::array<std::pair<std::string_view, SkillCategory>, 4> kSkillCatego
     {"support", SkillCategory::Support},
 }};
 
-constexpr std::array<std::pair<std::string_view, SkillEffect>, 4> kSkillEffects{{
+constexpr std::array<std::pair<std::string_view, SkillEffect>, 5> kSkillEffects{{
     {"none", SkillEffect::None},
     {"taunt", SkillEffect::Taunt},
     {"fade", SkillEffect::Fade},
     {"intercept", SkillEffect::Intercept},
+    {"cleanse", SkillEffect::Cleanse},
 }};
 
 constexpr std::array<std::pair<std::string_view, SkillTarget>, 5> kSkillTargets{{
@@ -112,13 +113,16 @@ constexpr std::array<std::pair<std::string_view, ConsumableEffect>, 5> kConsumab
     {"cure", ConsumableEffect::Cure},
 }};
 
-constexpr std::array<std::pair<std::string_view, StatusType>, 6> kStatusTypes{{
+constexpr std::array<std::pair<std::string_view, StatusType>, 9> kStatusTypes{{
     {"none", StatusType::None},
     {"poison", StatusType::Poison},
     {"attack_up", StatusType::AttackUp},
     {"attack_down", StatusType::AttackDown},
     {"defense_up", StatusType::DefenseUp},
     {"defense_down", StatusType::DefenseDown},
+    {"confusion", StatusType::Confusion},
+    {"silence", StatusType::Silence},
+    {"blind", StatusType::Blind},
 }};
 
 constexpr std::array<std::pair<std::string_view, BossArchetype>, 4> kBossArchetypes{{

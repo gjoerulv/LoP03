@@ -65,21 +65,29 @@ void addStatus(Combatant& c, content::StatusType type, int magnitude, int turns)
     if (type == content::StatusType::None || turns <= 0) {
         return;
     }
+    const int scaledTurns = turns * kStatusDurationMult;  // M35: statuses last 2x their authored duration
     for (StatusInstance& s : c.statuses) {
         if (s.type == type) {
             s.magnitude = magnitude;
-            s.turns = turns;
+            s.turns = scaledTurns;
             return;
         }
     }
-    c.statuses.push_back({type, magnitude, turns});
+    c.statuses.push_back({type, magnitude, scaledTurns});
+}
+
+void removeStatus(Combatant& c, content::StatusType type) {
+    c.statuses.erase(std::remove_if(c.statuses.begin(), c.statuses.end(),
+                                    [type](const StatusInstance& s) { return s.type == type; }),
+                     c.statuses.end());
 }
 
 void clearNegativeStatuses(Combatant& c) {
+    // Cure strips every negative status (poison, ATK-/DEF- debuffs, and the M35
+    // Confusion/Silence/Blind), keeping only the beneficial buffs.
     std::vector<StatusInstance> kept;
     for (const StatusInstance& s : c.statuses) {
-        if (s.type != content::StatusType::Poison && s.type != content::StatusType::AttackDown &&
-            s.type != content::StatusType::DefenseDown) {
+        if (s.type == content::StatusType::AttackUp || s.type == content::StatusType::DefenseUp) {
             kept.push_back(s);
         }
     }
@@ -93,12 +101,23 @@ const char* statusLabel(content::StatusType type) {
         case content::StatusType::AttackDown: return "ATK-";
         case content::StatusType::DefenseUp: return "DEF+";
         case content::StatusType::DefenseDown: return "DEF-";
+        case content::StatusType::Confusion: return "Confusion";
+        case content::StatusType::Silence: return "Silence";
+        case content::StatusType::Blind: return "Blind";
         case content::StatusType::None: return "";
     }
     return "";
 }
 
-void applyDamage(Combatant& d, int dmg) { d.hp = std::max(0, d.hp - dmg); }
+void applyDamage(Combatant& d, int dmg) {
+    d.hp = std::max(0, d.hp - dmg);
+    // Confusion (M35): a hit snaps its bearer out of confusion. Single chokepoint
+    // for all attack/skill damage (poison DoT does not route through here), so the
+    // rule holds identically in live play and the Simulator.
+    if (dmg > 0) {
+        removeStatus(d, content::StatusType::Confusion);
+    }
+}
 
 void applyHeal(Combatant& d, int amount) {
     if (d.hp <= 0) {
@@ -109,13 +128,19 @@ void applyHeal(Combatant& d, int amount) {
 
 // --- M28 enmity/targeting helpers ---
 
-// SplitMix64 mix — the basis for the deterministic targeting tie-break.
+// SplitMix64 mix — the basis for the deterministic targeting tie-break and the
+// M35 to-hit / confusion roll stream.
 std::uint64_t mix64(std::uint64_t x) {
     x += 0x9E3779B97F4A7C15ull;
     x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ull;
     x = (x ^ (x >> 27)) * 0x94D049BB133111EBull;
     return x ^ (x >> 31);
 }
+
+// Per-use salts for the M35 roll stream, so Blind and Confusion draws taken in
+// the same action are independent.
+constexpr std::uint64_t kSaltBlind = 0xB11D5EED0F0F0F0Full;
+constexpr std::uint64_t kSaltConfuse = 0xC0FFED15C0117E00ull;
 
 // Small deterministic jitter in [0, range) from the battle seed + round + acting
 // enemy + candidate. Pure, so a given encounter always resolves identically and
@@ -248,6 +273,30 @@ void Battle::beginRound() {
     }
 }
 
+std::uint64_t Battle::nextRandom(std::uint64_t salt) {
+    ++rollCursor;
+    return mix64(rngSeed ^ mix64(rollCursor) ^ mix64(salt));
+}
+
+int Battle::confusedTarget(int actor) {
+    const Side s = units[static_cast<std::size_t>(actor)].side;
+    std::vector<int> allies;  // own living side, including self (M35: uniform pick)
+    for (std::size_t i = 0; i < units.size(); ++i) {
+        if (units[i].side == s && units[i].alive()) {
+            allies.push_back(static_cast<int>(i));
+        }
+    }
+    if (allies.empty()) {
+        return -1;
+    }
+    const std::uint64_t r = nextRandom(kSaltConfuse);
+    return allies[static_cast<std::size_t>(r % allies.size())];
+}
+
+bool canCast(const Combatant& c, const content::SkillDef& skill) {
+    return !(isSilenced(c) && skill.mpCost > 0);
+}
+
 void Battle::clearGuard(int unit) {
     if (unit >= 0 && unit < static_cast<int>(units.size())) {
         units[static_cast<std::size_t>(unit)].guarding = false;
@@ -256,6 +305,7 @@ void Battle::clearGuard(int unit) {
 }
 
 std::string Battle::tickStatuses(int unit) {
+    lastMissed.clear();
     std::string log;
     Combatant& c = units[static_cast<std::size_t>(unit)];
 
@@ -283,8 +333,9 @@ std::string Battle::tickStatuses(int unit) {
     }
     for (StatusInstance& s : c.statuses) {
         if (s.type == content::StatusType::Poison && c.hp > 0) {
-            c.hp = std::max(0, c.hp - s.magnitude);
-            log += c.name + " takes " + std::to_string(s.magnitude) + " poison damage.";
+            const int dmg = s.magnitude * kPoisonDamageMult;  // M35: poison deals 2x
+            c.hp = std::max(0, c.hp - dmg);
+            log += c.name + " takes " + std::to_string(dmg) + " poison damage.";
             if (!c.alive()) {
                 log += " " + c.name + " is KO'd!";
             }
@@ -302,11 +353,33 @@ std::string Battle::tickStatuses(int unit) {
 }
 
 std::string Battle::attack(int actor, int target) {
+    lastMissed.clear();
+    // Confusion (M35): a confused unit swings at a seeded random member of its own
+    // side instead. (Draws from the shared roll stream, so live play and the
+    // Simulator reproduce it identically.)
+    const bool confused = isConfused(units[static_cast<std::size_t>(actor)]);
+    if (confused) {
+        const int ct = confusedTarget(actor);
+        if (ct >= 0) {
+            target = ct;
+        }
+    }
     target = redirectTarget(units, actor, target);  // intercept redirects enemy hits (M28)
     Combatant& a = units[static_cast<std::size_t>(actor)];
     Combatant& t = units[static_cast<std::size_t>(target)];
     const bool opener = a.rushOpener && !a.actedOnce;
     a.actedOnce = true;
+    const std::string verb = confused ? " is confused and attacks " : " attacks ";
+    // Blind (M35): physical attacks usually miss.
+    if (isBlinded(a) && static_cast<int>(nextRandom(kSaltBlind) % 100) < kBlindMissPct) {
+        lastMissed.push_back(target);
+        std::string miss = a.name + verb + t.name + " but misses! (Blind)";
+        if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
+            a.enrageAnnounced = true;
+            miss = a.name + " flies into a rage! " + miss;
+        }
+        return miss;
+    }
     int dmg = physicalDamage(a, t, 0);
     if (opener) {
         dmg *= 2;  // Rush: opening fury
@@ -315,7 +388,7 @@ std::string Battle::attack(int actor, int target) {
     if (a.side == Side::Party) {
         addThreat(actor, dmg);  // dealing damage draws enmity (M28)
     }
-    std::string log = a.name + " attacks " + t.name + " for " + std::to_string(dmg) + ".";
+    std::string log = a.name + verb + t.name + " for " + std::to_string(dmg) + ".";
     if (opener) {
         log += " (opening fury!)";
     }
@@ -348,6 +421,14 @@ std::vector<int> Battle::resolveTargets(const content::SkillDef& skill, int acto
 }
 
 std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillDef& skill) {
+    lastMissed.clear();
+    // Silence (M35): MP-cost skills are blocked (0-MP skills, items, and basic
+    // attacks are fine). Guarded here too, so no caller can slip a silenced cast
+    // past the battle menu / AI filters and desync live play from the Simulator.
+    if (isSilenced(units[static_cast<std::size_t>(actor)]) && skill.mpCost > 0) {
+        return units[static_cast<std::size_t>(actor)].name + " is silenced and cannot use " +
+               skill.name + "!";
+    }
     primaryTarget = redirectTarget(units, actor, primaryTarget);  // M28 intercept
     Combatant& a = units[static_cast<std::size_t>(actor)];
     a.mp = std::max(0, a.mp - skill.mpCost);
@@ -392,6 +473,10 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             a.intercepting = true;
             log += " " + a.name + " stands ready to shield the party.";
             break;
+        case content::SkillEffect::Cleanse:
+            // Applied per ally target in the loop below (works with single_ally
+            // and all_allies), so a heal skill can double as a cure (M35).
+            break;
         case content::SkillEffect::None:
             break;
     }
@@ -401,6 +486,14 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             continue;
         }
         Combatant& t = units[static_cast<std::size_t>(ti)];
+        // Blind (M35): a blinded unit's physical skill usually misses each target;
+        // magic, heal, and support skills are unaffected.
+        if (skill.category == content::SkillCategory::Physical && isBlinded(a) &&
+            static_cast<int>(nextRandom(kSaltBlind) % 100) < kBlindMissPct) {
+            lastMissed.push_back(ti);
+            log += " " + t.name + ": miss! (Blind)";
+            continue;  // no damage and no status on a miss
+        }
         switch (skill.category) {
             case content::SkillCategory::Physical: {
                 int dmg = physicalDamage(a, t, skill.power);
@@ -448,6 +541,14 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                 break;  // effect comes from the applied status below
         }
 
+        // Cleanse (M35): strip every negative status from an ally target, so a
+        // heal/support skill can double as a cure (Cleric's Purify).
+        if (skill.controlEffect == content::SkillEffect::Cleanse && t.alive() &&
+            t.side == a.side && !t.statuses.empty()) {
+            clearNegativeStatuses(t);
+            log += " " + t.name + " is cleansed.";
+        }
+
         // Apply the skill's status to living targets.
         if (skill.statusEffect != content::StatusType::None && t.alive()) {
             addStatus(t, skill.statusEffect, skill.statusMagnitude, skill.statusDuration);
@@ -462,6 +563,7 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
 }
 
 std::string Battle::useItem(int actor, int target, const content::ItemDef& item) {
+    lastMissed.clear();
     Combatant& t = units[static_cast<std::size_t>(target)];
     const std::string& who = units[static_cast<std::size_t>(actor)].name;
     std::string log = who + " uses " + item.name + " on " + t.name + ".";
@@ -499,6 +601,7 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
 }
 
 std::string Battle::guard(int actor) {
+    lastMissed.clear();
     Combatant& a = units[static_cast<std::size_t>(actor)];
     a.guarding = true;
     return a.name + " guards.";
@@ -632,6 +735,9 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
     EnemyChoice choice;
 
     const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    // Silence (M35): a silenced enemy cannot use MP-cost skills, so it falls back
+    // to any 0-MP skill or a basic attack. canCast enforces exactly that in each
+    // skill loop below.
 
     // Pick the party target that best matches this enemy's profile (M28):
     // threat, kill pressure, and backline weight, with a small seeded tie-break.
@@ -666,7 +772,7 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
 
     for (const std::string& sid : self.skillIds) {
         const content::SkillDef* skill = db.findSkill(sid);
-        if (skill == nullptr || skill->mpCost > self.mp) {
+        if (skill == nullptr || skill->mpCost > self.mp || !canCast(self, *skill)) {
             continue;
         }
         if (skill->category == content::SkillCategory::Heal && hurtAlly >= 0) {
@@ -681,7 +787,7 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
     // expire, so this recurs but never spams while one is active.
     for (const std::string& sid : self.skillIds) {
         const content::SkillDef* skill = db.findSkill(sid);
-        if (skill == nullptr || skill->mpCost > self.mp ||
+        if (skill == nullptr || skill->mpCost > self.mp || !canCast(self, *skill) ||
             skill->category != content::SkillCategory::Support ||
             skill->statusEffect == content::StatusType::None) {
             continue;
@@ -691,7 +797,10 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
         if (ti < 0) {
             continue;
         }
-        if (statusSum(b.units[static_cast<std::size_t>(ti)], skill->statusEffect) == 0) {
+        // Use presence, not magnitude: the M35 statuses (silence/blind/confusion)
+        // carry magnitude 0, so statusSum would read 0 and the AI would re-cast
+        // every turn. hasStatus is correct for magnitude-based and duration-only.
+        if (!hasStatus(b.units[static_cast<std::size_t>(ti)], skill->statusEffect)) {
             choice.useSkill = true;
             choice.skillId = sid;
             choice.target = ti;
@@ -701,7 +810,7 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
 
     for (const std::string& sid : self.skillIds) {
         const content::SkillDef* skill = db.findSkill(sid);
-        if (skill == nullptr || skill->mpCost > self.mp) {
+        if (skill == nullptr || skill->mpCost > self.mp || !canCast(self, *skill)) {
             continue;
         }
         const bool damaging = skill->category == content::SkillCategory::Physical ||

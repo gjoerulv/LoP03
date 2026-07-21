@@ -21,8 +21,12 @@ music, or text. Built in **C++20** with **raylib**.
 > paid-rest economy — are delivered, as is the **M31–M34 expansion**: a
 > seven-town difficulty ladder with per-town art and music, a stakes-escalation
 > score rule, a black market selling legendary gear for gold or elite-challenge
-> tokens, and categorized equip shopping. Only the deferred **validation/balance
-> playtesting (M23)** and **release packaging/sign-off (M24)** remain — see
+> tokens, and categorized equip shopping. The **M35–M42 endgame program**
+> (statuses v2, passives, per-town content, boss drops, a castle with the King,
+> story, and enrichment features) is now underway — **M35** (Confusion/Silence/
+> Blind statuses + the seeded to-hit layer, re-tuned stakes) is implemented and
+> awaiting approval. The deferred **validation/balance playtesting (M23)** and
+> **release packaging/sign-off (M24)** run last — see
 > `docs/completion_roadmap.md` and `docs/milestones.md`.
 
 ## Requirements
@@ -162,7 +166,7 @@ letterbox/pillarbox bars.
 5. Beat the **boss** to clear the dungeon and post a **score** (driven mainly by
    *fewest battle turns*, plus danger defeated, treasure, a no-death bonus, and
    the town's score bonus). Runs that fail to raise your **stakes** — (town,
-   depth) vs your last completed run — lose 15 % per repeat (to a −90 % cap);
+   depth) vs your last completed run — lose 30 % per repeat (to a −99 % cap);
    the Guild shows the exact penalty before you enter.
 6. **Retreat** any time (you keep XP/gold but score 0). **Defeat** returns you to
    town with half your gold. Upgrade, then dive deeper — runs scale with depth,
@@ -225,9 +229,11 @@ save round-trips via the Save Point + Continue.
   sound and visual role is replaceable without code via
   `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload
   with F5); missing files fall back to synthesized placeholders or silence.
-- Status effects are a focused set (poison + attack/defense buffs/debuffs).
-  Bosses use stats, skills, minions, telegraph text, and a Brute enrage; dynamic
-  summons and true multi-wave "rush" are not implemented.
+- Status effects include poison, attack/defense buffs/debuffs, and (M35)
+  Blind (physical attacks usually miss), Silence (no MP-cost skills), and
+  Confusion (attacks its own side) — all deterministic and seeded. Bosses use
+  stats, skills, minions, telegraph text, and a Brute enrage; dynamic summons and
+  true multi-wave "rush" are not implemented.
 - Equipment has no per-class restrictions; the economy is lightly tuned.
 - The seven towns share one fixed layout (exterior palette, service interiors,
   and music vary per town); no per-character portraits.

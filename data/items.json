@@ -6,7 +6,7 @@
     { "id": "mega_potion", "name": "Mega Potion", "type": "consumable", "rarity": "rare", "value": 180, "effect": "heal", "effectAmount": 160, "description": "Restores 160 HP to one ally." },
     { "id": "ether", "name": "Ether", "type": "consumable", "rarity": "uncommon", "value": 60, "effect": "restore_mp", "effectAmount": 20, "description": "Restores 20 MP to one ally." },
     { "id": "hi_ether", "name": "Hi-Ether", "type": "consumable", "rarity": "rare", "value": 150, "effect": "restore_mp", "effectAmount": 50, "description": "Restores 50 MP to one ally." },
-    { "id": "antidote", "name": "Antidote", "type": "consumable", "rarity": "common", "value": 15, "effect": "cure", "effectAmount": 0, "description": "Cures poison and lifts debuffs from one ally." },
+    { "id": "antidote", "name": "Remedy", "type": "consumable", "rarity": "common", "value": 15, "effect": "cure", "effectAmount": 0, "description": "Cures all afflictions and debuffs from one ally." },
     { "id": "phoenix_tear", "name": "Phoenix Tear", "type": "consumable", "rarity": "rare", "value": 150, "effect": "revive", "effectAmount": 50, "description": "Revives a fallen ally with 50% HP." },
     { "id": "elixir", "name": "Elixir", "type": "consumable", "rarity": "epic", "value": 400, "effect": "heal", "effectAmount": 300, "description": "Restores a great deal of HP." },
 

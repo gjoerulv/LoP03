@@ -2,21 +2,21 @@
 
 #include <algorithm>
 
-// Pure, raylib-free stakes-escalation rules (M33). A run's stakes = (townIndex,
-// depth), compared lexicographically town-first against the previous completed
-// run. A completed run that fails to raise the stakes accrues a score penalty
-// (-15% per step, capped at -90%); one that raises them clears it. Headless-
-// tested and the single source of the rule, so scoring, save, and the Guild
-// forewarning always agree. All-zero is the fresh state: the first real run
-// (town >= 1, depth >= 1) is strictly higher than (0,0), so it always raises and
-// is unpenalized, and pre-M33 saves (fields absent -> 0) behave identically.
+// Pure, raylib-free stakes-escalation rules (M33; re-tuned M35). A run's stakes =
+// (townIndex, depth), compared lexicographically town-first against the previous
+// completed run. A completed run that fails to raise the stakes accrues a score
+// penalty (-30% per step, capped at -99%: steps pay 30/60/90/99); one that raises
+// them clears it. Headless-tested and the single source of the rule, so scoring,
+// save, and the Guild forewarning always agree. All-zero is the fresh state: the
+// first real run (town >= 1, depth >= 1) is strictly higher than (0,0), so it
+// always raises and is unpenalized, and pre-M33 saves (fields absent -> 0) behave
+// identically.
 
 namespace cd {
 
-inline constexpr int kStakesPenaltyPerStep = 15;   // percent per unraised run
-inline constexpr int kStakesPenaltyMaxSteps = 6;   // 6 steps
-inline constexpr int kStakesPenaltyCapPct =
-    kStakesPenaltyPerStep * kStakesPenaltyMaxSteps;  // 90
+inline constexpr int kStakesPenaltyPerStep = 30;   // percent per unraised run (M35)
+inline constexpr int kStakesPenaltyMaxSteps = 4;   // 4 steps: 30/60/90/(90+->cap)
+inline constexpr int kStakesPenaltyCapPct = 99;    // hard floor at -99% (M35), not perStep*maxSteps
 
 // The previous completed run's stakes and how many consecutive completed runs
 // have failed to raise them.
@@ -35,14 +35,14 @@ inline bool stakesRaised(const StakesState& s, int town, int depth) {
     return depth > s.prevDepth;
 }
 
-// The penalty percent (0..90) a completed run at (town, depth) would incur:
-// 0 if it raises the stakes, else (steps + 1) * 15, capped at 90.
+// The penalty percent (0..99) a completed run at (town, depth) would incur:
+// 0 if it raises the stakes, else min(99, steps * 30) for steps 1..4 -> 30/60/90/99.
 inline int stakesPenaltyPct(const StakesState& s, int town, int depth) {
     if (stakesRaised(s, town, depth)) {
         return 0;
     }
     const int steps = std::min(kStakesPenaltyMaxSteps, s.penaltySteps + 1);
-    return steps * kStakesPenaltyPerStep;
+    return std::min(kStakesPenaltyCapPct, steps * kStakesPenaltyPerStep);
 }
 
 // The state after a completed (score > 0) run at (town, depth): the penalty step

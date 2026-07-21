@@ -30,7 +30,7 @@ constexpr int kTurnsR = 162;     // right edge of Turns
 constexpr int kDangerR = 214;    // right edge of Danger
 constexpr int kDepthR = 254;     // right edge of Depth
 constexpr int kLvR = 288;        // right edge of Lv (M19 comparability tag)
-constexpr int kThemeX = 302;     // left edge of Theme
+constexpr int kThemeX = 296;     // left edge of Theme (M35: -6px to fit the T# + theme + * + ~ case)
 constexpr int kHeaderY = 44;
 constexpr int kRowsY = 60;
 constexpr int kRowH = 13;
@@ -122,7 +122,7 @@ void ScoreboardState::render() {
         if (e.battleRulesVersion < battle::kBattleRulesVersion) {
             theme += " ~";
         }
-        ui::drawTextFitted(theme, kThemeX, y, w - kThemeX - 16, style::kFontBody, rowColor,
+        ui::drawTextFitted(theme, kThemeX, y, w - kThemeX - 14, style::kFontBody, rowColor,
                            "scoreboard.theme");
     }
 
@@ -131,7 +131,7 @@ void ScoreboardState::render() {
     const int legendY = kRowsY + count * kRowH + 4;
     ui::drawText("* = no-death   Lv = party level   T# = town", kRankX, legendY,
              style::kFontSmall, Color{150, 170, 150, 255});
-    ui::drawText("Compare at same Depth/Lv.  ~ = older battle rules (pre-M28).", kRankX,
+    ui::drawText("Compare at same Depth/Lv.  ~ = older battle rules.", kRankX,
                  legendY + 10, style::kFontSmall, style::palette().textDim);
     if (scroll_.moreAbove() || scroll_.moreBelow(total, kVisibleRows)) {
         ui::drawTextRight(TextFormat("%d-%d of %d   Up/Down: Scroll", first + 1, first + count,

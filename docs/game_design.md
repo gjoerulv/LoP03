@@ -143,6 +143,23 @@ revive exist; game over if all party KO. **Every** encounter (incl. bosses) is
 escapable. Escaping a normal battle forfeits that guarded chest/reward; escaping
 the boss or leaving the dungeon gives **0 dungeon score**.
 
+**Status effects (M35, extends M7).** Beyond poison and the attack/defense
+buffs/debuffs, three afflictions deepen the tactics. **Blind** makes a unit's
+physical attacks usually miss (the game's first to-hit roll — magic and items are
+unaffected). **Silence** blocks MP-cost skills (basic attacks and items still
+work). **Confusion** makes a unit's basic attack strike a seeded random member of
+its own side — and a confused unit is **snapped out of it the moment it takes
+damage**, so hitting a confused ally (or letting a foe strike your confused
+member) is a real counter. All three are fully deterministic (seeded off the
+battle, so live play and the simulator agree exactly), applied by class skills (a
+Rogue and Ranger blind, a Mage silence and confusion) and enemy kits (disruptors,
+sorcerers, and several bosses now weave them in where the role fits), and all are
+lifted by a **Remedy** item or the Cleric's **Purify**. A miss reads as "Miss!"
+and every affliction shows a labelled icon, so nothing depends on colour alone.
+Afflictions and buffs both **linger** (durations run long), and **poison bites
+hard** (it deals heavy damage each turn), so status play — inflicting, curing,
+and outlasting — is a meaningful axis of a fight.
+
 **Enmity & enemy targeting (M28).** Enemies no longer always pile onto the
 lowest-HP party member (which perversely made an efficiently-played mage the
 tank). Each party member accrues **threat** from the damage and healing they do;
@@ -196,8 +213,9 @@ premise.
 
 **Stakes escalation (M33).** A run's *stakes* is its `(town, depth)`, compared
 town-first against your **previous completed run**. If a completed run does **not**
-raise the stakes above the last one, it loses score — **−15 % per repeat,
-stacking to a −90 % floor** — and each further non-raising run deepens it.
+raise the stakes above the last one, it loses score — **−30 % per repeat,
+stacking to a −99 % floor** (M35 re-tune; was −15 %/−90 %) — and each further
+non-raising run deepens it.
 Clearing a run that **does** raise the stakes (a higher town, or a deeper dungeon
 at the same town) **resets the penalty to zero**. Retreats and wipes (score-0
 runs) don't count either way. The Guild **forewarns** the penalty the configured
@@ -268,10 +286,11 @@ These are engineering bars, not formal WCAG claims.
 ## 13. First-complete-version content target
 
 6 classes (each with a level-based learnset) · 22 normal enemy types · 9 elites ·
-6 bosses across 4 archetypes · 30+ items/equipment · 43 skills/spells across the
+6 bosses across 4 archetypes · 30+ items/equipment · 48 skills/spells across the
 broad categories · 3 themes (**Ruined Keep, Crystal Mine, Hollow Forest**) ·
-infinite seeded dungeons with depth scaling. (Counts as of M29; the enemy/boss
-roster and skill list grow with content milestones.)
+infinite seeded dungeons with depth scaling. (Counts as of M35, which added the
+5 status skills; the enemy/boss roster and skill list grow with content
+milestones.)
 
 ## 14. Open design questions (decide with human when reached)
 

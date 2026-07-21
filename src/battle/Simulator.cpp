@@ -42,7 +42,8 @@ EnemyChoice choosePartyAction(const Battle& b, int actor, const content::Content
     if (hurtAlly >= 0) {
         for (const std::string& sid : self.skillIds) {
             const content::SkillDef* s = db.findSkill(sid);
-            if (s != nullptr && s->category == content::SkillCategory::Heal && s->mpCost <= self.mp) {
+            if (s != nullptr && s->category == content::SkillCategory::Heal && s->mpCost <= self.mp &&
+                canCast(self, *s)) {  // M35: silence blocks MP-cost skills
                 choice.useSkill = true;
                 choice.skillId = sid;
                 choice.target = hurtAlly;
@@ -54,7 +55,7 @@ EnemyChoice choosePartyAction(const Battle& b, int actor, const content::Content
     int bestPower = -1;
     for (const std::string& sid : self.skillIds) {
         const content::SkillDef* s = db.findSkill(sid);
-        if (s == nullptr || s->mpCost > self.mp) {
+        if (s == nullptr || s->mpCost > self.mp || !canCast(self, *s)) {  // M35 silence
             continue;
         }
         const bool damaging = s->category == content::SkillCategory::Physical ||

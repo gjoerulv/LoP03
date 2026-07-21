@@ -18,14 +18,14 @@ TEST_CASE("stakes: a fresh state means the first run always raises", "[stakes]")
     CHECK(stakesPenaltyPct(s, 1, 1) == 0);
 }
 
-TEST_CASE("stakes: repeating a stake grows -15% per step to a -90% cap", "[stakes]") {
+TEST_CASE("stakes: repeating a stake grows -30% per step to a -99% cap", "[stakes]") {
     StakesState s = afterCompletedRun(StakesState{}, 3, 5);  // first run raises
     REQUIRE(s.penaltySteps == 0);
     REQUIRE(s.prevTown == 3);
     REQUIRE(s.prevDepth == 5);
 
-    // Each subsequent repeat of (3,5) incurs one more step, capped at 90.
-    const int expected[] = {15, 30, 45, 60, 75, 90, 90, 90};
+    // Each subsequent repeat of (3,5) incurs one more step: 30/60/90 then the 99% cap.
+    const int expected[] = {30, 60, 90, 99, 99, 99, 99, 99};
     for (int p : expected) {
         CHECK(stakesPenaltyPct(s, 3, 5) == p);
         s = afterCompletedRun(s, 3, 5);
@@ -44,8 +44,8 @@ TEST_CASE("stakes: raising the stakes resets the penalty to zero", "[stakes]") {
     s = afterCompletedRun(s, 3, 6);         // raise
     CHECK(s.penaltySteps == 0);
     CHECK(s.prevDepth == 6);
-    // And a fresh repeat at the new baseline starts the ladder over at 15%.
-    CHECK(stakesPenaltyPct(s, 3, 6) == 15);
+    // And a fresh repeat at the new baseline starts the ladder over at 30%.
+    CHECK(stakesPenaltyPct(s, 3, 6) == 30);
 }
 
 TEST_CASE("stakes: comparison is town-first (lexicographic)", "[stakes]") {
@@ -57,7 +57,8 @@ TEST_CASE("stakes: comparison is town-first (lexicographic)", "[stakes]") {
     CHECK(stakesRaised(s, 3, 1));               // higher town beats any depth
     CHECK(stakesPenaltyPct(s, 3, 1) == 0);
     CHECK_FALSE(stakesRaised(s, 1, 20));        // lower town, even deeper, does not raise
-    CHECK(stakesPenaltyPct(s, 1, 20) == (3 + 1) * kStakesPenaltyPerStep);  // 60
+    // penaltySteps 3 -> step 4 -> 4*30=120 capped to 99.
+    CHECK(stakesPenaltyPct(s, 1, 20) == kStakesPenaltyCapPct);
     CHECK_FALSE(stakesRaised(s, 2, 5));         // identical stake
     CHECK_FALSE(stakesRaised(s, 2, 4));         // same town, shallower
     CHECK(stakesRaised(s, 2, 6));               // same town, deeper

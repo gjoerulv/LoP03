@@ -42,15 +42,27 @@
 | 32 | Town ladder (7 towns, travel, scaling, score bonus) | ☑ complete (approved) |
 | 33 | Stakes-escalation penalty | ☑ complete (approved) |
 | 34 | Black market & legendary gear | ☑ complete (approved) |
+| 35 | Status effects & battle rules v2 | ◑ implemented, awaiting manual approval |
+| 36 | Passive skills | ☐ planned |
+| 37 | Per-town equipment | ☐ planned |
+| 38 | Per-town enemies & bosses | ☐ planned |
+| 39 | Boss legendary & token drops | ☐ planned |
+| 40 | The castle & the King's challenges | ☐ planned |
+| 41 | Story NPCs & lore | ☐ planned |
+| 42 | Enrichment: bestiary, victory stats, achievements | ☐ planned |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
-**M31 → M32 → M33 → M34**, **then** M23 → M24. M23/M24 were deferred by the
-owner on 2026-07-20: the game is not release-ready, so validating and packaging
-it would have measured the wrong build. Their existing tooling and packaging
-work is retained, not discarded — only their position in the sequence changed.
-The M31–M34 expansion program (towns, stakes, black market, shop categories)
-was authorized by the owner on 2026-07-20 as the content/systems work the game
-needs before M23/M24 are worth running; see the program section below.
+**M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
+(M35 → M36 → M37 → M38 → M39 → M40 → M41 → M42), **then** M23 → M24. M23/M24 were
+deferred by the owner on 2026-07-20: the game is not release-ready, so validating
+and packaging it would have measured the wrong build. Their existing tooling and
+packaging work is retained, not discarded — only their position in the sequence
+changed. The M31–M34 expansion program (towns, stakes, black market, shop
+categories) was authorized by the owner on 2026-07-20; the M35–M42 endgame
+program (statuses, passives, per-town content, boss drops, a castle with the
+King, story, and enrichment features) was authorized on 2026-07-21 — both as the
+content/systems work the game needs before M23/M24 are worth running. See the
+program sections below.
 
 ## M1 — Project foundation
 
@@ -1269,4 +1281,296 @@ checkout; each carries its as-implemented record (§K).
 - **Owner manual validation:** discovery excitement, price feel, legendary
   balance.
 - **Milestone note:** `docs/milestone_notes/M34_black_market.md` (authored at
+  authorization).
+
+## Endgame program (M35–M42)
+
+Authorized by the owner on 2026-07-21, after the M31–M34 expansion closed.
+M31–M34 gave the game a seven-town ladder, a stakes rule, and a black market;
+the loop still tops out at the town-7 ceiling with no summit and combat still
+turns on a handful of statuses. This program adds an **endgame**: deeper combat
+(new statuses, passive skills), per-town equipment and enemy content, boss
+legendary drops, a **castle above the town-7 ceiling with a King and three
+challenges**, a light-hearted serial story, and three enrichment features. It is
+content and systems on the same core loop, not a new genre — the castle is a
+distinct summit hub, not a world map or a story campaign. Strategic framing lives
+in `docs/completion_roadmap.md` §14; per-milestone scope lives in the notes.
+
+**Execution order:** M35 → M36 → M37 → M38 → M39 → M40 → M41 → M42, **then**
+M23 → M24 (re-audited for all the new content). Cross-cutting rules for every
+milestone in this program:
+
+- **Save compatibility (owner decision):** breaking old saves is **permitted**
+  this program if the optional-field pattern becomes a real hindrance — bump
+  `kSaveVersion` freely, no migration code required. The default remains
+  optional-field/defensive-load where it is not painful (most of this program
+  fits it). Never *silently* change what a stored field means.
+- **Versioning guardrails:** any change to how a battle resolves bumps
+  `battle::kBattleRulesVersion` (M35 → 2, M36 → 3); any change to generated
+  dungeon output bumps `dungeon::kGenerationVersion` (M37 → 7 if new items enter
+  chest pools, M38 → 8). Tags are displayed, never used for ranking.
+- **Determinism is inviolable.** All new randomness — to-hit rolls, confusion
+  targets, drop rolls, castle waves — derives from an existing **seeded** stream
+  (`Battle.rngSeed` for battles, the run/challenge seed for drops and waves),
+  never wall-clock or unseeded RNG. Simulator ↔ live agreement must hold exactly.
+- **M19 comparability:** anything score-adjacent is tagged/displayed, never
+  normalized; **castle records live outside the dungeon scoreboard entirely**.
+- Original writing/art/music only (the hard originality constraint binds every
+  milestone). Statuses stop at `implemented, awaiting manual approval` with a
+  manual checklist per `docs/milestone_completion_template.md`; the owner
+  approves each before the next begins.
+
+### Owner decisions taken at planning time (2026-07-21, via Q&A)
+
+- **Castle rewards.** The castle keeps its **own records** (boss rush: fewest
+  total turns; endless rush: best wave; King: defeated + fewest turns), separate
+  from the dungeon scoreboard so M19 comparability is preserved. Each challenge
+  pays a **one-time first-clear reward** (tokens/gold; the King a unique
+  legendary + a visible title); repeatable for records afterward.
+- **Castle unlock.** Clearing **any town-7 dungeon** opens the road to the castle
+  (consistent with the existing road rule).
+- **Passives economy: own many, equip one.** Passives are purchased per character
+  at the Training Hall and stay owned; the single equipped passive swaps freely
+  there. A character equips at most one.
+- **Enemy overhaul scope (statuses): kit overhaul only.** Every enemy/boss kit is
+  reviewed and new-status skills woven in where the role fits; base stats stay
+  untouched unless the sim battery shows breakage.
+- **Enrichment picks:** Bestiary, Victory stats + records, Achievements. The
+  daily-seed challenge was **rejected**.
+- **Stakes re-tune.** The stakes penalty becomes **−30 % per step, capped at
+  −99 %** (was −15 %/−90 %): steps pay 30/60/90/99. No version implication — each
+  entry's `stakesPenaltyPct` tag already records the actual percent applied.
+- **Dungeon merchant discount.** The Merchant room event sells at **75 % of item
+  value** (was a 130 % markup), turning the merchant into a reward for
+  exploration rather than a tax. Generated prices change for the same seed, so
+  this rides M37's `kGenerationVersion` bump.
+- **Owner-specified status/drop/King rules.** Blind = physical attacks miss 75 %
+  (100 % against an Evasion-passive holder). Confusion = attacks own team.
+  Silence = cannot use MP-cost skills. Boss drops: town ≥ 3 **and** depth ≥ 4
+  only; town-7 token drops are double (2 tokens); at town 7 depth 20 the caps are
+  **75 % chance of 2 tokens and 30 % chance of a legendary equipment piece**. King
+  fights sit **above town-7-depth-20 stats**. 3–5 new equipment pieces per town;
+  ≥ 2 new standard enemies + 1 new boss per town. The King has **3 passives**; new
+  bosses have passives. The story is light-hearted and funny, ending with a
+  Jester punchline at the castle.
+
+**Note authoring is just-in-time.** Only `M35_status_battle_rules_v2.md` exists
+so far; the notes for M36–M42 are authored when the owner authorizes each
+milestone and re-audited against the then-current checkout. A detailed note
+written six milestones ahead describes a repository that will not exist by the
+time anyone reads it. The scope summaries below are the commitment; each note
+adds the detail once the ground under it is stable. M36–M42 are **direction, not
+authorization** — do not begin one without explicit owner go-ahead.
+
+## M35 — Status effects & battle rules v2
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against HEAD `cc1e93d`. The foundation milestone of the endgame
+  program; everything later builds on these mechanics. Owner authorized beginning
+  M35 on 2026-07-21. **321/321 tests** (+12 `[status]`), `--capture` **27/27**
+  overflow-clean, Debug + Release clean, `kBattleRulesVersion` 2 /
+  `kGenerationVersion` 6. Includes the owner's 2026-07-21 status refinement
+  (confusion cleared by damage; durations ×2; poison damage ×2). See the note's
+  §K for the as-implemented record.
+- **Goal:** deepen combat with three new statuses (Confusion, Silence, Blind),
+  the game's first to-hit layer, class and enemy integration, and a re-tuned
+  stakes penalty — all deterministic and sim/live-agreed.
+- **Primary deliverables:**
+  - **Slice 0 — stakes re-tune (owner decision):** in `game/StakesLadder.hpp`
+    set the per-step penalty to 30 % and the cap to 99 % (steps pay 30/60/90/99 —
+    `min(99, steps*30)`, max-steps constant 4); update the table tests, the Guild
+    forewarning (it prints the exact percent, so it follows automatically —
+    verify), `docs/game_design.md`, and the README How-to-play numbers.
+    Self-contained; land and verify before the battle work.
+  - **New statuses** in the pure sim: **Confusion** (basic-attacks a seeded random
+    member of its own side), **Silence** (MP-cost skills blocked; items and basic
+    attacks fine; silenced enemy AI falls back gracefully in `chooseEnemyAction`),
+    **Blind** (physical attacks miss 75 %).
+  - **To-hit layer** (new): a seeded roll from `Battle.rngSeed`'s stream decides
+    Blind misses (and, in M36, Evasion). Misses render as "Miss!" floaters and log
+    lines; magic and items are unaffected by Blind.
+  - **Class integration:** new skills applying/curing the statuses across the six
+    class learnsets; `Cure`/remedy items extended.
+  - **Enemy kit overhaul (kit-only, owner decision):** every existing enemy and
+    boss kit reviewed; status appliers/cleansers added where the role fits; base
+    stats untouched unless the sim battery shows breakage.
+  - **UI:** status icons/labels in battle + target-info panel + Details help;
+    non-color-alone indicators (M22 accessibility bar).
+  - `battle::kBattleRulesVersion` **1 → 2**; the scoreboard shows it (mechanism
+    exists).
+  - Re-tuned balance battery; sim/live agreement tests extended to the new
+    statuses (shared code paths only — same discipline as `tickStatuses`).
+- **Out of scope:** passive skills (M36); per-town equipment/enemies (M37/M38);
+  boss drops (M39); the castle (M40); no generation change
+  (`kGenerationVersion` stays 6 — statuses do not change what a seed generates).
+- **Dependencies:** M34 approved.
+- **Acceptance criteria:** identical seed + inputs reproduce battles (with the new
+  statuses) exactly; simulator and live play agree; Blind/Confusion/Silence behave
+  per the owner rules; stakes steps pay 30/60/90/99 to a −99 % cap; full suite
+  green from the 309 baseline; capture overflow-clean with a status-battle scene;
+  presentation lint green.
+- **Owner manual validation:** whether the statuses read clearly and feel
+  tactical (not arbitrary); to-hit misses legible; stakes penalty feel; balance.
+- **Milestone note:** `docs/milestone_notes/M35_status_battle_rules_v2.md`
+  (authored at authorization).
+
+## M36 — Passive skills
+
+- **Status:** ☐ planned — **direction only.** Note authored when the owner
+  authorizes it, re-audited against the then-current checkout.
+- **Goal:** per-character passive skills (own many, equip one) plus enemy/boss
+  passives, as a deterministic sim layer built on M35's to-hit roll.
+- **Primary deliverables:** `passives.json` (id, name, description, hook
+  parameters) + loader/validator; pure sim hooks for the owner-approved catalog
+  (Counter Attack, Evasion, Spell Ward, Thorns, Lifedrink, Clarity, Iron Will,
+  First Strike, Bodyguard, Keen Senses — final set + prices owner-approved at note
+  time; Evasion uses M35's to-hit layer); Training Hall acquisition (own many,
+  equip one, swap free); optional character save fields (owned ids + equipped id);
+  `EnemyDef`/`BossDef` optional passive list; target-info reveals a foe's passive
+  once seen; `battle::kBattleRulesVersion` **2 → 3**; balance battery re-tuned (the
+  last rules change of the program).
+- **Out of scope:** per-town content (M37/M38); the King's three passives are
+  authored in M40.
+- **Dependencies:** M35 approved.
+- **Acceptance criteria:** passives validate and round-trip through saves; sim ↔
+  live agreement holds with passives active; Evasion honours the Blind-vs-Evasion
+  rule; battle menus/target-info stay within layout budgets.
+- **Milestone note:** `docs/milestone_notes/M36_passives.md` (authored at
+  authorization).
+
+## M37 — Per-town equipment
+
+- **Status:** ☐ planned — **direction only.**
+- **Goal:** town-gated equipment so gear power tracks the ladder, plus the
+  dungeon-merchant discount.
+- **Primary deliverables:** `ItemDef.minTown` (default 1); `equipShopBuyIds` gains
+  a town parameter and the Equip Shop stocks only `minTown ≤ currentTown`; 3–5 new
+  pieces per town for towns 2–7 (~20–28 items) with a sim-validated price/power
+  curve, including **≥ 3 legendary weapons** (market/drop pool only — they feed
+  M39's drops); the **Merchant event discount** (75 % of value, was 130 % markup);
+  new gear enters chest candidate pools gated by the dungeon's town. The merchant
+  discount and chest pool change generated output for the same seed →
+  `kGenerationVersion` **6 → 7** (one bump covers both).
+- **Out of scope:** per-town enemies (M38); boss drops (M39).
+- **Dependencies:** M36 approved.
+- **Acceptance criteria:** each town stocks only its unlocked gear; economy sim
+  proves per-town affordability; town 1 shop output unchanged except the
+  intended generation bump; capture at max stock overflow-clean.
+- **Milestone note:** `docs/milestone_notes/M37_per_town_equipment.md` (authored
+  at authorization).
+
+## M38 — Per-town enemies & bosses
+
+- **Status:** ☐ planned — **direction only.**
+- **Goal:** town-gated enemy and boss content built around M35 statuses and M36
+  passives.
+- **Primary deliverables:** ≥ 2 new standard enemies + 1 new boss per town for
+  towns 2–7 (+12 normal, +6 bosses minimum), each with its own sprite
+  (`tools/asset_gen/`, lint-enforced), a behaviour profile (M28), a kit built
+  around M35 statuses, and (bosses) M36 passives; `EnemyDef`/`BossDef` gain
+  `minTown` (default 1); generation pools filter by the dungeon's town before team
+  build (sorted order preserved → deterministic); `kGenerationVersion` **7 → 8**;
+  the full boss roster (~12) enumerable in sorted order for M40's gauntlet;
+  balance battery extended with per-town rows.
+- **Out of scope:** boss drops (M39); the castle (M40).
+- **Dependencies:** M37 approved.
+- **Acceptance criteria:** every new enemy/boss has its own sprite and a declared
+  behaviour profile; generation stays deterministic; the town × depth clearability
+  grid re-validates with the new pools and M37 gear.
+- **Milestone note:** `docs/milestone_notes/M38_per_town_enemies.md` (authored at
+  authorization).
+
+## M39 — Boss legendary & token drops
+
+- **Status:** ☐ planned — **direction only.**
+- **Goal:** seeded, reload-proof boss drops that reward deep, high-town clears.
+- **Primary deliverables:** on a boss kill with **town ≥ 3 and depth ≥ 4**, a
+  seeded token-drop roll and a separate legendary-equipment roll (blackMarketHash
+  pattern, salted off the run's dungeon seed); rates ramp with town and depth from
+  "low" at t3/d4 to the owner-fixed caps at **t7/d20: 75 % for a token / 30 % for a
+  legendary piece**; a town-7 token drop pays **2** tokens; drops shown in the
+  victory/result flow and recorded in run stats; an `[economy-report]` drop-rate
+  table proving tokens/legendaries do not trivialize the black market or the M19
+  no-farm bar. No battle- or generation-version implication (post-battle reward
+  roll only).
+- **Out of scope:** the castle (M40); the drop pool draws on M37's legendary
+  weapons + existing legendary items (final composition decided at note time).
+- **Dependencies:** M38 approved.
+- **Acceptance criteria:** same seed → same drops (reload cannot reroll); the
+  t7/d20 caps match the owner rule; economy sim shows no farm exploit.
+- **Milestone note:** `docs/milestone_notes/M39_boss_drops.md` (authored at
+  authorization).
+
+## M40 — The castle & the King's challenges
+
+- **Status:** ☐ planned — **direction only.** The endgame milestone.
+- **Goal:** a castle above the town-7 ceiling with a King and three challenges,
+  its own records and rewards, kept entirely outside the dungeon scoreboard.
+- **Primary deliverables:** `kCastleTown = 8` as a **distinct place, not a ladder
+  town** — its own `CastleState` (not `TownState`), never fed through
+  `townScalePct`/`townScoreBonusPct`, no Guild/dungeons/stakes/black-market
+  interaction; every `clampTown`/`currentTown` call site audited and the save
+  clamp extended deliberately (`WorldLadder` assumes 1..7). Unlock: clearing any
+  town-7 dungeon opens the road to the castle; travel back is free. Castle place:
+  throne room (challenge menu with the King), Jester spot (M41 hook), save point,
+  inn; castle art + `MusicTrack::Castle` and a distinct King-battle track. Three
+  challenges, all above the t7/d20 battery point: **Boss Rush** (full boss roster
+  as a gauntlet, HP/MP persist, record = fewest total turns), **Endless Rush**
+  (deterministic escalating waves from a challenge seed, record = best wave,
+  bounded memory), **The King** (bespoke `BossDef`-grade stats above everything
+  else, **3 passives**, a kit using every M35 status). Castle records persisted
+  **separately** from the dungeon scoreboard; first-clear rewards per challenge
+  (King → unique legendary + a visible title); challenges never touch `ScoreEntry`,
+  stakes, or the dungeon scoreboard. Simulation evidence that the King is beatable
+  by a maxed party, the boss rush clearable, and endless reaches a sane wave count;
+  capture scenes (throne room, King fight, records); tutorial prompts.
+- **Out of scope:** story NPCs (M41); enrichment features (M42).
+- **Dependencies:** M39 approved (and the full boss roster from M38).
+- **Acceptance criteria:** the castle never flows through the town arrays; records
+  live outside the scoreboard; the three challenges are deterministic and
+  clearable per the sim; capture overflow-clean.
+- **Milestone note:** `docs/milestone_notes/M40_castle_king.md` (authored at
+  authorization).
+
+## M41 — Story NPCs & lore
+
+- **Status:** ☐ planned — **direction only.**
+- **Goal:** a light-hearted, funny 8-part serial with a Jester punchline at the
+  castle.
+- **Primary deliverables:** one story NPC per town (towns 1–7) + the **Jester** in
+  the castle; data-driven `data/story.json` (validated like other content) with
+  per-town beats; an NPC dialog overlay reusing the M12 wrapped-text helpers and
+  the black-market NPC interaction pattern (tile + prompt + pushState); NPC sprites
+  via the generators with lint rows; the Jester's scene unlocks after meeting all
+  7 (recommended, so the punchline lands). All writing original (hard constraint).
+- **Out of scope:** enrichment features (M42).
+- **Dependencies:** M40 approved (the castle hosts the Jester).
+- **Acceptance criteria:** story validates and renders within layout budgets; the
+  serial reads in town order; the Jester unlocks per the chosen rule.
+- **Owner manual validation:** tone and whether the jokes land (a manual-validation
+  item like art and audio).
+- **Milestone note:** `docs/milestone_notes/M41_story_lore.md` (authored at
+  authorization).
+
+## M42 — Enrichment: bestiary, victory stats, achievements
+
+- **Status:** ☐ planned — **direction only.** Closes the endgame program.
+- **Goal:** three presentation/persistence-only enrichment features (the owner's
+  picks; the daily-seed challenge was rejected).
+- **Primary deliverables:** **Bestiary** (town service or Details screen listing
+  every enemy/boss fought, from a persisted encountered-set, with sprite, stats,
+  behaviour profile, revealed passive, and a one-line flavor entry in M41's voice);
+  **Victory stats + records** (result-screen run stats — total damage, biggest
+  hit, statuses inflicted, MVP — accumulated in `RunStats`, plus personal records
+  persisted alongside the scoreboard, display-only, no ranking change);
+  **Achievements** (a local screen with tutorial.json-style persistence, ~15–20
+  original achievements spanning the whole game, one toast on unlock, no network).
+  All three are presentation/persistence only: no battle, generation, or scoring
+  change.
+- **Out of scope:** any new battle/generation/scoring behavior; M23/M24.
+- **Dependencies:** M41 approved.
+- **Acceptance criteria:** the encountered-set/records/achievements round-trip
+  through saves; no ranking or determinism change; capture overflow-clean for the
+  new screens.
+- **Milestone note:** `docs/milestone_notes/M42_enrichment.md` (authored at
   authorization).

@@ -135,7 +135,7 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     INFO(rep.summary());
     REQUIRE(ok);
     REQUIRE(db.classCount() == 6);
-    REQUIRE(db.skillCount() == 43);  // +12 M29 expansion skills (learnset + orphans reused)
+    REQUIRE(db.skillCount() == 48);  // +5 M35 status skills (smoke/flash/silence/bewilder/purify)
     REQUIRE(db.enemyCount() == 31);  // 22 normals + 9 elites (M29 adds 6 + 2)
     REQUIRE(db.itemCount() == 41);  // +5 M34 legendary items (black-market gear)
     REQUIRE(db.bossCount() == 6);  // +2 M29 (deep_king, blight_matron)

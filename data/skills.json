@@ -50,6 +50,12 @@
     { "id": "radiance", "name": "Radiance", "category": "magic", "target": "all_enemies", "element": "holy", "power": 10, "mpCost": 12, "description": "Searing light burns every foe." },
 
     { "id": "intimidate", "name": "Intimidate", "category": "support", "target": "all_enemies", "power": 0, "mpCost": 10, "statusEffect": "attack_down", "statusMagnitude": 20, "statusDuration": 3, "description": "Cow every foe into weaker blows." },
-    { "id": "iron_will", "name": "Iron Will", "category": "support", "target": "self", "power": 0, "mpCost": 8, "statusEffect": "defense_up", "statusMagnitude": 60, "statusDuration": 4, "description": "Steel yourself against all harm." }
+    { "id": "iron_will", "name": "Iron Will", "category": "support", "target": "self", "power": 0, "mpCost": 8, "statusEffect": "defense_up", "statusMagnitude": 60, "statusDuration": 4, "description": "Steel yourself against all harm." },
+
+    { "id": "smoke_screen", "name": "Smoke Screen", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "blind", "statusDuration": 3, "description": "Blinds a foe so its physical blows go wide." },
+    { "id": "flash_arrow", "name": "Flash Arrow", "category": "physical", "target": "single_enemy", "power": 8, "mpCost": 5, "statusEffect": "blind", "statusDuration": 3, "description": "A dazzling shot that blinds its mark." },
+    { "id": "silence", "name": "Silence", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 7, "statusEffect": "silence", "statusDuration": 3, "description": "Seals a foe's magic, blocking MP skills." },
+    { "id": "bewilder", "name": "Bewilder", "category": "magic", "target": "single_enemy", "element": "dark", "power": 6, "mpCost": 8, "statusEffect": "confusion", "statusDuration": 2, "description": "Addles a foe into striking its own side." },
+    { "id": "purify", "name": "Purify", "category": "heal", "target": "all_allies", "power": 12, "mpCost": 10, "control": "cleanse", "description": "Heals the party and lifts all afflictions." }
   ]
 }

@@ -24,10 +24,21 @@ struct EnemyTeam;
 
 namespace cd::battle {
 
-// Battle-resolution rules version (M28). Bumped when the outcome of a battle
-// for identical inputs changes (targeting/enmity/control skills), so the
-// scoreboard can flag runs played under different rules. 0 = pre-M28.
-inline constexpr int kBattleRulesVersion = 1;
+// Battle-resolution rules version. Bumped when the outcome of a battle for
+// identical inputs can change, so the scoreboard can flag runs played under
+// different rules. 0 = pre-M28; 1 = M28 (enmity/targeting/control skills);
+// 2 = M35 (Confusion/Silence/Blind statuses + the seeded to-hit layer).
+inline constexpr int kBattleRulesVersion = 2;
+
+// Blind (M35): a physical attack from a blinded unit misses this often.
+inline constexpr int kBlindMissPct = 75;
+
+// M35 status balance knobs (owner tune). Every applied status lasts this many
+// times its authored duration, and poison deals this many times its authored
+// per-tick damage. Confusion is additionally cleared the moment its bearer takes
+// damage (see applyDamage).
+inline constexpr int kStatusDurationMult = 2;
+inline constexpr int kPoisonDamageMult = 2;
 
 enum class Side { Party, Enemy };
 enum class Outcome { Ongoing, Victory, Defeat, Escaped };
@@ -89,6 +100,17 @@ public:
     std::vector<long> threat;
     std::uint64_t rngSeed = 0;
 
+    // Status-gated to-hit / confusion randomness (M35). A roll cursor advanced by
+    // nextRandom, drawn only when a status actually gates a roll (a blinded
+    // attacker, a confused attacker). Both BattleState and the Simulator call the
+    // shared attack/useSkill in the same order, so the stream evolves identically
+    // for a given battle+action sequence and a status-free battle never advances
+    // it (byte-identical to the pre-M35 rules). Never seeded off wall-clock time.
+    std::uint64_t rollCursor = 0;
+    // Unit indices that the last action missed (Blind), for the "Miss!" floaters.
+    // Cleared at the start of every action so it only reflects the latest one.
+    std::vector<int> lastMissed;
+
     bool sideAlive(Side s) const;
     Outcome outcome() const;  // Victory / Defeat / Ongoing (Escaped is set by the caller)
     std::vector<int> aliveIndices(Side s) const;
@@ -113,7 +135,31 @@ public:
 private:
     std::vector<int> resolveTargets(const content::SkillDef& skill, int actor,
                                     int primaryTarget) const;
+    // M35: advance the roll cursor and return a fresh value mixed from rngSeed +
+    // the cursor + a per-use salt (so Blind and Confusion draws stay independent).
+    std::uint64_t nextRandom(std::uint64_t salt);
+    // M35: a seeded uniform pick among the actor's own living side (incl. self),
+    // or -1 if none. Advances the roll stream.
+    int confusedTarget(int actor);
 };
+
+// --- M35 status queries (pure, header-inline) ---
+inline bool hasStatus(const Combatant& c, content::StatusType t) {
+    for (const StatusInstance& s : c.statuses) {
+        if (s.type == t) {
+            return true;
+        }
+    }
+    return false;
+}
+inline bool isConfused(const Combatant& c) { return hasStatus(c, content::StatusType::Confusion); }
+inline bool isSilenced(const Combatant& c) { return hasStatus(c, content::StatusType::Silence); }
+inline bool isBlinded(const Combatant& c) { return hasStatus(c, content::StatusType::Blind); }
+
+// M35: may this combatant cast this skill? False only if silenced and the skill
+// costs MP (silence blocks MP-cost skills; 0-MP skills, items, attacks are fine).
+// MP affordability is a separate check the callers still apply.
+bool canCast(const Combatant& c, const content::SkillDef& skill);
 
 // Builds combatants from the party and an enemy team.
 Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
