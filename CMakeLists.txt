@@ -72,6 +72,7 @@ add_library(crystal_core STATIC
     src/content/ContentLoader.cpp
     src/game/Party.cpp
     src/game/Inventory.cpp
+    src/game/BossDrops.cpp
     src/save/SaveSystem.cpp
     src/battle/Battle.cpp
     src/battle/Simulator.cpp

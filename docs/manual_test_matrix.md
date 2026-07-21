@@ -318,6 +318,9 @@ sound fires.
 | 66 | New boss kits (M38) | fight the per-town bosses (towns 2-7); read their telegraphs/passives | not run | not run | each boss's status/passive kit reads in play (silence/blind/confuse, thorns/ward/etc.) | n/a | boss music | 18_battle_boss.png | not run |
 | 67 | Per-town difficulty (M38) | clear towns 2->7 with town-appropriate level/gear | not run | not run | escalation feels fair; town 7 is beatable by a maxed, well-geared party | n/a | n/a | - | not run |
 | 68 | Generation comparability (M38) | run a dungeon; check the scoreboard shows gen v8 | not run | not run | scoreboard tags v8; old entries read their own version | n/a | n/a | 12_scoreboard.png | not run |
+| 69 | Boss drops appear (M39) | clear bosses in town 3+ at depth 4+ (and deeper/higher); watch the result screen | not run | not run | "Boss drops" block shows tokens (+2 in town 7) and/or a legendary; block + footer stay on-screen even on the fullest panel | n/a | victory sfx | 32_result_drops.png | not run |
+| 70 | Boss drops reload-proof (M39) | reload the entry autosave and replay the same run — same drops; a shallow/low-town boss never drops | not run | not run | n/a | n/a | n/a | - | not run |
+| 71 | Boss drops feel/balance (M39) | climb towns 3->7 at depth; confirm drops reward deep clears without replacing the black market | not run | not run | rates feel right; tokens/legendaries accrue over clears, market still worthwhile | n/a | n/a | - | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

@@ -12,6 +12,7 @@
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
+#include "game/BossDrops.hpp"
 #include "game/Party.hpp"
 #include "game/WorldLadder.hpp"
 #include "input/Input.hpp"
@@ -581,15 +582,8 @@ void DungeonState::completeDungeon() {
     // replaces it. Only reached on a real completion (total > 0).
     if (blackMarketShouldSpawn(total > 0, raisedStakes, dungeon_.town, dungeon_.seed,
                                dungeon_.depth)) {
-        std::vector<std::string> legendaryIds;
-        for (const auto& [id, def] : context_.content.items()) {
-            if (def.rarity == content::Rarity::Legendary &&
-                (def.type == content::ItemType::Equipment ||
-                 def.type == content::ItemType::Relic)) {
-                legendaryIds.push_back(id);
-            }
-        }
-        std::sort(legendaryIds.begin(), legendaryIds.end());
+        // Shared legendary pool (M39): the market and boss drops draw the same set.
+        const std::vector<std::string> legendaryIds = legendaryDropPool(context_.content);
         if (!legendaryIds.empty()) {
             BlackMarketOffer offer;
             offer.present = true;
@@ -602,6 +596,20 @@ void DungeonState::completeDungeon() {
             offer.tileY = mt.y;
             context_.party.blackMarket = offer;
         }
+    }
+
+    // M39: seeded, reload-proof boss drops. On a boss kill in town >= 3 and
+    // depth >= 4, roll legendary tokens and (independently) a legendary piece off
+    // this run's dungeon seed, so replaying the same run reproduces the same drops
+    // and no reload rerolls them. Applied to the live party (saved on the next
+    // save/autosave, like the run's gold/XP); shown on the result screen.
+    const BossDropResult drops =
+        rollBossDrops(dungeon_.seed, dungeon_.town, dungeon_.depth, context_.content);
+    if (drops.tokens > 0) {
+        context_.party.legendaryTokens += drops.tokens;
+    }
+    if (drops.legendary) {
+        context_.party.inventory.add(drops.legendaryId, 1);
     }
 
     score::ScoreEntry entry;
@@ -622,7 +630,8 @@ void DungeonState::completeDungeon() {
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);
 
-    stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total));
+    stack().pushState(
+        std::make_unique<DungeonResultState>(stack(), context_, summary, total, drops));
 }
 
 void DungeonState::handleInput(const Input& input) {

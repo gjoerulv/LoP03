@@ -817,6 +817,40 @@ dungeon seed (+ stakes), so a reload cannot reroll them.
   `kSaveVersion` bump; `generationVersion`/`battleRulesVersion` untouched (the
   market is a post-run town event).
 
+### Boss legendary & token drops (Milestone 39)
+
+Pure rules in `game/BossDrops.hpp` (+ `.cpp`), reusing the M34 `blackMarketHash`
+SplitMix64 primitive with a distinct salt namespace. Header-only math is
+content-free and unit-tested; the content pool + assembled roll live in the `.cpp`.
+
+- **Gate & ramp.** `bossDropEligible(town, depth)` is `town ≥ 3 && depth ≥ 4`.
+  `bossDropProgressPerMille` averages a town progress (0 at town 3, 1000 at town 7)
+  and a depth progress (0 at depth 4, 1000 at depth 20), each clamped to its
+  anchor — integer per-mille, no floating point in the deterministic path.
+  `bossTokenChancePct` / `bossLegendaryChancePct` ramp linearly from the floors
+  (15 % / 5 %) to the owner-fixed caps (**75 % / 30 %** at t7/d20), capped beyond
+  the anchors. `bossTokenCount(town)` pays **2** in town 7, else 1.
+- **Rolls.** `bossTokenRolls` and `bossLegendaryRolls` are two independent seeded
+  rolls (distinct salts → independent of each other and of the market stream on
+  the same seed); `bossLegendaryIndex` picks from the pool. `rollBossDrops(seed,
+  town, depth, content) → BossDropResult { tokens, legendary, legendaryId }`
+  assembles the outcome, returning empty when the gate is not met.
+- **Shared pool.** `legendaryDropPool(content)` enumerates every `Legendary`
+  equipment/relic id, sorted — the **same** set the black-market spawn now draws
+  from (`DungeonState::completeDungeon` was refactored to call it), so the two
+  systems cannot diverge. Non-de-duplicated by design: keying only on
+  `(seed, town, depth)` is what makes drops reload-proof.
+- **Hook.** `DungeonState::completeDungeon` (the sole boss-kill path) calls
+  `rollBossDrops(dungeon_.seed, dungeon_.town, dungeon_.depth, …)`, applies
+  `legendaryTokens += tokens` and `inventory.add(legendaryId)` to the live party
+  (saved on the next save/autosave, like the run's gold/XP), and passes the result
+  to `DungeonResultState`, which renders a "Boss drops" block below the score
+  breakdown. That panel's line pitch now tightens when the fullest breakdown +
+  drop block would exceed the virtual height, so the footer stays on-screen.
+- **Versions.** No `kSaveVersion` change (tokens/inventory are existing fields);
+  `kBattleRulesVersion` and `kGenerationVersion` untouched (a post-battle reward
+  roll changes neither battle resolution nor generated content).
+
 ## 13. Presentation (Milestone 8)
 
 - **Audio (`audio/AudioManager`):** SFX and looping music are **synthesized at

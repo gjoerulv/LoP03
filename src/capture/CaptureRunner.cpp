@@ -485,6 +485,19 @@ int run(const char* outDir) {
                  applyCaptureStatuses(b);
                  s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot));
              }},
+            {"32_result_drops",
+             [](StateStack& s, AppContext& c) {
+                 // M39: the fullest score breakdown AND a maximal boss drop (2
+                 // tokens + the longest legendary name), to overflow-check the
+                 // drop block appended below the breakdown.
+                 const score::RunSummary run = maximalRunSummary();
+                 BossDropResult drops;
+                 drops.tokens = 2;                         // town-7 double
+                 drops.legendary = true;
+                 drops.legendaryId = "titanforged_heart";  // longest legendary name
+                 s.pushState(std::make_unique<DungeonResultState>(
+                     s, c, run, score::computeScore(run), drops));
+             }},
         };
 
         for (const Scenario& scenario : scenarios) {

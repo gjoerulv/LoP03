@@ -2,10 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / re-audited and
-  implemented 2026-07-21 against HEAD `c9e78a4` ("M37"). Owner authorized beginning
-  M38 after approving M37. As-implemented record in §K. Only the owner sets
-  `complete (approved)`.
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after manual
+  testing; committed. Authored / re-audited and implemented 2026-07-21 against
+  HEAD `c9e78a4` ("M37"). Owner authorized beginning M38 after approving M37.
+  As-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. Fourth milestone of the
   M35–M42 endgame program. Changes generation output → `dungeon::kGenerationVersion`

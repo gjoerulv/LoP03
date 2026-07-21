@@ -267,6 +267,18 @@ offer waits until bought; a later stakes-raising hit replaces it. Legendaries ar
 aspirational endgame gear (sim-validated not to trivialize the top town), the
 prize for climbing and taking optional risks.
 
+**Boss legendary & token drops (M39).** Beating a dungeon boss in **town 3 or
+higher** and at **depth 4 or deeper** rolls two independent rewards, seeded from
+the run (so a reload can't reroll them): a chance of **legendary tokens** and a
+separate chance of a **legendary equipment** piece (from the same pool the black
+market sells). Both chances **ramp with town and depth** — from a low floor at
+town 3 / depth 4 up to the caps at **town 7 / depth 20: 75 % for tokens, 30 % for
+a legendary**; a token drop in **town 7 pays 2 tokens**. Drops are shown on the
+result screen. The rates are tuned (sim-tabulated) to reward deep, high-town
+clears without replacing the black market: one top clear's expected token drip is
+worth less than a market purchase, and most top clears still drop no legendary, so
+scarcity holds. Boss drops never affect the score (they are a post-battle reward).
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1

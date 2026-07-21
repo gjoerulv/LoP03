@@ -24,9 +24,11 @@ music, or text. Built in **C++20** with **raylib**.
 > tokens, and categorized equip shopping. The **M35–M42 endgame program**
 > (statuses v2, passives, per-town content, boss drops, a castle with the King,
 > story, and enrichment features) is underway — **M35** (statuses + to-hit layer),
-> **M36** (10 passive skills), and **M37** (per-town equipment) are approved, and
-> **M38** (12 per-town enemies + 6 per-town bosses, each with its own sprite and
-> status/passive kit) is implemented and awaiting approval. The deferred
+> **M36** (10 passive skills), **M37** (per-town equipment), and **M38** (12
+> per-town enemies + 6 per-town bosses, each with its own sprite and status/passive
+> kit) are approved, and **M39** (seeded, reload-proof boss legendary & token
+> drops on deep, high-town clears) is implemented and awaiting approval. The
+> deferred
 > **validation/balance playtesting (M23)** and **release packaging/sign-off
 > (M24)** run last — see `docs/completion_roadmap.md` and `docs/milestones.md`.
 
@@ -169,7 +171,11 @@ letterbox/pillarbox bars.
    *fewest battle turns*, plus danger defeated, treasure, a no-death bonus, and
    the town's score bonus). Runs that fail to raise your **stakes** — (town,
    depth) vs your last completed run — lose 30 % per repeat (to a −99 % cap);
-   the Guild shows the exact penalty before you enter.
+   the Guild shows the exact penalty before you enter. Beating a boss in **town 3+
+   at depth 4+** can also **drop legendary tokens and/or a legendary piece** —
+   chances rise with town and depth (up to 75 %/30 % at town 7 depth 20, with
+   double tokens in town 7), seeded so a reload can't reroll them; drops show on
+   the result screen and never change the score.
 6. **Retreat** any time (you keep XP/gold but score 0). **Defeat** returns you to
    town with half your gold. Upgrade, then dive deeper — runs scale with depth,
    town, and seed, endlessly. A stakes-raising clear in town 2+ can (20 %,

@@ -45,8 +45,8 @@
 | 35 | Status effects & battle rules v2 | ☑ complete (approved) |
 | 36 | Passive skills | ☑ complete (approved) |
 | 37 | Per-town equipment | ☑ complete (approved) |
-| 38 | Per-town enemies & bosses | ◑ implemented, awaiting manual approval |
-| 39 | Boss legendary & token drops | ☐ planned |
+| 38 | Per-town enemies & bosses | ☑ complete (approved) |
+| 39 | Boss legendary & token drops | ◑ implemented, awaiting manual approval |
 | 40 | The castle & the King's challenges | ☐ planned |
 | 41 | Story NPCs & lore | ☐ planned |
 | 42 | Enrichment: bestiary, victory stats, achievements | ☐ planned |
@@ -1475,8 +1475,9 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M38 — Per-town enemies & bosses
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against HEAD `c9e78a4`; owner authorized beginning M38 after approving
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing; committed. Implemented / audited 2026-07-21 against HEAD
+  `c9e78a4`; owner authorized beginning M38 after approving
   M37. `EnemyDef`/`BossDef` gain `minTown`; +12 per-town enemies (4 normal + 8
   elite) and +6 per-town bosses (towns 2–7), each with its own generated sprite +
   status/passive kit, added to all theme pools and town-gated in generation;
@@ -1506,7 +1507,19 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M39 — Boss legendary & token drops
 
-- **Status:** ☐ planned — **direction only.**
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against the post-M38 checkout; owner authorized beginning M39 after
+  approving M38. New pure `game/BossDrops` module (reusing the M34
+  `blackMarketHash` primitive, distinct salts): on a boss kill in **town ≥ 3 and
+  depth ≥ 4**, two independent seeded reload-proof rolls award legendary tokens
+  (double in town 7) and/or a legendary piece, ramping from 15 %/5 % at t3/d4 to
+  the owner caps **75 %/30 %** at t7/d20. Shared legendary pool (8 items) with the
+  black market; drops applied to the party and shown on the result screen; no
+  battle/generation/save-version change. **348/348 tests** (+10: 9 `[bossdrops]` +
+  1 `[economy]`, plus a hidden `[economy-report]` drop table), `--capture` **32/32**
+  overflow-clean (new `32_result_drops` scene), Debug + Release clean. See the
+  note's §K. Milestone note: `docs/milestone_notes/M39_boss_drops.md`.
+- **(original scope below)** — **direction only.**
 - **Goal:** seeded, reload-proof boss drops that reward deep, high-town clears.
 - **Primary deliverables:** on a boss kill with **town ≥ 3 and depth ≥ 4**, a
   seeded token-drop roll and a separate legendary-equipment roll (blackMarketHash
