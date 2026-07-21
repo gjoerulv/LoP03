@@ -301,6 +301,16 @@ Castle records live **entirely apart from the dungeon scoreboard** (score
 comparability is preserved); challenges never touch your dungeon score, stakes, or
 the scoreboard. Travel back to town is free.
 
+**Story & lore (M41).** A light-hearted running serial threads the climb: a
+**wandering storyteller** stands in every town and, town by town, spins the
+increasingly absurd "Ballad of the Hollow King" — one verse per town, growing
+taller with each telling. Hear all seven verses and the **Jester** at the castle
+delivers the punchline: the dread King is, in truth, a very tired, very bored,
+goose-fearing man who mostly wants a nap and a worthy challenger. The serial is
+optional flavor (never gates progress or combat); it simply rewards curiosity and
+gives the King a wink. Reading is remembered across saves; the Jester's finale
+unlocks once all seven verses are heard. All writing is original.
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1

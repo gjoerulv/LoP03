@@ -906,6 +906,30 @@ castle is reached, and left, only through its own states.
 - **Versions.** `kSaveVersion`, `kBattleRulesVersion` (3), and `kGenerationVersion` (8)
   all unchanged.
 
+### Story serial (Milestone 41)
+
+Pure content + presentation; no battle/generation/scoring surface.
+
+- **Content.** `StoryBeat { int town; string speaker/title/body; }`
+  (`Definitions.hpp`); `parseStory` in `ContentLoader` validates town 1..8 (1–7 town
+  installments + the castle Jester at `kCastleTown`), non-empty fields, and one beat
+  per town; `ContentDatabase::story()` / `findStoryBeat(town)` (a small vector, not an
+  id map). `data/story.json` ships the eight original beats; a `[story][lint]` test
+  wraps every beat to confirm it fits the dialog panel.
+- **Presentation.** `StoryDialogState` — a near-clone of `TutorialPromptState`
+  (dims the frozen scene, titled wrapped panel via the M12 helpers, speaker footer,
+  Confirm/Cancel dismiss).
+- **Storyteller.** A `TownState` overlay at the fixed plaza tile `(6,9)` in every
+  town (the black-market NPC pattern: sprite + `onBardTile()` + prompt); talking
+  pushes `StoryDialogState` with `findStoryBeat(currentTown)` and sets the town's bit
+  in `Party.storyMet`.
+- **Jester.** A `CastleState` menu entry: the Jester beat (`findStoryBeat(kCastleTown)`)
+  once `storyAllHeard(storyMet)`, else a teaser. Pure mask helpers live in
+  `game/Story.hpp` (`kStoryTownCount`, `storyBit`, `storyHeard`, `storyAllHeard`).
+- **Save.** `Party.storyMet` is an additive optional 7-bit field (old saves → 0); no
+  `kSaveVersion` bump. Two 12×12 NPC sprites (`actor.bard/jester.overworld`), manifest
+  + credits. No version bumps.
+
 ## 13. Presentation (Milestone 8)
 
 - **Audio (`audio/AudioManager`):** SFX and looping music are **synthesized at

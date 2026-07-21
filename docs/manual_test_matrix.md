@@ -326,6 +326,10 @@ sound fires.
 | 74 | Boss Rush / Endless (M40) | run the Boss Rush (12 bosses, no free heal) and the Endless Rush (escalating waves) | not run | not run | no healing carries between fights; Boss Rush is clearable, Endless overwhelms after a sane number of waves | n/a | battle/boss music | - | not run |
 | 75 | Castle records + rewards (M40) | clear each challenge once; check the records panel and the first-clear rewards (King -> regalia + title) | not run | not run | records show on the hub and the load screen title; first clear pays gold/tokens; King grants the unique regalia + title; repeats set records only | n/a | n/a | 33_castle_hub.png, 35_castle_result.png | not run |
 | 76 | Castle save/scoreboard separation (M40) | save in the castle, reload; confirm castle records persist and never appear on the dungeon scoreboard | not run | not run | records round-trip; the dungeon scoreboard is untouched by castle challenges | n/a | n/a | - | not run |
+| 77 | Storyteller in each town (M41) | find the wandering storyteller in each town; hear the verse; read one in town order as you climb | not run | not run | storyteller easy to find at a fixed plaza spot; each verse fits the dialog panel; the serial reads in town order | storyteller sprite + "Hear the storyteller" prompt | confirm sfx | 36_story_dialog.png | not run |
+| 78 | Jester punchline gate (M41) | at the castle choose "Speak with the Jester" before hearing all 7 (teaser) and after (punchline) | not run | not run | teaser until all 7 heard, then the punchline; the joke lands and pays off the climb | n/a | confirm sfx | 37_jester.png | not run |
+| 79 | Story read-progress persists (M41) | hear some verses, save, reload; confirm progress kept and the Jester still gated/unlocked correctly | not run | not run | storyMet round-trips; old saves load with nothing heard | n/a | n/a | - | not run |
+| 80 | Story tone (M41) | read the whole serial start to finish | not run | not run | light-hearted and funny; original; the King wink does not undercut the boss fight | n/a | n/a | - | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

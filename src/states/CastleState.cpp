@@ -4,10 +4,12 @@
 #include <string>
 
 #include "audio/AudioManager.hpp"
+#include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
 #include "game/Castle.hpp"
 #include "game/Party.hpp"
+#include "game/Story.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -15,6 +17,7 @@
 #include "states/InnState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
+#include "states/StoryDialogState.hpp"
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
@@ -25,9 +28,10 @@ namespace {
 constexpr int kBossRush = 0;
 constexpr int kEndless = 1;
 constexpr int kKing = 2;
-constexpr int kInn = 3;
-constexpr int kSave = 4;
-constexpr int kLeave = 5;
+constexpr int kJester = 3;
+constexpr int kInn = 4;
+constexpr int kSave = 5;
+constexpr int kLeave = 6;
 }  // namespace
 
 CastleState::CastleState(StateStack& stack, AppContext& context)
@@ -35,6 +39,7 @@ CastleState::CastleState(StateStack& stack, AppContext& context)
     menu_.setItems({{"Boss Rush", true},
                     {"Endless Rush", true},
                     {"Challenge the King", true},
+                    {"Speak with the Jester", true},
                     {"Rest at the Inn", true},
                     {"Save", true},
                     {"Leave to Town", true}});
@@ -82,6 +87,23 @@ void CastleState::handleInput(const Input& input) {
             case kKing:
                 stack().pushState(std::make_unique<CastleChallengeState>(stack(), context_,
                                                                          CastleChallenge::King));
+                break;
+            case kJester:
+                if (storyAllHeard(context_.party.storyMet)) {
+                    if (const content::StoryBeat* beat =
+                            context_.content.findStoryBeat(kCastleTown)) {
+                        stack().pushState(std::make_unique<StoryDialogState>(
+                            stack(), context_, beat->speaker, beat->title, beat->body));
+                    }
+                } else {
+                    // Teaser until the whole ballad (all 7 town verses) is heard.
+                    stack().pushState(std::make_unique<StoryDialogState>(
+                        stack(), context_, "The Jester", "The Jester",
+                        "The Jester waggles a finger. \"Ah-ah - no spoilers! Go hear the whole "
+                        "ballad from that wandering storyteller: one verse in each of the seven "
+                        "towns. Come back when you know the tale, and I'll tell you how it REALLY "
+                        "ends.\""));
+                }
                 break;
             case kInn:
                 stack().pushState(std::make_unique<InnState>(stack(), context_));
@@ -137,9 +159,9 @@ void CastleState::render() {
                             Color{235, 210, 130, 255}, "castle.records.title", 2);
     }
 
-    // The Jester spot is reserved for M41.
-    ui::drawTextCentered("The throne hall is quiet. No jester has yet come to court.", w / 2,
-                         h - 28, 8, Color{130, 120, 150, 255});
+    // The Jester lounges by the throne (M41).
+    ui::drawTextCentered("A jester lounges by the throne, waiting to share the tale's end.", w / 2,
+                         h - 28, 8, Color{150, 135, 175, 255});
     ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
                                        context_.input.activeDevice(), "Leave")
                              .c_str(),

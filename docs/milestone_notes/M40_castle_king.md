@@ -2,10 +2,11 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / re-audited and
-  implemented 2026-07-21 against the post-M39 checkout. Owner authorized beginning
-  M40 after approving M39, and answered the two note-time design questions (§D).
-  As-implemented record in §K. Only the owner sets `complete (approved)`.
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after manual
+  testing (including two rounds of playtest fixes — see §K); committed. Authored /
+  re-audited and implemented 2026-07-21 against the post-M39 checkout. Owner
+  authorized beginning M40 after approving M39, and answered the two note-time
+  design questions (§D).
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. The **endgame milestone** of
   the M35–M42 program: a castle above the town-7 ceiling with a King and three

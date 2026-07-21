@@ -259,6 +259,26 @@ void parseThemes(const Json& root, const std::string& source, ContentDatabase& d
     });
 }
 
+void parseStory(const Json& root, const std::string& source, ContentDatabase& db,
+                LoadReport& rep) {
+    forEachEntry(root, source, "story", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        StoryBeat d;
+        // town 1..7 are the storyteller's installments; 8 (the castle) is the Jester.
+        d.town = r.reqIntRange("town", 1, 8);
+        d.speaker = r.reqString("speaker");
+        d.title = r.reqString("title");
+        d.body = r.reqString("body");
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addStory(d)) {
+            rep.add(source, ctx, "duplicate story beat for town " + std::to_string(d.town));
+        }
+    });
+}
+
 void parsePassives(const Json& root, const std::string& source, ContentDatabase& db,
                    LoadReport& rep) {
     forEachEntry(root, source, "passives", rep, [&](const Json& el, const std::string& ctx, int) {
@@ -458,6 +478,9 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     }
     if (readJsonFile(dataRoot / "composition.json", json, rep)) {
         parseComposition(json, "composition.json", db, rep);
+    }
+    if (readJsonFile(dataRoot / "story.json", json, rep)) {
+        parseStory(json, "story.json", db, rep);
     }
 
     validateReferences(db, rep);

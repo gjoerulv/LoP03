@@ -165,4 +165,14 @@ struct DungeonThemeDef {
     std::string description;
 };
 
+// Story serial (M41): one beat per town 1..7 (told by the wandering storyteller)
+// plus the Jester's beat at the castle (town == kCastleTown). Pure flavor content;
+// no battle/generation/scoring effect.
+struct StoryBeat {
+    int town = 1;             // 1..7 for the town installments, kCastleTown for the Jester
+    std::string speaker;      // who tells it (display)
+    std::string title;        // panel heading
+    std::string body;         // the beat text (wrapped in the dialog panel)
+};
+
 }  // namespace cd::content

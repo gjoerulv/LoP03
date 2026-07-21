@@ -114,6 +114,7 @@ add_library(crystal_core STATIC
     src/states/BattleState.cpp
     src/states/DungeonResultState.cpp
     src/states/ScoreboardState.cpp
+    src/states/StoryDialogState.cpp
     src/states/EquipShopState.cpp
     src/states/HelpState.cpp
     src/states/TutorialPromptState.cpp

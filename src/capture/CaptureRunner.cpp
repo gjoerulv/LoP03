@@ -35,6 +35,7 @@
 #include "states/BlackMarketState.hpp"
 #include "states/CastleChallengeState.hpp"
 #include "states/CastleState.hpp"
+#include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
@@ -536,6 +537,27 @@ int run(const char* outDir) {
                  auto st = std::make_unique<CastleChallengeState>(s, c, CastleChallenge::King);
                  st->captureKingReward();
                  s.pushState(std::move(st));
+             }},
+            {"36_story_dialog",
+             [](StateStack& s, AppContext& c) {
+                 // M41: the storyteller's dialog overlay over a town, to overflow-
+                 // check the wrapped-text panel.
+                 s.pushState(std::make_unique<TownState>(s, c));
+                 if (const content::StoryBeat* b = c.content.findStoryBeat(6)) {
+                     s.pushState(std::make_unique<StoryDialogState>(s, c, b->speaker, b->title,
+                                                                    b->body));
+                 }
+             }},
+            {"37_jester",
+             [](StateStack& s, AppContext& c) {
+                 // M41: the Jester's punchline (the longest story beat), over the
+                 // castle hub.
+                 c.party.castleUnlocked = true;
+                 s.pushState(std::make_unique<CastleState>(s, c));
+                 if (const content::StoryBeat* b = c.content.findStoryBeat(kCastleTown)) {
+                     s.pushState(std::make_unique<StoryDialogState>(s, c, b->speaker, b->title,
+                                                                    b->body));
+                 }
              }},
         };
 

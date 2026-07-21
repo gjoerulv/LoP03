@@ -74,6 +74,7 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["castleKingDefeated"] = party.castleRecords.kingDefeated;
   root["castleKingBestTurns"] = party.castleRecords.kingBestTurns;
   root["castleKingTitle"] = party.castleRecords.kingTitle;
+  root["storyMet"] = party.storyMet;  // M41 (optional; old -> 0)
 
   Json members = Json::array();
   for (const Character& c : party.members) {
@@ -171,6 +172,7 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   loaded.castleRecords.kingDefeated = rootReader.optBool("castleKingDefeated", false);
   loaded.castleRecords.kingBestTurns = rootReader.optIntMin("castleKingBestTurns", 0, 0);
   loaded.castleRecords.kingTitle = rootReader.optString("castleKingTitle");
+  loaded.storyMet = rootReader.optIntMin("storyMet", 0, 0);  // M41 (optional; old -> 0)
 
   auto partyIt = root.find("party");
   if (partyIt == root.end() || !partyIt->is_array()) {

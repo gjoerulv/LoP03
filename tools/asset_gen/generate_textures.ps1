@@ -1043,4 +1043,23 @@ FR $b 8 30 6 2 $PAL.night1; FR $b 18 30 6 2 $PAL.night1          # feet
 Speckle $b 6 11 20 18 $PAL.violet 0.10
 SaveEnemy $b 'boss_the_hollow_king'
 
+# --- M41 story NPCs (12x12 overworld actors; no speckle RNG, so they shift no
+#     other file's bytes) ---
+Write-Output 'Generating M41 story NPCs...'
+$b = New-Img 12 12                                                # storyteller: wide-hat robed bard
+FR $b 3 1 6 1 $PAL.earth4                                          # hat brim
+FR $b 4 1 4 3 $PAL.earth3; FR $b 4 3 4 1 $PAL.night1             # hat crown + face shadow
+FR $b 3 4 6 5 $PAL.earth2; FR $b 3 4 6 1 $PAL.gold               # robe + gold trim
+FR $b 8 5 2 4 $PAL.earth4; P $b 9 6 $PAL.glint                   # a lute/staff at the side
+FR $b 4 9 2 2 $PAL.night1; FR $b 6 9 2 2 $PAL.night1            # boots
+Outline $b; SaveImg $b 'actors/bard_npc.png'
+
+$b = New-Img 12 12                                                # jester: belled cap + two-tone motley
+P $b 4 0 $PAL.gold; P $b 7 0 $PAL.gold                            # cap bells
+P $b 4 1 $PAL.danger; P $b 7 1 $PAL.cyan                         # cap points
+FR $b 4 2 4 2 $PAL.clsCleric                                       # face
+FR $b 3 4 3 5 $PAL.danger; FR $b 6 4 3 5 $PAL.cyan              # motley: red left, cyan right
+FR $b 4 9 2 2 $PAL.night1; FR $b 6 9 2 2 $PAL.night1            # boots
+Outline $b; SaveImg $b 'actors/jester_npc.png'
+
 Write-Output 'Texture generation complete.'

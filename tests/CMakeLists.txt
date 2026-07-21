@@ -33,6 +33,7 @@ add_executable(crystal_tests
     test_black_market.cpp
     test_boss_drops.cpp
     test_castle.cpp
+    test_story.cpp
     test_dungeon.cpp
     test_room_layout.cpp
     test_inventory.cpp

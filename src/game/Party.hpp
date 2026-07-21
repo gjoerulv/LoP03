@@ -42,6 +42,9 @@ struct Party {
     // kept entirely separate from the dungeon scoreboard. See game/Castle.hpp.
     bool castleUnlocked = false;
     CastleRecords castleRecords;
+    // Story serial (M41): a 7-bit mask of which town installments have been heard
+    // (see game/Story.hpp). Optional save field; old saves -> 0 (nothing heard).
+    int storyMet = 0;
 
     bool empty() const { return members.empty(); }
     std::size_t size() const { return members.size(); }

@@ -10,6 +10,7 @@
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
 #include "game/Party.hpp"
+#include "game/Story.hpp"
 #include "game/WorldLadder.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -22,6 +23,7 @@
 #include "states/InnState.hpp"
 #include "states/ItemShopState.hpp"
 #include "states/ScoreboardState.hpp"
+#include "states/StoryDialogState.hpp"
 #include "states/TrainingHallState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
@@ -38,6 +40,12 @@ namespace {
 
 constexpr float kPlayerSpeed = 72.0f;
 constexpr float kPlayerSize = 12.0f;
+
+// M41: the wandering storyteller stands at a fixed open-plaza tile in every town
+// (Ground; clear of buildings, doors, road exits, the spawn, and every
+// black-market tile).
+constexpr int kBardTileX = 6;
+constexpr int kBardTileY = 9;
 
 Color tileColor(town::Tile tile) {
     switch (tile) {
@@ -187,6 +195,13 @@ bool TownState::onBlackMarketTile() const {
     return tx == context_.party.blackMarket.tileX && ty == context_.party.blackMarket.tileY;
 }
 
+bool TownState::onBardTile() const {
+    const int ts = town::Tilemap::kTileSize;
+    const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
+    const int ty = static_cast<int>((player_.y + player_.h * 0.5f) / ts);
+    return tx == kBardTileX && ty == kBardTileY;
+}
+
 const town::Building* TownState::buildingAtPlayerTile() const {
     const int ts = town::Tilemap::kTileSize;
     const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
@@ -239,6 +254,15 @@ void TownState::handleInput(const Input& input) {
         } else if (nearMarket_) {
             context_.audio.play(Sfx::Confirm);
             stack().pushState(std::make_unique<BlackMarketState>(stack(), context_));
+        } else if (nearBard_) {
+            // M41: hear the storyteller's installment for this town, and remember it.
+            const int town = clampTown(context_.party.currentTown);
+            if (const content::StoryBeat* beat = context_.content.findStoryBeat(town)) {
+                context_.audio.play(Sfx::Confirm);
+                context_.party.storyMet |= storyBit(town);
+                stack().pushState(std::make_unique<StoryDialogState>(
+                    stack(), context_, beat->speaker, beat->title, beat->body));
+            }
         } else if (nearExit_ != nullptr) {
             if (nearExit_->locked) {
                 context_.audio.play(Sfx::Error);  // road not yet open; hint is on screen
@@ -275,6 +299,7 @@ void TownState::update(float dt) {
     nearDoor_ = buildingAtPlayerTile();
     nearExit_ = nearDoor_ == nullptr ? exitAtPlayerTile() : nullptr;
     nearMarket_ = (nearDoor_ == nullptr && nearExit_ == nullptr) && onBlackMarketTile();
+    nearBard_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_) && onBardTile();
 }
 
 void TownState::render() {
@@ -342,6 +367,18 @@ void TownState::render() {
                              Color{210, 170, 240, 255});
     }
 
+    // Wandering storyteller (M41): always present at a fixed plaza tile in every town.
+    {
+        const float bcx = kBardTileX * ts + ts * 0.5f;
+        const float bcy = kBardTileY * ts + ts * 0.5f;
+        if (!render::drawTextureCentered(context_.resources, "actor.bard.overworld", bcx, bcy)) {
+            DrawRectangle(kBardTileX * ts + 3, kBardTileY * ts + 2, ts - 6, ts - 4,
+                          Color{150, 120, 60, 255});
+        }
+        ui::drawTextCentered("Storyteller", kBardTileX * ts + ts / 2, kBardTileY * ts - 9, 8,
+                             Color{220, 200, 140, 255});
+    }
+
     // Player: directional walk animation, then static sprite, then rectangle
     // (with the old facing tick, which the sprites encode themselves).
     const float pcx = player_.x + player_.w * 0.5f;
@@ -394,6 +431,13 @@ void TownState::render() {
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
         ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
                              Color{215, 175, 245, 255});
+    } else if (nearBard_) {
+        DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
+        const std::string text =
+            input::prompt(bindings, InputAction::Confirm, device, "Hear the storyteller") + "   " +
+            input::prompt(bindings, InputAction::Menu, device, "Pause");
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
+                             Color{225, 205, 150, 255});
     } else if (nearExit_ != nullptr) {
         DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
         std::string text;

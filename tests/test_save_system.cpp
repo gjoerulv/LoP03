@@ -358,6 +358,7 @@ TEST_CASE("save: castle unlock + records + King title round-trip (M40)", "[save]
     p.castleRecords.kingDefeated = true;
     p.castleRecords.kingBestTurns = 18;
     p.castleRecords.kingTitle = kKingTitle;
+    p.storyMet = 0b1010101;  // M41: some story installments heard
 
     content::LoadReport rep;
     REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
@@ -370,6 +371,7 @@ TEST_CASE("save: castle unlock + records + King title round-trip (M40)", "[save]
     REQUIRE(loaded.castleRecords.kingDefeated);
     REQUIRE(loaded.castleRecords.kingBestTurns == 18);
     REQUIRE(loaded.castleRecords.kingTitle == std::string(kKingTitle));
+    REQUIRE(loaded.storyMet == 0b1010101);  // M41 round-trips
 
     // Backward compatibility: a save with no castle fields loads locked / no records.
     writeFile(saves.slotPath(save::SaveSlot::Manual2),
@@ -382,6 +384,7 @@ TEST_CASE("save: castle unlock + records + King title round-trip (M40)", "[save]
     REQUIRE_FALSE(legacy.castleRecords.kingDefeated);
     REQUIRE(legacy.castleRecords.bossRushBestTurns == 0);
     REQUIRE(legacy.castleRecords.kingTitle.empty());
+    REQUIRE(legacy.storyMet == 0);  // M41 absent -> nothing heard
 
     fs::remove_all(dir);
 }

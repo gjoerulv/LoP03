@@ -47,8 +47,8 @@
 | 37 | Per-town equipment | ☑ complete (approved) |
 | 38 | Per-town enemies & bosses | ☑ complete (approved) |
 | 39 | Boss legendary & token drops | ☑ complete (approved) |
-| 40 | The castle & the King's challenges | ◑ implemented, awaiting manual approval |
-| 41 | Story NPCs & lore | ☐ planned |
+| 40 | The castle & the King's challenges | ☑ complete (approved) |
+| 41 | Story NPCs & lore | ◑ implemented, awaiting manual approval |
 | 42 | Enrichment: bestiary, victory stats, achievements | ☐ planned |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
@@ -1541,9 +1541,11 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M40 — The castle & the King's challenges
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against the post-M39 checkout; owner authorized beginning M40 after
-  approving M39. `kCastleTown = 8` as a distinct place (never a ladder town); a
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing (incl. two rounds of playtest fixes — immune-status display, the
+  King's damaging debuffs, and confused-character input); committed. Implemented /
+  audited 2026-07-21 against the post-M39 checkout; owner authorized beginning M40
+  after approving M39. `kCastleTown = 8` as a distinct place (never a ladder town); a
   town-7 clear opens the northern road to a `CastleState` throne hall with the
   King's three challenges, its own records/rewards, kept entirely outside the
   dungeon scoreboard. New Hollow King boss (Keen Senses + Clarity + Counter Attack,
@@ -1590,7 +1592,20 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M41 — Story NPCs & lore
 
-- **Status:** ☐ planned — **direction only.**
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against the post-M40 checkout; owner authorized beginning M41 after
+  approving M40. An original 8-part comedic serial ("The Ballad of the Hollow
+  King"): a wandering storyteller at a fixed plaza tile in every town tells one
+  escalating verse per town (1–7), and a **Jester** at the castle (a `CastleState`
+  menu entry, gated on hearing all 7) delivers the punchline. New `StoryBeat`
+  content type + `story.json` + loader/validator; a `StoryDialogState` overlay
+  (M12 wrapped text); `Party.storyMet` (optional 7-bit mask) tracks read-progress;
+  2 new NPC sprites. Content + presentation only — no battle/generation/scoring
+  change; no version bumps. **364/364 tests** (+4), `--capture` **37/37**
+  overflow-clean (2 new story scenes), Debug + Release clean. **Deviation:** one
+  recurring storyteller (2 sprites) rather than 7 distinct town NPCs (flagged for
+  owner veto — see the note's §K). Milestone note:
+  `docs/milestone_notes/M41_story_lore.md`.
 - **Goal:** a light-hearted, funny 8-part serial with a Jester punchline at the
   castle.
 - **Primary deliverables:** one story NPC per town (towns 1–7) + the **Jester** in
