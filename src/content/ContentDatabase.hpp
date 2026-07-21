@@ -21,6 +21,7 @@ public:
     bool addItem(const ItemDef& def);
     bool addBoss(const BossDef& def);
     bool addTheme(const DungeonThemeDef& def);
+    bool addPassive(const PassiveDef& def);
 
     const SkillDef* findSkill(const std::string& id) const;
     const ClassDef* findClass(const std::string& id) const;
@@ -28,8 +29,10 @@ public:
     const ItemDef* findItem(const std::string& id) const;
     const BossDef* findBoss(const std::string& id) const;
     const DungeonThemeDef* findTheme(const std::string& id) const;
+    const PassiveDef* findPassive(const std::string& id) const;
 
     bool hasSkill(const std::string& id) const { return findSkill(id) != nullptr; }
+    bool hasPassive(const std::string& id) const { return findPassive(id) != nullptr; }
 
     const std::unordered_map<std::string, SkillDef>& skills() const { return skills_; }
     const std::unordered_map<std::string, ClassDef>& classes() const { return classes_; }
@@ -37,6 +40,7 @@ public:
     const std::unordered_map<std::string, ItemDef>& items() const { return items_; }
     const std::unordered_map<std::string, BossDef>& bosses() const { return bosses_; }
     const std::unordered_map<std::string, DungeonThemeDef>& themes() const { return themes_; }
+    const std::unordered_map<std::string, PassiveDef>& passives() const { return passives_; }
 
     // Team-composition constraints (M20). Defaults apply until
     // data/composition.json is loaded.
@@ -49,6 +53,7 @@ public:
     std::size_t itemCount() const { return items_.size(); }
     std::size_t bossCount() const { return bosses_.size(); }
     std::size_t themeCount() const { return themes_.size(); }
+    std::size_t passiveCount() const { return passives_.size(); }
 
     bool empty() const;
     void clear();
@@ -60,6 +65,7 @@ private:
     std::unordered_map<std::string, ItemDef> items_;
     std::unordered_map<std::string, BossDef> bosses_;
     std::unordered_map<std::string, DungeonThemeDef> themes_;
+    std::unordered_map<std::string, PassiveDef> passives_;
     CompositionDef composition_;
 };
 

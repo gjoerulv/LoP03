@@ -43,6 +43,20 @@ content::ContentDatabase makeDb() {
     sword.slot = content::EquipSlot::Weapon;
     sword.statBonus = {0, 6, 0, 0, 0};
     db.addItem(sword);
+
+    content::PassiveDef evasion;  // M36
+    evasion.id = "evasion";
+    evasion.name = "Evasion";
+    evasion.hook = content::PassiveHook::Evasion;
+    evasion.magnitude = 25;
+    evasion.price = 1000;
+    db.addPassive(evasion);
+    content::PassiveDef thorns;
+    thorns.id = "thorns";
+    thorns.name = "Thorns";
+    thorns.hook = content::PassiveHook::Thorns;
+    thorns.magnitude = 20;
+    db.addPassive(thorns);
     return db;
 }
 
@@ -204,6 +218,58 @@ TEST_CASE("save: inventory round-trips; missing inventory loads empty", "[save]"
     REQUIRE(saves.load(save::SaveSlot::Manual2, old, rep3));
     REQUIRE(old.inventory.empty());
     REQUIRE(old.restTokens == 0);  // M30 absent -> 0
+
+    fs::remove_all(dir);
+}
+
+TEST_CASE("save: passives round-trip and drop unknown/unowned ids (M36)", "[save]") {
+    const content::ContentDatabase db = makeDb();
+    const fs::path dir = makeTempDir();
+    const save::SaveSystem saves(db, dir);
+
+    Party p;
+    Character c = createCharacter(*db.findClass("knight"), "Rolan");
+    c.ownedPassives = {"evasion", "thorns", "ghost_passive"};  // last is unknown -> dropped
+    c.equippedPassive = "thorns";
+    p.members.push_back(c);
+
+    content::LoadReport rep;
+    REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
+    Party loaded;
+    content::LoadReport rep2;
+    REQUIRE(saves.load(save::SaveSlot::Manual1, loaded, rep2));
+    REQUIRE(loaded.members.size() == 1);
+    const Character& lc = loaded.members[0];
+    REQUIRE(lc.ownedPassives.size() == 2);  // the unknown id was dropped
+    CHECK(std::find(lc.ownedPassives.begin(), lc.ownedPassives.end(), "evasion") !=
+          lc.ownedPassives.end());
+    CHECK(std::find(lc.ownedPassives.begin(), lc.ownedPassives.end(), "thorns") !=
+          lc.ownedPassives.end());
+    CHECK(lc.equippedPassive == "thorns");
+
+    // An equipped id that is not owned is dropped on load.
+    Party p2;
+    Character c2 = createCharacter(*db.findClass("knight"), "Mara");
+    c2.ownedPassives = {"evasion"};
+    c2.equippedPassive = "thorns";  // not owned
+    p2.members.push_back(c2);
+    content::LoadReport repB;
+    REQUIRE(saves.save(save::SaveSlot::Manual2, p2, repB));
+    Party loaded2;
+    content::LoadReport repB2;
+    REQUIRE(saves.load(save::SaveSlot::Manual2, loaded2, repB2));
+    CHECK(loaded2.members[0].equippedPassive.empty());  // unowned equip dropped
+
+    // Backward compatibility: a pre-M36 save with no passive fields loads empty.
+    writeFile(saves.slotPath(save::SaveSlot::Manual3),
+              R"({"version":1,"gold":0,"party":[
+                 {"classId":"knight","name":"X","level":1,"xp":0,"hp":120,"mp":4}]})");
+    Party legacy;
+    content::LoadReport rep3;
+    REQUIRE(saves.load(save::SaveSlot::Manual3, legacy, rep3));
+    REQUIRE(legacy.members.size() == 1);
+    CHECK(legacy.members[0].ownedPassives.empty());
+    CHECK(legacy.members[0].equippedPassive.empty());
 
     fs::remove_all(dir);
 }

@@ -42,8 +42,8 @@
 | 32 | Town ladder (7 towns, travel, scaling, score bonus) | ☑ complete (approved) |
 | 33 | Stakes-escalation penalty | ☑ complete (approved) |
 | 34 | Black market & legendary gear | ☑ complete (approved) |
-| 35 | Status effects & battle rules v2 | ◑ implemented, awaiting manual approval |
-| 36 | Passive skills | ☐ planned |
+| 35 | Status effects & battle rules v2 | ☑ complete (approved) |
+| 36 | Passive skills | ◑ implemented, awaiting manual approval |
 | 37 | Per-town equipment | ☐ planned |
 | 38 | Per-town enemies & bosses | ☐ planned |
 | 39 | Boss legendary & token drops | ☐ planned |
@@ -1364,11 +1364,11 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M35 — Status effects & battle rules v2
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against HEAD `cc1e93d`. The foundation milestone of the endgame
-  program; everything later builds on these mechanics. Owner authorized beginning
-  M35 on 2026-07-21. **321/321 tests** (+12 `[status]`), `--capture` **27/27**
-  overflow-clean, Debug + Release clean, `kBattleRulesVersion` 2 /
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing; committed. Implemented / audited 2026-07-21 against HEAD
+  `cc1e93d`. The foundation milestone of the endgame program; everything later
+  builds on these mechanics. **321/321 tests** (+12 `[status]`), `--capture`
+  **27/27** overflow-clean, Debug + Release clean, `kBattleRulesVersion` 2 /
   `kGenerationVersion` 6. Includes the owner's 2026-07-21 status refinement
   (confusion cleared by damage; durations ×2; poison damage ×2). See the note's
   §K for the as-implemented record.
@@ -1416,8 +1416,14 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M36 — Passive skills
 
-- **Status:** ☐ planned — **direction only.** Note authored when the owner
-  authorizes it, re-audited against the then-current checkout.
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against HEAD `94c79a1`; owner authorized beginning M36 after approving
+  M35. Final catalog + prices confirmed at note time (all 10 passives, flat 1000 g;
+  see the note's §D). **334/334 tests** (+13: 12 `[passive]` + 1 `[save]`),
+  `--capture` **29/29** overflow-clean (2 new scenes), Debug + Release clean,
+  `kBattleRulesVersion` 3 / `kGenerationVersion` 6 / `kSaveVersion` unchanged. The
+  program's last battle-rules change. See the note's §K. Milestone note:
+  `docs/milestone_notes/M36_passives.md`.
 - **Goal:** per-character passive skills (own many, equip one) plus enemy/boss
   passives, as a deterministic sim layer built on M35's to-hit roll.
 - **Primary deliverables:** `passives.json` (id, name, description, hook

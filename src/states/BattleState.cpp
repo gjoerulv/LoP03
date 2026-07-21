@@ -529,6 +529,13 @@ void BattleState::openDetails() {
                     " turns)";
         }
     }
+    // Passive skills (M36): name and, for a single passive, its description.
+    for (const std::string& pid : c.passiveIds) {
+        const content::PassiveDef* p = context_.content.findPassive(pid);
+        if (p != nullptr) {
+            body += "\nPassive: " + p->name + " - " + p->description;
+        }
+    }
     body +=
         "\n\nPSN: poison, damage at the start of each turn. ATK+/ATK-: attack "
         "raised/lowered. DEF+/DEF-: defense raised/lowered. CNF: confused, "
@@ -936,12 +943,26 @@ void BattleState::render() {
                     "    SPD " + std::to_string(t.stats.speed);
                 ui::drawTextFitted(stats, kListX, panelY + 34, w - 2 * kListX, style::kFontBody,
                                    style::palette().textDim, "battle.target.stats");
+                std::string line;
                 if (!t.statuses.empty()) {
-                    std::string line = "Status:";
+                    line = "Status:";
                     for (const battle::StatusInstance& s : t.statuses) {
                         line += " " + std::string(statusShort(s.type)) + "(" +
                                 std::to_string(s.turns) + ")";
                     }
+                }
+                // A revealed passive (M36): show the foe/ally's passive by name.
+                if (!t.passiveIds.empty()) {
+                    if (!line.empty()) {
+                        line += "   ";
+                    }
+                    line += "Passive:";
+                    for (const std::string& pid : t.passiveIds) {
+                        const content::PassiveDef* p = context_.content.findPassive(pid);
+                        line += " " + std::string(p != nullptr ? p->name : pid);
+                    }
+                }
+                if (!line.empty()) {
                     ui::drawTextFitted(line, kListX, panelY + 47, w - 2 * kListX, style::kFontSmall,
                                        style::palette().textDim, "battle.target.status");
                 }

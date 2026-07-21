@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "content/Stats.hpp"
 
@@ -26,6 +27,11 @@ struct Character {
     std::string weapon;
     std::string armor;
     std::string accessory;
+
+    // Passive skills (M36): own many, equip one. Both persist as optional save
+    // fields (old saves -> empty); unknown ids are dropped on load.
+    std::vector<std::string> ownedPassives;
+    std::string equippedPassive;
 
     bool isAlive() const { return hp > 0; }
 };

@@ -132,6 +132,21 @@ constexpr std::array<std::pair<std::string_view, BossArchetype>, 4> kBossArchety
     {"rush", BossArchetype::Rush},
 }};
 
+// The 10 valid passive hooks (M36); "none" is intentionally absent so it is
+// rejected in data and only ever the inert error fallback.
+constexpr std::array<std::pair<std::string_view, PassiveHook>, 10> kPassiveHooks{{
+    {"counter", PassiveHook::Counter},
+    {"evasion", PassiveHook::Evasion},
+    {"spell_ward", PassiveHook::SpellWard},
+    {"thorns", PassiveHook::Thorns},
+    {"lifedrink", PassiveHook::Lifedrink},
+    {"clarity", PassiveHook::Clarity},
+    {"iron_will", PassiveHook::IronWill},
+    {"first_strike", PassiveHook::FirstStrike},
+    {"bodyguard", PassiveHook::Bodyguard},
+    {"keen_senses", PassiveHook::KeenSenses},
+}};
+
 }  // namespace
 
 std::optional<Element> parseElement(std::string_view s) { return parseFrom(kElements, s); }
@@ -157,6 +172,9 @@ std::optional<StatusType> parseStatusType(std::string_view s) { return parseFrom
 std::optional<BossArchetype> parseBossArchetype(std::string_view s) {
     return parseFrom(kBossArchetypes, s);
 }
+std::optional<PassiveHook> parsePassiveHook(std::string_view s) {
+    return parseFrom(kPassiveHooks, s);
+}
 
 const char* toString(Element v) { return nameFrom(kElements, v); }
 const char* toString(SkillCategory v) { return nameFrom(kSkillCategories, v); }
@@ -171,5 +189,6 @@ const char* toString(Rarity v) { return nameFrom(kRarities, v); }
 const char* toString(ConsumableEffect v) { return nameFrom(kConsumableEffects, v); }
 const char* toString(StatusType v) { return nameFrom(kStatusTypes, v); }
 const char* toString(BossArchetype v) { return nameFrom(kBossArchetypes, v); }
+const char* toString(PassiveHook v) { return nameFrom(kPassiveHooks, v); }
 
 }  // namespace cd::content

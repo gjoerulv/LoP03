@@ -55,6 +55,22 @@ from the class and the character's level (not stored), so leveling mid-run
 immediately unlocks the new options and no save is ever invalidated. By the
 level cap each class commands roughly six to seven skills.
 
+**Passive skills (M36).** Beyond skills, each character can carry a **passive** —
+an always-on battle trait bought at the Training Hall for gold. The economy is
+**own many, equip one**: purchased passives stay owned, and the single equipped
+passive swaps freely, so a character is tuned per run without losing what it
+bought. The ten passives are **Counter Attack** (retaliate after surviving a
+physical hit), **Evasion** (25 % of physical attacks miss; a Blind attacker always
+misses you), **Spell Ward** (25 % of hostile magic fizzles), **Thorns** (reflect
+20 % of physical damage), **Lifedrink** (heal 15 % of physical damage dealt),
+**Clarity** (+3 MP a round, immune to Silence), **Iron Will** (survive a lethal
+blow at 1 HP once a battle), **First Strike** (act first in round 1, +50 % on your
+first hit), **Bodyguard** (soak 25 % of a hit on your weakest ally), and **Keen
+Senses** (immune to Blind, +10 % vs debuffed foes). Enemies and bosses carry
+passives too — the target-info panel reveals a foe's passive so you can play
+around it. All effects are fully deterministic (chance-based ones seeded off the
+battle, so play and the simulator agree exactly).
+
 ## 5. Town hub (functional, not huge)
 
 Inn/rest · Item shop · Equipment shop · Guild/dungeon selection · Training
@@ -287,10 +303,10 @@ These are engineering bars, not formal WCAG claims.
 
 6 classes (each with a level-based learnset) · 22 normal enemy types · 9 elites ·
 6 bosses across 4 archetypes · 30+ items/equipment · 48 skills/spells across the
-broad categories · 3 themes (**Ruined Keep, Crystal Mine, Hollow Forest**) ·
-infinite seeded dungeons with depth scaling. (Counts as of M35, which added the
-5 status skills; the enemy/boss roster and skill list grow with content
-milestones.)
+broad categories · **10 passive skills** · 3 themes (**Ruined Keep, Crystal Mine,
+Hollow Forest**) · infinite seeded dungeons with depth scaling. (Counts as of
+M36, which added the 10 passives; the enemy/boss roster and skill list grow with
+content milestones.)
 
 ## 14. Open design questions (decide with human when reached)
 

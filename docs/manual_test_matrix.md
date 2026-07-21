@@ -306,6 +306,11 @@ sound fires.
 | 54 | Cure / Purify (M35) | afflict the party, then use a Remedy item and the Cleric's Purify (L10) | not run | not run | all afflictions (poison/blind/silence/confusion/debuffs) lifted; buffs kept | n/a | heal sfx | — | not run |
 | 55 | Stakes re-tune (M35) | do a non-raising completed run, then repeat it several times | not run | not run | Guild + result show -30% then -60/-90/-99% (was -15/-90) | n/a | n/a | 26_guild_penalty.png, 19_result.png | not run |
 
+| 57 | Passive buy/equip (M36) | Training Hall -> a character -> Manage Passives; buy one, equip/unequip, swap between two owned | not run | not run | rows show Equipped/Owned/price; gold deducts once; swap is free | equip flow legible on both | confirm/error sfx | 28_training_passives.png | not run |
+| 58 | Passive effects in battle (M36) | equip and try each: Counter, Evasion, Spell Ward, Thorns, Lifedrink, Clarity, Iron Will, First Strike, Bodyguard, Keen Senses | not run | not run | each reads clearly (Miss!, counter/thorns/drain/shield lines, MP tick, survive-at-1, acts first) | n/a | n/a | - | not run |
+| 59 | Foe passive reveal (M36) | target an elite/boss that carries a passive; open Details | not run | not run | target panel + Details show "Passive: name" and effect | reveal on the targeted foe | n/a | 29_battle_passive_reveal.png | not run |
+| 60 | Passive save round-trip (M36) | equip passives, save, Continue; also load a pre-M36 save | not run | not run | owned + equipped persist; old save loads with none | n/a | n/a | - | not run |
+
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 
 - Rows 1, 3, 4, 6, 9, 10 partially verified at W1 with screenshots 01–06;

@@ -110,7 +110,13 @@ const char* statusLabel(content::StatusType type) {
 }
 
 void applyDamage(Combatant& d, int dmg) {
-    d.hp = std::max(0, d.hp - dmg);
+    // Iron Will (M36): a lethal blow leaves the holder at 1 HP, once per battle.
+    if (dmg > 0 && d.hp > 0 && d.hp - dmg <= 0 && d.ironWill && !d.ironWillUsed) {
+        d.ironWillUsed = true;
+        d.hp = 1;
+    } else {
+        d.hp = std::max(0, d.hp - dmg);
+    }
     // Confusion (M35): a hit snaps its bearer out of confusion. Single chokepoint
     // for all attack/skill damage (poison DoT does not route through here), so the
     // rule holds identically in live play and the Simulator.
@@ -137,10 +143,11 @@ std::uint64_t mix64(std::uint64_t x) {
     return x ^ (x >> 31);
 }
 
-// Per-use salts for the M35 roll stream, so Blind and Confusion draws taken in
-// the same action are independent.
-constexpr std::uint64_t kSaltBlind = 0xB11D5EED0F0F0F0Full;
+// Per-use salts for the M35/M36 roll stream, so independent chance draws taken in
+// the same action stay independent.
+constexpr std::uint64_t kSaltBlind = 0xB11D5EED0F0F0F0Full;   // physical miss (Blind + Evasion)
 constexpr std::uint64_t kSaltConfuse = 0xC0FFED15C0117E00ull;
+constexpr std::uint64_t kSaltWard = 0x5FADE0000ABCDEF0ull;    // Spell Ward magic fizzle
 
 // Small deterministic jitter in [0, range) from the battle seed + round + acting
 // enemy + candidate. Pure, so a given encounter always resolves identically and
@@ -221,6 +228,68 @@ long targetScore(TargetProfile p, const Combatant& c, long threat) {
     return threat;
 }
 
+// --- M36 passive helpers ---
+
+// Resolves a unit's passive ids into its Combatant effect fields (mirrors the
+// boss-flag resolution). Unknown ids are skipped defensively.
+void applyPassives(Combatant& c, const std::vector<std::string>& ids,
+                   const content::ContentDatabase& db) {
+    for (const std::string& id : ids) {
+        const content::PassiveDef* p = db.findPassive(id);
+        if (p == nullptr) {
+            continue;
+        }
+        c.passiveIds.push_back(id);
+        const int m = p->magnitude;
+        switch (p->hook) {
+            case content::PassiveHook::Counter: c.counterAttack = true; break;
+            case content::PassiveHook::Evasion: c.evasionPct = m; break;
+            case content::PassiveHook::SpellWard: c.spellWardPct = m; break;
+            case content::PassiveHook::Thorns: c.thornsPct = m; break;
+            case content::PassiveHook::Lifedrink: c.lifedrinkPct = m; break;
+            case content::PassiveHook::Clarity: c.clarityMp = m; c.silenceImmune = true; break;
+            case content::PassiveHook::IronWill: c.ironWill = true; break;
+            case content::PassiveHook::FirstStrike:
+                c.firstStrike = true;
+                c.firstStrikeBonusPct = m;
+                break;
+            case content::PassiveHook::Bodyguard: c.bodyguardPct = m; break;
+            case content::PassiveHook::KeenSenses: c.blindImmune = true; c.keenSensesPct = m; break;
+            case content::PassiveHook::None: break;
+        }
+    }
+}
+
+// True if the unit carries any negative status (for Keen Senses' bonus).
+bool hasAnyDebuff(const Combatant& c) {
+    for (const StatusInstance& s : c.statuses) {
+        switch (s.type) {
+            case content::StatusType::Poison:
+            case content::StatusType::AttackDown:
+            case content::StatusType::DefenseDown:
+            case content::StatusType::Confusion:
+            case content::StatusType::Silence:
+            case content::StatusType::Blind:
+                return true;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+
+// Combined physical miss chance vs a defender: Blind on the attacker (75 %) or
+// Evasion on the defender (its %), and 100 % when a blind attacker faces an
+// evader (owner rule). 0 (the common case) means no roll is taken.
+int physicalMissPct(const Combatant& a, const Combatant& d) {
+    const bool blind = isBlinded(a);
+    const int evade = d.evasionPct;
+    if (blind && evade > 0) {
+        return 100;
+    }
+    return std::max(blind ? kBlindMissPct : 0, evade);
+}
+
 }  // namespace
 
 bool Battle::sideAlive(Side s) const {
@@ -271,6 +340,13 @@ void Battle::beginRound() {
     for (long& t : threat) {
         t = t * 3 / 4;  // recency decay; keeps threat bounded and recent-weighted
     }
+    // M36 passives at round start: Counter Attack rearms; Clarity regenerates MP.
+    for (Combatant& u : units) {
+        u.counteredThisRound = false;
+        if (u.clarityMp > 0 && u.alive()) {
+            u.mp = std::min(u.maxMp, u.mp + u.clarityMp);
+        }
+    }
 }
 
 std::uint64_t Battle::nextRandom(std::uint64_t salt) {
@@ -291,6 +367,127 @@ int Battle::confusedTarget(int actor) {
     }
     const std::uint64_t r = nextRandom(kSaltConfuse);
     return allies[static_cast<std::size_t>(r % allies.size())];
+}
+
+int Battle::bodyguardFor(int target) const {
+    if (target < 0 || target >= static_cast<int>(units.size())) {
+        return -1;
+    }
+    const Side side = units[static_cast<std::size_t>(target)].side;
+    // Bodyguard only protects the lowest-HP living member of the side (lowest
+    // index wins ties, so it is deterministic).
+    int lowest = -1;
+    for (std::size_t i = 0; i < units.size(); ++i) {
+        if (units[i].side == side && units[i].alive() &&
+            (lowest < 0 || units[i].hp < units[static_cast<std::size_t>(lowest)].hp)) {
+            lowest = static_cast<int>(i);
+        }
+    }
+    if (lowest != target) {
+        return -1;
+    }
+    for (std::size_t i = 0; i < units.size(); ++i) {
+        if (static_cast<int>(i) != target && units[i].side == side && units[i].alive() &&
+            units[i].bodyguardPct > 0) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+int Battle::dealPhysical(int actor, int target, int baseDmg, std::string& extra) {
+    Combatant& a = units[static_cast<std::size_t>(actor)];
+    int dmg = baseDmg;
+    if (a.firstStrike && !a.firstStrikeUsed) {  // First Strike (M36): first damaging action
+        dmg = dmg * (100 + a.firstStrikeBonusPct) / 100;
+        a.firstStrikeUsed = true;
+    }
+    if (a.keenSensesPct > 0 && hasAnyDebuff(units[static_cast<std::size_t>(target)])) {
+        dmg = dmg * (100 + a.keenSensesPct) / 100;  // Keen Senses (M36)
+    }
+    int toTarget = dmg;
+    const int guard = bodyguardFor(target);
+    if (guard >= 0) {  // Bodyguard (M36): the weakest ally's guard soaks a share
+        Combatant& g = units[static_cast<std::size_t>(guard)];
+        const int share = dmg * g.bodyguardPct / 100;
+        if (share > 0) {
+            applyDamage(g, share);
+            toTarget = dmg - share;
+            extra += " " + g.name + " shields " + units[static_cast<std::size_t>(target)].name +
+                     " (" + std::to_string(share) + ").";
+            if (!g.alive()) {
+                extra += " " + g.name + " is KO'd!";
+            }
+        }
+    }
+    applyDamage(units[static_cast<std::size_t>(target)], toTarget);
+    if (a.side == Side::Party) {
+        addThreat(actor, dmg);  // total damage draws enmity (M28)
+    }
+    Combatant& t = units[static_cast<std::size_t>(target)];
+    if (actor != target && t.thornsPct > 0 && toTarget > 0) {  // Thorns (M36)
+        const int reflect = toTarget * t.thornsPct / 100;
+        if (reflect > 0) {
+            applyDamage(a, reflect);
+            extra += " " + a.name + " takes " + std::to_string(reflect) + " thorns damage.";
+            if (!a.alive()) {
+                extra += " " + a.name + " is KO'd!";
+            }
+        }
+    }
+    if (a.lifedrinkPct > 0 && dmg > 0 && a.alive()) {  // Lifedrink (M36)
+        const int heal = dmg * a.lifedrinkPct / 100;
+        if (heal > 0) {
+            applyHeal(a, heal);
+            extra += " " + a.name + " drains " + std::to_string(heal) + " HP.";
+        }
+    }
+    if (actor != target && t.alive() && t.counterAttack && !t.counteredThisRound &&
+        a.alive()) {  // Counter Attack (M36): one basic retaliation per round
+        t.counteredThisRound = true;
+        const int cdmg = physicalDamage(t, a, 0);
+        applyDamage(a, cdmg);
+        if (t.side == Side::Party) {
+            addThreat(target, cdmg);
+        }
+        extra += " " + t.name + " counters " + a.name + " for " + std::to_string(cdmg) + ".";
+        if (!a.alive()) {
+            extra += " " + a.name + " is KO'd!";
+        }
+    }
+    return toTarget;
+}
+
+int Battle::dealMagic(int actor, int target, int baseDmg, std::string& extra) {
+    Combatant& a = units[static_cast<std::size_t>(actor)];
+    int dmg = baseDmg;
+    if (a.firstStrike && !a.firstStrikeUsed) {
+        dmg = dmg * (100 + a.firstStrikeBonusPct) / 100;
+        a.firstStrikeUsed = true;
+    }
+    if (a.keenSensesPct > 0 && hasAnyDebuff(units[static_cast<std::size_t>(target)])) {
+        dmg = dmg * (100 + a.keenSensesPct) / 100;
+    }
+    int toTarget = dmg;
+    const int guard = bodyguardFor(target);
+    if (guard >= 0) {  // Bodyguard soaks magic too (any damage aimed at the weakest ally)
+        Combatant& g = units[static_cast<std::size_t>(guard)];
+        const int share = dmg * g.bodyguardPct / 100;
+        if (share > 0) {
+            applyDamage(g, share);
+            toTarget = dmg - share;
+            extra += " " + g.name + " shields " + units[static_cast<std::size_t>(target)].name +
+                     " (" + std::to_string(share) + ").";
+            if (!g.alive()) {
+                extra += " " + g.name + " is KO'd!";
+            }
+        }
+    }
+    applyDamage(units[static_cast<std::size_t>(target)], toTarget);
+    if (a.side == Side::Party) {
+        addThreat(actor, dmg);
+    }
+    return toTarget;
 }
 
 bool canCast(const Combatant& c, const content::SkillDef& skill) {
@@ -370,31 +567,31 @@ std::string Battle::attack(int actor, int target) {
     const bool opener = a.rushOpener && !a.actedOnce;
     a.actedOnce = true;
     const std::string verb = confused ? " is confused and attacks " : " attacks ";
-    // Blind (M35): physical attacks usually miss.
-    if (isBlinded(a) && static_cast<int>(nextRandom(kSaltBlind) % 100) < kBlindMissPct) {
+    // Blind/Evasion physical miss (M35/M36): one seeded roll, only when it applies.
+    const int missPct = physicalMissPct(a, t);
+    if (missPct > 0 && static_cast<int>(nextRandom(kSaltBlind) % 100) < missPct) {
         lastMissed.push_back(target);
-        std::string miss = a.name + verb + t.name + " but misses! (Blind)";
+        std::string miss = a.name + verb + t.name + " but misses!";
         if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
             a.enrageAnnounced = true;
             miss = a.name + " flies into a rage! " + miss;
         }
         return miss;
     }
-    int dmg = physicalDamage(a, t, 0);
+    int base = physicalDamage(a, t, 0);
     if (opener) {
-        dmg *= 2;  // Rush: opening fury
+        base *= 2;  // Rush: opening fury
     }
-    applyDamage(t, dmg);
-    if (a.side == Side::Party) {
-        addThreat(actor, dmg);  // dealing damage draws enmity (M28)
-    }
-    std::string log = a.name + verb + t.name + " for " + std::to_string(dmg) + ".";
+    std::string extra;
+    const int dealt = dealPhysical(actor, target, base, extra);  // M36 passive effects
+    std::string log = a.name + verb + t.name + " for " + std::to_string(dealt) + ".";
     if (opener) {
         log += " (opening fury!)";
     }
     if (!t.alive()) {
         log += " " + t.name + " is KO'd!";
     }
+    log += extra;
     if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
         a.enrageAnnounced = true;
         log = a.name + " flies into a rage! " + log;
@@ -486,44 +683,48 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             continue;
         }
         Combatant& t = units[static_cast<std::size_t>(ti)];
-        // Blind (M35): a blinded unit's physical skill usually misses each target;
-        // magic, heal, and support skills are unaffected.
-        if (skill.category == content::SkillCategory::Physical && isBlinded(a) &&
-            static_cast<int>(nextRandom(kSaltBlind) % 100) < kBlindMissPct) {
-            lastMissed.push_back(ti);
-            log += " " + t.name + ": miss! (Blind)";
-            continue;  // no damage and no status on a miss
+        // Blind/Evasion physical miss, or Spell Ward magic fizzle (M35/M36): one
+        // seeded roll per target, only when a status/passive gates it.
+        if (skill.category == content::SkillCategory::Physical) {
+            const int missPct = physicalMissPct(a, t);
+            if (missPct > 0 && static_cast<int>(nextRandom(kSaltBlind) % 100) < missPct) {
+                lastMissed.push_back(ti);
+                log += " " + t.name + ": miss!";
+                continue;  // no damage and no status on a miss
+            }
+        } else if (skill.category == content::SkillCategory::Magic && t.spellWardPct > 0 &&
+                   static_cast<int>(nextRandom(kSaltWard) % 100) < t.spellWardPct) {
+            log += " " + t.name + " wards the spell!";
+            continue;  // Spell Ward (M36): the spell fizzles - no damage or status
         }
         switch (skill.category) {
             case content::SkillCategory::Physical: {
-                int dmg = physicalDamage(a, t, skill.power);
+                int base = physicalDamage(a, t, skill.power);
                 if (opener) {
-                    dmg *= 2;  // Rush: opening fury
+                    base *= 2;  // Rush: opening fury
                 }
-                applyDamage(t, dmg);
-                if (a.side == Side::Party) {
-                    addThreat(actor, dmg);  // M28 enmity
-                }
-                log += " " + t.name + " takes " + std::to_string(dmg) + ".";
+                std::string extra;
+                const int dealt = dealPhysical(actor, ti, base, extra);  // M36 passives
+                log += " " + t.name + " takes " + std::to_string(dealt) + ".";
                 if (!t.alive()) {
                     log += " " + t.name + " is KO'd!";
                 }
+                log += extra;
                 break;
             }
             case content::SkillCategory::Magic: {
-                int dmg = magicDamage(a, t, skill.power);
-                dmg = dmg * (100 + empowerPct) / 100;
+                int base = magicDamage(a, t, skill.power);
+                base = base * (100 + empowerPct) / 100;
                 if (opener) {
-                    dmg *= 2;  // Rush: opening fury
+                    base *= 2;  // Rush: opening fury
                 }
-                applyDamage(t, dmg);
-                if (a.side == Side::Party) {
-                    addThreat(actor, dmg);  // M28 enmity
-                }
-                log += " " + t.name + " takes " + std::to_string(dmg) + ".";
+                std::string extra;
+                const int dealt = dealMagic(actor, ti, base, extra);  // M36 passives
+                log += " " + t.name + " takes " + std::to_string(dealt) + ".";
                 if (!t.alive()) {
                     log += " " + t.name + " is KO'd!";
                 }
+                log += extra;
                 break;
             }
             case content::SkillCategory::Heal: {
@@ -629,6 +830,10 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             // identically here for live play and the headless simulator.
             u.skillIds = content::knownSkillsFor(*cls, c.level);
         }
+        // M36: own many, equip one - resolve the single equipped passive.
+        if (!c.equippedPassive.empty()) {
+            applyPassives(u, {c.equippedPassive}, db);
+        }
         b.units.push_back(std::move(u));
     }
 
@@ -661,6 +866,7 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             u.ralliesMinions = boss->archetype == content::BossArchetype::Commander;
             u.rushOpener = boss->archetype == content::BossArchetype::Rush;
             u.telegraph = boss->telegraph;
+            applyPassives(u, boss->passives, db);  // M36 (bosses may carry several)
             b.units.push_back(std::move(u));
         }
     }
@@ -690,6 +896,7 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             u.name += ' ';
             u.name += static_cast<char>('A' + n);
         }
+        applyPassives(u, def->passives, db);  // M36
         b.units.push_back(std::move(u));
     }
 
@@ -720,6 +927,13 @@ std::vector<int> turnOrder(const Battle& b) {
     std::sort(order.begin(), order.end(), [&](int a, int c) {
         const Combatant& ua = b.units[static_cast<std::size_t>(a)];
         const Combatant& uc = b.units[static_cast<std::size_t>(c)];
+        // First Strike (M36): a holder that has not yet acted outranks everyone,
+        // so it moves first at the start of the battle (round 1). Inert otherwise.
+        const bool aFirst = ua.firstStrike && !ua.actedOnce;
+        const bool cFirst = uc.firstStrike && !uc.actedOnce;
+        if (aFirst != cFirst) {
+            return aFirst;
+        }
         if (ua.stats.speed != uc.stats.speed) {
             return ua.stats.speed > uc.stats.speed;
         }

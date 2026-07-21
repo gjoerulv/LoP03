@@ -81,6 +81,8 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
     m["weapon"] = c.weapon;
     m["armor"] = c.armor;
     m["accessory"] = c.accessory;
+    m["ownedPassives"] = c.ownedPassives;      // M36 (optional; old saves -> empty)
+    m["equippedPassive"] = c.equippedPassive;  // M36
     members.push_back(std::move(m));
   }
   root["party"] = std::move(members);
@@ -181,6 +183,8 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
     const std::string weapon = m.optString("weapon");
     const std::string armor = m.optString("armor");
     const std::string accessory = m.optString("accessory");
+    const std::vector<std::string> ownedPassives = m.optStringArray("ownedPassives");  // M36
+    const std::string equippedPassive = m.optString("equippedPassive");                // M36
     if (report.errorCount() != elementBefore) {
       continue;
     }
@@ -195,6 +199,20 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
     c.armor = (armor.empty() || db_.findItem(armor) != nullptr) ? armor : "";
     c.accessory =
         (accessory.empty() || db_.findItem(accessory) != nullptr) ? accessory : "";
+    // M36 passives: keep only owned ids the content still knows; an equipped id
+    // is honored only if it is known and owned (dropped otherwise).
+    for (const std::string& pid : ownedPassives) {
+      if (db_.findPassive(pid) != nullptr &&
+          std::find(c.ownedPassives.begin(), c.ownedPassives.end(), pid) ==
+              c.ownedPassives.end()) {
+        c.ownedPassives.push_back(pid);
+      }
+    }
+    if (!equippedPassive.empty() && db_.findPassive(equippedPassive) != nullptr &&
+        std::find(c.ownedPassives.begin(), c.ownedPassives.end(), equippedPassive) !=
+            c.ownedPassives.end()) {
+      c.equippedPassive = equippedPassive;
+    }
     refreshCharacter(c, db_);
     c.hp = std::clamp(hp, 0, c.maxHp);
     c.mp = std::clamp(mp, 0, c.maxMp);

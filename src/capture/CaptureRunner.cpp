@@ -439,6 +439,29 @@ int run(const char* outDir) {
                  c.party.blackMarket = {true, 1, "titanforged_heart", 8750, 16, 6};
                  s.pushState(std::make_unique<BlackMarketState>(s, c));
              }},
+            {"28_training_passives",
+             [](StateStack& s, AppContext& c) {
+                 // M36: the Training Hall passive-management screen, with a mix of
+                 // equipped / owned / priced rows to overflow-check the list.
+                 c.party.gold = 5000;
+                 c.party.members[0].ownedPassives = {"counter_attack", "evasion"};
+                 c.party.members[0].equippedPassive = "evasion";
+                 auto st = std::make_unique<TrainingHallState>(s, c);
+                 st->captureEnterPassives();
+                 s.pushState(std::move(st));
+             }},
+            {"29_battle_passive_reveal",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M36: target-info reveals a foe's passive (troll_berserker carries
+                 // Counter Attack; shadow_stalker carries Evasion).
+                 dungeon::EnemyTeam team;
+                 team.name = "Berserker Vanguard";
+                 team.enemyIds = {"troll_berserker", "shadow_stalker"};
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
+             }},
         };
 
         for (const Scenario& scenario : scenarios) {

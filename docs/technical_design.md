@@ -591,6 +591,30 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   which bypasses `applyDamage` — does not clear it). Statuses live only inside a
   `Battle` (never serialized), so no save bump; `battle::kBattleRulesVersion` is
   **2**.
+- **Passive skills (M36).** `content::PassiveDef { id, name, hook, magnitude,
+  price }` (a `PassiveHook` enum of 10) loads from `data/passives.json` into a
+  `ContentDatabase` map; enemy/boss defs gain an optional `passives` list, and
+  `Character` gains `ownedPassives` + `equippedPassive`. `buildBattle` resolves
+  each unit's passives (a party member's **single equipped** passive; an enemy/
+  boss's list) into per-`Combatant` effect fields via `applyPassives`, mirroring
+  the boss-flag pattern — so the pure `attack`/`useSkill`/`beginRound`/`turnOrder`/
+  `applyDamage` read plain fields and stay **db-free and deterministic**. The
+  hooks: Counter Attack (a once-per-round retaliation in `dealPhysical`), Evasion
+  (folded into `physicalMissPct` with the Blind rule — a blind attacker always
+  misses an evader), Spell Ward (a magic-fizzle roll off `kSaltWard`), Thorns and
+  Lifedrink (in `dealPhysical`), Clarity (MP regen in `beginRound`; `silenceImmune`
+  read by `isSilenced`), Iron Will (survive-at-1 in `applyDamage`), First Strike
+  (turn-order priority while `!actedOnce` + a first-hit damage bonus), Bodyguard
+  (a partial redirect to the weakest ally's guard in `dealPhysical`/`dealMagic`),
+  Keen Senses (`blindImmune` + a bonus vs debuffed targets). All chance hooks ride
+  the shared M35 roll cursor, so a battle where **no unit has a passive** resolves
+  byte-identically to v2 and both drivers agree. Passives sell at the **Training
+  Hall** (own many, equip one, swap free); the target-info panel and Details
+  reveal a unit's passive. `ownedPassives`/`equippedPassive` are optional save
+  fields (old saves → empty; unknown/unowned ids dropped on load), so **no
+  `kSaveVersion` bump**. `battle::kBattleRulesVersion` is **3** (the program's last
+  rules bump); `kGenerationVersion` unchanged (passives are not a generation
+  input).
 - **Commands:** Attack, Skill, Item, Guard, Escape. Escape always succeeds (every
   encounter is escapable); escaping forfeits the gate/chest.
 - **Inventory:** `game/Inventory` (item id → count, insertion-ordered). Persisted

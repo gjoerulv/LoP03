@@ -2,10 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / re-audited and
-  implemented 2026-07-21 against HEAD `cc1e93d` ("M34"). Owner authorized beginning
-  M35 on 2026-07-21 as the foundation milestone of the M35–M42 endgame program.
-  As-implemented record in §K. Only the owner sets `complete (approved)`.
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after manual
+  testing; committed. Authored / re-audited and implemented 2026-07-21 against HEAD
+  `cc1e93d` ("M34"). The foundation milestone of the M35–M42 endgame program.
+  As-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. **First milestone of the
   M35–M42 endgame program.** Depends on M34 approved. M36 (passives) builds

@@ -23,8 +23,9 @@ music, or text. Built in **C++20** with **raylib**.
 > score rule, a black market selling legendary gear for gold or elite-challenge
 > tokens, and categorized equip shopping. The **M35–M42 endgame program**
 > (statuses v2, passives, per-town content, boss drops, a castle with the King,
-> story, and enrichment features) is now underway — **M35** (Confusion/Silence/
-> Blind statuses + the seeded to-hit layer, re-tuned stakes) is implemented and
+> story, and enrichment features) is underway — **M35** (Confusion/Silence/Blind
+> statuses + the seeded to-hit layer, re-tuned stakes) is approved, and **M36**
+> (10 passive skills, own-many-equip-one at the Training Hall) is implemented and
 > awaiting approval. The deferred **validation/balance playtesting (M23)** and
 > **release packaging/sign-off (M24)** run last — see
 > `docs/completion_roadmap.md` and `docs/milestones.md`.
@@ -153,8 +154,9 @@ letterbox/pillarbox bars.
    and name them. You start with a little gold.
 2. In the **town**, walk to buildings: **Inn** (rest to full HP/MP for gold, or
    free with a rest token), **Item Shop** (buy consumables), **Equip Shop**
-   (buy by category + equip gear), **Training Hall** (pay gold to level up),
-   **Scoreboard**, **Save Point** (3 slots), and the **Guild**. Roads at the
+   (buy by category + equip gear), **Training Hall** (level up, and buy passive
+   skills — own many, equip one), **Scoreboard**, **Save Point** (3 slots), and
+   the **Guild**. Roads at the
    bottom corners connect **seven towns**: each later town raises enemy stats
    (up to +200 %) and score bonus (up to +100 %); clearing a dungeon in a town
    unlocks the road onward.
