@@ -472,6 +472,19 @@ int run(const char* outDir) {
                  state->captureEnterBuyList(content::EquipSlot::Weapon);
                  s.pushState(std::move(state));
              }},
+            {"31_battle_high_town",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M38: a five-enemy team of new town-7 foes (their own sprites),
+                 // town-7 scaled, with live statuses - showcases + overflow-checks.
+                 dungeon::EnemyTeam team;
+                 team.name = "Vanguard of the Dread Sovereign";
+                 team.enemyIds = {"titan_guard", "archon_of_ruin", "dread_knight",
+                                  "soul_render", "void_stalker"};
+                 team.statScalePct = 300;  // town-7-scale
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 applyCaptureStatuses(b);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot));
+             }},
         };
 
         for (const Scenario& scenario : scenarios) {

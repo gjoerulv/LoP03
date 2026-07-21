@@ -183,9 +183,10 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = **7** (M29 enlarged the theme enemy/boss pools; M30 added
-  the RestToken event; **M37 gave the merchant a 75 % bargain and gated chest gear
-  by town** — each changes a seed's roster/events/rewards; owner-approved bumps).
+  `kGenerationVersion` = **8** (M29 enlarged the theme enemy/boss pools; M30 added
+  the RestToken event; M37 gave the merchant a 75 % bargain and gated chest gear by
+  town; **M38 gates the per-town enemy/boss pools by `minTown`** — each changes a
+  seed's roster/events/rewards; owner-approved bumps).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager/rest-token) realized as an
@@ -516,7 +517,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 7; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 8; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).
@@ -710,6 +711,21 @@ content (no `kSaveVersion` / `kBattleRulesVersion` change).
 length, team size, elite chance, gate count, and rewards with depth. The Guild
 chooses theme + depth, giving infinite seeded runs. Bosses are built from
 `BossDef` (the boss plus its minions as one `EnemyTeam` with a `bossId`).
+
+**Per-town enemies & bosses (M38).** `EnemyDef.minTown` / `BossDef.minTown`
+(optional, default 1) gate content by the town ladder: `buildPools` and `pickBoss`
+take the dungeon's `town` and keep only `minTown ≤ town` foes (sorted order
+preserved → deterministic). 12 new standard enemies (4 normal + 8 elite) and 6 new
+bosses (towns 2–7) ship in `enemies.json`/`bosses.json`, added to every theme's
+pools so they surface at their town in any theme, with kits built on the M35
+statuses and (bosses) M36 passives, and their own generated 24×24/32×32 battle
+sprites (lint-enforced, provenance in `assets/credits.md`). The full boss roster is
+now 12 (what M40's gauntlet enumerates in sorted order). Because the town-gated
+pools change a seed's roster at towns 2+, `dungeon::kGenerationVersion` is **8**;
+`minTown` is content (no `kSaveVersion` / `kBattleRulesVersion` change). This
+supersedes M32's "town does not change enemy composition" property — town now
+selects from a town-gated pool, though topology and per-(seed,depth,town)
+determinism are unchanged.
 
 ### Town ladder (Milestone 32)
 

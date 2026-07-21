@@ -243,6 +243,27 @@ TEST_CASE("balance: legendary gear out-stats the best epic gear", "[balance][bla
     CHECK(leg.maxHp > epic.maxHp);
 }
 
+TEST_CASE("balance: a maxed legendary party can clear the M38 town-7 content", "[balance]") {
+    const content::ContentDatabase db = loadContent();
+    // The new per-town bosses/enemies (towns 2-7) must be beatable, not unwinnable:
+    // a level-50 party in full legendaries clears essentially every town-7 boss.
+    int wins = 0;
+    const int seeds = 6;
+    for (int s = 0; s < seeds; ++s) {
+        const dungeon::Dungeon d = dungeon::generate(1000 + s, 8, db, "hollow_forest", 7);
+        const int bossTeam = d.rooms[static_cast<std::size_t>(d.bossRoom)].teamIndex;
+        REQUIRE(bossTeam >= 0);
+        Party p = makeParty(db, 50);
+        legendaryUp(p, db);
+        battle::Battle b = battle::buildBattle(p, d.teams[static_cast<std::size_t>(bossTeam)], db);
+        if (battle::simulate(b, db).outcome == battle::Outcome::Victory) {
+            ++wins;
+        }
+    }
+    INFO("town-7 boss wins: " << wins << "/" << seeds);
+    CHECK(wins >= seeds - 1);
+}
+
 TEST_CASE("balance: legendaries do not let level trivialize the top town",
           "[balance][blackmarket]") {
     const content::ContentDatabase db = loadContent();

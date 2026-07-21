@@ -314,6 +314,10 @@ sound fires.
 | 62 | Gear power curve (M37) | buy and equip per-town gear as you climb; compare to legendaries | not run | not run | each town's gear is an upgrade; prices gate without grinding; legendaries still the peak | n/a | n/a | - | not run |
 | 63 | Merchant bargain (M37) | find a dungeon Merchant event; check the price vs the item's shop value | not run | not run | merchant sells at ~75% of value (a bargain), shown before buying | n/a | n/a | - | not run |
 | 64 | Generation comparability (M37) | run a dungeon; check the scoreboard shows the run under gen v7 | not run | not run | scoreboard tags the generation version; old entries read their own version | n/a | n/a | 12_scoreboard.png | not run |
+| 65 | Per-town foes appear (M38) | run dungeons at town 1 vs town 5 vs town 7; watch the enemy/boss variety | not run | not run | new foes (Dune Reaver ... Dread Sovereign) show only at their town+; each has its own sprite | distinct silhouettes readable | n/a | 31_battle_high_town.png | not run |
+| 66 | New boss kits (M38) | fight the per-town bosses (towns 2-7); read their telegraphs/passives | not run | not run | each boss's status/passive kit reads in play (silence/blind/confuse, thorns/ward/etc.) | n/a | boss music | 18_battle_boss.png | not run |
+| 67 | Per-town difficulty (M38) | clear towns 2->7 with town-appropriate level/gear | not run | not run | escalation feels fair; town 7 is beatable by a maxed, well-geared party | n/a | n/a | - | not run |
+| 68 | Generation comparability (M38) | run a dungeon; check the scoreboard shows gen v8 | not run | not run | scoreboard tags v8; old entries read their own version | n/a | n/a | 12_scoreboard.png | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

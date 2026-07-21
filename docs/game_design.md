@@ -96,7 +96,11 @@ the top town is never the best farm; the climb pays in score. **Per-town gear
 (stronger weapons/armor/accessories, priced to gate — sim-validated affordable
 against depth-driven income, and kept below the legendary tier) and adds pieces
 to the dungeon chest pools, so climbing the ladder opens a real gear progression
-to match the rising difficulty. Access is earned:
+to match the rising difficulty. **Per-town foes (M38):** each town from 2 to 7
+also introduces new standard enemies (≥ 2 each) and a new boss, each with its own
+sprite, behaviour, and status/passive kit, gated so they appear only once their
+town is reached — so the roster deepens as you climb, not just its numbers.
+Access is earned:
 completing at least one dungeon in a town unlocks the road to the next, and the
 furthest reached town persists in the save. Old saves start in town 1. Each town
 has its own exterior and service-interior art and its own theme track; the three
@@ -307,12 +311,12 @@ These are engineering bars, not formal WCAG claims.
 
 ## 13. First-complete-version content target
 
-6 classes (each with a level-based learnset) · 22 normal enemy types · 9 elites ·
-6 bosses across 4 archetypes · 30+ items/equipment · 48 skills/spells across the
+6 classes (each with a level-based learnset) · 26 normal enemy types · 17 elites ·
+12 bosses across 4 archetypes · 50+ items/equipment · 48 skills/spells across the
 broad categories · **10 passive skills** · 3 themes (**Ruined Keep, Crystal Mine,
-Hollow Forest**) · infinite seeded dungeons with depth scaling. (Counts as of
-M36, which added the 10 passives; the enemy/boss roster and skill list grow with
-content milestones.)
+Hollow Forest**) · infinite seeded dungeons with depth and town scaling. (Counts
+as of M38, which added 12 per-town enemies and 6 per-town bosses; the roster and
+lists grow with content milestones.)
 
 ## 14. Open design questions (decide with human when reached)
 

@@ -44,8 +44,8 @@
 | 34 | Black market & legendary gear | ☑ complete (approved) |
 | 35 | Status effects & battle rules v2 | ☑ complete (approved) |
 | 36 | Passive skills | ☑ complete (approved) |
-| 37 | Per-town equipment | ◑ implemented, awaiting manual approval |
-| 38 | Per-town enemies & bosses | ☐ planned |
+| 37 | Per-town equipment | ☑ complete (approved) |
+| 38 | Per-town enemies & bosses | ◑ implemented, awaiting manual approval |
 | 39 | Boss legendary & token drops | ☐ planned |
 | 40 | The castle & the King's challenges | ☐ planned |
 | 41 | Story NPCs & lore | ☐ planned |
@@ -1446,11 +1446,11 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M37 — Per-town equipment
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against HEAD `98a11e0`; owner authorized beginning M37 after approving
-  M36. `ItemDef.minTown` gates the Equip Shop + chest pools by town; 24 per-town
-  pieces (towns 2–7) + 3 legendary weapons; dungeon merchant now sells at 75 % of
-  value; `dungeon::kGenerationVersion` **6 → 7**. **336/336 tests** (+2
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing; committed. Implemented / audited 2026-07-21 against HEAD
+  `98a11e0`. `ItemDef.minTown` gates the Equip Shop + chest pools by town; 24
+  per-town pieces (towns 2–7) + 3 legendary weapons; dungeon merchant now sells at
+  75 % of value; `dungeon::kGenerationVersion` **6 → 7**. **336/336 tests** (+2
   `[equipshop]`), `--capture` **30/30** overflow-clean (new max-stock scene),
   Debug + Release clean; clearability grid unchanged. See the note's §K.
   Milestone note: `docs/milestone_notes/M37_per_town_equipment.md`.
@@ -1475,7 +1475,17 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M38 — Per-town enemies & bosses
 
-- **Status:** ☐ planned — **direction only.**
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against HEAD `c9e78a4`; owner authorized beginning M38 after approving
+  M37. `EnemyDef`/`BossDef` gain `minTown`; +12 per-town enemies (4 normal + 8
+  elite) and +6 per-town bosses (towns 2–7), each with its own generated sprite +
+  status/passive kit, added to all theme pools and town-gated in generation;
+  `dungeon::kGenerationVersion` **7 → 8**. Full boss roster now 12 (for M40).
+  **338/338 tests** (+2), `--capture` **31/31** overflow-clean (new high-town
+  scene), Debug + Release clean; town-1 grid unchanged, town-7 clearable; lint
+  green (18 new sprites, 0 existing PNGs changed). See the note's §K. Milestone
+  note: `docs/milestone_notes/M38_per_town_enemies.md`.
+- **(original scope below)** — **direction only.**
 - **Goal:** town-gated enemy and boss content built around M35 statuses and M36
   passives.
 - **Primary deliverables:** ≥ 2 new standard enemies + 1 new boss per town for

@@ -2,10 +2,9 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / re-audited and
-  implemented 2026-07-21 against HEAD `98a11e0` ("M36"). Owner authorized beginning
-  M37 after approving M36. As-implemented record in §K. Only the owner sets
-  `complete (approved)`.
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after manual
+  testing; committed. Authored / re-audited and implemented 2026-07-21 against HEAD
+  `98a11e0` ("M36"). As-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. Third milestone of the
   M35–M42 endgame program. First milestone that changes **generation** (not battle

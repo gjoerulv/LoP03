@@ -26,9 +26,10 @@ namespace cd::dungeon {
 // version 6 adds the M30 RestToken room event to the event pool, changing
 // each seed's event shuffle/placement (owner-approved); version 7 (M37) gives
 // the dungeon merchant a 75% bargain (was a 130% markup) and gates chest gear by
-// town (per-town equipment), both of which change generated output for a seed
-// (owner-approved).
-inline constexpr int kGenerationVersion = 7;
+// town (per-town equipment); version 8 (M38) adds town-gated per-town enemies and
+// bosses, changing a seed's roster at towns 2+ — each changes generated output
+// for a seed (owner-approved).
+inline constexpr int kGenerationVersion = 8;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

@@ -153,6 +153,7 @@ void parseEnemies(const Json& root, const std::string& source, ContentDatabase& 
         }
         d.skills = r.optStringArray("skills");
         d.passives = r.optStringArray("passives");  // M36 (optional)
+        d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
         if (rep.errorCount() != before) {
@@ -216,6 +217,7 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.skills = r.optStringArray("skills");
         d.minions = r.optStringArray("minions");
         d.passives = r.optStringArray("passives");  // M36 (optional)
+        d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
         d.telegraph = r.optString("telegraph");
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);

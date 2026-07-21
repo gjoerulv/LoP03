@@ -23,9 +23,10 @@ music, or text. Built in **C++20** with **raylib**.
 > score rule, a black market selling legendary gear for gold or elite-challenge
 > tokens, and categorized equip shopping. The **M35–M42 endgame program**
 > (statuses v2, passives, per-town content, boss drops, a castle with the King,
-> story, and enrichment features) is underway — **M35** (statuses + to-hit layer)
-> and **M36** (10 passive skills) are approved, and **M37** (per-town equipment,
-> a dungeon-merchant bargain) is implemented and awaiting approval. The deferred
+> story, and enrichment features) is underway — **M35** (statuses + to-hit layer),
+> **M36** (10 passive skills), and **M37** (per-town equipment) are approved, and
+> **M38** (12 per-town enemies + 6 per-town bosses, each with its own sprite and
+> status/passive kit) is implemented and awaiting approval. The deferred
 > **validation/balance playtesting (M23)** and **release packaging/sign-off
 > (M24)** run last — see `docs/completion_roadmap.md` and `docs/milestones.md`.
 

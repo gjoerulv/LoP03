@@ -33,21 +33,27 @@ struct Pools {
 Pools buildPools(const content::ContentDatabase& db, const content::DungeonThemeDef* theme,
                  int town) {
     Pools p;
+    // Per-town gating (M38): an enemy spawns only once town >= its minTown.
     if (theme != nullptr) {
         for (const std::string& id : theme->normalEnemies) {
-            if (db.findEnemy(id) != nullptr) {
+            const content::EnemyDef* def = db.findEnemy(id);
+            if (def != nullptr && def->minTown <= town) {
                 p.normalEnemies.push_back(id);
             }
         }
         for (const std::string& id : theme->eliteEnemies) {
-            if (db.findEnemy(id) != nullptr) {
+            const content::EnemyDef* def = db.findEnemy(id);
+            if (def != nullptr && def->minTown <= town) {
                 p.eliteEnemies.push_back(id);
             }
         }
     }
     if (p.normalEnemies.empty()) {
-        // Fallback: every enemy in the database, split by tier.
+        // Fallback: every enemy in the database (town-gated), split by tier.
         for (const auto& [id, def] : db.enemies()) {
+            if (def.minTown > town) {
+                continue;
+            }
             if (def.tier == content::EnemyTier::Elite) {
                 p.eliteEnemies.push_back(id);
             } else {
@@ -78,19 +84,22 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
 }
 
 const content::BossDef* pickBoss(Rng& rng, const content::DungeonThemeDef* theme,
-                                 const content::ContentDatabase& db) {
+                                 const content::ContentDatabase& db, int town) {
     std::vector<std::string> ids;
+    // Per-town gating (M38): a boss is chosen only once town >= its minTown.
     if (theme != nullptr) {
         for (const std::string& id : theme->bosses) {
-            if (db.findBoss(id) != nullptr) {
+            const content::BossDef* def = db.findBoss(id);
+            if (def != nullptr && def->minTown <= town) {
                 ids.push_back(id);
             }
         }
     }
     if (ids.empty()) {
         for (const auto& [id, def] : db.bosses()) {
-            (void)def;
-            ids.push_back(id);
+            if (def.minTown <= town) {
+                ids.push_back(id);
+            }
         }
     }
     if (ids.empty()) {
@@ -351,7 +360,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
         bossTeam.isBoss = true;
         bossTeam.statScalePct =
             combineTownScale(100 + db.composition().statScalePct(d.depth), townIdx);
-        if (const content::BossDef* boss = pickBoss(rng, theme, db)) {
+        if (const content::BossDef* boss = pickBoss(rng, theme, db, townIdx)) {
             bossTeam.bossId = boss->id;
             bossTeam.name = boss->name;
             bossTeam.enemyIds = boss->minions;

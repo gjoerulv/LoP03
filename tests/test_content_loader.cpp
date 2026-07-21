@@ -136,9 +136,9 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     REQUIRE(ok);
     REQUIRE(db.classCount() == 6);
     REQUIRE(db.skillCount() == 48);  // +5 M35 status skills (smoke/flash/silence/bewilder/purify)
-    REQUIRE(db.enemyCount() == 31);  // 22 normals + 9 elites (M29 adds 6 + 2)
+    REQUIRE(db.enemyCount() == 43);  // +12 M38 per-town enemies (4 normal + 8 elite)
     REQUIRE(db.itemCount() == 68);  // +27 M37 (24 per-town pieces + 3 legendary weapons)
-    REQUIRE(db.bossCount() == 6);  // +2 M29 (deep_king, blight_matron)
+    REQUIRE(db.bossCount() == 12);  // +6 M38 per-town bosses (towns 2-7)
     REQUIRE(db.themeCount() == 3);
     REQUIRE(db.findClass("knight") != nullptr);
     REQUIRE(db.hasSkill("fireball"));

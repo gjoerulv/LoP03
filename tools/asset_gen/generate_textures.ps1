@@ -896,4 +896,137 @@ P $b 5 5 $PAL.gold; P $b 6 6 $PAL.glint                            # coin glint
 FR $b 4 9 2 2 $PAL.night1; FR $b 6 9 2 2 $PAL.night1              # boots
 Outline $b; SaveImg $b 'actors/market_npc.png'
 
+# ======================= M38 per-town enemies & bosses =======================
+# Appended last so their speckle RNG draws never shift any earlier file's bytes.
+Write-Output 'Generating M38 per-town enemies and bosses...'
+
+# --- 12 per-town standard enemies (24x24) ---
+
+$b = New-Img 24 24                                                # dune_reaver: lean raider + scimitar
+FR $b 10 4 6 5 $PAL.earth3; FR $b 10 6 6 2 $PAL.maroon; Eyes $b 12 6 $PAL.gold
+FR $b 8 9 9 9 $PAL.earth2; FR $b 8 9 9 1 $PAL.earth3; FR $b 11 11 3 7 $PAL.earth1
+FR $b 5 6 2 11 $PAL.clsGuardian; for ($j = 4; $j -le 9; $j++) { P $b (4 + [int](($j - 4) / 2)) $j $PAL.stone4 }
+FR $b 8 18 3 3 $PAL.earth1; FR $b 13 18 3 3 $PAL.earth1
+SaveEnemy $b 'dune_reaver'
+
+$b = New-Img 24 24                                                # hex_wisp: violet orb + tendrils
+Ell $b 7 6 10 10 $PAL.violet; Ell $b 9 8 6 6 $PAL.glint; Eyes $b 10 10 $PAL.night1
+foreach ($tx in 8, 12, 16) { for ($k = 0; $k -lt 5; $k++) { P $b ($tx - [int]($k / 2)) (16 + $k) $PAL.violet } }
+Speckle $b 6 5 12 12 $PAL.glint 0.10
+SaveEnemy $b 'hex_wisp'
+
+$b = New-Img 24 24                                                # grave_wight: sunken undead
+FR $b 11 4 6 6 $PAL.veg2; FR $b 11 8 6 1 $PAL.night1; Eyes $b 13 6 $PAL.gold
+FR $b 8 10 10 10 $PAL.veg1; FR $b 8 10 10 1 $PAL.veg2; Speckle $b 8 11 10 8 $PAL.maroonD 0.14
+FR $b 6 11 2 7 $PAL.veg1; FR $b 16 11 2 6 $PAL.veg2
+FR $b 8 20 3 3 $PAL.night2; FR $b 13 20 3 3 $PAL.veg1
+SaveEnemy $b 'grave_wight'
+
+$b = New-Img 24 24                                                # shardling: crystal shard sprite
+FR $b 11 4 3 8 $PAL.cyan; FR $b 9 8 7 6 $PAL.wat3; FR $b 10 9 5 4 $PAL.cyan
+Eyes $b 11 10 $PAL.night1; P $b 12 5 $PAL.glint
+foreach ($s in @(@(8, 13), @(15, 13))) { FR $b $s[0] $s[1] 2 6 $PAL.wat2 }
+FR $b 10 19 5 3 $PAL.wat3; Speckle $b 9 8 7 6 $PAL.glint 0.12
+SaveEnemy $b 'shardling'
+
+$b = New-Img 24 24                                                # ironclad_reaver: armored brute
+Ell $b 4 8 16 14 $PAL.stone3; Ell $b 6 11 12 10 $PAL.stone2
+FR $b 9 6 6 5 $PAL.stone4; Eyes $b 11 8 $PAL.danger; Horns $b 9 6
+FR $b 3 11 3 8 $PAL.stone2; FR $b 18 11 4 7 $PAL.stone3
+FR $b 6 21 4 2 $PAL.stone1; FR $b 13 21 4 2 $PAL.stone1; Speckle $b 6 11 12 9 $PAL.stone4 0.08
+SaveEnemy $b 'ironclad_reaver'
+
+$b = New-Img 24 24                                                # blight_chanter: hooded plague healer
+FR $b 8 4 8 6 $PAL.veg1; FR $b 9 8 6 2 $PAL.night1; Eyes $b 11 8 $PAL.heal
+FR $b 6 10 12 11 $PAL.veg2; FR $b 6 10 12 1 $PAL.veg3; FR $b 10 12 4 9 $PAL.veg0
+FR $b 17 6 1 15 $PAL.earth2; Ell $b 15 3 5 5 $PAL.heal; Horns $b 10 3
+Speckle $b 7 11 10 9 $PAL.veg3 0.08
+SaveEnemy $b 'blight_chanter'
+
+$b = New-Img 24 24                                                # war_caller: rallying warrior + horn
+FR $b 10 5 6 5 $PAL.earth3; FR $b 10 7 6 2 $PAL.maroon; Eyes $b 12 7 $PAL.gold
+FR $b 8 10 9 9 $PAL.maroonD; FR $b 8 10 9 1 $PAL.clsGuardian; FR $b 11 12 3 7 $PAL.maroon
+FR $b 5 4 2 15 $PAL.earth2; FR $b 3 4 4 5 $PAL.gold; Horns $b 10 4
+FR $b 8 19 3 3 $PAL.night2; FR $b 13 19 3 3 $PAL.night2
+SaveEnemy $b 'war_caller'
+
+$b = New-Img 24 24                                                # void_stalker: shadow assassin
+FR $b 11 4 5 5 $PAL.night3; FR $b 11 6 5 2 $PAL.night1; Eyes $b 13 6 $PAL.violet
+FR $b 8 9 9 10 $PAL.night2; FR $b 8 9 9 1 $PAL.night3; FR $b 11 11 3 8 $PAL.night1
+FR $b 5 8 2 6 $PAL.stone4; P $b 5 7 $PAL.glint; Horns $b 11 4
+FR $b 8 19 3 3 $PAL.night1; FR $b 13 19 3 3 $PAL.night1; Speckle $b 8 9 9 10 $PAL.violet 0.05
+SaveEnemy $b 'void_stalker'
+
+$b = New-Img 24 24                                                # dread_knight: dark-plated warrior
+FR $b 9 4 6 6 $PAL.night3; FR $b 10 6 4 2 $PAL.danger; Eyes $b 10 6 $PAL.danger; Horns $b 9 4
+FR $b 6 10 12 11 $PAL.night2; FR $b 6 10 12 1 $PAL.stone3; FR $b 10 12 4 9 $PAL.night1
+FR $b 4 6 2 14 $PAL.stone4; FR $b 3 5 4 2 $PAL.stone3
+FR $b 7 21 4 2 $PAL.night1; FR $b 13 21 4 2 $PAL.night1
+SaveEnemy $b 'dread_knight'
+
+$b = New-Img 24 24                                                # soul_render: wraith caster
+FR $b 9 4 7 6 $PAL.night2; FR $b 10 8 5 2 $PAL.night1; Eyes $b 11 7 $PAL.violet
+FR $b 7 10 11 11 $PAL.night3; FR $b 7 10 11 1 $PAL.violet; FR $b 11 12 4 9 $PAL.veg0
+foreach ($ty in 12, 16, 20) { P $b 6 $ty $PAL.veg3; P $b 18 $ty $PAL.veg3 }
+Horns $b 10 4; Speckle $b 8 11 9 9 $PAL.violet 0.10
+SaveEnemy $b 'soul_render'
+
+$b = New-Img 24 24                                                # titan_guard: colossal shield-bearer
+FR $b 4 6 16 16 $PAL.stone2; FR $b 5 7 14 14 $PAL.stone1; FR $b 4 6 16 2 $PAL.stone3
+FR $b 8 3 8 5 $PAL.stone3; Eyes $b 11 5 $PAL.cyan; Horns $b 8 3
+FR $b 2 9 3 10 $PAL.stone2; FR $b 18 8 5 12 $PAL.stone3; FR $b 19 9 3 10 $PAL.stone4
+FR $b 7 22 4 2 $PAL.stone1; FR $b 13 22 4 2 $PAL.stone1
+SaveEnemy $b 'titan_guard'
+
+$b = New-Img 24 24                                                # archon_of_ruin: floating dark mage
+FR $b 9 3 7 6 $PAL.night2; FR $b 10 7 5 2 $PAL.night1; Eyes $b 11 6 $PAL.cyan
+FR $b 6 9 12 11 $PAL.night3; FR $b 6 9 12 1 $PAL.violet; FR $b 11 11 3 9 $PAL.violet
+Ell $b 15 2 8 8 $PAL.violet; Ell $b 17 4 4 4 $PAL.cyan; P $b 18 5 $PAL.glint; Horns $b 10 3
+Speckle $b 7 10 10 9 $PAL.cyan 0.06
+SaveEnemy $b 'archon_of_ruin'
+
+# --- 6 per-town bosses (32x32; gold crown) ---
+
+$b = New-Img 32 32                                                # sand_warlord: desert brute + crown
+Ell $b 4 10 22 20 $PAL.earth3; Ell $b 7 14 17 15 $PAL.earth2
+FR $b 12 4 8 8 $PAL.earth4; Eyes $b 15 8 $PAL.danger; Crown $b 12 4
+FR $b 2 14 4 12 $PAL.earth2; FR $b 26 12 5 14 $PAL.stone4; FR $b 27 8 2 6 $PAL.gold
+FR $b 8 30 5 2 $PAL.earth1; FR $b 19 30 5 2 $PAL.earth1; Speckle $b 7 14 17 14 $PAL.earth4 0.06
+SaveEnemy $b 'boss_sand_warlord'
+
+$b = New-Img 32 32                                                # frost_monarch: ice sorcerer + crown
+FR $b 10 6 12 8 $PAL.wat2; FR $b 11 12 10 2 $PAL.night1; Eyes $b 14 10 $PAL.cyan
+FR $b 7 14 18 16 $PAL.wat1; FR $b 7 14 18 2 $PAL.wat3; FR $b 13 17 6 13 $PAL.wat0
+Crown $b 12 5; FR $b 24 4 2 26 $PAL.stone4; Ell $b 21 1 8 8 $PAL.cyan; Ell $b 23 3 4 4 $PAL.glint
+Speckle $b 8 15 16 14 $PAL.cyan 0.08
+SaveEnemy $b 'boss_frost_monarch'
+
+$b = New-Img 32 32                                                # obsidian_colossus: black-glass giant
+Ell $b 4 9 24 21 $PAL.night3; Ell $b 7 13 18 16 $PAL.night2
+FR $b 12 4 8 7 $PAL.night2; Eyes $b 15 8 $PAL.violet; Crown $b 12 4
+FR $b 2 13 4 14 $PAL.night3; FR $b 26 13 5 14 $PAL.night2
+FR $b 8 30 6 2 $PAL.night1; FR $b 19 30 6 2 $PAL.night1; Speckle $b 7 13 18 15 $PAL.violet 0.07
+SaveEnemy $b 'boss_obsidian_colossus'
+
+$b = New-Img 32 32                                                # hollow_sovereign: crowned revenant + banner
+FR $b 11 6 10 7 $PAL.stone4; FR $b 12 11 8 2 $PAL.night1; Eyes $b 14 9 $PAL.danger
+FR $b 8 13 16 17 $PAL.stone2; FR $b 8 13 16 2 $PAL.stone3; FR $b 13 16 6 14 $PAL.stone1
+Crown $b 13 5; FR $b 25 3 2 27 $PAL.earth2; FR $b 25 3 6 6 $PAL.maroon
+FR $b 10 30 5 2 $PAL.stone4; FR $b 18 30 5 2 $PAL.stone4
+SaveEnemy $b 'boss_hollow_sovereign'
+
+$b = New-Img 32 32                                                # abyssal_tyrant: hulking aggressor + crown
+Ell $b 3 8 26 22 $PAL.maroon; Ell $b 6 12 20 16 $PAL.maroonD
+FR $b 12 3 9 8 $PAL.maroon; Eyes $b 15 7 $PAL.gold; Crown $b 12 3
+FR $b 1 13 4 14 $PAL.maroonD; FR $b 27 13 4 14 $PAL.maroonD
+FR $b 8 30 6 2 $PAL.maroonD; FR $b 19 30 6 2 $PAL.maroonD; Speckle $b 6 12 20 15 $PAL.danger 0.05
+SaveEnemy $b 'boss_abyssal_tyrant'
+
+$b = New-Img 32 32                                                # dread_sovereign: master of afflictions
+FR $b 10 5 12 8 $PAL.bossBody; FR $b 11 11 10 2 $PAL.night1; Eyes $b 14 9 $PAL.violet
+FR $b 6 13 20 17 $PAL.bossD; FR $b 6 13 20 2 $PAL.violet; FR $b 13 16 6 14 $PAL.night1
+Crown $b 12 4; FR $b 25 3 2 27 $PAL.stone3; Ell $b 21 0 9 9 $PAL.violet; Ell $b 23 2 5 5 $PAL.cyan; P $b 25 4 $PAL.glint
+Speckle $b 7 14 18 15 $PAL.violet 0.10
+SaveEnemy $b 'boss_dread_sovereign'
+
 Write-Output 'Texture generation complete.'
