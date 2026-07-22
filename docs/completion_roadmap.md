@@ -546,8 +546,9 @@ exist before enemies are designed around them. Economy (M30) last, because gold
 income depends on battle outcomes and content — tuning a rest cost before those
 settle is tuning against a moving target.
 
-M23 and M24 run after M30 (since extended to after M34 — see §13) rather than
-being cancelled. Their tooling and
+M23 and M24 run last — after whatever expansion program is newest (the
+ledger's execution-order note is authoritative) — rather than being
+cancelled. Their tooling and
 packaging work is built and retained; only the sequencing changed. Validating
 and packaging a build known to need this work would have measured the wrong
 build, and the capture scenes and balance battery both need extending for the
@@ -605,8 +606,8 @@ spine — `currentTown`, travel, and town-scaled difficulty/score — and both l
 milestones read it, so it precedes them. The stakes penalty (M33) needs the
 `(town, depth)` stakes vector M32 introduces. The black market (M34) is last
 because its spawn trigger *is* M33's stakes-raise event and its legendaries must
-be balanced against M32's town-7 difficulty. M23 → M24 run after M34, re-audited
-for all the new content.
+be balanced against M32's town-7 difficulty. M23 → M24 run last (see the
+ledger's execution-order note), re-audited for all the new content.
 
 ## 14. Endgame program (M35–M42) — direction
 
@@ -675,5 +676,51 @@ full boss roster from M38) exists. The castle (M40) needs that full boss roster
 for its gauntlet and sits at the top of everything below it. Story (M41) hangs on
 the finished town-and-castle geography, and the enrichment features (M42) —
 bestiary, victory stats, achievements — reference the complete enemy roster,
-combat systems, and story voice, so they come last. M23 → M24 run after M42,
-re-audited for the whole endgame.
+combat systems, and story voice, so they come last. M23 → M24 now run after
+the King's Gambit program (§15), re-audited for everything.
+
+## 15. King's Gambit program (M43–M45) — direction
+
+Added 2026-07-22, after the owner approved M42, a deep audit of M35–M42 found
+four fixable defects and no blockers, and the owner specified nine features
+forming one arc: the King doubles in power, and the game ships his counterplay
+and his reward. Scope lives in `docs/milestones.md`; decisions were taken at
+planning (recorded there).
+
+### Why this phase exists
+
+The Hollow King is the game's summit, but he fell on the first serious
+attempt, several economy numbers no longer sting, and the audit showed two
+places where a stated rule and the code disagree (confusion vs. skill-casters;
+the castle defeat message). This program makes the summit worth the climb:
+honest rules, prices that matter, a King who demands preparation, rare relics
+that reward exploration with exactly that preparation, and three
+deliberately-absurd unlockable classes as the trophy.
+
+### Quality bars for this phase
+
+All prior bars (§4, §5, §9, §10, §12, §14) still apply. Additionally:
+
+1. **Rules must match their descriptions.** If the help text says confusion
+   makes a unit attack its own side, it does — for every unit, in the sim and
+   on screen. A discrepancy between stated and actual rules is a defect even
+   when deterministic and consistent.
+2. **Counterplay ships with the threat.** The doubled King lands in the same
+   milestone as the relics and after the snacks, and the clearability
+   evidence may never rely on the rarest drop.
+3. **Joke content is still content.** The Dragon/Jester/Goose classes and the
+   relic items must be funny AND mechanically sound: schema-driven,
+   deterministic, score-tagged, and covered by the battery like everything
+   else. Forced/automatic actions live in shared battle code; presentation
+   humor (jest lines) never touches the RNG stream.
+
+### Ordering rationale
+
+Fixes and repricing first (M43): they change the baselines every later
+balance judgment depends on, and the confusion fix is a rules bump that the
+relic effects should land on top of, not underneath. The relics and the
+doubled King together (M44): shipping the threat without its counterplay
+would make the summit a wall, and shipping relics first would trivialize the
+current King. Classes last (M45): they are the reward for the fight M44
+defines, and their score modifiers should be tuned against the final King
+economy. M23 → M24 run after M45.

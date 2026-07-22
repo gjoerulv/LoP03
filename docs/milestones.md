@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M34** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M45** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -49,20 +49,22 @@
 | 39 | Boss legendary & token drops | ☑ complete (approved) |
 | 40 | The castle & the King's challenges | ☑ complete (approved) |
 | 41 | Story NPCs & lore | ☑ complete (approved) |
-| 42 | Enrichment: bestiary, victory stats, achievements | ◑ implemented, awaiting manual approval |
+| 42 | Enrichment: bestiary, victory stats, achievements | ☑ complete (approved) |
+| 43 | Balance pass & audit fixes | ☐ planned |
+| 44 | Royal Relics & the doubled King | ☐ planned |
+| 45 | The King's classes: Dragon, Jester, Goose | ☐ planned |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
-(M35 → M36 → M37 → M38 → M39 → M40 → M41 → M42), **then** M23 → M24. M23/M24 were
-deferred by the owner on 2026-07-20: the game is not release-ready, so validating
-and packaging it would have measured the wrong build. Their existing tooling and
-packaging work is retained, not discarded — only their position in the sequence
-changed. The M31–M34 expansion program (towns, stakes, black market, shop
-categories) was authorized by the owner on 2026-07-20; the M35–M42 endgame
-program (statuses, passives, per-town content, boss drops, a castle with the
-King, story, and enrichment features) was authorized on 2026-07-21 — both as the
-content/systems work the game needs before M23/M24 are worth running. See the
-program sections below.
+(M35 → M36 → M37 → M38 → M39 → M40 → M41 → M42), then the **M43–M45 King's
+Gambit program** (M43 → M44 → M45, authorized 2026-07-22), **then** M23 → M24.
+M23/M24 were deferred by the owner on 2026-07-20: the game is not
+release-ready, so validating and packaging it would have measured the wrong
+build. Their existing tooling and packaging work is retained, not discarded —
+only their position in the sequence changed. Each expansion program (M31–M34
+towns/stakes/market, 2026-07-20; M35–M42 endgame, 2026-07-21; M43–M45 King's
+Gambit, 2026-07-22) was authorized as content/systems work the game needs
+before M23/M24 are worth running. See the program sections below.
 
 ## M1 — Project foundation
 
@@ -768,17 +770,18 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M34** (the
-  deferral was extended the same day when the owner authorized the M31–M34
-  expansion). The tooling, diagnostics, lint/mass/report suites, and
-  sim-justified early-ramp tuning (generation v4) are already implemented and
-  remain in the tree; they are not re-work. What changed is sequencing:
-  playtesting a build with known-stale gameplay and placeholder-grade enemy
-  art would produce findings about problems M25–M34 already exist to fix.
-  Re-audit this note against the post-M34 checkout before starting — the
-  capture scene list and balance battery will both need extending for the new
-  AI, content, art, and the M31–M34 systems (town ladder, stakes penalty,
-  black market).
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M45** (the
+  deferral has been extended by each expansion program the owner authorized:
+  M31–M34, M35–M42, and M43–M45). The tooling, diagnostics, lint/mass/report
+  suites, and sim-justified early-ramp tuning (generation v4) are already
+  implemented and remain in the tree; they are not re-work. What changed is
+  sequencing: playtesting a build with known-stale gameplay would produce
+  findings about problems the expansion programs already exist to fix.
+  Re-audit this note against the post-M45 checkout before starting — the
+  capture scene list and balance battery will both need extending for
+  everything M25–M45 added (AI, content, art, town ladder, stakes, black
+  market, statuses/passives, castle challenges, relics, and the unlockable
+  classes).
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -1626,9 +1629,12 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M42 — Enrichment: bestiary, victory stats, achievements
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
-  2026-07-21 against the post-M41 checkout; owner authorized beginning M42 after
-  approving M41. The **final milestone of the endgame program.** Three
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-22 after
+  manual testing (approval recorded during the M43–M45 planning session, after
+  the 2026-07-22 deep audit verified 368/368 tests and 44/44 capture scenes at
+  `bc10511`). Implemented / audited 2026-07-21 against the post-M41 checkout;
+  owner authorized beginning M42 after approving M41. The **final milestone of
+  the endgame program.** Three
   presentation/persistence features: a **Bestiary** (per-party encountered-set,
   recorded on battle start; a codex of the whole roster with
   sprite/stats/profile/passives/boss flavor for foes met and `? ? ?` for the rest,
@@ -1649,7 +1655,8 @@ authorization** — do not begin one without explicit owner go-ahead.
   columns with a centered description clear of the Back hint, save/load rows moved
   a party's King title onto its own line, and Quit to Title now asks a real Yes/No
   question via a new reusable `ConfirmPromptState` instead of arming a second
-  press (note §Playtest fixes). Closes the M35–M42 program; **M23 → M24 run next** (re-audited for the
+  press (note §Playtest fixes). Closes the M35–M42 program; the **M43–M45
+  King's Gambit program runs next**, then M23 → M24 (re-audited for all the
   new systems). Milestone note: `docs/milestone_notes/M42_enrichment.md`.
 - **Goal:** three presentation/persistence-only enrichment features (the owner's
   picks; the daily-seed challenge was rejected).
@@ -1670,3 +1677,120 @@ authorization** — do not begin one without explicit owner go-ahead.
   new screens.
 - **Milestone note:** `docs/milestone_notes/M42_enrichment.md` (authored at
   authorization).
+
+## King's Gambit program (M43–M45)
+
+Authorized by the owner on 2026-07-22, after a deep audit of M35–M42 (no
+blockers; four fixable findings) and nine owner-specified features forming one
+endgame arc: fix and rebalance first, then double the King while shipping his
+counterplay, then the reward classes for beating him. The full implementation
+plan (with verified code anchors) lives in the plan file provided to the
+implementing session; scope commitments below; per-milestone notes are
+authored just-in-time at each authorization.
+
+**Execution order:** M43 → M44 → M45, **then** M23 → M24. Cross-cutting rules
+are unchanged from prior programs (optional-field/defensive-load schema motion,
+M19 tag-never-normalize scoring, statuses stop at `implemented, awaiting
+manual approval`). Determinism law: every gameplay roll derives from
+`Battle.rngSeed`'s salted stream or `blackMarketHash(seed, salt)`; every
+forced/automatic action rule lives in shared `battle::` code used by both
+BattleState and the Simulator; presentation-only rolls (jest lines) use a pure
+hash that never advances `rollCursor`.
+
+Owner decisions taken at planning time (2026-07-22, via Q&A):
+
+- **Goose class skills are a comedy tradeoff:** its heal/cure skills also
+  buff ALL enemies; the level-30 ultimate (30 MP) applies all six debuffs to
+  all enemies.
+- **Relic items are consumed on use**; "owned" = inventory count ≥ 1; the
+  event can drop a used relic again.
+- **Owning all four relics:** the event still spawns and rolls the base
+  40/40/15/5, granting a duplicate (existing `ItemStack.count` stacking);
+  exclusion/renormalization applies only while 1–3 are owned.
+- **The +5 %pt event bonus applies at depth ≥ 20** (not only exactly 20).
+- The 2026-07-22 audit findings are folded into M43 (owner directive).
+- Planned version bumps: M43 → battle rules 4, generation 9; M44 → rules 5,
+  generation 10; M45 → rules 6. No save-version bump expected; the owner
+  permits one if the optional-field pattern genuinely hurts.
+
+## M43 — Balance pass & audit fixes
+
+- **Status:** ☐ planned
+- **Goal:** land the audit fixes and the owner's balance/item changes at one
+  battle-rules bump (3→4) and one generation bump (8→9, repriced merchant
+  goods).
+- **Primary deliverables:** confusion forces a basic attack in shared code
+  (`chooseEnemyAction` + the Simulator's party AI — closes the audit's
+  confused-caster gap and the sim-fidelity gap); challenge-aware castle
+  defeat (truthful message, full heal at the castle gates, no gold penalty;
+  boss-rush progress text derived from `bossRushOrder` size); repricing
+  (Remedy/`antidote` 15→100, Ether 60→150, Hi-Ether 150→500, Phoenix Tear
+  150→300 with revive 50 %→25 %); Clarity passive 3→2 MP; Purify cure-only
+  (heal removed); Renew becomes a weaker revive-capable heal (targets KO'd
+  allies); battle heal/MP/cure items can no longer target the KO'd (revive
+  items target only the KO'd); **Royal Snacks** (250 g, town-1-only via new
+  item-shop town gating; 10 HP + cures ATK-/DEF- — in the King fight
+  100 HP + 10 MP instead; "Bring Snacks!").
+- **Out of scope:** the relic event/items (M44); class content (M45).
+- **Dependencies:** none. Can start immediately.
+- **Acceptance criteria:** sim = live for confused units on both sides; no
+  false gold-loss claim in castle defeats and the party leaves healed;
+  repriced economy passes the affordability battery; snacks behave per
+  context; targeting filters hold; full suite + capture + lint green.
+- **Owner manual validation:** castle defeat feel; snack usefulness in and
+  out of the King fight; whether the reprices sting appropriately.
+- **Milestone note:** authored at authorization.
+
+## M44 — Royal Relics & the doubled King
+
+- **Status:** ☐ planned
+- **Goal:** a rare event-replacing encounter that yields four unique
+  consumable relics — the intended counterplay for a King whose stats double.
+- **Primary deliverables:** `RoomEventKind::RoyalRelic` replacing a rolled
+  event at generation (town ≥ 2, depth ≥ 2; 3 % town 2 / 5 % towns 3–6 / 7 %
+  town 7; +5 %pts at depth ≥ 20); resolution-time seeded item grant (Evil
+  Goose 40 / Tax Sheets 40 / Dragon Crown 15 / Deadly Spoon 5, renormalized
+  to exclude owned; all-owned → base roll, duplicate allowed); the four
+  relics as enemy-targetable consumables (forced Guard next turn; skip next
+  turn; ATK-/DEF- on the King only, else nothing; halve ATK/MAG/DEF/SPD for
+  the battle); the King at **750 HP with doubled ATK/MAG/DEF/SPD**
+  (36/44/36/26 — current base is 560 HP, 18/22/18/13).
+- **Out of scope:** class content (M45); any change to other bosses.
+- **Dependencies:** M43 approved (snacks + reprices are part of the King
+  counterplay math).
+- **Acceptance criteria:** replacement odds match the table per town/depth;
+  picks are deterministic and reload-proof; each relic effect proven in sim
+  and live; the doubled King is sim-beatable by a maxed party using
+  obtainable counterplay (never requiring the 5 % Spoon); full suite +
+  capture + lint green.
+- **Owner manual validation:** event discovery feel; relic drama in the King
+  fight; King difficulty.
+- **Milestone note:** authored at authorization.
+
+## M45 — The King's classes: Dragon, Jester, Goose
+
+- **Status:** ☐ planned
+- **Goal:** three unlockable joke-but-real classes as the King's reward,
+  schema-driven (no hardcoded class behavior outside data + generic flags).
+- **Primary deliverables:** a cross-save **profile store** (first King kill
+  unlocks the classes for New Game; retroactive from a loaded save's
+  `castleRecords.kingDefeated`); `ClassDef` schema additions (equip-slot
+  restrictions, AoE basic attack + attack-applied statuses, uncontrolled
+  flag, per-member score modifier); **Dragon** (very high stats, no skills,
+  no armor, attack hits all enemies applying poison + blind, −20 % score
+  each); **Jester** (uncontrolled — seeded random skill/attack each turn in
+  shared `battle::` code; 15 % jest chance shows one of ~12 original
+  dry-humor lines via a pure presentation hash; no weapons; +5 % score
+  each); **Goose** (very low stats, nothing equippable, heals that buff all
+  enemies, level-30 all-debuff ultimate; +5 % score each); the additive
+  class score modifier as a visible breakdown row + `ScoreEntry` tag.
+- **Out of scope:** M23/M24; new dungeons or bosses.
+- **Dependencies:** M44 approved (the unlock reads the King as re-statted).
+- **Acceptance criteria:** unlock round-trips and grants retroactively;
+  restrictions enforced in equip flows; Jester turns identical in sim and
+  live for a given seed; score modifiers displayed and tagged, ranking
+  untouched; class-party battery rows sane; full suite + capture + lint
+  green.
+- **Owner manual validation:** whether the classes are funny AND playable;
+  jest-line tone; score-modifier feel.
+- **Milestone note:** authored at authorization.

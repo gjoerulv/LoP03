@@ -2,11 +2,13 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / re-audited and
-  implemented 2026-07-21 against the post-M41 checkout. Owner authorized beginning
-  M42 after approving M41. As-implemented record in §K. Only the owner sets
-  `complete (approved)`. **Final milestone of the M35–M42 endgame program** (M23 →
-  M24 run after, re-audited post-M42).
+- **Status:** complete (approved) — approved by the owner 2026-07-22 after
+  manual testing (three playtest rounds; seven UI fixes recorded in §Playtest
+  fixes). Authored / re-audited and implemented 2026-07-21 against the
+  post-M41 checkout; owner authorized beginning M42 after approving M41.
+  As-implemented record in §K. **Final milestone of the M35–M42 endgame
+  program** (the M43–M45 King's Gambit program runs next, then M23 → M24,
+  re-audited post-M45).
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. **Presentation + persistence
   only** — no battle, generation, or scoring change; `kBattleRulesVersion` (3),
@@ -143,7 +145,7 @@ re-audit pointer (extend to cover M35–M42); a manual checklist per
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. The §D routine choices were
+- **Status:** complete (approved 2026-07-22). The §D routine choices were
   taken as written (pause-menu access; per-party bestiary/records + global
   achievements; boss `description` as flavor, no per-enemy flavor; live-only
   RunStats; 16 achievements; no new art).

@@ -197,11 +197,14 @@ authorization to start the next.
 inspection only. The owner handles all commits and pushes.
 
 Milestones: `docs/milestones.md` is the single source for statuses — trust it
-over any restatement, including this one. Everything through **M34** (the
-M31–M34 towns/stakes/black-market expansion) is `complete (approved)`; only the
+over any restatement, including this one. Everything through **M42** (the
+M35–M42 endgame program: statuses v2, passives, per-town content, boss drops,
+the castle with the King, story, enrichment) is `complete (approved)`. The
+**M43–M45 King's Gambit program** (balance/audit fixes → royal relics + the
+doubled King → three unlockable classes) is planned and runs next. The
 deliberately deferred **M23** (validation/playtesting/balance) and **M24**
-(release packaging) remain, and they run **last, after M34**: their tooling and
-packaging are built (v0.9.0 RC flow), awaiting owner-run external playtests
+(release packaging) run **last, after M45**: their tooling and packaging are
+built (v0.9.0 RC flow), awaiting owner-run external playtests
 (`docs/playtest_protocol.md`) and a clean-machine sign-off; version bumps to
 1.0.0 after playtests pass. Details: `docs/milestones.md` + one note per
 milestone under `docs/milestone_notes/`.

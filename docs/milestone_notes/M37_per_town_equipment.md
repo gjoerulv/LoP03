@@ -142,7 +142,7 @@ rows; a manual checklist per `docs/milestone_completion_template.md`.
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. Implemented / audited against
+- **Status:** complete (approved 2026-07-21). Implemented / audited against
   HEAD `98a11e0`. The §D routine choices were taken as written (chests include the
   town-gated gear; 24 regular + 3 legendary pieces; per-town gear below the
   legendary tier; flat merchant 75 %).
