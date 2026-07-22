@@ -227,13 +227,13 @@ TEST_CASE("balance: legendary gear out-stats the best epic gear", "[balance][bla
     // noise): the same character in the best epic-tier loadout vs full
     // legendaries. Legendaries must be a clear step up so the market is worth it.
     Character epic = createCharacter(*db.findClass("knight"), "Epic", 30);
-    epic.weapon = "war_hammer";
-    epic.armor = "plate_armor";
+    epic.weapon = "sunforged_greatblade";  // M37: the best epic weapon (town 7)
+    epic.armor = "bulwark_of_ages";        // M37: the best epic armor (town 7)
     epic.accessory = "titan_heart";
     refreshCharacter(epic, db);
 
     Character leg = createCharacter(*db.findClass("knight"), "Legend", 30);
-    leg.weapon = "dawnforged_blade";
+    leg.weapon = "worldbreaker_axe";  // M37: the strongest legendary weapon
     leg.armor = "aegis_eternal";
     leg.accessory = "titanforged_heart";
     refreshCharacter(leg, db);
@@ -241,6 +241,27 @@ TEST_CASE("balance: legendary gear out-stats the best epic gear", "[balance][bla
     CHECK(leg.stats.attack > epic.stats.attack);
     CHECK(leg.stats.defense > epic.stats.defense);
     CHECK(leg.maxHp > epic.maxHp);
+}
+
+TEST_CASE("balance: a maxed legendary party can clear the M38 town-7 content", "[balance]") {
+    const content::ContentDatabase db = loadContent();
+    // The new per-town bosses/enemies (towns 2-7) must be beatable, not unwinnable:
+    // a level-50 party in full legendaries clears essentially every town-7 boss.
+    int wins = 0;
+    const int seeds = 6;
+    for (int s = 0; s < seeds; ++s) {
+        const dungeon::Dungeon d = dungeon::generate(1000 + s, 8, db, "hollow_forest", 7);
+        const int bossTeam = d.rooms[static_cast<std::size_t>(d.bossRoom)].teamIndex;
+        REQUIRE(bossTeam >= 0);
+        Party p = makeParty(db, 50);
+        legendaryUp(p, db);
+        battle::Battle b = battle::buildBattle(p, d.teams[static_cast<std::size_t>(bossTeam)], db);
+        if (battle::simulate(b, db).outcome == battle::Outcome::Victory) {
+            ++wins;
+        }
+    }
+    INFO("town-7 boss wins: " << wins << "/" << seeds);
+    CHECK(wins >= seeds - 1);
 }
 
 TEST_CASE("balance: legendaries do not let level trivialize the top town",

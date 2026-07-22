@@ -25,6 +25,16 @@ bool ContentDatabase::addEnemy(const EnemyDef& def) { return insertUnique(enemie
 bool ContentDatabase::addItem(const ItemDef& def) { return insertUnique(items_, def); }
 bool ContentDatabase::addBoss(const BossDef& def) { return insertUnique(bosses_, def); }
 bool ContentDatabase::addTheme(const DungeonThemeDef& def) { return insertUnique(themes_, def); }
+bool ContentDatabase::addPassive(const PassiveDef& def) { return insertUnique(passives_, def); }
+bool ContentDatabase::addStory(const StoryBeat& def) {
+    for (const StoryBeat& b : story_) {
+        if (b.town == def.town) {
+            return false;  // one beat per town
+        }
+    }
+    story_.push_back(def);
+    return true;
+}
 
 const SkillDef* ContentDatabase::findSkill(const std::string& id) const {
     return findIn(skills_, id);
@@ -44,10 +54,21 @@ const BossDef* ContentDatabase::findBoss(const std::string& id) const {
 const DungeonThemeDef* ContentDatabase::findTheme(const std::string& id) const {
     return findIn(themes_, id);
 }
+const PassiveDef* ContentDatabase::findPassive(const std::string& id) const {
+    return findIn(passives_, id);
+}
+const StoryBeat* ContentDatabase::findStoryBeat(int town) const {
+    for (const StoryBeat& b : story_) {
+        if (b.town == town) {
+            return &b;
+        }
+    }
+    return nullptr;
+}
 
 bool ContentDatabase::empty() const {
     return skills_.empty() && classes_.empty() && enemies_.empty() && items_.empty() &&
-           bosses_.empty() && themes_.empty();
+           bosses_.empty() && themes_.empty() && passives_.empty();
 }
 
 void ContentDatabase::clear() {
@@ -57,6 +78,8 @@ void ContentDatabase::clear() {
     items_.clear();
     bosses_.clear();
     themes_.clear();
+    passives_.clear();
+    story_.clear();
 }
 
 std::vector<std::string> knownSkillsFor(const ClassDef& cls, int level) {

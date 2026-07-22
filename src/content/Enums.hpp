@@ -12,10 +12,12 @@ enum class Element { None, Fire, Ice, Lightning, Earth, Holy, Dark };
 
 enum class SkillCategory { Physical, Magic, Heal, Support };
 
-// Enmity-control effect a skill carries (M28), independent of its category.
+// Enmity-control / utility effect a skill carries, independent of its category.
 // None = ordinary skill. Taunt spikes the caster's threat, Fade sheds it,
-// Intercept makes the caster take hits aimed at allies until its next turn.
-enum class SkillEffect { None, Taunt, Fade, Intercept };
+// Intercept makes the caster take hits aimed at allies until its next turn (M28).
+// Cleanse strips every negative status from the skill's ally targets (M35), so a
+// heal skill can double as a cure.
+enum class SkillEffect { None, Taunt, Fade, Intercept, Cleanse };
 
 enum class SkillTarget { SingleEnemy, AllEnemies, SingleAlly, AllAllies, Self };
 
@@ -36,9 +38,39 @@ enum class Rarity { Common, Uncommon, Rare, Epic, Legendary };
 
 enum class ConsumableEffect { None, Heal, Revive, RestoreMp, Cure };
 
-enum class StatusType { None, Poison, AttackUp, AttackDown, DefenseUp, DefenseDown };
+// M35 adds Confusion (basic-attacks its own side), Silence (no MP-cost skills),
+// and Blind (physical attacks usually miss). All three are duration-only
+// (no magnitude) and are stripped by Cure like the other negative statuses.
+enum class StatusType {
+    None,
+    Poison,
+    AttackUp,
+    AttackDown,
+    DefenseUp,
+    DefenseDown,
+    Confusion,
+    Silence,
+    Blind
+};
 
 enum class BossArchetype { Brute, Sorcerer, Commander, Rush };
+
+// Passive-skill behaviour (M36). Keyed by id in data; the sim implements each
+// hook and reads a single `magnitude` parameter. None is the inert error default
+// (never a valid data value).
+enum class PassiveHook {
+    None,
+    Counter,      // retaliate with a basic attack after surviving a physical hit
+    Evasion,      // % chance a physical attack misses you (Blind attacker always misses)
+    SpellWard,    // % chance hostile magic fizzles on you
+    Thorns,       // physical attacker takes magnitude% of its dealt damage back
+    Lifedrink,    // heal magnitude% of the physical damage you deal
+    Clarity,      // +magnitude MP each round; immune to Silence
+    IronWill,     // survive a lethal blow at 1 HP once per battle
+    FirstStrike,  // act first in round 1; +magnitude% damage on your first damaging action
+    Bodyguard,    // redirect magnitude% of damage aimed at the lowest-HP ally to yourself
+    KeenSenses    // immune to Blind; +magnitude% damage vs a debuffed target
+};
 
 // parse* return std::nullopt for unrecognized strings (the caller reports the
 // error with context). toString is the inverse and always returns a stable id.
@@ -55,6 +87,7 @@ std::optional<Rarity> parseRarity(std::string_view s);
 std::optional<ConsumableEffect> parseConsumableEffect(std::string_view s);
 std::optional<StatusType> parseStatusType(std::string_view s);
 std::optional<BossArchetype> parseBossArchetype(std::string_view s);
+std::optional<PassiveHook> parsePassiveHook(std::string_view s);
 
 const char* toString(Element v);
 const char* toString(SkillCategory v);
@@ -77,5 +110,6 @@ const char* toString(Rarity v);
 const char* toString(ConsumableEffect v);
 const char* toString(StatusType v);
 const char* toString(BossArchetype v);
+const char* toString(PassiveHook v);
 
 }  // namespace cd::content

@@ -34,8 +34,8 @@
     { "id": "sunder", "name": "Sunder", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "defense_down", "statusMagnitude": 30, "statusDuration": 3, "description": "Shatter a foe's defenses." },
 
     { "id": "taunt", "name": "Taunt", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "taunt", "description": "Goad the enemy into striking you instead of your allies." },
-    { "id": "fade", "name": "Fade", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "fade", "description": "Slip from the enemy's attention, shedding their focus." },
-    { "id": "redirect", "name": "Redirect", "category": "support", "target": "self", "power": 0, "mpCost": 4, "control": "intercept", "description": "Guard your allies, taking single blows meant for them until your next turn." },
+    { "id": "fade", "name": "Fade", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "fade", "description": "Slip from the enemy's attention, shedding focus." },
+    { "id": "redirect", "name": "Redirect", "category": "support", "target": "self", "power": 0, "mpCost": 4, "control": "intercept", "description": "Take single blows meant for allies until your next turn." },
 
     { "id": "shield_bash", "name": "Shield Bash", "category": "physical", "target": "single_enemy", "power": 12, "mpCost": 5, "statusEffect": "defense_down", "statusMagnitude": 20, "statusDuration": 3, "description": "A shield blow that batters down a foe's guard." },
     { "id": "execute", "name": "Execute", "category": "physical", "target": "single_enemy", "power": 21, "mpCost": 9, "description": "A finishing strike aimed to end the fight." },
@@ -50,6 +50,19 @@
     { "id": "radiance", "name": "Radiance", "category": "magic", "target": "all_enemies", "element": "holy", "power": 10, "mpCost": 12, "description": "Searing light burns every foe." },
 
     { "id": "intimidate", "name": "Intimidate", "category": "support", "target": "all_enemies", "power": 0, "mpCost": 10, "statusEffect": "attack_down", "statusMagnitude": 20, "statusDuration": 3, "description": "Cow every foe into weaker blows." },
-    { "id": "iron_will", "name": "Iron Will", "category": "support", "target": "self", "power": 0, "mpCost": 8, "statusEffect": "defense_up", "statusMagnitude": 60, "statusDuration": 4, "description": "Steel yourself against all harm." }
+    { "id": "iron_will", "name": "Iron Will", "category": "support", "target": "self", "power": 0, "mpCost": 8, "statusEffect": "defense_up", "statusMagnitude": 60, "statusDuration": 4, "description": "Steel yourself against all harm." },
+
+    { "id": "smoke_screen", "name": "Smoke Screen", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "blind", "statusDuration": 3, "description": "Blinds a foe so its physical blows go wide." },
+    { "id": "flash_arrow", "name": "Flash Arrow", "category": "physical", "target": "single_enemy", "power": 8, "mpCost": 5, "statusEffect": "blind", "statusDuration": 3, "description": "A dazzling shot that blinds its mark." },
+    { "id": "silence", "name": "Silence", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 7, "statusEffect": "silence", "statusDuration": 3, "description": "Seals a foe's magic, blocking MP skills." },
+    { "id": "bewilder", "name": "Bewilder", "category": "magic", "target": "single_enemy", "element": "dark", "power": 6, "mpCost": 8, "statusEffect": "confusion", "statusDuration": 2, "description": "Addles a foe into striking its own side." },
+    { "id": "purify", "name": "Purify", "category": "heal", "target": "all_allies", "power": 12, "mpCost": 10, "control": "cleanse", "description": "Heals the party and lifts all afflictions." },
+
+    { "id": "blinding_curse", "name": "Blinding Curse", "category": "support", "target": "single_enemy", "power": 16, "mpCost": 6, "statusEffect": "blind", "statusDuration": 3, "description": "A searing curse that wounds and blinds its mark." },
+    { "id": "silencing_word", "name": "Silencing Word", "category": "support", "target": "single_enemy", "power": 16, "mpCost": 7, "statusEffect": "silence", "statusDuration": 3, "description": "A word of unmaking that wounds and seals a foe's magic." },
+    { "id": "maddening_gaze", "name": "Maddening Gaze", "category": "support", "target": "single_enemy", "power": 14, "mpCost": 8, "statusEffect": "confusion", "statusDuration": 2, "description": "A gaze that wounds and turns a foe against its own." },
+    { "id": "withering_touch", "name": "Withering Touch", "category": "support", "target": "single_enemy", "power": 14, "mpCost": 5, "statusEffect": "poison", "statusMagnitude": 6, "statusDuration": 3, "description": "A touch that wounds and rots a foe from within." },
+    { "id": "sovereigns_cataclysm", "name": "Sovereign's Cataclysm", "category": "magic", "target": "all_enemies", "power": 18, "mpCost": 12, "statusEffect": "attack_down", "statusMagnitude": 25, "statusDuration": 3, "description": "Ruin falls on the whole party, sapping their strength." },
+    { "id": "sovereign_smite", "name": "Sovereign's Smite", "category": "physical", "target": "single_enemy", "power": 24, "mpCost": 8, "statusEffect": "defense_down", "statusMagnitude": 30, "statusDuration": 3, "description": "A crushing blow that shatters a foe's guard." }
   ]
 }

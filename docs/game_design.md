@@ -55,6 +55,22 @@ from the class and the character's level (not stored), so leveling mid-run
 immediately unlocks the new options and no save is ever invalidated. By the
 level cap each class commands roughly six to seven skills.
 
+**Passive skills (M36).** Beyond skills, each character can carry a **passive** —
+an always-on battle trait bought at the Training Hall for gold. The economy is
+**own many, equip one**: purchased passives stay owned, and the single equipped
+passive swaps freely, so a character is tuned per run without losing what it
+bought. The ten passives are **Counter Attack** (retaliate after surviving a
+physical hit), **Evasion** (25 % of physical attacks miss; a Blind attacker always
+misses you), **Spell Ward** (25 % of hostile magic fizzles), **Thorns** (reflect
+20 % of physical damage), **Lifedrink** (heal 15 % of physical damage dealt),
+**Clarity** (+3 MP a round, immune to Silence), **Iron Will** (survive a lethal
+blow at 1 HP once a battle), **First Strike** (act first in round 1, +50 % on your
+first hit), **Bodyguard** (soak 25 % of a hit on your weakest ally), and **Keen
+Senses** (immune to Blind, +10 % vs debuffed foes). Enemies and bosses carry
+passives too — the target-info panel reveals a foe's passive so you can play
+around it. All effects are fully deterministic (chance-based ones seeded off the
+battle, so play and the simulator agree exactly).
+
 ## 5. Town hub (functional, not huge)
 
 Inn/rest · Item shop · Equipment shop · Guild/dungeon selection · Training
@@ -75,7 +91,16 @@ higher town multiplies every enemy team's stats — **+0/25/50/75/100/150/200 %*
 across towns 1–7 (composed on top of depth scaling; danger labels rise
 honestly) — and grants a **visible score bonus** on the whole run subtotal —
 **+0/10/20/30/40/50/100 %**. XP and gold rewards do **not** scale with town, so
-the top town is never the best farm; the climb pays in score. Access is earned:
+the top town is never the best farm; the climb pays in score. **Per-town gear
+(M37):** each town from 2 to 7 unlocks its own equipment at the Equip Shop
+(stronger weapons/armor/accessories, priced to gate — sim-validated affordable
+against depth-driven income, and kept below the legendary tier) and adds pieces
+to the dungeon chest pools, so climbing the ladder opens a real gear progression
+to match the rising difficulty. **Per-town foes (M38):** each town from 2 to 7
+also introduces new standard enemies (≥ 2 each) and a new boss, each with its own
+sprite, behaviour, and status/passive kit, gated so they appear only once their
+town is reached — so the roster deepens as you climb, not just its numbers.
+Access is earned:
 completing at least one dungeon in a town unlocks the road to the next, and the
 furthest reached town persists in the save. Old saves start in town 1. Each town
 has its own exterior and service-interior art and its own theme track; the three
@@ -103,8 +128,9 @@ from the scaled stats, so they never lie.
 
 **Room events (M20, +M30).** Dead-end event rooms offer real decisions whose
 full trade-off is shown **before** confirming: a shrine (gold for healing), a
-one-use healing spring, a wandering merchant (one item at dungeon markup),
-an elite challenge (double danger score, no treasure), an omen's score
+one-use healing spring, a wandering merchant (one item at a **bargain — 75 % of
+value** (M37), a reward for exploring, not a tax), an elite challenge (double
+danger score, no treasure), an omen's score
 wager (+150 if you finish with no deaths, −100 if anyone falls — shown in
 the score breakdown), and a **rest camp (M30)** that grants a free-rest token
 redeemable at the inn. Some unguarded chests are visibly **trapped**: extra
@@ -142,6 +168,24 @@ enemy team 1–5. Commands: **Attack, Skill/Magic, Item, Guard, Escape**. KO and
 revive exist; game over if all party KO. **Every** encounter (incl. bosses) is
 escapable. Escaping a normal battle forfeits that guarded chest/reward; escaping
 the boss or leaving the dungeon gives **0 dungeon score**.
+
+**Status effects (M35, extends M7).** Beyond poison and the attack/defense
+buffs/debuffs, three afflictions deepen the tactics. **Blind** makes a unit's
+physical attacks usually miss (the game's first to-hit roll — magic and items are
+unaffected). **Silence** blocks MP-cost skills (basic attacks and items still
+work). **Confusion** takes over a unit's turn entirely: it acts automatically —
+**no player input for a confused character** — lashing out with a basic attack at
+a seeded random member of its own side. A confused unit is **snapped out of it the
+moment it takes damage**, so hitting a confused ally (or letting a foe strike your
+confused member) is a real counter. All three are fully deterministic (seeded off the
+battle, so live play and the simulator agree exactly), applied by class skills (a
+Rogue and Ranger blind, a Mage silence and confusion) and enemy kits (disruptors,
+sorcerers, and several bosses now weave them in where the role fits), and all are
+lifted by a **Remedy** item or the Cleric's **Purify**. A miss reads as "Miss!"
+and every affliction shows a labelled icon, so nothing depends on colour alone.
+Afflictions and buffs both **linger** (durations run long), and **poison bites
+hard** (it deals heavy damage each turn), so status play — inflicting, curing,
+and outlasting — is a meaningful axis of a fight.
 
 **Enmity & enemy targeting (M28).** Enemies no longer always pile onto the
 lowest-HP party member (which perversely made an efficiently-played mage the
@@ -196,8 +240,9 @@ premise.
 
 **Stakes escalation (M33).** A run's *stakes* is its `(town, depth)`, compared
 town-first against your **previous completed run**. If a completed run does **not**
-raise the stakes above the last one, it loses score — **−15 % per repeat,
-stacking to a −90 % floor** — and each further non-raising run deepens it.
+raise the stakes above the last one, it loses score — **−30 % per repeat,
+stacking to a −99 % floor** (M35 re-tune; was −15 %/−90 %) — and each further
+non-raising run deepens it.
 Clearing a run that **does** raise the stakes (a higher town, or a deeper dungeon
 at the same town) **resets the penalty to zero**. Retreats and wipes (score-0
 runs) don't count either way. The Guild **forewarns** the penalty the configured
@@ -222,6 +267,63 @@ single **legendary** piece — gear a clear step above Epic, sold **nowhere else
 offer waits until bought; a later stakes-raising hit replaces it. Legendaries are
 aspirational endgame gear (sim-validated not to trivialize the top town), the
 prize for climbing and taking optional risks.
+
+**Boss legendary & token drops (M39).** Beating a dungeon boss in **town 3 or
+higher** and at **depth 4 or deeper** rolls two independent rewards, seeded from
+the run (so a reload can't reroll them): a chance of **legendary tokens** and a
+separate chance of a **legendary equipment** piece (from the same pool the black
+market sells). Both chances **ramp with town and depth** — from a low floor at
+town 3 / depth 4 up to the caps at **town 7 / depth 20: 75 % for tokens, 30 % for
+a legendary**; a token drop in **town 7 pays 2 tokens**. Drops are shown on the
+result screen. The rates are tuned (sim-tabulated) to reward deep, high-town
+clears without replacing the black market: one top clear's expected token drip is
+worth less than a market purchase, and most top clears still drop no legendary, so
+scarcity holds. Boss drops never affect the score (they are a post-battle reward).
+
+**The castle & the King (M40).** Clearing any **town-7 dungeon** opens a road that
+climbs from town 7 up to the **castle** — a distinct place above the seven-town
+ladder (not a town: no shops, dungeons, stakes, or score bonus). The castle hosts
+an inn, a save point, the party's **castle records**, and the **King's three
+challenges**, each a step above normal play and each paying a **one-time first-clear
+reward**:
+
+- **Boss Rush** — the full 12-boss roster, back to back, with **no free healing
+  between fights** (items and skills still work). Record: fewest total turns.
+- **Endless Rush** — deterministic escalating waves; survive as long as you can, no
+  free healing. Record: best wave reached.
+- **The Hollow King** — the hardest fight in the game. A bespoke boss above every
+  town-7 foe, immune to Blind, Silence, **and** Confusion, striking your afflicted
+  party harder as the fight wears on, with a kit that inflicts every status. Beating
+  him the first time grants a **unique legendary** (the Sovereign's Regalia, won
+  nowhere else), a **visible title**, gold, and tokens.
+
+Castle records live **entirely apart from the dungeon scoreboard** (score
+comparability is preserved); challenges never touch your dungeon score, stakes, or
+the scoreboard. Travel back to town is free.
+
+**Story & lore (M41).** A light-hearted running serial threads the climb: a
+**wandering storyteller** stands in every town and, town by town, spins the
+increasingly absurd "Ballad of the Hollow King" — one verse per town, growing
+taller with each telling. Hear all seven verses and the **Jester** at the castle
+delivers the punchline: the dread King is, in truth, a very tired, very bored,
+goose-fearing man who mostly wants a nap and a worthy challenger. The serial is
+optional flavor (never gates progress or combat); it simply rewards curiosity and
+gives the King a wink. Reading is remembered across saves; the Jester's finale
+unlocks once all seven verses are heard. All writing is original.
+
+**Enrichment: bestiary, victory stats, achievements (M42).** Three optional
+presentation features round out the endgame. A **Bestiary** (from the town pause
+menu) is a codex of the whole roster: a foe you have fought shows its sprite,
+stats, behaviour profile (role/tier or boss archetype), tags, passives (one per
+line), and — for bosses — its flavor text; a foe you have not met yet reads as an
+unknown, so the roster's size and your progress through it are always visible.
+**Victory stats** appear on the clear screen's Run-stats view: this run's
+total damage, biggest single hit, statuses inflicted, and the party MVP, plus your
+personal records (biggest hit ever, most damage in a run) — display-only, never
+ranked. **Achievements** (also from the pause menu) are ~16 original cross-game
+goals — clearing dungeons, climbing the ladder, beating the King's challenges,
+hearing the whole story, and more — persisted globally, each with a single toast
+when it unlocks. None of the three touch battle, generation, or scoring.
 
 ## 11. Bosses
 
@@ -262,16 +364,19 @@ comparison in the equip shop. Nothing behind Details is required to play.
 no color-only or sound-only information anywhere; a High Contrast palette
 toggle; battle flash/shake reducible to off; message pacing and battle
 speed configurable; Settings reachable before starting a game; destructive
-actions (save overwrite, quit-to-title) need an explicit second Confirm.
+actions need explicit confirmation — a save overwrite takes a second Confirm on
+the same slot, and quitting to the title asks a Yes/No question outright, with the
+cursor starting on the safe answer.
 These are engineering bars, not formal WCAG claims.
 
 ## 13. First-complete-version content target
 
-6 classes (each with a level-based learnset) · 22 normal enemy types · 9 elites ·
-6 bosses across 4 archetypes · 30+ items/equipment · 43 skills/spells across the
-broad categories · 3 themes (**Ruined Keep, Crystal Mine, Hollow Forest**) ·
-infinite seeded dungeons with depth scaling. (Counts as of M29; the enemy/boss
-roster and skill list grow with content milestones.)
+6 classes (each with a level-based learnset) · 26 normal enemy types · 17 elites ·
+12 bosses across 4 archetypes · 50+ items/equipment · 48 skills/spells across the
+broad categories · **10 passive skills** · 3 themes (**Ruined Keep, Crystal Mine,
+Hollow Forest**) · infinite seeded dungeons with depth and town scaling. (Counts
+as of M38, which added 12 per-town enemies and 6 per-town bosses; the roster and
+lists grow with content milestones.)
 
 ## 14. Open design questions (decide with human when reached)
 

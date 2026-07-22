@@ -45,11 +45,12 @@ constexpr std::array<std::pair<std::string_view, SkillCategory>, 4> kSkillCatego
     {"support", SkillCategory::Support},
 }};
 
-constexpr std::array<std::pair<std::string_view, SkillEffect>, 4> kSkillEffects{{
+constexpr std::array<std::pair<std::string_view, SkillEffect>, 5> kSkillEffects{{
     {"none", SkillEffect::None},
     {"taunt", SkillEffect::Taunt},
     {"fade", SkillEffect::Fade},
     {"intercept", SkillEffect::Intercept},
+    {"cleanse", SkillEffect::Cleanse},
 }};
 
 constexpr std::array<std::pair<std::string_view, SkillTarget>, 5> kSkillTargets{{
@@ -112,13 +113,16 @@ constexpr std::array<std::pair<std::string_view, ConsumableEffect>, 5> kConsumab
     {"cure", ConsumableEffect::Cure},
 }};
 
-constexpr std::array<std::pair<std::string_view, StatusType>, 6> kStatusTypes{{
+constexpr std::array<std::pair<std::string_view, StatusType>, 9> kStatusTypes{{
     {"none", StatusType::None},
     {"poison", StatusType::Poison},
     {"attack_up", StatusType::AttackUp},
     {"attack_down", StatusType::AttackDown},
     {"defense_up", StatusType::DefenseUp},
     {"defense_down", StatusType::DefenseDown},
+    {"confusion", StatusType::Confusion},
+    {"silence", StatusType::Silence},
+    {"blind", StatusType::Blind},
 }};
 
 constexpr std::array<std::pair<std::string_view, BossArchetype>, 4> kBossArchetypes{{
@@ -126,6 +130,21 @@ constexpr std::array<std::pair<std::string_view, BossArchetype>, 4> kBossArchety
     {"sorcerer", BossArchetype::Sorcerer},
     {"commander", BossArchetype::Commander},
     {"rush", BossArchetype::Rush},
+}};
+
+// The 10 valid passive hooks (M36); "none" is intentionally absent so it is
+// rejected in data and only ever the inert error fallback.
+constexpr std::array<std::pair<std::string_view, PassiveHook>, 10> kPassiveHooks{{
+    {"counter", PassiveHook::Counter},
+    {"evasion", PassiveHook::Evasion},
+    {"spell_ward", PassiveHook::SpellWard},
+    {"thorns", PassiveHook::Thorns},
+    {"lifedrink", PassiveHook::Lifedrink},
+    {"clarity", PassiveHook::Clarity},
+    {"iron_will", PassiveHook::IronWill},
+    {"first_strike", PassiveHook::FirstStrike},
+    {"bodyguard", PassiveHook::Bodyguard},
+    {"keen_senses", PassiveHook::KeenSenses},
 }};
 
 }  // namespace
@@ -153,6 +172,9 @@ std::optional<StatusType> parseStatusType(std::string_view s) { return parseFrom
 std::optional<BossArchetype> parseBossArchetype(std::string_view s) {
     return parseFrom(kBossArchetypes, s);
 }
+std::optional<PassiveHook> parsePassiveHook(std::string_view s) {
+    return parseFrom(kPassiveHooks, s);
+}
 
 const char* toString(Element v) { return nameFrom(kElements, v); }
 const char* toString(SkillCategory v) { return nameFrom(kSkillCategories, v); }
@@ -167,5 +189,6 @@ const char* toString(Rarity v) { return nameFrom(kRarities, v); }
 const char* toString(ConsumableEffect v) { return nameFrom(kConsumableEffects, v); }
 const char* toString(StatusType v) { return nameFrom(kStatusTypes, v); }
 const char* toString(BossArchetype v) { return nameFrom(kBossArchetypes, v); }
+const char* toString(PassiveHook v) { return nameFrom(kPassiveHooks, v); }
 
 }  // namespace cd::content

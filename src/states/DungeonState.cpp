@@ -12,6 +12,8 @@
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
+#include "game/Achievements.hpp"
+#include "game/BossDrops.hpp"
 #include "game/Party.hpp"
 #include "game/WorldLadder.hpp"
 #include "input/Input.hpp"
@@ -23,6 +25,7 @@
 #include "render/SpriteDraw.hpp"
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
+#include "states/AchievementToast.hpp"
 #include "states/BattleState.hpp"
 #include "states/DungeonMenuState.hpp"
 #include "states/DetailsOverlayState.hpp"
@@ -426,7 +429,8 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     battle::Battle b =
         battle::buildBattle(context_.party, dungeon_.teams[static_cast<std::size_t>(teamIndex)],
                             context_.content);
-    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &battleResult_));
+    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &battleResult_,
+                                                    MusicTrack::None, &victoryStats_));
 }
 
 void DungeonState::onEnter() {
@@ -567,6 +571,10 @@ void DungeonState::completeDungeon() {
     // saved on the next save/autosave, like the run's gold and XP).
     context_.party.highestUnlockedTown =
         unlockAfterClear(context_.party.highestUnlockedTown, dungeon_.town);
+    // M40: clearing any town-7 dungeon opens the road up to the castle.
+    if (dungeon_.town >= kTownCount) {
+        context_.party.castleUnlocked = true;
+    }
     // M33: advance the stakes baseline/penalty on a scoring completion. A
     // completed-but-zero run (extreme turn penalty) is treated like a score-0
     // run: it does not move the baseline (owner rule).
@@ -581,15 +589,8 @@ void DungeonState::completeDungeon() {
     // replaces it. Only reached on a real completion (total > 0).
     if (blackMarketShouldSpawn(total > 0, raisedStakes, dungeon_.town, dungeon_.seed,
                                dungeon_.depth)) {
-        std::vector<std::string> legendaryIds;
-        for (const auto& [id, def] : context_.content.items()) {
-            if (def.rarity == content::Rarity::Legendary &&
-                (def.type == content::ItemType::Equipment ||
-                 def.type == content::ItemType::Relic)) {
-                legendaryIds.push_back(id);
-            }
-        }
-        std::sort(legendaryIds.begin(), legendaryIds.end());
+        // Shared legendary pool (M39): the market and boss drops draw the same set.
+        const std::vector<std::string> legendaryIds = legendaryDropPool(context_.content);
         if (!legendaryIds.empty()) {
             BlackMarketOffer offer;
             offer.present = true;
@@ -602,6 +603,20 @@ void DungeonState::completeDungeon() {
             offer.tileY = mt.y;
             context_.party.blackMarket = offer;
         }
+    }
+
+    // M39: seeded, reload-proof boss drops. On a boss kill in town >= 3 and
+    // depth >= 4, roll legendary tokens and (independently) a legendary piece off
+    // this run's dungeon seed, so replaying the same run reproduces the same drops
+    // and no reload rerolls them. Applied to the live party (saved on the next
+    // save/autosave, like the run's gold/XP); shown on the result screen.
+    const BossDropResult drops =
+        rollBossDrops(dungeon_.seed, dungeon_.town, dungeon_.depth, context_.content);
+    if (drops.tokens > 0) {
+        context_.party.legendaryTokens += drops.tokens;
+    }
+    if (drops.legendary) {
+        context_.party.inventory.add(drops.legendaryId, 1);
     }
 
     score::ScoreEntry entry;
@@ -622,7 +637,25 @@ void DungeonState::completeDungeon() {
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);
 
-    stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total));
+    // M42: fold this run's victory tallies into the party's personal records
+    // (display-only, never ranked), then show the result with the run stats.
+    if (victoryStats_.biggestHit > context_.party.recordBiggestHit) {
+        context_.party.recordBiggestHit = victoryStats_.biggestHit;
+    }
+    if (victoryStats_.totalDamage > context_.party.recordRunDamage) {
+        context_.party.recordRunDamage = victoryStats_.totalDamage;
+    }
+    stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total, drops,
+                                                           victoryStats_));
+
+    // M42: unlock any achievements this run earned, and toast them (pushed above
+    // the result, so they show first, then the reckoning).
+    AchvContext actx;
+    actx.clearedDungeon = total > 0;
+    actx.runNoDeath = summary.noDeath;
+    actx.runTurns = summary.battleTurns;
+    actx.runDepth = dungeon_.depth;
+    pushAchievementToasts(stack(), context_, actx);
 }
 
 void DungeonState::handleInput(const Input& input) {

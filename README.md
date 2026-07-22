@@ -21,9 +21,20 @@ music, or text. Built in **C++20** with **raylib**.
 > paid-rest economy — are delivered, as is the **M31–M34 expansion**: a
 > seven-town difficulty ladder with per-town art and music, a stakes-escalation
 > score rule, a black market selling legendary gear for gold or elite-challenge
-> tokens, and categorized equip shopping. Only the deferred **validation/balance
-> playtesting (M23)** and **release packaging/sign-off (M24)** remain — see
-> `docs/completion_roadmap.md` and `docs/milestones.md`.
+> tokens, and categorized equip shopping. The **M35–M42 endgame program**
+> (statuses v2, passives, per-town content, boss drops, a castle with the King,
+> story, and enrichment features) is underway — **M35** (statuses + to-hit layer),
+> **M36** (10 passive skills), **M37** (per-town equipment), **M38** (12 per-town
+> enemies + 6 per-town bosses), and **M39** (seeded, reload-proof boss legendary &
+> token drops), **M40** (the castle above the seven towns, with Boss Rush /
+> Endless Rush / the Hollow King challenges, its own records and rewards kept outside
+> the dungeon scoreboard), and **M41** (an original light-hearted story serial — a
+> wandering storyteller in every town and a Jester punchline at the castle) are
+> approved, and **M42** (enrichment — a bestiary, result-screen victory stats +
+> personal records, and ~16 achievements) is implemented and awaiting approval,
+> closing the endgame program. The deferred
+> **validation/balance playtesting (M23)** and **release packaging/sign-off
+> (M24)** run last — see `docs/completion_roadmap.md` and `docs/milestones.md`.
 
 ## Requirements
 
@@ -149,7 +160,8 @@ letterbox/pillarbox bars.
    and name them. You start with a little gold.
 2. In the **town**, walk to buildings: **Inn** (rest to full HP/MP for gold, or
    free with a rest token), **Item Shop** (buy consumables), **Equip Shop**
-   (buy by category + equip gear), **Training Hall** (pay gold to level up),
+   (buy by category + equip gear — each town unlocks stronger gear as you climb),
+   **Training Hall** (level up, and buy passive skills — own many, equip one),
    **Scoreboard**, **Save Point** (3 slots), and the **Guild**. Roads at the
    bottom corners connect **seven towns**: each later town raises enemy stats
    (up to +200 %) and score bonus (up to +100 %); clearing a dungeon in a town
@@ -162,13 +174,23 @@ letterbox/pillarbox bars.
 5. Beat the **boss** to clear the dungeon and post a **score** (driven mainly by
    *fewest battle turns*, plus danger defeated, treasure, a no-death bonus, and
    the town's score bonus). Runs that fail to raise your **stakes** — (town,
-   depth) vs your last completed run — lose 15 % per repeat (to a −90 % cap);
-   the Guild shows the exact penalty before you enter.
+   depth) vs your last completed run — lose 30 % per repeat (to a −99 % cap);
+   the Guild shows the exact penalty before you enter. Beating a boss in **town 3+
+   at depth 4+** can also **drop legendary tokens and/or a legendary piece** —
+   chances rise with town and depth (up to 75 %/30 % at town 7 depth 20, with
+   double tokens in town 7), seeded so a reload can't reroll them; drops show on
+   the result screen and never change the score.
 6. **Retreat** any time (you keep XP/gold but score 0). **Defeat** returns you to
    town with half your gold. Upgrade, then dive deeper — runs scale with depth,
    town, and seed, endlessly. A stakes-raising clear in town 2+ can (20 %,
    seeded) spawn a **black market** selling one legendary piece for gold or
    **legendary tokens** won in optional elite challenges.
+7. Clear any **town-7 dungeon** to open the northern road to the **castle** — a
+   place above the ladder with the **King's three challenges**: the **Boss Rush**
+   (all 12 bosses back-to-back, no free healing), the **Endless Rush** (escalating
+   waves, survive as long as you can), and **the Hollow King** himself (the hardest
+   fight — immune to blind/silence/confusion, beat him for a unique legendary and a
+   title). The castle keeps its **own records**, separate from your dungeon scores.
 
 ## Project layout
 
@@ -225,9 +247,11 @@ save round-trips via the Save Point + Continue.
   sound and visual role is replaceable without code via
   `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload
   with F5); missing files fall back to synthesized placeholders or silence.
-- Status effects are a focused set (poison + attack/defense buffs/debuffs).
-  Bosses use stats, skills, minions, telegraph text, and a Brute enrage; dynamic
-  summons and true multi-wave "rush" are not implemented.
+- Status effects include poison, attack/defense buffs/debuffs, and (M35)
+  Blind (physical attacks usually miss), Silence (no MP-cost skills), and
+  Confusion (attacks its own side) — all deterministic and seeded. Bosses use
+  stats, skills, minions, telegraph text, and a Brute enrage; dynamic summons and
+  true multi-wave "rush" are not implemented.
 - Equipment has no per-class restrictions; the economy is lightly tuned.
 - The seven towns share one fixed layout (exterior palette, service interiors,
   and music vary per town); no per-character portraits.

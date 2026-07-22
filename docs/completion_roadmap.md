@@ -607,3 +607,73 @@ milestones read it, so it precedes them. The stakes penalty (M33) needs the
 because its spawn trigger *is* M33's stakes-raise event and its legendaries must
 be balanced against M32's town-7 difficulty. M23 → M24 run after M34, re-audited
 for all the new content.
+
+## 14. Endgame program (M35–M42) — direction
+
+Added 2026-07-21, after the M31–M34 expansion program closed. Direction and
+quality bars only; scope lives in `docs/milestones.md` and the per-milestone
+notes.
+
+### Why this phase exists
+
+M31–M34 built a seven-town ladder that rewards climbing, but the ladder has no
+summit and combat still turns on the M7 status set (poison + attack/defense
+buffs/debuffs). The game reaches town 7 and stops. This program adds an
+**endgame**: deeper combat (Confusion/Silence/Blind statuses, then passive
+skills), per-town equipment and enemy content so the ladder has fresh gear and
+foes at every rung, seeded boss drops that reward deep high-town clears, and — the
+payoff — a **castle above the town-7 ceiling** where a King guards three
+challenges with their own records. A light-hearted serial story and three
+enrichment features (bestiary, victory stats, achievements) round it out. It is
+content and systems on the same loop: town → prepare → seeded dungeon → boss →
+score → upgrade is unchanged, and the castle is a distinct summit hub reached by
+the same road rule, not a world map, a story campaign, or a new genre.
+
+### Quality bars for this phase
+
+Additional to §4, §5, §9 and §10, which all still apply:
+
+1. **Determinism carries into every new source of chance.** This program adds the
+   game's first to-hit roll, confusion targeting, boss drops, and endless castle
+   waves — every one derived from an existing **seeded** stream (`Battle.rngSeed`,
+   the run seed, a challenge seed), never wall-clock or unseeded RNG. The
+   simulator and live play must continue to agree exactly, as they do today via
+   shared `tickStatuses`. Randomness a player can farm by reloading is a defect.
+2. **The castle stays out of the ladder and the scoreboard.** `WorldLadder`
+   assumes towns 1..7 and the dungeon scoreboard encodes the M19 comparability
+   policy; the castle is a **distinct place** (`kCastleTown = 8`, its own state)
+   with its **own records**, never fed through town scaling and never writing a
+   `ScoreEntry`. Blurring the two would corrupt both the ladder clamps and score
+   comparability.
+3. **Rules changes are versioned and visible.** M35 and M36 each change how a
+   battle resolves and bump `battle::kBattleRulesVersion`; M37/M38 change what a
+   seed generates and bump `dungeon::kGenerationVersion`. Tags are displayed for
+   comparability, never used for ranking — M19's principle, extended to the new
+   systems.
+4. **Climbing stays the power fantasy.** Per-town gear and boss drops pay in
+   power for pushing deeper and higher, but the stakes rule (now re-tuned to
+   −30 %/step, −99 % cap) still fights farming a safe stake; drops are gated to
+   town ≥ 3 / depth ≥ 4 and sim-validated not to trivialize the black market or
+   the top town. The castle pays in records and one-time first-clear rewards, not
+   a better farm.
+5. **Originality and distinctness carry up the ladder and into the castle.** Every
+   new enemy, boss, NPC, and castle asset must be identifiable without reading its
+   name (the M25–M30 distinctness bar), and all writing/art/music is original (the
+   hard constraint). The presentation lint proves every new sprite and castle asset
+   resolves.
+
+### Ordering rationale
+
+Statuses (M35) first: they are the foundation every later combat system builds on,
+and landing them (plus the self-contained stakes re-tune) before passives means
+the to-hit layer exists when Evasion needs it. Passives (M36) next, while combat
+rules are still in flux, so the last `battleRulesVersion` bump of the program is
+spent here rather than later. Per-town equipment (M37) before per-town enemies
+(M38) so new foes are balanced against the gear the player can actually reach, and
+both before boss drops (M39) so the drop pool (legendary weapons from M37, the
+full boss roster from M38) exists. The castle (M40) needs that full boss roster
+for its gauntlet and sits at the top of everything below it. Story (M41) hangs on
+the finished town-and-castle geography, and the enrichment features (M42) —
+bestiary, victory stats, achievements — reference the complete enemy roster,
+combat systems, and story voice, so they come last. M23 → M24 run after M42,
+re-audited for the whole endgame.

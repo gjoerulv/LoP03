@@ -24,10 +24,22 @@ struct EnemyTeam;
 
 namespace cd::battle {
 
-// Battle-resolution rules version (M28). Bumped when the outcome of a battle
-// for identical inputs changes (targeting/enmity/control skills), so the
-// scoreboard can flag runs played under different rules. 0 = pre-M28.
-inline constexpr int kBattleRulesVersion = 1;
+// Battle-resolution rules version. Bumped when the outcome of a battle for
+// identical inputs can change, so the scoreboard can flag runs played under
+// different rules. 0 = pre-M28; 1 = M28 (enmity/targeting/control skills);
+// 2 = M35 (Confusion/Silence/Blind statuses + the seeded to-hit layer);
+// 3 = M36 (passive skills). The program's last rules bump.
+inline constexpr int kBattleRulesVersion = 3;
+
+// Blind (M35): a physical attack from a blinded unit misses this often.
+inline constexpr int kBlindMissPct = 75;
+
+// M35 status balance knobs (owner tune). Every applied status lasts this many
+// times its authored duration, and poison deals this many times its authored
+// per-tick damage. Confusion is additionally cleared the moment its bearer takes
+// damage (see applyDamage).
+inline constexpr int kStatusDurationMult = 2;
+inline constexpr int kPoisonDamageMult = 2;
 
 enum class Side { Party, Enemy };
 enum class Outcome { Ongoing, Victory, Defeat, Escaped };
@@ -73,6 +85,29 @@ struct Combatant {
     bool actedOnce = false;
     std::string telegraph;       // boss intro line
 
+    // Passive-skill effects (M36), resolved from the equipped passive (party) or
+    // the enemy/boss passive list at buildBattle, then read directly by the pure
+    // methods so the sim stays db-free and deterministic. All default to
+    // off/zero, so a unit with no passive resolves battles byte-identically to v2.
+    std::vector<std::string> passiveIds;  // for target-info legibility
+    int evasionPct = 0;                   // Evasion: physical miss chance vs this unit
+    int spellWardPct = 0;                 // Spell Ward: hostile-magic fizzle chance
+    int thornsPct = 0;                    // Thorns: reflected share of physical damage
+    int lifedrinkPct = 0;                 // Lifedrink: healed share of physical damage dealt
+    int clarityMp = 0;                    // Clarity: MP regained each round
+    int keenSensesPct = 0;                // Keen Senses: bonus damage vs a debuffed target
+    int bodyguardPct = 0;                 // Bodyguard: share of a hit on the weakest ally soaked
+    int firstStrikeBonusPct = 0;          // First Strike: bonus on the first damaging action
+    bool blindImmune = false;             // Keen Senses
+    bool silenceImmune = false;           // Clarity
+    bool confusionImmune = false;         // M40: the King (bespoke BossDef immunity)
+    bool counterAttack = false;           // Counter Attack
+    bool counteredThisRound = false;      // reset by beginRound
+    bool ironWill = false;                // Iron Will
+    bool ironWillUsed = false;            // once per battle
+    bool firstStrike = false;             // First Strike
+    bool firstStrikeUsed = false;         // once per battle
+
     bool alive() const { return hp > 0; }
 };
 
@@ -88,6 +123,17 @@ public:
     // seed+turn+actor+candidate — no evolving RNG state to keep in sync).
     std::vector<long> threat;
     std::uint64_t rngSeed = 0;
+
+    // Status-gated to-hit / confusion randomness (M35). A roll cursor advanced by
+    // nextRandom, drawn only when a status actually gates a roll (a blinded
+    // attacker, a confused attacker). Both BattleState and the Simulator call the
+    // shared attack/useSkill in the same order, so the stream evolves identically
+    // for a given battle+action sequence and a status-free battle never advances
+    // it (byte-identical to the pre-M35 rules). Never seeded off wall-clock time.
+    std::uint64_t rollCursor = 0;
+    // Unit indices that the last action missed (Blind), for the "Miss!" floaters.
+    // Cleared at the start of every action so it only reflects the latest one.
+    std::vector<int> lastMissed;
 
     bool sideAlive(Side s) const;
     Outcome outcome() const;  // Victory / Defeat / Ongoing (Escaped is set by the caller)
@@ -113,7 +159,58 @@ public:
 private:
     std::vector<int> resolveTargets(const content::SkillDef& skill, int actor,
                                     int primaryTarget) const;
+    // M35: advance the roll cursor and return a fresh value mixed from rngSeed +
+    // the cursor + a per-use salt (so Blind and Confusion draws stay independent).
+    std::uint64_t nextRandom(std::uint64_t salt);
+    // M35: a seeded uniform pick among the actor's own living side (incl. self),
+    // or -1 if none. Advances the roll stream.
+    int confusedTarget(int actor);
+    // M36 passive helpers. dealPhysical/dealMagic apply a hit's final damage (with
+    // the first-strike/keen-senses bonuses and the bodyguard split), plus threat,
+    // thorns/lifedrink/counter (physical only), appending any passive side-effect
+    // lines to `extra`; they return the damage the primary target took (for the
+    // caller's log). bodyguardFor returns a living guard for the weakest ally of
+    // `target`'s side, or -1. A unit with no passives makes these inert.
+    int dealPhysical(int actor, int target, int baseDmg, std::string& extra);
+    int dealMagic(int actor, int target, int baseDmg, std::string& extra);
+    int bodyguardFor(int target) const;
 };
+
+// --- M35 status queries (pure, header-inline) ---
+inline bool hasStatus(const Combatant& c, content::StatusType t) {
+    for (const StatusInstance& s : c.statuses) {
+        if (s.type == t) {
+            return true;
+        }
+    }
+    return false;
+}
+// Confusion/Silence/Blind respect immunity (M40 confusionImmune, M36 Clarity /
+// Keen Senses), so an immune unit is never treated as afflicted anywhere the
+// queries are used. No existing content sets confusionImmune, so every prior
+// battle resolves byte-identically.
+inline bool isConfused(const Combatant& c) {
+    return hasStatus(c, content::StatusType::Confusion) && !c.confusionImmune;
+}
+inline bool isSilenced(const Combatant& c) {
+    return hasStatus(c, content::StatusType::Silence) && !c.silenceImmune;
+}
+inline bool isBlinded(const Combatant& c) {
+    return hasStatus(c, content::StatusType::Blind) && !c.blindImmune;
+}
+// M40: whether this unit is immune to a status type. A stored status the unit is
+// immune to has no effect (the queries above ignore it), so it must never be shown
+// as afflicted either — display sites skip statuses for which this is true.
+inline bool isImmuneTo(const Combatant& c, content::StatusType t) {
+    return (t == content::StatusType::Blind && c.blindImmune) ||
+           (t == content::StatusType::Silence && c.silenceImmune) ||
+           (t == content::StatusType::Confusion && c.confusionImmune);
+}
+
+// M35: may this combatant cast this skill? False only if silenced and the skill
+// costs MP (silence blocks MP-cost skills; 0-MP skills, items, attacks are fine).
+// MP affordability is a separate check the callers still apply.
+bool canCast(const Combatant& c, const content::SkillDef& skill);
 
 // Builds combatants from the party and an enemy team.
 Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,

@@ -13,6 +13,10 @@ namespace cd::ui {
 struct MenuItem {
     std::string label;
     bool enabled = true;
+    // Optional trailing column (cost, count, tag). Rendered right-aligned at the
+    // row's right edge by drawMenuScrolled, so it is never squeezed out by a long
+    // label — the label is fitted to whatever room is left instead.
+    std::string suffix;
 };
 
 class Menu {

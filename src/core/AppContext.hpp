@@ -25,6 +25,7 @@ class SettingsStore;
 namespace tutorial {
 class TutorialStore;
 }
+class AchievementStore;
 
 struct AppContext {
     ResourceManager& resources;
@@ -40,6 +41,8 @@ struct AppContext {
     settings::SettingsStore& settings;
     // M22: one-time onboarding prompt progress (tutorial.json).
     tutorial::TutorialStore& tutorial;
+    // M42: global unlocked-achievements store (achievements.json).
+    AchievementStore& achievements;
     int virtualWidth;
     int virtualHeight;
 };

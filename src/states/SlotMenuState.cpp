@@ -24,6 +24,19 @@ std::string slotLabel(save::SaveSystem& saves, save::SaveSlot slot) {
     }
     return label;
 }
+
+// M40: a party that has beaten the King carries a visible title. It is drawn on
+// its own line under the slot row rather than appended to it.
+std::string slotTitle(save::SaveSystem& saves, save::SaveSlot slot) {
+    if (auto s = saves.summary(slot)) {
+        return s->kingTitle;
+    }
+    return {};
+}
+
+constexpr int kRowX = 56;
+constexpr int kRowsY = 76;
+constexpr int kRowH = 26;
 }  // namespace
 
 SlotMenuState::SlotMenuState(StateStack& stack, AppContext& context, SlotMenuMode mode)
@@ -33,6 +46,7 @@ void SlotMenuState::onEnter() { rebuild(); }
 
 void SlotMenuState::rebuild() {
     slots_.clear();
+    titles_.clear();
     std::vector<ui::MenuItem> items;
 
     if (mode_ == SlotMenuMode::Load) {
@@ -47,6 +61,7 @@ void SlotMenuState::rebuild() {
         const bool exists = context_.saves.exists(slot);
         const bool enabled = (mode_ == SlotMenuMode::Save) || exists;  // can't load empty
         items.push_back({slotLabel(context_.saves, slot), enabled});
+        titles_.push_back(slotTitle(context_.saves, slot));
     }
     const int previous = menu_.cursor();
     menu_.setItems(std::move(items));
@@ -121,11 +136,28 @@ void SlotMenuState::render() {
     const char* title = mode_ == SlotMenuMode::Save ? "Save Game" : "Load Game";
     ui::drawTextCentered(title, w / 2, 28, 18, RAYWHITE);
 
-    ui::drawMenu(menu_, 70, 80, 24, 12, RAYWHITE, Color{90, 90, 110, 255},
-                 Color{240, 220, 120, 255});
+    // Rows are drawn here rather than via drawMenu so a slot's King title gets
+    // its own line: appended to the label it ran straight off the screen.
+    const std::vector<ui::MenuItem>& items = menu_.items();
+    for (std::size_t i = 0; i < items.size(); ++i) {
+        const int y = kRowsY + static_cast<int>(i) * kRowH;
+        const bool isCursor = static_cast<int>(i) == menu_.cursor();
+        Color color = items[i].enabled ? RAYWHITE : Color{90, 90, 110, 255};
+        if (isCursor && items[i].enabled) {
+            color = Color{240, 220, 120, 255};
+            ui::drawText(">", kRowX - 12, y, 12, color);
+        }
+        ui::drawTextFitted(items[i].label, kRowX, y, w - kRowX - 16, 12, color, "slot.label");
+        if (i < titles_.size() && !titles_[i].empty()) {
+            ui::drawTextFitted(titles_[i], kRowX + 12, y + 13, w - kRowX - 28, 10,
+                               Color{210, 190, 130, 255}, "slot.title");
+        }
+    }
 
     if (!message_.empty()) {
-        ui::drawTextCentered(message_.c_str(), w / 2, 180, 10, Color{170, 220, 170, 255});
+        // Below the deepest row a Load list can reach (4 slots, each able to carry
+        // a title line) and clear of the footer.
+        ui::drawTextCentered(message_.c_str(), w / 2, 190, 10, Color{170, 220, 170, 255});
     }
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();

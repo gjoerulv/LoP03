@@ -24,6 +24,7 @@
       "learnset": [
         { "skill": "aimed_shot", "level": 4 },
         { "skill": "barrage", "level": 9 },
+        { "skill": "flash_arrow", "level": 11 },
         { "skill": "hamstring", "level": 13 },
         { "skill": "focus", "level": 17 }
       ]
@@ -37,7 +38,9 @@
       "startingSkills": ["fireball", "frost_lance", "spark", "fade"],
       "learnset": [
         { "skill": "stone_edge", "level": 4 },
+        { "skill": "silence", "level": 7 },
         { "skill": "arcane_burst", "level": 9 },
+        { "skill": "bewilder", "level": 12 },
         { "skill": "inferno", "level": 15 }
       ]
     },
@@ -51,6 +54,7 @@
       "learnset": [
         { "skill": "renew", "level": 4 },
         { "skill": "smite", "level": 8 },
+        { "skill": "purify", "level": 10 },
         { "skill": "radiance", "level": 13 },
         { "skill": "holy_ray", "level": 18 }
       ]
@@ -64,6 +68,7 @@
       "startingSkills": ["shadow_strike", "crippling_blow", "weaken"],
       "learnset": [
         { "skill": "rend", "level": 4 },
+        { "skill": "smoke_screen", "level": 7 },
         { "skill": "execute", "level": 9 },
         { "skill": "eviscerate", "level": 15 }
       ]

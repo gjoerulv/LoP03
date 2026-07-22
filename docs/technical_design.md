@@ -183,9 +183,10 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = 6 (M29 enlarged the theme enemy/boss pools; M30 added
-  the RestToken event to the pool — each changes a seed's roster/events;
-  owner-approved bumps).
+  `kGenerationVersion` = **8** (M29 enlarged the theme enemy/boss pools; M30 added
+  the RestToken event; M37 gave the merchant a 75 % bargain and gated chest gear by
+  town; **M38 gates the per-town enemy/boss pools by `minTown`** — each changes a
+  seed's roster/events/rewards; owner-approved bumps).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager/rest-token) realized as an
@@ -516,7 +517,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 6; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 8; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).
@@ -570,6 +571,51 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   only through the shared methods, preserving the sim/live determinism contract.
   A run's `ScoreEntry.battleRulesVersion` (`battle::kBattleRulesVersion`) tags
   which rules resolved its battles. Variance/crits remain out of scope.
+- **Statuses & to-hit v2 (M35).** `StatusType` gains **Confusion / Silence /
+  Blind** (duration-only, magnitude 0). Confusion redirects a basic `attack` to a
+  seeded random member of the actor's own side; Silence blocks MP-cost skills
+  (guarded in `useSkill` and honoured by the battle menu, `chooseEnemyAction`, and
+  the Simulator party AI via the pure `canCast`); Blind gives a physical attack a
+  75 % miss (`kBlindMissPct`) — the game's first to-hit roll, and magic/items are
+  exempt. The new randomness rides a **shared per-action roll cursor**
+  (`Battle.rollCursor`, advanced by `nextRandom` only when a status gates a roll),
+  so a status-free battle stays byte-identical to the M28 rules and both drivers
+  evolve the stream in lockstep (`turnsTaken` — frozen at 0 in the Simulator — is
+  never used for it). Misses are recorded in `Battle.lastMissed` for the "Miss!"
+  floaters. `SkillEffect::Cleanse` lets a skill strip an ally's negative statuses
+  (Cleric's Purify), and the `Cure` consumable clears the new afflictions too.
+  **Owner balance tune (2026-07-21):** every applied status lasts
+  `kStatusDurationMult`× its authored duration (2×, in `addStatus`), poison ticks
+  `kPoisonDamageMult`× its authored magnitude (2×, in `tickStatuses`), and
+  **Confusion is cleared the instant its bearer takes attack/skill damage** (in
+  the shared `applyDamage` chokepoint, so sim/live agree and the poison DoT —
+  which bypasses `applyDamage` — does not clear it). Statuses live only inside a
+  `Battle` (never serialized), so no save bump; `battle::kBattleRulesVersion` is
+  **2**.
+- **Passive skills (M36).** `content::PassiveDef { id, name, hook, magnitude,
+  price }` (a `PassiveHook` enum of 10) loads from `data/passives.json` into a
+  `ContentDatabase` map; enemy/boss defs gain an optional `passives` list, and
+  `Character` gains `ownedPassives` + `equippedPassive`. `buildBattle` resolves
+  each unit's passives (a party member's **single equipped** passive; an enemy/
+  boss's list) into per-`Combatant` effect fields via `applyPassives`, mirroring
+  the boss-flag pattern — so the pure `attack`/`useSkill`/`beginRound`/`turnOrder`/
+  `applyDamage` read plain fields and stay **db-free and deterministic**. The
+  hooks: Counter Attack (a once-per-round retaliation in `dealPhysical`), Evasion
+  (folded into `physicalMissPct` with the Blind rule — a blind attacker always
+  misses an evader), Spell Ward (a magic-fizzle roll off `kSaltWard`), Thorns and
+  Lifedrink (in `dealPhysical`), Clarity (MP regen in `beginRound`; `silenceImmune`
+  read by `isSilenced`), Iron Will (survive-at-1 in `applyDamage`), First Strike
+  (turn-order priority while `!actedOnce` + a first-hit damage bonus), Bodyguard
+  (a partial redirect to the weakest ally's guard in `dealPhysical`/`dealMagic`),
+  Keen Senses (`blindImmune` + a bonus vs debuffed targets). All chance hooks ride
+  the shared M35 roll cursor, so a battle where **no unit has a passive** resolves
+  byte-identically to v2 and both drivers agree. Passives sell at the **Training
+  Hall** (own many, equip one, swap free); the target-info panel and Details
+  reveal a unit's passive. `ownedPassives`/`equippedPassive` are optional save
+  fields (old saves → empty; unknown/unowned ids dropped on load), so **no
+  `kSaveVersion` bump**. `battle::kBattleRulesVersion` is **3** (the program's last
+  rules bump); `kGenerationVersion` unchanged (passives are not a generation
+  input).
 - **Commands:** Attack, Skill, Item, Guard, Escape. Escape always succeeds (every
   encounter is escapable); escaping forfeits the gate/chest.
 - **Inventory:** `game/Inventory` (item id → count, insertion-ordered). Persisted
@@ -618,11 +664,14 @@ a `ScoreEntry`, and shows `DungeonResultState` before returning to town. The tow
 
 ### Status effects (`battle/`)
 
-A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down).
-Skills/items apply them to their targets; `Battle::tickStatuses` (called at each
-unit's turn start) deals poison and ages durations. Buffs/debuffs scale the
-effective attack/defense used in the damage formulas; `Cure`/antidotes strip
-poison and debuffs. A **Brute** boss `enrages` (×1.5 attack below half HP) and
+A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down, and the
+M35 Confusion/Silence/Blind). Skills/items apply them to their targets;
+`Battle::tickStatuses` (called at each unit's turn start) deals poison and ages
+durations. Buffs/debuffs scale the effective attack/defense used in the damage
+formulas; `Cure`/Remedy items and `SkillEffect::Cleanse` (the Cleric's Purify)
+strip every negative status (poison, debuffs, and the M35 afflictions). See §10's
+M35 bullet for the Confusion/Silence/Blind behaviour and the seeded to-hit stream.
+A **Brute** boss `enrages` (×1.5 attack below half HP) and
 shows a telegraph line; **Commander/Rush** bosses field a fixed minion team
 (dynamic summons / true waves are deferred). The base (no-status, non-boss)
 formulas are unchanged, so prior battle tests still hold.
@@ -644,6 +693,17 @@ case. The slot filter is the pure, raylib-free `equipShopBuyIds`
 the same "equippable" definition the equip flow uses. Categories are a browse
 aid only: no pricing, stock, equip, save, or content change.
 
+**Per-town equipment (M37).** `ItemDef.minTown` (optional, default 1) gates gear
+by the town ladder: `equipShopBuyIds(content, slot, town)` stocks only
+`minTown ≤ town`, so the Equip Shop grows as the ladder is climbed, and
+`buildPools(db, theme, town)` filters chest candidates the same way (legendaries
+stay excluded). 24 new per-town pieces (towns 2–7, priced below the legendary
+tier) plus 3 new legendary weapons (black-market/drop pool) ship in `items.json`.
+The dungeon **Merchant** event now sells at `value * 75 / 100` (a bargain, was a
+130 % markup). The merchant price and the town-gated chest pool both change a
+seed's generated output, so `dungeon::kGenerationVersion` is **7**; `minTown` is
+content (no `kSaveVersion` / `kBattleRulesVersion` change).
+
 ### Theme/depth generation
 
 `generate(seed, depth, db, themeId)` draws enemy and boss pools from the chosen
@@ -651,6 +711,21 @@ aid only: no pricing, stock, equip, save, or content change.
 length, team size, elite chance, gate count, and rewards with depth. The Guild
 chooses theme + depth, giving infinite seeded runs. Bosses are built from
 `BossDef` (the boss plus its minions as one `EnemyTeam` with a `bossId`).
+
+**Per-town enemies & bosses (M38).** `EnemyDef.minTown` / `BossDef.minTown`
+(optional, default 1) gate content by the town ladder: `buildPools` and `pickBoss`
+take the dungeon's `town` and keep only `minTown ≤ town` foes (sorted order
+preserved → deterministic). 12 new standard enemies (4 normal + 8 elite) and 6 new
+bosses (towns 2–7) ship in `enemies.json`/`bosses.json`, added to every theme's
+pools so they surface at their town in any theme, with kits built on the M35
+statuses and (bosses) M36 passives, and their own generated 24×24/32×32 battle
+sprites (lint-enforced, provenance in `assets/credits.md`). The full boss roster is
+now 12 (what M40's gauntlet enumerates in sorted order). Because the town-gated
+pools change a seed's roster at towns 2+, `dungeon::kGenerationVersion` is **8**;
+`minTown` is content (no `kSaveVersion` / `kBattleRulesVersion` change). This
+supersedes M32's "town does not change enemy composition" property — town now
+selects from a town-gated pool, though topology and per-(seed,depth,town)
+determinism are unchanged.
 
 ### Town ladder (Milestone 32)
 
@@ -667,8 +742,10 @@ everywhere, so pre-M32 behaviour, seeds, and scores are unchanged.
 - **Generation.** `generate(seed, depth, db, themeId, town=1)` and
   `makeTeam(..., town)` fold the town multiplier into every team's
   `statScalePct` via `combineTownScale = (100+depthScale) * townScalePct/100`.
-  Town does not touch the RNG stream, so town-1 output is byte-identical and
-  `kGenerationVersion` stays **6**. `Dungeon.town` records the run's town.
+  Town does not touch the RNG stream, so town-1 output was byte-identical at M32
+  (`kGenerationVersion` 6). **M37 superseded that:** the merchant discount and the
+  town-gated chest pool change generated output for every town (including town 1),
+  bumping `kGenerationVersion` to **7**. `Dungeon.town` records the run's town.
 - **Scoring.** `RunSummary.townBonusPct` → `ScoreBreakdown.townBonus` (a percent
   of the non-negative subtotal, applied once over everything incl. the wager;
   pure and tested). `ScoreEntry.townIndex` is an optional comparability tag
@@ -740,6 +817,163 @@ dungeon seed (+ stakes), so a reload cannot reroll them.
   `kSaveVersion` bump; `generationVersion`/`battleRulesVersion` untouched (the
   market is a post-run town event).
 
+### Boss legendary & token drops (Milestone 39)
+
+Pure rules in `game/BossDrops.hpp` (+ `.cpp`), reusing the M34 `blackMarketHash`
+SplitMix64 primitive with a distinct salt namespace. Header-only math is
+content-free and unit-tested; the content pool + assembled roll live in the `.cpp`.
+
+- **Gate & ramp.** `bossDropEligible(town, depth)` is `town ≥ 3 && depth ≥ 4`.
+  `bossDropProgressPerMille` averages a town progress (0 at town 3, 1000 at town 7)
+  and a depth progress (0 at depth 4, 1000 at depth 20), each clamped to its
+  anchor — integer per-mille, no floating point in the deterministic path.
+  `bossTokenChancePct` / `bossLegendaryChancePct` ramp linearly from the floors
+  (15 % / 5 %) to the owner-fixed caps (**75 % / 30 %** at t7/d20), capped beyond
+  the anchors. `bossTokenCount(town)` pays **2** in town 7, else 1.
+- **Rolls.** `bossTokenRolls` and `bossLegendaryRolls` are two independent seeded
+  rolls (distinct salts → independent of each other and of the market stream on
+  the same seed); `bossLegendaryIndex` picks from the pool. `rollBossDrops(seed,
+  town, depth, content) → BossDropResult { tokens, legendary, legendaryId }`
+  assembles the outcome, returning empty when the gate is not met.
+- **Shared pool.** `legendaryDropPool(content)` enumerates every `Legendary`
+  equipment/relic id, sorted — the **same** set the black-market spawn now draws
+  from (`DungeonState::completeDungeon` was refactored to call it), so the two
+  systems cannot diverge. Non-de-duplicated by design: keying only on
+  `(seed, town, depth)` is what makes drops reload-proof.
+- **Hook.** `DungeonState::completeDungeon` (the sole boss-kill path) calls
+  `rollBossDrops(dungeon_.seed, dungeon_.town, dungeon_.depth, …)`, applies
+  `legendaryTokens += tokens` and `inventory.add(legendaryId)` to the live party
+  (saved on the next save/autosave, like the run's gold/XP), and passes the result
+  to `DungeonResultState`, which renders a "Boss drops" block below the score
+  breakdown. That panel's line pitch now tightens when the fullest breakdown +
+  drop block would exceed the virtual height, so the footer stays on-screen.
+- **Versions.** No `kSaveVersion` change (tokens/inventory are existing fields);
+  `kBattleRulesVersion` and `kGenerationVersion` untouched (a post-battle reward
+  roll changes neither battle resolution nor generated content).
+
+### The castle & the King's challenges (Milestone 40)
+
+Pure rules in `game/Castle.hpp` (+ `.cpp`). **`kCastleTown = 8` is a distinct place,
+never a ladder town** — it is never assigned to `Party.currentTown` and never passed
+through `WorldLadder`/`clampTown` (which cap at 7), so no town array is touched. The
+castle is reached, and left, only through its own states.
+
+- **Unlock & travel.** `Party.castleUnlocked` (optional save field) is set in
+  `DungeonState::completeDungeon` on any town-7 clear. `town::buildTown` gains a
+  northern **castle road** in town 7 (a `TownExit` with `toCastle = true`), shown
+  locked until unlocked and refreshed in `TownState::onResume` exactly like the M32
+  next-town road; standing on it pushes `CastleState` (not `travelTo`). Travel back
+  is a free pop.
+- **`CastleState`** is a menu-driven throne hall (Boss Rush / Endless Rush / the King
+  / inn / save / leave) that shows the party's `CastleRecords`; the Jester spot is
+  reserved here for M41. (A walkable castle with a bespoke tileset is a deliberate
+  deferral — see the note's §K.)
+- **`CastleChallengeState`** runs a challenge as a sequence of `BattleState`s with
+  **persistent HP/MP** (no free healing; `BattleState` writes hp/mp back to the party
+  between fights). Boss Rush enumerates `bossRushOrder` (the 12 bosses, King-excluded,
+  sorted) at `kBossRushScalePct`; Endless builds `endlessWaveTeam` from a fixed seed
+  (`kEndlessSeed`, blackMarketHash stream) with escalating scale/size; the King is
+  `kingTeam` at `kKingScalePct` with `MusicTrack::KingBattle` (a new optional
+  `BattleState` music override). On finish it updates the records, pays the one-time
+  first-clear reward (the King also adds the unique `sovereigns_regalia` — excluded
+  from `legendaryDropPool` so it drops nowhere else — and the title), and shows a
+  result overlay. Scales are **sim-tuned** (`[castle]` / `[castle-report]`): the King
+  is beatable by a maxed party but a real war of attrition, the Boss Rush clears
+  no-heal, Endless reaches a sane wave then overwhelms.
+- **The King's Confusion immunity.** A new `Combatant.confusionImmune` (default false)
+  resolved from an optional `BossDef.immuneToConfusion`; `isConfused` respects it,
+  mirroring the M36 Blind/Silence immunities. No existing content sets it, so every
+  prior battle resolves byte-identically — no `kBattleRulesVersion` bump. Combined
+  with the King's Keen Senses + Clarity passives, he is immune to all three control
+  statuses.
+- **Immune statuses are hidden (display).** A stored status a unit is immune to has
+  no effect (the effect queries already ignore it), so it must not read as afflicted
+  either. `battle::isImmuneTo(combatant, type)` gates the three status-display sites
+  (per-unit HUD badges, target-info panel, Details overlay). Display-only — resolution
+  is unchanged.
+- **The King's damaging debuffs.** A `Support`-category skill with `power > 0` now
+  also deals that power as magic damage to an enemy target (the effect switch's
+  `Support` case), so a debuff-curse wounds as well as afflicts. Every shipped Support
+  skill is power 0, so this is inert for all prior content (battles byte-identical, no
+  version bump); only the King's six bespoke damaging curses use it. This is what
+  makes the King deal damage every turn rather than spending turns on effect-less
+  debuffs (the enemy AI prefers Support debuffs).
+- **Records & audio.** `CastleRecords` (bossRushBestTurns / endlessBestWave /
+  kingDefeated / kingBestTurns / kingTitle) are optional Party save fields, defensively
+  loaded (old saves → locked / no records), and surfaced on the castle hub and the
+  load-screen slot summary — never in the dungeon `Scoreboard`. `SlotMenuState` draws
+  its own rows (it keeps `ui::Menu` only for cursor/enabled logic) so the title gets
+  its own indented line under the slot/level/party/gold line: appended to the label it
+  measured roughly twice the room the row has, and `drawMenu` neither fits nor reports.
+  Two new tracks
+  (`MusicTrack::Castle`, `MusicTrack::KingBattle`) with manifest rows + synth fallback.
+- **Versions.** `kSaveVersion`, `kBattleRulesVersion` (3), and `kGenerationVersion` (8)
+  all unchanged.
+
+### Story serial (Milestone 41)
+
+Pure content + presentation; no battle/generation/scoring surface.
+
+- **Content.** `StoryBeat { int town; string speaker/title/body; }`
+  (`Definitions.hpp`); `parseStory` in `ContentLoader` validates town 1..8 (1–7 town
+  installments + the castle Jester at `kCastleTown`), non-empty fields, and one beat
+  per town; `ContentDatabase::story()` / `findStoryBeat(town)` (a small vector, not an
+  id map). `data/story.json` ships the eight original beats; a `[story][lint]` test
+  wraps every beat to confirm it fits the dialog panel.
+- **Presentation.** `StoryDialogState` — a near-clone of `TutorialPromptState`
+  (dims the frozen scene, titled wrapped panel via the M12 helpers, speaker footer,
+  Confirm/Cancel dismiss).
+- **Storyteller.** A `TownState` overlay at the fixed plaza tile `(6,9)` in every
+  town (the black-market NPC pattern: sprite + `onBardTile()` + prompt); talking
+  pushes `StoryDialogState` with `findStoryBeat(currentTown)` and sets the town's bit
+  in `Party.storyMet`.
+- **Jester.** A `CastleState` menu entry: the Jester beat (`findStoryBeat(kCastleTown)`)
+  once `storyAllHeard(storyMet)`, else a teaser. Pure mask helpers live in
+  `game/Story.hpp` (`kStoryTownCount`, `storyBit`, `storyHeard`, `storyAllHeard`).
+- **Save.** `Party.storyMet` is an additive optional 7-bit field (old saves → 0); no
+  `kSaveVersion` bump. Two 12×12 NPC sprites (`actor.bard/jester.overworld`), manifest
+  + credits. No version bumps.
+
+### Enrichment: bestiary, victory stats, achievements (Milestone 42)
+
+Presentation + persistence only; no battle/generation/scoring surface, no version bumps.
+
+- **Bestiary.** `Party.encountered` (a per-party id set, save round-trip) is appended
+  in `BattleState`'s constructor for every enemy/boss faced (dedup). `BestiaryState`
+  builds an entry for **every** enemy then every boss in the content database (each
+  group alphabetical, so a slot never moves as it is discovered) and marks the ones in
+  `encountered` as known. A known entry resolves to a sprite (`enemy/boss.<id>.battle`),
+  stats, a behaviour profile (`toString` of tier + role, or the boss archetype, plus
+  tags), its passives **one per line**, and — for bosses — the `description` as flavor
+  (enemies have no description field; per-enemy flavor is a follow-up). An unknown
+  entry reads `? ? ?` with masked stats, the same convention `AchievementsState` uses.
+  A scroll list + detail panel with a `known / total` counter; reached from
+  `TownMenuState`. The flavor block picks the body font when it fits the room left
+  under the passives and the caption font otherwise, so the longest boss text
+  (the King's) is never truncated.
+- **Victory stats.** `game/RunStats.hpp` (totalDamage / biggestHit / statusesInflicted
+  / per-member damage → `mvpMember`). `BattleState` accumulates it live from HP deltas
+  (enemy damage attributed to the acting member) into an **optional `RunStats*` slot**
+  — the pure Battle model and the Simulator are untouched, so resolution is
+  byte-identical. `DungeonState` passes `&victoryStats_` to its battles, updates the
+  party's personal records (`recordBiggestHit`/`recordRunDamage`, save fields) on a
+  completed run, and hands the stats to `DungeonResultState`, whose Details key opens
+  the run stats + records. Castle challenges pass no slot (their own records cover them).
+- **Achievements.** `game/Achievements.hpp` — a fixed table of 16 original goals +
+  `achievementMet(id, party, ctx)` (pure predicates over party state + a run event) +
+  `AchievementStore` (a global `achievements.json`, tutorial.json-style: versioned,
+  defensive load, atomic save), added to `AppContext` and created in `Application`.
+  `store.check(party, ctx)` unlocks and returns the newly-met ids; the free helper
+  `pushAchievementToasts` toasts each via the story-dialog overlay. Hooks:
+  `DungeonState::completeDungeon` (with the run context), `CastleChallengeState::finish`,
+  and `TownState::onResume` (state-based, for town actions). `AchievementsState` lists
+  the roster (locked ones hidden as goals) from `TownMenuState`, in two columns of
+  `(kAchievementCount + 1) / 2` rows — left/right jump a column, up/down walk the
+  whole list in reading order — with the cursor's description centered underneath.
+- **Save.** `Party.encountered` (string array), `recordBiggestHit`, `recordRunDamage`
+  are additive optional fields; achievements are a new global file. No `kSaveVersion`
+  bump. No new art (the bestiary reuses battle sprites).
+
 ## 13. Presentation (Milestone 8)
 
 - **Audio (`audio/AudioManager`):** SFX and looping music are **synthesized at
@@ -788,7 +1022,27 @@ tested; raylib adapters live in `ui/UiDraw`.
   colors. States use roles, not ad-hoc numbers, as they are migrated.
 - **`ui/UiDraw` additions**: `measureText`/`raylibMeasure()`;
   `drawTextRight`; `drawTextFitted` (fits-or-clips + logs); `drawTextWrapped`
-  (bounded lines + logs); `drawMenuScrolled` (window slice + arrows).
+  (bounded lines + logs); `drawTextWrappedCentered` (the same, every line centered
+  on a point); `drawMenuScrolled` (window slice + arrows).
+- **`states/ConfirmPromptState`**: a reusable transparent Yes/No modal (dims and
+  freezes the scene below, measured panel: title + wrapped consequence + two
+  answers) that runs a supplied `std::function` on yes. The cursor starts on the
+  safe answer and Cancel answers no. Used by the pause menu's Quit to Title, which
+  previously armed a second Confirm on the same entry and explained itself with a
+  warning line — a pattern that reads as a dead key press.
+- **`MenuItem::suffix`** (M42 follow-up): an optional trailing column drawn
+  right-aligned at the row's right edge by `drawMenuScrolled`, in its own font
+  size/color. The column is reserved *first* and the label is fitted to what is
+  left, so a trailing cost or count can never be pushed out of view by a long
+  name. Used by the battle skill list (`MP n`, or `SIL` when silence blocks the
+  skill — spelled out in the description column) and item list (`xN`); the
+  battle panel's list/description split is set by the widest skill row so
+  neither column clips.
+- **Battle status tags** (M42 follow-up): both sides read their tags in the open
+  field right of the sprite — enemy rows level with the sprite, party rows under
+  their HP/MP numerals — packed into at most two 8px lines that fit the room,
+  with a trailing `+N` when a unit carries more than fits. Immune statuses are
+  never listed (M40).
 - **Overflow diagnostics:** any bounded draw that cannot fit reports
   `[ui-overflow] site: 'text' Wpx > Mpx` once per site/text via `cd::log` and
   scissor-clips instead of spilling. Silent truncation is prohibited; the log

@@ -2,11 +2,18 @@
 
 ## A. Status and authority
 
-- **Status:** planned — deferred 2026-07-20; runs **after M34** (the tooling
-  described below is already built and stays in the tree). Re-audit this note
-  against the post-M34 checkout before starting: the capture scenes and the
-  balance battery need extending for the M25–M34 systems (enmity AI, new
-  content, town ladder, stakes penalty, black market).
+- **Status:** planned — deferred 2026-07-20; the deferral was extended on
+  2026-07-21 when the owner authorized the **M35–M42 endgame program**, so this
+  milestone now runs **after M42** (the tooling described below is already built
+  and stays in the tree). Re-audit this note against the post-M42 checkout before
+  starting: the capture scenes and the balance battery need extending for the
+  **M25–M42** systems — enmity AI, new content, town ladder, stakes penalty
+  (re-tuned to −30 %/step, −99 % cap at M35), black market, the new statuses
+  (Confusion/Silence/Blind) and to-hit layer, passive skills, per-town equipment
+  and enemies, boss legendary/token drops, and the **castle & the King's three
+  challenges** (whose records live outside the dungeon scoreboard and need their
+  own capture scenes and clearability sims), the story dialog overlay, and the
+  bestiary/victory-stats/achievements screens.
 - **Last reviewed repository commit:** M22 approval HEAD (2026-07-20).
   Re-audit: no capture/scenario tooling exists (window-screenshot
   automation only, from milestone verification); UiDraw's fitted/wrapped

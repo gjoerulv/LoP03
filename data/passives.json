@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "passives": [
+    { "id": "counter_attack", "name": "Counter Attack", "hook": "counter", "magnitude": 0, "price": 1000, "description": "Retaliate with a strike after surviving a hit." },
+    { "id": "evasion", "name": "Evasion", "hook": "evasion", "magnitude": 25, "price": 1000, "description": "25% of physical attacks miss you." },
+    { "id": "spell_ward", "name": "Spell Ward", "hook": "spell_ward", "magnitude": 25, "price": 1000, "description": "25% of hostile spells fizzle on you." },
+    { "id": "thorns", "name": "Thorns", "hook": "thorns", "magnitude": 20, "price": 1000, "description": "Attackers take 20% of their damage back." },
+    { "id": "lifedrink", "name": "Lifedrink", "hook": "lifedrink", "magnitude": 15, "price": 1000, "description": "Heal 15% of the physical damage you deal." },
+    { "id": "clarity", "name": "Clarity", "hook": "clarity", "magnitude": 3, "price": 1000, "description": "+3 MP each round; immune to Silence." },
+    { "id": "iron_will", "name": "Iron Will", "hook": "iron_will", "magnitude": 1, "price": 1000, "description": "Survive a lethal blow at 1 HP once a battle." },
+    { "id": "first_strike", "name": "First Strike", "hook": "first_strike", "magnitude": 50, "price": 1000, "description": "Act first in round 1; +50% on your first hit." },
+    { "id": "bodyguard", "name": "Bodyguard", "hook": "bodyguard", "magnitude": 25, "price": 1000, "description": "Take 25% of hits aimed at your weakest ally." },
+    { "id": "keen_senses", "name": "Keen Senses", "hook": "keen_senses", "magnitude": 10, "price": 1000, "description": "Immune to Blind; +10% vs debuffed foes." }
+  ]
+}

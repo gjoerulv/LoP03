@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include "game/BossDrops.hpp"  // M39: pure drop-rate math (+ kBlackMarketTokenPrice)
 #include "score/Scoring.hpp"
 
 #ifdef CRYSTAL_TEST_DATA_DIR
@@ -77,6 +78,24 @@ TEST_CASE("economy: an unfinished run scores zero regardless of loot", "[economy
     r.treasureGold = 100000;
     r.chestsOpened = 99;
     REQUIRE(score::computeScore(r) == 0);
+}
+
+TEST_CASE("economy: boss drops supplement the black market, never replace it",
+          "[economy]") {
+    // Caps are the owner rule; lock them so a later tweak cannot silently exceed.
+    REQUIRE(bossTokenChancePct(7, 20) == 75);
+    REQUIRE(bossLegendaryChancePct(7, 20) == 30);
+    // A single top-tier clear's expected token drip (chance% x count, i.e. tokens
+    // scaled by 100) stays below the price of one black-market legendary
+    // (kBlackMarketTokenPrice tokens, scaled by 100): tokens accrue toward market
+    // purchases over several clears, they are not handed out.
+    REQUIRE(bossTokenChancePct(7, 20) * bossTokenCount(7) < kBlackMarketTokenPrice * 100);
+    // Most top clears do NOT drop a legendary, so scarcity — and the market's
+    // targeted pick — survives.
+    REQUIRE(bossLegendaryChancePct(7, 20) < 50);
+    // The gate keeps the whole reward off the early ladder entirely.
+    REQUIRE_FALSE(bossDropEligible(kBossDropMinTown - 1, 20));
+    REQUIRE_FALSE(bossDropEligible(7, kBossDropMinDepth - 1));
 }
 
 #ifdef CRYSTAL_TEST_DATA_DIR
@@ -267,6 +286,22 @@ TEST_CASE("economy report: depth/level/income battery", "[.][economy-report]") {
         std::cout << depth << " | " << worstLv << " | " << sample.rounds << " | " << sample.xp
                   << " | " << sample.gold << " | " << sample.chestGold << " | "
                   << trainPartyCost(worstLv) << "\n";
+    }
+    SUCCEED();
+}
+
+// On-demand drop-rate table (M39) for the milestone note and owner review:
+//   crystal_tests.exe "[economy-report]" -s
+TEST_CASE("economy report: boss drop rates across the ladder", "[.][economy-report]") {
+    const content::ContentDatabase db = loadContent();
+    std::cout << "boss drops — legendary pool size " << legendaryDropPool(db).size() << "\n";
+    std::cout << "town/depth | token chance x count | legendary chance\n";
+    for (int town : {3, 4, 5, 6, 7}) {
+        for (int depth : {4, 8, 12, 16, 20}) {
+            std::cout << "t" << town << "/d" << depth << " | " << bossTokenChancePct(town, depth)
+                      << "% x" << bossTokenCount(town) << " | "
+                      << bossLegendaryChancePct(town, depth) << "%\n";
+        }
     }
     SUCCEED();
 }

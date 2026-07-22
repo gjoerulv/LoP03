@@ -114,8 +114,10 @@ TEST_CASE("town ladder: higher town scales stats, not topology; deterministic", 
     REQUIRE(t1.teams.size() == t3.teams.size());
     CHECK(t3.town == 3);
     for (std::size_t i = 0; i < t1.teams.size(); ++i) {
-        // Town does not touch the RNG stream: same enemies, boss flags, order.
-        CHECK(t1.teams[i].enemyIds == t3.teams[i].enemyIds);
+        // Town scaling does not change the topology: the same team slots are boss
+        // vs normal. (M38 town-gates the enemy/boss *pools*, so which foes fill a
+        // team can legitimately differ between towns — the composition changes,
+        // not the structure. Determinism per (seed, depth, town) still holds.)
         CHECK(t1.teams[i].isBoss == t3.teams[i].isBoss);
         // Town 3 multiplies the stat scale (x1.50) over the town-1 value.
         CHECK(t3.teams[i].statScalePct == combineTownScale(t1.teams[i].statScalePct, 3));
@@ -124,4 +126,40 @@ TEST_CASE("town ladder: higher town scales stats, not topology; deterministic", 
         CHECK(t3.teams[i].statScalePct == t3b.teams[i].statScalePct);
         CHECK(t3.teams[i].enemyIds == t3b.teams[i].enemyIds);
     }
+}
+
+TEST_CASE("town ladder: per-town enemies/bosses spawn only once their town is reached (M38)",
+          "[townladder]") {
+    const content::ContentDatabase db = loadShippedContent();
+    const auto hasHighTownEnemy = [&](const dungeon::Dungeon& d) {
+        for (const auto& team : d.teams) {
+            for (const auto& id : team.enemyIds) {
+                const content::EnemyDef* e = db.findEnemy(id);
+                if (e != nullptr && e->minTown >= 2) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    // Town 1 never spawns a minTown>=2 enemy or boss, across many seeds.
+    for (int seed = 1; seed <= 40; ++seed) {
+        const dungeon::Dungeon t1 = dungeon::generate(seed, 8, db, "ruined_keep", 1);
+        CHECK_FALSE(hasHighTownEnemy(t1));
+        for (const auto& team : t1.teams) {
+            if (!team.bossId.empty()) {
+                const content::BossDef* b = db.findBoss(team.bossId);
+                REQUIRE(b != nullptr);
+                CHECK(b->minTown == 1);  // no per-town boss at town 1
+            }
+        }
+    }
+
+    // Town 7 does surface the new foes at least sometimes.
+    bool anyHigh = false;
+    for (int seed = 1; seed <= 40 && !anyHigh; ++seed) {
+        anyHigh = hasHighTownEnemy(dungeon::generate(seed, 8, db, "ruined_keep", 7));
+    }
+    CHECK(anyHigh);
 }

@@ -31,6 +31,7 @@ private:
 
     bool blackMarketHere() const;  // an offer is present and belongs to this town
     bool onBlackMarketTile() const;
+    bool onBardTile() const;  // M41: standing on the wandering storyteller's tile
 
     AppContext& context_;
     town::TownLayout town_;
@@ -39,6 +40,7 @@ private:
     const town::Building* nearDoor_ = nullptr;
     const town::TownExit* nearExit_ = nullptr;
     bool nearMarket_ = false;  // M34: standing on the black-market NPC tile
+    bool nearBard_ = false;    // M41: standing on the storyteller's tile
     float moveX_ = 0.0f;
     float moveY_ = 0.0f;
     float walkTime_ = 0.0f;  // walk-cycle clock; 0 while standing (stand frame)

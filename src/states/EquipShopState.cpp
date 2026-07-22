@@ -109,6 +109,11 @@ void EquipShopState::captureEnterBuyCategory() {
     phase_ = Phase::BuyCategory;
     rebuild();
 }
+void EquipShopState::captureEnterBuyList(content::EquipSlot slot) {
+    buyCategory_ = slot;
+    phase_ = Phase::Buy;
+    rebuild();
+}
 #endif
 
 void EquipShopState::rebuild() {
@@ -126,7 +131,7 @@ void EquipShopState::rebuild() {
             break;
         case Phase::Buy: {
             const std::vector<std::string> ids =
-                equipShopBuyIds(context_.content, buyCategory_);
+                equipShopBuyIds(context_.content, buyCategory_, context_.party.currentTown);
             for (const std::string& id : ids) {
                 const content::ItemDef* it = context_.content.findItem(id);
                 rowIds_.push_back(id);

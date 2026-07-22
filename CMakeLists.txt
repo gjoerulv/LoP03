@@ -72,6 +72,9 @@ add_library(crystal_core STATIC
     src/content/ContentLoader.cpp
     src/game/Party.cpp
     src/game/Inventory.cpp
+    src/game/BossDrops.cpp
+    src/game/Castle.cpp
+    src/game/Achievements.cpp
     src/save/SaveSystem.cpp
     src/battle/Battle.cpp
     src/battle/Simulator.cpp
@@ -104,15 +107,22 @@ add_library(crystal_core STATIC
     src/states/ItemShopState.cpp
     src/states/TrainingHallState.cpp
     src/states/BlackMarketState.cpp
+    src/states/CastleState.cpp
+    src/states/CastleChallengeState.cpp
     src/states/GuildState.cpp
     src/states/DungeonState.cpp
     src/states/DungeonMenuState.cpp
     src/states/BattleState.cpp
     src/states/DungeonResultState.cpp
     src/states/ScoreboardState.cpp
+    src/states/StoryDialogState.cpp
+    src/states/BestiaryState.cpp
+    src/states/AchievementsState.cpp
+    src/states/AchievementToast.cpp
     src/states/EquipShopState.cpp
     src/states/HelpState.cpp
     src/states/TutorialPromptState.cpp
+    src/states/ConfirmPromptState.cpp
     src/states/DetailsOverlayState.cpp
 )
 

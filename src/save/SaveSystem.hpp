@@ -30,6 +30,7 @@ struct SlotSummary {
     int partySize = 0;
     int highestLevel = 0;
     int gold = 0;
+    std::string kingTitle;  // M40: the earned King title, shown on the load screen
 };
 
 // Reads/writes versioned JSON saves under a directory (default: the user data

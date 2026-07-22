@@ -28,6 +28,9 @@ public:
     // Capture-only (M31): open straight into the buy-category menu so the new
     // category-selection UI is covered by the overflow check. Not shipped.
     void captureEnterBuyCategory();
+    // Capture-only (M37): open straight into a filtered buy list, to overflow-check
+    // the scrolling list at max stock (town 7).
+    void captureEnterBuyList(content::EquipSlot slot);
 #endif
 
 private:

@@ -17,7 +17,8 @@ const char* locationName(LocationId id) {
     return "?";
 }
 
-TownLayout buildTown(int town, bool hasPrev, bool hasNext, bool nextUnlocked) {
+TownLayout buildTown(int town, bool hasPrev, bool hasNext, bool nextUnlocked, bool hasCastle,
+                     bool castleUnlocked) {
     constexpr int kW = 26;
     constexpr int kH = 15;
     Tilemap map(kW, kH, Tile::Ground);
@@ -71,6 +72,16 @@ TownLayout buildTown(int town, bool hasPrev, bool hasNext, bool nextUnlocked) {
     }
     if (hasNext) {
         carveExit(kW - 3, town + 1, true, !nextUnlocked);
+    }
+    // M40: the castle road leaves town 7 to the NORTH (top edge), distinct from
+    // the side roads, signalling it climbs above the ladder. Always shown when
+    // hasCastle, locked until the town-7 clear opens it.
+    if (hasCastle) {
+        const int col = kW / 2;
+        map.set(col, 1, Tile::Path);
+        map.set(col, 0, Tile::Door);
+        TownExit e{col, 0, 0, true, !castleUnlocked, true};
+        exits.push_back(e);
     }
 
     const Vec2 spawn{12.0f * Tilemap::kTileSize, 8.0f * Tilemap::kTileSize};

@@ -5,6 +5,7 @@
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
+#include "game/Achievements.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "render/VirtualScreen.hpp"
@@ -55,6 +56,7 @@ private:
     Input input_;
     settings::SettingsStore settings_;
     tutorial::TutorialStore tutorial_;
+    AchievementStore achievements_;
     AppContext context_;
     StateStack stack_;
     bool debugOverlay_;

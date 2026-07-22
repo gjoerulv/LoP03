@@ -30,10 +30,13 @@ namespace {
 
 // Bottom-panel layout (M12): everything must fit inside the 60px panel.
 constexpr int kPanelH = 60;
-constexpr int kListX = 24;       // command/skill/item lists (cursor at x-10)
+constexpr int kListX = 16;       // command/skill/item lists (cursor at x-10)
 constexpr int kListItemH = 12;
 constexpr int kListRows = 4;     // visible rows in skill/item lists (scrolled)
-constexpr int kInfoX = 150;      // right column: actor line + descriptions
+// Right column: actor line + descriptions. The split is set by the widest skill
+// row (longest name + its right-aligned MP column) so neither is ever clipped;
+// the description column keeps enough room for two wrapped lines.
+constexpr int kInfoX = 186;
 
 bool skillNeedsTarget(content::SkillTarget t) {
     return t == content::SkillTarget::SingleEnemy || t == content::SkillTarget::SingleAlly;
@@ -46,20 +49,101 @@ const char* statusShort(content::StatusType t) {
         case content::StatusType::AttackDown: return "ATK-";
         case content::StatusType::DefenseUp: return "DEF+";
         case content::StatusType::DefenseDown: return "DEF-";
+        case content::StatusType::Confusion: return "CNF";
+        case content::StatusType::Silence: return "SIL";
+        case content::StatusType::Blind: return "BLD";
         case content::StatusType::None: return "";
     }
     return "";
 }
+
+std::string joinTags(const std::vector<std::string>& tags) {
+    std::string out;
+    for (const std::string& t : tags) {
+        if (!out.empty()) {
+            out += " ";
+        }
+        out += t;
+    }
+    return out;
+}
+
+// Packs a unit's *visible* status tags into at most maxLines lines that each fit
+// maxWidth. Whatever still does not fit is summarised as a trailing "+N" rather
+// than clipped, so a tag is never silently lost (Details lists them in full).
+std::vector<std::string> statusLines(const battle::Combatant& c, int maxWidth, int fontSize,
+                                     int maxLines) {
+    std::vector<std::string> tags;
+    for (const battle::StatusInstance& s : c.statuses) {
+        if (battle::isImmuneTo(c, s.type)) {
+            continue;  // M40: an immune unit never reads as afflicted
+        }
+        const std::string tag = statusShort(s.type);
+        if (!tag.empty()) {
+            tags.push_back(tag);
+        }
+    }
+    std::vector<std::vector<std::string>> packed;
+    for (const std::string& tag : tags) {
+        if (!packed.empty() &&
+            ui::measureText(joinTags(packed.back()) + " " + tag, fontSize) <= maxWidth) {
+            packed.back().push_back(tag);
+            continue;
+        }
+        packed.push_back({tag});
+    }
+
+    int hidden = 0;
+    if (static_cast<int>(packed.size()) > maxLines) {
+        int shown = 0;
+        packed.resize(static_cast<std::size_t>(maxLines));
+        for (const std::vector<std::string>& line : packed) {
+            shown += static_cast<int>(line.size());
+        }
+        hidden = static_cast<int>(tags.size()) - shown;
+        // Give the marker room by dropping tags off the last line as needed.
+        std::vector<std::string>& last = packed.back();
+        while (last.size() > 1 &&
+               ui::measureText(joinTags(last) + " +" + std::to_string(hidden), fontSize) >
+                   maxWidth) {
+            last.pop_back();
+            ++hidden;
+        }
+    }
+
+    std::vector<std::string> lines;
+    for (std::size_t i = 0; i < packed.size(); ++i) {
+        std::string line = joinTags(packed[i]);
+        if (hidden > 0 && i + 1 == packed.size()) {
+            line += " +" + std::to_string(hidden);
+        }
+        lines.push_back(std::move(line));
+    }
+    return lines;
+}
 }  // namespace
 
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
-                         battle::BattleResult* resultSlot)
-    : GameState(stack), context_(context), battle_(std::move(battle)), resultSlot_(resultSlot) {
+                         battle::BattleResult* resultSlot, MusicTrack musicOverride,
+                         RunStats* statsSlot)
+    : GameState(stack),
+      context_(context),
+      battle_(std::move(battle)),
+      resultSlot_(resultSlot),
+      musicOverride_(musicOverride),
+      stats_(statsSlot) {
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Enemy && c.isBoss) {
             bossBattle_ = true;
             if (!c.telegraph.empty()) {
                 bossTelegraph_ = c.telegraph;
+            }
+        }
+        // M42 bestiary: record every foe faced (dedup, insertion order kept).
+        if (c.side == battle::Side::Enemy && !c.sourceId.empty()) {
+            std::vector<std::string>& seen = context_.party.encountered;
+            if (std::find(seen.begin(), seen.end(), c.sourceId) == seen.end()) {
+                seen.push_back(c.sourceId);
             }
         }
     }
@@ -71,7 +155,9 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
     hitFlags_.assign(battle_.units.size(), 0);
     koFade_.assign(battle_.units.size(), 1.0f);
     context_.fade.start();
-    context_.audio.setMusic(bossBattle_ ? MusicTrack::Boss : MusicTrack::Battle);
+    context_.audio.setMusic(musicOverride_ != MusicTrack::None
+                                ? musicOverride_
+                                : (bossBattle_ ? MusicTrack::Boss : MusicTrack::Battle));
 }
 
 void BattleState::onEnter() { maybeTutorialPrompt(stack(), context_, tutorial::kBattleFirst); }
@@ -92,6 +178,15 @@ void BattleState::captureEnterTargeting() {
     targetCandidates_ = battle_.aliveIndices(battle::Side::Enemy);
     targetCursor_ = 0;
     phase_ = Phase::ChooseTarget;
+}
+
+void BattleState::captureEnterSkillMenu(std::vector<std::string> skills) {
+    captureEnterTargeting();  // reuse: puts a living party member on turn
+    if (!skills.empty()) {
+        battle_.units[static_cast<std::size_t>(currentActor())].skillIds = std::move(skills);
+    }
+    buildSkillMenu();
+    phase_ = Phase::ChooseSkill;
 }
 #endif
 
@@ -157,6 +252,23 @@ void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
             anyKo = true;
         }
     }
+    // "Miss!" floaters for Blind misses (M35): the missed units took no HP delta,
+    // so they are surfaced here from the action's recorded miss list.
+    for (int mi : battle_.lastMissed) {
+        if (mi < 0 || mi >= static_cast<int>(battle_.units.size())) {
+            continue;
+        }
+        int mx = 0;
+        int my = 0;
+        unitScreenPos(mi, mx, my);
+        FloatNumber f;
+        f.x = static_cast<float>(mx) + 14.0f;
+        f.y = static_cast<float>(my);
+        f.timer = 0.9f;
+        f.heal = false;
+        f.text = "Miss!";
+        pendingFloats_.push_back(std::move(f));
+    }
     pendingSfx_ = anyKo ? 3 : (anyDamage ? damageSfx : (anyHeal ? 1 : (statusAction ? 5 : 0)));
 }
 
@@ -219,8 +331,14 @@ void BattleState::startActorTurn() {
     }
     battle_.clearGuard(actor);
     if (battle_.units[static_cast<std::size_t>(actor)].side == battle::Side::Party) {
-        phase_ = Phase::Command;
-        buildCommandMenu();
+        // Confusion (M35): a confused character takes no player input — it lashes
+        // out at a seeded random ally automatically, just like an enemy's turn.
+        if (battle::isConfused(battle_.units[static_cast<std::size_t>(actor)])) {
+            executeConfused(actor);
+        } else {
+            phase_ = Phase::Command;
+            buildCommandMenu();
+        }
     } else {
         executeEnemy(actor);
     }
@@ -279,8 +397,19 @@ void BattleState::buildSkillMenu() {
             items.push_back({sid, false});
             continue;
         }
-        const bool affordable = a.mp >= s->mpCost;
-        items.push_back({s->name + "  (MP " + std::to_string(s->mpCost) + ")", affordable});
+        // Silence (M35): MP-cost skills are blocked and labelled so the player
+        // sees *why* they are greyed (non-color-alone, M22).
+        const bool silencedBlocked = !battle::canCast(a, *s);
+        const bool enabled = a.mp >= s->mpCost && !silencedBlocked;
+        // The cost lives in its own right-aligned column so a long skill name can
+        // never push it out of view; a blocked skill shows the reason instead.
+        std::string suffix;
+        if (silencedBlocked) {
+            suffix = "SIL";
+        } else if (s->mpCost > 0) {
+            suffix = "MP " + std::to_string(s->mpCost);
+        }
+        items.push_back({s->name, enabled, std::move(suffix)});
     }
     skillMenu_.setItems(std::move(items));
     skillScroll_.reset();
@@ -293,7 +422,7 @@ void BattleState::buildItemMenu() {
     for (const std::string& id : itemIds_) {
         const content::ItemDef* it = context_.content.findItem(id);
         const std::string name = it != nullptr ? it->name : id;
-        items.push_back({name + "  x" + std::to_string(context_.party.inventory.count(id)), true});
+        items.push_back({name, true, "x" + std::to_string(context_.party.inventory.count(id))});
     }
     itemMenu_.setItems(std::move(items));
     itemScroll_.reset();
@@ -379,6 +508,7 @@ void BattleState::executePending(int targetUnit) {
     }
     int damageSfx = 2;
     bool statusAction = false;
+    bool offensiveStatus = false;  // M42: a status-carrying skill aimed at enemies
     switch (pendingKind_) {
         case PendingKind::Attack:
             message_ = battle_.attack(actor, targetUnit);
@@ -388,6 +518,9 @@ void BattleState::executePending(int targetUnit) {
                 message_ = battle_.useSkill(actor, targetUnit, *s);
                 damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
                 statusAction = s->statusEffect != content::StatusType::None;
+                offensiveStatus = statusAction &&
+                                  (s->target == content::SkillTarget::SingleEnemy ||
+                                   s->target == content::SkillTarget::AllEnemies);
             }
             break;
         case PendingKind::Item:
@@ -397,8 +530,41 @@ void BattleState::executePending(int targetUnit) {
             }
             break;
     }
+    accumulateStats(hpBefore, actor, offensiveStatus);
     stageNumbers(hpBefore, damageSfx, statusAction);
     afterAction();
+}
+
+void BattleState::accumulateStats(const std::vector<int>& hpBefore, int actor,
+                                  bool offensiveStatus) {
+    if (stats_ == nullptr) {
+        return;  // castle challenges pass no slot; their own records cover them
+    }
+    int actionDmg = 0;
+    int biggest = 0;
+    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        if (battle_.units[i].side != battle::Side::Enemy) {
+            continue;
+        }
+        const int d = hpBefore[i] - battle_.units[i].hp;
+        if (d > 0) {
+            actionDmg += d;
+            if (d > biggest) {
+                biggest = d;
+            }
+        }
+    }
+    const int pm = battle_.units[static_cast<std::size_t>(actor)].partyIndex;
+    if (pm >= 0 && pm < kRunStatsMembers) {
+        stats_->damageByMember[pm] += actionDmg;
+    }
+    stats_->totalDamage += actionDmg;
+    if (biggest > stats_->biggestHit) {
+        stats_->biggestHit = biggest;
+    }
+    if (offensiveStatus) {
+        stats_->statusesInflicted++;
+    }
 }
 
 void BattleState::executeEnemy(int actor) {
@@ -422,6 +588,21 @@ void BattleState::executeEnemy(int actor) {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
     }
     stageNumbers(hpBefore, damageSfx, statusAction);
+    afterAction();
+}
+
+void BattleState::executeConfused(int actor) {
+    std::vector<int> hpBefore;
+    hpBefore.reserve(battle_.units.size());
+    for (const battle::Combatant& u : battle_.units) {
+        hpBefore.push_back(u.hp);
+    }
+    // attack() performs the confusion redirect internally (a seeded random same-side
+    // target), so the nominal target only needs to be valid; use any living enemy.
+    const std::vector<int> foes = battle_.aliveIndices(battle::Side::Enemy);
+    const int nominal = foes.empty() ? actor : foes.front();
+    message_ = battle_.attack(actor, nominal);
+    stageNumbers(hpBefore, 2, false);
     afterAction();
 }
 
@@ -493,20 +674,33 @@ void BattleState::openDetails() {
     if (c.guarding) {
         body += "\nGuarding: incoming damage is halved this round.";
     }
-    if (c.statuses.empty()) {
+    std::string statusList;
+    for (const battle::StatusInstance& s : c.statuses) {
+        if (battle::isImmuneTo(c, s.type)) {
+            continue;  // M40: immune statuses are not shown
+        }
+        statusList += " " + std::string(statusShort(s.type)) + "(" + std::to_string(s.turns) +
+                      " turns)";
+    }
+    if (statusList.empty()) {
         body += "\nNo active statuses.";
     } else {
-        body += "\nStatuses:";
-        for (const battle::StatusInstance& s : c.statuses) {
-            body += " " + std::string(statusShort(s.type)) + "(" + std::to_string(s.turns) +
-                    " turns)";
+        body += "\nStatuses:" + statusList;
+    }
+    // Passive skills (M36): name and, for a single passive, its description.
+    for (const std::string& pid : c.passiveIds) {
+        const content::PassiveDef* p = context_.content.findPassive(pid);
+        if (p != nullptr) {
+            body += "\nPassive: " + p->name + " - " + p->description;
         }
     }
     body +=
         "\n\nPSN: poison, damage at the start of each turn. ATK+/ATK-: attack "
-        "raised/lowered. DEF+/DEF-: defense raised/lowered.\nTurn order "
-        "follows Speed. Guard halves damage. Escape forfeits the guarded "
-        "reward - and every battle turn counts against your score.";
+        "raised/lowered. DEF+/DEF-: defense raised/lowered. CNF: confused, "
+        "attacks its own side. SIL: silenced, cannot use MP skills. BLD: blinded, "
+        "physical attacks usually miss.\nTurn order follows Speed. Guard halves "
+        "damage. Escape forfeits the guarded reward - and every battle turn "
+        "counts against your score.";
     stack().pushState(
         std::make_unique<DetailsOverlayState>(stack(), context_, "Battle Details", body));
 }
@@ -740,22 +934,18 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
     }
 
     if (!c.statuses.empty() && shownAlive) {
-        std::string line;
-        for (const battle::StatusInstance& s : c.statuses) {
-            if (!line.empty()) {
-                line += " ";
-            }
-            line += statusShort(s.type);
-        }
-        // Party rows have HP text to the right, so their statuses sit below;
-        // enemy rows use the open field to the right, keeping tall enemy
-        // columns clear of the bottom panel.
-        if (c.side == battle::Side::Party) {
-            ui::drawTextFitted(line, x, y + 24, 100, 8, Color{200, 160, 220, 255},
-                               "battle.status.party");
-        } else {
-            ui::drawTextFitted(line, x + 44, y + 4, 120, 8, Color{200, 160, 220, 255},
-                               "battle.status.enemy");
+        // Both sides read their status tags in the open field to the right of the
+        // sprite: party rows below their HP/MP numerals, enemy rows level with the
+        // sprite. Nothing is painted over a neighbouring row's graphics.
+        const bool party = c.side == battle::Side::Party;
+        const int sx = x + 44;
+        const int sy = y + (party ? 22 : 4);
+        const int maxWidth = party ? context_.virtualWidth - sx - 2 : 120;
+        const std::vector<std::string> lines = statusLines(c, maxWidth, 8, 2);
+        for (std::size_t i = 0; i < lines.size(); ++i) {
+            ui::drawTextFitted(lines[i], sx, sy + static_cast<int>(i) * 8, maxWidth, 8,
+                               Color{200, 160, 220, 255},
+                               party ? "battle.status.party" : "battle.status.enemy");
         }
     }
 }
@@ -788,7 +978,9 @@ void BattleState::render() {
                      isTarget);
             ++enemyRow;
         } else {
-            drawUnit(c, static_cast<int>(i), w - 110 + shakeX, 36 + partyRow * 34, isCurrent,
+            // The party column leaves room to its right for the HP/MP numerals
+            // *and* the status tags underneath them.
+            drawUnit(c, static_cast<int>(i), w - 124 + shakeX, 36 + partyRow * 34, isCurrent,
                      isTarget);
             ++partyRow;
         }
@@ -847,14 +1039,23 @@ void BattleState::render() {
         case Phase::ChooseSkill: {
             ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,
                                  kListItemH, style::kFontBody, listLabelW, style::palette().text,
-                                 style::palette().disabled, style::palette().cursor, "battle.skills");
-            ui::drawTextFitted("Choose a skill   " + backHint, kInfoX, panelY + 6, infoW,
-                               style::kFontBody, style::palette().textDim, "battle.skillhint");
+                                 style::palette().disabled, style::palette().cursor, "battle.skills",
+                                 style::kFontSmall, Color{150, 175, 235, 255});
+            ui::drawTextFitted("Skill  " + backHint, kInfoX, panelY + 6, infoW, style::kFontBody,
+                               style::palette().textDim, "battle.skillhint");
             if (!skillIds_.empty()) {
                 const std::string& sid =
                     skillIds_[static_cast<std::size_t>(skillMenu_.cursor())];
                 if (const content::SkillDef* s = context_.content.findSkill(sid)) {
-                    if (!s->description.empty()) {
+                    // The row's "SIL" tag is terse by necessity; spell the block
+                    // out here rather than leaving the player to decode it.
+                    const battle::Combatant& a =
+                        battle_.units[static_cast<std::size_t>(actor)];
+                    if (!battle::canCast(a, *s)) {
+                        ui::drawTextWrapped("SIL: silenced - MP skills are blocked.", kInfoX,
+                                            panelY + 20, infoW, style::kFontBody,
+                                            style::palette().textDim, "battle.skillblocked", 2);
+                    } else if (!s->description.empty()) {
                         ui::drawTextWrapped(s->description, kInfoX, panelY + 20, infoW,
                                             style::kFontBody, style::palette().success,
                                             "battle.skilldesc", 2);
@@ -866,9 +1067,10 @@ void BattleState::render() {
         case Phase::ChooseItem: {
             ui::drawMenuScrolled(itemMenu_, itemScroll_, kListRows, kListX, panelY + 6,
                                  kListItemH, style::kFontBody, listLabelW, style::palette().text,
-                                 style::palette().disabled, style::palette().cursor, "battle.items");
-            ui::drawTextFitted("Choose an item   " + backHint, kInfoX, panelY + 6, infoW,
-                               style::kFontBody, style::palette().textDim, "battle.itemhint");
+                                 style::palette().disabled, style::palette().cursor, "battle.items",
+                                 style::kFontSmall, Color{200, 200, 160, 255});
+            ui::drawTextFitted("Item  " + backHint, kInfoX, panelY + 6, infoW, style::kFontBody,
+                               style::palette().textDim, "battle.itemhint");
             if (!itemIds_.empty()) {
                 const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
                 if (const content::ItemDef* it = context_.content.findItem(iid)) {
@@ -907,12 +1109,29 @@ void BattleState::render() {
                     "    SPD " + std::to_string(t.stats.speed);
                 ui::drawTextFitted(stats, kListX, panelY + 34, w - 2 * kListX, style::kFontBody,
                                    style::palette().textDim, "battle.target.stats");
-                if (!t.statuses.empty()) {
-                    std::string line = "Status:";
-                    for (const battle::StatusInstance& s : t.statuses) {
-                        line += " " + std::string(statusShort(s.type)) + "(" +
-                                std::to_string(s.turns) + ")";
+                std::string line;
+                for (const battle::StatusInstance& s : t.statuses) {
+                    if (battle::isImmuneTo(t, s.type)) {
+                        continue;  // M40: immune statuses are not shown
                     }
+                    if (line.empty()) {
+                        line = "Status:";
+                    }
+                    line += " " + std::string(statusShort(s.type)) + "(" +
+                            std::to_string(s.turns) + ")";
+                }
+                // A revealed passive (M36): show the foe/ally's passive by name.
+                if (!t.passiveIds.empty()) {
+                    if (!line.empty()) {
+                        line += "   ";
+                    }
+                    line += "Passive:";
+                    for (const std::string& pid : t.passiveIds) {
+                        const content::PassiveDef* p = context_.content.findPassive(pid);
+                        line += " " + std::string(p != nullptr ? p->name : pid);
+                    }
+                }
+                if (!line.empty()) {
                     ui::drawTextFitted(line, kListX, panelY + 47, w - 2 * kListX, style::kFontSmall,
                                        style::palette().textDim, "battle.target.status");
                 }

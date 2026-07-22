@@ -152,6 +152,8 @@ void parseEnemies(const Json& root, const std::string& source, ContentDatabase& 
             }
         }
         d.skills = r.optStringArray("skills");
+        d.passives = r.optStringArray("passives");  // M36 (optional)
+        d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
         if (rep.errorCount() != before) {
@@ -175,6 +177,7 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         d.slot = r.optEnum<EquipSlot>("slot", parseEquipSlot, EquipSlot::None, "equip slot");
         d.rarity = r.optEnum<Rarity>("rarity", parseRarity, Rarity::Common, "rarity");
         d.value = r.optIntMin("value", 0, 0);
+        d.minTown = r.optIntMin("minTown", 1, 1);  // M37 (default 1)
         d.effect = r.optEnum<ConsumableEffect>("effect", parseConsumableEffect,
                                                ConsumableEffect::None, "consumable effect");
         d.effectAmount = r.optIntMin("effectAmount", 0, 0);
@@ -213,6 +216,9 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.stats = r.reqStatBlock("stats");
         d.skills = r.optStringArray("skills");
         d.minions = r.optStringArray("minions");
+        d.passives = r.optStringArray("passives");  // M36 (optional)
+        d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
+        d.immuneToConfusion = r.optBool("immuneToConfusion", false);  // M40 (the King)
         d.telegraph = r.optString("telegraph");
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
@@ -253,6 +259,47 @@ void parseThemes(const Json& root, const std::string& source, ContentDatabase& d
     });
 }
 
+void parseStory(const Json& root, const std::string& source, ContentDatabase& db,
+                LoadReport& rep) {
+    forEachEntry(root, source, "story", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        StoryBeat d;
+        // town 1..7 are the storyteller's installments; 8 (the castle) is the Jester.
+        d.town = r.reqIntRange("town", 1, 8);
+        d.speaker = r.reqString("speaker");
+        d.title = r.reqString("title");
+        d.body = r.reqString("body");
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addStory(d)) {
+            rep.add(source, ctx, "duplicate story beat for town " + std::to_string(d.town));
+        }
+    });
+}
+
+void parsePassives(const Json& root, const std::string& source, ContentDatabase& db,
+                   LoadReport& rep) {
+    forEachEntry(root, source, "passives", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        PassiveDef d;
+        d.id = r.reqString("id");
+        d.name = r.reqString("name");
+        d.hook = r.reqEnum<PassiveHook>("hook", parsePassiveHook, "passive hook");
+        d.magnitude = r.optIntMin("magnitude", 0, 0);
+        d.price = r.optIntMin("price", 0, 0);
+        d.description = r.optString("description");
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addPassive(d)) {
+            rep.add(source, ctx, "duplicate passive id '" + d.id + "'");
+        }
+    });
+}
+
 void validateReferences(const ContentDatabase& db, LoadReport& rep) {
     const std::string source = "<references>";
     for (const auto& [id, cls] : db.classes()) {
@@ -276,6 +323,12 @@ void validateReferences(const ContentDatabase& db, LoadReport& rep) {
                         "references unknown skill '" + skill + "'");
             }
         }
+        for (const auto& passive : enemy.passives) {
+            if (!db.hasPassive(passive)) {
+                rep.add(source, "enemy '" + id + "'.passives",
+                        "references unknown passive '" + passive + "'");
+            }
+        }
     }
     for (const auto& [id, item] : db.items()) {
         if (item.type == ItemType::Scroll && !item.grantsSkill.empty() &&
@@ -295,6 +348,12 @@ void validateReferences(const ContentDatabase& db, LoadReport& rep) {
             if (db.findEnemy(minion) == nullptr) {
                 rep.add(source, "boss '" + id + "'.minions",
                         "references unknown enemy '" + minion + "'");
+            }
+        }
+        for (const auto& passive : boss.passives) {
+            if (!db.hasPassive(passive)) {
+                rep.add(source, "boss '" + id + "'.passives",
+                        "references unknown passive '" + passive + "'");
             }
         }
     }
@@ -401,6 +460,10 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     if (readJsonFile(dataRoot / "classes.json", json, rep)) {
         parseClasses(json, "classes.json", db, rep);
     }
+    // Passives before enemies/bosses so their passive-id references validate.
+    if (readJsonFile(dataRoot / "passives.json", json, rep)) {
+        parsePassives(json, "passives.json", db, rep);
+    }
     if (readJsonFile(dataRoot / "enemies.json", json, rep)) {
         parseEnemies(json, "enemies.json", db, rep);
     }
@@ -415,6 +478,9 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     }
     if (readJsonFile(dataRoot / "composition.json", json, rep)) {
         parseComposition(json, "composition.json", db, rep);
+    }
+    if (readJsonFile(dataRoot / "story.json", json, rep)) {
+        parseStory(json, "story.json", db, rep);
     }
 
     validateReferences(db, rep);

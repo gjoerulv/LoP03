@@ -49,6 +49,18 @@ struct ClassDef {
     std::vector<LearnEntry> learnset;         // level-gated grants (M29)
 };
 
+// A passive skill (M36): an always-on trait keyed by `hook`, parameterized by a
+// single `magnitude`, purchased per character for `price` gold at the Training
+// Hall. Also carried by enemies/bosses (an optional list on their defs).
+struct PassiveDef {
+    std::string id;
+    std::string name;
+    PassiveHook hook = PassiveHook::None;
+    int magnitude = 0;  // hook parameter (percent, MP, etc.)
+    int price = 0;      // Training Hall gold cost
+    std::string description;
+};
+
 struct EnemyDef {
     std::string id;
     std::string name;
@@ -56,7 +68,9 @@ struct EnemyDef {
     EnemyTier tier = EnemyTier::Normal;
     EnemyRole role = EnemyRole::Bruiser;  // required in data (M20 taxonomy)
     std::vector<EnemyTag> tags;
-    std::vector<std::string> skills;  // skill ids
+    std::vector<std::string> skills;    // skill ids
+    std::vector<std::string> passives;  // passive ids (M36; optional)
+    int minTown = 1;                    // per-town gating (M38): spawns only at town >= minTown
     int xpReward = 0;
     int goldReward = 0;
 };
@@ -110,7 +124,8 @@ struct ItemDef {
     ItemType type = ItemType::Consumable;
     EquipSlot slot = EquipSlot::None;  // for equipment/relics
     Rarity rarity = Rarity::Common;
-    int value = 0;  // gold value (>= 0)
+    int value = 0;      // gold value (>= 0)
+    int minTown = 1;    // per-town gating (M37): stocked/dropped only at town >= minTown
 
     // Consumable behavior.
     ConsumableEffect effect = ConsumableEffect::None;
@@ -130,9 +145,12 @@ struct BossDef {
     std::string name;
     BossArchetype archetype = BossArchetype::Brute;
     StatBlock stats;
-    std::vector<std::string> skills;   // skill ids
-    std::vector<std::string> minions;  // enemy ids fighting alongside the boss
-    std::string telegraph;             // flavor line shown when the battle begins
+    std::vector<std::string> skills;    // skill ids
+    std::vector<std::string> minions;   // enemy ids fighting alongside the boss
+    std::vector<std::string> passives;  // passive ids (M36; bosses may carry several)
+    int minTown = 1;                    // per-town gating (M38): chosen only at town >= minTown
+    bool immuneToConfusion = false;     // M40: bespoke status immunity (the King)
+    std::string telegraph;              // flavor line shown when the battle begins
     int xpReward = 0;
     int goldReward = 0;
     std::string description;
@@ -145,6 +163,16 @@ struct DungeonThemeDef {
     std::vector<std::string> eliteEnemies;   // enemy ids
     std::vector<std::string> bosses;         // boss ids
     std::string description;
+};
+
+// Story serial (M41): one beat per town 1..7 (told by the wandering storyteller)
+// plus the Jester's beat at the castle (town == kCastleTown). Pure flavor content;
+// no battle/generation/scoring effect.
+struct StoryBeat {
+    int town = 1;             // 1..7 for the town installments, kCastleTown for the Jester
+    std::string speaker;      // who tells it (display)
+    std::string title;        // panel heading
+    std::string body;         // the beat text (wrapped in the dialog panel)
 };
 
 }  // namespace cd::content

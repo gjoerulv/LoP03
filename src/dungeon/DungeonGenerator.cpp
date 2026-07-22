@@ -30,23 +30,30 @@ struct Pools {
     std::vector<std::string> consumables;  // merchant offers (M20)
 };
 
-Pools buildPools(const content::ContentDatabase& db, const content::DungeonThemeDef* theme) {
+Pools buildPools(const content::ContentDatabase& db, const content::DungeonThemeDef* theme,
+                 int town) {
     Pools p;
+    // Per-town gating (M38): an enemy spawns only once town >= its minTown.
     if (theme != nullptr) {
         for (const std::string& id : theme->normalEnemies) {
-            if (db.findEnemy(id) != nullptr) {
+            const content::EnemyDef* def = db.findEnemy(id);
+            if (def != nullptr && def->minTown <= town) {
                 p.normalEnemies.push_back(id);
             }
         }
         for (const std::string& id : theme->eliteEnemies) {
-            if (db.findEnemy(id) != nullptr) {
+            const content::EnemyDef* def = db.findEnemy(id);
+            if (def != nullptr && def->minTown <= town) {
                 p.eliteEnemies.push_back(id);
             }
         }
     }
     if (p.normalEnemies.empty()) {
-        // Fallback: every enemy in the database, split by tier.
+        // Fallback: every enemy in the database (town-gated), split by tier.
         for (const auto& [id, def] : db.enemies()) {
+            if (def.minTown > town) {
+                continue;
+            }
             if (def.tier == content::EnemyTier::Elite) {
                 p.eliteEnemies.push_back(id);
             } else {
@@ -56,9 +63,12 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
     }
     for (const auto& [id, def] : db.items()) {
         // Legendary gear is black-market only (M34): never a chest/merchant drop.
-        // Excluding it also keeps the chest pool identical to pre-M34 content, so
-        // the same seed still yields the same dungeon (generationVersion stays 6).
         if (def.rarity == content::Rarity::Legendary) {
+            continue;
+        }
+        // Per-town gating (M37): a chest reward only offers gear unlocked at this
+        // town, so higher-town gear appears only in higher-town dungeons.
+        if (def.minTown > town) {
             continue;
         }
         p.items.push_back(id);
@@ -74,19 +84,22 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
 }
 
 const content::BossDef* pickBoss(Rng& rng, const content::DungeonThemeDef* theme,
-                                 const content::ContentDatabase& db) {
+                                 const content::ContentDatabase& db, int town) {
     std::vector<std::string> ids;
+    // Per-town gating (M38): a boss is chosen only once town >= its minTown.
     if (theme != nullptr) {
         for (const std::string& id : theme->bosses) {
-            if (db.findBoss(id) != nullptr) {
+            const content::BossDef* def = db.findBoss(id);
+            if (def != nullptr && def->minTown <= town) {
                 ids.push_back(id);
             }
         }
     }
     if (ids.empty()) {
         for (const auto& [id, def] : db.bosses()) {
-            (void)def;
-            ids.push_back(id);
+            if (def.minTown <= town) {
+                ids.push_back(id);
+            }
         }
     }
     if (ids.empty()) {
@@ -245,8 +258,8 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                  std::string themeId, int town) {
     Rng rng(seed);
     const content::DungeonThemeDef* theme = themeId.empty() ? nullptr : db.findTheme(themeId);
-    const Pools pools = buildPools(db, theme);
     const int townIdx = clampTown(town);
+    const Pools pools = buildPools(db, theme, townIdx);  // M37: chest gear gated by town
 
     Dungeon d;
     d.seed = seed;
@@ -347,7 +360,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
         bossTeam.isBoss = true;
         bossTeam.statScalePct =
             combineTownScale(100 + db.composition().statScalePct(d.depth), townIdx);
-        if (const content::BossDef* boss = pickBoss(rng, theme, db)) {
+        if (const content::BossDef* boss = pickBoss(rng, theme, db, townIdx)) {
             bossTeam.bossId = boss->id;
             bossTeam.name = boss->name;
             bossTeam.enemyIds = boss->minions;
@@ -463,7 +476,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                         ev.itemId = pools.consumables[static_cast<std::size_t>(rng.range(
                             0, static_cast<int>(pools.consumables.size()) - 1))];
                         if (const content::ItemDef* it = db.findItem(ev.itemId)) {
-                            ev.goldCost = it->value * 130 / 100;  // dungeon markup
+                            ev.goldCost = it->value * 75 / 100;  // M37: a bargain, not a markup
                         }
                     } else {
                         ev.kind = RoomEventKind::HealingSpring;  // no stock: degrade

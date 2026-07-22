@@ -20,6 +20,8 @@
 #include "core/FadeController.hpp"
 #include "core/GameConfig.hpp"
 #include "dungeon/DungeonGenerator.hpp"
+#include "game/Achievements.hpp"
+#include "game/Castle.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -32,6 +34,12 @@
 #include "settings/Settings.hpp"
 #include "states/BattleState.hpp"
 #include "states/BlackMarketState.hpp"
+#include "states/AchievementsState.hpp"
+#include "states/BestiaryState.hpp"
+#include "states/CastleChallengeState.hpp"
+#include "states/CastleState.hpp"
+#include "states/ConfirmPromptState.hpp"
+#include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
@@ -48,6 +56,7 @@
 #include "states/SettingsState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
+#include "states/TownMenuState.hpp"
 #include "states/TownState.hpp"
 #include "states/TrainingHallState.hpp"
 #include "states/TutorialPromptState.hpp"
@@ -136,18 +145,24 @@ dungeon::EnemyTeam makeBossTeam(const content::ContentDatabase& db) {
     return team;
 }
 
-// Applies a spread of statuses so battle rows show every tag at once.
+// Applies a spread of statuses so battle rows show every tag at once, including
+// the M35 Confusion/Silence/Blind (duration-only, magnitude 0) and a stacked row
+// to stress the status-line width with the wider labels.
 void applyCaptureStatuses(battle::Battle& b) {
     using content::StatusType;
     int i = 0;
     for (battle::Combatant& u : b.units) {
-        switch (i % 4) {
+        switch (i % 7) {
             case 0: u.statuses.push_back({StatusType::Poison, 5, 3}); break;
             case 1: u.statuses.push_back({StatusType::AttackUp, 25, 2}); break;
             case 2: u.statuses.push_back({StatusType::DefenseDown, 25, 2}); break;
+            case 3: u.statuses.push_back({StatusType::Blind, 0, 3}); break;     // M35
+            case 4: u.statuses.push_back({StatusType::Silence, 0, 3}); break;   // M35
+            case 5: u.statuses.push_back({StatusType::Confusion, 0, 2}); break;  // M35
             default:
                 u.statuses.push_back({StatusType::Poison, 3, 2});
                 u.statuses.push_back({StatusType::DefenseUp, 25, 1});
+                u.statuses.push_back({StatusType::Blind, 0, 2});  // widest: 3 stacked labels
                 break;
         }
         ++i;
@@ -165,7 +180,7 @@ score::RunSummary maximalRunSummary() {
     run.escapes = 3;
     run.wagerAccepted = true;
     run.townBonusPct = 100;      // M32: max town bonus
-    run.stakesPenaltyPct = 90;   // M33: max penalty -> town-bonus + penalty rows, fullest panel
+    run.stakesPenaltyPct = 99;   // M33/M35: max penalty (-99%) -> town-bonus + penalty rows, fullest panel
     return run;
 }
 
@@ -220,10 +235,11 @@ int run(const char* outDir) {
         settings::SettingsStore settings(scratch / "settings.json");
         tutorial::TutorialStore tutorial(scratch / "tutorial.json");
         tutorial.state.enabled = false;  // prompts only in their own scene
+        AchievementStore achievements(scratch / "achievements.json");
 
-        AppContext ctx{resources,  content, saves, party,
-                       scoreboard, audio,   fade,  input,
-                       settings,   tutorial,
+        AppContext ctx{resources,  content, saves,       party,
+                       scoreboard, audio,   fade,        input,
+                       settings,   tutorial, achievements,
                        config::kVirtualWidth, config::kVirtualHeight};
 
         // One full save slot (the others stay empty) for the slot menu.
@@ -331,6 +347,15 @@ int run(const char* outDir) {
              }},
             {"11_slot_menu_save",
              [](StateStack& s, AppContext& c) {
+                 // Write one occupied slot carrying the King title, the widest
+                 // row content the screen can show.
+                 const int gold = c.party.gold;
+                 c.party.gold = 999999;
+                 c.party.castleRecords.kingTitle = kKingTitle;
+                 content::LoadReport report;
+                 c.saves.save(save::SaveSlot::Manual1, c.party, report);
+                 c.party.gold = gold;  // the slot summary keeps it; later scenes must not
+                 c.party.castleRecords.kingTitle.clear();
                  s.pushState(std::make_unique<SlotMenuState>(s, c, SlotMenuMode::Save));
              }},
             {"12_scoreboard",
@@ -421,7 +446,7 @@ int run(const char* outDir) {
                  // so the forewarning shows a penalty. Placed after the town
                  // scenes; the stakes mutation does not leak into earlier scenes.
                  c.party.currentTown = 1;
-                 c.party.stakes = {1, 20, 3};  // prev (town 1, depth 20), 3 steps -> -60%
+                 c.party.stakes = {1, 20, 1};  // prev (town 1, depth 20); 1 prior step -> forewarns -60% (M35: 30/step)
                  s.pushState(std::make_unique<GuildState>(s, c));
              }},
             {"27_black_market",
@@ -432,6 +457,220 @@ int run(const char* outDir) {
                  c.party.legendaryTokens = 3;
                  c.party.blackMarket = {true, 1, "titanforged_heart", 8750, 16, 6};
                  s.pushState(std::make_unique<BlackMarketState>(s, c));
+             }},
+            {"28_training_passives",
+             [](StateStack& s, AppContext& c) {
+                 // M36: the Training Hall passive-management screen, with a mix of
+                 // equipped / owned / priced rows to overflow-check the list.
+                 c.party.gold = 5000;
+                 c.party.members[0].ownedPassives = {"counter_attack", "evasion"};
+                 c.party.members[0].equippedPassive = "evasion";
+                 auto st = std::make_unique<TrainingHallState>(s, c);
+                 st->captureEnterPassives();
+                 s.pushState(std::move(st));
+             }},
+            {"29_battle_passive_reveal",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M36: target-info reveals a foe's passive (troll_berserker carries
+                 // Counter Attack; shadow_stalker carries Evasion).
+                 dungeon::EnemyTeam team;
+                 team.name = "Berserker Vanguard";
+                 team.enemyIds = {"troll_berserker", "shadow_stalker"};
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
+             }},
+            {"30_equip_shop_max",
+             [](StateStack& s, AppContext& c) {
+                 // M37: the buy list at town 7 (max stock) with the per-town gear
+                 // and longest names, to overflow-check the scrolling list.
+                 c.party.currentTown = 7;
+                 c.party.gold = 9999;
+                 auto state = std::make_unique<EquipShopState>(s, c);
+                 state->captureEnterBuyList(content::EquipSlot::Weapon);
+                 s.pushState(std::move(state));
+             }},
+            {"31_battle_high_town",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M38: a five-enemy team of new town-7 foes (their own sprites),
+                 // town-7 scaled, with live statuses - showcases + overflow-checks.
+                 dungeon::EnemyTeam team;
+                 team.name = "Vanguard of the Dread Sovereign";
+                 team.enemyIds = {"titan_guard", "archon_of_ruin", "dread_knight",
+                                  "soul_render", "void_stalker"};
+                 team.statScalePct = 300;  // town-7-scale
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 applyCaptureStatuses(b);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot));
+             }},
+            {"32_result_drops",
+             [](StateStack& s, AppContext& c) {
+                 // M39: the fullest score breakdown AND a maximal boss drop (2
+                 // tokens + the longest legendary name), to overflow-check the
+                 // drop block appended below the breakdown.
+                 const score::RunSummary run = maximalRunSummary();
+                 BossDropResult drops;
+                 drops.tokens = 2;                         // town-7 double
+                 drops.legendary = true;
+                 drops.legendaryId = "titanforged_heart";  // longest legendary name
+                 s.pushState(std::make_unique<DungeonResultState>(
+                     s, c, run, score::computeScore(run), drops));
+             }},
+            {"33_castle_hub",
+             [](StateStack& s, AppContext& c) {
+                 // M40: the castle throne hall with a full records panel (earned
+                 // title) to overflow-check the hub layout.
+                 c.party.castleUnlocked = true;
+                 c.party.castleRecords.bossRushBestTurns = 44;
+                 c.party.castleRecords.endlessBestWave = 17;
+                 c.party.castleRecords.kingDefeated = true;
+                 c.party.castleRecords.kingBestTurns = 18;
+                 c.party.castleRecords.kingTitle = kKingTitle;
+                 s.pushState(std::make_unique<CastleState>(s, c));
+             }},
+            {"34_king_battle",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M40: the King fight (its own sprite + telegraph), the hardest
+                 // battle in the game. The King is dealt all three control statuses
+                 // it is immune to -> they must NOT show as labels (display fix).
+                 battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 for (battle::Combatant& u : b.units) {
+                     if (u.side == battle::Side::Enemy) {
+                         u.statuses.push_back({content::StatusType::Blind, 0, 4});
+                         u.statuses.push_back({content::StatusType::Silence, 0, 4});
+                         u.statuses.push_back({content::StatusType::Confusion, 0, 4});
+                     }
+                 }
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::KingBattle));
+             }},
+            {"35_castle_result",
+             [](StateStack& s, AppContext& c) {
+                 // M40: the challenge result overlay with the longest reward text
+                 // (a King first-clear), to overflow-check the panel.
+                 auto st = std::make_unique<CastleChallengeState>(s, c, CastleChallenge::King);
+                 st->captureKingReward();
+                 s.pushState(std::move(st));
+             }},
+            {"36_story_dialog",
+             [](StateStack& s, AppContext& c) {
+                 // M41: the storyteller's dialog overlay over a town, to overflow-
+                 // check the wrapped-text panel.
+                 s.pushState(std::make_unique<TownState>(s, c));
+                 if (const content::StoryBeat* b = c.content.findStoryBeat(6)) {
+                     s.pushState(std::make_unique<StoryDialogState>(s, c, b->speaker, b->title,
+                                                                    b->body));
+                 }
+             }},
+            {"37_jester",
+             [](StateStack& s, AppContext& c) {
+                 // M41: the Jester's punchline (the longest story beat), over the
+                 // castle hub.
+                 c.party.castleUnlocked = true;
+                 s.pushState(std::make_unique<CastleState>(s, c));
+                 if (const content::StoryBeat* b = c.content.findStoryBeat(kCastleTown)) {
+                     s.pushState(std::make_unique<StoryDialogState>(s, c, b->speaker, b->title,
+                                                                    b->body));
+                 }
+             }},
+            {"38_bestiary",
+             [](StateStack& s, AppContext& c) {
+                 // M42: the bestiary over the full roster (undiscovered foes read
+                 // as unknowns), to overflow-check the list and the detail panel.
+                 int n = 0;
+                 for (const auto& [id, def] : c.content.enemies()) {
+                     (void)def;
+                     c.party.encountered.push_back(id);
+                     if (++n >= 8) break;
+                 }
+                 n = 0;
+                 for (const auto& [id, def] : c.content.bosses()) {
+                     (void)def;
+                     c.party.encountered.push_back(id);
+                     if (++n >= 4) break;
+                 }
+                 s.pushState(std::make_unique<BestiaryState>(s, c));
+             }},
+            {"39_achievements",
+             [](StateStack& s, AppContext& c) {
+                 // M42: the achievements screen with a mix of unlocked / locked.
+                 c.achievements.unlocked = {"first_clear", "trailblazer", "kingslayer",
+                                            "loremaster", "deep_diver"};
+                 s.pushState(std::make_unique<AchievementsState>(s, c));
+             }},
+            {"40_run_stats",
+             [](StateStack& s, AppContext& c) {
+                 // M42: the run-stats Details overlay (result-screen Details key).
+                 const std::string body =
+                     "This run\nTotal damage dealt: 4820\nBiggest single hit: 612\n"
+                     "Statuses inflicted: 7\nMVP: Christabelle Wolfgangheim\n\n"
+                     "Personal records\nBiggest hit ever: 999\nMost damage in a run: 12345";
+                 s.pushState(std::make_unique<DetailsOverlayState>(s, c, "Run Stats", body));
+             }},
+            {"41_bestiary_king",
+             [](StateStack& s, AppContext& c) {
+                 // The heaviest bestiary entry: the longest boss name, three
+                 // passives on their own lines, and the longest flavor text.
+                 c.party.encountered.push_back(kKingBossId);
+                 c.party.encountered.push_back("obsidian_colossus");
+                 auto state = std::make_unique<BestiaryState>(s, c);
+                 state->captureSelect(kKingBossId);
+                 s.pushState(std::move(state));
+             }},
+            {"42_battle_skills",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // The skill list with the widest party skill names, so the name
+                 // column and the right-aligned MP column are both checked.
+                 std::vector<std::string> skills;
+                 for (const auto& [id, def] : c.content.classes()) {
+                     (void)id;
+                     skills.insert(skills.end(), def.startingSkills.begin(),
+                                   def.startingSkills.end());
+                     for (const content::LearnEntry& e : def.learnset) {
+                         skills.push_back(e.skill);
+                     }
+                 }
+                 std::sort(skills.begin(), skills.end(), [&c](const std::string& a,
+                                                              const std::string& b) {
+                     const content::SkillDef* sa = c.content.findSkill(a);
+                     const content::SkillDef* sb = c.content.findSkill(b);
+                     const std::size_t la = sa != nullptr ? sa->name.size() : 0;
+                     const std::size_t lb = sb != nullptr ? sb->name.size() : 0;
+                     return la != lb ? la > lb : a < b;
+                 });
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterSkillMenu(std::move(skills));
+                 s.pushState(std::move(state));
+             }},
+            {"43_slot_menu_load",
+             [](StateStack& s, AppContext& c) {
+                 // The deepest slot list: four occupied rows, each carrying a
+                 // title line, plus a message under them.
+                 const int gold = c.party.gold;
+                 c.party.gold = 999999;
+                 c.party.castleRecords.kingTitle = kKingTitle;
+                 content::LoadReport report;
+                 for (save::SaveSlot slot :
+                      {save::SaveSlot::Auto, save::SaveSlot::Manual1, save::SaveSlot::Manual2,
+                       save::SaveSlot::Manual3}) {
+                     c.saves.save(slot, c.party, report);
+                 }
+                 c.party.gold = gold;
+                 c.party.castleRecords.kingTitle.clear();
+                 s.pushState(std::make_unique<SlotMenuState>(s, c, SlotMenuMode::Load));
+             }},
+            {"44_quit_confirm",
+             [](StateStack& s, AppContext& c) {
+                 // The pause menu's quit question, over the pause panel it opens
+                 // from — the same strings TownMenuState passes.
+                 s.pushState(std::make_unique<TownState>(s, c));
+                 s.pushState(std::make_unique<TownMenuState>(s, c));
+                 s.pushState(std::make_unique<ConfirmPromptState>(
+                     s, c, "Quit to Title", "Progress since your last save will be lost.",
+                     "Quit to Title", "Keep Playing", []() {}));
              }},
         };
 

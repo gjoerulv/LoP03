@@ -135,10 +135,10 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     INFO(rep.summary());
     REQUIRE(ok);
     REQUIRE(db.classCount() == 6);
-    REQUIRE(db.skillCount() == 43);  // +12 M29 expansion skills (learnset + orphans reused)
-    REQUIRE(db.enemyCount() == 31);  // 22 normals + 9 elites (M29 adds 6 + 2)
-    REQUIRE(db.itemCount() == 41);  // +5 M34 legendary items (black-market gear)
-    REQUIRE(db.bossCount() == 6);  // +2 M29 (deep_king, blight_matron)
+    REQUIRE(db.skillCount() == 54);  // +6 M40 King damage+debuff skills
+    REQUIRE(db.enemyCount() == 43);  // +12 M38 per-town enemies (4 normal + 8 elite)
+    REQUIRE(db.itemCount() == 69);  // +1 M40 King unique legendary (sovereigns_regalia)
+    REQUIRE(db.bossCount() == 13);  // +1 M40 The Hollow King
     REQUIRE(db.themeCount() == 3);
     REQUIRE(db.findClass("knight") != nullptr);
     REQUIRE(db.hasSkill("fireball"));

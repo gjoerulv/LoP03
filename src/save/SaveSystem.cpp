@@ -68,6 +68,16 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["blackMarketPrice"] = party.blackMarket.priceGold;
   root["blackMarketTileX"] = party.blackMarket.tileX;
   root["blackMarketTileY"] = party.blackMarket.tileY;
+  root["castleUnlocked"] = party.castleUnlocked;                        // M40 (optional; old -> false)
+  root["castleBossRushBestTurns"] = party.castleRecords.bossRushBestTurns;
+  root["castleEndlessBestWave"] = party.castleRecords.endlessBestWave;
+  root["castleKingDefeated"] = party.castleRecords.kingDefeated;
+  root["castleKingBestTurns"] = party.castleRecords.kingBestTurns;
+  root["castleKingTitle"] = party.castleRecords.kingTitle;
+  root["storyMet"] = party.storyMet;  // M41 (optional; old -> 0)
+  root["encountered"] = party.encountered;             // M42 (optional; old -> empty)
+  root["recordBiggestHit"] = party.recordBiggestHit;   // M42 (optional; old -> 0)
+  root["recordRunDamage"] = party.recordRunDamage;     // M42 (optional; old -> 0)
 
   Json members = Json::array();
   for (const Character& c : party.members) {
@@ -81,6 +91,8 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
     m["weapon"] = c.weapon;
     m["armor"] = c.armor;
     m["accessory"] = c.accessory;
+    m["ownedPassives"] = c.ownedPassives;      // M36 (optional; old saves -> empty)
+    m["equippedPassive"] = c.equippedPassive;  // M36
     members.push_back(std::move(m));
   }
   root["party"] = std::move(members);
@@ -155,6 +167,18 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   if (loaded.blackMarket.present && db_.findItem(loaded.blackMarket.itemId) == nullptr) {
     loaded.blackMarket = BlackMarketOffer{};
   }
+  // M40 castle: optional; old saves load locked with no records. Records are
+  // non-negative; the King title is free text (defensive-loaded like any string).
+  loaded.castleUnlocked = rootReader.optBool("castleUnlocked", false);
+  loaded.castleRecords.bossRushBestTurns = rootReader.optIntMin("castleBossRushBestTurns", 0, 0);
+  loaded.castleRecords.endlessBestWave = rootReader.optIntMin("castleEndlessBestWave", 0, 0);
+  loaded.castleRecords.kingDefeated = rootReader.optBool("castleKingDefeated", false);
+  loaded.castleRecords.kingBestTurns = rootReader.optIntMin("castleKingBestTurns", 0, 0);
+  loaded.castleRecords.kingTitle = rootReader.optString("castleKingTitle");
+  loaded.storyMet = rootReader.optIntMin("storyMet", 0, 0);  // M41 (optional; old -> 0)
+  loaded.encountered = rootReader.optStringArray("encountered");  // M42 (optional; old -> empty)
+  loaded.recordBiggestHit = rootReader.optIntMin("recordBiggestHit", 0, 0);  // M42
+  loaded.recordRunDamage = rootReader.optIntMin("recordRunDamage", 0, 0);    // M42
 
   auto partyIt = root.find("party");
   if (partyIt == root.end() || !partyIt->is_array()) {
@@ -181,6 +205,8 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
     const std::string weapon = m.optString("weapon");
     const std::string armor = m.optString("armor");
     const std::string accessory = m.optString("accessory");
+    const std::vector<std::string> ownedPassives = m.optStringArray("ownedPassives");  // M36
+    const std::string equippedPassive = m.optString("equippedPassive");                // M36
     if (report.errorCount() != elementBefore) {
       continue;
     }
@@ -195,6 +221,20 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
     c.armor = (armor.empty() || db_.findItem(armor) != nullptr) ? armor : "";
     c.accessory =
         (accessory.empty() || db_.findItem(accessory) != nullptr) ? accessory : "";
+    // M36 passives: keep only owned ids the content still knows; an equipped id
+    // is honored only if it is known and owned (dropped otherwise).
+    for (const std::string& pid : ownedPassives) {
+      if (db_.findPassive(pid) != nullptr &&
+          std::find(c.ownedPassives.begin(), c.ownedPassives.end(), pid) ==
+              c.ownedPassives.end()) {
+        c.ownedPassives.push_back(pid);
+      }
+    }
+    if (!equippedPassive.empty() && db_.findPassive(equippedPassive) != nullptr &&
+        std::find(c.ownedPassives.begin(), c.ownedPassives.end(), equippedPassive) !=
+            c.ownedPassives.end()) {
+      c.equippedPassive = equippedPassive;
+    }
     refreshCharacter(c, db_);
     c.hp = std::clamp(hp, 0, c.maxHp);
     c.mp = std::clamp(mp, 0, c.maxMp);
@@ -252,6 +292,7 @@ std::optional<SlotSummary> SaveSystem::summary(SaveSlot slot) const {
   s.partySize = static_cast<int>(tmp.size());
   s.highestLevel = highestLevel(tmp);
   s.gold = tmp.gold;
+  s.kingTitle = tmp.castleRecords.kingTitle;  // M40
   return s;
 }
 

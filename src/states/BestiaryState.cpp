@@ -1,0 +1,228 @@
+#include "states/BestiaryState.hpp"
+
+#include <algorithm>
+
+#include "content/ContentDatabase.hpp"
+#include "content/Definitions.hpp"
+#include "content/Enums.hpp"
+#include "core/AppContext.hpp"
+#include "game/Party.hpp"
+#include "input/Input.hpp"
+#include "input/PromptLabels.hpp"
+#include "raylib.h"
+#include "render/SpriteDraw.hpp"
+#include "states/StateStack.hpp"
+#include "ui/TextLayout.hpp"
+#include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
+
+namespace cd {
+
+namespace style = ui::style;
+
+namespace {
+constexpr int kVisibleRows = 12;
+constexpr int kListX = 12;
+constexpr int kListW = 176;   // fits the longest boss name at the body font
+constexpr int kRowsY = 42;
+constexpr int kRowH = 14;
+constexpr int kPanelX = 194;  // detail panel, just right of the list
+
+// Foes the party has not met read as unknowns, the same way locked achievements
+// do, so the roster's size is visible without spoiling what is in it.
+const char* kUnknownName = "? ? ?";
+
+std::vector<std::string> passiveNames(const std::vector<std::string>& ids,
+                                      const content::ContentDatabase& db) {
+    std::vector<std::string> out;
+    for (const std::string& id : ids) {
+        if (const content::PassiveDef* p = db.findPassive(id)) {
+            out.push_back(p->name);
+        }
+    }
+    return out;
+}
+}  // namespace
+
+BestiaryState::BestiaryState(StateStack& stack, AppContext& context)
+    : GameState(stack), context_(context) {
+    const std::vector<std::string>& seen = context_.party.encountered;
+    const auto known = [&seen](const std::string& id) {
+        return std::find(seen.begin(), seen.end(), id) != seen.end();
+    };
+
+    // The whole roster, enemies first then bosses, each alphabetical. An entry
+    // keeps its slot when it is discovered, so the list never reshuffles.
+    for (const auto& [id, def] : context_.content.enemies()) {
+        Entry e;
+        e.id = id;
+        e.spriteId = "enemy." + id + ".battle";
+        e.name = def.name;
+        e.stats = def.stats;
+        e.profile = std::string(content::toString(def.tier)) + " " + content::toString(def.role);
+        for (content::EnemyTag t : def.tags) {
+            e.profile += std::string(" ") + content::toString(t);
+        }
+        e.passives = passiveNames(def.passives, context_.content);
+        e.known = known(id);
+        entries_.push_back(std::move(e));
+    }
+    const std::size_t firstBoss = entries_.size();
+    for (const auto& [id, def] : context_.content.bosses()) {
+        Entry e;
+        e.id = id;
+        e.boss = true;
+        e.spriteId = "boss." + id + ".battle";
+        e.name = def.name;
+        e.stats = def.stats;
+        e.profile = std::string(content::toString(def.archetype)) + " boss";
+        e.passives = passiveNames(def.passives, context_.content);
+        e.flavor = def.description;
+        e.known = known(id);
+        entries_.push_back(std::move(e));
+    }
+    const auto byName = [](const Entry& a, const Entry& b) { return a.name < b.name; };
+    std::sort(entries_.begin(), entries_.begin() + static_cast<std::ptrdiff_t>(firstBoss), byName);
+    std::sort(entries_.begin() + static_cast<std::ptrdiff_t>(firstBoss), entries_.end(), byName);
+
+    for (const Entry& e : entries_) {
+        known_ += e.known ? 1 : 0;
+    }
+}
+
+#ifdef CRYSTAL_CAPTURE
+void BestiaryState::captureSelect(const std::string& id) {
+    for (std::size_t i = 0; i < entries_.size(); ++i) {
+        if (entries_[i].id == id) {
+            cursor_ = static_cast<int>(i);
+            scroll_.follow(static_cast<int>(entries_.size()), kVisibleRows, cursor_);
+            return;
+        }
+    }
+}
+#endif
+
+void BestiaryState::handleInput(const Input& input) {
+    const int total = static_cast<int>(entries_.size());
+    if (input.navPressed(InputAction::MoveUp) && cursor_ > 0) {
+        --cursor_;
+        scroll_.follow(total, kVisibleRows, cursor_);
+    }
+    if (input.navPressed(InputAction::MoveDown) && cursor_ + 1 < total) {
+        ++cursor_;
+        scroll_.follow(total, kVisibleRows, cursor_);
+    }
+    if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Confirm)) {
+        stack().popState();
+    }
+}
+
+void BestiaryState::renderDetail(const Entry& e, int px, int pw) {
+    const int textX = px + 52;               // right of the sprite well
+    const int textW = px + pw - 12 - textX;  // name/profile column
+    const int bodyW = pw - 24;               // full-width rows below the sprite
+    const int bottom = context_.virtualHeight - style::kFooterHeight - 2;
+
+    if (e.known) {
+        render::drawTextureCentered(context_.resources, e.spriteId,
+                                    static_cast<float>(px + 28), 62.0f);
+    } else {
+        ui::drawTextCentered("?", px + 28, 52, style::kFontScreenTitle, style::palette().disabled);
+    }
+
+    int ty = ui::drawTextWrapped(e.known ? e.name : kUnknownName, textX, 42, textW,
+                                 style::kFontHeading, style::palette().text, "bestiary.detailname",
+                                 2);
+    ty = ui::drawTextWrapped(e.known ? e.profile : "Not yet encountered.", textX, ty, textW,
+                             style::kFontSmall, Color{180, 190, 210, 255}, "bestiary.profile", 2);
+
+    int y = std::max(ty + 4, 82);  // clears the 32px sprite well
+    const content::StatBlock& s = e.stats;
+    if (e.known) {
+        ui::drawText(TextFormat("HP %d   ATK %d   MAG %d", s.maxHp, s.attack, s.magic), px + 12, y,
+                     style::kFontBody, style::palette().textDim);
+        y += 13;
+        ui::drawText(TextFormat("DEF %d   SPD %d", s.defense, s.speed), px + 12, y,
+                     style::kFontBody, style::palette().textDim);
+    } else {
+        ui::drawText("HP ?   ATK ?   MAG ?", px + 12, y, style::kFontBody,
+                     style::palette().disabled);
+        y += 13;
+        ui::drawText("DEF ?   SPD ?", px + 12, y, style::kFontBody, style::palette().disabled);
+    }
+    y += 14;
+
+    // Passives get one line each: a foe with three of them (the King) would
+    // otherwise run off the panel on a single row.
+    if (e.known && !e.passives.empty()) {
+        ui::drawText(e.passives.size() > 1 ? "Passives" : "Passive", px + 12, y, style::kFontSmall,
+                     style::palette().textDim);
+        y += 11;
+        for (const std::string& p : e.passives) {
+            ui::drawTextFitted(p, px + 18, y, bodyW - 6, style::kFontBody,
+                               Color{200, 200, 140, 255}, "bestiary.passive");
+            y += 11;
+        }
+        y += 4;
+    }
+
+    if (e.known && !e.flavor.empty()) {
+        // Prefer the body font; drop to the caption font only when the flavor
+        // would not otherwise fit the room the panel has left.
+        const int room = bottom - y;
+        const int bodyLines = room / ui::lineHeight(style::kFontBody);
+        const bool fitsBody =
+            static_cast<int>(
+                ui::wrapText(e.flavor, bodyW, style::kFontBody, ui::raylibMeasure()).size()) <=
+            bodyLines;
+        const int font = fitsBody ? style::kFontBody : style::kFontSmall;
+        const int lines = room / ui::lineHeight(font);
+        if (lines > 0) {
+            ui::drawTextWrapped(e.flavor, px + 12, y, bodyW, font, style::palette().text,
+                                "bestiary.flavor", lines);
+        }
+    }
+}
+
+void BestiaryState::render() {
+    const int w = context_.virtualWidth;
+    const int h = context_.virtualHeight;
+    ClearBackground(Color{16, 16, 24, 255});
+    ui::drawTextCentered("Bestiary", w / 2, 16, style::kFontScreenTitle, style::palette().text);
+
+    const int total = static_cast<int>(entries_.size());
+    ui::drawTextRight(TextFormat("%d / %d recorded", known_, total), kListX + kListW, 30,
+                      style::kFontSmall, style::palette().textDim);
+
+    // Left: the full roster, scrolled, with unknowns masked.
+    const int first = scroll_.top();
+    const int count = scroll_.visibleCount(total, kVisibleRows);
+    for (int row = 0; row < count; ++row) {
+        const Entry& e = entries_[static_cast<std::size_t>(first + row)];
+        const int y = kRowsY + row * kRowH;
+        const bool sel = first + row == cursor_;
+        if (sel) {
+            DrawRectangle(kListX - 4, y - 1, kListW + 8, kRowH, Color{40, 44, 66, 255});
+        }
+        const Color c = e.known ? (sel ? style::palette().cursor : style::palette().text)
+                                : style::palette().disabled;
+        ui::drawTextFitted(e.known ? e.name : kUnknownName, kListX, y, kListW, style::kFontBody, c,
+                           "bestiary.name");
+    }
+
+    // Right: the selected foe's detail panel.
+    const int pw = w - kPanelX - 12;
+    ui::drawFramedPanel(context_.resources, kPanelX, 36, pw, h - 36 - style::kFooterHeight,
+                        Color{22, 22, 34, 240}, Color{110, 120, 160, 255});
+    if (total > 0) {
+        renderDetail(entries_[static_cast<std::size_t>(cursor_)], kPanelX, pw);
+    }
+
+    ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
+                                       context_.input.activeDevice(), "Back")
+                             .c_str(),
+                         w / 2, h - style::kFooterHeight + 2, style::kFontBody,
+                         style::palette().textHint);
+}
+
+}  // namespace cd

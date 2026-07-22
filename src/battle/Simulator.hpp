@@ -30,4 +30,9 @@ struct SimResult {
 
 SimResult simulate(Battle battle, const content::ContentDatabase& db, int maxRounds = 300);
 
+// Same, but resolves `battle` in place so the caller can read the final combatant
+// states (HP/MP) — used to drive a no-heal gauntlet where the party's condition
+// carries from one fight to the next (M40 castle challenges / their balance sim).
+SimResult simulateInPlace(Battle& battle, const content::ContentDatabase& db, int maxRounds = 300);
+
 }  // namespace cd::battle

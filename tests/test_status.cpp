@@ -100,16 +100,22 @@ TEST_CASE("status: poison ticks each turn and then expires", "[status]") {
     const content::ContentDatabase db = makeDb();
     Battle b = buildBattle(oneKnight(db), goblinTeam(), db);
     const content::SkillDef* venom = db.findSkill("venom");
-    b.useSkill(0, 1, *venom);  // poisons the goblin (3 turns, 6/turn)
+    b.useSkill(0, 1, *venom);  // venom: authored 6/turn x3, but M35 doubles both
 
+    // M35 balance: statuses last 2x their authored duration (3 -> 6) and poison
+    // deals 2x its authored magnitude per tick (6 -> 12).
+    REQUIRE(b.units[1].statuses.size() == 1);
+    CHECK(b.units[1].statuses[0].turns == 6);
     const int hp0 = b.units[1].hp;
     b.tickStatuses(1);
-    REQUIRE(b.units[1].hp == hp0 - 6);
-    b.tickStatuses(1);
-    b.tickStatuses(1);  // third tick; status now expires
-    const int afterThree = b.units[1].hp;
+    CHECK(b.units[1].hp == hp0 - 12);
+    for (int i = 0; i < 5; ++i) {
+        b.tickStatuses(1);  // ticks 2..6; poison expires after the 6th
+    }
+    CHECK(b.units[1].statuses.empty());
+    const int afterSix = b.units[1].hp;
     b.tickStatuses(1);  // no status left
-    REQUIRE(b.units[1].hp == afterThree);
+    CHECK(b.units[1].hp == afterSix);
 }
 
 TEST_CASE("status: defense up reduces incoming damage", "[status]") {

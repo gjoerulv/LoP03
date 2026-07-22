@@ -76,6 +76,10 @@ void drawTextFitted(const std::string& text, int x, int y, int maxWidth, int fon
 int drawTextWrapped(const std::string& text, int x, int y, int maxWidth, int fontSize,
                     Color color, const char* site, int maxLines = 0);
 
+// The same wrapped block with every line centered on centerX.
+int drawTextWrappedCentered(const std::string& text, int centerX, int y, int maxWidth, int fontSize,
+                            Color color, const char* site, int maxLines = 0);
+
 // Draws menu items top-down from (x, y). The cursor item is marked and tinted.
 void drawMenu(const Menu& menu, int x, int y, int itemHeight, int fontSize, Color normal,
               Color disabled, Color cursor);
@@ -84,8 +88,13 @@ void drawMenu(const Menu& menu, int x, int y, int itemHeight, int fontSize, Colo
 // must have been follow()ed with the menu cursor), with more-above/below
 // arrows just outside the list's top/bottom rows. Labels are fitted to
 // maxLabelWidth (overflow reported, clipped).
+//
+// An item's optional `suffix` is drawn right-aligned at x + maxLabelWidth in
+// `suffixFontSize` (0 = the row font) and the label is fitted to the room that
+// is left, so a trailing cost or count is always fully readable.
 void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleRows, int x, int y,
                       int itemHeight, int fontSize, int maxLabelWidth, Color normal,
-                      Color disabled, Color cursor, const char* site);
+                      Color disabled, Color cursor, const char* site, int suffixFontSize = 0,
+                      Color suffixColor = Color{150, 175, 235, 255});
 
 }  // namespace cd::ui

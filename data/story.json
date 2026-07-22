@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "story": [
+    {
+      "town": 1,
+      "speaker": "The Wandering Storyteller",
+      "title": "The Ballad Begins",
+      "body": "Ah, a new face! Sit, sit. Every hero should know of the Hollow King, who broods atop the seven towns. They say he has not blinked in a hundred years - his eyes are far too busy being terrifying. Climb high enough, and you may meet him. I'd bring a snack."
+    },
+    {
+      "town": 2,
+      "speaker": "The Wandering Storyteller",
+      "title": "The Second Verse",
+      "body": "You again! I have learned more of the King. He is ten feet tall, forged from the crystal of the deepest dungeon, and he dines only upon the fears of adventurers - which, between us, must make for an awfully thin soup these days."
+    },
+    {
+      "town": 3,
+      "speaker": "The Wandering Storyteller",
+      "title": "The Third Verse",
+      "body": "The tale grows! His voice, they swear, shatters glass at forty paces, and his crown was won from a dragon in single combat. The dragon, I am told, is still quite cross about it and writes strongly-worded letters to this day."
+    },
+    {
+      "town": 4,
+      "speaker": "The Wandering Storyteller",
+      "title": "The Fourth Verse",
+      "body": "Higher you climb, wiser you grow. The Hollow King never sleeps, for sleep is for the weak. Instead he stands very still, through all the long nights, thinking - so the story goes - about taxes."
+    },
+    {
+      "town": 5,
+      "speaker": "The Wandering Storyteller",
+      "title": "The Fifth Verse",
+      "body": "Nearly there! The King commands a whole legion of living shadows. They are, by every account, magnificent - at filing paperwork. And, though I hesitate to say it aloud, he is rumoured to be mortally afraid of geese."
+    },
+    {
+      "town": 6,
+      "speaker": "The Wandering Storyteller",
+      "title": "The Sixth Verse",
+      "body": "One town left. They say the King wept but once: the day he dropped his favourite spoon down a very deep, very dark well. That well, hero, is now a dungeon. You may well have cleared it already. Tell me - did you find a spoon?"
+    },
+    {
+      "town": 7,
+      "speaker": "The Wandering Storyteller",
+      "title": "The Final Verse",
+      "body": "So. This is as far as the road climbs, and as far as my ballad goes. Beyond lies the castle, and the King himself - dread made flesh. Go, hero. Look upon him. And, truly, from the bottom of my heart... mind the geese."
+    },
+    {
+      "town": 8,
+      "speaker": "The Jester",
+      "title": "The Jester's Truth",
+      "body": "Oh! You've heard the whole ballad? Marvellous. Now let me ruin it. The dread 'Hollow King'? His name is Gerald. He is very tired. Yes, the geese thing is true. Yes, the spoon is still down the well. And yes - he is desperately, achingly bored, and has waited an age for a worthy challenger. So do go in. Just... don't win TOO quickly. He so rarely gets visitors."
+    }
+  ]
+}
