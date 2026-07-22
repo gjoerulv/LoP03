@@ -31,8 +31,12 @@ namespace cd::battle {
 // 3 = M36 (passive skills); 4 = M43 (confusion forces a basic attack on BOTH
 // sides, revive-capable heal skills, King-context items, effect-filtered item
 // targeting); 5 = M44 (the Royal Relics: enemy-targetable items, the Terrified /
-// Stunned turn-control statuses, and a battle-long stat scale).
-inline constexpr int kBattleRulesVersion = 5;
+// Stunned turn-control statuses, and a battle-long stat scale); 6 = M45 (the
+// uncontrolled turn, the AoE basic attack with attack-applied statuses, the
+// enemy-buffing heal — and the Simulator now tracks `turnsTaken`, which the
+// enemy-targeting tie-break reads, so simulation and live play finally agree on
+// it too).
+inline constexpr int kBattleRulesVersion = 6;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -111,6 +115,15 @@ struct Combatant {
     bool firstStrike = false;             // First Strike
     bool firstStrikeUsed = false;         // once per battle
 
+    // Class battle traits (M45), resolved from the ClassDef at buildBattle so the
+    // pure model never looks a class up. All inert by default.
+    bool attackHitsAll = false;                 // basic attack sweeps every foe
+    // Applied per connecting basic hit. Stored as StatusInstances (the same
+    // {type, magnitude, turns} triple) so the pure model needs no content type
+    // here; buildBattle converts the class's authored list once.
+    std::vector<StatusInstance> attackStatuses;
+    bool uncontrolled = false;                  // acts on its own, seeded
+
     bool alive() const { return hp > 0; }
 };
 
@@ -160,12 +173,16 @@ public:
     std::string tickStatuses(int unit);
 
     // Each returns a human-readable log line. Skills deduct MP from the actor.
+    // `attack` dispatches to one strike, or (M45) a sweep of every living foe.
     std::string attack(int actor, int target);
     std::string useSkill(int actor, int primaryTarget, const content::SkillDef& skill);
     std::string useItem(int actor, int target, const content::ItemDef& item);
     std::string guard(int actor);
 
 private:
+    std::string attackOne(int actor, int target);   // one strike (the pre-M45 attack)
+    std::string attackAll(int actor);               // M45: one strike per living foe
+    std::string applyAttackStatuses(int actor, int target);  // M45: the Dragon's bite
     std::vector<int> resolveTargets(const content::SkillDef& skill, int actor,
                                     int primaryTarget) const;
     // M35: advance the roll cursor and return a fresh value mixed from rngSeed +
@@ -257,6 +274,20 @@ ForcedAction forcedActionFor(const Combatant& c);
 // decide turns (BattleState, the Simulator, chooseEnemyAction) ask this once at
 // the top of a turn and obey it — the M43 lesson, generalized.
 EnemyChoice forcedChoice(const Battle& b, int actor, ForcedAction forced);
+
+// M45: the turn an UNCONTROLLED unit (the Jester) takes for itself — a seeded
+// pick among its affordable, castable known skills plus the basic attack, aimed
+// at a random living foe. Pure: it hashes (rngSeed, turnsTaken, actor) the way
+// `targetJitter` does and never advances `rollCursor`, so BattleState, the
+// Simulator, and chooseEnemyAction all derive the same turn without having to
+// consume the roll stream in the same order.
+EnemyChoice uncontrolledChoice(const Battle& b, int actor, const content::ContentDatabase& db);
+
+// M45: does the Jester quip this turn, and which line? `index` is only meaningful
+// when it returns true. Presentation only — a pure hash under its own salt that
+// never touches `rollCursor`, so showing (or hiding) a jest cannot change how a
+// battle resolves.
+bool jestThisTurn(const Battle& b, int actor, int lineCount, int& index);
 
 // M43: the forced action of a confused unit — a basic attack, never a skill.
 // `attack()` then performs the seeded same-side redirect, so the returned target

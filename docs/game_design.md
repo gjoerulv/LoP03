@@ -381,6 +381,29 @@ you out-level and becomes a fight you answer with absurd objects.
   down from 420 % to 340 % so the doubled stats land exactly there — the fight is
   a puzzle now, not a farming toll.)
 
+**The King's classes (M45).** Beating the Hollow King unlocks three more classes
+**for the player, not for that save** — they are offered on every future New
+Game, and a save that already beat him unlocks them retroactively. Until then
+they are listed at character creation as **Locked**, so the reward is visible
+long before it is earned. All three are jokes that are also real classes:
+
+- **Dragon** — enormous stats, **no skills**, **no armor**. Its basic attack hits
+  **every** living foe and leaves poison and blindness on each one it connects
+  with. Its score modifier is **−20 % per Dragon**: overwhelming force is not
+  efficiency, and the scoreboard says so.
+- **Jester** — **uncontrolled**. You do not choose its turns: each round it picks
+  one of its own skills (any it can afford and cast) or a swing, at a foe of its
+  choosing. It carries no weapon, quips one of twelve dry lines about 15 % of the
+  time, and pays **+5 % score per Jester** for the indignity.
+- **Goose** — dreadful stats, **equips nothing at all**. Its heals and cures work
+  — and cheerfully buff **every enemy** at the same time. At level 30 it learns
+  one ultimate that lays every debuff on every foe for 30 MP. **+5 % per Goose.**
+
+The class modifiers are **additive across the party** (three Dragons and a Goose
+= −55 %), shown as their own line on the result screen and tagged on the
+scoreboard. Per M19 they are visible and tagged, never normalized away, and they
+never change how runs are ranked.
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1

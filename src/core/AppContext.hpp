@@ -26,6 +26,7 @@ namespace tutorial {
 class TutorialStore;
 }
 class AchievementStore;
+class ProfileStore;
 
 struct AppContext {
     ResourceManager& resources;
@@ -43,6 +44,9 @@ struct AppContext {
     tutorial::TutorialStore& tutorial;
     // M42: global unlocked-achievements store (achievements.json).
     AchievementStore& achievements;
+    // M45: cross-save player profile (profile.json) — currently just whether the
+    // King has ever fallen, which unlocks the three reward classes.
+    ProfileStore& profile;
     int virtualWidth;
     int virtualHeight;
 };

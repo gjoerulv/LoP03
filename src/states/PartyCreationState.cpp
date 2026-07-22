@@ -7,7 +7,9 @@
 
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
+#include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
+#include "game/Profile.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -50,7 +52,34 @@ void PartyCreationState::onEnter() {
     }
     cursor_ = 0;
     editing_ = false;
+#ifdef CRYSTAL_CAPTURE
+    for (std::size_t slot = 0; slot < capturePending_.size(); ++slot) {
+        if (capturePending_[slot].empty()) {
+            continue;
+        }
+        for (std::size_t i = 0; i < classes_.size(); ++i) {
+            if (classes_[i]->id == capturePending_[slot]) {
+                slots_[slot].classIndex = static_cast<int>(i);
+                break;
+            }
+        }
+    }
+#endif
 }
+
+bool PartyCreationState::classLocked(const content::ClassDef& cls) const {
+    // M45: the King's reward classes stay visible but unusable until he falls —
+    // the roster's size and the goal are never hidden from the player.
+    return cls.unlockedByKing && !context_.profile.classesUnlocked();
+}
+
+#ifdef CRYSTAL_CAPTURE
+void PartyCreationState::captureSelectClass(int slot, const std::string& classId) {
+    if (slot >= 0 && slot < 4) {
+        capturePending_[static_cast<std::size_t>(slot)] = classId;
+    }
+}
+#endif
 
 void PartyCreationState::cycleClass(int slotIndex, int direction) {
     if (classes_.empty()) {
@@ -59,6 +88,15 @@ void PartyCreationState::cycleClass(int slotIndex, int direction) {
     const int n = static_cast<int>(classes_.size());
     Slot& slot = slots_[static_cast<std::size_t>(slotIndex)];
     slot.classIndex = ((slot.classIndex + direction) % n + n) % n;
+}
+
+bool PartyCreationState::anyLockedSelected() const {
+    for (const Slot& slot : slots_) {
+        if (classLocked(*classes_[static_cast<std::size_t>(slot.classIndex)])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void PartyCreationState::begin() {
@@ -136,6 +174,8 @@ void PartyCreationState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Confirm)) {
         if (cursor_ < kBeginRow) {
             editing_ = true;
+        } else if (anyLockedSelected()) {
+            context_.audio.play(Sfx::Error);  // M45: a locked class cannot start a run
         } else {
             begin();
         }
@@ -175,8 +215,11 @@ void PartyCreationState::render() {
 
         const content::ClassDef* cls =
             classes_[static_cast<std::size_t>(slots_[static_cast<std::size_t>(i)].classIndex)];
-        ui::drawText(TextFormat("<  %s  >", cls->name.c_str()), 190, y, 12,
-                 selected ? yellow : Color{170, 190, 220, 255});
+        const bool locked = classLocked(*cls);
+        const Color classColor = locked ? Color{150, 130, 130, 255}
+                                        : (selected ? yellow : Color{170, 190, 220, 255});
+        ui::drawTextFitted(TextFormat("<  %s%s  >", cls->name.c_str(), locked ? " (Locked)" : ""),
+                           190, y, w - 200, 12, classColor, "partycreate.class");
     }
 
     const int beginY = baseY + 4 * 24 + 10;
@@ -185,6 +228,13 @@ void PartyCreationState::render() {
         ui::drawText(">", 36, beginY, 12, yellow);
     }
     ui::drawText("Begin Adventure", 54, beginY, 12, beginSel ? yellow : RAYWHITE);
+
+    // M45: say WHY a class is locked, once, under the roster (never color alone).
+    if (anyLockedSelected()) {
+        ui::drawTextFitted("Locked: defeat the Hollow King to unlock these classes.", 36,
+                           beginY + 18, w - 72, 10, Color{225, 180, 140, 255},
+                           "partycreate.locked");
+    }
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();

@@ -4,6 +4,7 @@
 
 #include "content/LoadReport.hpp"
 #include "core/AppContext.hpp"
+#include "game/Profile.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -93,6 +94,12 @@ void SlotMenuState::confirmSelection() {
         rebuild();
     } else {
         if (context_.saves.load(slot, context_.party, report)) {
+            // M45: a party that already beat the King unlocks the reward classes
+            // retroactively — a player who won before this build should not have
+            // to win again.
+            if (context_.party.castleRecords.kingDefeated) {
+                context_.profile.recordKingDefeated();
+            }
             stack().clearStates();
             stack().pushState(std::make_unique<TownState>(stack(), context_));
         } else {

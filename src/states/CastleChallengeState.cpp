@@ -10,6 +10,7 @@
 #include "core/FadeController.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "game/Party.hpp"
+#include "game/Profile.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -146,7 +147,14 @@ void CastleChallengeState::finish(bool cleared) {
                     rec.kingBestTurns = totalRounds_;
                 }
                 rec.kingDefeated = true;
+                // M45: the kill belongs to the PLAYER, not this save — it unlocks
+                // the three reward classes for every future New Game.
+                const bool newlyUnlocked = context_.profile.recordKingDefeated();
                 msg = "The Hollow King falls in " + std::to_string(totalRounds_) + " turns!";
+                if (newlyUnlocked) {
+                    msg += " The Dragon, the Jester and the Goose will answer your call from "
+                           "now on - in any new party.";
+                }
                 if (first) {
                     rec.kingTitle = kKingTitle;
                     context_.party.inventory.add(kKingLegendaryId, 1);

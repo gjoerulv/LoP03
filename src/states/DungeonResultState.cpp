@@ -85,6 +85,7 @@ void DungeonResultState::render() {
                           (summary_.wagerAccepted ? 1 : 0) +
                           (summary_.townBonusPct > 0 ? 1 : 0) +        // M32 town bonus
                           (summary_.stakesPenaltyPct > 0 ? 1 : 0) +    // M33 stakes penalty
+                          (summary_.classModPct != 0 ? 1 : 0) +        // M45 class modifier
                           dropLines;                                   // M39 boss drops
     // Pitch 13 keeps the common breakdown clear of the footer (audit
     // UI-LAYOUT-018); but the fullest panel (all 10 breakdown lines + the M39
@@ -135,6 +136,12 @@ void DungeonResultState::render() {
     if (summary_.stakesPenaltyPct > 0) {
         line(TextFormat("Stakes penalty (-%d%%)", summary_.stakesPenaltyPct), -b.stakesPenalty,
              minus);
+    }
+
+    if (summary_.classModPct != 0) {
+        // M45: shown honestly, signed, with the percentage that produced it.
+        line(TextFormat("Class modifier (%+d%%)", summary_.classModPct), b.classMod,
+             b.classMod >= 0 ? plus : minus);
     }
 
     // M39: boss drops, as a reward block below the score breakdown. The legendary

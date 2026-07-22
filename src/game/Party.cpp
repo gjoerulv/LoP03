@@ -94,6 +94,25 @@ void healFull(Party& party) {
     }
 }
 
+int partyClassModPct(const Party& party, const content::ContentDatabase& db) {
+    int total = 0;
+    for (const Character& c : party.members) {
+        if (const content::ClassDef* cls = db.findClass(c.classId)) {
+            total += cls->scoreModPct;
+        }
+    }
+    return total;
+}
+
+bool canEquipSlot(const Character& character, content::EquipSlot slot,
+                  const content::ContentDatabase& db) {
+    if (slot == content::EquipSlot::None) {
+        return false;
+    }
+    const content::ClassDef* cls = db.findClass(character.classId);
+    return cls == nullptr || cls->canEquip(slot);
+}
+
 int restCost(const Party& party) {
     const int level = std::max(1, highestLevel(party));
     long cost = static_cast<long>(kRestCostBase) +

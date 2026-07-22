@@ -34,6 +34,11 @@ struct SkillDef {
     // of max HP instead of being skipped. Validated to heal/single_ally only.
     int reviveHpPct = 0;
 
+    // M45 (the Goose's comedy tradeoff): the skill ALSO applies its status to
+    // every living enemy. Authored on ally-facing skills whose `statusEffect` is
+    // a buff, so healing the party cheers the enemy up too.
+    bool alsoBuffsEnemies = false;
+
     std::string description;
 };
 
@@ -44,6 +49,13 @@ struct LearnEntry {
     int level = 1;      // >= 1
 };
 
+// One status a basic attack applies on a connecting hit (M45, the Dragon).
+struct AttackStatus {
+    StatusType type = StatusType::None;
+    int magnitude = 0;
+    int duration = 0;
+};
+
 struct ClassDef {
     std::string id;
     std::string name;
@@ -52,6 +64,25 @@ struct ClassDef {
     StatGrowth growth;
     std::vector<std::string> startingSkills;  // skill ids (level-1 set)
     std::vector<LearnEntry> learnset;         // level-gated grants (M29)
+
+    // M45 (the King's reward classes). Every field is optional and inert by
+    // default, so the six original classes are untouched. Class identity is data:
+    // no class id is ever branched on in code.
+    bool unlockedByKing = false;              // hidden until the King has fallen
+    std::vector<EquipSlot> equipBans;         // slots this class may never equip
+    bool attackHitsAll = false;               // the basic attack strikes every foe
+    std::vector<AttackStatus> attackStatuses; // applied per connecting basic hit
+    bool uncontrolled = false;                // takes no player input; acts on its own
+    int scoreModPct = 0;                      // per-member additive score modifier
+
+    bool canEquip(EquipSlot slot) const {
+        for (EquipSlot banned : equipBans) {
+            if (banned == slot) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
 // A passive skill (M36): an always-on trait keyed by `hook`, parameterized by a

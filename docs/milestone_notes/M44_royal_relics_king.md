@@ -2,10 +2,11 @@
 
 ## A. Status and authority
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-22) — the second
-  milestone of the **King's Gambit program**. See §J for the as-implemented
-  record and the deviations, including the owner's mid-implementation decision to
-  take `kKingScalePct` from 420 % to 340 %. M45 is **not** authorized by this.
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-22 after
+  manual testing; committed as `5608528`. The second milestone of the **King's
+  Gambit program**. See §J for the as-implemented record and the deviations,
+  including the owner's mid-implementation decision to take `kKingScalePct` from
+  420 % to 340 %. The owner authorized **M45** with the approval.
 - **Authority:** `CLAUDE.md` → this note → `docs/milestones.md` →
   `docs/game_design.md` → `docs/technical_design.md`. M45 is direction only.
 - **Base checkout:** `65c9a47` ("M43"), working tree clean at authorization.

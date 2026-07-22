@@ -35,6 +35,12 @@ EnemyChoice choosePartyAction(const Battle& b, int actor, const content::Content
     if (const ForcedAction forced = forcedActionFor(self); forced != ForcedAction::None) {
         return forcedChoice(b, actor, forced);
     }
+    // M45: an uncontrolled unit (the Jester) picks its own turn, from the same
+    // shared, pure rule the battle screen uses — the player never chooses, so
+    // neither does this AI.
+    if (self.uncontrolled) {
+        return uncontrolledChoice(b, actor, db);
+    }
     const int enemy = lowestHpOnSide(b, Side::Enemy);
 
     int hurtAlly = -1;
@@ -112,6 +118,12 @@ SimResult simulateInPlace(Battle& battle, const content::ContentDatabase& db, in
     int rounds = 0;
     while (battle.outcome() == Outcome::Ongoing && rounds < maxRounds) {
         ++rounds;
+        // M45: mirror BattleState's round counter. It was left at 0 here, which
+        // silently desynchronized the two: `chooseEnemyAction`'s tie-break jitter
+        // reads `turnsTaken`, so the simulator could pick a different target than
+        // live play in a near-tie. Tracking it closes that gap (and is what makes
+        // the Jester's pure per-round hash safe in both drivers).
+        battle.turnsTaken = rounds;
         battle.beginRound();  // enmity decay at round start (M28); mirrors BattleState
         const std::vector<int> order = turnOrder(battle);
         for (int actor : order) {

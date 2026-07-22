@@ -42,6 +42,26 @@ bool skillNeedsTarget(content::SkillTarget t) {
     return t == content::SkillTarget::SingleEnemy || t == content::SkillTarget::SingleAlly;
 }
 
+// M45: the Jester's mid-battle quips — twelve original dry one-liners in the
+// voice of the castle Jester (M41). Presentation only: which one appears (and
+// whether one appears at all) comes from a pure hash that never touches the
+// battle's roll stream, so a quip can never change an outcome.
+constexpr const char* kJestLines[] = {
+    "I had a plan. It left.",
+    "Do stop me if you've seen this one.",
+    "Gerald would have LOVED that.",
+    "That was intentional. Mostly.",
+    "I'm told there's a strategy. Sounds exhausting.",
+    "Aim is a construct. So is the floor.",
+    "Somewhere, a goose is judging me.",
+    "The spoon is still down the well, you know.",
+    "I meant to do the other thing.",
+    "Bold of you to expect a pattern.",
+    "This is fine. This is the bit that's fine.",
+    "Applause optional. Encouraged, but optional.",
+};
+constexpr int kJestLineCount = static_cast<int>(sizeof(kJestLines) / sizeof(kJestLines[0]));
+
 const char* statusShort(content::StatusType t) {
     switch (t) {
         case content::StatusType::Poison: return "PSN";
@@ -197,6 +217,18 @@ void BattleState::captureEnterItemMenu() {
     buildItemMenu();
     phase_ = Phase::ChooseItem;
 }
+
+void BattleState::captureShowJest() {
+    captureEnterTargeting();
+    const char* longest = kJestLines[0];
+    for (const char* line : kJestLines) {
+        if (std::string(line).size() > std::string(longest).size()) {
+            longest = line;
+        }
+    }
+    jestLine_ = longest;
+    jestTimer_ = 999.0f;  // captures render one frame; never expire
+}
 #endif
 
 int BattleState::enemyBaseY() const {
@@ -346,6 +378,8 @@ void BattleState::startActorTurn() {
         if (battle::forcedActionFor(battle_.units[static_cast<std::size_t>(actor)]) !=
             battle::ForcedAction::None) {
             executeConfused(actor);
+        } else if (battle_.units[static_cast<std::size_t>(actor)].uncontrolled) {
+            executeUncontrolled(actor);  // M45: the Jester decides for itself
         } else {
             phase_ = Phase::Command;
             buildCommandMenu();
@@ -675,6 +709,42 @@ void BattleState::executeConfused(int actor) {
     afterAction();
 }
 
+void BattleState::executeUncontrolled(int actor) {
+    std::vector<int> hpBefore;
+    hpBefore.reserve(battle_.units.size());
+    for (const battle::Combatant& u : battle_.units) {
+        hpBefore.push_back(u.hp);
+    }
+    // M45: the same shared, pure rule the Simulator uses — the player gets no say,
+    // and neither driver can drift from the other.
+    const battle::EnemyChoice choice =
+        battle::uncontrolledChoice(battle_, actor, context_.content);
+    int damageSfx = 2;
+    bool statusAction = false;
+    if (choice.target < 0) {
+        message_ = battle_.units[static_cast<std::size_t>(actor)].name + " capers pointlessly.";
+    } else if (choice.useSkill) {
+        if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
+            message_ = battle_.useSkill(actor, choice.target, *s);
+            damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
+            statusAction = s->statusEffect != content::StatusType::None;
+        }
+    } else {
+        message_ = battle_.attack(actor, choice.target);
+    }
+    // The quip rides on top of the resolved action and never changes it: a pure
+    // hash under its own salt, so hiding or showing it cannot move the battle.
+    int line = 0;
+    if (battle::jestThisTurn(battle_, actor, kJestLineCount, line)) {
+        jestLine_ = kJestLines[static_cast<std::size_t>(line)];
+        jestTimer_ =
+            2.0f * settings::messageDurationScale(context_.settings.values.messageSpeed);
+    }
+    accumulateStats(hpBefore, actor, false);
+    stageNumbers(hpBefore, damageSfx, statusAction);
+    afterAction();
+}
+
 void BattleState::afterAction() {
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Party && c.hp <= 0) {
@@ -871,6 +941,12 @@ void BattleState::handleInput(const Input& input) {
 }
 
 void BattleState::update(float dt) {
+    if (jestTimer_ > 0.0f) {  // M45: the Jester's quip fades on its own
+        jestTimer_ -= dt;
+        if (jestTimer_ <= 0.0f) {
+            jestLine_.clear();
+        }
+    }
     // Floating numbers hold still during the impact beat (a brief hit-stop)
     // and rise otherwise.
     if (seq_.stage() != render::BattleStage::Impact) {
@@ -1063,6 +1139,13 @@ void BattleState::render() {
     // Turn counter top-right: the top-left is needed by tall enemy columns.
     ui::drawTextRight(TextFormat("Turns: %d", battle_.turnsTaken), w - 6, 6, 8,
                       style::palette().textDim);
+
+    // M45: the Jester's quip, mid-screen above the panel — decorative, dismissed
+    // by its own timer, and fitted so a long line can never spill.
+    if (!jestLine_.empty()) {
+        ui::drawTextFitted(jestLine_, 20, h - kPanelH - 22, w - 40, style::kFontBody,
+                           Color{235, 205, 130, 255}, "battle.jest");
+    }
 
     // Floating damage / heal numbers.
     for (const FloatNumber& f : floats_) {

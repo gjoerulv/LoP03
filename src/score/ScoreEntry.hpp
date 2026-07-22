@@ -38,6 +38,10 @@ struct ScoreEntry {
     // (or a legacy/raising run). Optional in the file, no format bump; a
     // comparability tag, never used for ranking.
     int stakesPenaltyPct = 0;
+    // Unlockable-class score modifier the party carried (M45). 0 = a party of the
+    // six original classes (or a legacy entry). Optional in the file, no format
+    // bump; a comparability tag shown next to the run, never used for ranking.
+    int classModPct = 0;
 };
 
 }  // namespace cd::score

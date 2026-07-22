@@ -912,7 +912,7 @@ castle is reached, and left, only through its own states.
   Two new tracks
   (`MusicTrack::Castle`, `MusicTrack::KingBattle`) with manifest rows + synth fallback.
 - **Versions.** `kSaveVersion`, `kBattleRulesVersion`, and `kGenerationVersion` all
-  unchanged **by M40** (they stood at 1 / 3 / 8; M43 took them to 1 / 4 / 9, M44 to 1 / 5 / 10).
+  unchanged **by M40** (they stood at 1 / 3 / 8; M43 took them to 1 / 4 / 9, M44 to 1 / 5 / 10, M45 to 1 / 6 / 10).
 
 ### Story serial (Milestone 41)
 
@@ -1080,6 +1080,52 @@ ordinary inventory items).
   122 DEF, 88 SPD. The counterplay battery lives in `test_royal_relics.cpp`
   (`[king-report]` prints the loadout table and the stat-scale sweep that backed
   the decision).
+
+### The King's classes (Milestone 45)
+
+Rules **5 → 6**; generation unchanged (classes are not a generation input); no
+`kSaveVersion` change. **No class id is branched on anywhere in code** — the three
+classes are `data/classes.json` plus generic flags.
+
+- **Profile store (`game/Profile.hpp/.cpp`).** A versioned `profile.json` in the
+  user data dir, the `AchievementStore` pattern (defensive load, atomic save,
+  missing file = fresh). It exists because `PartyCreationState::begin()` resets
+  the party wholesale, so a per-save `castleRecords.kingDefeated` could never gate
+  the class list. Written by `CastleChallengeState::finish` on a King kill and by
+  `SlotMenuState` when a loaded save already shows one (the retroactive grant).
+- **`ClassDef` additions** (all optional, inert for the six originals):
+  `unlockedByKing`, `equipBans` + `canEquip(slot)`, `attackHitsAll`,
+  `attackStatuses[]`, `uncontrolled`, `scoreModPct` (validated to −100..100).
+  `buildBattle` resolves the battle-relevant ones onto the `Combatant` (converting
+  `AttackStatus` to the model's own `StatusInstance`), so the pure battle model
+  still never touches the content database.
+- **AoE basic attack.** `Battle::attack` dispatches to `attackOne` (the pre-M45
+  body, byte-identical) or `attackAll`, which repeats a full independent strike
+  per living foe — its own to-hit roll, passives, and `applyAttackStatuses`. A
+  confused sweeper still lashes at one of its own side.
+- **The uncontrolled turn.** `uncontrolledChoice(b, actor, db)` picks among the
+  actor's affordable, castable skills plus the basic attack and aims it, from a
+  **pure hash** of (`rngSeed`, `turnsTaken`, actor) under its own salts — no
+  `rollCursor` consumption, so `BattleState`, the Simulator, and
+  `chooseEnemyAction` all derive the same turn with no ordering contract between
+  them. Ally-facing skills retarget to a random ally.
+- **Jest lines.** `jestThisTurn` is the same kind of pure hash under a third salt
+  (15 %), returning an index into a `BattleState`-local table of twelve original
+  lines. It never advances the stream: showing or hiding a quip cannot change an
+  outcome.
+- **A sim-fidelity fix this milestone forced:** the Simulator now sets
+  `battle.turnsTaken` each round. It was left at 0, while `BattleState` counts
+  rounds — and `chooseEnemyAction`'s tie-break jitter reads it, so the two drivers
+  could pick different targets in a near-tie. Tracking it closes that gap and is
+  what makes the per-round Jester hash identical in both. Covered by the rules
+  bump.
+- **Equip bans.** `canEquipSlot(character, slot, db)` is the one rule; the equip
+  shop refuses with a stated reason and still allows buying.
+- **Scoring.** `RunSummary.classModPct` (from the pure `partyClassModPct`) →
+  `ScoreBreakdown.classMod`, applied to the same subtotal as the town bonus and
+  clamped to ±100 %, → a visible result row and the optional
+  `ScoreEntry.classModPct` tag. M19 holds: tagged, visible, never normalized, and
+  ranking is untouched.
 
 ## 13. Presentation (Milestone 8)
 

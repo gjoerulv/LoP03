@@ -172,6 +172,14 @@ std::uint64_t mix64(std::uint64_t x) {
 constexpr std::uint64_t kSaltBlind = 0xB11D5EED0F0F0F0Full;   // physical miss (Blind + Evasion)
 constexpr std::uint64_t kSaltConfuse = 0xC0FFED15C0117E00ull;
 constexpr std::uint64_t kSaltWard = 0x5FADE0000ABCDEF0ull;    // Spell Ward magic fizzle
+// M45 Jester salts. These mix into a PURE hash (targetJitter), never into the
+// roll stream, so an uncontrolled turn and its quip are reproducible without any
+// ordering contract between the battle screen and the Simulator.
+constexpr std::uint64_t kSaltJesterAct = 0x1E57E7AC7100D1E5ull;   // which action
+constexpr std::uint64_t kSaltJesterAim = 0x1E57E7A10A1D0000ull;   // which target
+constexpr std::uint64_t kSaltJesterLine = 0x1E57E71114E00D1Eull;  // which quip, if any
+// M45: how often an uncontrolled Jester quips (presentation only).
+constexpr int kJestChancePct = 15;
 
 // Small deterministic jitter in [0, range) from the battle seed + round + acting
 // enemy + candidate. Pure, so a given encounter always resolves identically and
@@ -575,6 +583,18 @@ std::string Battle::tickStatuses(int unit) {
 
 std::string Battle::attack(int actor, int target) {
     lastMissed.clear();
+    // M45: a class whose basic attack hits every foe sweeps instead of striking
+    // one — except while confused, when it lashes at a single member of its own
+    // side like anyone else.
+    const Combatant& self = units[static_cast<std::size_t>(actor)];
+    if (self.attackHitsAll && !isConfused(self)) {
+        return attackAll(actor);
+    }
+    return attackOne(actor, target);
+}
+
+std::string Battle::attackOne(int actor, int target) {
+    lastMissed.clear();
     // Confusion (M35): a confused unit swings at a seeded random member of its own
     // side instead. (Draws from the shared roll stream, so live play and the
     // Simulator reproduce it identically.)
@@ -616,10 +636,55 @@ std::string Battle::attack(int actor, int target) {
         log += " " + t.name + " is KO'd!";
     }
     log += extra;
+    log += applyAttackStatuses(actor, target);  // M45 (the Dragon's bite)
     if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
         a.enrageAnnounced = true;
         log = a.name + " flies into a rage! " + log;
     }
+    return log;
+}
+
+std::string Battle::applyAttackStatuses(int actor, int target) {
+    // M45: statuses a class's BASIC attack carries (the Dragon's poison + blind),
+    // applied only on a connecting hit and only to a living target. Empty for
+    // every unit that carries none, so pre-M45 attacks are byte-identical.
+    Combatant& a = units[static_cast<std::size_t>(actor)];
+    Combatant& t = units[static_cast<std::size_t>(target)];
+    if (a.attackStatuses.empty() || !t.alive()) {
+        return "";
+    }
+    std::string log;
+    for (const StatusInstance& s : a.attackStatuses) {
+        if (s.type == content::StatusType::None || isImmuneTo(t, s.type)) {
+            continue;
+        }
+        addStatus(t, s.type, s.magnitude, s.turns);
+        log += " " + t.name + ": " + statusLabel(s.type) + ".";
+    }
+    return log;
+}
+
+std::string Battle::attackAll(int actor) {
+    // M45: an AoE basic attack (the Dragon) resolves as one independent strike per
+    // living foe — its own to-hit roll, its own passive interactions, its own
+    // statuses — so it reads and resolves exactly like the single-target attack it
+    // is repeated from.
+    const Side foe =
+        units[static_cast<std::size_t>(actor)].side == Side::Party ? Side::Enemy : Side::Party;
+    const std::vector<int> targets = aliveIndices(foe);
+    if (targets.empty()) {
+        return units[static_cast<std::size_t>(actor)].name + " finds nothing to strike.";
+    }
+    std::string log = units[static_cast<std::size_t>(actor)].name + " sweeps every foe!";
+    std::vector<int> missed;
+    for (int ti : targets) {
+        if (!units[static_cast<std::size_t>(ti)].alive()) {
+            continue;  // felled by an earlier strike in this same sweep
+        }
+        log += " " + attackOne(actor, ti);
+        missed.insert(missed.end(), lastMissed.begin(), lastMissed.end());
+    }
+    lastMissed = std::move(missed);  // every miss in the sweep, for the floaters
     return log;
 }
 
@@ -804,6 +869,20 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             log += " " + t.name + ": " + statusLabel(skill.statusEffect) + ".";
         }
     }
+    // M45 (the Goose's tradeoff): a skill authored `alsoBuffsEnemies` applies its
+    // status to every living FOE as well — the price of a goose's kindness. Inert
+    // for every other skill, so nothing else changes.
+    if (skill.alsoBuffsEnemies && skill.statusEffect != content::StatusType::None) {
+        const Side foe = a.side == Side::Party ? Side::Enemy : Side::Party;
+        for (int fi : aliveIndices(foe)) {
+            Combatant& f = units[static_cast<std::size_t>(fi)];
+            if (isImmuneTo(f, skill.statusEffect)) {
+                continue;
+            }
+            addStatus(f, skill.statusEffect, skill.statusMagnitude, skill.statusDuration);
+            log += " " + f.name + " is cheered up: " + statusLabel(skill.statusEffect) + "!";
+        }
+    }
     if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
         a.enrageAnnounced = true;
         log = a.name + " flies into a rage! " + log;
@@ -921,6 +1000,13 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             // character's level (startingSkills + level-gated grants), derived
             // identically here for live play and the headless simulator.
             u.skillIds = content::knownSkillsFor(*cls, c.level);
+            // M45: class battle traits are resolved once, here, so the pure model
+            // never needs the content database to know how a unit fights.
+            u.attackHitsAll = cls->attackHitsAll;
+            for (const content::AttackStatus& s : cls->attackStatuses) {
+                u.attackStatuses.push_back({s.type, s.magnitude, s.duration});
+            }
+            u.uncontrolled = cls->uncontrolled;
         }
         // M36: own many, equip one - resolve the single equipped passive.
         if (!c.equippedPassive.empty()) {
@@ -1052,6 +1138,69 @@ EnemyChoice confusedChoice(const Battle& b, int actor) {
     // only a valid nominal target; the actor itself serves when nothing opposes it.
     choice.target = foes.empty() ? actor : foes.front();
     return choice;
+}
+
+EnemyChoice uncontrolledChoice(const Battle& b, int actor, const content::ContentDatabase& db) {
+    EnemyChoice choice;
+    const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    const Side foe = self.side == Side::Party ? Side::Enemy : Side::Party;
+    const std::vector<int> foes = b.aliveIndices(foe);
+    if (foes.empty()) {
+        choice.target = -1;
+        return choice;
+    }
+    // Pure hashes of (seed, round, actor) under their own salts: no roll-stream
+    // consumption, so every decider derives the identical turn.
+    const std::uint64_t pickRoll = static_cast<std::uint64_t>(
+        targetJitter(b.rngSeed ^ kSaltJesterAct, b.turnsTaken, actor, 0, 1 << 20));
+    const std::uint64_t aimRoll = static_cast<std::uint64_t>(
+        targetJitter(b.rngSeed ^ kSaltJesterAim, b.turnsTaken, actor, 1, 1 << 20));
+
+    choice.target = foes[static_cast<std::size_t>(aimRoll % foes.size())];
+
+    // Its options: every known skill it can actually cast and afford, plus the
+    // basic attack (always available). An unusable skill is simply not an option,
+    // so a silenced or broke Jester still swings instead of fizzling.
+    std::vector<const std::string*> castable;
+    for (const std::string& sid : self.skillIds) {
+        const content::SkillDef* s = db.findSkill(sid);
+        if (s != nullptr && s->mpCost <= self.mp && canCast(self, *s)) {
+            castable.push_back(&sid);
+        }
+    }
+    const std::size_t options = castable.size() + 1;  // +1 = the basic attack
+    const std::size_t pick = pickRoll % options;
+    if (pick < castable.size()) {
+        choice.useSkill = true;
+        choice.skillId = *castable[pick];
+        // An ally-facing skill is aimed at a random ALLY instead (the Jester is
+        // chaotic, not suicidal).
+        if (const content::SkillDef* s = db.findSkill(choice.skillId);
+            s != nullptr && (s->target == content::SkillTarget::SingleAlly ||
+                             s->target == content::SkillTarget::AllAllies ||
+                             s->target == content::SkillTarget::Self)) {
+            const std::vector<int> allies = b.aliveIndices(self.side);
+            choice.target = allies.empty() ? actor
+                                           : allies[static_cast<std::size_t>(aimRoll %
+                                                                             allies.size())];
+        }
+    }
+    return choice;
+}
+
+bool jestThisTurn(const Battle& b, int actor, int lineCount, int& index) {
+    index = 0;
+    if (lineCount <= 0) {
+        return false;
+    }
+    // Presentation only: its own salt, a pure hash, no rollCursor. Whether a jest
+    // shows can never change how the battle resolves.
+    const long roll = targetJitter(b.rngSeed ^ kSaltJesterLine, b.turnsTaken, actor, 2, 10000);
+    if (roll % 100 >= kJestChancePct) {
+        return false;
+    }
+    index = static_cast<int>((roll / 100) % lineCount);
+    return true;
 }
 
 ForcedAction forcedActionFor(const Combatant& c) {

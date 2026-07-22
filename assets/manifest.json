@@ -113,6 +113,9 @@
     { "id": "actor.cleric.battle", "type": "texture", "path": "textures/actors/cleric_battle.png" },
     { "id": "actor.rogue.battle", "type": "texture", "path": "textures/actors/rogue_battle.png" },
     { "id": "actor.guardian.battle", "type": "texture", "path": "textures/actors/guardian_battle.png" },
+    { "id": "actor.dragon.battle", "type": "texture", "path": "textures/actors/dragon_battle.png" },
+    { "id": "actor.jester.battle", "type": "texture", "path": "textures/actors/jester_battle.png" },
+    { "id": "actor.goose.battle", "type": "texture", "path": "textures/actors/goose_battle.png" },
 
     { "id": "enemy.normal.battle", "type": "texture", "path": "textures/enemies/normal_battle.png" },
     { "id": "enemy.elite.battle", "type": "texture", "path": "textures/enemies/elite_battle.png" },

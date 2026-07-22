@@ -7,6 +7,7 @@
 #include "core/FadeController.hpp"
 #include "game/Achievements.hpp"
 #include "game/Party.hpp"
+#include "game/Profile.hpp"
 #include "input/Input.hpp"
 #include "render/VirtualScreen.hpp"
 #include "resource/ResourceManager.hpp"
@@ -57,6 +58,7 @@ private:
     settings::SettingsStore settings_;
     tutorial::TutorialStore tutorial_;
     AchievementStore achievements_;
+    ProfileStore profile_;
     AppContext context_;
     StateStack stack_;
     bool debugOverlay_;

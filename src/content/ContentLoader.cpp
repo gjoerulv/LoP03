@@ -82,6 +82,7 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
         d.controlEffect =
             r.optEnum<SkillEffect>("control", parseSkillEffect, SkillEffect::None, "control effect");
         d.reviveHpPct = r.optIntMin("reviveHpPct", 0, 0);  // M43 (default 0 = cannot revive)
+        d.alsoBuffsEnemies = r.optBool("alsoBuffsEnemies", false);  // M45 (Goose tradeoff)
         d.description = r.optString("description");
 
         // Semantic rules tying fields together (M43): a revive-capable skill is a
@@ -136,6 +137,45 @@ void parseClasses(const Json& root, const std::string& source, ContentDatabase& 
                 }
             }
         }
+        // M45 reward-class fields: all optional, all inert by default.
+        d.unlockedByKing = r.optBool("unlockedByKing", false);
+        d.attackHitsAll = r.optBool("attackHitsAll", false);
+        d.uncontrolled = r.optBool("uncontrolled", false);
+        d.scoreModPct = r.optInt("scoreModPct", 0);
+        for (const std::string& slot : r.optStringArray("equipBans")) {
+            if (const std::optional<EquipSlot> parsed = parseEquipSlot(slot);
+                parsed && *parsed != EquipSlot::None) {
+                d.equipBans.push_back(*parsed);
+            } else {
+                rep.add(source, ctx, "unknown equip slot '" + slot + "' in 'equipBans'");
+            }
+        }
+        if (const auto it = el.find("attackStatuses"); it != el.end()) {
+            if (!it->is_array()) {
+                rep.add(source, ctx + ".attackStatuses", "expected array");
+            } else {
+                int ai = 0;
+                for (const auto& ae : *it) {
+                    const std::string actx = ctx + ".attackStatuses[" + std::to_string(ai) + "]";
+                    if (!ae.is_object()) {
+                        rep.add(source, actx, "expected object");
+                    } else {
+                        ObjectReader ar(ae, actx, source, rep);
+                        AttackStatus st;
+                        st.type = ar.reqEnum<StatusType>("type", parseStatusType, "status type");
+                        st.magnitude = ar.optIntMin("magnitude", 0, 0);
+                        st.duration = ar.reqIntMin("duration", 1);
+                        d.attackStatuses.push_back(st);
+                    }
+                    ++ai;
+                }
+            }
+        }
+        // Semantic rule: a score modifier is a percentage, not a multiplier.
+        if (d.scoreModPct < -100 || d.scoreModPct > 100) {
+            rep.add(source, ctx, "'scoreModPct' must be -100..100");
+        }
+
         if (rep.errorCount() != before) {
             return;
         }

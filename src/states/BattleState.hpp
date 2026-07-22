@@ -49,6 +49,9 @@ public:
     // Capture-only (M44): open the item list, so the widest item name + count
     // column (the Royal Relics) is overflow-checked.
     void captureEnterItemMenu();
+    // Capture-only (M45): show the LONGEST Jester quip, so the mid-screen line is
+    // overflow-checked at its worst case.
+    void captureShowJest();
 #endif
 
 private:
@@ -72,6 +75,7 @@ private:
     void executePending(int targetUnit);
     void executeEnemy(int actor);
     void executeConfused(int actor);  // M35: a confused party member auto-attacks an ally
+    void executeUncontrolled(int actor);  // M45: the Jester picks its own turn
     // M42: fold a party action's enemy damage into the run's victory tallies.
     void accumulateStats(const std::vector<int>& hpBefore, int actor, bool offensiveStatus);
     void afterAction();
@@ -131,6 +135,10 @@ private:
     int targetCursor_ = 0;
 
     std::string message_;
+    // M45: the Jester's current quip, shown mid-screen while it lasts. Purely
+    // decorative — nothing reads it back into the battle.
+    std::string jestLine_;
+    float jestTimer_ = 0.0f;
     std::vector<FloatNumber> floats_;
 
     // Staged presentation (M18): the sim result is already final; these only

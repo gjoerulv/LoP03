@@ -68,6 +68,16 @@ std::string equipDetail(const content::ItemDef& it) {
     return out;
 }
 
+const char* slotLabel(content::EquipSlot s) {
+    switch (s) {
+        case content::EquipSlot::Weapon: return "Weapon";
+        case content::EquipSlot::Armor: return "Armor";
+        case content::EquipSlot::Accessory: return "Accessory";
+        case content::EquipSlot::None: break;
+    }
+    return "Item";
+}
+
 content::EquipSlot slotEnum(int slot) {
     switch (slot) {
         case 0: return content::EquipSlot::Weapon;
@@ -234,6 +244,15 @@ void EquipShopState::confirm() {
             break;
         case Phase::EquipItem: {
             Character& c = context_.party.members[static_cast<std::size_t>(selectedChar_)];
+            // M45: a class may be barred from a slot entirely. Buying is never
+            // blocked — only equipping — and the refusal says why.
+            if (cursor != 0 && !canEquipSlot(c, slotEnum(selectedSlot_), context_.content)) {
+                context_.audio.play(Sfx::Error);
+                const content::ClassDef* cls = context_.content.findClass(c.classId);
+                message_ = std::string("A ") + (cls != nullptr ? cls->name : c.classId) +
+                           " cannot equip " + slotLabel(slotEnum(selectedSlot_)) + ".";
+                break;
+            }
             std::string& ref = slotRef(c, selectedSlot_);
             if (cursor == 0) {  // Unequip
                 if (!ref.empty()) {
@@ -276,16 +295,6 @@ std::string bonusDelta(const content::StatBlock& next, const content::StatBlock&
     add("DEF", next.defense - cur.defense);
     add("SPD", next.speed - cur.speed);
     return out;
-}
-
-const char* slotLabel(content::EquipSlot s) {
-    switch (s) {
-        case content::EquipSlot::Weapon: return "Weapon";
-        case content::EquipSlot::Armor: return "Armor";
-        case content::EquipSlot::Accessory: return "Accessory";
-        case content::EquipSlot::None: break;
-    }
-    return "Item";
 }
 
 }  // namespace

@@ -51,8 +51,8 @@
 | 41 | Story NPCs & lore | ☑ complete (approved) |
 | 42 | Enrichment: bestiary, victory stats, achievements | ☑ complete (approved) |
 | 43 | Balance pass & audit fixes | ☑ complete (approved) |
-| 44 | Royal Relics & the doubled King | ◑ implemented, awaiting manual approval |
-| 45 | The King's classes: Dragon, Jester, Goose | ☐ planned |
+| 44 | Royal Relics & the doubled King | ☑ complete (approved) |
+| 45 | The King's classes: Dragon, Jester, Goose | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -65,6 +65,14 @@ only their position in the sequence changed. Each expansion program (M31–M34
 towns/stakes/market, 2026-07-20; M35–M42 endgame, 2026-07-21; M43–M45 King's
 Gambit, 2026-07-22) was authorized as content/systems work the game needs
 before M23/M24 are worth running. See the program sections below.
+
+**With M45 the King's Gambit program is finished, and with it the expansion
+work: M23 → M24 are next.** Both must be re-audited against the post-M45
+checkout before they begin — the capture set is now 49 scenes, the balance
+batteries have grown (`[economy-report]`, `[castle-report]`, `[king-report]`,
+`[classes-report]`), and the packaging manifest must account for everything
+M43–M45 added (the relic prop, three class sprites, and the new `profile.json`
+user-data file).
 
 ## M1 — Project foundation
 
@@ -778,10 +786,12 @@ milestone is not automatic authorization to start the next.
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
   Re-audit this note against the post-M45 checkout before starting — the
-  capture scene list and balance battery will both need extending for
-  everything M25–M45 added (AI, content, art, town ladder, stakes, black
-  market, statuses/passives, castle challenges, relics, and the unlockable
-  classes).
+  capture scene list is now **49 scenes** and the balance batteries have grown
+  (`[economy-report]`, `[castle-report]`, `[king-report]`, `[classes-report]`);
+  both need extending for everything M25–M45 added (AI, content, art, town
+  ladder, stakes, black market, statuses/passives, castle challenges, relics,
+  and the unlockable classes). **M45 is implemented, so this is next in line
+  once the owner approves it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -1764,7 +1774,8 @@ Owner decisions taken at planning time (2026-07-22, via Q&A):
 
 ## M44 — Royal Relics & the doubled King
 
-- **Status:** ◑ implemented, awaiting manual approval — authorized by the owner
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-22 after
+  manual testing, committed as `5608528`. Authorized
   2026-07-22 together with M43's approval; note authored and re-audited against
   `65c9a47` (all the plan's facts held; two new ones drove decisions — statuses
   tick before their bearer acts, and the King is fought at a 420 % stat scale).
@@ -1815,7 +1826,35 @@ Owner decisions taken at planning time (2026-07-22, via Q&A):
 
 ## M45 — The King's classes: Dragon, Jester, Goose
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — authorized by the owner
+  2026-07-22 with M44's approval; the **final milestone of the King's Gambit
+  program**. Note authored and re-audited against `5608528` (all the plan's facts
+  held; one new one drove the design — `PartyCreationState::begin()` resets the
+  whole party, so the unlock could not live on it). Implemented the same day: a
+  cross-save **profile store** (`profile.json`) set by the King's fall and
+  granted **retroactively** when a save that already beat him is loaded;
+  `ClassDef` gains `unlockedByKing` / `equipBans` / `attackHitsAll` /
+  `attackStatuses[]` / `uncontrolled` / `scoreModPct`, so all three classes are
+  data plus generic flags with **no class id branched on in code**; **Dragon**
+  (huge stats, no skills, no armor, a basic attack that sweeps every foe applying
+  poison + blind per connecting hit, −20 % score each), **Jester**
+  (uncontrolled — a seeded pure-hash turn shared by `BattleState`, the Simulator
+  and `chooseEnemyAction`, no weapon, twelve original quips at 15 % via a
+  presentation-only hash, +5 % each), **Goose** (dreadful stats, equips nothing,
+  heals that buff every enemy via `SkillDef.alsoBuffsEnemies`, a level-30 /
+  30 MP all-debuff ultimate, +5 % each); the additive class modifier flows
+  `partyClassModPct` → `RunSummary` → a visible `ScoreBreakdown` row → the
+  `ScoreEntry.classModPct` tag (M19: tagged, never normalized, ranking untouched).
+  `kBattleRulesVersion` **5 → 6**; generation and save versions unchanged.
+  **426/426 tests** (+21) in Debug and Release, `--capture` **49/49**
+  overflow-clean (locked/unlocked class select, a jest line; the result scene now
+  also carries the class row as its worst case), both configs clean.
+  **Deviations:** the Simulator now tracks `turnsTaken` — it sat at 0 while
+  `BattleState` counted rounds, and the enemy tie-break jitter reads it, so the
+  two drivers could already disagree on targeting in a near-tie (fixed, covered
+  by the rules bump); the uncontrolled turn is a pure hash rather than a
+  roll-stream draw; `Combatant::attackStatuses` reuses the model's own
+  `StatusInstance`. Note: `docs/milestone_notes/M45_kings_classes.md`.
 - **Goal:** three unlockable joke-but-real classes as the King's reward,
   schema-driven (no hardcoded class behavior outside data + generic flags).
 - **Primary deliverables:** a cross-save **profile store** (first King kill

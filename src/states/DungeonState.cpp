@@ -609,6 +609,9 @@ void DungeonState::completeDungeon() {
     const int stakesPct =
         stakesPenaltyPct(context_.party.stakes, dungeon_.town, dungeon_.depth);
     summary.stakesPenaltyPct = stakesPct;
+    // M45: the party's additive unlockable-class modifier (0 for any party of the
+    // six original classes). Derived from the classes, never hand-set.
+    summary.classModPct = partyClassModPct(context_.party, context_.content);
     // M34: whether this run raises the stakes (the black-market spawn trigger),
     // read from the PRE-run state before it advances below.
     const bool raisedStakes =
@@ -681,7 +684,8 @@ void DungeonState::completeDungeon() {
     entry.partyLevel = highestLevel(context_.party);
     entry.battleRulesVersion = battle::kBattleRulesVersion;
     entry.townIndex = dungeon_.town;  // M32
-    entry.stakesPenaltyPct = stakesPct;  // M33
+    entry.stakesPenaltyPct = stakesPct;      // M33
+    entry.classModPct = summary.classModPct;  // M45 (comparability tag, never ranked)
     context_.scoreboard.add(entry);
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);

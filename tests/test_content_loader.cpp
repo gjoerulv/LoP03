@@ -134,8 +134,8 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     const bool ok = loadAll(fs::path(CRYSTAL_TEST_DATA_DIR), db, rep);
     INFO(rep.summary());
     REQUIRE(ok);
-    REQUIRE(db.classCount() == 6);
-    REQUIRE(db.skillCount() == 54);  // +6 M40 King damage+debuff skills
+    REQUIRE(db.classCount() == 9);  // 6 original + 3 M45 King-reward classes
+    REQUIRE(db.skillCount() == 57);  // +3 M45 Goose skills
     REQUIRE(db.enemyCount() == 43);  // +12 M38 per-town enemies (4 normal + 8 elite)
     REQUIRE(db.itemCount() == 74);  // +1 M43 Royal Snacks, +4 M44 Royal Relics
     REQUIRE(db.bossCount() == 13);  // +1 M40 The Hollow King

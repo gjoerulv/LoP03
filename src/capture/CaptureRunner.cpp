@@ -21,6 +21,7 @@
 #include "core/GameConfig.hpp"
 #include "dungeon/DungeonGenerator.hpp"
 #include "game/Achievements.hpp"
+#include "game/Profile.hpp"
 #include "game/Castle.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
@@ -181,6 +182,7 @@ score::RunSummary maximalRunSummary() {
     run.wagerAccepted = true;
     run.townBonusPct = 100;      // M32: max town bonus
     run.stakesPenaltyPct = 99;   // M33/M35: max penalty (-99%) -> town-bonus + penalty rows, fullest panel
+    run.classModPct = -80;       // M45: an all-Dragon party -> the class row, fullest panel
     return run;
 }
 
@@ -236,10 +238,14 @@ int run(const char* outDir) {
         tutorial::TutorialStore tutorial(scratch / "tutorial.json");
         tutorial.state.enabled = false;  // prompts only in their own scene
         AchievementStore achievements(scratch / "achievements.json");
+        // M45: captures run with the reward classes UNLOCKED unless a scene says
+        // otherwise, so the class-select scene can show both states.
+        ProfileStore profile(scratch / "profile.json");
+        profile.data.kingDefeated = true;
 
-        AppContext ctx{resources,  content, saves,       party,
-                       scoreboard, audio,   fade,        input,
-                       settings,   tutorial, achievements,
+        AppContext ctx{resources,  content,  saves,        party,
+                       scoreboard, audio,    fade,         input,
+                       settings,   tutorial, achievements, profile,
                        config::kVirtualWidth, config::kVirtualHeight};
 
         // One full save slot (the others stay empty) for the slot menu.
@@ -698,6 +704,43 @@ int run(const char* outDir) {
                  auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
                                                             MusicTrack::KingBattle, nullptr, true);
                  state->captureEnterItemMenu();
+                 s.pushState(std::move(state));
+             }},
+            {"47_class_select_locked",
+             [](StateStack& s, AppContext& c) {
+                 // M45: the reward classes are listed but locked, with the hint —
+                 // the goal is visible from the very first New Game.
+                 c.profile.data.kingDefeated = false;
+                 auto state = std::make_unique<PartyCreationState>(s, c);
+                 state->captureSelectClass(0, "dragon");
+                 state->captureSelectClass(1, "jester");
+                 state->captureSelectClass(2, "goose");
+                 s.pushState(std::move(state));
+             }},
+            {"48_class_select_unlocked",
+             [](StateStack& s, AppContext& c) {
+                 c.profile.data.kingDefeated = true;  // after the King has fallen
+                 auto state = std::make_unique<PartyCreationState>(s, c);
+                 state->captureSelectClass(0, "dragon");
+                 state->captureSelectClass(1, "jester");
+                 state->captureSelectClass(2, "goose");
+                 s.pushState(std::move(state));
+             }},
+            {"49_battle_jest",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M45: the longest quip, mid-screen, over a real battle.
+                 Party jesters = c.party;
+                 if (const content::ClassDef* cls = c.content.findClass("jester")) {
+                     jesters.members.clear();
+                     jesters.members.push_back(createCharacter(*cls, "Christabelle", 30));
+                     for (int i = 1; i < 4; ++i) {
+                         jesters.members.push_back(createCharacter(*cls, "Wolfgangheim", 30));
+                     }
+                 }
+                 battle::Battle b =
+                     battle::buildBattle(jesters, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureShowJest();
                  s.pushState(std::move(state));
              }},
             {"44_quit_confirm",

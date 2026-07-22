@@ -201,6 +201,37 @@ $b = New-Humanoid $PAL.clsGuardian $PAL.stone2 $PAL.clsGuardian   # Guardian: to
 FR $b 2 5 5 14 $PAL.clsGuardian; FR $b 3 6 3 12 $PAL.earth3; FR $b 4 8 1 8 $PAL.gold
 Save-Actor $b 'guardian_battle'
 
+# --- M45 unlockable classes (silhouette-distinct: none of them is a humanoid
+# --- outline you could mistake for the six originals) ---
+$b = New-Img 24 24                                                # Dragon: horned wyrm
+$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.veg2)), 3, 9, 16, 11)   # body
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.veg1)), 2, 3, 9, 8); $g.Dispose()  # head
+FR $b 2 1 2 3 $PAL.stone3; FR $b 8 1 2 3 $PAL.stone3               # horns
+P $b 4 6 $PAL.danger; P $b 8 6 $PAL.danger                         # eyes
+FR $b 12 4 3 6 $PAL.veg1; FR $b 15 6 4 5 $PAL.veg2                 # wing
+FR $b 5 20 3 2 $PAL.night1; FR $b 13 20 3 2 $PAL.night1            # claws
+Outline $b; SaveImg $b 'actors/dragon_battle.png'
+
+$b = New-Humanoid $PAL.clsRogue $PAL.violet $PAL.gold              # Jester: belled cap
+FR $b 7 2 10 1 $PAL.violet
+FR $b 6 0 3 3 $PAL.clsRogue; FR $b 15 0 3 3 $PAL.gold              # two drooping points
+P $b 6 3 $PAL.gold; P $b 17 3 $PAL.gold                            # bells
+FR $b 9 9 2 6 $PAL.gold; FR $b 13 9 2 6 $PAL.gold                  # motley stripes
+FR $b 4 12 3 3 $PAL.gold                                           # a juggled something
+Outline $b; SaveImg $b 'actors/jester_battle.png'
+
+$b = New-Img 24 24                                                # Goose: goose.
+$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C '#F2F2F0')), 4, 11, 15, 10)  # body
+$g.FillEllipse((New-Object System.Drawing.SolidBrush(C '#F2F2F0')), 5, 2, 7, 7); $g.Dispose()  # head
+FR $b 8 8 3 5 '#F2F2F0'                                            # neck
+FR $b 2 4 4 2 $PAL.gold                                            # beak
+P $b 8 4 $PAL.night1                                               # eye
+FR $b 12 14 5 3 '#D8D8D4'                                          # wing
+FR $b 7 21 2 2 $PAL.gold; FR $b 12 21 2 2 $PAL.gold                # feet
+Outline $b; SaveImg $b 'actors/goose_battle.png'
+
 # Enemies face right.
 $b = New-Img 24 24                                                # Normal: hunched beast
 $g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
