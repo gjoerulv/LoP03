@@ -13,6 +13,8 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "game/Achievements.hpp"
+#include "states/AchievementToast.hpp"
 #include "states/BattleState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
@@ -150,6 +152,9 @@ void CastleChallengeState::finish(bool cleared) {
             break;
     }
     resultText_ = msg;
+    // M42: a challenge win may unlock castle achievements; toast them above the
+    // result overlay this state renders.
+    pushAchievementToasts(stack(), context_, AchvContext{});
 }
 
 #ifdef CRYSTAL_CAPTURE

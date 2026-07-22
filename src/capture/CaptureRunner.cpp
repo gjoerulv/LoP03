@@ -20,6 +20,7 @@
 #include "core/FadeController.hpp"
 #include "core/GameConfig.hpp"
 #include "dungeon/DungeonGenerator.hpp"
+#include "game/Achievements.hpp"
 #include "game/Castle.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
@@ -33,8 +34,11 @@
 #include "settings/Settings.hpp"
 #include "states/BattleState.hpp"
 #include "states/BlackMarketState.hpp"
+#include "states/AchievementsState.hpp"
+#include "states/BestiaryState.hpp"
 #include "states/CastleChallengeState.hpp"
 #include "states/CastleState.hpp"
+#include "states/ConfirmPromptState.hpp"
 #include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonResultState.hpp"
@@ -52,6 +56,7 @@
 #include "states/SettingsState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
+#include "states/TownMenuState.hpp"
 #include "states/TownState.hpp"
 #include "states/TrainingHallState.hpp"
 #include "states/TutorialPromptState.hpp"
@@ -230,10 +235,11 @@ int run(const char* outDir) {
         settings::SettingsStore settings(scratch / "settings.json");
         tutorial::TutorialStore tutorial(scratch / "tutorial.json");
         tutorial.state.enabled = false;  // prompts only in their own scene
+        AchievementStore achievements(scratch / "achievements.json");
 
-        AppContext ctx{resources,  content, saves, party,
-                       scoreboard, audio,   fade,  input,
-                       settings,   tutorial,
+        AppContext ctx{resources,  content, saves,       party,
+                       scoreboard, audio,   fade,        input,
+                       settings,   tutorial, achievements,
                        config::kVirtualWidth, config::kVirtualHeight};
 
         // One full save slot (the others stay empty) for the slot menu.
@@ -341,6 +347,15 @@ int run(const char* outDir) {
              }},
             {"11_slot_menu_save",
              [](StateStack& s, AppContext& c) {
+                 // Write one occupied slot carrying the King title, the widest
+                 // row content the screen can show.
+                 const int gold = c.party.gold;
+                 c.party.gold = 999999;
+                 c.party.castleRecords.kingTitle = kKingTitle;
+                 content::LoadReport report;
+                 c.saves.save(save::SaveSlot::Manual1, c.party, report);
+                 c.party.gold = gold;  // the slot summary keeps it; later scenes must not
+                 c.party.castleRecords.kingTitle.clear();
                  s.pushState(std::make_unique<SlotMenuState>(s, c, SlotMenuMode::Save));
              }},
             {"12_scoreboard",
@@ -558,6 +573,104 @@ int run(const char* outDir) {
                      s.pushState(std::make_unique<StoryDialogState>(s, c, b->speaker, b->title,
                                                                     b->body));
                  }
+             }},
+            {"38_bestiary",
+             [](StateStack& s, AppContext& c) {
+                 // M42: the bestiary over the full roster (undiscovered foes read
+                 // as unknowns), to overflow-check the list and the detail panel.
+                 int n = 0;
+                 for (const auto& [id, def] : c.content.enemies()) {
+                     (void)def;
+                     c.party.encountered.push_back(id);
+                     if (++n >= 8) break;
+                 }
+                 n = 0;
+                 for (const auto& [id, def] : c.content.bosses()) {
+                     (void)def;
+                     c.party.encountered.push_back(id);
+                     if (++n >= 4) break;
+                 }
+                 s.pushState(std::make_unique<BestiaryState>(s, c));
+             }},
+            {"39_achievements",
+             [](StateStack& s, AppContext& c) {
+                 // M42: the achievements screen with a mix of unlocked / locked.
+                 c.achievements.unlocked = {"first_clear", "trailblazer", "kingslayer",
+                                            "loremaster", "deep_diver"};
+                 s.pushState(std::make_unique<AchievementsState>(s, c));
+             }},
+            {"40_run_stats",
+             [](StateStack& s, AppContext& c) {
+                 // M42: the run-stats Details overlay (result-screen Details key).
+                 const std::string body =
+                     "This run\nTotal damage dealt: 4820\nBiggest single hit: 612\n"
+                     "Statuses inflicted: 7\nMVP: Christabelle Wolfgangheim\n\n"
+                     "Personal records\nBiggest hit ever: 999\nMost damage in a run: 12345";
+                 s.pushState(std::make_unique<DetailsOverlayState>(s, c, "Run Stats", body));
+             }},
+            {"41_bestiary_king",
+             [](StateStack& s, AppContext& c) {
+                 // The heaviest bestiary entry: the longest boss name, three
+                 // passives on their own lines, and the longest flavor text.
+                 c.party.encountered.push_back(kKingBossId);
+                 c.party.encountered.push_back("obsidian_colossus");
+                 auto state = std::make_unique<BestiaryState>(s, c);
+                 state->captureSelect(kKingBossId);
+                 s.pushState(std::move(state));
+             }},
+            {"42_battle_skills",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // The skill list with the widest party skill names, so the name
+                 // column and the right-aligned MP column are both checked.
+                 std::vector<std::string> skills;
+                 for (const auto& [id, def] : c.content.classes()) {
+                     (void)id;
+                     skills.insert(skills.end(), def.startingSkills.begin(),
+                                   def.startingSkills.end());
+                     for (const content::LearnEntry& e : def.learnset) {
+                         skills.push_back(e.skill);
+                     }
+                 }
+                 std::sort(skills.begin(), skills.end(), [&c](const std::string& a,
+                                                              const std::string& b) {
+                     const content::SkillDef* sa = c.content.findSkill(a);
+                     const content::SkillDef* sb = c.content.findSkill(b);
+                     const std::size_t la = sa != nullptr ? sa->name.size() : 0;
+                     const std::size_t lb = sb != nullptr ? sb->name.size() : 0;
+                     return la != lb ? la > lb : a < b;
+                 });
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterSkillMenu(std::move(skills));
+                 s.pushState(std::move(state));
+             }},
+            {"43_slot_menu_load",
+             [](StateStack& s, AppContext& c) {
+                 // The deepest slot list: four occupied rows, each carrying a
+                 // title line, plus a message under them.
+                 const int gold = c.party.gold;
+                 c.party.gold = 999999;
+                 c.party.castleRecords.kingTitle = kKingTitle;
+                 content::LoadReport report;
+                 for (save::SaveSlot slot :
+                      {save::SaveSlot::Auto, save::SaveSlot::Manual1, save::SaveSlot::Manual2,
+                       save::SaveSlot::Manual3}) {
+                     c.saves.save(slot, c.party, report);
+                 }
+                 c.party.gold = gold;
+                 c.party.castleRecords.kingTitle.clear();
+                 s.pushState(std::make_unique<SlotMenuState>(s, c, SlotMenuMode::Load));
+             }},
+            {"44_quit_confirm",
+             [](StateStack& s, AppContext& c) {
+                 // The pause menu's quit question, over the pause panel it opens
+                 // from — the same strings TownMenuState passes.
+                 s.pushState(std::make_unique<TownState>(s, c));
+                 s.pushState(std::make_unique<TownMenuState>(s, c));
+                 s.pushState(std::make_unique<ConfirmPromptState>(
+                     s, c, "Quit to Title", "Progress since your last save will be lost.",
+                     "Quit to Title", "Keep Playing", []() {}));
              }},
         };
 

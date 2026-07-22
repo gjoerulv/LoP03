@@ -8,6 +8,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
+#include "game/Party.hpp"
 #include "core/FadeController.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -23,15 +24,31 @@ namespace cd {
 
 DungeonResultState::DungeonResultState(StateStack& stack, AppContext& context,
                                        score::RunSummary summary, int score,
-                                       BossDropResult drops)
+                                       BossDropResult drops, RunStats stats)
     : GameState(stack),
       context_(context),
       summary_(std::move(summary)),
       score_(score),
-      drops_(std::move(drops)) {
+      drops_(std::move(drops)),
+      stats_(std::move(stats)) {
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Result);
     context_.audio.setAmbience(AmbienceTrack::None);
+}
+
+std::string DungeonResultState::runStatsText() const {
+    std::string s = "This run\n";
+    s += "Total damage dealt: " + std::to_string(stats_.totalDamage) + "\n";
+    s += "Biggest single hit: " + std::to_string(stats_.biggestHit) + "\n";
+    s += "Statuses inflicted: " + std::to_string(stats_.statusesInflicted) + "\n";
+    const int mvp = stats_.mvpMember();
+    if (mvp >= 0 && mvp < static_cast<int>(context_.party.members.size())) {
+        s += "MVP: " + context_.party.members[static_cast<std::size_t>(mvp)].name + "\n";
+    }
+    s += "\nPersonal records\n";
+    s += "Biggest hit ever: " + std::to_string(context_.party.recordBiggestHit) + "\n";
+    s += "Most damage in a run: " + std::to_string(context_.party.recordRunDamage);
+    return s;
 }
 
 void DungeonResultState::onEnter() {
@@ -40,8 +57,8 @@ void DungeonResultState::onEnter() {
 
 void DungeonResultState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Details)) {
-        stack().pushState(std::make_unique<DetailsOverlayState>(
-            stack(), context_, "How Scoring Works", scoreDetailsText()));
+        stack().pushState(
+            std::make_unique<DetailsOverlayState>(stack(), context_, "Run Stats", runStatsText()));
         return;
     }
     if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel)) {
@@ -144,7 +161,7 @@ void DungeonResultState::render() {
                                         context_.input.activeDevice(), "Return to Town") +
                           "   " +
                           input::prompt(context_.input.map(), InputAction::Details,
-                                        context_.input.activeDevice(), "Details"))
+                                        context_.input.activeDevice(), "Run stats"))
                              .c_str(),
                          w / 2, boxY + boxH - 16, 10, Color{200, 200, 160, 255});
 }

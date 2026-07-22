@@ -5,6 +5,7 @@
 
 #include "audio/AudioRoles.hpp"
 #include "battle/Battle.hpp"
+#include "game/RunStats.hpp"
 #include "render/BattleSequencer.hpp"
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
@@ -21,9 +22,11 @@ struct AppContext;
 class BattleState : public GameState {
 public:
     // `musicOverride` (M40) replaces the default Boss/Battle track for this fight
-    // (e.g. the King's own theme); None keeps the default.
+    // (e.g. the King's own theme); None keeps the default. `statsSlot` (M42), when
+    // given, accumulates this battle's victory tallies into a run's RunStats.
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
-                battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None);
+                battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None,
+                RunStats* statsSlot = nullptr);
 
     void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
@@ -35,6 +38,9 @@ public:
     // attacking the first living enemy) so the target-info panel renders
     // deterministically for the overflow check. Not present in shipping builds.
     void captureEnterTargeting();
+    // Capture-only: open the skill list for the acting party member, optionally
+    // with a supplied skill set, so the widest name + MP column is overflow-checked.
+    void captureEnterSkillMenu(std::vector<std::string> skills = {});
 #endif
 
 private:
@@ -56,6 +62,8 @@ private:
     void executePending(int targetUnit);
     void executeEnemy(int actor);
     void executeConfused(int actor);  // M35: a confused party member auto-attacks an ally
+    // M42: fold a party action's enemy damage into the run's victory tallies.
+    void accumulateStats(const std::vector<int>& hpBefore, int actor, bool offensiveStatus);
     void afterAction();
     void finish();
     std::string outcomeMessage() const;
@@ -87,6 +95,7 @@ private:
     battle::Battle battle_;
     battle::BattleResult* resultSlot_;
     MusicTrack musicOverride_ = MusicTrack::None;
+    RunStats* stats_ = nullptr;  // M42: run victory-stat accumulation (optional)
     battle::Outcome result_ = battle::Outcome::Ongoing;
     bool bossBattle_ = false;
     bool koOccurred_ = false;

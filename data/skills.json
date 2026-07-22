@@ -34,8 +34,8 @@
     { "id": "sunder", "name": "Sunder", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "defense_down", "statusMagnitude": 30, "statusDuration": 3, "description": "Shatter a foe's defenses." },
 
     { "id": "taunt", "name": "Taunt", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "taunt", "description": "Goad the enemy into striking you instead of your allies." },
-    { "id": "fade", "name": "Fade", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "fade", "description": "Slip from the enemy's attention, shedding their focus." },
-    { "id": "redirect", "name": "Redirect", "category": "support", "target": "self", "power": 0, "mpCost": 4, "control": "intercept", "description": "Guard your allies, taking single blows meant for them until your next turn." },
+    { "id": "fade", "name": "Fade", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "fade", "description": "Slip from the enemy's attention, shedding focus." },
+    { "id": "redirect", "name": "Redirect", "category": "support", "target": "self", "power": 0, "mpCost": 4, "control": "intercept", "description": "Take single blows meant for allies until your next turn." },
 
     { "id": "shield_bash", "name": "Shield Bash", "category": "physical", "target": "single_enemy", "power": 12, "mpCost": 5, "statusEffect": "defense_down", "statusMagnitude": 20, "statusDuration": 3, "description": "A shield blow that batters down a foe's guard." },
     { "id": "execute", "name": "Execute", "category": "physical", "target": "single_enemy", "power": 21, "mpCost": 9, "description": "A finishing strike aimed to end the fight." },

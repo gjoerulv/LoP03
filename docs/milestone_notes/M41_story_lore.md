@@ -2,10 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** implemented, awaiting manual approval — authored / re-audited and
-  implemented 2026-07-21 against the post-M40 checkout. Owner authorized beginning
-  M41 after approving M40. As-implemented record in §K. Only the owner sets
-  `complete (approved)`.
+- **Status:** complete (approved) — approved by the owner 2026-07-21 after manual
+  testing; committed. Authored / re-audited and implemented 2026-07-21 against the
+  post-M40 checkout. Owner authorized beginning M41 after approving M40.
+  As-implemented record in §K.
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. Seventh milestone of the
   M35–M42 program. **Content + presentation only** — no battle, generation, or

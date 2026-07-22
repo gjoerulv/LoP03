@@ -359,6 +359,9 @@ TEST_CASE("save: castle unlock + records + King title round-trip (M40)", "[save]
     p.castleRecords.kingBestTurns = 18;
     p.castleRecords.kingTitle = kKingTitle;
     p.storyMet = 0b1010101;  // M41: some story installments heard
+    p.encountered = {"goblin", "boss_deep_king"};  // M42 bestiary set
+    p.recordBiggestHit = 777;                       // M42 personal records
+    p.recordRunDamage = 5555;
 
     content::LoadReport rep;
     REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
@@ -372,6 +375,9 @@ TEST_CASE("save: castle unlock + records + King title round-trip (M40)", "[save]
     REQUIRE(loaded.castleRecords.kingBestTurns == 18);
     REQUIRE(loaded.castleRecords.kingTitle == std::string(kKingTitle));
     REQUIRE(loaded.storyMet == 0b1010101);  // M41 round-trips
+    REQUIRE(loaded.encountered == std::vector<std::string>{"goblin", "boss_deep_king"});  // M42
+    REQUIRE(loaded.recordBiggestHit == 777);
+    REQUIRE(loaded.recordRunDamage == 5555);
 
     // Backward compatibility: a save with no castle fields loads locked / no records.
     writeFile(saves.slotPath(save::SaveSlot::Manual2),
@@ -385,6 +391,9 @@ TEST_CASE("save: castle unlock + records + King title round-trip (M40)", "[save]
     REQUIRE(legacy.castleRecords.bossRushBestTurns == 0);
     REQUIRE(legacy.castleRecords.kingTitle.empty());
     REQUIRE(legacy.storyMet == 0);  // M41 absent -> nothing heard
+    REQUIRE(legacy.encountered.empty());     // M42 absent -> empty bestiary
+    REQUIRE(legacy.recordBiggestHit == 0);
+    REQUIRE(legacy.recordRunDamage == 0);
 
     fs::remove_all(dir);
 }

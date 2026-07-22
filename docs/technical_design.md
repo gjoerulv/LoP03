@@ -901,7 +901,11 @@ castle is reached, and left, only through its own states.
 - **Records & audio.** `CastleRecords` (bossRushBestTurns / endlessBestWave /
   kingDefeated / kingBestTurns / kingTitle) are optional Party save fields, defensively
   loaded (old saves → locked / no records), and surfaced on the castle hub and the
-  load-screen slot summary — never in the dungeon `Scoreboard`. Two new tracks
+  load-screen slot summary — never in the dungeon `Scoreboard`. `SlotMenuState` draws
+  its own rows (it keeps `ui::Menu` only for cursor/enabled logic) so the title gets
+  its own indented line under the slot/level/party/gold line: appended to the label it
+  measured roughly twice the room the row has, and `drawMenu` neither fits nor reports.
+  Two new tracks
   (`MusicTrack::Castle`, `MusicTrack::KingBattle`) with manifest rows + synth fallback.
 - **Versions.** `kSaveVersion`, `kBattleRulesVersion` (3), and `kGenerationVersion` (8)
   all unchanged.
@@ -929,6 +933,46 @@ Pure content + presentation; no battle/generation/scoring surface.
 - **Save.** `Party.storyMet` is an additive optional 7-bit field (old saves → 0); no
   `kSaveVersion` bump. Two 12×12 NPC sprites (`actor.bard/jester.overworld`), manifest
   + credits. No version bumps.
+
+### Enrichment: bestiary, victory stats, achievements (Milestone 42)
+
+Presentation + persistence only; no battle/generation/scoring surface, no version bumps.
+
+- **Bestiary.** `Party.encountered` (a per-party id set, save round-trip) is appended
+  in `BattleState`'s constructor for every enemy/boss faced (dedup). `BestiaryState`
+  builds an entry for **every** enemy then every boss in the content database (each
+  group alphabetical, so a slot never moves as it is discovered) and marks the ones in
+  `encountered` as known. A known entry resolves to a sprite (`enemy/boss.<id>.battle`),
+  stats, a behaviour profile (`toString` of tier + role, or the boss archetype, plus
+  tags), its passives **one per line**, and — for bosses — the `description` as flavor
+  (enemies have no description field; per-enemy flavor is a follow-up). An unknown
+  entry reads `? ? ?` with masked stats, the same convention `AchievementsState` uses.
+  A scroll list + detail panel with a `known / total` counter; reached from
+  `TownMenuState`. The flavor block picks the body font when it fits the room left
+  under the passives and the caption font otherwise, so the longest boss text
+  (the King's) is never truncated.
+- **Victory stats.** `game/RunStats.hpp` (totalDamage / biggestHit / statusesInflicted
+  / per-member damage → `mvpMember`). `BattleState` accumulates it live from HP deltas
+  (enemy damage attributed to the acting member) into an **optional `RunStats*` slot**
+  — the pure Battle model and the Simulator are untouched, so resolution is
+  byte-identical. `DungeonState` passes `&victoryStats_` to its battles, updates the
+  party's personal records (`recordBiggestHit`/`recordRunDamage`, save fields) on a
+  completed run, and hands the stats to `DungeonResultState`, whose Details key opens
+  the run stats + records. Castle challenges pass no slot (their own records cover them).
+- **Achievements.** `game/Achievements.hpp` — a fixed table of 16 original goals +
+  `achievementMet(id, party, ctx)` (pure predicates over party state + a run event) +
+  `AchievementStore` (a global `achievements.json`, tutorial.json-style: versioned,
+  defensive load, atomic save), added to `AppContext` and created in `Application`.
+  `store.check(party, ctx)` unlocks and returns the newly-met ids; the free helper
+  `pushAchievementToasts` toasts each via the story-dialog overlay. Hooks:
+  `DungeonState::completeDungeon` (with the run context), `CastleChallengeState::finish`,
+  and `TownState::onResume` (state-based, for town actions). `AchievementsState` lists
+  the roster (locked ones hidden as goals) from `TownMenuState`, in two columns of
+  `(kAchievementCount + 1) / 2` rows — left/right jump a column, up/down walk the
+  whole list in reading order — with the cursor's description centered underneath.
+- **Save.** `Party.encountered` (string array), `recordBiggestHit`, `recordRunDamage`
+  are additive optional fields; achievements are a new global file. No `kSaveVersion`
+  bump. No new art (the bestiary reuses battle sprites).
 
 ## 13. Presentation (Milestone 8)
 
@@ -978,7 +1022,27 @@ tested; raylib adapters live in `ui/UiDraw`.
   colors. States use roles, not ad-hoc numbers, as they are migrated.
 - **`ui/UiDraw` additions**: `measureText`/`raylibMeasure()`;
   `drawTextRight`; `drawTextFitted` (fits-or-clips + logs); `drawTextWrapped`
-  (bounded lines + logs); `drawMenuScrolled` (window slice + arrows).
+  (bounded lines + logs); `drawTextWrappedCentered` (the same, every line centered
+  on a point); `drawMenuScrolled` (window slice + arrows).
+- **`states/ConfirmPromptState`**: a reusable transparent Yes/No modal (dims and
+  freezes the scene below, measured panel: title + wrapped consequence + two
+  answers) that runs a supplied `std::function` on yes. The cursor starts on the
+  safe answer and Cancel answers no. Used by the pause menu's Quit to Title, which
+  previously armed a second Confirm on the same entry and explained itself with a
+  warning line — a pattern that reads as a dead key press.
+- **`MenuItem::suffix`** (M42 follow-up): an optional trailing column drawn
+  right-aligned at the row's right edge by `drawMenuScrolled`, in its own font
+  size/color. The column is reserved *first* and the label is fitted to what is
+  left, so a trailing cost or count can never be pushed out of view by a long
+  name. Used by the battle skill list (`MP n`, or `SIL` when silence blocks the
+  skill — spelled out in the description column) and item list (`xN`); the
+  battle panel's list/description split is set by the widest skill row so
+  neither column clips.
+- **Battle status tags** (M42 follow-up): both sides read their tags in the open
+  field right of the sprite — enemy rows level with the sprite, party rows under
+  their HP/MP numerals — packed into at most two 8px lines that fit the room,
+  with a trailing `+N` when a unit carries more than fits. Immune statuses are
+  never listed (M40).
 - **Overflow diagnostics:** any bounded draw that cannot fit reports
   `[ui-overflow] site: 'text' Wpx > Mpx` once per site/text via `cd::log` and
   scissor-clips instead of spilling. Silent truncation is prohibited; the log

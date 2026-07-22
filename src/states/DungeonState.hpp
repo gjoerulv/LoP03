@@ -7,6 +7,7 @@
 #include "battle/Battle.hpp"
 #include "core/Geometry.hpp"
 #include "danger/DangerRating.hpp"
+#include "game/RunStats.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "dungeon/RoomLayout.hpp"
 #include "states/GameState.hpp"
@@ -88,6 +89,7 @@ private:
 
     std::vector<danger::Tier> teamTier_;  // precomputed danger per team
     RunStats run_;
+    cd::RunStats victoryStats_;  // M42: this-run victory tallies (damage/hits/MVP)
 
     // Pending battle context (applied in onResume).
     EncounterKind pendingKind_ = EncounterKind::None;

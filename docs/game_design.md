@@ -311,6 +311,20 @@ optional flavor (never gates progress or combat); it simply rewards curiosity an
 gives the King a wink. Reading is remembered across saves; the Jester's finale
 unlocks once all seven verses are heard. All writing is original.
 
+**Enrichment: bestiary, victory stats, achievements (M42).** Three optional
+presentation features round out the endgame. A **Bestiary** (from the town pause
+menu) is a codex of the whole roster: a foe you have fought shows its sprite,
+stats, behaviour profile (role/tier or boss archetype), tags, passives (one per
+line), and — for bosses — its flavor text; a foe you have not met yet reads as an
+unknown, so the roster's size and your progress through it are always visible.
+**Victory stats** appear on the clear screen's Run-stats view: this run's
+total damage, biggest single hit, statuses inflicted, and the party MVP, plus your
+personal records (biggest hit ever, most damage in a run) — display-only, never
+ranked. **Achievements** (also from the pause menu) are ~16 original cross-game
+goals — clearing dungeons, climbing the ladder, beating the King's challenges,
+hearing the whole story, and more — persisted globally, each with a single toast
+when it unlocks. None of the three touch battle, generation, or scoring.
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1
@@ -350,7 +364,9 @@ comparison in the equip shop. Nothing behind Details is required to play.
 no color-only or sound-only information anywhere; a High Contrast palette
 toggle; battle flash/shake reducible to off; message pacing and battle
 speed configurable; Settings reachable before starting a game; destructive
-actions (save overwrite, quit-to-title) need an explicit second Confirm.
+actions need explicit confirmation — a save overwrite takes a second Confirm on
+the same slot, and quitting to the title asks a Yes/No question outright, with the
+cursor starting on the safe answer.
 These are engineering bars, not formal WCAG claims.
 
 ## 13. First-complete-version content target

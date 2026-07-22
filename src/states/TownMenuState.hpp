@@ -7,8 +7,9 @@ namespace cd {
 
 struct AppContext;
 
-// Transparent overlay opened from town (Menu/Cancel): Resume, or Quit to Title.
-// The town renders behind it (rendersBelow).
+// Transparent overlay opened from town (Menu/Cancel): Resume, Bestiary,
+// Achievements, Settings, or Quit to Title (which asks a Yes/No
+// ConfirmPromptState). The town renders behind it (rendersBelow).
 class TownMenuState : public GameState {
 public:
     TownMenuState(StateStack& stack, AppContext& context);
@@ -22,7 +23,6 @@ public:
 private:
     AppContext& context_;
     ui::Menu menu_;
-    bool quitArmed_ = false;  // M22: quit-to-title needs a second Confirm
 };
 
 }  // namespace cd

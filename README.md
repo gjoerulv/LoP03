@@ -26,11 +26,13 @@ music, or text. Built in **C++20** with **raylib**.
 > story, and enrichment features) is underway — **M35** (statuses + to-hit layer),
 > **M36** (10 passive skills), **M37** (per-town equipment), **M38** (12 per-town
 > enemies + 6 per-town bosses), and **M39** (seeded, reload-proof boss legendary &
-> token drops) and **M40** (the castle above the seven towns, with Boss Rush /
+> token drops), **M40** (the castle above the seven towns, with Boss Rush /
 > Endless Rush / the Hollow King challenges, its own records and rewards kept outside
-> the dungeon scoreboard) are approved, and **M41** (an original light-hearted story
-> serial — a wandering storyteller in every town and a Jester punchline at the
-> castle) is implemented and awaiting approval. The deferred
+> the dungeon scoreboard), and **M41** (an original light-hearted story serial — a
+> wandering storyteller in every town and a Jester punchline at the castle) are
+> approved, and **M42** (enrichment — a bestiary, result-screen victory stats +
+> personal records, and ~16 achievements) is implemented and awaiting approval,
+> closing the endgame program. The deferred
 > **validation/balance playtesting (M23)** and **release packaging/sign-off
 > (M24)** run last — see `docs/completion_roadmap.md` and `docs/milestones.md`.
 

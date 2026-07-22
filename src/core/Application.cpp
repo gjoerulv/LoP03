@@ -64,8 +64,9 @@ Application::Application()
       input_(),
       settings_(paths::userDataDir() / "settings.json"),
       tutorial_(paths::userDataDir() / "tutorial.json"),
+      achievements_(paths::userDataDir() / "achievements.json"),
       context_{resources_, content_, saves_, party_, scoreboard_, audio_, fade_,
-               input_, settings_, tutorial_, config::kVirtualWidth,
+               input_, settings_, tutorial_, achievements_, config::kVirtualWidth,
                config::kVirtualHeight},
       stack_(),
       // Off by default (audit UI-LAYOUT-009); F1 toggles it in debug builds.
@@ -90,6 +91,13 @@ Application::Application()
       log::warn("Tutorial state could not be loaded; starting fresh.");
     }
     for (const auto& e : tutorialReport.errors()) {
+      log::warn("  " + e.source + ": " + e.context + ": " + e.message);
+    }
+    content::LoadReport achvReport;
+    if (!achievements_.load(achvReport)) {
+      log::warn("Achievements could not be loaded; starting fresh.");
+    }
+    for (const auto& e : achvReport.errors()) {
       log::warn("  " + e.source + ": " + e.context + ": " + e.message);
     }
   }

@@ -12,6 +12,7 @@
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
+#include "game/Achievements.hpp"
 #include "game/BossDrops.hpp"
 #include "game/Party.hpp"
 #include "game/WorldLadder.hpp"
@@ -24,6 +25,7 @@
 #include "render/SpriteDraw.hpp"
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
+#include "states/AchievementToast.hpp"
 #include "states/BattleState.hpp"
 #include "states/DungeonMenuState.hpp"
 #include "states/DetailsOverlayState.hpp"
@@ -427,7 +429,8 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     battle::Battle b =
         battle::buildBattle(context_.party, dungeon_.teams[static_cast<std::size_t>(teamIndex)],
                             context_.content);
-    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &battleResult_));
+    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &battleResult_,
+                                                    MusicTrack::None, &victoryStats_));
 }
 
 void DungeonState::onEnter() {
@@ -634,8 +637,25 @@ void DungeonState::completeDungeon() {
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);
 
-    stack().pushState(
-        std::make_unique<DungeonResultState>(stack(), context_, summary, total, drops));
+    // M42: fold this run's victory tallies into the party's personal records
+    // (display-only, never ranked), then show the result with the run stats.
+    if (victoryStats_.biggestHit > context_.party.recordBiggestHit) {
+        context_.party.recordBiggestHit = victoryStats_.biggestHit;
+    }
+    if (victoryStats_.totalDamage > context_.party.recordRunDamage) {
+        context_.party.recordRunDamage = victoryStats_.totalDamage;
+    }
+    stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total, drops,
+                                                           victoryStats_));
+
+    // M42: unlock any achievements this run earned, and toast them (pushed above
+    // the result, so they show first, then the reckoning).
+    AchvContext actx;
+    actx.clearedDungeon = total > 0;
+    actx.runNoDeath = summary.noDeath;
+    actx.runTurns = summary.battleTurns;
+    actx.runDepth = dungeon_.depth;
+    pushAchievementToasts(stack(), context_, actx);
 }
 
 void DungeonState::handleInput(const Input& input) {

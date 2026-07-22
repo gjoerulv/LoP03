@@ -9,6 +9,7 @@
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
+#include "game/Achievements.hpp"
 #include "game/Party.hpp"
 #include "game/Story.hpp"
 #include "game/WorldLadder.hpp"
@@ -16,6 +17,7 @@
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "resource/ResourceManager.hpp"
+#include "states/AchievementToast.hpp"
 #include "states/BlackMarketState.hpp"
 #include "states/CastleState.hpp"
 #include "states/EquipShopState.hpp"
@@ -166,6 +168,9 @@ void TownState::onResume() {
     if (context_.tutorial.state.seen.count(tutorial::kResultFirst) > 0) {
         maybeTutorialPrompt(stack(), context_, tutorial::kTownReturn);
     }
+    // M42: catch achievements earned by a town action (e.g. equipping a passive or
+    // training to level 50); the check is cheap and only toasts newly-unlocked ones.
+    pushAchievementToasts(stack(), context_, AchvContext{});
 }
 
 const town::TownExit* TownState::exitAtPlayerTile() const {

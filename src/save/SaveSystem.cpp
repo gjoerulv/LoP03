@@ -75,6 +75,9 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["castleKingBestTurns"] = party.castleRecords.kingBestTurns;
   root["castleKingTitle"] = party.castleRecords.kingTitle;
   root["storyMet"] = party.storyMet;  // M41 (optional; old -> 0)
+  root["encountered"] = party.encountered;             // M42 (optional; old -> empty)
+  root["recordBiggestHit"] = party.recordBiggestHit;   // M42 (optional; old -> 0)
+  root["recordRunDamage"] = party.recordRunDamage;     // M42 (optional; old -> 0)
 
   Json members = Json::array();
   for (const Character& c : party.members) {
@@ -173,6 +176,9 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   loaded.castleRecords.kingBestTurns = rootReader.optIntMin("castleKingBestTurns", 0, 0);
   loaded.castleRecords.kingTitle = rootReader.optString("castleKingTitle");
   loaded.storyMet = rootReader.optIntMin("storyMet", 0, 0);  // M41 (optional; old -> 0)
+  loaded.encountered = rootReader.optStringArray("encountered");  // M42 (optional; old -> empty)
+  loaded.recordBiggestHit = rootReader.optIntMin("recordBiggestHit", 0, 0);  // M42
+  loaded.recordRunDamage = rootReader.optIntMin("recordRunDamage", 0, 0);    // M42
 
   auto partyIt = root.find("party");
   if (partyIt == root.end() || !partyIt->is_array()) {

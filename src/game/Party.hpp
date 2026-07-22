@@ -45,6 +45,12 @@ struct Party {
     // Story serial (M41): a 7-bit mask of which town installments have been heard
     // (see game/Story.hpp). Optional save field; old saves -> 0 (nothing heard).
     int storyMet = 0;
+    // Enrichment (M42), all optional save fields (old saves -> empty / 0):
+    // the set of enemy/boss ids this party has fought (the bestiary), and the
+    // party's personal victory records (display-only, never ranked).
+    std::vector<std::string> encountered;
+    int recordBiggestHit = 0;
+    int recordRunDamage = 0;
 
     bool empty() const { return members.empty(); }
     std::size_t size() const { return members.size(); }

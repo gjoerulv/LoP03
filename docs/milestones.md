@@ -48,8 +48,8 @@
 | 38 | Per-town enemies & bosses | ☑ complete (approved) |
 | 39 | Boss legendary & token drops | ☑ complete (approved) |
 | 40 | The castle & the King's challenges | ☑ complete (approved) |
-| 41 | Story NPCs & lore | ◑ implemented, awaiting manual approval |
-| 42 | Enrichment: bestiary, victory stats, achievements | ☐ planned |
+| 41 | Story NPCs & lore | ☑ complete (approved) |
+| 42 | Enrichment: bestiary, victory stats, achievements | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -1592,7 +1592,8 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M41 — Story NPCs & lore
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-21 after
+  manual testing; committed. Implemented / audited
   2026-07-21 against the post-M40 checkout; owner authorized beginning M41 after
   approving M40. An original 8-part comedic serial ("The Ballad of the Hollow
   King"): a wandering storyteller at a fixed plaza tile in every town tells one
@@ -1625,7 +1626,31 @@ authorization** — do not begin one without explicit owner go-ahead.
 
 ## M42 — Enrichment: bestiary, victory stats, achievements
 
-- **Status:** ☐ planned — **direction only.** Closes the endgame program.
+- **Status:** ◑ implemented, awaiting manual approval — implemented / audited
+  2026-07-21 against the post-M41 checkout; owner authorized beginning M42 after
+  approving M41. The **final milestone of the endgame program.** Three
+  presentation/persistence features: a **Bestiary** (per-party encountered-set,
+  recorded on battle start; a codex of the whole roster with
+  sprite/stats/profile/passives/boss flavor for foes met and `? ? ?` for the rest,
+  from the town pause menu); **victory stats + records** (a live `RunStats`
+  accumulated by `BattleState` into an optional slot — Battle model + Simulator
+  untouched — shown on the result screen's Details, plus per-party personal
+  records); and **~16 achievements** (a global `achievements.json` store,
+  tutorial.json-style, checked at dungeon/castle/town transitions, one toast on
+  unlock, a list screen). No battle/generation/scoring change; no version bumps; no
+  new art. **368/368 tests** (+4), `--capture` **44/44** overflow-clean (7 new
+  screens), Debug + Release clean. **Deviation:** bestiary flavor is boss-only
+  (enemies have no description field; per-enemy M41-voice flavor is a flagged
+  follow-up). **Owner playtest rounds 1–3 (2026-07-22)** fixed seven UI defects —
+  bestiary passives now one per line, the bestiary lists the full roster with
+  unknowns, battle skill/item rows keep their MP-cost / count column readable via a
+  new right-aligned `MenuItem::suffix`, party status tags moved beside the sprite
+  so they stop overlapping neighbouring rows, the achievements roster went to two
+  columns with a centered description clear of the Back hint, save/load rows moved
+  a party's King title onto its own line, and Quit to Title now asks a real Yes/No
+  question via a new reusable `ConfirmPromptState` instead of arming a second
+  press (note §Playtest fixes). Closes the M35–M42 program; **M23 → M24 run next** (re-audited for the
+  new systems). Milestone note: `docs/milestone_notes/M42_enrichment.md`.
 - **Goal:** three presentation/persistence-only enrichment features (the owner's
   picks; the daily-seed challenge was rejected).
 - **Primary deliverables:** **Bestiary** (town service or Details screen listing

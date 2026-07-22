@@ -186,6 +186,23 @@ int drawTextWrapped(const std::string& text, int x, int y, int maxWidth, int fon
     return y + drawn * step;
 }
 
+int drawTextWrappedCentered(const std::string& text, int centerX, int y, int maxWidth, int fontSize,
+                            Color color, const char* site, int maxLines) {
+    const std::vector<std::string> lines = wrapText(text, maxWidth, fontSize, raylibMeasure());
+    const int step = lineHeight(fontSize);
+    int drawn = 0;
+    for (const std::string& line : lines) {
+        if (maxLines > 0 && drawn >= maxLines) {
+            reportOverflowOnce(site, text, static_cast<int>(lines.size()) * step,
+                               maxLines * step);
+            break;
+        }
+        drawTextCentered(line.c_str(), centerX, y + drawn * step, fontSize, color);
+        ++drawn;
+    }
+    return y + drawn * step;
+}
+
 void drawMenu(const Menu& menu, int x, int y, int itemHeight, int fontSize, Color normal,
               Color disabled, Color cursor) {
     const auto& items = menu.items();
@@ -203,23 +220,36 @@ void drawMenu(const Menu& menu, int x, int y, int itemHeight, int fontSize, Colo
 
 void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleRows, int x, int y,
                       int itemHeight, int fontSize, int maxLabelWidth, Color normal,
-                      Color disabled, Color cursor, const char* site) {
+                      Color disabled, Color cursor, const char* site, int suffixFontSize,
+                      Color suffixColor) {
     const auto& items = menu.items();
     const int total = static_cast<int>(items.size());
     const int first = window.top();
     const int count = window.visibleCount(total, visibleRows);
+    const int suffixFont = suffixFontSize > 0 ? suffixFontSize : fontSize;
 
     for (int row = 0; row < count; ++row) {
-        const int i = first + row;
+        const MenuItem& item = items[static_cast<std::size_t>(first + row)];
         const int rowY = y + row * itemHeight;
-        const bool isCursor = i == menu.cursor();
-        Color color = items[static_cast<std::size_t>(i)].enabled ? normal : disabled;
-        if (isCursor && items[static_cast<std::size_t>(i)].enabled) {
+        const bool isCursor = first + row == menu.cursor();
+        Color color = item.enabled ? normal : disabled;
+        if (isCursor && item.enabled) {
             color = cursor;
             drawTextRaw(">", x - 10, rowY, fontSize, cursor);
         }
-        drawTextFitted(items[static_cast<std::size_t>(i)].label, x, rowY, maxLabelWidth, fontSize,
-                       color, site);
+        // The suffix column is reserved first; the label takes what is left.
+        int labelWidth = maxLabelWidth;
+        if (!item.suffix.empty()) {
+            const int suffixWidth = measureWidth(item.suffix.c_str(), suffixFont);
+            labelWidth = maxLabelWidth - suffixWidth - 6;
+            if (labelWidth < 8) {
+                labelWidth = 8;
+            }
+            drawTextRaw(item.suffix.c_str(), x + maxLabelWidth - suffixWidth,
+                        rowY + (fontSize - suffixFont), suffixFont,
+                        item.enabled ? suffixColor : disabled);
+        }
+        drawTextFitted(item.label, x, rowY, labelWidth, fontSize, color, site);
     }
 
     // More-above/below arrows, drawn as small triangles right of the list.

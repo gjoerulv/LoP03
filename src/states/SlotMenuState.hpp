@@ -33,6 +33,9 @@ private:
     SlotMenuMode mode_;
     ui::Menu menu_;
     std::vector<save::SaveSlot> slots_;
+    // A party's King title (M40) is long enough to run off the row, so it is kept
+    // apart from the slot label and drawn on its own line under it.
+    std::vector<std::string> titles_;
     std::string message_;
     // M22: overwriting an existing save needs a second Confirm on the same
     // slot; moving the cursor or Cancel disarms it.
