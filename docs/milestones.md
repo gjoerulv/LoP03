@@ -50,7 +50,7 @@
 | 40 | The castle & the King's challenges | ☑ complete (approved) |
 | 41 | Story NPCs & lore | ☑ complete (approved) |
 | 42 | Enrichment: bestiary, victory stats, achievements | ☑ complete (approved) |
-| 43 | Balance pass & audit fixes | ☐ planned |
+| 43 | Balance pass & audit fixes | ◑ implemented, awaiting manual approval |
 | 44 | Royal Relics & the doubled King | ☐ planned |
 | 45 | The King's classes: Dragon, Jester, Goose | ☐ planned |
 
@@ -1715,7 +1715,27 @@ Owner decisions taken at planning time (2026-07-22, via Q&A):
 
 ## M43 — Balance pass & audit fixes
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — authorized by the owner
+  2026-07-22; note authored and re-audited against `9dff867` (the plan's facts
+  were verified at `bc10511`, and all of them still held). Implemented the same
+  day: confusion is forced to a basic attack in the shared
+  `battle::confusedChoice` used by `BattleState`, the Simulator's party AI **and**
+  `chooseEnemyAction` (closing both the confused-caster and sim-fidelity gaps);
+  castle defeats tell the truth (no gold claim, full heal at the gates, roster
+  size derived from `bossRushOrder`); the shelf is repriced (Remedy 100, Ether
+  150, Hi-Ether 500, Phoenix Tear 300 at 25 % revive); Clarity +2 MP; Purify is
+  cure-only; Renew is a weak heal that raises the fallen at 20 % HP via the new
+  `SkillDef.reviveHpPct`; battle items follow their effect (`battle::itemTargets`
+  — heal/MP/cure to the living, revive to the fallen, unusable items greyed with
+  the reason); **Royal Snacks** (250 g, town-1-only via the new
+  `ItemDef::availableAtTown` window, 10 HP + ATK-/DEF- cure, 100 HP + 10 MP in the
+  King's fight via the content-derived `Battle.kingBattle`). `kBattleRulesVersion`
+  **3 → 4**, `kGenerationVersion` **8 → 9**, no save bump. **387/387 tests**
+  (+19) in Debug and Release, `--capture` **44/44** overflow-clean, both configs
+  build clean. **Deviations:** unusable items are greyed with a reason rather than
+  refused after selection; the new `maxTown` window applies everywhere `minTown`
+  did (so a **town-1** merchant/chest may also offer snacks); `renew` mpCost also
+  went 7 → 9. Note: `docs/milestone_notes/M43_balance_audit_fixes.md`.
 - **Goal:** land the audit fixes and the owner's balance/item changes at one
   battle-rules bump (3→4) and one generation bump (8→9, repriced merchant
   goods).

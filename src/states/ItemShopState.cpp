@@ -11,6 +11,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "states/ItemShopFilter.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -32,13 +33,9 @@ ItemShopState::ItemShopState(StateStack& stack, AppContext& context)
 void ItemShopState::onEnter() { rebuild(); }
 
 void ItemShopState::rebuild() {
-    ids_.clear();
-    for (const auto& [id, def] : context_.content.items()) {
-        if (def.type == content::ItemType::Consumable) {
-            ids_.push_back(id);
-        }
-    }
-    std::sort(ids_.begin(), ids_.end());
+    // M43: consumables are stocked by the same town window gear uses, so a
+    // town-1-only item (Royal Snacks) is genuinely town-1-only.
+    ids_ = itemShopBuyIds(context_.content, context_.party.currentTown);
 
     std::vector<ui::MenuItem> items;
     for (const std::string& id : ids_) {

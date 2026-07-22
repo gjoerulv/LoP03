@@ -22,11 +22,20 @@ int lowestHpOnSide(const Battle& b, Side side) {
     return best;
 }
 
+}  // namespace
+
 // A simple deterministic party AI: heal a badly hurt ally if able, else use the
 // strongest affordable damaging skill (or a basic attack) on the weakest enemy.
 EnemyChoice choosePartyAction(const Battle& b, int actor, const content::ContentDatabase& db) {
     EnemyChoice choice;
     const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    // Confusion (M43): the same shared rule the battle screen and the enemy AI
+    // use - a confused party member is forced to a basic attack. Without this the
+    // simulator let a confused caster act normally and silently disagreed with
+    // live play about the outcome.
+    if (isConfused(self)) {
+        return confusedChoice(b, actor);
+    }
     const int enemy = lowestHpOnSide(b, Side::Enemy);
 
     int hurtAlly = -1;
@@ -72,6 +81,8 @@ EnemyChoice choosePartyAction(const Battle& b, int actor, const content::Content
     }
     return choice;
 }
+
+namespace {
 
 void applyChoice(Battle& b, int actor, const EnemyChoice& choice,
                  const content::ContentDatabase& db) {

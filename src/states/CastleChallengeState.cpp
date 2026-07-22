@@ -70,8 +70,10 @@ void CastleChallengeState::startNextFight() {
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
     const MusicTrack music =
         kind_ == CastleChallenge::King ? MusicTrack::KingBattle : MusicTrack::None;
-    stack().pushState(
-        std::make_unique<BattleState>(stack(), context_, std::move(b), &result_, music));
+    // M43: the last argument marks this as a castle fight, so a defeat message
+    // never claims the dungeon's gold penalty.
+    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &result_,
+                                                    music, nullptr, true));
 }
 
 void CastleChallengeState::onResume() {
@@ -94,6 +96,12 @@ void CastleChallengeState::finish(bool cleared) {
     context_.audio.setMusic(MusicTrack::Castle);
     CastleRecords& rec = context_.party.castleRecords;
     std::string msg;
+    // M43: a lost challenge costs nothing but the attempt. The party is patched
+    // up at the castle gates — no gold penalty, no forfeited run — and the text
+    // below says so, so the screen and the battle's defeat line agree.
+    if (!cleared) {
+        healFull(context_.party);
+    }
     switch (kind_) {
         case CastleChallenge::BossRush:
             if (cleared) {
@@ -110,8 +118,11 @@ void CastleChallengeState::finish(bool cleared) {
                            " legendary tokens.";
                 }
             } else {
-                msg = "The gauntlet fells you after " + std::to_string(wavesWon_) +
-                      " of 12 bosses. Rest and return.";
+                // M43: the roster is derived, never a literal — adding a boss
+                // must not leave this line quietly lying.
+                msg = "The gauntlet fells you after " + std::to_string(wavesWon_) + " of " +
+                      std::to_string(bossRushOrder(context_.content).size()) +
+                      " bosses. Rest and return.";
             }
             break;
         case CastleChallenge::Endless: {
@@ -150,6 +161,9 @@ void CastleChallengeState::finish(bool cleared) {
                 msg = "The King proves too mighty. Return stronger.";
             }
             break;
+    }
+    if (!cleared) {
+        msg += " You are patched up at the gates; nothing is lost.";
     }
     resultText_ = msg;
     // M42: a challenge win may unlock castle achievements; toast them above the

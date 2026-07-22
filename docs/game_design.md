@@ -63,7 +63,7 @@ bought. The ten passives are **Counter Attack** (retaliate after surviving a
 physical hit), **Evasion** (25 % of physical attacks miss; a Blind attacker always
 misses you), **Spell Ward** (25 % of hostile magic fizzles), **Thorns** (reflect
 20 % of physical damage), **Lifedrink** (heal 15 % of physical damage dealt),
-**Clarity** (+3 MP a round, immune to Silence), **Iron Will** (survive a lethal
+**Clarity** (+2 MP a round, immune to Silence; M43), **Iron Will** (survive a lethal
 blow at 1 HP once a battle), **First Strike** (act first in round 1, +50 % on your
 first hit), **Bodyguard** (soak 25 % of a hit on your weakest ally), and **Keen
 Senses** (immune to Blind, +10 % vs debuffed foes). Enemies and bosses carry
@@ -175,13 +175,17 @@ physical attacks usually miss (the game's first to-hit roll — magic and items 
 unaffected). **Silence** blocks MP-cost skills (basic attacks and items still
 work). **Confusion** takes over a unit's turn entirely: it acts automatically —
 **no player input for a confused character** — lashing out with a basic attack at
-a seeded random member of its own side. A confused unit is **snapped out of it the
+a seeded random member of its own side. Since **M43** this binds **both sides
+equally**: a confused enemy can no longer heal, buff, or curse its way through the
+affliction, because the forced basic attack is enforced in the shared rules every
+turn-decider uses. A confused unit is **snapped out of it the
 moment it takes damage**, so hitting a confused ally (or letting a foe strike your
 confused member) is a real counter. All three are fully deterministic (seeded off the
 battle, so live play and the simulator agree exactly), applied by class skills (a
 Rogue and Ranger blind, a Mage silence and confusion) and enemy kits (disruptors,
 sorcerers, and several bosses now weave them in where the role fits), and all are
-lifted by a **Remedy** item or the Cleric's **Purify**. A miss reads as "Miss!"
+lifted by a **Remedy** item or the Cleric's **Purify** (which since M43 is a pure
+cure — it lifts everything and heals nothing). A miss reads as "Miss!"
 and every affliction shows a labelled icon, so nothing depends on colour alone.
 Afflictions and buffs both **linger** (durations run long), and **poison bites
 hard** (it deals heavy damage each turn), so status play — inflicting, curing,
@@ -324,6 +328,31 @@ ranked. **Achievements** (also from the pause menu) are ~16 original cross-game
 goals — clearing dungeons, climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
+
+**Balance pass (M43).** The endgame arc opens by making consumables a real budget
+decision and healing a real choice, at one battle-rules bump (v4).
+
+- **The repriced shelf:** Remedy **100 g** (was 15), Ether **150 g** (was 60),
+  Hi-Ether **500 g** (was 150), Phoenix Tear **300 g** (was 150) — and a Phoenix
+  Tear now revives at **25 %** HP, not 50 %. Potions are untouched, so HP stays
+  cheap while MP, cures, and resurrection cost what they are worth. One clear's
+  gold buys a handful of Remedies or a single Tear, so the shopping list is a
+  decision rather than a formality.
+- **Purify** lifts every affliction and debuff from the party and **heals
+  nothing**; **Renew** becomes the emergency button — a weak heal that can also
+  **raise a fallen ally at 20 % HP**, the first skill in the game that can.
+- **Battle items now respect the state of their target:** potions, ethers, and
+  cures reach only living allies, and a revive reaches only the fallen. An item
+  with nobody to use it on is greyed out with the reason, so nothing is ever spent
+  on "No effect".
+- **Royal Snacks (250 g)** — "Bring Snacks!" — are sold **only in the first
+  town**. Ordinarily they are a joke: 10 HP and a shrug that lifts ATK-/DEF-. In
+  **the King's fight** they are 100 HP and 10 MP. The King's counterplay starts
+  where the game did.
+- **Clarity** gives **+2 MP** a round (was +3).
+- **Losing a castle challenge costs nothing but the attempt:** the party is fully
+  healed at the castle gates, no gold is taken, and the screen says exactly that.
+  (It always cost nothing; the message used to claim the dungeon's gold penalty.)
 
 ## 11. Bosses
 

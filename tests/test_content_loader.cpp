@@ -137,7 +137,7 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     REQUIRE(db.classCount() == 6);
     REQUIRE(db.skillCount() == 54);  // +6 M40 King damage+debuff skills
     REQUIRE(db.enemyCount() == 43);  // +12 M38 per-town enemies (4 normal + 8 elite)
-    REQUIRE(db.itemCount() == 69);  // +1 M40 King unique legendary (sovereigns_regalia)
+    REQUIRE(db.itemCount() == 70);  // +1 M43 Royal Snacks (town-1-only King counterplay)
     REQUIRE(db.bossCount() == 13);  // +1 M40 The Hollow King
     REQUIRE(db.themeCount() == 3);
     REQUIRE(db.findClass("knight") != nullptr);

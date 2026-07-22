@@ -14,6 +14,9 @@
 namespace cd {
 
 struct AppContext;
+namespace content {
+struct ItemDef;
+}
 
 // Side-view battle screen (enemies left, party right) driving the pure Battle
 // model. Speed-ordered turns; Attack/Skill/Item/Guard/Escape; deterministic
@@ -24,9 +27,11 @@ public:
     // `musicOverride` (M40) replaces the default Boss/Battle track for this fight
     // (e.g. the King's own theme); None keeps the default. `statsSlot` (M42), when
     // given, accumulates this battle's victory tallies into a run's RunStats.
+    // `castleChallenge` (M43) marks a fight fought at the castle, where losing
+    // costs no gold and forfeits no run — so the defeat message tells the truth.
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                 battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None,
-                RunStats* statsSlot = nullptr);
+                RunStats* statsSlot = nullptr, bool castleChallenge = false);
 
     void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
@@ -59,6 +64,8 @@ private:
     void onCommand();
     void onSkillChosen();
     void onItemChosen();
+    // M43: why a battle item is unusable right now ("" when it is usable).
+    std::string itemBlockReason(const content::ItemDef& item) const;
     void executePending(int targetUnit);
     void executeEnemy(int actor);
     void executeConfused(int actor);  // M35: a confused party member auto-attacks an ally
@@ -97,6 +104,7 @@ private:
     MusicTrack musicOverride_ = MusicTrack::None;
     RunStats* stats_ = nullptr;  // M42: run victory-stat accumulation (optional)
     battle::Outcome result_ = battle::Outcome::Ongoing;
+    bool castleChallenge_ = false;  // M43: castle defeats cost no gold
     bool bossBattle_ = false;
     bool koOccurred_ = false;
     std::string bossTelegraph_;

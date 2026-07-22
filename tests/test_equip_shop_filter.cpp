@@ -11,6 +11,7 @@
 #include "content/Enums.hpp"
 #include "content/LoadReport.hpp"
 #include "states/EquipShopFilter.hpp"
+#include "states/ItemShopFilter.hpp"
 
 // M31: the Equip Shop's "Buy Gear" list splits into Weapons / Armor /
 // Accessories. The split is a pure slot filter (equipShopBuyIds); these tests
@@ -203,4 +204,52 @@ TEST_CASE("equipshop: the shipped roster grows from town 1 to town 7 (M37)", "[e
                            equipShopBuyIds(db, EquipSlot::Armor, 7).size() +
                            equipShopBuyIds(db, EquipSlot::Accessory, 7).size();
     CHECK(t7 > t1);  // per-town gear (M37) unlocks as the ladder is climbed
+}
+
+// --- M43: the item shop gained the same kind of town window ------------------
+
+TEST_CASE("itemshop: consumables are stocked inside their town window (M43)", "[itemshop]") {
+    ContentDatabase db;
+    ItemDef always;  // no window: every town
+    always.id = "potion";
+    always.name = "Potion";
+    always.type = ItemType::Consumable;
+    db.addItem(always);
+    ItemDef townOne;  // town-1 only
+    townOne.id = "royal_snacks";
+    townOne.name = "Royal Snacks";
+    townOne.type = ItemType::Consumable;
+    townOne.minTown = 1;
+    townOne.maxTown = 1;
+    db.addItem(townOne);
+    ItemDef late;  // town-5 and up
+    late.id = "elixir";
+    late.name = "Elixir";
+    late.type = ItemType::Consumable;
+    late.minTown = 5;
+    db.addItem(late);
+    ItemDef gear;  // not a consumable: the item shop never stocks it
+    gear.id = "blade";
+    gear.name = "Blade";
+    gear.type = ItemType::Equipment;
+    gear.slot = EquipSlot::Weapon;
+    db.addItem(gear);
+
+    CHECK(cd::itemShopBuyIds(db, 1) == std::vector<std::string>{"potion", "royal_snacks"});
+    CHECK(cd::itemShopBuyIds(db, 2) == std::vector<std::string>{"potion"});
+    CHECK(cd::itemShopBuyIds(db, 5) == std::vector<std::string>{"elixir", "potion"});
+}
+
+TEST_CASE("itemshop: the shipped Royal Snacks are sold in town 1 and nowhere else (M43)",
+          "[itemshop]") {
+    const ContentDatabase db = loadShippedContent();
+    CHECK(contains(cd::itemShopBuyIds(db, 1), "royal_snacks"));
+    for (int town = 2; town <= 7; ++town) {
+        CHECK_FALSE(contains(cd::itemShopBuyIds(db, town), "royal_snacks"));
+    }
+    // Every other consumable is unaffected by the new window.
+    for (int town = 1; town <= 7; ++town) {
+        CHECK(contains(cd::itemShopBuyIds(db, town), "potion"));
+        CHECK(isSorted(cd::itemShopBuyIds(db, town)));
+    }
 }

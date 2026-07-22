@@ -7,6 +7,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "dungeon/DungeonModel.hpp"
+#include "game/Castle.hpp"  // kKingBossId (M43: King-context items)
 #include "game/Party.hpp"
 
 namespace cd::battle {
@@ -92,6 +93,20 @@ void clearNegativeStatuses(Combatant& c) {
         }
     }
     c.statuses = std::move(kept);
+}
+
+// M43: lift only the stat debuffs (ATK-/DEF-), leaving poison and the M35
+// afflictions in place. Royal Snacks pick you up; a Remedy is still what cures
+// you.
+bool clearStatDebuffs(Combatant& c) {
+    const std::size_t before = c.statuses.size();
+    c.statuses.erase(std::remove_if(c.statuses.begin(), c.statuses.end(),
+                                    [](const StatusInstance& s) {
+                                        return s.type == content::StatusType::AttackDown ||
+                                               s.type == content::StatusType::DefenseDown;
+                                    }),
+                     c.statuses.end());
+    return c.statuses.size() != before;
 }
 
 const char* statusLabel(content::StatusType type) {
@@ -735,6 +750,16 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                         addThreat(actor, amt);  // healing draws enmity too (M28)
                     }
                     log += " " + t.name + " recovers " + std::to_string(amt) + " HP.";
+                } else if (skill.reviveHpPct > 0) {
+                    // M43: a revive-capable heal (Renew) raises a KO'd ally at a
+                    // fixed share of its max HP - the skill's own power never
+                    // enters, so reviving is an emergency, not a heal.
+                    const int amt = std::max(1, t.maxHp * skill.reviveHpPct / 100);
+                    t.hp = amt;
+                    if (a.side == Side::Party) {
+                        addThreat(actor, amt);
+                    }
+                    log += " " + t.name + " is revived with " + std::to_string(amt) + " HP!";
                 }
                 break;
             }
@@ -782,18 +807,28 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
     Combatant& t = units[static_cast<std::size_t>(target)];
     const std::string& who = units[static_cast<std::size_t>(actor)].name;
     std::string log = who + " uses " + item.name + " on " + t.name + ".";
+    // M43: an item may carry King-specific amounts (Royal Snacks). kingBattle is
+    // set at buildBattle from the team's boss id, so this branch is content-
+    // derived and identical in live play and the Simulator.
+    const int healAmount =
+        kingBattle && item.kingEffectAmount > 0 ? item.kingEffectAmount : item.effectAmount;
+    const int mpAmount = kingBattle ? item.kingMpAmount : 0;
     switch (item.effect) {
         case content::ConsumableEffect::Heal:
             if (t.alive()) {
-                applyHeal(t, item.effectAmount);
-                log += " HP +" + std::to_string(item.effectAmount) + ".";
+                applyHeal(t, healAmount);
+                log += " HP +" + std::to_string(healAmount) + ".";
+                if (mpAmount > 0) {
+                    t.mp = std::min(t.maxMp, t.mp + mpAmount);
+                    log += " MP +" + std::to_string(mpAmount) + ".";
+                }
             } else {
                 log += " No effect.";
             }
             break;
         case content::ConsumableEffect::RestoreMp:
-            t.mp = std::min(t.maxMp, t.mp + item.effectAmount);
-            log += " MP +" + std::to_string(item.effectAmount) + ".";
+            t.mp = std::min(t.maxMp, t.mp + healAmount);
+            log += " MP +" + std::to_string(healAmount) + ".";
             break;
         case content::ConsumableEffect::Revive:
             if (!t.alive()) {
@@ -811,6 +846,11 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
         case content::ConsumableEffect::None:
             log += " Nothing happens.";
             break;
+    }
+    // M43: an item may also lift the stat debuffs alongside its main effect
+    // (Royal Snacks). Inert for every item that does not ask for it.
+    if (item.curesDebuffs && t.alive() && clearStatDebuffs(t)) {
+        log += " ATK-/DEF- lifted.";
     }
     return log;
 }
@@ -862,6 +902,10 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         s.speed = s.speed * team.statScalePct / 100;
         return s;
     };
+
+    // M43: is this the King's fight? Read once, from content, so item behavior
+    // that keys on it is deterministic and sim-identical.
+    b.kingBattle = team.bossId == kKingBossId;
 
     // Boss combatant (built from a BossDef; its minions follow below).
     if (!team.bossId.empty()) {
@@ -960,10 +1004,48 @@ std::vector<int> turnOrder(const Battle& b) {
     return order;
 }
 
+EnemyChoice confusedChoice(const Battle& b, int actor) {
+    EnemyChoice choice;  // useSkill stays false: confusion forbids deliberate acts
+    const Side foe =
+        b.units[static_cast<std::size_t>(actor)].side == Side::Party ? Side::Enemy : Side::Party;
+    const std::vector<int> foes = b.aliveIndices(foe);
+    // attack() redirects to a seeded member of the actor's OWN side, so this is
+    // only a valid nominal target; the actor itself serves when nothing opposes it.
+    choice.target = foes.empty() ? actor : foes.front();
+    return choice;
+}
+
+std::vector<int> itemTargets(const Battle& b, Side side, const content::ItemDef& item) {
+    const bool wantsFallen = item.effect == content::ConsumableEffect::Revive;
+    std::vector<int> targets;
+    for (std::size_t i = 0; i < b.units.size(); ++i) {
+        if (b.units[i].side == side && b.units[i].alive() != wantsFallen) {
+            targets.push_back(static_cast<int>(i));
+        }
+    }
+    return targets;
+}
+
+std::vector<int> skillAllyTargets(const Battle& b, Side side, const content::SkillDef& skill) {
+    std::vector<int> targets;
+    for (std::size_t i = 0; i < b.units.size(); ++i) {
+        if (b.units[i].side == side && (b.units[i].alive() || skill.reviveHpPct > 0)) {
+            targets.push_back(static_cast<int>(i));
+        }
+    }
+    return targets;
+}
+
 EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::ContentDatabase& db) {
     EnemyChoice choice;
 
     const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    // Confusion (M43): a confused unit cannot choose - it swings wildly. Enforced
+    // here, in shared code, so an enemy caster can no longer heal or curse through
+    // its confusion the way it could before this bump.
+    if (isConfused(self)) {
+        return confusedChoice(b, actor);
+    }
     // Silence (M35): a silenced enemy cannot use MP-cost skills, so it falls back
     // to any 0-MP skill or a basic attack. canCast enforces exactly that in each
     // skill loop below.

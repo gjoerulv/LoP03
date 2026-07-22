@@ -66,9 +66,10 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
         if (def.rarity == content::Rarity::Legendary) {
             continue;
         }
-        // Per-town gating (M37): a chest reward only offers gear unlocked at this
-        // town, so higher-town gear appears only in higher-town dungeons.
-        if (def.minTown > town) {
+        // Per-town gating (M37, windowed in M43): a chest reward or merchant
+        // offer only holds what exists at this town, so higher-town gear appears
+        // only in higher-town dungeons and a town-1-only item stays there.
+        if (!def.availableAtTown(town)) {
             continue;
         }
         p.items.push_back(id);

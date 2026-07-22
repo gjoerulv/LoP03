@@ -27,9 +27,11 @@ namespace cd::dungeon {
 // each seed's event shuffle/placement (owner-approved); version 7 (M37) gives
 // the dungeon merchant a 75% bargain (was a 130% markup) and gates chest gear by
 // town (per-town equipment); version 8 (M38) adds town-gated per-town enemies and
-// bosses, changing a seed's roster at towns 2+ — each changes generated output
-// for a seed (owner-approved).
-inline constexpr int kGenerationVersion = 8;
+// bosses, changing a seed's roster at towns 2+; version 9 (M43) reprices the
+// consumables a dungeon merchant offers and adds a town-1-only item to the town-1
+// chest/merchant pools, so a seed's offers and prices change — each changes
+// generated output for a seed (owner-approved).
+inline constexpr int kGenerationVersion = 9;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

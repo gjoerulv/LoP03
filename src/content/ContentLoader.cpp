@@ -81,7 +81,19 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
         d.statusDuration = r.optIntMin("statusDuration", 0, 0);
         d.controlEffect =
             r.optEnum<SkillEffect>("control", parseSkillEffect, SkillEffect::None, "control effect");
+        d.reviveHpPct = r.optIntMin("reviveHpPct", 0, 0);  // M43 (default 0 = cannot revive)
         d.description = r.optString("description");
+
+        // Semantic rules tying fields together (M43): a revive-capable skill is a
+        // single-ally heal, and its percentage is a percentage.
+        if (d.reviveHpPct > 100) {
+            rep.add(source, ctx, "'reviveHpPct' must be 0..100");
+        }
+        if (d.reviveHpPct > 0 &&
+            (d.category != SkillCategory::Heal || d.target != SkillTarget::SingleAlly)) {
+            rep.add(source, ctx,
+                    "'reviveHpPct' is only valid on a 'heal' skill targeting 'single_ally'");
+        }
         if (rep.errorCount() != before) {
             return;  // invalid entry; skip
         }
@@ -178,14 +190,21 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         d.rarity = r.optEnum<Rarity>("rarity", parseRarity, Rarity::Common, "rarity");
         d.value = r.optIntMin("value", 0, 0);
         d.minTown = r.optIntMin("minTown", 1, 1);  // M37 (default 1)
+        d.maxTown = r.optIntMin("maxTown", 0, 0);  // M43 (default 0 = unbounded)
         d.effect = r.optEnum<ConsumableEffect>("effect", parseConsumableEffect,
                                                ConsumableEffect::None, "consumable effect");
         d.effectAmount = r.optIntMin("effectAmount", 0, 0);
+        d.curesDebuffs = r.optBool("curesDebuffs", false);           // M43
+        d.kingEffectAmount = r.optIntMin("kingEffectAmount", 0, 0);  // M43
+        d.kingMpAmount = r.optIntMin("kingMpAmount", 0, 0);          // M43
         d.statBonus = r.optStatBlock("statBonus");
         d.grantsSkill = r.optString("grantsSkill");
         d.description = r.optString("description");
 
         // Semantic rules tying fields together.
+        if (d.maxTown > 0 && d.maxTown < d.minTown) {
+            rep.add(source, ctx, "'maxTown' must be >= 'minTown' (or 0 for unbounded)");
+        }
         if (d.type == ItemType::Scroll && d.grantsSkill.empty()) {
             rep.add(source, ctx, "scroll item must specify a non-empty 'grantsSkill'");
         }

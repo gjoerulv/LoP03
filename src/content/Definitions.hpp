@@ -29,6 +29,11 @@ struct SkillDef {
     // manipulate the threat model instead of (or besides) dealing damage.
     SkillEffect controlEffect = SkillEffect::None;
 
+    // Revive capability (M43): 0 = the skill cannot raise the fallen (every
+    // pre-M43 skill); 1..100 = a KO'd ally target is revived at this percentage
+    // of max HP instead of being skipped. Validated to heal/single_ally only.
+    int reviveHpPct = 0;
+
     std::string description;
 };
 
@@ -126,10 +131,20 @@ struct ItemDef {
     Rarity rarity = Rarity::Common;
     int value = 0;      // gold value (>= 0)
     int minTown = 1;    // per-town gating (M37): stocked/dropped only at town >= minTown
+    int maxTown = 0;    // M43: upper end of the town window (0 = unbounded)
 
     // Consumable behavior.
     ConsumableEffect effect = ConsumableEffect::None;
     int effectAmount = 0;
+    // M43: the item also lifts ATK-/DEF- (stat debuffs only - full affliction
+    // cleansing remains the Cure effect's job).
+    bool curesDebuffs = false;
+    // M43 (Royal Snacks): amounts used INSTEAD of the normal ones when the fight
+    // is the King's (battle::Battle::kingBattle). 0 = no King-specific behavior,
+    // which is every other item. Bespoke King fields follow the M40 precedent
+    // (BossDef::immuneToConfusion).
+    int kingEffectAmount = 0;
+    int kingMpAmount = 0;
 
     // Equipment/relic flat stat bonus.
     StatBlock statBonus;
@@ -138,6 +153,14 @@ struct ItemDef {
     std::string grantsSkill;
 
     std::string description;
+
+    // M43: the town window this item exists in at all - shop stock, chest
+    // rewards, and dungeon merchant offers all ask this one question, so an
+    // item can never be "sold only in town 1" in one place and everywhere in
+    // another. Unbounded above unless maxTown says otherwise.
+    bool availableAtTown(int town) const {
+        return minTown <= town && (maxTown <= 0 || town <= maxTown);
+    }
 };
 
 struct BossDef {

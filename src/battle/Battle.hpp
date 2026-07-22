@@ -28,8 +28,10 @@ namespace cd::battle {
 // identical inputs can change, so the scoreboard can flag runs played under
 // different rules. 0 = pre-M28; 1 = M28 (enmity/targeting/control skills);
 // 2 = M35 (Confusion/Silence/Blind statuses + the seeded to-hit layer);
-// 3 = M36 (passive skills). The program's last rules bump.
-inline constexpr int kBattleRulesVersion = 3;
+// 3 = M36 (passive skills); 4 = M43 (confusion forces a basic attack on BOTH
+// sides, revive-capable heal skills, King-context items, effect-filtered item
+// targeting).
+inline constexpr int kBattleRulesVersion = 4;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -135,6 +137,12 @@ public:
     // Cleared at the start of every action so it only reflects the latest one.
     std::vector<int> lastMissed;
 
+    // M43: this fight is the King's (set by buildBattle from the team's boss id).
+    // Content-derived, never rolled, so the live screen and the Simulator read the
+    // same flag from the same construction path. Items may carry King-specific
+    // amounts (Royal Snacks).
+    bool kingBattle = false;
+
     bool sideAlive(Side s) const;
     Outcome outcome() const;  // Victory / Defeat / Ongoing (Escaped is set by the caller)
     std::vector<int> aliveIndices(Side s) const;
@@ -231,5 +239,23 @@ struct EnemyChoice {
     std::string skillId;
 };
 EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::ContentDatabase& db);
+
+// M43: the forced action of a confused unit — a basic attack, never a skill.
+// `attack()` then performs the seeded same-side redirect, so the returned target
+// is only a nominal living opposing unit (the actor itself if its foes are all
+// down). EVERY caller that decides a turn — BattleState, the Simulator, and
+// chooseEnemyAction — routes confusion through this one function, so live play
+// and simulation agree by construction rather than by careful duplication.
+EnemyChoice confusedChoice(const Battle& b, int actor);
+
+// M43: the party members a battle item may be used on, by effect (Heal /
+// RestoreMp / Cure / None reach the living; Revive reaches only the fallen).
+// Empty means the item has no legal target and must not be spent. Pure, so the
+// battle screen and the tests share one rule.
+std::vector<int> itemTargets(const Battle& b, Side side, const content::ItemDef& item);
+
+// M43: the ally targets a single-ally skill may be aimed at — the living, plus
+// the KO'd when the skill can revive them (SkillDef::reviveHpPct > 0).
+std::vector<int> skillAllyTargets(const Battle& b, Side side, const content::SkillDef& skill);
 
 }  // namespace cd::battle

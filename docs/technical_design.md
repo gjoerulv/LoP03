@@ -183,10 +183,12 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = **8** (M29 enlarged the theme enemy/boss pools; M30 added
+  `kGenerationVersion` = **9** (M29 enlarged the theme enemy/boss pools; M30 added
   the RestToken event; M37 gave the merchant a 75 % bargain and gated chest gear by
-  town; **M38 gates the per-town enemy/boss pools by `minTown`** — each changes a
-  seed's roster/events/rewards; owner-approved bumps).
+  town; **M38 gates the per-town enemy/boss pools by `minTown`**; **M43 reprices
+  the consumables a merchant offers and windows item pools by
+  `availableAtTown`** — each changes a seed's roster/events/rewards;
+  owner-approved bumps).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager/rest-token) realized as an
@@ -517,7 +519,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 8; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 9; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).
@@ -554,8 +556,9 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   the start of a unit's turn.
 - **Resolution (deterministic formulas):** physical `max(1, attack + power −
   def/2)`, magic `max(1, magic + power − def/4)`, both halved while guarding;
-  heal `power + magic/2` (never resurrects); items apply Heal/RestoreMp/Revive/
-  Cure; revive restores a percentage of max HP. Skills spend MP.
+  heal `power + magic/2` (a heal resurrects only when the skill carries M43's
+  `reviveHpPct`); items apply Heal/RestoreMp/Revive/Cure; revive restores a
+  percentage of max HP. Skills spend MP.
 - **Enmity & targeting (M28).** `Battle` holds global `threat` per party member
   (accrued inside the shared `attack`/`useSkill` from damage dealt and healing
   done; decayed ×3/4 by `beginRound()`, called at each round start by both
@@ -613,8 +616,8 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   Hall** (own many, equip one, swap free); the target-info panel and Details
   reveal a unit's passive. `ownedPassives`/`equippedPassive` are optional save
   fields (old saves → empty; unknown/unowned ids dropped on load), so **no
-  `kSaveVersion` bump**. `battle::kBattleRulesVersion` is **3** (the program's last
-  rules bump); `kGenerationVersion` unchanged (passives are not a generation
+  `kSaveVersion` bump**. `battle::kBattleRulesVersion` was **3** at M36 (M43 took it
+  to 4); `kGenerationVersion` unchanged by M36 (passives are not a generation
   input).
 - **Commands:** Attack, Skill, Item, Guard, Escape. Escape always succeeds (every
   encounter is escapable); escaping forfeits the gate/chest.
@@ -694,8 +697,9 @@ the same "equippable" definition the equip flow uses. Categories are a browse
 aid only: no pricing, stock, equip, save, or content change.
 
 **Per-town equipment (M37).** `ItemDef.minTown` (optional, default 1) gates gear
-by the town ladder: `equipShopBuyIds(content, slot, town)` stocks only
-`minTown ≤ town`, so the Equip Shop grows as the ladder is climbed, and
+by the town ladder (M43 widened this into the `availableAtTown` window and applied
+it to consumables too): `equipShopBuyIds(content, slot, town)` stocks only
+what is available at that town, so the Equip Shop grows as the ladder is climbed, and
 `buildPools(db, theme, town)` filters chest candidates the same way (legendaries
 stay excluded). 24 new per-town pieces (towns 2–7, priced below the legendary
 tier) plus 3 new legendary weapons (black-market/drop pool) ship in `items.json`.
@@ -907,8 +911,8 @@ castle is reached, and left, only through its own states.
   measured roughly twice the room the row has, and `drawMenu` neither fits nor reports.
   Two new tracks
   (`MusicTrack::Castle`, `MusicTrack::KingBattle`) with manifest rows + synth fallback.
-- **Versions.** `kSaveVersion`, `kBattleRulesVersion` (3), and `kGenerationVersion` (8)
-  all unchanged.
+- **Versions.** `kSaveVersion`, `kBattleRulesVersion`, and `kGenerationVersion` all
+  unchanged **by M40** (they stood at 1 / 3 / 8; M43 took them to 1 / 4 / 9).
 
 ### Story serial (Milestone 41)
 
@@ -973,6 +977,63 @@ Presentation + persistence only; no battle/generation/scoring surface, no versio
 - **Save.** `Party.encountered` (string array), `recordBiggestHit`, `recordRunDamage`
   are additive optional fields; achievements are a new global file. No `kSaveVersion`
   bump. No new art (the bestiary reuses battle sprites).
+
+### Balance pass & audit fixes (Milestone 43)
+
+One battle-rules bump (**3 → 4**) and one generation bump (**8 → 9**); no
+`kSaveVersion` change (every schema addition is an optional field with an inert
+default, so pre-M43 saves and content load unchanged).
+
+- **Forced actions live in shared `battle::` code — the rule this milestone
+  exists to establish.** Any rule that takes a turn away from its owner must be
+  implemented once, in `battle::`, and consulted by **every** turn-decider:
+  `BattleState`, the `Simulator`'s party AI, and `chooseEnemyAction`. M35 put the
+  confusion lockout in `BattleState` alone, so a confused *enemy* still cast
+  freely and the Simulator disagreed with live play about the same board.
+  `battle::confusedChoice(b, actor)` is now that one rule (a no-skill
+  `EnemyChoice` at a nominal living foe; `attack()` performs the existing seeded
+  same-side redirect), and all three callers route through it. Immunity is
+  unchanged: `isConfused` honours `confusionImmune`, so the King is unaffected.
+  The Simulator's `choosePartyAction` is exported from `Simulator.hpp` so a test
+  can assert sim-vs-live agreement directly, the way `chooseEnemyAction` already
+  allowed. **M44/M45 add more forced actions (a relic's forced Guard and skipped
+  turn, the Jester's uncontrolled turn) — they follow this rule.**
+- **Revive-capable skills.** `SkillDef.reviveHpPct` (optional, 0 = cannot revive;
+  1–100 = raise a KO'd ally at that share of max HP; the loader rejects a value
+  above 100 or on anything but a `heal`/`single_ally` skill). `useSkill`'s Heal
+  branch revives a dead target instead of skipping it; the skill's `power` never
+  enters the revive amount. `battle::skillAllyTargets` decides the ally target
+  list (living, plus the fallen for a revive-capable skill) so the rule is pure
+  and headless-testable; `BattleState` calls it.
+- **Item targeting by effect.** `battle::itemTargets` returns living allies for
+  Heal / RestoreMp / Cure / None and only fallen allies for Revive. `BattleState`
+  greys an item with no legal target and prints the reason beside the list, so an
+  item can no longer be consumed on a "No effect" no-op.
+- **King-context items.** `Battle.kingBattle` is set in `buildBattle` from
+  `team.bossId == kKingBossId` — content-derived, never rolled, identical in the
+  Simulator. `ItemDef.kingEffectAmount` / `kingMpAmount` replace the normal
+  amounts in that fight, and `ItemDef.curesDebuffs` lifts ATK-/DEF- only
+  (`clearStatDebuffs`, distinct from `Cure`'s full `clearNegativeStatuses`).
+  Royal Snacks is the only item using them; every other item is inert to all
+  three. Bespoke King fields follow the M40 `BossDef::immuneToConfusion`
+  precedent.
+- **Item town window.** `ItemDef.maxTown` (optional, 0 = unbounded) completes
+  M37's `minTown` into `ItemDef::availableAtTown(town)`, and that one predicate is
+  now the single answer everywhere an item's availability is asked: the new pure
+  `itemShopBuyIds` (`states/ItemShopFilter.hpp`, mirroring `EquipShopFilter`),
+  `equipShopBuyIds`, and the generator's chest/merchant pools. The item shop had
+  no gating at all before this.
+- **Truthful castle defeat.** `BattleState` takes a `castleChallenge` flag and
+  drops the dungeon's "half your gold is lost" claim for those fights;
+  `CastleChallengeState::finish(false)` fully heals the party (`healFull`) and
+  says so, and the boss-rush defeat line counts `bossRushOrder(db).size()` rather
+  than a literal 12.
+- **Versions.** `battle::kBattleRulesVersion` = **4** (confusion enforcement,
+  revive skills, King items, item-target filtering all change how identical inputs
+  resolve). `dungeon::kGenerationVersion` = **9** (a dungeon merchant prices its
+  offer at `item.value * 75 / 100`, so the reprices change a seed's offer, and the
+  town-1 pools gain Royal Snacks). Existing `ScoreEntry` rows keep their recorded
+  versions and the M19 comparability display flags them — never normalized.
 
 ## 13. Presentation (Milestone 8)
 

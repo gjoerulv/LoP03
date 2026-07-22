@@ -125,13 +125,14 @@ std::vector<std::string> statusLines(const battle::Combatant& c, int maxWidth, i
 
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                          battle::BattleResult* resultSlot, MusicTrack musicOverride,
-                         RunStats* statsSlot)
+                         RunStats* statsSlot, bool castleChallenge)
     : GameState(stack),
       context_(context),
       battle_(std::move(battle)),
       resultSlot_(resultSlot),
       musicOverride_(musicOverride),
-      stats_(statsSlot) {
+      stats_(statsSlot),
+      castleChallenge_(castleChallenge) {
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Enemy && c.isBoss) {
             bossBattle_ = true;
@@ -416,13 +417,27 @@ void BattleState::buildSkillMenu() {
     skillScroll_.follow(static_cast<int>(skillMenu_.size()), kListRows, skillMenu_.cursor());
 }
 
+std::string BattleState::itemBlockReason(const content::ItemDef& item) const {
+    // M43: why an item is greyed out, spelled out rather than left to the player
+    // to decode (M22, non-color-alone). Empty means the item is usable.
+    if (!battle::itemTargets(battle_, battle::Side::Party, item).empty()) {
+        return "";
+    }
+    return item.effect == content::ConsumableEffect::Revive
+               ? "No fallen ally to revive."
+               : "No able ally to use this on.";
+}
+
 void BattleState::buildItemMenu() {
     itemIds_ = consumableIds();
     std::vector<ui::MenuItem> items;
     for (const std::string& id : itemIds_) {
         const content::ItemDef* it = context_.content.findItem(id);
         const std::string name = it != nullptr ? it->name : id;
-        items.push_back({name, true, "x" + std::to_string(context_.party.inventory.count(id))});
+        // An item with no legal target (M43) is offered greyed, never spent.
+        const bool enabled = it != nullptr && itemBlockReason(*it).empty();
+        items.push_back(
+            {name, enabled, "x" + std::to_string(context_.party.inventory.count(id))});
     }
     itemMenu_.setItems(std::move(items));
     itemScroll_.reset();
@@ -474,7 +489,9 @@ void BattleState::onSkillChosen() {
     }
     if (skillNeedsTarget(s->target)) {
         const bool ally = s->target == content::SkillTarget::SingleAlly;
-        targetCandidates_ = battle_.aliveIndices(ally ? battle::Side::Party : battle::Side::Enemy);
+        // M43: a revive-capable ally skill (Renew) may be aimed at the fallen.
+        targetCandidates_ = ally ? battle::skillAllyTargets(battle_, battle::Side::Party, *s)
+                                 : battle_.aliveIndices(battle::Side::Enemy);
         targetCursor_ = 0;
         phase_ = Phase::ChooseTarget;
     } else {
@@ -486,15 +503,23 @@ void BattleState::onItemChosen() {
     if (itemIds_.empty()) {
         return;
     }
-    pendingItemId_ = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
-    pendingKind_ = PendingKind::Item;
-    // Items target any party member (alive or KO'd, for revives).
-    targetCandidates_.clear();
-    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
-        if (battle_.units[i].side == battle::Side::Party) {
-            targetCandidates_.push_back(static_cast<int>(i));
-        }
+    if (!itemMenu_.currentEnabled()) {
+        context_.audio.play(Sfx::Error);
+        return;  // no legal target; the reason is shown beside the list
     }
+    pendingItemId_ = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
+    const content::ItemDef* it = context_.content.findItem(pendingItemId_);
+    if (it == nullptr) {
+        return;
+    }
+    // M43: candidates follow the item's effect - a potion cannot be poured into a
+    // fallen ally, and a Phoenix Tear reaches only the fallen, so an item can no
+    // longer be spent on a "No effect" no-op.
+    targetCandidates_ = battle::itemTargets(battle_, battle::Side::Party, *it);
+    if (targetCandidates_.empty()) {
+        return;
+    }
+    pendingKind_ = PendingKind::Item;
     targetCursor_ = 0;
     phase_ = Phase::ChooseTarget;
 }
@@ -597,11 +622,10 @@ void BattleState::executeConfused(int actor) {
     for (const battle::Combatant& u : battle_.units) {
         hpBefore.push_back(u.hp);
     }
-    // attack() performs the confusion redirect internally (a seeded random same-side
-    // target), so the nominal target only needs to be valid; use any living enemy.
-    const std::vector<int> foes = battle_.aliveIndices(battle::Side::Enemy);
-    const int nominal = foes.empty() ? actor : foes.front();
-    message_ = battle_.attack(actor, nominal);
+    // M43: the forced action comes from the shared rule the Simulator and the
+    // enemy AI also use, so a confused turn resolves identically everywhere.
+    const battle::EnemyChoice choice = battle::confusedChoice(battle_, actor);
+    message_ = battle_.attack(actor, choice.target);
     stageNumbers(hpBefore, 2, false);
     afterAction();
 }
@@ -645,9 +669,14 @@ std::string BattleState::outcomeMessage() const {
         case battle::Outcome::Victory:
             return bossBattle_ ? "Victory! The dungeon boss is defeated!" : "Victory!";
         case battle::Outcome::Defeat:
-            // Defeat consequences are stated, not silent (UI-INFO-014).
-            return "The party has fallen... You are carried back to town; "
-                   "half your gold is lost and the run is forfeit.";
+            // Defeat consequences are stated, not silent (UI-INFO-014) — and
+            // stated TRUTHFULLY (M43): a castle challenge costs no gold and has
+            // no run to forfeit, so it must not borrow the dungeon's penalty.
+            return castleChallenge_
+                       ? "The party has fallen... The castle guard carries you back "
+                         "to the gates. The challenge ends; nothing is lost."
+                       : "The party has fallen... You are carried back to town; "
+                         "half your gold is lost and the run is forfeit.";
         case battle::Outcome::Escaped:
             return "Escaped!";
         case battle::Outcome::Ongoing:
@@ -1074,7 +1103,12 @@ void BattleState::render() {
             if (!itemIds_.empty()) {
                 const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
                 if (const content::ItemDef* it = context_.content.findItem(iid)) {
-                    if (!it->description.empty()) {
+                    // M43: a greyed item says why before it says what it does.
+                    const std::string blocked = itemBlockReason(*it);
+                    if (!blocked.empty()) {
+                        ui::drawTextWrapped(blocked, kInfoX, panelY + 20, infoW, style::kFontBody,
+                                            style::palette().textDim, "battle.itemblocked", 2);
+                    } else if (!it->description.empty()) {
                         ui::drawTextWrapped(it->description, kInfoX, panelY + 20, infoW,
                                             style::kFontBody, style::palette().success,
                                             "battle.itemdesc", 2);

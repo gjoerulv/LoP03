@@ -235,7 +235,8 @@ save round-trips via the Save Point + Continue.
   with F5); missing files fall back to synthesized placeholders or silence.
 - Status effects include poison, attack/defense buffs/debuffs, and (M35)
   Blind (physical attacks usually miss), Silence (no MP-cost skills), and
-  Confusion (attacks its own side) — all deterministic and seeded. Bosses use
+  Confusion (forces a basic attack at its own side, on both sides equally since
+  M43) — all deterministic and seeded. Bosses use
   stats, skills, minions, telegraph text, and a Brute enrage; dynamic summons and
   true multi-wave "rush" are not implemented.
 - Equipment has no per-class restrictions; the economy is lightly tuned.

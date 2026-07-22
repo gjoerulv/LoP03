@@ -160,9 +160,15 @@ Asset generators (deterministic; reruns byte-identical):
     `PostMessage` WM_KEYDOWN/UP to the game's HWND (extended-key bit for
     arrows, ~70ms between down/up) + `SetWindowPos` topmost+NOACTIVATE.
 12. **Generation changes need a version bump.** Anything that alters what a
-    seed produces (generator code OR composition/data curves) bumps
-    `dungeon::kGenerationVersion` (currently 6) — the scoreboard tags it
+    seed produces (generator code OR composition/data curves — including item
+    prices, which the dungeon merchant derives its offer from) bumps
+    `dungeon::kGenerationVersion` (currently 9) — the scoreboard tags it
     for comparability. Owner-gated.
+13. **A forced/automatic action rule lives in shared `battle::` code**, called by
+    `BattleState`, the `Simulator`, AND `chooseEnemyAction` (see
+    `battle::confusedChoice`). Enforcing one in a state only — as M35 did with
+    confusion — silently desynchronizes live play from the simulator; M43 exists
+    partly to fix that.
 
 ## Architecture rules (enforce in review)
 
@@ -201,7 +207,8 @@ over any restatement, including this one. Everything through **M42** (the
 M35–M42 endgame program: statuses v2, passives, per-town content, boss drops,
 the castle with the King, story, enrichment) is `complete (approved)`. The
 **M43–M45 King's Gambit program** (balance/audit fixes → royal relics + the
-doubled King → three unlockable classes) is planned and runs next. The
+doubled King → three unlockable classes) runs next; **M43 is implemented and
+awaiting the owner's manual approval** (M44/M45 are not authorized). The
 deliberately deferred **M23** (validation/playtesting/balance) and **M24**
 (release packaging) run **last, after M45**: their tooling and packaging are
 built (v0.9.0 RC flow), awaiting owner-run external playtests
