@@ -34,6 +34,14 @@ public:
     void update(float dt) override;
     void render() override;
 
+#ifdef CRYSTAL_CAPTURE
+    // Capture-only (M44): jump to the room holding `kind` and stand facing its
+    // marker, so the event's footer prompt renders deterministically for the
+    // overflow check. Returns false when the dungeon has no such event. Not
+    // present in shipping builds.
+    bool captureFaceEvent(dungeon::RoomEventKind kind);
+#endif
+
 private:
     enum class MarkerKind { GateTeam, GuardTeam, Boss, Chest, Event };
     enum class EncounterKind { None, Gate, Guard, Boss, Challenge };

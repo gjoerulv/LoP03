@@ -41,6 +41,10 @@ enum class ConsumableEffect { None, Heal, Revive, RestoreMp, Cure };
 // M35 adds Confusion (basic-attacks its own side), Silence (no MP-cost skills),
 // and Blind (physical attacks usually miss). All three are duration-only
 // (no magnitude) and are stripped by Cure like the other negative statuses.
+// M44 adds two TURN-CONTROL statuses applied by the Royal Relics: Terrified
+// (the bearer is forced to Guard on its next turn) and Stunned (it does nothing
+// on its next turn). Unlike the others these take the turn itself, so their
+// authored duration is applied exactly (never scaled) — see addStatus.
 enum class StatusType {
     None,
     Poison,
@@ -50,8 +54,13 @@ enum class StatusType {
     DefenseDown,
     Confusion,
     Silence,
-    Blind
+    Blind,
+    Terrified,
+    Stunned
 };
+
+// Which side a battle item is aimed at (M44). Ally is every pre-M44 item.
+enum class BattleTarget { Ally, Enemy };
 
 enum class BossArchetype { Brute, Sorcerer, Commander, Rush };
 
@@ -86,6 +95,7 @@ std::optional<EquipSlot> parseEquipSlot(std::string_view s);
 std::optional<Rarity> parseRarity(std::string_view s);
 std::optional<ConsumableEffect> parseConsumableEffect(std::string_view s);
 std::optional<StatusType> parseStatusType(std::string_view s);
+std::optional<BattleTarget> parseBattleTarget(std::string_view s);
 std::optional<BossArchetype> parseBossArchetype(std::string_view s);
 std::optional<PassiveHook> parsePassiveHook(std::string_view s);
 
@@ -109,6 +119,7 @@ const char* toString(EquipSlot v);
 const char* toString(Rarity v);
 const char* toString(ConsumableEffect v);
 const char* toString(StatusType v);
+const char* toString(BattleTarget v);
 const char* toString(BossArchetype v);
 const char* toString(PassiveHook v);
 

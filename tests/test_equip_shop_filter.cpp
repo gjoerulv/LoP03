@@ -214,6 +214,7 @@ TEST_CASE("itemshop: consumables are stocked inside their town window (M43)", "[
     always.id = "potion";
     always.name = "Potion";
     always.type = ItemType::Consumable;
+    always.value = 25;
     db.addItem(always);
     ItemDef townOne;  // town-1 only
     townOne.id = "royal_snacks";
@@ -221,12 +222,14 @@ TEST_CASE("itemshop: consumables are stocked inside their town window (M43)", "[
     townOne.type = ItemType::Consumable;
     townOne.minTown = 1;
     townOne.maxTown = 1;
+    townOne.value = 250;
     db.addItem(townOne);
     ItemDef late;  // town-5 and up
     late.id = "elixir";
     late.name = "Elixir";
     late.type = ItemType::Consumable;
     late.minTown = 5;
+    late.value = 400;
     db.addItem(late);
     ItemDef gear;  // not a consumable: the item shop never stocks it
     gear.id = "blade";
@@ -234,6 +237,13 @@ TEST_CASE("itemshop: consumables are stocked inside their town window (M43)", "[
     gear.type = ItemType::Equipment;
     gear.slot = EquipSlot::Weapon;
     db.addItem(gear);
+
+    ItemDef granted;  // M44: a valueless item is granted, never sold
+    granted.id = "evil_goose";
+    granted.name = "Evil Goose";
+    granted.type = ItemType::Consumable;
+    granted.value = 0;
+    db.addItem(granted);
 
     CHECK(cd::itemShopBuyIds(db, 1) == std::vector<std::string>{"potion", "royal_snacks"});
     CHECK(cd::itemShopBuyIds(db, 2) == std::vector<std::string>{"potion"});
@@ -251,5 +261,14 @@ TEST_CASE("itemshop: the shipped Royal Snacks are sold in town 1 and nowhere els
     for (int town = 1; town <= 7; ++town) {
         CHECK(contains(cd::itemShopBuyIds(db, town), "potion"));
         CHECK(isSorted(cd::itemShopBuyIds(db, town)));
+    }
+}
+
+TEST_CASE("itemshop: the shipped Royal Relics are never for sale (M44)", "[itemshop]") {
+    const ContentDatabase db = loadShippedContent();
+    for (int town = 1; town <= 7; ++town) {
+        for (const char* relic : {"evil_goose", "tax_sheets", "dragon_crown", "deadly_spoon"}) {
+            CHECK_FALSE(contains(cd::itemShopBuyIds(db, town), relic));
+        }
     }
 }

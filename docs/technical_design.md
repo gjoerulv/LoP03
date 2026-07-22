@@ -183,12 +183,12 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = **9** (M29 enlarged the theme enemy/boss pools; M30 added
+  `kGenerationVersion` = **10** (M29 enlarged the theme enemy/boss pools; M30 added
   the RestToken event; M37 gave the merchant a 75 % bargain and gated chest gear by
   town; **M38 gates the per-town enemy/boss pools by `minTown`**; **M43 reprices
   the consumables a merchant offers and windows item pools by
-  `availableAtTown`** — each changes a seed's roster/events/rewards;
-  owner-approved bumps).
+  `availableAtTown`**; **M44 draws the Royal Relic replacement roll from the event
+  stream** — each changes a seed's roster/events/rewards; owner-approved bumps).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager/rest-token) realized as an
@@ -519,7 +519,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 9; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 10; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).
@@ -912,7 +912,7 @@ castle is reached, and left, only through its own states.
   Two new tracks
   (`MusicTrack::Castle`, `MusicTrack::KingBattle`) with manifest rows + synth fallback.
 - **Versions.** `kSaveVersion`, `kBattleRulesVersion`, and `kGenerationVersion` all
-  unchanged **by M40** (they stood at 1 / 3 / 8; M43 took them to 1 / 4 / 9).
+  unchanged **by M40** (they stood at 1 / 3 / 8; M43 took them to 1 / 4 / 9, M44 to 1 / 5 / 10).
 
 ### Story serial (Milestone 41)
 
@@ -1028,12 +1028,58 @@ default, so pre-M43 saves and content load unchanged).
   `CastleChallengeState::finish(false)` fully heals the party (`healFull`) and
   says so, and the boss-rush defeat line counts `bossRushOrder(db).size()` rather
   than a literal 12.
-- **Versions.** `battle::kBattleRulesVersion` = **4** (confusion enforcement,
-  revive skills, King items, item-target filtering all change how identical inputs
-  resolve). `dungeon::kGenerationVersion` = **9** (a dungeon merchant prices its
-  offer at `item.value * 75 / 100`, so the reprices change a seed's offer, and the
-  town-1 pools gain Royal Snacks). Existing `ScoreEntry` rows keep their recorded
-  versions and the M19 comparability display flags them — never normalized.
+- **Versions (at M43).** `battle::kBattleRulesVersion` **4** (confusion
+  enforcement, revive skills, King items, item-target filtering all change how
+  identical inputs resolve); `dungeon::kGenerationVersion` **9** (a dungeon
+  merchant prices its offer at `item.value * 75 / 100`, so the reprices change a
+  seed's offer, and the town-1 pools gain Royal Snacks). M44 took them to 5 / 10.
+  Existing `ScoreEntry` rows keep their recorded versions and the M19
+  comparability display flags them — never normalized.
+
+### Royal Relics & the doubled King (Milestone 44)
+
+Rules **4 → 5**, generation **9 → 10**; no `kSaveVersion` change (relics are
+ordinary inventory items).
+
+- **Pure rules (`game/Relics.hpp`).** `relicEventChancePct(town, depth)` is the
+  replacement table; `relicPickIndex(seed, roomIndex, owned)` is the weighted draw
+  with ownership exclusion, proportional renormalization, and the owns-all
+  fallback to the base table. The draw uses `blackMarketHash` under its own salt,
+  so it can never shadow a black-market roll for the same seed. Both are
+  headless-tested.
+- **Generation.** `RoomEventKind::RoyalRelic` is **not** in the shuffled kind
+  list — it replaces an already-rolled event, at most once per dungeon, and the
+  draw is taken from the generator's own seeded `Rng` only where the event is
+  eligible (town ≥ 2, depth ≥ 2). `kGenerationVersion` = **10**.
+- **Resolution.** `DungeonState::resolveEvent` picks the relic at *interaction*
+  time from `(dungeon seed, room index, current ownership)`, so a reload plus a
+  re-entry reproduces the same grant instead of rerolling it.
+- **Item schema.** `ItemDef` gains `battleTarget` (ally/enemy), `statuses` (a list
+  of `{type, magnitude, duration}`), `requiresBossId`, and `statScalePct`. All
+  four relics are pure data — the battle model has no relic-specific branch. A
+  valueless item (`value <= 0`) is never stocked or dropped, so the relics exist
+  only through their event.
+- **Turn-control statuses.** `StatusType::Terrified` / `Stunned`. `addStatus`
+  applies them **unscaled** (the M35 2× multiplier would silently double a lost
+  turn); since `tickStatuses` runs at the start of the bearer's turn, an authored
+  duration of 2 costs exactly one turn.
+- **Forced actions, still in one place.** `ForcedAction { None, BasicAttack,
+  Guard, Skip }` + `forcedActionFor(const Combatant&)` + `forcedChoice(...)`.
+  `EnemyChoice` carries the forced kind, and `chooseEnemyAction`, the Simulator's
+  `choosePartyAction`, and `BattleState` all consult exactly that function — the
+  M43 rule, now carrying three imposed actions instead of one. `applyChoice` is
+  exported from `Simulator.hpp` so it (and a scripted battery) resolve a forced
+  turn the same way.
+- **Non-consumption.** `itemAffects(b, target, item)` is false only for a
+  `requiresBossId` item on the wrong target; `BattleState` asks **before** the
+  battle mutates and keeps the item when it did nothing.
+- **The King.** `the_hollow_king` is 750 / 36 / 44 / 36 / 26, and `kKingScalePct`
+  came **420 % → 340 %** (owner decision, 2026-07-22): the doubled base multiplies
+  through the challenge scale, and at 420 % the fight demanded far more counterplay
+  than the milestone approved. Effective at 340 %: 2550 HP, 122 ATK, 149 MAG,
+  122 DEF, 88 SPD. The counterplay battery lives in `test_royal_relics.cpp`
+  (`[king-report]` prints the loadout table and the stat-scale sweep that backed
+  the decision).
 
 ## 13. Presentation (Milestone 8)
 

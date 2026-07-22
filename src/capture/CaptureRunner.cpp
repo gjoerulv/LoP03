@@ -662,6 +662,44 @@ int run(const char* outDir) {
                  c.party.castleRecords.kingTitle.clear();
                  s.pushState(std::make_unique<SlotMenuState>(s, c, SlotMenuMode::Load));
              }},
+            {"45_relic_event",
+             [](StateStack& s, AppContext& c) {
+                 // M44: a reliquary room with the player facing it, so the event's
+                 // footer prompt is checked in situ. The seed is searched rather
+                 // than pinned: a rare event's seed would rot at the next
+                 // generation bump.
+                 for (std::uint64_t seed = 1; seed < 4000; ++seed) {
+                     dungeon::Dungeon d = dungeon::generate(seed, 20, c.content, "ruined_keep", 7);
+                     bool holdsRelic = false;
+                     for (const dungeon::Room& r : d.rooms) {
+                         holdsRelic = holdsRelic ||
+                                      r.event.kind == dungeon::RoomEventKind::RoyalRelic;
+                     }
+                     if (!holdsRelic) {
+                         continue;
+                     }
+                     auto state = std::make_unique<DungeonState>(s, c, std::move(d));
+                     if (state->captureFaceEvent(dungeon::RoomEventKind::RoyalRelic)) {
+                         s.pushState(std::move(state));
+                         return;
+                     }
+                 }
+             }},
+            {"46_battle_relics",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M44: the battle item list holding all four relics plus the
+                 // snacks — the widest item names and the count column.
+                 for (const char* id : {"evil_goose", "tax_sheets", "dragon_crown",
+                                        "deadly_spoon", "royal_snacks"}) {
+                     c.party.inventory.add(id, 2);
+                 }
+                 battle::Battle b =
+                     battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                            MusicTrack::KingBattle, nullptr, true);
+                 state->captureEnterItemMenu();
+                 s.pushState(std::move(state));
+             }},
             {"44_quit_confirm",
              [](StateStack& s, AppContext& c) {
                  // The pause menu's quit question, over the pause panel it opens

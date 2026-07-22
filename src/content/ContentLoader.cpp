@@ -200,8 +200,38 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         d.statBonus = r.optStatBlock("statBonus");
         d.grantsSkill = r.optString("grantsSkill");
         d.description = r.optString("description");
+        // M44: enemy-targetable battle items, applied statuses, a boss
+        // restriction, and a battle-long stat scale (the Royal Relics).
+        d.battleTarget = r.optEnum<BattleTarget>("battleTarget", parseBattleTarget,
+                                                 BattleTarget::Ally, "battle target");
+        d.requiresBossId = r.optString("requiresBossId");
+        d.statScalePct = r.optIntMin("statScalePct", 0, 0);
+        if (const auto it = el.find("statuses"); it != el.end()) {
+            if (!it->is_array()) {
+                rep.add(source, ctx + ".statuses", "expected array");
+            } else {
+                int si = 0;
+                for (const auto& se : *it) {
+                    const std::string sctx = ctx + ".statuses[" + std::to_string(si) + "]";
+                    if (!se.is_object()) {
+                        rep.add(source, sctx, "expected object");
+                    } else {
+                        ObjectReader sr(se, sctx, source, rep);
+                        ItemStatus st;
+                        st.type = sr.reqEnum<StatusType>("type", parseStatusType, "status type");
+                        st.magnitude = sr.optIntMin("magnitude", 0, 0);
+                        st.duration = sr.reqIntMin("duration", 1);
+                        d.statuses.push_back(st);
+                    }
+                    ++si;
+                }
+            }
+        }
 
         // Semantic rules tying fields together.
+        if (d.statScalePct > 100) {
+            rep.add(source, ctx, "'statScalePct' must be 0..100 (it only weakens a target)");
+        }
         if (d.maxTown > 0 && d.maxTown < d.minTown) {
             rep.add(source, ctx, "'maxTown' must be >= 'minTown' (or 0 for unbounded)");
         }

@@ -11,6 +11,11 @@
     { "id": "elixir", "name": "Elixir", "type": "consumable", "rarity": "epic", "value": 400, "effect": "heal", "effectAmount": 300, "description": "Restores a great deal of HP." },
     { "id": "royal_snacks", "name": "Royal Snacks", "type": "consumable", "rarity": "uncommon", "value": 250, "minTown": 1, "maxTown": 1, "effect": "heal", "effectAmount": 10, "curesDebuffs": true, "kingEffectAmount": 100, "kingMpAmount": 10, "description": "Bring Snacks!" },
 
+    { "id": "evil_goose", "name": "Evil Goose", "type": "consumable", "rarity": "epic", "value": 0, "battleTarget": "enemy", "statuses": [ { "type": "terrified", "duration": 2 } ], "description": "A terrifying goose. The foe can only cower behind its guard next turn." },
+    { "id": "tax_sheets", "name": "Tax Sheets", "type": "consumable", "rarity": "epic", "value": 0, "battleTarget": "enemy", "statuses": [ { "type": "stunned", "duration": 2 } ], "description": "Busy your enemies with taxes. The foe loses its next turn." },
+    { "id": "dragon_crown", "name": "Dragon Crown", "type": "consumable", "rarity": "epic", "value": 0, "battleTarget": "enemy", "requiresBossId": "the_hollow_king", "statuses": [ { "type": "attack_down", "magnitude": 40, "duration": 4 }, { "type": "defense_down", "magnitude": 40, "duration": 4 } ], "description": "The real Dragon Crown. Only the Hollow King cares - it saps his attack and defense." },
+    { "id": "deadly_spoon", "name": "Deadly Spoon", "type": "consumable", "rarity": "epic", "value": 0, "battleTarget": "enemy", "statScalePct": 50, "description": "Most deadly thing known to man. Halves a foe's ATK, MAG, DEF and SPD for the rest of the battle." },
+
     { "id": "iron_sword", "name": "Iron Sword", "type": "equipment", "slot": "weapon", "rarity": "common", "value": 120, "statBonus": { "attack": 6 }, "description": "A dependable iron blade." },
     { "id": "steel_sword", "name": "Steel Sword", "type": "equipment", "slot": "weapon", "rarity": "uncommon", "value": 260, "statBonus": { "attack": 10 }, "description": "A finely forged steel blade." },
     { "id": "short_bow", "name": "Short Bow", "type": "equipment", "slot": "weapon", "rarity": "common", "value": 110, "statBonus": { "attack": 5, "speed": 2 }, "description": "A light, quick bow." },

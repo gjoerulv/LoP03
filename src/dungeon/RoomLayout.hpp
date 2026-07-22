@@ -29,9 +29,10 @@ namespace cd::dungeon {
 // town (per-town equipment); version 8 (M38) adds town-gated per-town enemies and
 // bosses, changing a seed's roster at towns 2+; version 9 (M43) reprices the
 // consumables a dungeon merchant offers and adds a town-1-only item to the town-1
-// chest/merchant pools, so a seed's offers and prices change — each changes
-// generated output for a seed (owner-approved).
-inline constexpr int kGenerationVersion = 9;
+// chest/merchant pools; version 10 (M44) draws the Royal Relic replacement roll
+// from the event stream at town >= 2 / depth >= 2, so a seed's events shift —
+// each changes generated output for a seed (owner-approved).
+inline constexpr int kGenerationVersion = 10;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

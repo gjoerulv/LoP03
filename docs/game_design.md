@@ -354,6 +354,33 @@ decision and healing a real choice, at one battle-rules bump (v4).
   healed at the castle gates, no gold is taken, and the screen says exactly that.
   (It always cost nothing; the message used to claim the dungeon's gold penalty.)
 
+**Royal Relics & the doubled King (M44).** The King stops being a wall of stats
+you out-level and becomes a fight you answer with absurd objects.
+
+- **The reliquary** is a rare room event that *replaces* an ordinary rolled event
+  from **town 2, depth 2** onward: **3 %** in town 2, **5 %** in towns 3–6, **7 %**
+  in town 7, **+5 %pts from depth 20 up**, and never more than one per dungeon.
+  It costs nothing and asks nothing — it simply hands over one relic.
+- **Which relic** is a seeded 40 / 40 / 15 / 5 draw over Evil Goose, Tax Sheets,
+  Dragon Crown, Deadly Spoon, with anything you already hold excluded and the rest
+  renormalized; hold all four and the plain draw returns, giving a duplicate. The
+  draw is fixed by the run's seed and the room, so reloading cannot fish for the
+  Spoon.
+- **The four relics** are single-use, aimed at an **enemy**, and sold nowhere:
+  - **Evil Goose** — "A terrifying goose." The target can only **Guard** next turn.
+  - **Tax Sheets** — "Busy your enemies with taxes." The target **loses** its next turn.
+  - **Dragon Crown** — "The real Dragon Crown." Saps the **Hollow King's** attack
+    and defense. Anyone else shrugs — and you keep the crown.
+  - **Deadly Spoon** — "Most deadly thing known to man." **Halves** the target's
+    ATK/MAG/DEF/SPD for the rest of the battle. The rarest, and it shows.
+  The King is **not** immune to any of them: that is the whole point.
+- **The King doubles.** 750 HP (was 560) and doubled ATK/MAG/DEF/SPD
+  (36 / 44 / 36 / 26). A maxed party carrying no relics and no snacks now
+  **loses**; one Tax Sheets, one Evil Goose and a bag of Royal Snacks turn it into
+  a tense win, and each extra relic buys survivors. (His challenge multiplier came
+  down from 420 % to 340 % so the doubled stats land exactly there — the fight is
+  a puzzle now, not a farming toll.)
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1

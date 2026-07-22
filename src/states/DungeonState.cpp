@@ -15,6 +15,7 @@
 #include "game/Achievements.hpp"
 #include "game/BossDrops.hpp"
 #include "game/Party.hpp"
+#include "game/Relics.hpp"  // the M44 relic grant (seeded, reload-proof)
 #include "game/WorldLadder.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -212,6 +213,31 @@ void DungeonState::enterRoom(int index, std::optional<dungeon::Dir> entrySide) {
                    static_cast<float>(start.y) * kTile + inset, kPlayerSize, kPlayerSize};
 }
 
+#ifdef CRYSTAL_CAPTURE
+bool DungeonState::captureFaceEvent(dungeon::RoomEventKind kind) {
+    for (std::size_t i = 0; i < dungeon_.rooms.size(); ++i) {
+        if (dungeon_.rooms[i].event.kind != kind) {
+            continue;
+        }
+        enterRoom(static_cast<int>(i), std::nullopt);
+        for (const Marker& m : markers_) {
+            if (m.kind != MarkerKind::Event) {
+                continue;
+            }
+            // Stand one tile above the marker, looking down at it, so the footer
+            // shows the event's trade-off exactly as it does in play.
+            const float inset = (kTile - kPlayerSize) * 0.5f;
+            player_ = Rect{static_cast<float>(m.x) * kTile + inset,
+                           static_cast<float>(m.y - 1) * kTile + inset, kPlayerSize, kPlayerSize};
+            facing_ = Vec2{0.0f, 1.0f};
+            recomputeInteraction(m.x, m.y - 1);
+            return facingMarker_ != nullptr;
+        }
+    }
+    return false;
+}
+#endif
+
 void DungeonState::recomputeInteraction(int tx, int ty) {
     onChest_ = false;
     facingMarker_ = nullptr;
@@ -356,6 +382,24 @@ void DungeonState::resolveEvent() {
             context_.audio.play(Sfx::Interact);
             message_ = "You pocket a free-rest token - redeem it at the inn.";
             break;
+        case dungeon::RoomEventKind::RoyalRelic: {
+            // M44: which relic is granted is decided HERE, at resolution, from a
+            // pure hash of (dungeon seed, room index) and what the party already
+            // owns - so reloading and walking back in reproduces the same relic
+            // rather than rerolling it.
+            std::array<bool, kRelicCount> owned{};
+            for (int i = 0; i < kRelicCount; ++i) {
+                owned[static_cast<std::size_t>(i)] =
+                    context_.party.inventory.count(relicIdAt(i)) >= 1;
+            }
+            const std::string relicId = relicIdAt(relicPickIndex(dungeon_.seed, currentRoom_, owned));
+            context_.party.inventory.add(relicId, 1);
+            const content::ItemDef* it = context_.content.findItem(relicId);
+            context_.audio.play(Sfx::Interact);
+            message_ = "The reliquary yields " + (it != nullptr ? it->name : relicId) +
+                       "! Save it for a foe that deserves it.";
+            break;
+        }
         case dungeon::RoomEventKind::EliteChallenge:
         case dungeon::RoomEventKind::None:
             return;  // challenges resolve through battle, not here
@@ -399,6 +443,11 @@ std::string DungeonState::eventPromptText() const {
         case dungeon::RoomEventKind::RestToken:
             return input::prompt(map, InputAction::Confirm, device, "Rest here") +
                    " - pocket a free-rest token for the inn";
+        case dungeon::RoomEventKind::RoyalRelic:
+            // M44: no cost and no catch - the trade-off is that it is used up in
+            // one battle, which the prompt says before the player commits (M20).
+            return input::prompt(map, InputAction::Confirm, device, "Open the reliquary") +
+                   " - claim one Royal Relic (a single-use battle trick)";
         case dungeon::RoomEventKind::EliteChallenge: {
             if (room.teamIndex < 0 ||
                 room.teamIndex >= static_cast<int>(dungeon_.teams.size())) {
@@ -735,7 +784,14 @@ void DungeonState::update(float dt) {
         if (facingMarker_->kind == MarkerKind::GuardTeam) {
             maybeTutorialPrompt(stack(), context_, tutorial::kChestGuarded);
         } else if (facingMarker_->kind == MarkerKind::Event) {
-            maybeTutorialPrompt(stack(), context_, tutorial::kEventFirst);
+            // M44: a reliquary is rare enough to deserve its own first-encounter
+            // beat, and it explains what the relics are FOR before the King.
+            const dungeon::RoomEvent& ev =
+                dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].event;
+            maybeTutorialPrompt(stack(), context_,
+                                ev.kind == dungeon::RoomEventKind::RoyalRelic
+                                    ? tutorial::kFirstRelic
+                                    : tutorial::kEventFirst);
         }
     }
 
@@ -887,6 +943,11 @@ void DungeonState::render() {
                         c = Color{240, 170, 90, 255};
                         glyph = "R";
                         spriteId = "prop.event.rest";
+                        break;
+                    case dungeon::RoomEventKind::RoyalRelic:  // M44
+                        c = Color{235, 225, 140, 255};
+                        glyph = "*";
+                        spriteId = "prop.event.relic";
                         break;
                     case dungeon::RoomEventKind::None:
                         break;

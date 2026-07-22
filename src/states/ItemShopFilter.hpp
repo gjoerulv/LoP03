@@ -23,7 +23,10 @@ namespace cd {
 inline std::vector<std::string> itemShopBuyIds(const content::ContentDatabase& content, int town) {
     std::vector<std::string> ids;
     for (const auto& [id, def] : content.items()) {
-        if (def.type == content::ItemType::Consumable && def.availableAtTown(town)) {
+        // M44: an item with no gold value has no price and is never stocked — it
+        // exists only through whatever grants it (the Royal Relics).
+        if (def.type == content::ItemType::Consumable && def.value > 0 &&
+            def.availableAtTown(town)) {
             ids.push_back(id);
         }
     }

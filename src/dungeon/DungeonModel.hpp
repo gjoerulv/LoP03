@@ -16,8 +16,10 @@ enum class RoomType { Start, Normal, Treasure, Boss, Event };
 // Room events (M20, owner-approved set; M30 adds RestToken). TrappedChest is a
 // chest flag, not an event room. Every event shows its full trade-off before
 // confirmation.
+// M44 adds RoyalRelic: a rare event that REPLACES one of the rolled events (it is
+// never part of the shuffled kind list), granting one of the four Royal Relics.
 enum class RoomEventKind {
-    None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken
+    None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken, RoyalRelic
 };
 
 struct RoomEvent {

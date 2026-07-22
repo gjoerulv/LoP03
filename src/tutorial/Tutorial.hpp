@@ -34,6 +34,7 @@ inline constexpr const char* kFirstPenalty = "first_penalty";  // M33 stakes pen
 inline constexpr const char* kFirstMarket = "first_market";    // M34 black market
 inline constexpr const char* kFirstCastle = "first_castle";        // M40 castle
 inline constexpr const char* kFirstChallenge = "first_challenge";  // M40 challenges
+inline constexpr const char* kFirstRelic = "first_relic";          // M44 royal relics
 
 struct Beat {
     const char* id;
@@ -108,6 +109,11 @@ inline constexpr Beat kBeats[] = {
      "them wisely. Each pays a one-time reward the first time you clear it; the "
      "King grants a unique legendary and a title. Fall, and you simply return to "
      "the castle to try again."},
+    {kFirstRelic, "A Royal Relic",
+     "Reliquaries are rare, and each holds one absurd single-use relic you aim at "
+     "an ENEMY in battle: a goose that frightens a foe into guarding, tax sheets "
+     "that cost it a turn, a spoon that halves its stats - or a crown only the "
+     "Hollow King cares about. Save them; the King is why they exist."},
 };
 inline constexpr std::size_t kBeatCount = sizeof(kBeats) / sizeof(kBeats[0]);
 

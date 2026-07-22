@@ -30,8 +30,9 @@ namespace cd::battle {
 // 2 = M35 (Confusion/Silence/Blind statuses + the seeded to-hit layer);
 // 3 = M36 (passive skills); 4 = M43 (confusion forces a basic attack on BOTH
 // sides, revive-capable heal skills, King-context items, effect-filtered item
-// targeting).
-inline constexpr int kBattleRulesVersion = 4;
+// targeting); 5 = M44 (the Royal Relics: enemy-targetable items, the Terrified /
+// Stunned turn-control statuses, and a battle-long stat scale).
+inline constexpr int kBattleRulesVersion = 5;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -233,12 +234,29 @@ std::vector<int> turnOrder(const Battle& b);
 // role) — weighing accrued threat, kill pressure, and the backline, with a
 // small seeded tie-break. Pure and reproducible, so live play and the Simulator
 // agree exactly.
+// M44: an action a unit does not get to choose. `None` means it acts normally;
+// the rest are imposed by a status and resolved identically wherever a turn is
+// decided (see forcedActionFor).
+enum class ForcedAction { None, BasicAttack, Guard, Skip };
+
 struct EnemyChoice {
     bool useSkill = false;
     int target = -1;
     std::string skillId;
+    ForcedAction forced = ForcedAction::None;  // M44: set when the turn was taken away
 };
 EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::ContentDatabase& db);
+
+// M44: does a status take this unit's turn away, and how? The single source of
+// truth for every imposed action — Confusion (M35/M43) forces a basic attack,
+// Terrified forces a Guard, Stunned skips the turn entirely. Immunities are
+// honoured through the isConfused-style queries. Pure.
+ForcedAction forcedActionFor(const Combatant& c);
+
+// M44: the EnemyChoice a forced action resolves to, ready to apply. Callers that
+// decide turns (BattleState, the Simulator, chooseEnemyAction) ask this once at
+// the top of a turn and obey it — the M43 lesson, generalized.
+EnemyChoice forcedChoice(const Battle& b, int actor, ForcedAction forced);
 
 // M43: the forced action of a confused unit — a basic attack, never a skill.
 // `attack()` then performs the seeded same-side redirect, so the returned target
@@ -248,11 +266,17 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
 // and simulation agree by construction rather than by careful duplication.
 EnemyChoice confusedChoice(const Battle& b, int actor);
 
-// M43: the party members a battle item may be used on, by effect (Heal /
-// RestoreMp / Cure / None reach the living; Revive reaches only the fallen).
-// Empty means the item has no legal target and must not be spent. Pure, so the
-// battle screen and the tests share one rule.
+// M43: the units a battle item may be used on, from the actor's side. An ally
+// item filters by effect (Heal / RestoreMp / Cure / None reach the living; Revive
+// reaches only the fallen); an enemy item (M44's relics) reaches the living foes
+// of `side`. Empty means the item has no legal target and must not be spent.
+// Pure, so the battle screen and the tests share one rule.
 std::vector<int> itemTargets(const Battle& b, Side side, const content::ItemDef& item);
+
+// M44: would this item do anything at all to this target? False only for an item
+// restricted to a boss (`requiresBossId`) used on anything else — the caller keeps
+// such an item instead of spending it on nothing.
+bool itemAffects(const Battle& b, int target, const content::ItemDef& item);
 
 // M43: the ally targets a single-ally skill may be aimed at — the living, plus
 // the KO'd when the skill can revive them (SkillDef::reviveHpPct > 0).

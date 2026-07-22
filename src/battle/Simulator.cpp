@@ -29,12 +29,11 @@ int lowestHpOnSide(const Battle& b, Side side) {
 EnemyChoice choosePartyAction(const Battle& b, int actor, const content::ContentDatabase& db) {
     EnemyChoice choice;
     const Combatant& self = b.units[static_cast<std::size_t>(actor)];
-    // Confusion (M43): the same shared rule the battle screen and the enemy AI
-    // use - a confused party member is forced to a basic attack. Without this the
-    // simulator let a confused caster act normally and silently disagreed with
-    // live play about the outcome.
-    if (isConfused(self)) {
-        return confusedChoice(b, actor);
+    // Forced actions (M43 confusion, M44 Terrified/Stunned): the same shared rule
+    // the battle screen and the enemy AI use. Without this the simulator let a
+    // confused caster act normally and silently disagreed with live play.
+    if (const ForcedAction forced = forcedActionFor(self); forced != ForcedAction::None) {
+        return forcedChoice(b, actor, forced);
     }
     const int enemy = lowestHpOnSide(b, Side::Enemy);
 
@@ -82,10 +81,17 @@ EnemyChoice choosePartyAction(const Battle& b, int actor, const content::Content
     return choice;
 }
 
-namespace {
-
 void applyChoice(Battle& b, int actor, const EnemyChoice& choice,
                  const content::ContentDatabase& db) {
+    // M44: a forced Guard or Skip is resolved here, so the sim and the battle
+    // screen carry out an imposed turn the same way.
+    if (choice.forced == ForcedAction::Guard) {
+        b.guard(actor);
+        return;
+    }
+    if (choice.forced == ForcedAction::Skip) {
+        return;  // the turn passes
+    }
     if (choice.target < 0) {
         return;
     }
@@ -97,8 +103,6 @@ void applyChoice(Battle& b, int actor, const EnemyChoice& choice,
     }
     b.attack(actor, choice.target);
 }
-
-}  // namespace
 
 SimResult simulate(Battle battle, const content::ContentDatabase& db, int maxRounds) {
     return simulateInPlace(battle, db, maxRounds);

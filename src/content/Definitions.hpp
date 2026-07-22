@@ -123,6 +123,15 @@ struct CompositionDef {
     }
 };
 
+// One status a battle item applies to its target (M44). Authored as a list so an
+// item can carry more than one (the Dragon Crown applies ATK- and DEF-) without
+// the schema growing a field per slot.
+struct ItemStatus {
+    StatusType type = StatusType::None;
+    int magnitude = 0;  // percent for buffs/debuffs, damage for poison
+    int duration = 0;   // turns
+};
+
 struct ItemDef {
     std::string id;
     std::string name;
@@ -145,6 +154,14 @@ struct ItemDef {
     // (BossDef::immuneToConfusion).
     int kingEffectAmount = 0;
     int kingMpAmount = 0;
+
+    // M44 (Royal Relics). All inert by default, so every pre-M44 item behaves
+    // exactly as before.
+    BattleTarget battleTarget = BattleTarget::Ally;  // which side it may be used on
+    std::vector<ItemStatus> statuses;                // statuses applied to the target
+    std::string requiresBossId;   // non-empty: only this boss is affected at all
+    int statScalePct = 0;         // non-zero: scales the target's ATK/MAG/DEF/SPD
+                                  // for the rest of the battle (50 = halved)
 
     // Equipment/relic flat stat bonus.
     StatBlock statBonus;

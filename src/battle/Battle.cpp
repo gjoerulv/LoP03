@@ -66,7 +66,14 @@ void addStatus(Combatant& c, content::StatusType type, int magnitude, int turns)
     if (type == content::StatusType::None || turns <= 0) {
         return;
     }
-    const int scaledTurns = turns * kStatusDurationMult;  // M35: statuses last 2x their authored duration
+    // M35: statuses last 2x their authored duration - EXCEPT the M44 turn-control
+    // statuses, which take the turn itself. Doubling those would quietly turn one
+    // skipped turn into two, so they are applied exactly as authored. (Statuses
+    // tick at the START of the bearer's turn, before it acts, so a duration of 2
+    // costs it exactly one turn.)
+    const bool turnControl = type == content::StatusType::Terrified ||
+                             type == content::StatusType::Stunned;
+    const int scaledTurns = turnControl ? turns : turns * kStatusDurationMult;
     for (StatusInstance& s : c.statuses) {
         if (s.type == type) {
             s.magnitude = magnitude;
@@ -119,6 +126,8 @@ const char* statusLabel(content::StatusType type) {
         case content::StatusType::Confusion: return "Confusion";
         case content::StatusType::Silence: return "Silence";
         case content::StatusType::Blind: return "Blind";
+        case content::StatusType::Terrified: return "Terrified";
+        case content::StatusType::Stunned: return "Stunned";
         case content::StatusType::None: return "";
     }
     return "";
@@ -807,6 +816,11 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
     Combatant& t = units[static_cast<std::size_t>(target)];
     const std::string& who = units[static_cast<std::size_t>(actor)].name;
     std::string log = who + " uses " + item.name + " on " + t.name + ".";
+    // M44: an item restricted to one boss does nothing to anyone else - and the
+    // caller keeps it rather than spending it on nothing (itemAffects).
+    if (!item.requiresBossId.empty() && t.sourceId != item.requiresBossId) {
+        return log + " Nothing happens.";
+    }
     // M43: an item may carry King-specific amounts (Royal Snacks). kingBattle is
     // set at buildBattle from the team's boss id, so this branch is content-
     // derived and identical in live play and the Simulator.
@@ -851,6 +865,30 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
     // (Royal Snacks). Inert for every item that does not ask for it.
     if (item.curesDebuffs && t.alive() && clearStatDebuffs(t)) {
         log += " ATK-/DEF- lifted.";
+    }
+    // M44 (Royal Relics): applied statuses and a battle-long stat scale. Both are
+    // data-driven, so no relic has hardcoded behavior in the battle model.
+    if (t.alive()) {
+        for (const content::ItemStatus& s : item.statuses) {
+            if (s.type == content::StatusType::None || isImmuneTo(t, s.type)) {
+                continue;
+            }
+            addStatus(t, s.type, s.magnitude, s.duration);
+            log += " " + t.name + ": " + statusLabel(s.type) + ".";
+        }
+        if (item.statScalePct > 0 && item.statScalePct < 100) {
+            // Enemy stats never persist past a battle, so "for the rest of the
+            // fight" is simply a direct scale of the combatant's own stats. HP/MP
+            // are untouched: this weakens a foe, it does not wound it.
+            const auto scale = [pct = item.statScalePct](int v) {
+                return v > 0 ? std::max(1, v * pct / 100) : v;
+            };
+            t.stats.attack = scale(t.stats.attack);
+            t.stats.magic = scale(t.stats.magic);
+            t.stats.defense = scale(t.stats.defense);
+            t.stats.speed = scale(t.stats.speed);
+            log += " " + t.name + " is diminished for the rest of the battle!";
+        }
     }
     return log;
 }
@@ -1006,6 +1044,7 @@ std::vector<int> turnOrder(const Battle& b) {
 
 EnemyChoice confusedChoice(const Battle& b, int actor) {
     EnemyChoice choice;  // useSkill stays false: confusion forbids deliberate acts
+    choice.forced = ForcedAction::BasicAttack;
     const Side foe =
         b.units[static_cast<std::size_t>(actor)].side == Side::Party ? Side::Enemy : Side::Party;
     const std::vector<int> foes = b.aliveIndices(foe);
@@ -1015,7 +1054,36 @@ EnemyChoice confusedChoice(const Battle& b, int actor) {
     return choice;
 }
 
+ForcedAction forcedActionFor(const Combatant& c) {
+    // Order matters only in that a unit can carry more than one: a skipped turn
+    // beats a forced guard, which beats a confused swing, because each is stricter
+    // than the next.
+    if (hasStatus(c, content::StatusType::Stunned)) {
+        return ForcedAction::Skip;
+    }
+    if (hasStatus(c, content::StatusType::Terrified)) {
+        return ForcedAction::Guard;
+    }
+    if (isConfused(c)) {
+        return ForcedAction::BasicAttack;
+    }
+    return ForcedAction::None;
+}
+
+EnemyChoice forcedChoice(const Battle& b, int actor, ForcedAction forced) {
+    if (forced == ForcedAction::BasicAttack) {
+        return confusedChoice(b, actor);
+    }
+    EnemyChoice choice;
+    choice.forced = forced;  // Guard / Skip need no target
+    return choice;
+}
+
 std::vector<int> itemTargets(const Battle& b, Side side, const content::ItemDef& item) {
+    // M44: an enemy-targeting item (the relics) reaches the living foes of `side`.
+    if (item.battleTarget == content::BattleTarget::Enemy) {
+        return b.aliveIndices(side == Side::Party ? Side::Enemy : Side::Party);
+    }
     const bool wantsFallen = item.effect == content::ConsumableEffect::Revive;
     std::vector<int> targets;
     for (std::size_t i = 0; i < b.units.size(); ++i) {
@@ -1024,6 +1092,16 @@ std::vector<int> itemTargets(const Battle& b, Side side, const content::ItemDef&
         }
     }
     return targets;
+}
+
+bool itemAffects(const Battle& b, int target, const content::ItemDef& item) {
+    if (item.requiresBossId.empty()) {
+        return true;
+    }
+    if (target < 0 || target >= static_cast<int>(b.units.size())) {
+        return false;
+    }
+    return b.units[static_cast<std::size_t>(target)].sourceId == item.requiresBossId;
 }
 
 std::vector<int> skillAllyTargets(const Battle& b, Side side, const content::SkillDef& skill) {
@@ -1040,11 +1118,11 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
     EnemyChoice choice;
 
     const Combatant& self = b.units[static_cast<std::size_t>(actor)];
-    // Confusion (M43): a confused unit cannot choose - it swings wildly. Enforced
-    // here, in shared code, so an enemy caster can no longer heal or curse through
-    // its confusion the way it could before this bump.
-    if (isConfused(self)) {
-        return confusedChoice(b, actor);
+    // Forced actions (M43 confusion, M44 Terrified/Stunned): a unit whose turn was
+    // taken away never gets to choose. Enforced here, in shared code, so an enemy
+    // caster can no longer heal or curse through it the way it could before v4.
+    if (const ForcedAction forced = forcedActionFor(self); forced != ForcedAction::None) {
+        return forcedChoice(b, actor, forced);
     }
     // Silence (M35): a silenced enemy cannot use MP-cost skills, so it falls back
     // to any 0-MP skill or a basic attack. canCast enforces exactly that in each

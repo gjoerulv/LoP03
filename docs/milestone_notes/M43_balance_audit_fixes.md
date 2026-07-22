@@ -2,9 +2,11 @@
 
 ## A. Status and authority
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-22) — the first
-  milestone of the **King's Gambit program**, M43 → M44 → M45. See §J for the
-  as-implemented record and deviations. M44 is **not** authorized by this.
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-22 after
+  manual testing; committed as `65c9a47`. The first milestone of the **King's
+  Gambit program**, M43 → M44 → M45. See §J for the as-implemented record and
+  deviations (all three accepted with the approval). The owner authorized **M44**
+  at the same time.
 - **Authority:** `CLAUDE.md` → this note → `docs/milestones.md` →
   `docs/game_design.md` → `docs/technical_design.md`. The program's approved
   implementation plan lives in the owner's plan file; this note is its

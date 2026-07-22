@@ -50,8 +50,8 @@
 | 40 | The castle & the King's challenges | ☑ complete (approved) |
 | 41 | Story NPCs & lore | ☑ complete (approved) |
 | 42 | Enrichment: bestiary, victory stats, achievements | ☑ complete (approved) |
-| 43 | Balance pass & audit fixes | ◑ implemented, awaiting manual approval |
-| 44 | Royal Relics & the doubled King | ☐ planned |
+| 43 | Balance pass & audit fixes | ☑ complete (approved) |
+| 44 | Royal Relics & the doubled King | ◑ implemented, awaiting manual approval |
 | 45 | The King's classes: Dragon, Jester, Goose | ☐ planned |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
@@ -1715,8 +1715,9 @@ Owner decisions taken at planning time (2026-07-22, via Q&A):
 
 ## M43 — Balance pass & audit fixes
 
-- **Status:** ◑ implemented, awaiting manual approval — authorized by the owner
-  2026-07-22; note authored and re-audited against `9dff867` (the plan's facts
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-22 after
+  manual testing, committed as `65c9a47`. Authorized 2026-07-22; note authored
+  and re-audited against `9dff867` (the plan's facts
   were verified at `bc10511`, and all of them still held). Implemented the same
   day: confusion is forced to a basic attack in the shared
   `battle::confusedChoice` used by `BattleState`, the Simulator's party AI **and**
@@ -1763,7 +1764,32 @@ Owner decisions taken at planning time (2026-07-22, via Q&A):
 
 ## M44 — Royal Relics & the doubled King
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — authorized by the owner
+  2026-07-22 together with M43's approval; note authored and re-audited against
+  `65c9a47` (all the plan's facts held; two new ones drove decisions — statuses
+  tick before their bearer acts, and the King is fought at a 420 % stat scale).
+  Implemented the same day: the **Royal Relic** event replaces a rolled event
+  (town ≥ 2, depth ≥ 2; 3 / 5 / 7 % by town, +5 %pts from depth 20, at most one
+  per dungeon) and grants one of four relics from a seeded, reload-proof,
+  ownership-renormalized draw; the four relics ship as **enemy-targeted**
+  single-use consumables driven entirely by new optional `ItemDef` fields
+  (`battleTarget`, `statuses[]`, `requiresBossId`, `statScalePct`) — Evil Goose
+  (forced Guard), Tax Sheets (skipped turn), Dragon Crown (ATK-/DEF- on the King
+  only, and **kept** when it does nothing), Deadly Spoon (halved ATK/MAG/DEF/SPD
+  for the fight); the new **Terrified / Stunned** turn-control statuses are
+  applied unscaled and enforced through one shared `forcedActionFor` /
+  `forcedChoice` used by `BattleState`, the Simulator **and** `chooseEnemyAction`;
+  the King is re-statted to **750 / 36 / 44 / 36 / 26**. `kBattleRulesVersion`
+  **4 → 5**, `kGenerationVersion` **9 → 10**, no save bump. **405/405 tests**
+  (+18) in Debug and Release, `--capture` **46/46** overflow-clean (relic room +
+  relic item menu), both configs clean. **Owner decision taken during
+  implementation (2026-07-22):** the doubled base stats compound with the M40
+  challenge multiplier, so at 420 % the King fell only to three copies of each
+  40 % relic plus the 15 % Crown — short of the approved bar. The sweep was put to
+  the owner, who chose **`kKingScalePct` 420 → 340 %**; at 340 % an unaided maxed
+  party still loses (17 rounds) while one Tax Sheets + one Evil Goose + snacks
+  wins in 18 rounds with two survivors. Note's §J carries both tables. Note:
+  `docs/milestone_notes/M44_royal_relics_king.md`.
 - **Goal:** a rare event-replacing encounter that yields four unique
   consumable relics — the intended counterplay for a King whose stats double.
 - **Primary deliverables:** `RoomEventKind::RoyalRelic` replacing a rolled

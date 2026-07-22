@@ -21,6 +21,12 @@ namespace cd::battle {
 // attack through the shared `confusedChoice`, exactly as the battle screen is.
 EnemyChoice choosePartyAction(const Battle& b, int actor, const content::ContentDatabase& db);
 
+// Carries out a decided turn (skill, attack, or an M44 forced Guard/Skip). Shared
+// so a scripted battery can drive real turns — injecting item uses between them —
+// without re-implementing the applier and drifting from it.
+void applyChoice(Battle& b, int actor, const EnemyChoice& choice,
+                 const content::ContentDatabase& db);
+
 struct SimResult {
     Outcome outcome = Outcome::Ongoing;  // Ongoing means it hit the round cap
     int rounds = 0;

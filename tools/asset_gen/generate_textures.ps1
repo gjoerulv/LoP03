@@ -445,6 +445,13 @@ P $b 6 3 $PAL.glint
 FR $b 2 8 8 2 $PAL.earth2; FR $b 3 9 6 1 $PAL.earth1               # logs
 Outline $b; SaveImg $b 'props/event_rest.png'
 
+$b = New-Img 12 12                                                # relic: reliquary casket (M44)
+FR $b 2 5 8 5 $PAL.earth2; FR $b 2 5 8 1 $PAL.earth1               # chest body + rim
+FR $b 3 2 6 3 $PAL.gold; FR $b 4 3 4 1 $PAL.glint                  # domed gold lid
+P $b 5 7 $PAL.glint; P $b 6 7 $PAL.glint                           # clasp
+FR $b 1 10 10 1 $PAL.night3                                        # shadow
+Outline $b; SaveImg $b 'props/event_relic.png'
+
 Write-Output 'Generating M26 per-enemy battle sprites...'
 
 # Per-id battle sprites (art_bible §3/§5): normal & elite 24x24, boss 32x32,

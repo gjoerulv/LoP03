@@ -52,6 +52,8 @@ const char* statusShort(content::StatusType t) {
         case content::StatusType::Confusion: return "CNF";
         case content::StatusType::Silence: return "SIL";
         case content::StatusType::Blind: return "BLD";
+        case content::StatusType::Terrified: return "TRF";  // M44: forced to Guard
+        case content::StatusType::Stunned: return "STN";    // M44: skips its turn
         case content::StatusType::None: return "";
     }
     return "";
@@ -188,6 +190,12 @@ void BattleState::captureEnterSkillMenu(std::vector<std::string> skills) {
     }
     buildSkillMenu();
     phase_ = Phase::ChooseSkill;
+}
+
+void BattleState::captureEnterItemMenu() {
+    captureEnterTargeting();  // reuse: puts a living party member on turn
+    buildItemMenu();
+    phase_ = Phase::ChooseItem;
 }
 #endif
 
@@ -332,9 +340,11 @@ void BattleState::startActorTurn() {
     }
     battle_.clearGuard(actor);
     if (battle_.units[static_cast<std::size_t>(actor)].side == battle::Side::Party) {
-        // Confusion (M35): a confused character takes no player input — it lashes
-        // out at a seeded random ally automatically, just like an enemy's turn.
-        if (battle::isConfused(battle_.units[static_cast<std::size_t>(actor)])) {
+        // Forced actions (M35 confusion, M44 Terrified/Stunned): a character whose
+        // turn was taken away gets no player input — it resolves automatically,
+        // just like an enemy's turn, through the one shared rule.
+        if (battle::forcedActionFor(battle_.units[static_cast<std::size_t>(actor)]) !=
+            battle::ForcedAction::None) {
             executeConfused(actor);
         } else {
             phase_ = Phase::Command;
@@ -422,6 +432,9 @@ std::string BattleState::itemBlockReason(const content::ItemDef& item) const {
     // to decode (M22, non-color-alone). Empty means the item is usable.
     if (!battle::itemTargets(battle_, battle::Side::Party, item).empty()) {
         return "";
+    }
+    if (item.battleTarget == content::BattleTarget::Enemy) {
+        return "No foe left to use this on.";  // M44 relics
     }
     return item.effect == content::ConsumableEffect::Revive
                ? "No fallen ally to revive."
@@ -514,7 +527,7 @@ void BattleState::onItemChosen() {
     }
     // M43: candidates follow the item's effect - a potion cannot be poured into a
     // fallen ally, and a Phoenix Tear reaches only the fallen, so an item can no
-    // longer be spent on a "No effect" no-op.
+    // longer be spent on a "No effect" no-op. M44: a relic aims at the enemies.
     targetCandidates_ = battle::itemTargets(battle_, battle::Side::Party, *it);
     if (targetCandidates_.empty()) {
         return;
@@ -550,8 +563,18 @@ void BattleState::executePending(int targetUnit) {
             break;
         case PendingKind::Item:
             if (const content::ItemDef* it = context_.content.findItem(pendingItemId_)) {
+                // M44: an item that does nothing here (the Dragon Crown outside the
+                // King's fight) is NOT spent - ask before the battle mutates.
+                const bool spends = battle::itemAffects(battle_, targetUnit, *it);
                 message_ = battle_.useItem(actor, targetUnit, *it);
-                context_.party.inventory.remove(pendingItemId_, 1);
+                statusAction = !it->statuses.empty();
+                offensiveStatus =
+                    statusAction && it->battleTarget == content::BattleTarget::Enemy;
+                if (spends) {
+                    context_.party.inventory.remove(pendingItemId_, 1);
+                } else {
+                    message_ += " (kept)";
+                }
             }
             break;
     }
@@ -601,7 +624,15 @@ void BattleState::executeEnemy(int actor) {
     const battle::EnemyChoice choice = battle::chooseEnemyAction(battle_, actor, context_.content);
     int damageSfx = 2;
     bool statusAction = false;
-    if (choice.useSkill) {
+    const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
+    if (choice.forced == battle::ForcedAction::Guard) {
+        // M44 (Evil Goose): the foe is too frightened to do anything but guard.
+        message_ = self.name + " is terrified and can only cower behind its guard!";
+        battle_.guard(actor);
+    } else if (choice.forced == battle::ForcedAction::Skip) {
+        // M44 (Tax Sheets): the foe spends its turn on the paperwork.
+        message_ = self.name + " is buried in paperwork and loses its turn!";
+    } else if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
@@ -622,10 +653,24 @@ void BattleState::executeConfused(int actor) {
     for (const battle::Combatant& u : battle_.units) {
         hpBefore.push_back(u.hp);
     }
-    // M43: the forced action comes from the shared rule the Simulator and the
-    // enemy AI also use, so a confused turn resolves identically everywhere.
-    const battle::EnemyChoice choice = battle::confusedChoice(battle_, actor);
-    message_ = battle_.attack(actor, choice.target);
+    // M43/M44: the forced action comes from the shared rule the Simulator and the
+    // enemy AI also use, so an imposed turn resolves identically everywhere.
+    const battle::Combatant& a = battle_.units[static_cast<std::size_t>(actor)];
+    const battle::ForcedAction forced = battle::forcedActionFor(a);
+    const battle::EnemyChoice choice = battle::forcedChoice(battle_, actor, forced);
+    switch (forced) {
+        case battle::ForcedAction::Guard:
+            message_ = a.name + " is terrified and can only cower behind its guard!";
+            battle_.guard(actor);
+            break;
+        case battle::ForcedAction::Skip:
+            message_ = a.name + " is buried in paperwork and loses its turn!";
+            break;
+        case battle::ForcedAction::BasicAttack:
+        case battle::ForcedAction::None:
+            message_ = battle_.attack(actor, choice.target);
+            break;
+    }
     stageNumbers(hpBefore, 2, false);
     afterAction();
 }

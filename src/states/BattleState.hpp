@@ -46,6 +46,9 @@ public:
     // Capture-only: open the skill list for the acting party member, optionally
     // with a supplied skill set, so the widest name + MP column is overflow-checked.
     void captureEnterSkillMenu(std::vector<std::string> skills = {});
+    // Capture-only (M44): open the item list, so the widest item name + count
+    // column (the Royal Relics) is overflow-checked.
+    void captureEnterItemMenu();
 #endif
 
 private:

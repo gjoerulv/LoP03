@@ -162,13 +162,14 @@ Asset generators (deterministic; reruns byte-identical):
 12. **Generation changes need a version bump.** Anything that alters what a
     seed produces (generator code OR composition/data curves — including item
     prices, which the dungeon merchant derives its offer from) bumps
-    `dungeon::kGenerationVersion` (currently 9) — the scoreboard tags it
+    `dungeon::kGenerationVersion` (currently 10) — the scoreboard tags it
     for comparability. Owner-gated.
 13. **A forced/automatic action rule lives in shared `battle::` code**, called by
     `BattleState`, the `Simulator`, AND `chooseEnemyAction` (see
-    `battle::confusedChoice`). Enforcing one in a state only — as M35 did with
-    confusion — silently desynchronizes live play from the simulator; M43 exists
-    partly to fix that.
+    `battle::forcedActionFor` / `forcedChoice`, which carry confusion, the M44
+    Terrified guard, and the M44 Stunned skip). Enforcing one in a state only — as
+    M35 did with confusion — silently desynchronizes live play from the simulator;
+    M43 exists partly to fix that.
 
 ## Architecture rules (enforce in review)
 
