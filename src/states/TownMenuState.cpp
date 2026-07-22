@@ -84,16 +84,16 @@ void TownMenuState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
 
-    DrawRectangle(0, 0, w, h, Color{0, 0, 0, 150});
+    const ui::style::Palette& p = ui::style::palette();
+    ui::drawModalDim(w, h);
 
     const int boxW = 220;
-    const int boxH = 150;  // fits the 5 pause entries (M42)
+    const int boxH = 132;  // fits the 5 pause entries (M42)
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
-    ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{28, 26, 48, 240}, Color{120, 120, 200, 255});
-    ui::drawTextCentered("Paused", w / 2, boxY + 12, 14, RAYWHITE);
-    ui::drawMenu(menu_, boxX + 40, boxY + 38, 18, 12, RAYWHITE, Color{90, 90, 110, 255},
-                 Color{240, 220, 120, 255});
+    ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
+    ui::drawTitlePlaque("Paused", w / 2, boxY - 10, 12);
+    ui::drawMenu(menu_, boxX + 44, boxY + 26, 20, 12, p.text, p.disabled, p.cursor);
 }
 
 }  // namespace cd

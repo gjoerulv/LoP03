@@ -147,17 +147,18 @@ void RemapState::handleInput(const Input& input) {
 void RemapState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 26, 255});
+    const style::Palette& p = style::palette();
+    ClearBackground(p.canvas);
     const char* title =
         device_ == ActiveDevice::Keyboard ? "Remap Keyboard" : "Remap Gamepad";
-    ui::drawTextCentered(title, w / 2, 14, style::kFontScreenTitle, style::palette().text);
+    ui::drawHeaderBand(title, w, p.crystal);
 
-    ui::drawMenu(menu_, 60, 44, 17, style::kFontMenu, style::palette().text, style::palette().disabled,
-                 style::palette().cursor);
+    const int rows = static_cast<int>(menu_.size());
+    ui::drawFrame(40, 34, w - 80, rows * 17 + 14, ui::FrameStyle::Inset);
+    ui::drawMenu(menu_, 60, 42, 17, style::kFontMenu, p.text, p.disabled, p.cursor);
 
     if (!message_.empty()) {
-        ui::drawTextFitted(message_, 40, h - 46, w - 80, style::kFontBody, style::palette().success,
-                           "remap.message");
+        ui::drawBanner(ui::BannerKind::Success, message_, 60, h - 44, w - 120, "remap.message");
     }
 
     if (listening_) {
@@ -165,28 +166,25 @@ void RemapState::render() {
         const int boxH = 64;
         const int boxX = w / 2 - boxW / 2;
         const int boxY = h / 2 - boxH / 2;
-        DrawRectangle(0, 0, w, h, Color{0, 0, 0, 140});
-        ui::drawPanel(boxX, boxY, boxW, boxH, Color{28, 26, 48, 245},
-                      Color{200, 200, 140, 255});
+        ui::drawModalDim(w, h);
+        ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Crystal);
         const InputAction action =
             kRemappableActions[static_cast<std::size_t>(menu_.cursor())];
         const std::string line = std::string(device_ == ActiveDevice::Keyboard
                                                  ? "Press a key for "
                                                  : "Press a button for ") +
                                  std::string(actionDisplayName(action));
-        ui::drawTextCentered(line.c_str(), w / 2, boxY + 14, style::kFontBody, style::palette().text);
-        ui::drawTextCentered("[Esc] Cancel", w / 2, boxY + 38, style::kFontBody,
-                             style::palette().textHint);
+        ui::drawTextCentered(line.c_str(), w / 2, boxY + 14, style::kFontBody, p.text);
+        ui::drawTextCentered("[Esc] Cancel", w / 2, boxY + 38, style::kFontBody, p.textHint);
         return;
     }
 
     const InputMap& map = context_.input.map();
     const ActiveDevice promptDevice = context_.input.activeDevice();
-    const std::string footer =
-        input::prompt(map, InputAction::Confirm, promptDevice, "Rebind") + "    " +
-        input::prompt(map, InputAction::Cancel, promptDevice, "Back");
-    ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, 9,
-                         style::palette().textHint);
+    ui::drawFooterHints(
+        {{input::primaryLabel(map, InputAction::Confirm, promptDevice), "Rebind"},
+         {input::primaryLabel(map, InputAction::Cancel, promptDevice), "Back"}},
+        w, h, "remap.footer");
 }
 
 }  // namespace cd

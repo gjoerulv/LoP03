@@ -22,9 +22,10 @@ namespace style = ui::style;
 
 namespace {
 constexpr int kListX = 50;
-constexpr int kListY = 48;
+constexpr int kListY = 54;
 constexpr int kListItemH = 14;
-constexpr int kVisibleRows = 10;
+constexpr int kVisibleRows = 9;
+constexpr int kLabelW = 300;
 }  // namespace
 
 ItemShopState::ItemShopState(StateStack& stack, AppContext& context)
@@ -41,9 +42,10 @@ void ItemShopState::rebuild() {
     for (const std::string& id : ids_) {
         const content::ItemDef* it = context_.content.findItem(id);
         const int owned = context_.party.inventory.count(id);
-        items.push_back({it->name + "  -  " + std::to_string(it->value) + "g  (x" +
-                             std::to_string(owned) + ")",
-                         true});
+        // Name column left, owned-count + price columns right (M46): the
+        // suffix is right-aligned by drawMenuScrolled and padded to a fixed
+        // width (monospace glyphs), so both value columns line up per row.
+        items.push_back({it->name, true, TextFormat("x%-3d%5dg", owned, it->value)});
     }
     const int previous = menu_.cursor();
     menu_.setItems(std::move(items));
@@ -70,10 +72,12 @@ void ItemShopState::handleInput(const Input& input) {
                 context_.party.inventory.add(it->id, 1);
                 context_.audio.play(Sfx::Confirm);
                 message_ = "Bought " + it->name;
+                messageIsError_ = false;
                 rebuild();
             } else {
                 context_.audio.play(Sfx::Error);
                 message_ = "Not enough gold for " + it->name;
+                messageIsError_ = true;
             }
         }
     }
@@ -86,36 +90,44 @@ void ItemShopState::handleInput(const Input& input) {
 void ItemShopState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ui::drawSceneBackground(context_.resources, "bg.item_shop", Color{16, 16, 24, 255},
+    const style::Palette& p = style::palette();
+    ui::drawSceneBackground(context_.resources, "bg.item_shop", p.canvas,
                             context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
-    ui::drawTextCentered("Item Shop", w / 2, 14, style::kFontScreenTitle, style::palette().text);
-    ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 14, 14, style::kFontMenu,
-                      style::palette().gold);
+
+    // Shop identity header with the gold badge (M46).
+    ui::drawHeaderBand("Item Shop", w, p.success, context_.party.gold);
+
+    // Transient feedback rides a compact banner between header and wares.
     if (!message_.empty()) {
-        ui::drawTextFitted(message_, 20, 32, w - 40, style::kFontBody, style::palette().success,
-                           "itemshop.message");
+        ui::drawBanner(messageIsError_ ? ui::BannerKind::Danger : ui::BannerKind::Success,
+                       message_, 60, 27, w - 120, "itemshop.message");
     }
 
+    // Inset merchandise panel; name column left, count/price columns right.
+    ui::drawFrame(kListX - 24, kListY - 8, kLabelW + 52, kVisibleRows * kListItemH + 14,
+                  ui::FrameStyle::Inset);
     ui::drawMenuScrolled(menu_, scroll_, kVisibleRows, kListX, kListY, kListItemH,
-                         style::kFontMenu, 300, style::palette().text, style::palette().disabled, style::palette().cursor,
-                         "itemshop.list");
+                         style::kFontMenu, kLabelW, p.text, p.disabled, p.cursor,
+                         "itemshop.list", style::kFontSmall, p.gold);
 
-    // Description of the selected consumable.
+    // Description panel for the selected consumable (existing data only).
+    const int infoY = kListY + kVisibleRows * kListItemH + 12;
+    ui::drawFrame(kListX - 24, infoY, kLabelW + 52, h - style::kFooterHeight - infoY - 4,
+                  ui::FrameStyle::Standard);
     if (!ids_.empty()) {
         const content::ItemDef* it =
             context_.content.findItem(ids_[static_cast<std::size_t>(menu_.cursor())]);
         if (it != nullptr && !it->description.empty()) {
-            ui::drawTextWrapped(it->description, 20, h - 52, w - 40, style::kFontBody,
-                                style::palette().success, "itemshop.detail", 2);
+            ui::drawTextWrapped(it->description, kListX - 14, infoY + 6, kLabelW + 32,
+                                style::kFontBody, p.textDim, "itemshop.detail", 2);
         }
     }
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
-    const std::string footer = input::prompt(map, InputAction::Confirm, device, "Buy") +
-                               "    " + input::prompt(map, InputAction::Cancel, device, "Back");
-    ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, style::kFontBody,
-                         style::palette().textHint);
+    ui::drawFooterHints({{input::primaryLabel(map, InputAction::Confirm, device), "Buy"},
+                         {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
+                        w, h, "itemshop.footer");
 }
 
 }  // namespace cd

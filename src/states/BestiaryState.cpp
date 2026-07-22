@@ -22,8 +22,8 @@ namespace style = ui::style;
 
 namespace {
 constexpr int kVisibleRows = 12;
-constexpr int kListX = 12;
-constexpr int kListW = 176;   // fits the longest boss name at the body font
+constexpr int kListX = 24;
+constexpr int kListW = 158;   // fits the longest boss name at the body font
 constexpr int kRowsY = 42;
 constexpr int kRowH = 14;
 constexpr int kPanelX = 194;  // detail panel, just right of the list
@@ -134,7 +134,7 @@ void BestiaryState::renderDetail(const Entry& e, int px, int pw) {
                                  style::kFontHeading, style::palette().text, "bestiary.detailname",
                                  2);
     ty = ui::drawTextWrapped(e.known ? e.profile : "Not yet encountered.", textX, ty, textW,
-                             style::kFontSmall, Color{180, 190, 210, 255}, "bestiary.profile", 2);
+                             style::kFontSmall, style::palette().textDim, "bestiary.profile", 2);
 
     int y = std::max(ty + 4, 82);  // clears the 32px sprite well
     const content::StatBlock& s = e.stats;
@@ -160,7 +160,7 @@ void BestiaryState::renderDetail(const Entry& e, int px, int pw) {
         y += 11;
         for (const std::string& p : e.passives) {
             ui::drawTextFitted(p, px + 18, y, bodyW - 6, style::kFontBody,
-                               Color{200, 200, 140, 255}, "bestiary.passive");
+                               style::palette().gold, "bestiary.passive");
             y += 11;
         }
         y += 4;
@@ -187,14 +187,17 @@ void BestiaryState::renderDetail(const Entry& e, int px, int pw) {
 void BestiaryState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 24, 255});
-    ui::drawTextCentered("Bestiary", w / 2, 16, style::kFontScreenTitle, style::palette().text);
+    const style::Palette& p = style::palette();
+    ClearBackground(p.canvas);
+    ui::drawHeaderBand("Bestiary", w, p.danger);
 
     const int total = static_cast<int>(entries_.size());
-    ui::drawTextRight(TextFormat("%d / %d recorded", known_, total), kListX + kListW, 30,
-                      style::kFontSmall, style::palette().textDim);
+    ui::drawTextRight(TextFormat("%d / %d recorded", known_, total), kListX + kListW, 28,
+                      style::kFontSmall, p.textDim);
 
-    // Left: the full roster, scrolled, with unknowns masked.
+    // Left: the full roster in an inset well, scrolled, unknowns masked.
+    ui::drawFrame(kListX - 12, kRowsY - 6, kListW + 22, kVisibleRows * kRowH + 10,
+                  ui::FrameStyle::Inset);
     const int first = scroll_.top();
     const int count = scroll_.visibleCount(total, kVisibleRows);
     for (int row = 0; row < count; ++row) {
@@ -202,7 +205,8 @@ void BestiaryState::render() {
         const int y = kRowsY + row * kRowH;
         const bool sel = first + row == cursor_;
         if (sel) {
-            DrawRectangle(kListX - 4, y - 1, kListW + 8, kRowH, Color{40, 44, 66, 255});
+            ui::drawSelectionSlab(kListX - 9, y - 2, kListW + 15, kRowH);
+            ui::drawChevron(kListX - 7, y + 1, style::palette().cursor, ui::motionPhase());
         }
         const Color c = e.known ? (sel ? style::palette().cursor : style::palette().text)
                                 : style::palette().disabled;
@@ -212,17 +216,15 @@ void BestiaryState::render() {
 
     // Right: the selected foe's detail panel.
     const int pw = w - kPanelX - 12;
-    ui::drawFramedPanel(context_.resources, kPanelX, 36, pw, h - 36 - style::kFooterHeight,
-                        Color{22, 22, 34, 240}, Color{110, 120, 160, 255});
+    ui::drawFrame(kPanelX, 36, pw, h - 36 - style::kFooterHeight - 4, ui::FrameStyle::Standard);
     if (total > 0) {
         renderDetail(entries_[static_cast<std::size_t>(cursor_)], kPanelX, pw);
     }
 
-    ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
-                                       context_.input.activeDevice(), "Back")
-                             .c_str(),
-                         w / 2, h - style::kFooterHeight + 2, style::kFontBody,
-                         style::palette().textHint);
+    ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
+                                              context_.input.activeDevice()),
+                          "Back"}},
+                        w, h, "bestiary.footer");
 }
 
 }  // namespace cd

@@ -17,6 +17,7 @@
 #include "states/StateStack.hpp"
 #include "states/TownState.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -190,49 +191,72 @@ void PartyCreationState::update(float dt) { caretTimer_ += dt; }
 void PartyCreationState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 28, 255});
-    ui::drawTextCentered("Create Your Party", w / 2, 14, 18, RAYWHITE);
+    namespace style = ui::style;
+    const style::Palette& p = style::palette();
+    ClearBackground(p.canvas);
+    ui::drawTitlePlaque("Create Your Party", w / 2, 8, 16);
 
     if (!ready_) {
         ui::drawTextCentered("No classes loaded. Press Cancel to go back.", w / 2, h / 2, 12,
-                             Color{220, 150, 150, 255});
+                             p.dangerText);
         return;
     }
 
-    const int baseY = 58;
-    const Color yellow{240, 220, 120, 255};
+    // Roster panel: name column plus a class stepper capsule per member.
+    ui::drawFrame(24, 46, w - 48, 4 * 24 + 14, ui::FrameStyle::Standard);
+    const int baseY = 56;
     for (int i = 0; i < 4; ++i) {
         const int y = baseY + i * 24;
         const bool selected = cursor_ == i;
         if (selected) {
-            ui::drawText(">", 36, y, 12, yellow);
+            ui::drawSelectionSlab(40, y - 3, 128, 17);
+            ui::drawChevron(43, y + 2, p.cursor, ui::motionPhase());
         }
         std::string nameText = slots_[static_cast<std::size_t>(i)].name.value();
         if (editing_ && selected) {
             nameText += (std::fmod(caretTimer_, 1.0f) < 0.5f) ? "_" : " ";
         }
-        ui::drawText(nameText.c_str(), 54, y, 12, selected ? yellow : RAYWHITE);
+        ui::drawText(nameText.c_str(), 54, y, 12, selected ? p.cursor : p.text);
 
         const content::ClassDef* cls =
             classes_[static_cast<std::size_t>(slots_[static_cast<std::size_t>(i)].classIndex)];
         const bool locked = classLocked(*cls);
-        const Color classColor = locked ? Color{150, 130, 130, 255}
-                                        : (selected ? yellow : Color{170, 190, 220, 255});
-        ui::drawTextFitted(TextFormat("<  %s%s  >", cls->name.c_str(), locked ? " (Locked)" : ""),
-                           190, y, w - 200, 12, classColor, "partycreate.class");
+        const Color classColor = locked ? p.disabled : (selected ? p.cursor : p.text);
+        const int capW = 156;
+        const int capX = w - 60 - capW;
+        ui::drawStepArrow(capX - 11, y + 2, -1, selected);
+        ui::drawStepArrow(capX + capW + 6, y + 2, +1, selected);
+        DrawRectangle(capX, y - 2, capW, 15, p.ink);
+        DrawRectangle(capX + 1, y - 1, capW - 2, 13, p.chipFill);
+        if (selected) {
+            DrawRectangleLines(capX, y - 2, capW, 15, p.rowBorder);
+        }
+        const std::string classLabel =
+            std::string(cls->name) + (locked ? " (Locked)" : "");
+        const int cw = ui::measureText(classLabel, 10);
+        ui::drawTextFitted(classLabel, capX + (capW - cw) / 2, y + 1, capW - 6, 10, classColor,
+                           "partycreate.class");
     }
 
-    const int beginY = baseY + 4 * 24 + 10;
+    // "Begin Adventure" — the dominant call to action, Guild-style.
+    const int beginY = 172;
     const bool beginSel = cursor_ == kBeginRow;
+    ui::drawFrame(w / 2 - 92, beginY - 5, 184, 22,
+                  beginSel ? ui::FrameStyle::Reward : ui::FrameStyle::Raised);
+    ui::drawTextCentered("Begin Adventure", w / 2, beginY, 12, beginSel ? p.cursor : p.text);
     if (beginSel) {
-        ui::drawText(">", 36, beginY, 12, yellow);
+        ui::drawChevron(w / 2 - 84, beginY + 2, p.cursor, ui::motionPhase());
     }
-    ui::drawText("Begin Adventure", 54, beginY, 12, beginSel ? yellow : RAYWHITE);
 
     // M45: say WHY a class is locked, once, under the roster (never color alone).
     if (anyLockedSelected()) {
-        ui::drawTextFitted("Locked: defeat the Hollow King to unlock these classes.", 36,
-                           beginY + 18, w - 72, 10, Color{225, 180, 140, 255},
+        const char* note = "Locked: defeat the Hollow King to unlock these classes.";
+        const int noteW = ui::measureText(note, 10);
+        const int noteX = w / 2 - noteW / 2 + 6;
+        DrawRectangle(noteX - 13, beginY + 24, 2, 2, p.danger);
+        DrawRectangle(noteX - 15, beginY + 26, 6, 2, p.danger);
+        DrawRectangle(noteX - 17, beginY + 28, 10, 2, p.danger);
+        ui::drawTextFitted(note, noteX, beginY + 22, w - noteX - 8, 10, p.dangerText,
                            "partycreate.locked");
     }
 
@@ -247,16 +271,18 @@ void PartyCreationState::render() {
                 : input::prompt(map, InputAction::TextBackspace, device, "Delete") + "   " +
                       input::prompt(map, InputAction::Confirm, device, "Finish") +
                       "   (typing needs a keyboard)";
-        ui::drawTextCentered(editHint.c_str(), w / 2, h - 30, 10, Color{170, 220, 170, 255});
+        ui::drawTextCentered(editHint.c_str(), w / 2, h - 28, 10, p.success);
     }
-    const std::string footer =
-        "[" + input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
-        input::primaryLabel(map, InputAction::MoveDown, device) + "] Move   [" +
-        input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
-        input::primaryLabel(map, InputAction::MoveRight, device) + "] Class   " +
-        input::prompt(map, InputAction::Confirm, device, "Edit/Begin") + "   " +
-        input::prompt(map, InputAction::Cancel, device, "Back");
-    ui::drawTextCentered(footer.c_str(), w / 2, h - 16, 9, Color{150, 150, 170, 255});
+    ui::drawFooterHints(
+        {{input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
+              input::primaryLabel(map, InputAction::MoveDown, device),
+          "Move"},
+         {input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
+              input::primaryLabel(map, InputAction::MoveRight, device),
+          "Class"},
+         {input::primaryLabel(map, InputAction::Confirm, device), "Edit/Begin"},
+         {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
+        w, h, "partycreate.footer");
 }
 
 }  // namespace cd

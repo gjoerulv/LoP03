@@ -49,6 +49,7 @@ private:
     int selectedChar_ = 0;
     int selectedSlot_ = 0;  // 0 weapon, 1 armor, 2 accessory
     std::string message_;
+    bool messageIsError_ = false;  // picks the banner treatment (presentation only)
 };
 
 }  // namespace cd

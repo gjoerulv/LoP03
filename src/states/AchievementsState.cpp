@@ -44,7 +44,8 @@ void AchievementsState::handleInput(const Input& input) {
 void AchievementsState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 24, 255});
+    const style::Palette& p = style::palette();
+    ClearBackground(p.canvas);
 
     int unlockedCount = 0;
     for (const AchievementDef& a : kAchievements) {
@@ -52,9 +53,9 @@ void AchievementsState::render() {
             ++unlockedCount;
         }
     }
-    ui::drawTextCentered("Achievements", w / 2, 14, style::kFontScreenTitle, style::palette().text);
-    ui::drawTextCentered(TextFormat("%d / %d unlocked", unlockedCount, kAchievementCount), w / 2, 32,
-                         style::kFontSmall, style::palette().textDim);
+    ui::drawHeaderBand("Achievements", w, p.gold);
+    ui::drawTextCentered(TextFormat("%d / %d unlocked", unlockedCount, kAchievementCount), w / 2,
+                         28, style::kFontSmall, p.textDim);
 
     // Two columns of kColumnRows, so the list ends well clear of the description
     // and the footer hint below it.
@@ -68,7 +69,7 @@ void AchievementsState::render() {
         const int colX = 14 + col * (colW + 6);
         const int y = rowsY + (i % kColumnRows) * rowH;
         if (i == cursor_) {
-            DrawRectangle(colX, y - 1, colW, rowH, Color{40, 44, 66, 255});
+            ui::drawSelectionSlab(colX, y - 2, colW, rowH + 1);
         }
         const Color c = unlocked ? style::palette().text : style::palette().textDim;
         ui::drawText(unlocked ? "[*]" : "[ ]", colX + 6, y, style::kFontBody, c);
@@ -85,13 +86,12 @@ void AchievementsState::render() {
         curUnlocked ? std::string(cur.description)
                     : std::string("Locked - keep playing to discover this one."),
         w / 2, descY, w - 40, style::kFontBody,
-        curUnlocked ? Color{200, 210, 160, 255} : style::palette().textDim, "achievements.desc", 3);
+        curUnlocked ? p.success : p.textDim, "achievements.desc", 3);
 
-    ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
-                                       context_.input.activeDevice(), "Back")
-                             .c_str(),
-                         w / 2, h - style::kFooterHeight + 2, style::kFontBody,
-                         style::palette().textHint);
+    ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
+                                              context_.input.activeDevice()),
+                          "Back"}},
+                        w, h, "achievements.footer");
 }
 
 }  // namespace cd

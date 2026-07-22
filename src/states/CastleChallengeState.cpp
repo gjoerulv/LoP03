@@ -21,6 +21,7 @@
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -200,7 +201,8 @@ void CastleChallengeState::handleInput(const Input& input) {
 void CastleChallengeState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{10, 8, 16, 255});
+    const ui::style::Palette& p = ui::style::palette();
+    ClearBackground(p.canvas);
     if (!done_) {
         return;  // transient between fights (a BattleState is normally on top)
     }
@@ -208,15 +210,15 @@ void CastleChallengeState::render() {
     const int boxH = 150;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
-    ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{22, 18, 30, 245},
-                        Color{200, 170, 90, 255});
-    ui::drawTextCentered(challengeName(kind_), w / 2, boxY + 14, 16, Color{235, 210, 130, 255});
-    ui::drawTextWrapped(resultText_, boxX + 16, boxY + 44, boxW - 32, 10, RAYWHITE,
+    ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
+    ui::drawTextCentered(challengeName(kind_), w / 2, boxY + 12, 16, p.gold);
+    ui::drawDivider(boxX + 14, boxY + 34, boxW - 28);
+    ui::drawTextWrapped(resultText_, boxX + 16, boxY + 42, boxW - 32, 10, p.text,
                         "castle.challenge.result", 6);
     ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,
                                        context_.input.activeDevice(), "Return to the Castle")
                              .c_str(),
-                         w / 2, boxY + boxH - 16, 10, Color{200, 200, 160, 255});
+                         w / 2, boxY + boxH - 16, 10, p.gold);
 }
 
 }  // namespace cd

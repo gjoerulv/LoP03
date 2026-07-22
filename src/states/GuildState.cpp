@@ -19,6 +19,7 @@
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -43,14 +44,14 @@ GuildState::GuildState(StateStack& stack, AppContext& context)
 }
 
 void GuildState::rebuild() {
-    // Theme/Depth values are composed into their own menu labels so the value
-    // sits on the row that changes it (M25 slice 4), following the
-    // SettingsState::volumeLabel idiom. ui::MenuItem carries no value field.
+    // The menu model still drives navigation; Theme/Depth values render in
+    // framed capsules on their own rows (M46 stepper rows), so labels stay
+    // plain. The value still sits on the row that changes it (M25 slice 4).
     const int previous = menu_.cursor();
     std::vector<ui::MenuItem> items;
     items.push_back({"Enter Dungeon", true});
-    items.push_back({"Theme:  < " + currentThemeName() + " >", true});
-    items.push_back({"Depth:  < " + std::to_string(depth_) + " >", true});
+    items.push_back({"Theme", true});
+    items.push_back({"Depth", true});
     items.push_back({"New Seed", true});
     items.push_back({"Back", true});
     menu_.setItems(std::move(items));
@@ -145,39 +146,105 @@ void GuildState::handleInput(const Input& input) {
 void GuildState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ui::drawSceneBackground(context_.resources, "bg.guild", Color{16, 16, 26, 255},
+    namespace style = ui::style;
+    const style::Palette& p = style::palette();
+    ui::drawSceneBackground(context_.resources, "bg.guild", p.canvas,
                             context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
 
-    ui::drawTextCentered("Guild", w / 2, 18, 18, RAYWHITE);
-    ui::drawTextCentered("Choose a dungeon and enter.", w / 2, 40, 10, Color{180, 180, 200, 255});
+    ui::drawHeaderBand("Guild", w, p.crystal);
+    ui::drawTextCentered("Choose a dungeon - entering autosaves.", w / 2, 28, style::kFontBody,
+                         p.textDim);
 
-    // Theme/Depth values render inline on their menu rows (composed in
-    // rebuild()); the seed is a non-adjustable readout below the list.
-    ui::drawMenu(menu_, 70, 66, 16, 11, RAYWHITE, Color{90, 90, 110, 255},
-                 Color{240, 220, 120, 255});
-    ui::drawText(TextFormat("Seed:   %llu", static_cast<unsigned long long>(seed_)), 70, 150, 10,
-                 Color{220, 220, 160, 255});
+    // Control panel: the CTA row on top, then the two stepper rows, then the
+    // plain rows. The menu model still owns navigation.
+    const int px = 90;
+    const int py = 44;
+    const int pw = 246;
+    const int ph = 112;
+    ui::drawFrame(px, py, pw, ph, ui::FrameStyle::Standard);
+    const int rowX = px + 22;
+
+    // "Enter Dungeon" — the dominant call to action.
+    const int enterY = py + 10;
+    const bool enterFocused = menu_.cursor() == kEnter;
+    ui::drawFrame(px + 10, enterY - 4, pw - 20, 22,
+                  enterFocused ? ui::FrameStyle::Reward : ui::FrameStyle::Raised);
+    ui::drawTextCentered("Enter Dungeon", px + pw / 2, enterY, 12,
+                         enterFocused ? p.cursor : p.text);
+    if (enterFocused) {
+        ui::drawChevron(px + 18, enterY + 2, p.cursor, ui::motionPhase());
+    }
+    ui::drawDivider(px + 10, py + 32, pw - 20);
+
+    // Stepper rows: label, left arrow, framed value capsule, right arrow.
+    const auto stepperRow = [&](int index, const char* label, const std::string& value, int y) {
+        const bool focused = menu_.cursor() == index;
+        if (focused) {
+            ui::drawSelectionSlab(rowX - 12, y - 2, pw - 40, 15);
+            ui::drawChevron(rowX - 9, y + 1, p.cursor, ui::motionPhase());
+        }
+        ui::drawText(label, rowX, y, style::kFontMenu, focused ? p.cursor : p.text);
+        const int capW = 104;
+        const int capX = px + pw - 22 - capW;
+        ui::drawStepArrow(capX - 11, y + 2, -1, focused);
+        ui::drawStepArrow(capX + capW + 6, y + 2, +1, focused);
+        DrawRectangle(capX, y - 1, capW, 13, p.ink);
+        DrawRectangle(capX + 1, y, capW - 2, 11, p.chipFill);
+        if (focused) {
+            DrawRectangleLines(capX, y - 1, capW, 13, p.rowBorder);
+        }
+        const int vw = ui::measureText(value, style::kFontBody);
+        ui::drawTextFitted(value, capX + (capW - vw) / 2, y + 1, capW - 6, style::kFontBody,
+                           focused ? p.cursor : p.text, "guild.capsule");
+    };
+    stepperRow(kTheme, "Theme", currentThemeName(), py + 40);
+    stepperRow(kDepth, "Depth", std::to_string(depth_), py + 58);
+
+    // Plain rows.
+    const auto plainRow = [&](int index, const char* label, int y) {
+        const bool focused = menu_.cursor() == index;
+        if (focused) {
+            ui::drawSelectionSlab(rowX - 12, y - 2, ui::measureText(label, style::kFontMenu) + 24,
+                                  15);
+            ui::drawChevron(rowX - 9, y + 1, p.cursor, ui::motionPhase());
+        }
+        ui::drawText(label, rowX, y, style::kFontMenu, focused ? p.cursor : p.text);
+    };
+    plainRow(kReroll, "New Seed", py + 78);
+    plainRow(kBack, "Back", py + 94);
+
+    // Seed: a subdued information chip (non-adjustable readout).
+    ui::drawChip("Seed " + std::to_string(static_cast<unsigned long long>(seed_)), px,
+                 py + ph + 8, p.borderMid);
 
     // M33 stakes forewarning: the penalty this run (currentTown + chosen depth)
     // will incur, updating live as Depth changes; matches what completeDungeon
     // applies. Honest and shown before entering (M19).
     const int pen = stakesPenaltyPct(context_.party.stakes, context_.party.currentTown, depth_);
+    const int bannerY = py + ph + 26;
     if (pen > 0) {
-        ui::drawText(TextFormat("Stakes penalty: -%d%%  (raise town or depth to clear)", pen), 70,
-                     168, 10, Color{230, 150, 150, 255});
+        ui::drawBanner(ui::BannerKind::Danger,
+                       TextFormat("Stakes penalty: -%d%% - raise town or depth to clear it.", pen),
+                       70, bannerY, w - 140, "guild.stakes");
     } else {
-        ui::drawText("No stakes penalty - this run raises the stakes.", 70, 168, 10,
-                     Color{150, 210, 150, 255});
+        const char* okText = "No stakes penalty - this run raises the stakes.";
+        const int tw = ui::measureText(okText, style::kFontBody);
+        const int tx = w / 2 - tw / 2;
+        DrawRectangle(tx - 10, bannerY + 4, 2, 2, p.success);  // stepped diamond, shape
+        DrawRectangle(tx - 12, bannerY + 6, 6, 2, p.success);  // + color double signal
+        DrawRectangle(tx - 10, bannerY + 8, 2, 2, p.success);
+        ui::drawText(okText, tx, bannerY + 2, style::kFontBody, p.success);
     }
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
-    const std::string footer =
-        "[" + input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
-        input::primaryLabel(map, InputAction::MoveRight, device) +
-        "] Adjust Theme & Depth. Entering autosaves. " +
-        input::prompt(map, InputAction::Cancel, device, "Back");
-    ui::drawTextCentered(footer.c_str(), w / 2, h - 14, 9, Color{150, 150, 170, 255});
+    ui::drawFooterHints(
+        {{input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
+              input::primaryLabel(map, InputAction::MoveRight, device),
+          "Adjust"},
+         {input::primaryLabel(map, InputAction::Confirm, device), "Select"},
+         {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
+        w, h, "guild.footer");
 }
 
 }  // namespace cd

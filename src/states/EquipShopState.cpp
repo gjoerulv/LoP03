@@ -29,9 +29,9 @@ const char* const kSlotNames[3] = {"Weapon", "Armor", "Accessory"};
 const char* const kCategoryNames[3] = {"Weapons", "Armor", "Accessories"};
 
 constexpr int kListX = 40;
-constexpr int kListY = 64;
+constexpr int kListY = 60;
 constexpr int kListItemH = 14;
-constexpr int kVisibleRows = 9;
+constexpr int kVisibleRows = 8;
 
 std::string statBonusSummary(const content::StatBlock& b) {
     std::string out;
@@ -145,7 +145,8 @@ void EquipShopState::rebuild() {
             for (const std::string& id : ids) {
                 const content::ItemDef* it = context_.content.findItem(id);
                 rowIds_.push_back(id);
-                items.push_back({it->name + "  -  " + std::to_string(it->value) + "g", true});
+                // Price column right-aligned via the suffix (M46).
+                items.push_back({it->name, true, TextFormat("%5dg", it->value)});
             }
             break;
         }
@@ -183,8 +184,8 @@ void EquipShopState::rebuild() {
             for (const std::string& id : ids) {
                 const content::ItemDef* it = context_.content.findItem(id);
                 rowIds_.push_back(id);
-                items.push_back({it->name + "  x" + std::to_string(context_.party.inventory.count(id)),
-                                 true});
+                items.push_back({it->name, true,
+                                 "x" + std::to_string(context_.party.inventory.count(id))});
             }
             break;
         }
@@ -226,9 +227,11 @@ void EquipShopState::confirm() {
                 context_.party.inventory.add(it->id, 1);
                 context_.audio.play(Sfx::Confirm);
                 message_ = "Bought " + it->name;
+                messageIsError_ = false;
             } else {
                 context_.audio.play(Sfx::Error);
                 message_ = "Not enough gold for " + it->name;
+                messageIsError_ = true;
             }
             break;
         }
@@ -251,6 +254,7 @@ void EquipShopState::confirm() {
                 const content::ClassDef* cls = context_.content.findClass(c.classId);
                 message_ = std::string("A ") + (cls != nullptr ? cls->name : c.classId) +
                            " cannot equip " + slotLabel(slotEnum(selectedSlot_)) + ".";
+                messageIsError_ = true;
                 break;
             }
             std::string& ref = slotRef(c, selectedSlot_);
@@ -363,11 +367,10 @@ void EquipShopState::handleInput(const Input& input) {
 void EquipShopState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ui::drawSceneBackground(context_.resources, "bg.equip_shop", Color{16, 16, 24, 255},
+    const style::Palette& p = style::palette();
+    ui::drawSceneBackground(context_.resources, "bg.equip_shop", p.canvas,
                             context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
-    ui::drawTextCentered("Equipment Shop", w / 2, 14, style::kFontScreenTitle, style::palette().text);
-    ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 14, 14, style::kFontMenu,
-                      style::palette().gold);
+    ui::drawHeaderBand("Equipment Shop", w, p.gold, context_.party.gold);
 
     std::string buyHint;
     const char* hint = "Confirm: Select   Cancel: Back";
@@ -375,51 +378,60 @@ void EquipShopState::render() {
         case Phase::Menu: hint = "Buy gear or equip your party."; break;
         case Phase::BuyCategory: hint = "Choose a category to browse."; break;
         case Phase::Buy:
-            buyHint = std::string("Buy ") + categoryLabel(buyCategory_) +
-                      "   Confirm: Buy   Cancel: Back";
+            buyHint = std::string("Buying ") + categoryLabel(buyCategory_);
             hint = buyHint.c_str();
             break;
         case Phase::EquipChar: hint = "Choose a party member."; break;
         case Phase::EquipSlot: hint = "Choose a slot."; break;
         case Phase::EquipItem: hint = "Choose an item to equip."; break;
     }
-    ui::drawText(hint, 20, 36, style::kFontBody, style::palette().textDim);
-    if (!message_.empty()) {
-        ui::drawTextFitted(message_, 20, 50, w - 40, style::kFontBody, style::palette().success,
-                           "equipshop.message");
-    }
+    ui::drawTextCentered(hint, w / 2, 30, style::kFontBody, p.textDim);
 
+    ui::drawFrame(kListX - 24, kListY - 8, 352, kVisibleRows * kListItemH + 14,
+                  ui::FrameStyle::Inset);
     ui::drawMenuScrolled(menu_, scroll_, kVisibleRows, kListX, kListY, kListItemH,
-                         style::kFontMenu, 300, style::palette().text, style::palette().disabled, style::palette().cursor,
-                         "equipshop.list");
+                         style::kFontMenu, 300, p.text, p.disabled, p.cursor,
+                         "equipshop.list", style::kFontSmall, p.gold);
 
-    // Detail line for the selected piece of gear (Buy and EquipItem phases).
+    // Detail panel for the selected piece of gear (Buy and EquipItem phases).
+    const int infoY = kListY + kVisibleRows * kListItemH + 12;
+    if (phase_ == Phase::Buy || phase_ == Phase::EquipItem) {
+        ui::drawFrame(kListX - 24, infoY, 352, h - style::kFooterHeight - infoY - 4,
+                      ui::FrameStyle::Standard);
+    }
     const content::ItemDef* detail = nullptr;
     if (phase_ == Phase::Buy && !rowIds_.empty()) {
         detail = context_.content.findItem(rowIds_[static_cast<std::size_t>(menu_.cursor())]);
     } else if (phase_ == Phase::EquipItem) {
         if (menu_.cursor() == 0) {
-            ui::drawTextWrapped("Remove the current equipment.", 20, h - 52, w - 40,
-                                style::kFontBody, style::palette().textDim, "equipshop.detail", 2);
+            ui::drawTextWrapped("Remove the current equipment.", kListX - 14, infoY + 6,
+                                332, style::kFontBody, p.textDim, "equipshop.detail", 2);
         } else if (!rowIds_.empty()) {
             detail = context_.content.findItem(
                 rowIds_[static_cast<std::size_t>(menu_.cursor() - 1)]);
         }
     }
     if (detail != nullptr) {
-        ui::drawTextWrapped(equipDetail(*detail), 20, h - 52, w - 40, style::kFontBody,
-                            style::palette().success, "equipshop.detail", 2);
+        ui::drawTextWrapped(equipDetail(*detail), kListX - 14, infoY + 6, 332, style::kFontBody,
+                            p.textDim, "equipshop.detail", 2);
     }
 
-    std::string footer = input::prompt(context_.input.map(), InputAction::Cancel,
-                                       context_.input.activeDevice(), "Back");
-    if (phase_ == Phase::Buy) {
-        footer = input::prompt(context_.input.map(), InputAction::Details,
-                               context_.input.activeDevice(), "Compare") +
-                 "    " + footer;
+    // Transient feedback rides an overlay banner (drawn last, like a toast).
+    if (!message_.empty()) {
+        ui::drawBanner(messageIsError_ ? ui::BannerKind::Danger : ui::BannerKind::Success,
+                       message_, 60, 40, w - 120, "equipshop.message");
     }
-    ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, 9,
-                         style::palette().textHint);
+
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    std::vector<ui::Hint> hints;
+    hints.push_back({input::primaryLabel(map, InputAction::Confirm, device),
+                     phase_ == Phase::Buy ? "Buy" : "Select"});
+    if (phase_ == Phase::Buy) {
+        hints.push_back({input::primaryLabel(map, InputAction::Details, device), "Compare"});
+    }
+    hints.push_back({input::primaryLabel(map, InputAction::Cancel, device), "Back"});
+    ui::drawFooterHints(hints, w, h, "equipshop.footer");
 }
 
 }  // namespace cd

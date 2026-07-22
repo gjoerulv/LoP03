@@ -13,6 +13,7 @@
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -108,9 +109,11 @@ void TrainingHallState::trainSelected() {
         grantXp(c, xpToNext(c.level) - c.xp, context_.content);  // exactly one level
         context_.audio.play(Sfx::Heal);
         message_ = c.name + " trained to Lv." + std::to_string(c.level) + "!";
+        messageIsError_ = false;
     } else {
         context_.audio.play(Sfx::Error);
         message_ = "Not enough gold to train " + c.name;
+        messageIsError_ = true;
     }
 }
 
@@ -125,21 +128,25 @@ void TrainingHallState::onPassiveConfirm() {
     if (c.equippedPassive == id) {
         c.equippedPassive.clear();  // swap freely: unequip
         message_ = c.name + " unequips " + name + ".";
+        messageIsError_ = false;
     } else if (owns(c, id)) {
         c.equippedPassive = id;  // equip an owned passive
         message_ = c.name + " equips " + name + ".";
+        messageIsError_ = false;
     } else if (p != nullptr && context_.party.gold >= p->price) {
         context_.party.gold -= p->price;
         c.ownedPassives.push_back(id);
         c.equippedPassive = id;  // auto-equip a fresh purchase
         context_.audio.play(Sfx::Heal);
         message_ = c.name + " learns " + name + "!";
+        messageIsError_ = false;
         rebuildPassives();
         context_.audio.play(Sfx::Confirm);
         return;
     } else {
         context_.audio.play(Sfx::Error);
         message_ = "Not enough gold.";
+        messageIsError_ = true;
         return;
     }
     context_.audio.play(Sfx::Confirm);
@@ -216,44 +223,48 @@ void TrainingHallState::handleInput(const Input& input) {
 void TrainingHallState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ui::drawSceneBackground(context_.resources, "bg.training_hall", Color{16, 16, 24, 255},
+    namespace style = ui::style;
+    const style::Palette& p = style::palette();
+    ui::drawSceneBackground(context_.resources, "bg.training_hall", p.canvas,
                             context_.virtualWidth, context_.virtualHeight,
                             context_.party.currentTown);
-    ui::drawTextCentered("Training Hall", w / 2, 14, 16, RAYWHITE);
-    ui::drawText(TextFormat("Gold: %d", context_.party.gold), w - 110, 14, 11,
-                 Color{230, 220, 150, 255});
+    ui::drawHeaderBand("Training Hall", w, p.crystal, context_.party.gold);
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
 
     switch (phase_) {
         case Phase::Members: {
-            ui::drawTextCentered("Choose a character to train or equip a passive.", w / 2, 36, 10,
-                                 Color{180, 180, 200, 255});
-            ui::drawMenu(memberMenu_, 48, 60, 16, 11, RAYWHITE, Color{90, 90, 110, 255},
-                         Color{240, 220, 120, 255});
+            ui::drawTextCentered("Choose a character to train or equip a passive.", w / 2, 30,
+                                 style::kFontBody, p.textDim);
+            const int rows = static_cast<int>(memberMenu_.size());
+            ui::drawFrame(28, 50, w - 56, rows * 16 + 16, ui::FrameStyle::Inset);
+            ui::drawMenu(memberMenu_, 48, 60, 16, style::kFontMenu, p.text, p.disabled, p.cursor);
             break;
         }
         case Phase::CharMenu: {
             const Character& c = context_.party.members[static_cast<std::size_t>(selectedMember_)];
-            ui::drawTextCentered(TextFormat("%s  -  Lv.%d", c.name.c_str(), c.level), w / 2, 36, 12,
-                                 Color{210, 210, 230, 255});
-            ui::drawMenu(charMenu_, 60, 66, 18, 12, RAYWHITE, Color{90, 90, 110, 255},
-                         Color{240, 220, 120, 255});
+            ui::drawTextCentered(TextFormat("%s  -  Lv.%d", c.name.c_str(), c.level), w / 2, 32,
+                                 12, p.text);
+            const int rows = static_cast<int>(charMenu_.size());
+            ui::drawFrame(40, 56, 260, rows * 18 + 18, ui::FrameStyle::Inset);
+            ui::drawMenu(charMenu_, 62, 66, 18, 12, p.text, p.disabled, p.cursor);
             break;
         }
         case Phase::Passives: {
             const Character& c = context_.party.members[static_cast<std::size_t>(selectedMember_)];
-            ui::drawText(TextFormat("%s's passives  (own many, equip one)", c.name.c_str()), 24, 34,
-                         10, Color{200, 200, 220, 255});
-            ui::drawMenu(passiveMenu_, 30, 50, 13, 10, RAYWHITE, Color{90, 90, 110, 255},
-                         Color{240, 220, 120, 255});
+            ui::drawText(TextFormat("%s's passives  (own many, equip one)", c.name.c_str()), 24,
+                         32, style::kFontBody, p.textDim);
+            const int rows = static_cast<int>(passiveMenu_.size());
+            ui::drawFrame(16, 44, 320, rows * 13 + 14, ui::FrameStyle::Inset);
+            ui::drawMenu(passiveMenu_, 32, 51, 13, style::kFontBody, p.text, p.disabled, p.cursor);
             if (!passiveIds_.empty()) {
                 const std::string& id =
                     passiveIds_[static_cast<std::size_t>(passiveMenu_.cursor())];
-                if (const content::PassiveDef* p = context_.content.findPassive(id)) {
-                    ui::drawTextWrapped(p->description, 30, h - 42, w - 60, 10,
-                                        Color{160, 210, 160, 255}, "training.passivedesc", 2);
+                if (const content::PassiveDef* pd = context_.content.findPassive(id)) {
+                    ui::drawFrame(24, h - 50, w - 48, 30, ui::FrameStyle::Standard);
+                    ui::drawTextWrapped(pd->description, 32, h - 44, w - 64, style::kFontBody,
+                                        p.textDim, "training.passivedesc", 2);
                 }
             }
             break;
@@ -261,21 +272,16 @@ void TrainingHallState::render() {
     }
 
     if (!message_.empty() && phase_ != Phase::Passives) {
-        ui::drawTextCentered(message_.c_str(), w / 2, h - 30, 10, Color{170, 220, 170, 255});
+        ui::drawBanner(messageIsError_ ? ui::BannerKind::Danger : ui::BannerKind::Success,
+                       message_, 60, h - 50, w - 120, "training.message");
     }
 
-    std::string footer;
-    if (phase_ == Phase::Members) {
-        footer = input::prompt(map, InputAction::Confirm, device, "Select") + "    " +
-                 input::prompt(map, InputAction::Cancel, device, "Back");
-    } else if (phase_ == Phase::CharMenu) {
-        footer = input::prompt(map, InputAction::Confirm, device, "Choose") + "    " +
-                 input::prompt(map, InputAction::Cancel, device, "Back");
-    } else {
-        footer = input::prompt(map, InputAction::Confirm, device, "Buy/Equip") + "    " +
-                 input::prompt(map, InputAction::Cancel, device, "Back");
-    }
-    ui::drawTextCentered(footer.c_str(), w / 2, h - 14, 10, Color{150, 150, 170, 255});
+    const char* verb = phase_ == Phase::Members   ? "Select"
+                       : phase_ == Phase::CharMenu ? "Choose"
+                                                   : "Buy/Equip";
+    ui::drawFooterHints({{input::primaryLabel(map, InputAction::Confirm, device), verb},
+                         {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
+                        w, h, "training.footer");
 }
 
 }  // namespace cd

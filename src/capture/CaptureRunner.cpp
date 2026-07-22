@@ -42,6 +42,7 @@
 #include "states/ConfirmPromptState.hpp"
 #include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
+#include "states/DungeonMenuState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
 #include "states/EquipShopState.hpp"
@@ -387,6 +388,14 @@ int run(const char* outDir) {
                  s.pushState(std::make_unique<DungeonState>(
                      s, c, dungeon::generate(424242, 10, c.content, "hollow_forest")));
              }},
+            {"50_dungeon_pause",
+             [](StateStack& s, AppContext& c) {
+                 // M46: the pause modal over a live dungeon — one of the six
+                 // facelift acceptance screens (presentation-only hook).
+                 s.pushState(std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine")));
+                 s.pushState(std::make_unique<DungeonMenuState>(s, c));
+             }},
             {"17_battle_five_enemies",
              [&battleSlot](StateStack& s, AppContext& c) {
                  battle::Battle b =
@@ -550,6 +559,19 @@ int run(const char* outDir) {
                  }
                  s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
                                                            MusicTrack::KingBattle));
+             }},
+            {"51_battle_high_contrast",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M46: the densest battle layout under the high-contrast
+                 // palette — meters, statuses, focus, and the boss frame must
+                 // keep their shape distinctions, not merely recolor.
+                 ui::style::setHighContrast(true);
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 applyCaptureStatuses(b);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
              }},
             {"35_castle_result",
              [](StateStack& s, AppContext& c) {

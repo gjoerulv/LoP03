@@ -22,6 +22,7 @@ add_executable(crystal_tests
     test_learnset.cpp
     test_rest.cpp
     test_menu.cpp
+    test_ui_kit.cpp
     test_text_input.cpp
     test_text_layout.cpp
     test_scroll_window.cpp

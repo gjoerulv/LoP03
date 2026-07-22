@@ -30,7 +30,7 @@ namespace {
 
 // Bottom-panel layout (M12): everything must fit inside the 60px panel.
 constexpr int kPanelH = 60;
-constexpr int kListX = 16;       // command/skill/item lists (cursor at x-10)
+constexpr int kListX = 20;       // command/skill/item lists (selection slab at x-12)
 constexpr int kListItemH = 12;
 constexpr int kListRows = 4;     // visible rows in skill/item lists (scrolled)
 // Right column: actor line + descriptions. The split is set by the widest skill
@@ -1029,6 +1029,7 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         }
     }
 
+    const style::Palette& p = style::palette();
     if (context_.resources.hasTexture(spriteId)) {
         const Texture2D& tex = context_.resources.texture(spriteId);
         const int sx = x + 20 - tex.width / 2;   // bottom-center on the old
@@ -1040,8 +1041,9 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
             DrawRectangle(sx, sy, tex.width, tex.height, Fade(WHITE, 0.55f * flash));
         }
         if (targeted) {
-            DrawRectangleLines(sx - 2, sy - 2, tex.width + 4, tex.height + 4,
-                               Color{240, 220, 120, 255});
+            // Corner brackets (M46): shape-first focus that survives grayscale,
+            // hit flashes, and any sprite behind it.
+            ui::drawFocusBrackets(sx - 1, sy - 1, tex.width + 2, tex.height + 2, p.cursor);
         }
     } else {
         const Color body = c.side == battle::Side::Enemy ? Color{170, 80, 90, 255}
@@ -1051,36 +1053,32 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
             DrawRectangle(x, y, 40, 16, Fade(WHITE, 0.55f * flash));
         }
         if (targeted) {
-            DrawRectangleLines(x - 2, y - 2, 44, 20, Color{240, 220, 120, 255});
+            ui::drawFocusBrackets(x - 1, y - 1, 42, 18, p.cursor);
         }
     }
     if (current) {
-        ui::drawText(">", x - 9, y + 3, 10, Color{240, 220, 120, 255});
+        // Acting unit: gold chevron with the sanctioned one-pixel nudge.
+        ui::drawChevron(x - 10, y + 4, p.cursor, ui::motionPhase());
     }
 
     // Names are no longer painted over every sprite (M25 slice 2); a unit's
     // name and judgment stats appear on the target-info panel while it is being
     // targeted, and via Details.
-    // HP bar (displayed value).
-    const float hpFrac =
-        c.maxHp > 0 ? static_cast<float>(shownHp) / static_cast<float>(c.maxHp) : 0.0f;
-    DrawRectangle(x, y + 17, 40, 3, Fade(Color{40, 40, 40, 255}, fade));
-    DrawRectangle(x, y + 17, static_cast<int>(40 * (hpFrac < 0.0f ? 0.0f : hpFrac)), 3,
-                  Fade(Color{90, 200, 110, 255}, fade));
+    // Framed HP meter (displayed value); hidden once a sinking KO begins.
+    if (c.side == battle::Side::Party || shownAlive) {
+        ui::drawMeter(x, y + 17, 40, 5, shownHp < 0 ? 0 : shownHp, c.maxHp, p.hpFill);
+    }
     if (c.side == battle::Side::Party) {
-        const float mpFrac =
-            c.maxMp > 0 ? static_cast<float>(c.mp) / static_cast<float>(c.maxMp) : 0.0f;
-        DrawRectangle(x, y + 21, 40, 2, Color{40, 40, 40, 255});
-        DrawRectangle(x, y + 21, static_cast<int>(40 * mpFrac), 2, Color{90, 120, 210, 255});
+        ui::drawMeter(x, y + 23, 40, 4, c.mp < 0 ? 0 : c.mp, c.maxMp, p.mpFill);
         // HP and MP as numerals (M25 slice 3): MP is the resource that gates
         // skills, so its exact value gets the same clarity as HP.
         ui::drawText(TextFormat("HP %d/%d", shownHp < 0 ? 0 : shownHp, c.maxHp), x + 44, y + 4, 8,
-                     RAYWHITE);
+                     p.text);
         ui::drawText(TextFormat("MP %d/%d", c.mp < 0 ? 0 : c.mp, c.maxMp), x + 44, y + 13, 8,
-                     Color{150, 175, 235, 255});
+                     p.mpFill);
     }
     if (!shownAlive) {
-        ui::drawText("KO", x + 13, y + 4, 8, Fade(Color{220, 120, 120, 255}, fade));
+        ui::drawText("KO", x + 13, y + 4, 8, Fade(p.dangerText, fade));
     }
 
     if (!c.statuses.empty() && shownAlive) {
@@ -1094,7 +1092,7 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         const std::vector<std::string> lines = statusLines(c, maxWidth, 8, 2);
         for (std::size_t i = 0; i < lines.size(); ++i) {
             ui::drawTextFitted(lines[i], sx, sy + static_cast<int>(i) * 8, maxWidth, 8,
-                               Color{200, 160, 220, 255},
+                               ui::lighten(p.magic, 32),
                                party ? "battle.status.party" : "battle.status.enemy");
         }
     }
@@ -1103,7 +1101,37 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
 void BattleState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{18, 16, 24, 255});
+    const style::Palette& pal = style::palette();
+    ClearBackground(pal.canvas);
+
+    // Stage dressing (M46): one broad value band behind the combatants with
+    // ink keylines, side grounding brackets per side, and a violet accent
+    // pair when a boss is on the field. No texture, no noise behind units.
+    {
+        const int bandY = 24;
+        const int bandH = h - kPanelH - 34 - bandY;
+        DrawRectangle(0, bandY, w, bandH, pal.panel);
+        DrawRectangle(0, bandY, w, 1, pal.ink);
+        DrawRectangle(0, bandY + bandH - 1, w, 1, pal.ink);
+        DrawRectangle(0, bandY + 1, w, 1, pal.borderDark);
+        const int gy = bandY + bandH - 8;
+        DrawRectangle(6, gy, 10, 2, pal.borderDark);       // enemy-side bracket
+        DrawRectangle(6, gy - 6, 2, 8, pal.borderDark);
+        DrawRectangle(w - 16, gy, 10, 2, pal.borderDark);  // party-side bracket
+        DrawRectangle(w - 8, gy - 6, 2, 8, pal.borderDark);
+        bool bossOnField = false;
+        for (const battle::Combatant& c : battle_.units) {
+            bossOnField = bossOnField || c.isBoss;
+        }
+        if (bossOnField) {
+            const auto pip = [&pal](int x, int y) {
+                DrawRectangle(x, y + 1, 3, 1, pal.magic);
+                DrawRectangle(x + 1, y, 1, 3, pal.magic);
+            };
+            pip(6, bandY + 4);
+            pip(12, bandY + 4);
+        }
+    }
 
     const int actor = currentActor();
     const bool partyTurn = phase_ == Phase::Command || phase_ == Phase::ChooseTarget ||
@@ -1136,28 +1164,36 @@ void BattleState::render() {
         }
     }
 
-    // Turn counter top-right: the top-left is needed by tall enemy columns.
-    ui::drawTextRight(TextFormat("Turns: %d", battle_.turnsTaken), w - 6, 6, 8,
-                      style::palette().textDim);
+    // Turn counter as a compact badge top-right: the top-left is needed by
+    // tall enemy columns; the badge stays quieter than the acting unit.
+    ui::drawChipRight(TextFormat("Turns %d", battle_.turnsTaken), w - 4, 4, pal.gold);
 
     // M45: the Jester's quip, mid-screen above the panel — decorative, dismissed
     // by its own timer, and fitted so a long line can never spill.
     if (!jestLine_.empty()) {
         ui::drawTextFitted(jestLine_, 20, h - kPanelH - 22, w - 40, style::kFontBody,
-                           Color{235, 205, 130, 255}, "battle.jest");
+                           pal.gold, "battle.jest");
     }
 
     // Floating damage / heal numbers.
     for (const FloatNumber& f : floats_) {
         ui::drawText(f.text.c_str(), static_cast<int>(f.x) + shakeX, static_cast<int>(f.y), 10,
-                 f.heal ? Color{120, 220, 120, 255} : Color{245, 120, 120, 255});
+                 f.heal ? pal.success : pal.dangerText);
     }
 
     // Bottom panel: lists live in the left column (scrolled to kListRows),
-    // the actor line and selected-entry description in the right column.
+    // the actor line and selected-entry description in the right column. A
+    // boss introduction gets the Danger frame with its warning tab.
     const int panelY = h - kPanelH - 4;
-    ui::drawFramedPanel(context_.resources, 4, panelY, w - 8, kPanelH, Color{24, 22, 34, 240},
-                        Color{120, 120, 160, 255});
+    const bool bossIntro = phase_ == Phase::Intro && !bossTelegraph_.empty();
+    ui::drawFrame(4, panelY, w - 8, kPanelH,
+                  bossIntro ? ui::FrameStyle::Danger : ui::FrameStyle::Standard);
+    const bool listPhase = phase_ == Phase::Command || phase_ == Phase::ChooseSkill ||
+                           phase_ == Phase::ChooseItem;
+    if (listPhase) {
+        // Column divider separates the list from the info column.
+        DrawRectangle(kInfoX - 10, panelY + 6, 1, kPanelH - 12, pal.borderDark);
+    }
     const int infoW = w - kInfoX - 12;
     const int listLabelW = kInfoX - kListX - 18;
     const InputMap& map = context_.input.map();
@@ -1168,18 +1204,21 @@ void BattleState::render() {
 
     switch (phase_) {
         case Phase::Intro:
-            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 6, 12, style::palette().text);
+            // Headline, telegraph, and confirm prompt as three separated
+            // layers inside the (boss: Danger) frame.
+            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 6, 12, pal.text);
             if (!bossTelegraph_.empty()) {
-                ui::drawTextWrapped(bossTelegraph_, 16, panelY + 22, w - 32, style::kFontBody,
-                                    Color{225, 170, 170, 255}, "battle.telegraph", 2);
+                ui::drawDivider(20, panelY + 21, w - 40);
+                ui::drawTextWrapped(bossTelegraph_, 16, panelY + 25, w - 32, style::kFontBody,
+                                    pal.dangerText, "battle.telegraph", 2);
             }
             ui::drawTextCentered(
                 input::prompt(map, InputAction::Confirm, device, "Begin").c_str(), w / 2,
-                panelY + 48, style::kFontBody, Color{200, 200, 160, 255});
+                panelY + 48, style::kFontBody, pal.gold);
             break;
         case Phase::Command:
-            ui::drawMenu(commandMenu_, kListX, panelY + 5, 11, style::kFontBody, style::palette().text,
-                         style::palette().disabled, style::palette().cursor);
+            ui::drawMenu(commandMenu_, kListX, panelY + 5, 11, style::kFontBody, pal.text,
+                         pal.disabled, pal.cursor);
             ui::drawTextFitted(
                 TextFormat("%s's turn",
                            battle_.units[static_cast<std::size_t>(actor)].name.c_str()),
@@ -1195,9 +1234,9 @@ void BattleState::render() {
             break;
         case Phase::ChooseSkill: {
             ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,
-                                 kListItemH, style::kFontBody, listLabelW, style::palette().text,
-                                 style::palette().disabled, style::palette().cursor, "battle.skills",
-                                 style::kFontSmall, Color{150, 175, 235, 255});
+                                 kListItemH, style::kFontBody, listLabelW, pal.text,
+                                 pal.disabled, pal.cursor, "battle.skills",
+                                 style::kFontSmall, pal.mpFill);
             ui::drawTextFitted("Skill  " + backHint, kInfoX, panelY + 6, infoW, style::kFontBody,
                                style::palette().textDim, "battle.skillhint");
             if (!skillIds_.empty()) {
@@ -1223,9 +1262,9 @@ void BattleState::render() {
         }
         case Phase::ChooseItem: {
             ui::drawMenuScrolled(itemMenu_, itemScroll_, kListRows, kListX, panelY + 6,
-                                 kListItemH, style::kFontBody, listLabelW, style::palette().text,
-                                 style::palette().disabled, style::palette().cursor, "battle.items",
-                                 style::kFontSmall, Color{200, 200, 160, 255});
+                                 kListItemH, style::kFontBody, listLabelW, pal.text,
+                                 pal.disabled, pal.cursor, "battle.items",
+                                 style::kFontSmall, pal.gold);
             ui::drawTextFitted("Item  " + backHint, kInfoX, panelY + 6, infoW, style::kFontBody,
                                style::palette().textDim, "battle.itemhint");
             if (!itemIds_.empty()) {
@@ -1309,10 +1348,10 @@ void BattleState::render() {
             break;
         case Phase::Done:
             ui::drawTextWrapped(message_, 16, panelY + 10, w - 32, 12,
-                                Color{240, 230, 160, 255}, "battle.outcome", 2);
+                                pal.gold, "battle.outcome", 2);
             ui::drawTextCentered(
                 input::prompt(map, InputAction::Confirm, device, "Continue").c_str(), w / 2,
-                panelY + 44, style::kFontBody, Color{200, 200, 160, 255});
+                panelY + 44, style::kFontBody, pal.gold);
             break;
     }
 }

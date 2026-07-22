@@ -810,8 +810,12 @@ void DungeonState::update(float dt) {
 void DungeonState::renderMinimap() const {
     constexpr int cell = 6;
     constexpr int step = 7;
-    const int ox = context_.virtualWidth - dungeon_.gridW * step - 4;
-    const int oy = 4;
+    const int ox = context_.virtualWidth - dungeon_.gridW * step - 10;
+    const int oy = 10;
+
+    // Framed map well (M46) with the shared Inset construction.
+    ui::drawFrame(ox - 6, oy - 6, dungeon_.gridW * step + 12, dungeon_.gridH * step + 12,
+                  ui::FrameStyle::Inset);
 
     for (const dungeon::Room& r : dungeon_.rooms) {
         const int cx = ox + r.gridX * step;
@@ -849,7 +853,51 @@ void DungeonState::renderMinimap() const {
 }
 
 void DungeonState::render() {
-    ClearBackground(BLACK);
+    const ui::style::Palette& pal = ui::style::palette();
+    ClearBackground(pal.canvas);
+
+    // Stage matte (M46): a low-contrast band behind the room's span plus
+    // stepped corner brackets and sparse theme accent pips connect the
+    // playable room to the HUD without painting over it.
+    const int roomW = roomMap_.width() * kTile;
+    const int roomH = roomMap_.height() * kTile;
+    DrawRectangle(0, originY_ - 8, context_.virtualWidth, roomH + 16, pal.panelInset);
+    {
+        const int bx = originX_ - 6;
+        const int by = originY_ - 6;
+        const int bw = roomW + 12;
+        const int bh = roomH + 12;
+        const Color bracket = pal.borderMid;
+        DrawRectangle(bx, by, 10, 2, bracket);
+        DrawRectangle(bx, by, 2, 10, bracket);
+        DrawRectangle(bx + bw - 10, by, 10, 2, bracket);
+        DrawRectangle(bx + bw - 2, by, 2, 10, bracket);
+        DrawRectangle(bx, by + bh - 2, 10, 2, bracket);
+        DrawRectangle(bx, by + bh - 10, 2, 10, bracket);
+        DrawRectangle(bx + bw - 10, by + bh - 2, 10, 2, bracket);
+        DrawRectangle(bx + bw - 2, by + bh - 10, 2, 10, bracket);
+        // Theme accent pips beside the top brackets (shape language shared,
+        // accent per theme: keep=bronze/stone, mine=crystal/violet,
+        // forest=green/ivory).
+        Color accentA = pal.rowBorder;
+        Color accentB = pal.borderLight;
+        if (dungeon_.themeId == "crystal_mine") {
+            accentA = pal.crystal;
+            accentB = pal.magic;
+        } else if (dungeon_.themeId == "hollow_forest") {
+            accentA = pal.success;
+            accentB = pal.text;
+        }
+        const auto pip = [](int x, int y, Color c) {
+            DrawRectangle(x, y + 1, 3, 1, c);
+            DrawRectangle(x + 1, y, 1, 3, c);
+        };
+        pip(bx + 13, by - 1, accentA);
+        pip(bx + 19, by - 1, accentB);
+        pip(bx + bw - 16, by - 1, accentA);
+        pip(bx + bw - 22, by - 1, accentB);
+    }
+
     // Theme tiles from the catalog (M15); colored rectangles remain the
     // fallback for themes that have no art yet.
     const std::string tilePrefix = "tiles." + dungeon_.themeId + ".";
@@ -1008,20 +1056,24 @@ void DungeonState::render() {
                                       static_cast<float>(originY_ + highlight->y * kTile + kTile / 2));
     }
 
-    // HUD: backdrop sized to the measured lines so text never spills past it.
-    const std::string hudLine1 = TextFormat("%s  depth %d  gates %d", dungeon_.themeName.c_str(),
-                                            dungeon_.depth, dungeon_.mandatoryGates);
-    const std::string hudLine2 = TextFormat("Gold %d", context_.party.gold);
-    const int hudW = std::max(ui::measureText(hudLine1, 8), ui::measureText(hudLine2, 8)) + 6;
-    DrawRectangle(2, 2, hudW, 24, Color{0, 0, 0, 150});
-    ui::drawTextFitted(hudLine1, 5, 4, context_.virtualWidth - 10, 8, RAYWHITE, "dungeon.hud");
-    ui::drawTextFitted(hudLine2, 5, 14, context_.virtualWidth - 10, 8,
-                       Color{230, 220, 150, 255}, "dungeon.hud");
+    // HUD (M46): theme/depth, gates, and gold as compact chips top-left.
+    {
+        Color themeAccent = pal.rowBorder;
+        if (dungeon_.themeId == "crystal_mine") {
+            themeAccent = pal.crystal;
+        } else if (dungeon_.themeId == "hollow_forest") {
+            themeAccent = pal.success;
+        }
+        int cx = 4;
+        cx += ui::drawChip(TextFormat("%s  D%d", dungeon_.themeName.c_str(), dungeon_.depth),
+                           cx, 4, themeAccent) + 4;
+        cx += ui::drawChip(TextFormat("Gates %d", dungeon_.mandatoryGates), cx, 4, pal.danger) + 4;
+        ui::drawChip(TextFormat("%dg", context_.party.gold), cx, 4, pal.gold);
+    }
 
     renderMinimap();
 
     const int h = context_.virtualHeight;
-    DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 165});
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
     std::string text;
@@ -1061,7 +1113,9 @@ void DungeonState::render() {
             }
             text += "]";
         }
-    } else {
+    }
+    if (text.empty()) {
+        // Idle: structured keycap hint groups in the shared footer strip.
         const std::string moveLabel =
             device == ActiveDevice::Keyboard
                 ? input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
@@ -1069,14 +1123,19 @@ void DungeonState::render() {
                       input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
                       input::primaryLabel(map, InputAction::MoveRight, device)
                 : "D-Pad/Stick";
-        text = "[" + moveLabel + "] Move    " +
-               input::prompt(map, InputAction::Details, device, "Details") + "    " +
-               input::prompt(map, InputAction::Menu, device, "Pause / Retreat");
+        ui::drawFooterHints(
+            {{moveLabel, "Move"},
+             {input::primaryLabel(map, InputAction::Details, device), "Details"},
+             {input::primaryLabel(map, InputAction::Menu, device), "Pause"}},
+            context_.virtualWidth, h, "dungeon.footer");
+    } else {
+        // Contextual prompt or transient message: strip plus one fitted line.
+        ui::drawFooterHints({}, context_.virtualWidth, h, "dungeon.footer");
+        const int promptW = ui::measureText(text, 8);
+        const int promptX = std::max(4, (context_.virtualWidth - promptW) / 2);
+        ui::drawTextFitted(text, promptX, h - 12, context_.virtualWidth - promptX - 4, 8,
+                           pal.text, "dungeon.prompt");
     }
-    const int promptW = ui::measureText(text, 8);
-    const int promptX = std::max(4, (context_.virtualWidth - promptW) / 2);
-    ui::drawTextFitted(text, promptX, h - 13, context_.virtualWidth - promptX - 4, 8,
-                       Color{235, 230, 180, 255}, "dungeon.prompt");
 }
 
 }  // namespace cd
