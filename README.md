@@ -8,19 +8,20 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M42
+> **Status: feature-complete, polished playable build** (milestones M1–M45
 > delivered and owner-approved). In the box: a seven-town difficulty ladder
-> plus a castle endgame (Boss Rush / Endless Rush / the Hollow King), seeded
-> walkable dungeons with room events, deterministic turn-based combat
-> (statuses, passives, an enmity/threat model with control skills), a
+> plus a castle endgame (Boss Rush / Endless Rush / a doubled Hollow King),
+> seeded walkable dungeons with room events including the rare Royal Relics,
+> deterministic turn-based combat (statuses, passives, forced-action
+> turn-control, an enmity/threat model with control skills), a
 > stakes-escalation score rule with an honest tagged scoreboard, a black
 > market and legendary tokens/drops, per-town enemies/bosses/equipment with
-> original generated art and music, a light-hearted story serial, learnsets,
-> shops, a paid inn, onboarding, accessibility options, a bestiary, victory
-> records, and achievements. Next up: the **M43–M45 King's Gambit program**
-> (balance fixes → royal relic items + a doubled King → three unlockable
-> classes), then the deferred **validation playtesting (M23)** and **release
-> sign-off (M24)**. Current status always lives in `docs/milestones.md`.
+> original generated art and music, a light-hearted story serial, three
+> unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
+> paid inn, onboarding, accessibility options, a bestiary, victory records,
+> and achievements. Only the deferred **validation playtesting (M23)** and
+> **release sign-off (M24)** remain. Current status always lives in
+> `docs/milestones.md`.
 
 ## Requirements
 

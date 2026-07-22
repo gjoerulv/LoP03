@@ -209,7 +209,7 @@ M35–M42 endgame program: statuses v2, passives, per-town content, boss drops,
 the castle with the King, story, enrichment) is `complete (approved)`, as are
 **M43** (balance & audit fixes) and **M44** (royal relics + the doubled King) of
 the **M43–M45 King's Gambit program**; **M45** (the three unlockable classes) is
-**implemented and awaiting the owner's manual approval** and closes the program.
+`complete (approved)` (owner, 2026-07-22) and closes the program.
 The
 deliberately deferred **M23** (validation/playtesting/balance) and **M24**
 (release packaging) run **last, after M45**: their tooling and packaging are

@@ -7,7 +7,7 @@
   fixes). Authored / re-audited and implemented 2026-07-21 against the
   post-M41 checkout; owner authorized beginning M42 after approving M41.
   As-implemented record in §K. **Final milestone of the M35–M42 endgame
-  program** (the M43–M45 King's Gambit program runs next, then M23 → M24,
+  program** (the M43–M45 King's Gambit program followed, then M23 → M24,
   re-audited post-M45).
 - **Authority:** `CLAUDE.md` > this note > `docs/milestones.md` >
   `docs/game_design.md` > `docs/technical_design.md`. **Presentation + persistence

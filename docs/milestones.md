@@ -52,7 +52,7 @@
 | 42 | Enrichment: bestiary, victory stats, achievements | ☑ complete (approved) |
 | 43 | Balance pass & audit fixes | ☑ complete (approved) |
 | 44 | Royal Relics & the doubled King | ☑ complete (approved) |
-| 45 | The King's classes: Dragon, Jester, Goose | ◑ implemented, awaiting manual approval |
+| 45 | The King's classes: Dragon, Jester, Goose | ☑ complete (approved) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -1665,8 +1665,8 @@ authorization** — do not begin one without explicit owner go-ahead.
   columns with a centered description clear of the Back hint, save/load rows moved
   a party's King title onto its own line, and Quit to Title now asks a real Yes/No
   question via a new reusable `ConfirmPromptState` instead of arming a second
-  press (note §Playtest fixes). Closes the M35–M42 program; the **M43–M45
-  King's Gambit program runs next**, then M23 → M24 (re-audited for all the
+  press (note §Playtest fixes). Closes the M35–M42 program; the M43–M45
+  King's Gambit program followed, then M23 → M24 (re-audited for all the
   new systems). Milestone note: `docs/milestone_notes/M42_enrichment.md`.
 - **Goal:** three presentation/persistence-only enrichment features (the owner's
   picks; the daily-seed challenge was rejected).
@@ -1826,7 +1826,9 @@ Owner decisions taken at planning time (2026-07-22, via Q&A):
 
 ## M45 — The King's classes: Dragon, Jester, Goose
 
-- **Status:** ◑ implemented, awaiting manual approval — authorized by the owner
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-22 after
+  manual testing (the audit that accompanied the approval re-verified 426/426
+  tests and 49/49 capture scenes at `8cc0ec1`). Authorized by the owner
   2026-07-22 with M44's approval; the **final milestone of the King's Gambit
   program**. Note authored and re-audited against `5608528` (all the plan's facts
   held; one new one drove the design — `PartyCreationState::begin()` resets the

@@ -2,7 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-22) — the
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-22 after
+  manual testing. The
   **final milestone of the King's Gambit program**; M23 → M24 run after it. See
   §J for the as-implemented record and deviations (one of them, the Simulator's
   round counter, fixes a pre-existing sim/live disagreement).
