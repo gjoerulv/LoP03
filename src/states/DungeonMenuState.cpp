@@ -5,6 +5,8 @@
 #include "core/AppContext.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
+#include "states/QuitFlow.hpp"
+#include "states/QuitPrompt.hpp"
 #include "states/SettingsState.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -16,11 +18,13 @@ namespace {
 constexpr int kResume = 0;
 constexpr int kSettings = 1;
 constexpr int kRetreat = 2;
+constexpr int kQuit = 3;
 }  // namespace
 
 DungeonMenuState::DungeonMenuState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {
-    menu_.setItems({{"Resume", true}, {"Settings", true}, {"Retreat to Town", true}});
+    menu_.setItems(
+        {{"Resume", true}, {"Settings", true}, {"Retreat to Town", true}, {"Quit", true}});
 }
 
 void DungeonMenuState::handleInput(const Input& input) {
@@ -30,7 +34,9 @@ void DungeonMenuState::handleInput(const Input& input) {
     if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
     }
-    if (input.pressed(InputAction::Cancel)) {
+    // M47: the key that opened the pause menu closes it again (Tab / Start),
+    // alongside Cancel.
+    if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Menu)) {
         stack().popState();
         return;
     }
@@ -46,6 +52,12 @@ void DungeonMenuState::handleInput(const Input& input) {
                 stack().popState();  // close this menu
                 stack().popState();  // leave the dungeon, back to town
                 break;
+            case kQuit:
+                // M47: leaving the game outright from inside a run. The body
+                // states the dungeon-honest consequence — the run goes, the
+                // entry autosave stays.
+                pushQuitPrompt(stack(), context_, quit::kDungeonBody);
+                break;
             default:
                 break;
         }
@@ -60,7 +72,7 @@ void DungeonMenuState::render() {
     ui::drawModalDim(w, h);
 
     const int boxW = 190;
-    const int boxH = 112;
+    const int boxH = 130;  // fits the 4 pause entries (M47 added Quit)
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);

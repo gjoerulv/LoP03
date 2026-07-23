@@ -1023,6 +1023,29 @@ Ell $b 15 2 8 8 $PAL.violet; Ell $b 17 4 4 4 $PAL.cyan; P $b 18 5 $PAL.glint; Ho
 Speckle $b 7 10 10 9 $PAL.cyan 0.06
 SaveEnemy $b 'archon_of_ruin'
 
+# --- 2 Royal Guards (24x24; M49 - the King's court, gold-trimmed matched pair) ---
+
+$b = New-Img 24 24                                                # royal_guard_sword: plated guard + upright blade
+FR $b 9 3 6 6 $PAL.stone3; FR $b 9 5 6 2 $PAL.gold; Eyes $b 10 5 $PAL.violet
+FR $b 6 9 12 12 $PAL.stone2; FR $b 6 9 12 2 $PAL.gold; FR $b 10 11 4 10 $PAL.violet
+FR $b 4 10 2 9 $PAL.stone3; FR $b 18 10 2 9 $PAL.stone3
+FR $b 20 4 2 15 $PAL.stone4; FR $b 19 3 4 2 $PAL.gold; P $b 21 3 $PAL.glint
+FR $b 7 21 4 2 $PAL.night1; FR $b 13 21 4 2 $PAL.night1; Horns $b 9 3
+SaveEnemy $b 'royal_guard_sword'
+
+$b = New-Img 24 24                                                # royal_guard_staff: robed guard + crowned stave
+FR $b 9 3 6 6 $PAL.stone3; FR $b 9 5 6 2 $PAL.gold; Eyes $b 10 5 $PAL.cyan
+FR $b 6 9 12 12 $PAL.violet; FR $b 6 9 12 2 $PAL.gold; FR $b 10 11 4 10 $PAL.stone2
+FR $b 4 11 2 8 $PAL.violet; FR $b 18 11 2 8 $PAL.violet
+FR $b 20 6 2 14 $PAL.earth2; Ell $b 18 2 6 6 $PAL.cyan; P $b 20 4 $PAL.glint
+FR $b 7 21 4 2 $PAL.night1; FR $b 13 21 4 2 $PAL.night1; Horns $b 9 3
+# NB: no Speckle here on purpose. Rnd advances one script-wide stream, so a
+# random call added mid-file silently re-rolls every sprite generated after it
+# (appending these two with a Speckle changed all six per-town boss PNGs).
+# Placed detail instead, so this pair is inert for everything downstream.
+P $b 8 12 $PAL.cyan; P $b 15 14 $PAL.cyan; P $b 9 17 $PAL.cyan; P $b 14 19 $PAL.cyan
+SaveEnemy $b 'royal_guard_staff'
+
 # --- 6 per-town bosses (32x32; gold crown) ---
 
 $b = New-Img 32 32                                                # sand_warlord: desert brute + crown

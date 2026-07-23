@@ -106,12 +106,53 @@ TEST_CASE("castle: it is a distinct place, not a ladder town", "[castle]") {
     CHECK(kCastleTown > 7);  // above the town ladder (WorldLadder kTownCount)
 }
 
-TEST_CASE("castle: challenge scaling is endgame and correctly ordered", "[castle]") {
-    // All challenges scale enemies well above base; the King is the hardest single
-    // fight (its per-fight scale exceeds the Boss Rush's), and every scale is at or
-    // above the town-7 base multiplier (300 %). Exact values are sim-tuned.
-    CHECK(kBossRushScalePct >= 300);
-    CHECK(kKingScalePct > kBossRushScalePct);
+TEST_CASE("castle: the castle outclasses the deepest dungeon", "[castle]") {
+    // The castle is the place ABOVE the ladder and must fight like it (owner
+    // decision, 2026-07-23). The bar is stated in EFFECTIVE stats rather than in
+    // raw percent, because a multiplier alone is misleading: the King's base
+    // stats tower over every dungeon boss, so he is the biggest fight in the game
+    // at 500 % while a dungeon boss needs 570 % to reach far less. The dungeon
+    // ceiling itself is DERIVED from the live ladder + composition rules, so this
+    // bar moves if those do.
+    const content::ContentDatabase db = loadContent();
+    const int floorPct = castleFloorScalePct(db);
+    INFO("dungeon ceiling = " << floorPct << "%");
+    CHECK(floorPct == 570);  // documents today's value; the checks below derive it
+
+    // The strongest single enemy a dungeon can ever field: the beefiest boss in
+    // the roster at the ladder ceiling.
+    int deepestDungeonHp = 0;
+    for (const auto& [id, boss] : db.bosses()) {
+        if (id == std::string(kKingBossId)) {
+            continue;  // castle-only, never generated into a dungeon
+        }
+        deepestDungeonHp = std::max(deepestDungeonHp, boss.stats.maxHp * floorPct / 100);
+    }
+    REQUIRE(deepestDungeonHp > 0);
+    INFO("deepest dungeon boss = " << deepestDungeonHp << " HP");
+
+    // 1. The Boss Rush clears the ceiling on raw multiplier as well.
+    CHECK(kBossRushScalePct > floorPct);
+
+    // 2. The King is the largest single fight in the game — measured, not assumed.
+    const content::BossDef* king = db.findBoss(kKingBossId);
+    REQUIRE(king != nullptr);
+    const int kingHp = king->stats.maxHp * kKingScalePct / 100;
+    INFO("king = " << kingHp << " HP");
+    CHECK(kingHp > deepestDungeonHp);
+
+    // 3. ...and bigger than anything the rush fields, despite the lower percent.
+    int biggestRushHp = 0;
+    for (const std::string& id : bossRushOrder(db)) {
+        if (const content::BossDef* b = db.findBoss(id)) {
+            biggestRushHp = std::max(biggestRushHp, b->stats.maxHp * kBossRushScalePct / 100);
+        }
+    }
+    CHECK(kingHp > biggestRushHp);
+
+    // 4. Endless opens at endgame and its climb passes the ladder ceiling.
+    CHECK(endlessWaveScalePct(0) >= kCastleBaselineScalePct);
+    CHECK(endlessWaveScalePct(20) > floorPct);
     CHECK(endlessWaveScalePct(0) == kCastleBaselineScalePct);
     // Endless escalates monotonically.
     for (int w = 0; w < 30; ++w) {
@@ -195,7 +236,9 @@ TEST_CASE("castle: the King is immune to Confusion, a normal foe is not", "[cast
     battle::Battle b = battle::buildBattle(maxedParty(db), kingTeam(db), db);
     int king = -1;
     for (std::size_t i = 0; i < b.units.size(); ++i) {
-        if (b.units[i].side == battle::Side::Enemy) {
+        // M49: the enemy side is the King AND his two guards, so pick the boss
+        // rather than "the last enemy" — the guards carry none of his immunities.
+        if (b.units[i].side == battle::Side::Enemy && b.units[i].isBoss) {
             king = static_cast<int>(i);
         }
     }
@@ -229,15 +272,26 @@ TEST_CASE("castle: isImmuneTo drives hiding immune statuses from the HUD", "[cas
     battle::Combatant plain;
     CHECK_FALSE(battle::isImmuneTo(plain, content::StatusType::Blind));
     // The King resolves all three control immunities from its passives + flag.
+    // M49: his Royal Guards do NOT — blind, silence and confusion are exactly
+    // the tools that answer the court, so the boss is checked specifically and
+    // the guards are checked to be answerable.
     const content::ContentDatabase db = loadContent();
     battle::Battle b = battle::buildBattle(maxedParty(db), kingTeam(db), db);
+    int guards = 0;
     for (const battle::Combatant& u : b.units) {
-        if (u.side == battle::Side::Enemy) {
+        if (u.side != battle::Side::Enemy) {
+            continue;
+        }
+        if (u.isBoss) {
             CHECK(battle::isImmuneTo(u, content::StatusType::Blind));
             CHECK(battle::isImmuneTo(u, content::StatusType::Silence));
             CHECK(battle::isImmuneTo(u, content::StatusType::Confusion));
+        } else {
+            ++guards;
+            CHECK_FALSE(battle::isImmuneTo(u, content::StatusType::Confusion));
         }
     }
+    CHECK(guards == 2);
 }
 
 // --- The King's debuffs deal damage (damaging Support skills) ---------------
@@ -295,8 +349,14 @@ TEST_CASE("castle: the re-statted King beats a maxed party that brought nothing"
     CHECK(r.rounds >= 6);  // it still takes a real fight to lose
 }
 
-TEST_CASE("castle: a maxed party clears the Boss Rush with no free healing",
-          "[castle]") {
+TEST_CASE("castle: the Boss Rush is a real gauntlet, not a formality", "[castle]") {
+    // Owner decision (2026-07-23): the castle is no longer tuned to what the
+    // SIMULATOR can clear. The scripted sim party plays a fixed, element-blind,
+    // item-less strategy — it is a FLOOR on player skill, not a ceiling — so
+    // "the sim clears it" is no longer the bar. What is asserted here is that
+    // the gauntlet is neither trivial nor a wall the sim bounces off instantly;
+    // how far it actually gets is RECORDED in [castle-report] for owner review,
+    // and real clearability is a manual-validation item (matrix row 126).
     const content::ContentDatabase db = loadContent();
     std::vector<dungeon::EnemyTeam> rush;
     const int n = static_cast<int>(bossRushOrder(db).size());
@@ -305,7 +365,8 @@ TEST_CASE("castle: a maxed party clears the Boss Rush with no free healing",
     }
     const GauntletResult g = runGauntlet(maxedParty(db), rush, db);
     INFO("boss rush survived " << g.wavesSurvived << "/" << n << " rounds=" << g.totalRounds);
-    CHECK(g.cleared);
+    CHECK(g.totalRounds > 0);          // the fights actually happen
+    CHECK(g.wavesSurvived < n);        // the sim's floor strategy does NOT clear it
 }
 
 TEST_CASE("castle: endless is survivable for a while, then overwhelms (bounded)",
@@ -317,8 +378,12 @@ TEST_CASE("castle: endless is survivable for a while, then overwhelms (bounded)"
     }
     const GauntletResult g = runGauntlet(maxedParty(db), waves, db);
     INFO("endless waves survived=" << g.wavesSurvived);
-    CHECK(g.wavesSurvived >= 3);   // a maxed party pushes a meaningful distance
-    CHECK(g.wavesSurvived < 60);   // but the escalating scale eventually overwhelms
+    // The floor dropped from 3 waves to 1 with the castle floor (owner decision,
+    // 2026-07-23): wave 0 now starts above the dungeon ceiling, so the sim's
+    // scripted party is not expected to push far. What still must hold is that
+    // the challenge is enterable at all and that it always ends.
+    CHECK(g.wavesSurvived >= 1);
+    CHECK(g.wavesSurvived < 60);   // the escalating scale eventually overwhelms
 }
 
 // On-demand sim table for tuning / owner review:
@@ -339,6 +404,22 @@ TEST_CASE("castle report: challenge clearability for a maxed party", "[.][castle
     std::cout << "BOSS RUSH scale=" << kBossRushScalePct << "% -> cleared=" << gr.cleared
               << " survived=" << gr.wavesSurvived << "/" << rush.size()
               << " rounds=" << gr.totalRounds << "\n";
+
+    // M49: the rush now fields every boss's minions, which is a large step up.
+    // Sweep the scale so the chosen constant is evidence, not a guess.
+    std::cout << "BOSS RUSH scale sweep (with M49 minions)\n";
+    std::cout << "scale% | cleared | survived | rounds\n";
+    for (int scale : {kBossRushScalePct, 500, 450, 400, 350, 300, 260}) {
+        std::vector<dungeon::EnemyTeam> sweep;
+        for (int i = 0; i < static_cast<int>(bossRushOrder(db).size()); ++i) {
+            dungeon::EnemyTeam t = bossRushTeam(db, i);
+            t.statScalePct = scale;
+            sweep.push_back(std::move(t));
+        }
+        const GauntletResult g = runGauntlet(maxedParty(db), sweep, db);
+        std::cout << scale << " | " << g.cleared << " | " << g.wavesSurvived << "/"
+                  << sweep.size() << " | " << g.totalRounds << "\n";
+    }
 
     std::vector<dungeon::EnemyTeam> waves;
     for (int w = 0; w < 60; ++w) {

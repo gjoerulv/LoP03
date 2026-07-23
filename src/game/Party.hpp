@@ -75,6 +75,13 @@ Character createCharacter(const content::ClassDef& cls, std::string name, int le
 // Restores every member to full HP/MP.
 void healFull(Party& party);
 
+// M47 — the castle's price of failure. A lost (or fled) castle challenge no
+// longer heals the party: everyone who was still standing ends at exactly 1 HP,
+// the fallen stay fallen, and MP is untouched. A total wipe leaves the FIRST
+// member at 1 HP so the party can always limp to an Inn. No gold is taken (the
+// castle never charged any) and no run is forfeited. Pure and unit-tested.
+void clampCastleDefeat(Party& party);
+
 // M45: the party's additive unlockable-class score modifier, summed over the
 // members' `ClassDef::scoreModPct` (0 for any party of the six original classes).
 // Pure and derived — never stored on the party, so it cannot drift from the
@@ -98,7 +105,14 @@ int restCost(const Party& party);
 // Highest level among living/all members (0 if empty) — used for save summaries.
 int highestLevel(const Party& party);
 
-inline constexpr int kMaxLevel = 50;
+// The level cap. Raised 50 -> 99 (owner decision, 2026-07-23): an overpowered
+// ceiling so a fully-levelled party can actually answer the raised castle
+// challenges. Stats grow linearly with level (base + growth x (level-1)), so a
+// level-99 party earns roughly double the level-earned stats of a level-50 one;
+// nothing in the growth curves comes near integer overflow at 99. `level` is
+// already an int save field, so no save-schema change: old saves (level <= 50)
+// load unchanged, and a level > 50 character round-trips like any other.
+inline constexpr int kMaxLevel = 99;
 
 // XP required to advance FROM `level` to the next level.
 int xpToNext(int level);

@@ -39,7 +39,6 @@
 #include "states/BestiaryState.hpp"
 #include "states/CastleChallengeState.hpp"
 #include "states/CastleState.hpp"
-#include "states/ConfirmPromptState.hpp"
 #include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonMenuState.hpp"
@@ -52,6 +51,8 @@
 #include "states/ItemShopState.hpp"
 #include "states/MainMenuState.hpp"
 #include "states/PartyCreationState.hpp"
+#include "states/QuitFlow.hpp"
+#include "states/QuitPrompt.hpp"
 #include "states/RemapState.hpp"
 #include "states/ScoreDetailsText.hpp"
 #include "states/ScoreboardState.hpp"
@@ -312,7 +313,16 @@ int run(const char* outDir) {
              }},
             {"03_settings",
              [](StateStack& s, AppContext& c) {
+                 // M51: the top-level category picker (Audio / Display / ...).
                  s.pushState(std::make_unique<SettingsState>(s, c));
+             }},
+            {"60_settings_display",
+             [](StateStack& s, AppContext& c) {
+                 // M51: the Display submenu, showing the CRT Effect toggle and the
+                 // effect/contrast rows.
+                 auto st = std::make_unique<SettingsState>(s, c);
+                 st->captureShowDisplay();
+                 s.pushState(std::move(st));
              }},
             {"04_remap_keyboard",
              [](StateStack& s, AppContext& c) {
@@ -452,8 +462,21 @@ int run(const char* outDir) {
                  // not leak into the town-1 scenes above.
                  c.party.currentTown = 6;
                  c.party.highestUnlockedTown = 6;  // next (town 7) exit reads locked
-                 c.party.blackMarket = {true, 6, "dawnforged_blade", 6500, 16, 6};  // M34 NPC
+                 c.party.blackMarket = {true, 6, "dawnforged_blade", 6500, 14, 6};  // M34 NPC
                  s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"59_town_road",
+             [](StateStack& s, AppContext& c) {
+                 // M50: the walk-through road affordance — the player parked on an
+                 // unlocked west road trigger, with the "Walk out to Town N"
+                 // signpost and footer. Placed after the ladder scene; the town
+                 // mutation is set explicitly so nothing leaks in.
+                 c.party.currentTown = 3;
+                 c.party.highestUnlockedTown = 3;
+                 c.party.blackMarket = {};  // no NPC in this shot
+                 auto town = std::make_unique<TownState>(s, c);
+                 town->captureStandAtWestExit();
+                 s.pushState(std::move(town));
              }},
             {"26_guild_penalty",
              [](StateStack& s, AppContext& c) {
@@ -549,9 +572,12 @@ int run(const char* outDir) {
                  // M40: the King fight (its own sprite + telegraph), the hardest
                  // battle in the game. The King is dealt all three control statuses
                  // it is immune to -> they must NOT show as labels (display fix).
+                 // M49: he now fights with his court, so the statuses go on the
+                 // BOSS only — the guards are not immune, and labelling them too
+                 // would bury the very thing this scene exists to check.
                  battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
                  for (battle::Combatant& u : b.units) {
-                     if (u.side == battle::Side::Enemy) {
+                     if (u.side == battle::Side::Enemy && u.isBoss) {
                          u.statuses.push_back({content::StatusType::Blind, 0, 4});
                          u.statuses.push_back({content::StatusType::Silence, 0, 4});
                          u.statuses.push_back({content::StatusType::Confusion, 0, 4});
@@ -768,12 +794,104 @@ int run(const char* outDir) {
             {"44_quit_confirm",
              [](StateStack& s, AppContext& c) {
                  // The pause menu's quit question, over the pause panel it opens
-                 // from — the same strings TownMenuState passes.
+                 // from. M47: three answers, raised through the same helper the
+                 // menu uses, so the scene cannot drift from the game.
                  s.pushState(std::make_unique<TownState>(s, c));
                  s.pushState(std::make_unique<TownMenuState>(s, c));
-                 s.pushState(std::make_unique<ConfirmPromptState>(
-                     s, c, "Quit to Title", "Progress since your last save will be lost.",
-                     "Quit to Title", "Keep Playing", []() {}));
+                 pushQuitPrompt(s, c, quit::kTownBody);
+             }},
+            {"61_aoe_tint",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M51: an all-enemies spell frozen at its impact beat, so the
+                 // faint AoE screen tint is captured as the game draws it.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureAoeImpact("radiance");  // all_enemies holy damage -> danger tint
+                 s.pushState(std::move(state));
+             }},
+            {"53_battle_weak_hit",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M48: a real fire hit on the fire-weak Frost Monarch — the
+                 // "Weak!" float, and the target panel's affinity chips behind it.
+                 dungeon::EnemyTeam team;
+                 team.bossId = "frost_monarch";
+                 team.statScalePct = 100;
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 if (const content::SkillDef* fireball = c.content.findSkill("fireball")) {
+                     state->captureElementHit(*fireball);
+                 }
+                 s.pushState(std::move(state));
+             }},
+            {"54_battle_immune_hit",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M48: the same foe, hit with the ice it is immune to — the
+                 // "Immune" float, which is the ONLY thing that marks a hit that
+                 // moved no HP at all.
+                 dungeon::EnemyTeam team;
+                 team.bossId = "frost_monarch";
+                 team.statScalePct = 100;
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 if (const content::SkillDef* blizzard = c.content.findSkill("blizzard")) {
+                     state->captureElementHit(*blizzard);
+                 }
+                 s.pushState(std::move(state));
+             }},
+            {"57_kings_court",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M49: the King as he is now fought — flanked by both Royal
+                 // Guards. Three enemy rows plus the party, so the battle
+                 // layout is overflow-checked at the court's width.
+                 battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                            MusicTrack::KingBattle);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
+             }},
+            {"58_court_revived",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M49: the revive announcement. The guards are felled and the
+                 // King's clock is wound to one turn short, so the captured line
+                 // is the real one the shared rule produces.
+                 battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                            MusicTrack::KingBattle);
+                 state->captureCourtRevival();
+                 s.pushState(std::move(state));
+             }},
+            {"56_battle_target_affinity",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M48: the target-info panel for a foe with BOTH affinities —
+                 // the two chips on the vitals row, checked against the panel's
+                 // 60px budget.
+                 dungeon::EnemyTeam team;
+                 team.bossId = "frost_monarch";
+                 team.statScalePct = 100;
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
+             }},
+            {"55_bestiary_affinity",
+             [](StateStack& s, AppContext& c) {
+                 // M48: a known foe carrying BOTH a weakness and an immunity, so
+                 // the affinity block is overflow-checked alongside the passives
+                 // and flavor it shares the panel with.
+                 c.party.encountered.push_back("frost_monarch");
+                 auto state = std::make_unique<BestiaryState>(s, c);
+                 state->captureSelect("frost_monarch");
+                 s.pushState(std::move(state));
+             }},
+            {"52_dungeon_quit",
+             [](StateStack& s, AppContext& c) {
+                 // M47: the same question from inside a run — the taller pause
+                 // panel with its new Quit row, and the dungeon-honest body.
+                 s.pushState(std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine")));
+                 s.pushState(std::make_unique<DungeonMenuState>(s, c));
+                 pushQuitPrompt(s, c, quit::kDungeonBody);
              }},
         };
 

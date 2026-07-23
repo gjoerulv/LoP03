@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "audio/AudioManager.hpp"
 #include "content/LoadReport.hpp"
@@ -23,26 +24,14 @@ namespace cd {
 namespace style = ui::style;
 
 namespace {
-constexpr int kMasterRow = 0;
-constexpr int kMusicRow = 1;
-constexpr int kSfxRow = 2;
-constexpr int kWindowRow = 3;
-constexpr int kBattleSpeedRow = 4;
-constexpr int kMessageSpeedRow = 5;
-constexpr int kEffectFlashRow = 6;
-constexpr int kEffectShakeRow = 7;
-constexpr int kHighContrastRow = 8;
-constexpr int kTutorialRow = 9;
-constexpr int kRemapKeyboardRow = 10;
-constexpr int kRemapGamepadRow = 11;
-constexpr int kResetTutorialRow = 12;
-constexpr int kResetRow = 13;
-constexpr int kBackRow = 14;
-
 int volumeSteps(float v) { return static_cast<int>(v * 10.0f + 0.5f); }
 
 std::string volumeLabel(const char* name, float v) {
     return std::string(name) + ":  < " + std::to_string(volumeSteps(v)) + " >";
+}
+
+std::string toggleLabel(const char* name, bool on) {
+    return std::string(name) + ":  < " + (on ? "On" : "Off") + " >";
 }
 }  // namespace
 
@@ -52,38 +41,79 @@ SettingsState::SettingsState(StateStack& stack, AppContext& context)
 void SettingsState::onEnter() { rebuild(); }
 void SettingsState::onResume() { rebuild(); }
 
+#ifdef CRYSTAL_CAPTURE
+void SettingsState::captureShowDisplay() {
+    mode_ = Mode::Display;
+    menu_.setCursor(0);
+    rebuild();
+}
+#endif
+
+SettingsState::Row SettingsState::rowAt(int index) const {
+    if (index < 0 || index >= static_cast<int>(rows_.size())) {
+        return Row::Back;
+    }
+    return rows_[static_cast<std::size_t>(index)];
+}
+
 void SettingsState::rebuild() {
     const settings::Settings& v = context_.settings.values;
+    const bool tutorialsOn = context_.tutorial.state.enabled;
     std::vector<ui::MenuItem> items;
-    items.push_back({volumeLabel("Master Volume", v.masterVolume), true});
-    items.push_back({volumeLabel("Music Volume", v.musicVolume), true});
-    items.push_back({volumeLabel("SFX Volume", v.sfxVolume), true});
-    items.push_back({std::string("Window:  < ") +
-                         (v.borderlessFullscreen ? "Borderless" : "Windowed") + " >",
-                     true});
-    items.push_back({std::string("Battle Speed:  < ") +
-                         std::string(settings::battleSpeedName(v.battleSpeed)) + " >",
-                     true});
-    items.push_back({std::string("Message Speed:  < ") +
-                         std::string(settings::messageSpeedName(v.messageSpeed)) + " >",
-                     true});
-    items.push_back({std::string("Battle Flash:  < ") +
-                         std::string(settings::effectLevelName(v.effectFlash)) + " >",
-                     true});
-    items.push_back({std::string("Battle Shake:  < ") +
-                         std::string(settings::effectLevelName(v.effectShake)) + " >",
-                     true});
-    items.push_back({std::string("High Contrast:  < ") + (v.highContrast ? "On" : "Off") +
-                         " >",
-                     true});
-    items.push_back({std::string("Tutorial Prompts:  < ") +
-                         (context_.tutorial.state.enabled ? "On" : "Off") + " >",
-                     true});
-    items.push_back({"Remap Keyboard...", true});
-    items.push_back({"Remap Gamepad...", context_.input.gamepadAvailable()});
-    items.push_back({"Reset tutorial prompts", true});
-    items.push_back({"Reset settings and bindings", true});
-    items.push_back({"Back", true});
+    rows_.clear();
+    const auto add = [&](std::string label, Row row, bool enabled = true) {
+        items.push_back({std::move(label), enabled});
+        rows_.push_back(row);
+    };
+
+    switch (mode_) {
+        case Mode::Top:
+            add("Audio...", Row::CatAudio);
+            add("Display...", Row::CatDisplay);
+            add("Gameplay...", Row::CatGameplay);
+            add("Controls...", Row::CatControls);
+            add("Reset settings and bindings", Row::ResetAll);
+            add("Back", Row::Back);
+            break;
+        case Mode::Audio:
+            add(volumeLabel("Master Volume", v.masterVolume), Row::MasterVolume);
+            add(volumeLabel("Music Volume", v.musicVolume), Row::MusicVolume);
+            add(volumeLabel("SFX Volume", v.sfxVolume), Row::SfxVolume);
+            add(toggleLabel("Background Audio", v.backgroundAudio), Row::BackgroundAudio);
+            add("Back", Row::Back);
+            break;
+        case Mode::Display:
+            add(std::string("Window:  < ") + (v.borderlessFullscreen ? "Borderless" : "Windowed") +
+                    " >",
+                Row::Window);
+            add(toggleLabel("CRT Effect", v.crtEffect), Row::CrtEffect);
+            add(std::string("Battle Flash:  < ") +
+                    std::string(settings::effectLevelName(v.effectFlash)) + " >",
+                Row::BattleFlash);
+            add(std::string("Battle Shake:  < ") +
+                    std::string(settings::effectLevelName(v.effectShake)) + " >",
+                Row::BattleShake);
+            add(toggleLabel("High Contrast", v.highContrast), Row::HighContrast);
+            add("Back", Row::Back);
+            break;
+        case Mode::Gameplay:
+            add(std::string("Battle Speed:  < ") +
+                    std::string(settings::battleSpeedName(v.battleSpeed)) + " >",
+                Row::BattleSpeed);
+            add(std::string("Message Speed:  < ") +
+                    std::string(settings::messageSpeedName(v.messageSpeed)) + " >",
+                Row::MessageSpeed);
+            add(toggleLabel("Tutorial Prompts", tutorialsOn), Row::TutorialPrompts);
+            add("Reset tutorial prompts", Row::ResetTutorial);
+            add("Back", Row::Back);
+            break;
+        case Mode::Controls:
+            add("Remap Keyboard...", Row::RemapKeyboard);
+            add("Remap Gamepad...", Row::RemapGamepad, context_.input.gamepadAvailable());
+            add("Back", Row::Back);
+            break;
+    }
+
     const int previous = menu_.cursor();
     menu_.setItems(std::move(items));
     menu_.setCursor(previous);
@@ -104,73 +134,70 @@ void SettingsState::saveSettings() {
     }
 }
 
-void SettingsState::adjust(int row, int direction) {
+void SettingsState::adjust(Row row, int direction) {
     settings::Settings& v = context_.settings.values;
-    const auto step = [direction](float value) {
+    const auto stepVolume = [direction](float value) {
         float next = value + 0.1f * static_cast<float>(direction);
         return next < 0.0f ? 0.0f : (next > 1.0f ? 1.0f : next);
     };
+    const auto cycle3 = [direction](int s) { return (s + direction) % 3 < 0 ? (s + direction + 3) % 3
+                                                                            : (s + direction) % 3; };
     switch (row) {
-        case kMasterRow: v.masterVolume = step(v.masterVolume); applyAudio(); break;
-        case kMusicRow: v.musicVolume = step(v.musicVolume); applyAudio(); break;
-        case kSfxRow: v.sfxVolume = step(v.sfxVolume); applyAudio(); break;
-        case kWindowRow: v.borderlessFullscreen = !v.borderlessFullscreen; break;
-        case kBattleSpeedRow: {
-            int s = static_cast<int>(v.battleSpeed) + direction;
-            s = (s % 3 + 3) % 3;
-            v.battleSpeed = static_cast<settings::BattleSpeed>(s);
+        case Row::MasterVolume: v.masterVolume = stepVolume(v.masterVolume); applyAudio(); break;
+        case Row::MusicVolume: v.musicVolume = stepVolume(v.musicVolume); applyAudio(); break;
+        case Row::SfxVolume: v.sfxVolume = stepVolume(v.sfxVolume); applyAudio(); break;
+        case Row::BackgroundAudio: v.backgroundAudio = !v.backgroundAudio; break;
+        case Row::Window: v.borderlessFullscreen = !v.borderlessFullscreen; break;
+        case Row::CrtEffect: v.crtEffect = !v.crtEffect; break;  // Application reads it each frame
+        case Row::BattleFlash:
+            v.effectFlash = static_cast<settings::EffectLevel>(cycle3(static_cast<int>(v.effectFlash)));
             break;
-        }
-        case kMessageSpeedRow: {
-            int s = static_cast<int>(v.messageSpeed) + direction;
-            s = (s % 3 + 3) % 3;
-            v.messageSpeed = static_cast<settings::MessageSpeed>(s);
+        case Row::BattleShake:
+            v.effectShake = static_cast<settings::EffectLevel>(cycle3(static_cast<int>(v.effectShake)));
             break;
-        }
-        case kEffectFlashRow: {
-            int s = static_cast<int>(v.effectFlash) + direction;
-            s = (s % 3 + 3) % 3;
-            v.effectFlash = static_cast<settings::EffectLevel>(s);
-            break;
-        }
-        case kEffectShakeRow: {
-            int s = static_cast<int>(v.effectShake) + direction;
-            s = (s % 3 + 3) % 3;
-            v.effectShake = static_cast<settings::EffectLevel>(s);
-            break;
-        }
-        case kHighContrastRow:
+        case Row::HighContrast:
             v.highContrast = !v.highContrast;
             ui::style::setHighContrast(v.highContrast);  // visible immediately
             break;
-        case kTutorialRow: {
+        case Row::BattleSpeed:
+            v.battleSpeed = static_cast<settings::BattleSpeed>(cycle3(static_cast<int>(v.battleSpeed)));
+            break;
+        case Row::MessageSpeed:
+            v.messageSpeed =
+                static_cast<settings::MessageSpeed>(cycle3(static_cast<int>(v.messageSpeed)));
+            break;
+        case Row::TutorialPrompts: {
             context_.tutorial.state.enabled = !context_.tutorial.state.enabled;
             content::LoadReport report;
             context_.tutorial.save(report);
             break;
         }
-        default: return;
+        default: return;  // non-adjustable rows
     }
     context_.audio.play(Sfx::Move);
     rebuild();
 }
 
-void SettingsState::activate(int row) {
+void SettingsState::activate(Row row) {
     switch (row) {
-        case kRemapKeyboardRow:
-            stack().pushState(std::make_unique<RemapState>(stack(), context_,
-                                                           ActiveDevice::Keyboard));
+        case Row::CatAudio: mode_ = Mode::Audio; menu_.setCursor(0); rebuild(); break;
+        case Row::CatDisplay: mode_ = Mode::Display; menu_.setCursor(0); rebuild(); break;
+        case Row::CatGameplay: mode_ = Mode::Gameplay; menu_.setCursor(0); rebuild(); break;
+        case Row::CatControls: mode_ = Mode::Controls; menu_.setCursor(0); rebuild(); break;
+        case Row::RemapKeyboard:
+            stack().pushState(
+                std::make_unique<RemapState>(stack(), context_, ActiveDevice::Keyboard));
             break;
-        case kRemapGamepadRow:
+        case Row::RemapGamepad:
             stack().pushState(
                 std::make_unique<RemapState>(stack(), context_, ActiveDevice::Gamepad));
             break;
-        case kResetTutorialRow:
+        case Row::ResetTutorial:
             context_.tutorial.reset();
             message_ = "Tutorial prompts will show again";
             rebuild();
             break;
-        case kResetRow:
+        case Row::ResetAll:
             context_.settings.values = settings::Settings{};
             input::resetBindings(context_.input.map());
             applyAudio();
@@ -179,12 +206,18 @@ void SettingsState::activate(int row) {
             message_ = "Settings and bindings reset to defaults";
             rebuild();
             break;
-        case kBackRow:
-            saveSettings();
-            stack().popState();
+        case Row::Back:
+            if (mode_ == Mode::Top) {
+                saveSettings();
+                stack().popState();
+            } else {
+                mode_ = Mode::Top;
+                menu_.setCursor(0);
+                rebuild();
+            }
             break;
         default:
-            break;
+            break;  // adjustable rows do nothing on Confirm
     }
 }
 
@@ -200,16 +233,24 @@ void SettingsState::handleInput(const Input& input) {
     const int dir = (input.navPressed(InputAction::MoveRight) ? 1 : 0) -
                     (input.navPressed(InputAction::MoveLeft) ? 1 : 0);
     if (dir != 0) {
-        adjust(menu_.cursor(), dir);
+        adjust(rowAt(menu_.cursor()), dir);
     }
     if (input.pressed(InputAction::Confirm) && menu_.currentEnabled()) {
         context_.audio.play(Sfx::Confirm);
-        activate(menu_.cursor());
+        activate(rowAt(menu_.cursor()));
     }
     if (input.pressed(InputAction::Cancel)) {
+        // Cancel steps out one level: a submenu returns to the top, the top saves
+        // and closes (the pre-M51 behaviour).
         context_.audio.play(Sfx::Cancel);
-        saveSettings();
-        stack().popState();
+        if (mode_ == Mode::Top) {
+            saveSettings();
+            stack().popState();
+        } else {
+            mode_ = Mode::Top;
+            menu_.setCursor(0);
+            rebuild();
+        }
     }
 }
 
@@ -220,9 +261,11 @@ void SettingsState::render() {
     ClearBackground(p.canvas);
     ui::drawHeaderBand("Settings", w, p.crystal);
 
-    // 15 rows (M22) fit inside 240px at 12px spacing starting higher; the
-    // list rides one full-height inset panel.
-    ui::drawFrame(54, 26, w - 108, 15 * 12 + 10, ui::FrameStyle::Inset);
+    // The submenus are short; one inset panel sized to the longest list (Display,
+    // 6 rows) keeps a stable frame across modes.
+    const int rows = static_cast<int>(menu_.size());
+    const int panelRows = rows < 6 ? 6 : rows;
+    ui::drawFrame(54, 26, w - 108, panelRows * 12 + 10, ui::FrameStyle::Inset);
     ui::drawMenu(menu_, 70, 31, 12, style::kFontMenu, p.text, p.disabled, p.cursor);
 
     if (!message_.empty()) {
@@ -232,12 +275,13 @@ void SettingsState::render() {
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
+    const char* backLabel = mode_ == Mode::Top ? "Save & Back" : "Back";
     ui::drawFooterHints(
         {{input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
               input::primaryLabel(map, InputAction::MoveRight, device),
           "Adjust"},
          {input::primaryLabel(map, InputAction::Confirm, device), "Select"},
-         {input::primaryLabel(map, InputAction::Cancel, device), "Save & Back"}},
+         {input::primaryLabel(map, InputAction::Cancel, device), backLabel}},
         w, h, "settings.footer");
 }
 

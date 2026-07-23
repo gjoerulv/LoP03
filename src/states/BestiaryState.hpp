@@ -36,6 +36,10 @@ private:
         content::StatBlock stats;
         std::string profile;                 // tier + role + tags, or boss archetype
         std::vector<std::string> passives;   // revealed passive names, one per line
+        // M48: the foe's element affinities, pre-formatted for display ("Fire",
+        // "Holy"). Empty for an untagged foe, so its panel is unchanged.
+        std::vector<std::string> weakTo;
+        std::vector<std::string> immuneTo;
         std::string flavor;                  // boss description, or empty
         bool boss = false;
         bool known = false;                  // party has faced it

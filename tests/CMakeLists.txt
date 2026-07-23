@@ -49,6 +49,10 @@ add_executable(crystal_tests
     test_status.cpp
     test_status_v2.cpp
     test_battle_rules_v4.cpp
+    test_rules_v7_flow.cpp
+    test_elements.cpp
+    test_kings_court.cpp
+    test_presentation_options.cpp
     test_royal_relics.cpp
     test_kings_classes.cpp
     test_passives.cpp

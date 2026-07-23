@@ -83,10 +83,13 @@ the cost and tokens held; declining is **never a soft-lock** — HP/MP persist,
 battles still pay gold, and the token is a relief valve, so a wounded, broke
 party can always earn its way back to health.
 
-**The town ladder (M32).** Town is not a single place but a chain of **seven**
-towns, each harder and higher-scoring. The bottom-right road leads to the next
-town, the bottom-left back to the previous one; travel between reached towns is
-free and instant (fade + a darker, more sinister music track per town). A
+**The town ladder (M32; travel reworked M50).** Town is not a single place but a
+chain of **seven** towns, each harder and higher-scoring. The town is a compact,
+centred layout whose **edges are walk-through roads** (M50): walk into the **east**
+road for the next town, the **west** road for the previous one — no button press,
+and arriving drops you at the matching edge so travel reads as one continuous
+walk. Travel between reached towns is free and instant (fade + a darker, more
+sinister music track per town). A
 higher town multiplies every enemy team's stats — **+0/25/50/75/100/150/200 %**
 across towns 1–7 (composed on top of depth scaling; danger labels rise
 honestly) — and grants a **visible score bonus** on the whole run subtotal —
@@ -291,13 +294,15 @@ an inn, a save point, the party's **castle records**, and the **King's three
 challenges**, each a step above normal play and each paying a **one-time first-clear
 reward**:
 
-- **Boss Rush** — the full 12-boss roster, back to back, with **no free healing
-  between fights** (items and skills still work). Record: fewest total turns.
+- **Boss Rush** — the full 12-boss roster, back to back, **each with its own
+  minions** (M49), with **no free healing between fights** (items and skills
+  still work). Record: fewest total turns.
 - **Endless Rush** — deterministic escalating waves; survive as long as you can, no
   free healing. Record: best wave reached.
 - **The Hollow King** — the hardest fight in the game. A bespoke boss above every
   town-7 foe, immune to Blind, Silence, **and** Confusion, striking your afflicted
-  party harder as the fight wears on, with a kit that inflicts every status. Beating
+  party harder as the fight wears on, with a kit that inflicts every status —
+  and, since M49, **two Royal Guards he keeps calling back**. Beating
   him the first time grants a **unique legendary** (the Sovereign's Regalia, won
   nowhere else), a **visible title**, gold, and tokens.
 
@@ -338,9 +343,10 @@ decision and healing a real choice, at one battle-rules bump (v4).
   cheap while MP, cures, and resurrection cost what they are worth. One clear's
   gold buys a handful of Remedies or a single Tear, so the shopping list is a
   decision rather than a formality.
-- **Purify** lifts every affliction and debuff from the party and **heals
-  nothing**; **Renew** becomes the emergency button — a weak heal that can also
-  **raise a fallen ally at 20 % HP**, the first skill in the game that can.
+- **Purify** lifts the party's afflictions and **heals nothing** (M47 narrowed
+  its scope further — see below); **Renew** becomes the emergency button — a weak
+  heal that can also **raise a fallen ally at 20 % HP**, the first skill in the
+  game that can.
 - **Battle items now respect the state of their target:** potions, ethers, and
   cures reach only living allies, and a revive reaches only the fallen. An item
   with nobody to use it on is greyed out with the reason, so nothing is ever spent
@@ -350,9 +356,10 @@ decision and healing a real choice, at one battle-rules bump (v4).
   **the King's fight** they are 100 HP and 10 MP. The King's counterplay starts
   where the game did.
 - **Clarity** gives **+2 MP** a round (was +3).
-- **Losing a castle challenge costs nothing but the attempt:** the party is fully
-  healed at the castle gates, no gold is taken, and the screen says exactly that.
-  (It always cost nothing; the message used to claim the dungeon's gold penalty.)
+- **Losing a castle challenge takes no gold:** the message used to claim the
+  dungeon's gold penalty, and no longer does. (M43 also fully healed the party at
+  the gates; **M47 removed that free heal** — see the castle-stakes section
+  below.)
 
 **Royal Relics & the doubled King (M44).** The King stops being a wall of stats
 you out-level and becomes a fight you answer with absurd objects.
@@ -375,11 +382,13 @@ you out-level and becomes a fight you answer with absurd objects.
     ATK/MAG/DEF/SPD for the rest of the battle. The rarest, and it shows.
   The King is **not** immune to any of them: that is the whole point.
 - **The King doubles.** 750 HP (was 560) and doubled ATK/MAG/DEF/SPD
-  (36 / 44 / 36 / 26). A maxed party carrying no relics and no snacks now
-  **loses**; one Tax Sheets, one Evil Goose and a bag of Royal Snacks turn it into
-  a tense win, and each extra relic buys survivors. (His challenge multiplier came
-  down from 420 % to 340 % so the doubled stats land exactly there — the fight is
-  a puzzle now, not a farming toll.)
+  (36 / 44 / 36 / 26). A party carrying no relics and no snacks **loses**, and
+  relics buy survivors — the fight is a puzzle, not a farming toll. (The
+  challenge multiplier and the counterplay bar have been retuned twice since
+  this milestone; the current fight — his Royal Guards, the revive clock, the
+  ×5.00 castle-floor scale, and the level-99 three-relic bar — is described
+  under **The King's Court** and **The castle floor** below, which supersede
+  the numbers this paragraph originally carried.)
 
 **The King's classes (M45).** Beating the Hollow King unlocks three more classes
 **for the player, not for that save** — they are offered on every future New
@@ -404,6 +413,112 @@ The class modifiers are **additive across the party** (three Dragons and a Goose
 scoreboard. Per M19 they are visible and tagged, never normalized away, and they
 never change how runs are ranked.
 
+**Rules & flow pass (M47).** Four small changes that sharpen the endgame and the
+edges of the interface, at one battle-rules bump (v7).
+
+- **Purify cleanses afflictions, not weakness.** A `cleanse` skill now lifts
+  **Poison, Blind, Silence and Confusion** only; **ATK- and DEF- survive it**, as
+  do the Royal Relics' Terrified/Stunned. Cure **items** (a Remedy) are unchanged
+  and still lift everything, and Royal Snacks still lift the stat debuffs alone —
+  so each answer to a bad status now has a distinct shape, and a Cleric can no
+  longer erase a boss's whole debuff kit for 10 MP. (The same narrowing applies to
+  the Goose's Generous Mending, the only other skill that cleanses.) Purify still
+  heals nothing.
+- **Losing at the castle costs something.** A failed — or fled — challenge no
+  longer heals the party at the gates. Everyone still standing is carried out at
+  **1 HP**, the **fallen stay fallen**, and **MP is untouched**; a total wipe
+  leaves **exactly one member** on their feet so an Inn is always reachable. Still
+  **no gold penalty** and still no run to forfeit: the King takes your strength,
+  not your purse. Fleeing keeps whatever HP/MP the fight ended with, minus the
+  heal that used to follow. Dungeon defeat is unchanged (half your gold, full
+  heal).
+- **Pause closes with the same key it opens with.** Tab / Start now closes the
+  town and dungeon pause menus, alongside Cancel.
+- **You can quit the game from inside the game.** Both pause menus offer **Quit**
+  → **Quit to Title / Quit Game / Keep Playing**, with the cursor on Keep Playing
+  and the warning stating what that screen actually loses (in a dungeon: the run
+  goes, the entry autosave stays).
+
+**Elements (M48).** A thin, sparse affinity layer over the existing damage
+formulas, at one battle-rules bump (v8). Some foes have an **elemental weakness**
+(that element deals **×150 %**) or an **immunity** (that element deals **nothing
+at all** — no damage and no status rider; an immune blow lands and accomplishes
+nothing, which the log and the float both say outright, and which never reads as
+a miss). Nothing is ever both.
+
+Elements reach a foe two ways: a **skill's own element** (the shipped fire, ice,
+lightning, earth and holy spells were always authored with one — until now it
+did nothing), and a **weapon's element**, which every basic attack of its wielder
+carries. Five weapons are elemental, spanning the ladder from the town-1 **Holy
+Mace** to the legendary **Dawnforged Blade**, so the system is met early and
+still matters late. Enemies carry no weapons, so their own basic attacks stay
+unelemented, and the party has no affinities — the layer only ever describes
+foes.
+
+**Affinities are shown, never guessed at.** A foe the party has fought lists
+`Weak: Fire` / `Immune: Ice` in the **bestiary**; the **battle target panel**
+shows the same as chips while you aim at it; and a resolved hit floats **"Weak!"**
+(gold) or **"Immune"** (coral) beside the number. Every one is shape *and* text,
+never color alone.
+
+The curation is deliberately small — 8 enemies, 3 bosses, 5 weapons — and follows
+one hard rule: **no weapon element is ever an immunity anywhere in the game.** A
+skill can be swapped for another, but a basic attack cannot, and one class (the
+Dragon) has nothing else — so a wielded element that could be nullified would be
+a trap rather than a decision. Immunities use ice, earth and lightning; weapons
+use fire and holy. Dark stays reserved for later content.
+
+**The King's Court (M49).** The Hollow King stops fighting alone. Two **Royal
+Guards** — the **Throne Blade** and the **Throne Stave** — stand with him:
+armoured, slow, magic-heavy, and built to last rather than to burst. They carry
+**iron will**, **evasion** and a **spell ward** between them, and their support
+skills brace the *whole court*, so killing the King through a wall of buffs is
+the real problem. Each has one elemental weakness (lightning and earth) and no
+immunity, so the M48 tools answer them.
+
+And they do not stay down. On the **fifth of the King's own turns with both
+guards fallen**, he calls them back at full health, unmarked — **every time the
+condition recurs**, for as long as the fight lasts. The clock resets the moment
+one of them is standing. Cutting the escort down is therefore a tempo decision,
+not a checklist: you either kill the King inside the window you bought, or you
+pay for the court twice.
+
+**The castle floor (owner decision, 2026-07-23).** The castle is the place
+*above* the ladder, and its numbers now say so: **every challenge starts above
+the strongest multiplier a dungeon can produce** (town 7 at the depth cap,
+×5.70). Previously the Boss Rush (×2.60) and even the King (×3.10) sat *below* a
+deep town-7 dungeon boss, which made the throne room a smaller number than the
+place you climbed out of. The new floor is a derived invariant, not a literal:
+it is computed from the same town-ladder and depth-curve rules the generator
+uses, so it moves if they do.
+
+- **Boss Rush ×5.80**, twelve bosses with their minions and no free healing —
+  above the ladder ceiling on the multiplier alone.
+- **Endless Rush from ×5.00**, climbing ×0.10 per wave, passing the ladder
+  ceiling within a handful of waves and never stopping.
+- **The Hollow King ×5.00** — a lower percentage than the rush, and still by far
+  the largest single fight in the game: his base stats are so far above any
+  dungeon boss that ×5.00 makes him a **3750 HP** opponent where the deepest
+  dungeon boss the ladder can produce is 2280. Against a **level-99** party (the
+  cap, raised from 50 so the endgame has an answer) the simulation beats him with
+  three Tax Sheets, three Evil Geese and a bag of Royal Snacks — three survivors
+  at a third health — and comfortably with the Dragon Crown and Deadly Spoon on
+  top. He rewards a full relic haul without demanding the absolute maximum, and a
+  party carrying nothing still loses.
+
+Because a multiplier alone is misleading once base stats differ this much, the
+"castle outranks the ladder" rule is enforced in **effective stats**, not in
+percent.
+
+This deliberately supersedes the earlier approach of tuning each challenge down
+to whatever the headless simulator could beat. The castle is meant to be very
+hard; the simulator's scripted party is a floor on player skill, not a ceiling.
+
+**The Boss Rush grows a court too (M49).** Every boss in the gauntlet now brings
+the **same minions it brings in a dungeon**, so the rush finally tests the fights
+the game actually taught — and, under the castle floor above, each of them is
+scaled beyond the deepest dungeon boss as well.
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1
@@ -417,7 +532,9 @@ unique mechanic, escapable (but escaping fails the score). Archetypes:
 
 ## 12. Progression & failure
 
-XP/levels, gold, shops/upgrades in town. Abandoned/failed dungeon → 0 dungeon
+XP/levels (cap **99**, raised from 50 in 2026-07-23 so a fully-levelled party can
+answer the raised castle challenges), gold, shops/upgrades in town.
+Abandoned/failed dungeon → 0 dungeon
 score. Successful escape → keep basic XP/gold but no dungeon score. Death →
 return to town, 0 dungeon score, partial gold loss. **Recovery is a paid loop
 (M30):** healing costs gold at the inn (or a free-rest token), so gold now has a
@@ -444,9 +561,28 @@ no color-only or sound-only information anywhere; a High Contrast palette
 toggle; battle flash/shake reducible to off; message pacing and battle
 speed configurable; Settings reachable before starting a game; destructive
 actions need explicit confirmation — a save overwrite takes a second Confirm on
-the same slot, and quitting to the title asks a Yes/No question outright, with the
-cursor starting on the safe answer.
+the same slot, and quitting asks its question outright (since M47 with three
+answers: to the title, to the desktop, or keep playing), with the cursor starting
+on the safe answer and Cancel resolving to it.
 These are engineering bars, not formal WCAG claims.
+
+**Presentation & options (M51).** Five closing polish features, none touching
+gameplay:
+- The **title screen** greets you with one of a dozen original dry-comedy
+  one-liners (chosen per visit, pulsing gently) — never a description of the
+  genre. "Geese and Dragons; Spoons and Snacks!" is in the pool.
+- **Settings are organized into submenus** — Audio / Display / Gameplay /
+  Controls, plus Reset — so the option list is no longer one long scroll. Cancel
+  steps back one level, then saves and closes.
+- A subtle **CRT effect** (Display → CRT Effect, **Off by default**) adds faint
+  scanlines and a light mask with **no curvature**, so the pixels stay crisp.
+- **Losing window focus now mutes the audio by default**; a new **Background
+  Audio** toggle (Audio submenu) keeps it playing. (A deliberate change — the
+  game used to always play.)
+- An **all-target action** (a mass spell, the Goose's ultimate, the Dragon's
+  sweep) briefly **tints the whole screen** during its impact — heal green,
+  damage coral, debuff violet — a single faint pulse, gated by the Battle Flash
+  setting, never a strobe.
 
 ## 13. First-complete-version content target
 

@@ -23,7 +23,7 @@
     { "id": "war_hammer", "name": "War Hammer", "type": "equipment", "slot": "weapon", "rarity": "rare", "value": 360, "statBonus": { "attack": 14, "speed": -2 }, "description": "A crushing two-handed hammer." },
     { "id": "oak_staff", "name": "Oak Staff", "type": "equipment", "slot": "weapon", "rarity": "common", "value": 120, "statBonus": { "magic": 8 }, "description": "A staff that channels magic." },
     { "id": "crystal_wand", "name": "Crystal Wand", "type": "equipment", "slot": "weapon", "rarity": "rare", "value": 340, "statBonus": { "magic": 12 }, "description": "A wand humming with power." },
-    { "id": "holy_mace", "name": "Holy Mace", "type": "equipment", "slot": "weapon", "rarity": "uncommon", "value": 250, "statBonus": { "attack": 8, "magic": 4 }, "description": "A blessed mace." },
+    { "id": "holy_mace", "name": "Holy Mace", "type": "equipment", "slot": "weapon", "rarity": "uncommon", "value": 250, "element": "holy", "statBonus": { "attack": 8, "magic": 4 }, "description": "A blessed mace. Its blows carry holy light." },
 
     { "id": "leather_armor", "name": "Leather Armor", "type": "equipment", "slot": "armor", "rarity": "common", "value": 90, "statBonus": { "defense": 4 }, "description": "Light, flexible protection." },
     { "id": "chain_mail", "name": "Chain Mail", "type": "equipment", "slot": "armor", "rarity": "uncommon", "value": 220, "statBonus": { "defense": 8 }, "description": "Interlocking steel rings." },
@@ -65,17 +65,17 @@
     { "id": "aegis_mail", "name": "Aegis Mail", "type": "equipment", "slot": "armor", "rarity": "epic", "value": 820, "minTown": 5, "statBonus": { "defense": 14, "hp": 25 }, "description": "Mail that turns the harshest blow." },
     { "id": "swiftwind_ring", "name": "Swiftwind Ring", "type": "equipment", "slot": "accessory", "rarity": "epic", "value": 720, "minTown": 5, "statBonus": { "speed": 7 }, "description": "A ring light as the wind." },
 
-    { "id": "dragonfang", "name": "Dragonfang", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1120, "minTown": 6, "statBonus": { "attack": 16 }, "description": "A blade forged from a dragon's fang." },
+    { "id": "dragonfang", "name": "Dragonfang", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1120, "minTown": 6, "element": "fire", "statBonus": { "attack": 16 }, "description": "A blade forged from a dragon's fang. It still runs hot." },
     { "id": "voidcaller_wand", "name": "Voidcaller Wand", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1120, "minTown": 6, "statBonus": { "magic": 15 }, "description": "A wand that whispers to the void." },
     { "id": "titan_plate", "name": "Titan Plate", "type": "equipment", "slot": "armor", "rarity": "epic", "value": 1050, "minTown": 6, "statBonus": { "defense": 15 }, "description": "Plate cut for a titan's frame." },
     { "id": "warlords_signet", "name": "Warlord's Signet", "type": "equipment", "slot": "accessory", "rarity": "epic", "value": 980, "minTown": 6, "statBonus": { "attack": 8 }, "description": "The signet of a feared warlord." },
 
-    { "id": "sunforged_greatblade", "name": "Sunforged Greatblade", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1450, "minTown": 7, "statBonus": { "attack": 18 }, "description": "A greatblade quenched in sunfire." },
-    { "id": "celestial_staff", "name": "Celestial Staff", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1450, "minTown": 7, "statBonus": { "magic": 17 }, "description": "A staff that channels the heavens." },
+    { "id": "sunforged_greatblade", "name": "Sunforged Greatblade", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1450, "minTown": 7, "element": "fire", "statBonus": { "attack": 18 }, "description": "A greatblade quenched in sunfire, and never quite cooled." },
+    { "id": "celestial_staff", "name": "Celestial Staff", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1450, "minTown": 7, "element": "holy", "statBonus": { "magic": 17 }, "description": "A staff that channels the heavens, and strikes with them." },
     { "id": "bulwark_of_ages", "name": "Bulwark of Ages", "type": "equipment", "slot": "armor", "rarity": "epic", "value": 1380, "minTown": 7, "statBonus": { "defense": 17, "hp": 30 }, "description": "Armor that has weathered ages." },
     { "id": "sages_diadem", "name": "Sage's Diadem", "type": "equipment", "slot": "accessory", "rarity": "epic", "value": 1300, "minTown": 7, "statBonus": { "magic": 9, "defense": 3 }, "description": "The diadem of an elder sage." },
 
-    { "id": "dawnforged_blade", "name": "Dawnforged Blade", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 5000, "statBonus": { "attack": 20, "speed": 2 }, "description": "A blade lit with the first dawn." },
+    { "id": "dawnforged_blade", "name": "Dawnforged Blade", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 5000, "element": "holy", "statBonus": { "attack": 20, "speed": 2 }, "description": "A blade lit with the first dawn. Holy light rides every swing." },
     { "id": "stormcaller_rod", "name": "Stormcaller Rod", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 5000, "statBonus": { "magic": 18, "hp": 12 }, "description": "A rod that calls down the storm." },
     { "id": "aegis_eternal", "name": "Aegis Eternal", "type": "equipment", "slot": "armor", "rarity": "legendary", "value": 5000, "statBonus": { "defense": 18, "hp": 40 }, "description": "Plate that has never once yielded." },
     { "id": "crown_of_ages", "name": "Crown of Ages", "type": "equipment", "slot": "accessory", "rarity": "legendary", "value": 5000, "statBonus": { "attack": 6, "magic": 6, "defense": 6, "speed": 3 }, "description": "A crown worn by forgotten kings." },

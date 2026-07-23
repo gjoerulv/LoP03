@@ -229,6 +229,85 @@ void BattleState::captureShowJest() {
     jestLine_ = longest;
     jestTimer_ = 999.0f;  // captures render one frame; never expire
 }
+
+void BattleState::captureAoeImpact(const std::string& skillId) {
+    // M51: resolve a real all-enemies skill, then drive the sequencer to its
+    // impact beat and freeze it there, so the captured frame shows the AoE tint
+    // exactly as the game produces it.
+    captureEnterTargeting();
+    const int actor = currentActor();
+    battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
+    self.mp = self.maxMp = std::max(self.maxMp, 999);
+    const std::vector<int> foes = battle_.aliveIndices(battle::Side::Enemy);
+    if (foes.empty()) {
+        return;
+    }
+    pendingKind_ = PendingKind::Skill;
+    pendingSkillId_ = skillId;
+    executePending(foes.front());  // sets aoeTint_, stages floats, starts the sequencer
+    for (int i = 0; i < 300 && seq_.stage() != render::BattleStage::Impact && !seq_.finished();
+         ++i) {
+        seq_.update(0.01f);
+        if (seq_.takeCommit()) {
+            commitPresentation();
+        }
+    }
+    captureFreezeSeq_ = true;
+    for (FloatNumber& f : floats_) {
+        f.timer = 999.0f;
+    }
+}
+
+void BattleState::captureCourtRevival() {
+    // M49: fell the King's court and wind his clock to one turn short, then take
+    // that turn — so the captured announcement is produced by the shared rule
+    // rather than written here.
+    captureEnterTargeting();
+    int kingIndex = -1;
+    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        battle::Combatant& u = battle_.units[i];
+        if (u.side != battle::Side::Enemy) {
+            continue;
+        }
+        if (u.isBoss) {
+            kingIndex = static_cast<int>(i);
+        } else {
+            u.hp = 0;  // the court falls
+        }
+    }
+    if (kingIndex >= 0) {
+        battle::Combatant& k = battle_.units[static_cast<std::size_t>(kingIndex)];
+        k.reviveMinionCounter = k.reviveMinionTurns - 1;
+        message_ = battle_.beginUnitTurn(kingIndex);
+    }
+    phase_ = Phase::Resolve;
+}
+
+void BattleState::captureElementHit(const content::SkillDef& skill) {
+    // M48: resolve a REAL elemental hit against the enemy side, then stage and
+    // commit its presentation, so the captured floats are the ones the game
+    // actually produces rather than hand-placed text.
+    captureEnterTargeting();
+    const int actor = currentActor();
+    std::vector<int> hpBefore;
+    for (const battle::Combatant& c : battle_.units) {
+        hpBefore.push_back(c.hp);
+    }
+    const std::vector<int> foes = battle_.aliveIndices(battle::Side::Enemy);
+    if (!foes.empty()) {
+        // Afford the skill without inventing a silly MP bar in the capture.
+        battle::Combatant& a = battle_.units[static_cast<std::size_t>(actor)];
+        a.maxMp = std::max(a.maxMp, skill.mpCost);
+        a.mp = a.maxMp;
+        message_ = battle_.useSkill(actor, foes.front(), skill);
+    }
+    stageNumbers(hpBefore, 4);
+    commitPresentation();
+    for (FloatNumber& f : floats_) {
+        f.timer = 999.0f;  // captures render one frame; never expire
+    }
+    phase_ = Phase::Resolve;
+}
 #endif
 
 int BattleState::enemyBaseY() const {
@@ -280,7 +359,7 @@ void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
         f.x = static_cast<float>(x) + 14.0f;
         f.y = static_cast<float>(y);
         f.timer = 0.9f;
-        f.heal = delta > 0;
+        f.kind = delta > 0 ? FloatKind::Heal : FloatKind::Damage;
         f.text = delta > 0 ? "+" + std::to_string(delta) : std::to_string(-delta);
         pendingFloats_.push_back(std::move(f));
         if (delta > 0) {
@@ -293,23 +372,34 @@ void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
             anyKo = true;
         }
     }
-    // "Miss!" floaters for Blind misses (M35): the missed units took no HP delta,
-    // so they are surfaced here from the action's recorded miss list.
-    for (int mi : battle_.lastMissed) {
-        if (mi < 0 || mi >= static_cast<int>(battle_.units.size())) {
-            continue;
+    // Marks the action recorded rather than deltas: a Blind miss (M35) and the
+    // M48 element readouts. An immune target took no HP delta at all, so this is
+    // the only way it is ever surfaced; a weak one gets the word beside its
+    // (larger) number, so the size is explained rather than just felt.
+    const auto markFloats = [this](const std::vector<int>& units, const char* text,
+                                   FloatKind kind, float yOffset) {
+        for (int ui : units) {
+            if (ui < 0 || ui >= static_cast<int>(battle_.units.size())) {
+                continue;
+            }
+            int mx = 0;
+            int my = 0;
+            unitScreenPos(ui, mx, my);
+            FloatNumber f;
+            f.x = static_cast<float>(mx) + 14.0f;
+            f.y = static_cast<float>(my) + yOffset;
+            f.timer = 0.9f;
+            f.kind = kind;
+            f.text = text;
+            pendingFloats_.push_back(std::move(f));
         }
-        int mx = 0;
-        int my = 0;
-        unitScreenPos(mi, mx, my);
-        FloatNumber f;
-        f.x = static_cast<float>(mx) + 14.0f;
-        f.y = static_cast<float>(my);
-        f.timer = 0.9f;
-        f.heal = false;
-        f.text = "Miss!";
-        pendingFloats_.push_back(std::move(f));
-    }
+    };
+    markFloats(battle_.lastMissed, "Miss!", FloatKind::Miss, 0.0f);
+    // Both element words sit a row ABOVE the unit: a weak hit shares its slot
+    // with the damage number, and an immune hit would otherwise print straight
+    // over the sprite it just failed to hurt.
+    markFloats(battle_.lastWeak, "Weak!", FloatKind::Weak, -10.0f);
+    markFloats(battle_.lastImmune, "Immune", FloatKind::Immune, -10.0f);
     pendingSfx_ = anyKo ? 3 : (anyDamage ? damageSfx : (anyHeal ? 1 : (statusAction ? 5 : 0)));
 }
 
@@ -371,6 +461,16 @@ void BattleState::startActorTurn() {
         return;
     }
     battle_.clearGuard(actor);
+    // M49: per-turn boss rules (the King's revive clock) — the same shared call
+    // the Simulator makes. Its announcement is carried into the turn's message
+    // so the revived court is explained rather than just appearing.
+    turnOpenLine_ = battle_.beginUnitTurn(actor);
+    if (!turnOpenLine_.empty()) {
+        message_ = turnOpenLine_;
+        // The court came back at full HP: refresh the shown bars at once, the
+        // way a status tick does, so the panel never lags the model.
+        commitPresentation();
+    }
     if (battle_.units[static_cast<std::size_t>(actor)].side == battle::Side::Party) {
         // Forced actions (M35 confusion, M44 Terrified/Stunned): a character whose
         // turn was taken away gets no player input — it resolves automatically,
@@ -581,10 +681,16 @@ void BattleState::executePending(int targetUnit) {
     int damageSfx = 2;
     bool statusAction = false;
     bool offensiveStatus = false;  // M42: a status-carrying skill aimed at enemies
+    aoeTint_ = AoeTint::None;      // M51: set below when an all-target action resolves
     switch (pendingKind_) {
-        case PendingKind::Attack:
+        case PendingKind::Attack: {
+            const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
+            if (self.attackHitsAll && !battle::isConfused(self)) {
+                aoeTint_ = AoeTint::Damage;  // the Dragon's sweep
+            }
             message_ = battle_.attack(actor, targetUnit);
             break;
+        }
         case PendingKind::Skill:
             if (const content::SkillDef* s = context_.content.findSkill(pendingSkillId_)) {
                 message_ = battle_.useSkill(actor, targetUnit, *s);
@@ -593,6 +699,7 @@ void BattleState::executePending(int targetUnit) {
                 offensiveStatus = statusAction &&
                                   (s->target == content::SkillTarget::SingleEnemy ||
                                    s->target == content::SkillTarget::AllEnemies);
+                aoeTint_ = aoeTintForSkill(*s);
             }
             break;
         case PendingKind::Item:
@@ -658,6 +765,7 @@ void BattleState::executeEnemy(int actor) {
     const battle::EnemyChoice choice = battle::chooseEnemyAction(battle_, actor, context_.content);
     int damageSfx = 2;
     bool statusAction = false;
+    aoeTint_ = AoeTint::None;  // M51
     const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
     if (choice.forced == battle::ForcedAction::Guard) {
         // M44 (Evil Goose): the foe is too frightened to do anything but guard.
@@ -671,11 +779,21 @@ void BattleState::executeEnemy(int actor) {
             message_ = battle_.useSkill(actor, choice.target, *s);
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
             statusAction = s->statusEffect != content::StatusType::None;
+            aoeTint_ = aoeTintForSkill(*s);
         }
     } else if (choice.target >= 0) {
+        if (self.attackHitsAll && !battle::isConfused(self)) {
+            aoeTint_ = AoeTint::Damage;
+        }
         message_ = battle_.attack(actor, choice.target);
     } else {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
+    }
+    // M49: a per-turn rule that fired this turn (the revive clock) is announced
+    // ahead of whatever the unit then did, so the two read as one beat.
+    if (!turnOpenLine_.empty()) {
+        message_ = turnOpenLine_ + " " + message_;
+        turnOpenLine_.clear();
     }
     stageNumbers(hpBefore, damageSfx, statusAction);
     afterAction();
@@ -692,6 +810,7 @@ void BattleState::executeConfused(int actor) {
     const battle::Combatant& a = battle_.units[static_cast<std::size_t>(actor)];
     const battle::ForcedAction forced = battle::forcedActionFor(a);
     const battle::EnemyChoice choice = battle::forcedChoice(battle_, actor, forced);
+    aoeTint_ = AoeTint::None;  // M51: a confused unit only ever makes a single-target swing
     switch (forced) {
         case battle::ForcedAction::Guard:
             message_ = a.name + " is terrified and can only cower behind its guard!";
@@ -721,6 +840,7 @@ void BattleState::executeUncontrolled(int actor) {
         battle::uncontrolledChoice(battle_, actor, context_.content);
     int damageSfx = 2;
     bool statusAction = false;
+    aoeTint_ = AoeTint::None;  // M51
     if (choice.target < 0) {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " capers pointlessly.";
     } else if (choice.useSkill) {
@@ -728,8 +848,13 @@ void BattleState::executeUncontrolled(int actor) {
             message_ = battle_.useSkill(actor, choice.target, *s);
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
             statusAction = s->statusEffect != content::StatusType::None;
+            aoeTint_ = aoeTintForSkill(*s);
         }
     } else {
+        const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
+        if (self.attackHitsAll && !battle::isConfused(self)) {
+            aoeTint_ = AoeTint::Damage;
+        }
         message_ = battle_.attack(actor, choice.target);
     }
     // The quip rides on top of the resolved action and never changes it: a pure
@@ -787,9 +912,12 @@ std::string BattleState::outcomeMessage() const {
             // Defeat consequences are stated, not silent (UI-INFO-014) — and
             // stated TRUTHFULLY (M43): a castle challenge costs no gold and has
             // no run to forfeit, so it must not borrow the dungeon's penalty.
+            // M47: it is no longer free either — the survivors are left at 1 HP
+            // and the fallen stay fallen, so the line no longer says "nothing
+            // is lost".
             return castleChallenge_
                        ? "The party has fallen... The castle guard carries you back "
-                         "to the gates. The challenge ends; nothing is lost."
+                         "to the gates. No gold is taken, but nobody is healed."
                        : "The party has fallen... You are carried back to town; "
                          "half your gold is lost and the run is forfeit.";
         case battle::Outcome::Escaped:
@@ -970,6 +1098,11 @@ void BattleState::update(float dt) {
     if (phase_ != Phase::Resolve) {
         return;
     }
+#ifdef CRYSTAL_CAPTURE
+    if (captureFreezeSeq_) {
+        return;  // hold the impact beat so a capture can render the AoE tint
+    }
+#endif
     seq_.update(dt);
     if (seq_.takeCommit()) {
         commitPresentation();
@@ -1175,16 +1308,40 @@ void BattleState::render() {
                            pal.gold, "battle.jest");
     }
 
-    // Floating damage / heal numbers.
+    // Floating damage / heal numbers, and the M48 element readouts.
     for (const FloatNumber& f : floats_) {
+        Color color = pal.dangerText;
+        switch (f.kind) {
+            case FloatKind::Heal: color = pal.success; break;
+            case FloatKind::Weak: color = pal.gold; break;
+            // The approved coral — the `danger` role, not `dangerText`, so an
+            // "Immune" never reads as just another damage number.
+            case FloatKind::Immune: color = pal.danger; break;
+            case FloatKind::Damage:
+            case FloatKind::Miss: break;  // unchanged from pre-M48
+        }
         ui::drawText(f.text.c_str(), static_cast<int>(f.x) + shakeX, static_cast<int>(f.y), 10,
-                 f.heal ? pal.success : pal.dangerText);
+                     color);
     }
 
-    // Bottom panel: lists live in the left column (scrolled to kListRows),
-    // the actor line and selected-entry description in the right column. A
-    // boss introduction gets the Danger frame with its warning tab.
+    // M51: faint full-screen tint for an all-target action, drawn over the
+    // battlefield (above the bottom panel) during the impact beat only. A single
+    // decay pulse via flashStrength — never a strobe — gated by the flash setting.
     const int panelY = h - kPanelH - 4;
+    if (seq_.stage() == render::BattleStage::Impact && aoeTint_ != AoeTint::None) {
+        const float a = aoeTintAlpha(aoeTint_, seq_.flashStrength(),
+                                     context_.settings.values.effectFlash);
+        if (a > 0.0f) {
+            Color tint = pal.danger;
+            if (aoeTint_ == AoeTint::Heal) {
+                tint = pal.success;
+            } else if (aoeTint_ == AoeTint::Debuff) {
+                tint = pal.magic;
+            }
+            tint.a = static_cast<unsigned char>(a * 255.0f);
+            DrawRectangle(0, 0, w, panelY, tint);
+        }
+    }
     const bool bossIntro = phase_ == Phase::Intro && !bossTelegraph_.empty();
     ui::drawFrame(4, panelY, w - 8, kPanelH,
                   bossIntro ? ui::FrameStyle::Danger : ui::FrameStyle::Standard);
@@ -1304,6 +1461,22 @@ void BattleState::render() {
                 }
                 ui::drawTextFitted(vitals, kListX, panelY + 22, w - 2 * kListX, style::kFontBody,
                                    style::palette().text, "battle.target.vitals");
+                // M48: the target's element affinities, as chips on the vitals
+                // row (the one row with free space on its right). Chips are
+                // outline + fill + accent bar + label, so the reveal is shape
+                // AND text. Absent entirely for an untagged foe, so nothing
+                // moves in the fights that have no elements.
+                int chipRight = w - 12;
+                for (const content::Element e : t.immunities) {
+                    chipRight = ui::drawChipRight(std::string("Immune ") + content::elementDisplayName(e),
+                                                  chipRight, panelY + 20, style::palette().danger) -
+                                4;
+                }
+                for (const content::Element e : t.weaknesses) {
+                    chipRight = ui::drawChipRight(std::string("Weak ") + content::elementDisplayName(e),
+                                                  chipRight, panelY + 20, style::palette().gold) -
+                                4;
+                }
                 const std::string stats =
                     "ATK " + std::to_string(t.stats.attack) + "    MAG " +
                     std::to_string(t.stats.magic) + "    DEF " + std::to_string(t.stats.defense) +

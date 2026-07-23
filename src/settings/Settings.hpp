@@ -50,6 +50,13 @@ struct Settings {
     // M22 (owner-approved): switchable high-contrast UI palette. Optional
     // field; absent = standard palette, so older files load unchanged.
     bool highContrast = false;
+    // M51 (owner-approved), both optional bools, absent = false so older files
+    // load unchanged:
+    //  - crtEffect: a subtle scanline/mask shader at the window blit (Off default).
+    //  - backgroundAudio: keep audio playing while the window is unfocused
+    //    (Off default = mute when unfocused, a deliberate behaviour change).
+    bool crtEffect = false;
+    bool backgroundAudio = false;
 };
 
 // In-memory parse/serialize (exposed for headless tests). parse fills

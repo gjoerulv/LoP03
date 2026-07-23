@@ -19,18 +19,19 @@ const char* locationName(LocationId id) {
 
 TownLayout buildTown(int town, bool hasPrev, bool hasNext, bool nextUnlocked, bool hasCastle,
                      bool castleUnlocked) {
-    constexpr int kW = 26;
-    constexpr int kH = 15;
-    Tilemap map(kW, kH, Tile::Ground);
+    // M50: compact, centred town (24x12 = 384x192). Rendered inside the M46 stage
+    // matte, with walk-through road triggers on the edges instead of Confirm-doors
+    // on the bottom border.
+    Tilemap map(kTownWidth, kTownHeight, Tile::Ground);
 
-    // Closed border of trees.
-    for (int x = 0; x < kW; ++x) {
+    // Closed border of trees; the road gaps below are carved back into it.
+    for (int x = 0; x < kTownWidth; ++x) {
         map.set(x, 0, Tile::Tree);
-        map.set(x, kH - 1, Tile::Tree);
+        map.set(x, kTownHeight - 1, Tile::Tree);
     }
-    for (int y = 0; y < kH; ++y) {
+    for (int y = 0; y < kTownHeight; ++y) {
         map.set(0, y, Tile::Tree);
-        map.set(kW - 1, y, Tile::Tree);
+        map.set(kTownWidth - 1, y, Tile::Tree);
     }
 
     std::vector<Building> buildings;
@@ -47,45 +48,70 @@ TownLayout buildTown(int town, bool hasPrev, bool hasNext, bool nextUnlocked, bo
         buildings.push_back({id, name, doorX, doorY, bx, by, bw, bh});
     };
 
-    // Top row of buildings; doors face down into the plaza.
-    place(LocationId::Inn, "Inn", 2, 2, 3, 2, true, 1);
-    place(LocationId::ItemShop, "Item Shop", 7, 2, 3, 2, true, 1);
-    place(LocationId::EquipShop, "Equip Shop", 12, 2, 3, 2, true, 1);
-    place(LocationId::Guild, "Guild", 17, 2, 3, 2, true, 1);
-    place(LocationId::TrainingHall, "Training Hall", 21, 2, 3, 2, true, 1);
+    // Top row (bodies y1-2, doors face down at y3): five services across the
+    // interior with the castle-road gap left open at x13.
+    place(LocationId::Inn, "Inn", 2, 1, 3, 2, true, 1);
+    place(LocationId::ItemShop, "Item Shop", 6, 1, 3, 2, true, 1);
+    place(LocationId::EquipShop, "Equip Shop", 10, 1, 3, 2, true, 1);
+    place(LocationId::Guild, "Guild", 14, 1, 3, 2, true, 1);
+    place(LocationId::TrainingHall, "Training Hall", 18, 1, 3, 2, true, 1);
 
-    // Bottom buildings; doors face up.
-    place(LocationId::Scoreboard, "Scoreboard", 7, 11, 3, 2, false, 1);
-    place(LocationId::SavePoint, "Save Point", 16, 11, 3, 2, false, 1);
+    // Bottom row (bodies y8-9, doors face up at y7).
+    place(LocationId::Scoreboard, "Scoreboard", 6, 8, 3, 2, false, 1);
+    place(LocationId::SavePoint, "Save Point", 15, 8, 3, 2, false, 1);
 
-    // Town-ladder exits (M32): a road down to a gap in the tree border. The exit
-    // trigger tile sits on the border row; the tile above is a short path so the
-    // gap reads as a road leaving town. Only added when a neighbour town exists.
+    // Walk-through edge triggers (M50). Each carves a road gap in the border at a
+    // mid row (sides) or a top gap (castle) plus one road tile inside, so the gap
+    // reads as a way out of town. The trigger tile is the border cell itself:
+    // walk onto it (no Confirm) to travel. Placed clear of the M46 footer strip.
     std::vector<TownExit> exits;
-    auto carveExit = [&](int col, int destTown, bool toNext, bool locked) {
-        map.set(col, kH - 2, Tile::Path);   // road
-        map.set(col, kH - 1, Tile::Door);   // gate in the border
-        exits.push_back({col, kH - 1, destTown, toNext, locked});
-    };
     if (hasPrev) {
-        carveExit(2, town - 1, false, false);
+        map.set(0, kExitRow, Tile::Path);  // west gate
+        map.set(1, kExitRow, Tile::Path);  // road inside
+        exits.push_back({0, kExitRow, town - 1, false, false});
     }
     if (hasNext) {
-        carveExit(kW - 3, town + 1, true, !nextUnlocked);
+        map.set(kTownWidth - 1, kExitRow, Tile::Path);  // east gate
+        map.set(kTownWidth - 2, kExitRow, Tile::Path);
+        exits.push_back({kTownWidth - 1, kExitRow, town + 1, true, !nextUnlocked});
     }
-    // M40: the castle road leaves town 7 to the NORTH (top edge), distinct from
-    // the side roads, signalling it climbs above the ladder. Always shown when
-    // hasCastle, locked until the town-7 clear opens it.
+    // M40 castle road: leaves town 7 to the NORTH through the x13 gap, distinct
+    // from the side roads. Shown locked until the town-7 clear opens it.
     if (hasCastle) {
-        const int col = kW / 2;
-        map.set(col, 1, Tile::Path);
-        map.set(col, 0, Tile::Door);
-        TownExit e{col, 0, 0, true, !castleUnlocked, true};
-        exits.push_back(e);
+        map.set(kCastleCol, 0, Tile::Path);
+        map.set(kCastleCol, 1, Tile::Path);
+        exits.push_back({kCastleCol, 0, 0, true, !castleUnlocked, true});
     }
 
-    const Vec2 spawn{12.0f * Tilemap::kTileSize, 8.0f * Tilemap::kTileSize};
+    const Vec2 spawn{static_cast<float>(kSpawnTileX) * Tilemap::kTileSize,
+                     static_cast<float>(kSpawnTileY) * Tilemap::kTileSize};
     return TownLayout{std::move(map), spawn, std::move(buildings), std::move(exits)};
+}
+
+Vec2 townEntrySpawnPixel(TownEntry entry) {
+    // Where the player lands on arrival: one tile INSIDE the matching edge
+    // trigger (never on it), so a walk-through exit cannot re-fire on spawn. The
+    // default is the plaza spawn (new game, load, leaving a building/dungeon).
+    int tx = kSpawnTileX;
+    int ty = kSpawnTileY;
+    switch (entry) {
+        case TownEntry::FromWest:  // arrived travelling east -> land at the WEST road
+            tx = 1;
+            ty = kExitRow;
+            break;
+        case TownEntry::FromEast:  // arrived travelling west -> land at the EAST road
+            tx = kTownWidth - 2;
+            ty = kExitRow;
+            break;
+        case TownEntry::FromNorth:  // down from the castle -> land under the north gap
+            tx = kCastleCol;
+            ty = 1;
+            break;
+        case TownEntry::Default:
+            break;
+    }
+    return Vec2{static_cast<float>(tx) * Tilemap::kTileSize,
+               static_cast<float>(ty) * Tilemap::kTileSize};
 }
 
 }  // namespace cd::town

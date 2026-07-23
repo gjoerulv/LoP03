@@ -107,8 +107,8 @@ inline constexpr Beat kBeats[] = {
     {kFirstChallenge, "The King's challenges",
      "A challenge gives NO free healing between fights - bring items and spend "
      "them wisely. Each pays a one-time reward the first time you clear it; the "
-     "King grants a unique legendary and a title. Fall, and you simply return to "
-     "the castle to try again."},
+     "King grants a unique legendary and a title. Fall, and no gold is taken - "
+     "but you are left at the gates at 1 HP, and the fallen stay fallen."},
     {kFirstRelic, "A Royal Relic",
      "Reliquaries are rare, and nobody alive agrees on what the relics inside "
      "actually DO. A goose. Tax sheets. A spoon. A crown. Each works exactly "

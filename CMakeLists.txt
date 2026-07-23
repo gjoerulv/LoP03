@@ -124,6 +124,7 @@ add_library(crystal_core STATIC
     src/states/HelpState.cpp
     src/states/TutorialPromptState.cpp
     src/states/ConfirmPromptState.cpp
+    src/states/QuitFlow.cpp
     src/states/DetailsOverlayState.cpp
 )
 

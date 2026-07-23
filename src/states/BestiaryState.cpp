@@ -42,6 +42,28 @@ std::vector<std::string> passiveNames(const std::vector<std::string>& ids,
     }
     return out;
 }
+
+// M48: element names as the player reads them, from the shared display table.
+std::vector<std::string> elementNames(const std::vector<content::Element>& elements) {
+    std::vector<std::string> out;
+    for (content::Element e : elements) {
+        out.push_back(content::elementDisplayName(e));
+    }
+    return out;
+}
+
+// "Fire, Holy" — affinities are short lists, so one joined line reads better
+// than the passives' line-per-entry treatment.
+std::string joined(const std::vector<std::string>& parts) {
+    std::string out;
+    for (const std::string& p : parts) {
+        if (!out.empty()) {
+            out += ", ";
+        }
+        out += p;
+    }
+    return out;
+}
 }  // namespace
 
 BestiaryState::BestiaryState(StateStack& stack, AppContext& context)
@@ -64,6 +86,8 @@ BestiaryState::BestiaryState(StateStack& stack, AppContext& context)
             e.profile += std::string(" ") + content::toString(t);
         }
         e.passives = passiveNames(def.passives, context_.content);
+        e.weakTo = elementNames(def.affinity.weaknesses);    // M48
+        e.immuneTo = elementNames(def.affinity.immunities);
         e.known = known(id);
         entries_.push_back(std::move(e));
     }
@@ -77,6 +101,8 @@ BestiaryState::BestiaryState(StateStack& stack, AppContext& context)
         e.stats = def.stats;
         e.profile = std::string(content::toString(def.archetype)) + " boss";
         e.passives = passiveNames(def.passives, context_.content);
+        e.weakTo = elementNames(def.affinity.weaknesses);    // M48
+        e.immuneTo = elementNames(def.affinity.immunities);
         e.flavor = def.description;
         e.known = known(id);
         entries_.push_back(std::move(e));
@@ -161,6 +187,22 @@ void BestiaryState::renderDetail(const Entry& e, int px, int pw) {
         for (const std::string& p : e.passives) {
             ui::drawTextFitted(p, px + 18, y, bodyW - 6, style::kFontBody,
                                style::palette().gold, "bestiary.passive");
+            y += 11;
+        }
+        y += 4;
+    }
+
+    // M48: element affinities, revealed only for a foe the party has actually
+    // met — an unknown gives nothing away, the same masking rule as its stats.
+    if (e.known && (!e.weakTo.empty() || !e.immuneTo.empty())) {
+        if (!e.weakTo.empty()) {
+            ui::drawTextFitted("Weak: " + joined(e.weakTo), px + 12, y, bodyW,
+                               style::kFontBody, style::palette().gold, "bestiary.weak");
+            y += 11;
+        }
+        if (!e.immuneTo.empty()) {
+            ui::drawTextFitted("Immune: " + joined(e.immuneTo), px + 12, y, bodyW,
+                               style::kFontBody, style::palette().dangerText, "bestiary.immune");
             y += 11;
         }
         y += 4;

@@ -94,6 +94,25 @@ void healFull(Party& party) {
     }
 }
 
+void clampCastleDefeat(Party& party) {
+    if (party.members.empty()) {
+        return;
+    }
+    bool anySurvivor = false;
+    for (Character& c : party.members) {
+        if (c.hp > 0) {
+            anySurvivor = true;
+            c.hp = 1;  // whoever still stood is carried out barely breathing
+        }
+        // A fallen member stays fallen, and nobody's MP is touched.
+    }
+    if (!anySurvivor) {
+        // A total wipe still leaves ONE pair of legs — the party can always
+        // limp to an Inn rather than being stranded with no way to recover.
+        party.members.front().hp = 1;
+    }
+}
+
 int partyClassModPct(const Party& party, const content::ContentDatabase& db) {
     int total = 0;
     for (const Character& c : party.members) {

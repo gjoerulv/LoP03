@@ -200,6 +200,15 @@ void Application::processFrame() {
     ToggleBorderlessWindowed();
   }
 
+  // M51: focus-aware audio. By default the game falls silent when its window
+  // loses focus; the Background Audio setting keeps it playing. setEnabled
+  // early-returns when the state is unchanged, so this is free on steady frames.
+  // (Capture runs its own loop, not this one, and forces audio off — unaffected.)
+  audio_.setEnabled(IsWindowFocused() || settings_.values.backgroundAudio);
+
+  // M51: the CRT scanline shader follows its setting (cheap bool toggle).
+  screen_.setCrt(settings_.values.crtEffect);
+
   GameState* const topBefore = stack_.top();
   stack_.handleInput(input_);
   stack_.update(dt);

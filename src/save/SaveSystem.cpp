@@ -167,6 +167,23 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   if (loaded.blackMarket.present && db_.findItem(loaded.blackMarket.itemId) == nullptr) {
     loaded.blackMarket = BlackMarketOffer{};
   }
+  // M50: the town shrank (26x15 -> 24x12), so a market offer saved before M50
+  // may carry a tile that is now a wall or out of bounds — the NPC would be
+  // unreachable. Snap any offer not on a current plaza tile onto a valid one, so
+  // a stale offer stays claimable. Defensive-load only; no schema change.
+  if (loaded.blackMarket.present) {
+    bool onValidTile = false;
+    for (const MarketTile& t : kBlackMarketTiles) {
+      if (t.x == loaded.blackMarket.tileX && t.y == loaded.blackMarket.tileY) {
+        onValidTile = true;
+        break;
+      }
+    }
+    if (!onValidTile) {
+      loaded.blackMarket.tileX = kBlackMarketTiles[0].x;
+      loaded.blackMarket.tileY = kBlackMarketTiles[0].y;
+    }
+  }
   // M40 castle: optional; old saves load locked with no records. Records are
   // non-negative; the King title is free text (defensive-loaded like any string).
   loaded.castleUnlocked = rootReader.optBool("castleUnlocked", false);

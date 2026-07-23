@@ -17,6 +17,7 @@
 #include "states/SettingsState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
+#include "states/TitlePhrases.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
 
@@ -42,6 +43,11 @@ void MainMenuState::onEnter() {
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Title);
     context_.audio.setAmbience(AmbienceTrack::None);
+    // M51: pick a comedic phrase for this visit. GetRandomValue is deterministic
+    // under the capture harness's pinned SetRandomSeed, so `01_title` stays
+    // reproducible across capture reruns.
+    phrase_ = kTitlePhrases[static_cast<std::size_t>(
+        GetRandomValue(0, static_cast<int>(kTitlePhrases.size()) - 1))];
     rebuild();
 }
 void MainMenuState::onResume() {
@@ -109,9 +115,14 @@ void MainMenuState::render() {
     // caption row flanked by two glinting pips.
     const int plaqueBottom = ui::drawTitlePlaque("CRYSTAL DUNGEONS", w / 2, 42,
                                                  ui::style::kFontTitleHero);
-    const char* tagline = "an 8-bit-plus dungeon-score roguelite";
-    const int tagW = ui::measureText(tagline, ui::style::kFontBody);
-    ui::drawTextCentered(tagline, w / 2, plaqueBottom + 6, ui::style::kFontBody, p.textDim);
+    // M51: a randomized comedic phrase (never a genre description), pulsing
+    // lightly on the 3-step motion clock — textHint -> textDim -> text — so it
+    // draws the eye without moving layout or strobing.
+    const std::string phrase = phrase_.empty() ? std::string(kTitlePhrases[0]) : phrase_;
+    const int tagW = ui::measureText(phrase.c_str(), ui::style::kFontBody);
+    const Color pulse[3] = {p.textHint, p.textDim, p.text};
+    ui::drawTextCentered(phrase.c_str(), w / 2, plaqueBottom + 6, ui::style::kFontBody,
+                         pulse[ui::motionPhase3()]);
     ui::drawCrystalPip(w / 2 - tagW / 2 - 10, plaqueBottom + 9);
     ui::drawCrystalPip(w / 2 + tagW / 2 + 7, plaqueBottom + 9);
 

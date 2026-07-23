@@ -75,6 +75,41 @@ TEST_CASE("settings: effect levels round-trip and default to full when absent") 
     CHECK(bad.effectFlash == EffectLevel::Full);
 }
 
+TEST_CASE("settings: M51 crtEffect/backgroundAudio round-trip and default off when absent") {
+    Settings values;
+    values.crtEffect = true;
+    values.backgroundAudio = true;
+    InputMap map;
+    const std::string text = serializeSettings(values, map);
+
+    Settings loaded;
+    InputMap loadedMap;
+    LoadReport report;
+    REQUIRE(parseSettingsText(text, loaded, loadedMap, report));
+    CHECK(report.errorCount() == 0);
+    CHECK(loaded.crtEffect);
+    CHECK(loaded.backgroundAudio);
+
+    // A pre-M51 file lacking both fields loads with both OFF (the defaults), so
+    // older settings.json is unaffected.
+    Settings old;
+    LoadReport report2;
+    REQUIRE(parseSettingsText(
+        R"({"version":1,"gameplay":{"battleSpeed":"fast","messageSpeed":"normal"}})", old,
+        loadedMap, report2));
+    CHECK(report2.errorCount() == 0);
+    CHECK_FALSE(old.crtEffect);
+    CHECK_FALSE(old.backgroundAudio);
+
+    // A non-boolean value is reported but survivable (keeps the default).
+    Settings bad;
+    LoadReport report3;
+    REQUIRE(parseSettingsText(
+        R"({"version":1,"gameplay":{"crtEffect":"yes"}})", bad, loadedMap, report3));
+    CHECK(report3.errorCount() > 0);
+    CHECK_FALSE(bad.crtEffect);
+}
+
 TEST_CASE("settings: malformed JSON yields defaults and a report") {
     Settings values;
     InputMap map;

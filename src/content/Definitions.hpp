@@ -97,6 +97,29 @@ struct PassiveDef {
     std::string description;
 };
 
+// Element affinities (M48). Both lists are optional and empty for every pre-M48
+// foe, which is what "no affinity" means: every element resolves at 100 %. The
+// loader validates that the two sets are disjoint — a foe that is both weak and
+// immune to an element is a content error, not a precedence puzzle.
+struct ElementAffinity {
+    std::vector<Element> weaknesses;  // x150 % damage
+    std::vector<Element> immunities;  // 0 damage, and no status rider lands
+
+    bool weakTo(Element e) const { return contains(weaknesses, e); }
+    bool immuneTo(Element e) const { return contains(immunities, e); }
+    bool any() const { return !weaknesses.empty() || !immunities.empty(); }
+
+private:
+    static bool contains(const std::vector<Element>& v, Element e) {
+        for (Element x : v) {
+            if (x == e) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
 struct EnemyDef {
     std::string id;
     std::string name;
@@ -107,6 +130,13 @@ struct EnemyDef {
     std::vector<std::string> skills;    // skill ids
     std::vector<std::string> passives;  // passive ids (M36; optional)
     int minTown = 1;                    // per-town gating (M38): spawns only at town >= minTown
+    ElementAffinity affinity;           // M48 (optional; empty = no affinity)
+    // M49: this enemy exists ONLY as a boss's minion — never in a generated
+    // dungeon team and never in an endless wave. A flag rather than a naming
+    // convention because two code paths sweep the whole enemy database (the
+    // generator's empty-pool fallback and endlessWaveTeam), so simply leaving it
+    // out of every theme would not be enough. Default false = ordinary enemy.
+    bool bossOnly = false;
     int xpReward = 0;
     int goldReward = 0;
 };
@@ -169,6 +199,10 @@ struct ItemDef {
     ItemType type = ItemType::Consumable;
     EquipSlot slot = EquipSlot::None;  // for equipment/relics
     Rarity rarity = Rarity::Common;
+    // M48: a WEAPON's element — the basic attacks of whoever wields it carry it.
+    // Validated to weapons only; None for everything else, which is every
+    // pre-M48 item.
+    Element element = Element::None;
     int value = 0;      // gold value (>= 0)
     int minTown = 1;    // per-town gating (M37): stocked/dropped only at town >= minTown
     int maxTown = 0;    // M43: upper end of the town window (0 = unbounded)
@@ -220,6 +254,13 @@ struct BossDef {
     std::vector<std::string> minions;   // enemy ids fighting alongside the boss
     std::vector<std::string> passives;  // passive ids (M36; bosses may carry several)
     int minTown = 1;                    // per-town gating (M38): chosen only at town >= minTown
+    ElementAffinity affinity;           // M48 (optional; empty = no affinity)
+    // M49: the revive clock. 0 = the boss never revives its minions (every boss
+    // but one). N > 0 = on the Nth of ITS OWN turns taken with every minion
+    // down, it raises them all to full HP and starts counting again. Data, not a
+    // boss id branch — any boss can carry it, following the M40
+    // `immuneToConfusion` precedent.
+    int reviveMinionTurns = 0;
     bool immuneToConfusion = false;     // M40: bespoke status immunity (the King)
     std::string telegraph;              // flavor line shown when the battle begins
     int xpReward = 0;

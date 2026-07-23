@@ -39,7 +39,7 @@ inline constexpr AchievementDef kAchievements[] = {
     {"gauntlet", "Gauntlet", "Clear the castle's Boss Rush."},
     {"the_long_night", "The Long Night", "Reach wave 10 of the Endless Rush."},
     {"loremaster", "Loremaster", "Hear the whole Ballad of the Hollow King."},
-    {"peerless", "Peerless", "Raise a hero to level 50."},
+    {"peerless", "Peerless", "Raise a hero to level 99."},
     {"champion", "Champion", "Earn the King's title."},
     {"naturalist", "Naturalist", "Record 30 different foes in the bestiary."},
 };

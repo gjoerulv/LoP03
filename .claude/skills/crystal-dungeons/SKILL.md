@@ -204,18 +204,19 @@ authorization to start the next.
 inspection only. The owner handles all commits and pushes.
 
 Milestones: `docs/milestones.md` is the single source for statuses — trust it
-over any restatement, including this one. Everything through **M42** (the
-M35–M42 endgame program: statuses v2, passives, per-town content, boss drops,
-the castle with the King, story, enrichment) is `complete (approved)`, as are
-**M43** (balance & audit fixes) and **M44** (royal relics + the doubled King) of
-the **M43–M45 King's Gambit program**; **M45** (the three unlockable classes) is
-`complete (approved)` (owner, 2026-07-22) and closes the program.
-The
+over any restatement, including this one. Everything through **M51** is
+`complete (approved)`: the expansion programs (M35–M42 endgame, M43–M45
+King's Gambit, M46 facelift, M47–M51 Court & Comfort — the last approved
+2026-07-23) are all closed. The M46 UI kit
+(`docs/ui_style_guide.md`) binds all UI work; the M49 castle retune (Boss
+Rush 580 % / King 500 % / Endless +10 %pts per wave, level cap 99) is the
+balance baseline. Only the
 deliberately deferred **M23** (validation/playtesting/balance) and **M24**
-(release packaging) run **last, after M45**: their tooling and packaging are
+(release packaging) remain, in that order: their tooling and packaging are
 built (v0.9.0 RC flow), awaiting owner-run external playtests
 (`docs/playtest_protocol.md`) and a clean-machine sign-off; version bumps to
-1.0.0 after playtests pass. Details: `docs/milestones.md` + one note per
+1.0.0 after playtests pass. Both must be re-audited against the post-M51
+checkout first. Details: `docs/milestones.md` + one note per
 milestone under `docs/milestone_notes/`.
 
 ## Verification checklist (before claiming done)

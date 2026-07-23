@@ -232,7 +232,8 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
-is not Release) renders 22 scenario states — every screen family, all
+is not Release) renders one scenario per screen family (the authoritative
+list lives in `src/capture/CaptureRunner.cpp`; 51 scenes as of M46) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
@@ -586,7 +587,8 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   evolve the stream in lockstep (`turnsTaken` — frozen at 0 in the Simulator — is
   never used for it). Misses are recorded in `Battle.lastMissed` for the "Miss!"
   floaters. `SkillEffect::Cleanse` lets a skill strip an ally's negative statuses
-  (Cleric's Purify), and the `Cure` consumable clears the new afflictions too.
+  (Cleric's Purify) — **narrowed to the four afflictions in M47**, see the
+  rules-v7 section — and the `Cure` consumable clears the new afflictions too.
   **Owner balance tune (2026-07-21):** every applied status lasts
   `kStatusDurationMult`× its authored duration (2×, in `addStatus`), poison ticks
   `kPoisonDamageMult`× its authored magnitude (2×, in `tickStatuses`), and
@@ -671,9 +673,11 @@ A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down, and th
 M35 Confusion/Silence/Blind). Skills/items apply them to their targets;
 `Battle::tickStatuses` (called at each unit's turn start) deals poison and ages
 durations. Buffs/debuffs scale the effective attack/defense used in the damage
-formulas; `Cure`/Remedy items and `SkillEffect::Cleanse` (the Cleric's Purify)
-strip every negative status (poison, debuffs, and the M35 afflictions). See §10's
-M35 bullet for the Confusion/Silence/Blind behaviour and the seeded to-hit stream.
+formulas; `Cure`/Remedy items strip every negative status (poison, debuffs, and
+the M35 afflictions), while `SkillEffect::Cleanse` (the Cleric's Purify) lifts
+**only the four afflictions** since M47 — the rules-v7 section has the split. See
+§10's M35 bullet for the Confusion/Silence/Blind behaviour and the seeded to-hit
+stream.
 A **Brute** boss `enrages` (×1.5 attack below half HP) and
 shows a telegraph line; **Commander/Rush** bosses field a fixed minion team
 (dynamic summons / true waves are deferred). The base (no-status, non-boss)
@@ -756,13 +760,26 @@ everywhere, so pre-M32 behaviour, seeds, and scores are unchanged.
   (0 = legacy → town 1), written by `DungeonState`, round-tripped by
   `Scoreboard`, and shown as "T#" on the scoreboard (Theme-column tag for
   town ≥ 2) and the result breakdown — never used for ranking (M19 policy).
-- **Travel & unlock.** `town::buildTown(town, hasPrev, hasNext, nextUnlocked)`
-  carves bottom-left/right road exits (`TownExit`s); `TownState` builds for the
-  live `currentTown`, renders signposts + a "Town n/7" indicator, and switches
-  town in place on Confirm at an unlocked exit (rebuild + fade + music). Boss
-  victory sets `highestUnlockedTown = unlockAfterClear(...)`. `TownState` is a
-  single persistent state (dungeon returns pop back to it), so every entry
-  reflects `currentTown` for free.
+- **Travel & unlock (reworked M50).** `town::buildTown` builds a compact centred
+  24×12 layout (`kTownWidth`/`kTownHeight`) drawn inside the M46 stage matte, with
+  **walk-through road triggers** on the edges (`TownExit`s): west = previous town,
+  east = next, north gap = castle (town 7). `TownState` keeps `player_`, collision,
+  and every tile query in tile-local space and adds `originX_/originY_` only at
+  render time — the `DungeonState` split — so centring touched no movement logic.
+  Travel resolves in `update()` when the player walks onto an **armed, unlocked**
+  trigger (no Confirm): a locked road shows its footer reason instead.
+  `travelTo(dest, TownEntry)` rebuilds in place (fade + door SFX + per-town music)
+  and the arrival spawn lands **one tile inside the matching edge** (travelling
+  east → the destination's west road, and vice-versa), so movement reads as
+  continuous. Two anti-bounce guards: the arrival is never *on* a trigger, and a
+  latch (`travelArmed_`, cleared on every spawn/`onResume`, set once the player is
+  off all triggers) stops a walk-through exit — including the castle-return, which
+  pops back onto the north trigger — from firing immediately. The `TownEntry` hint
+  is transient (never persisted). Boss victory still sets `highestUnlockedTown`.
+  Layout-coupled coordinates (`kBlackMarketTiles`, the bard tile) were re-authored
+  for the compact interior; `SaveSystem` defensively snaps a pre-M50 market offer
+  whose stored tile is no longer a valid plaza cell onto `kBlackMarketTiles[0]`
+  (no schema change).
 - **Presentation resolution (all with base fallback).** Per-town exterior tiles
   `tiles.town.<n>.<kind>` (`TownState`), per-town service interiors
   `bg.<place>.<n>` (a town-aware `ui::drawSceneBackground` overload used by the
@@ -1024,10 +1041,10 @@ default, so pre-M43 saves and content load unchanged).
   `equipShopBuyIds`, and the generator's chest/merchant pools. The item shop had
   no gating at all before this.
 - **Truthful castle defeat.** `BattleState` takes a `castleChallenge` flag and
-  drops the dungeon's "half your gold is lost" claim for those fights;
-  `CastleChallengeState::finish(false)` fully heals the party (`healFull`) and
-  says so, and the boss-rush defeat line counts `bossRushOrder(db).size()` rather
-  than a literal 12.
+  drops the dungeon's "half your gold is lost" claim for those fights, and the
+  boss-rush defeat line counts `bossRushOrder(db).size()` rather than a literal
+  12. (M43 also had `CastleChallengeState::finish(false)` call `healFull`; **M47
+  replaced that with `clampCastleDefeat`** — see the rules-v7 section.)
 - **Versions (at M43).** `battle::kBattleRulesVersion` **4** (confusion
   enforcement, revive skills, King items, item-target filtering all change how
   identical inputs resolve); `dungeon::kGenerationVersion` **9** (a dungeon
@@ -1073,13 +1090,12 @@ ordinary inventory items).
 - **Non-consumption.** `itemAffects(b, target, item)` is false only for a
   `requiresBossId` item on the wrong target; `BattleState` asks **before** the
   battle mutates and keeps the item when it did nothing.
-- **The King.** `the_hollow_king` is 750 / 36 / 44 / 36 / 26, and `kKingScalePct`
-  came **420 % → 340 %** (owner decision, 2026-07-22): the doubled base multiplies
-  through the challenge scale, and at 420 % the fight demanded far more counterplay
-  than the milestone approved. Effective at 340 %: 2550 HP, 122 ATK, 149 MAG,
-  122 DEF, 88 SPD. The counterplay battery lives in `test_royal_relics.cpp`
-  (`[king-report]` prints the loadout table and the stat-scale sweep that backed
-  the decision).
+- **The King.** `the_hollow_king` is 750 / 36 / 44 / 36 / 26. `kKingScalePct`
+  was 420 % → 340 % here (owner decision, 2026-07-22) and has since been
+  retuned by the M49 castle floor — the **current** scale constants,
+  effective stats, and counterplay bar live in the King's-Court section
+  (Milestone 49) below; `test_royal_relics.cpp` (`[king-report]`) still
+  prints the loadout table and stat-scale sweep.
 
 ### The King's classes (Milestone 45)
 
@@ -1177,12 +1193,14 @@ tested; raylib adapters live in `ui/UiDraw`.
   `drawTextRight`; `drawTextFitted` (fits-or-clips + logs); `drawTextWrapped`
   (bounded lines + logs); `drawTextWrappedCentered` (the same, every line centered
   on a point); `drawMenuScrolled` (window slice + arrows).
-- **`states/ConfirmPromptState`**: a reusable transparent Yes/No modal (dims and
-  freezes the scene below, measured panel: title + wrapped consequence + two
-  answers) that runs a supplied `std::function` on yes. The cursor starts on the
-  safe answer and Cancel answers no. Used by the pause menu's Quit to Title, which
-  previously armed a second Confirm on the same entry and explained itself with a
-  warning line — a pattern that reads as a dead key press.
+- **`states/ConfirmPromptState`**: a reusable transparent confirmation modal
+  (dims and freezes the scene below, measured panel: title + wrapped consequence
+  + the answer rows) that runs a supplied `std::function` for the chosen answer.
+  The cursor starts on the safe answer and Cancel resolves to it. Used by the
+  pause menus' Quit, which previously armed a second Confirm on the same entry
+  and explained itself with a warning line — a pattern that reads as a dead key
+  press. **M47 generalized it from Yes/No to N answers** (see the rules-v7
+  section).
 - **`MenuItem::suffix`** (M42 follow-up): an optional trailing column drawn
   right-aligned at the row's right edge by `drawMenuScrolled`, in its own font
   size/color. The column is reserved *first* and the label is fitted to what is
@@ -1209,9 +1227,246 @@ tested; raylib adapters live in `ui/UiDraw`.
   sized to measured text; dungeon fight prompt includes the team name; title
   menu centered on measured labels; result-panel pitch; Inn/Training Hall
   drop `%-N s` pseudo-columns. Debug overlay now starts hidden (F1 toggles).
-- **Not yet migrated** (fit today, tracked in the audit register): party
-  creation, save slots, Guild, pause menus. Hard-coded control-prompt strings
-  everywhere are M13 scope (binding-derived labels).
+- **Migration is complete:** every screen renders through the measured
+  helpers, and control prompts are binding-derived (M13). The M46 kit below
+  is the visual layer on top of these guarantees.
+
+### Procedural UI kit (Milestone 46)
+
+The owner-approved facelift ("humorous 8-bit-plus fantasy micro-caricature")
+is implemented as a procedural kit — raylib primitives only, no image
+assets. Authority for roles and construction is the code:
+`src/ui/UiStyle.hpp` (a 28-role semantic `Palette` with a high-contrast
+twin; `palette()` stays the single accessor) and `src/ui/UiDraw.hpp`
+(`FrameStyle` variants sharing one construction — hard 2px offset shadow,
+ink keyline, mid border, top-left light, bottom-right depth, stepped ink
+corners — plus plaques, header bands, chips, keycaps, structured footer
+hints, shape-iconed banners, framed meters, selection slabs, focus
+brackets, and `motionPhase()`, the sanctioned two-frame ~2.5 Hz clock).
+Rules that bind new UI work:
+
+- draw through the kit and `palette()` roles — no ad-hoc `Color` literals
+  outside world-space art;
+- selection uses three signals (slab + chevron + brighter text); danger,
+  disabled, and reward states always pair shape/text with color;
+- everything integer-aligned at 426×240; no gradients, antialiasing, or
+  blurred shadows; motion never moves layout or text and stays readable on
+  either frame;
+- `tests/test_ui_kit.cpp` pins contrast floors for both palettes and the
+  border-luminance ordering — palette changes must keep it green;
+- the nine-patch `drawFramedPanel`/`ui.frame.default` path still works and
+  stays manifest-replaceable, but no screen uses it: the procedural kit is
+  the identity.
+
+### Rules & flow pass (Milestone 47)
+
+Battle rules **6 → 7**; `kGenerationVersion` (10), `kSaveVersion` (1) and
+`kSettingsVersion` (1) all unchanged. Nothing here adds a roll, so a seed
+reproduces the same dungeon and the same action stream — only how a cleanse
+resolves changed, which is exactly what the rules bump records.
+
+- **The cleanse split.** `Battle.cpp` now holds three status-clearing rules
+  instead of two, and which one runs is decided by *what did it*, not by who was
+  hit:
+  - `clearAfflictions` — **Poison / Blind / Silence / Confusion only**. The body
+    of `SkillEffect::Cleanse` (Purify and, since M45, the Goose's Generous
+    Mending — those are the only two `"cleanse"` skills in `data/skills.json`).
+    It returns whether anything went, so the log claims a cleanse only when one
+    happened.
+  - `clearNegativeStatuses` — everything except the two buffs. **Unchanged**, and
+    now used *only* by `ConsumableEffect::Cure` (a Remedy). It was tempting to
+    rename and narrow it in place; that would have silently changed cure items,
+    which are not in this milestone's scope.
+  - `clearStatDebuffs` — ATK-/DEF- only (M43 Royal Snacks). Untouched.
+
+  The rule lives inside `Battle::useSkill`, which `BattleState` calls directly
+  and the `Simulator` reaches through `applyChoice` — one code path, so sim ==
+  live by construction rather than by agreement. `tests/test_rules_v7_flow.cpp`
+  asserts that agreement explicitly (same statuses, HP, MP, and `rollCursor`)
+  so a future fork fails loudly.
+- **`clampCastleDefeat(Party&)`** (`game/Party.hpp`, beside `healFull`): living
+  members → `hp = 1`, KO'd members stay at 0, MP untouched, and a party with no
+  survivors gets member 0 at 1 HP. Pure and unit-tested.
+  `CastleChallengeState::finish(false)` calls it where it used to call
+  `healFull`. Both a defeat and an **escape** take that path (`onResume` sends
+  every non-Victory outcome to `finish(false)`), so fleeing keeps its battle-end
+  HP/MP minus the free heal. `BattleState::finish` already wrote HP/MP back for
+  every outcome, so no write-back work was needed. Dungeon defeat
+  (`DungeonState`: `healFull` + half gold) is untouched. Three texts that
+  promised the old heal were corrected in the same slice: the challenge result
+  line, `BattleState::outcomeMessage`'s castle branch, and the `first_challenge`
+  tutorial beat.
+- **`ConfirmPromptState` takes N answers.** `Answer { label, onChoose }` plus a
+  `safeIndex` (the row the cursor starts on and the row Cancel resolves to); a
+  null `onChoose` means "just dismiss". The panel measures
+  `answers.size() * kRowH`. The pre-M47 Yes/No constructor is kept and delegates,
+  so the widget still has a one-line form (no caller uses it today).
+- **The quit flow.** `states/QuitPrompt.hpp` is **pure** (raylib-free, the
+  `EquipShopFilter` precedent): the three labels, their indices, the safe row,
+  and the two warning bodies — so the model is unit-testable in the headless
+  suite. `states/QuitFlow.{hpp,cpp}` binds those strings to actions in one
+  `pushQuitPrompt(stack, context, body)` that the town menu, the dungeon menu,
+  and both capture scenes call, so a scene cannot drift from the game.
+  **Quit Game is `clearStates()` and nothing pushed** — `Application::run`'s
+  `!stack_.empty()` guard then ends the loop on the next frame. No exit flag, no
+  forced `CloseWindow`; settings already persist on change.
+- **Menu closes a pause menu.** `TownMenuState` and `DungeonMenuState` treat
+  `InputAction::Menu` like `Cancel`. The state-transition input suppression in
+  `Application::processFrame` is what keeps a held Tab from opening and closing
+  in the same press.
+
+### Elements (Milestone 48)
+
+Battle rules **7 → 8**; generation (10), save (1) and settings (1) untouched.
+No new randomness: the modifier is a lookup, `rollCursor` never moves, and an
+untagged fight resolves byte-identically to M47.
+
+- **One rule, one function.** `battle::elementModifier(defender, element)` returns
+  a percentage — `kElementWeakPct` (150), `kElementImmunePct` (0), or 100 — and is
+  the only place that decision is made. `isImmuneToElement` is the same rule named
+  for the two sites that must also skip the *rider*.
+- **Where it is applied, and why there.** Inside `physicalDamage` and
+  `magicDamage`, as the **last step, after their `std::max(1, …)` floor**. Applying
+  it earlier would let the floor turn an immune hit into 1 damage. There is no
+  single damage choke point in this codebase — those two pure helpers are computed
+  at five sites (`attackOne`, the Counter Attack inside `dealPhysical`, and the
+  skill Physical / Magic / Support-with-power branches) — so putting the rule
+  *inside the helpers* is what covers all five by construction, in both drivers.
+- **What supplies the element.** A skill uses `SkillDef.element` (parsed since M2,
+  inert until now). A basic attack uses `Combatant.weaponElement`, resolved once in
+  `buildBattle` from the wielder's equipped `ItemDef.element` — the M45 pattern, so
+  the pure model still never reads content. A **counter-attack is a basic attack**
+  and carries the counter-attacker's own weapon element.
+- **Immunity blocks riders.** An immune target takes no attack-status
+  (`applyAttackStatuses` is skipped) and no skill status or cleanse — the skill
+  loop `continue`s after marking it. An immune hit is **not** a miss: it connects,
+  reads differently in the log, and is recorded separately.
+- **Schema (all optional, defensive).** `EnemyDef`/`BossDef` gain an
+  `ElementAffinity` (`weaknesses[]` + `immunities[]`, with `weakTo`/`immuneTo`
+  predicates); `ItemDef` gains `element`. Validation rejects unknown element names,
+  `none` inside either array, overlapping weakness/immunity sets, and `element` on
+  a non-weapon item. Absent fields mean "no affinity", which is every pre-M48 file
+  — so no content version moved.
+- **Presentation channel.** `Battle::lastWeak` / `lastImmune` mirror the M35
+  `lastMissed` list and are cleared together by the new `clearActionMarks()`;
+  `attackAll` accumulates all three across a sweep. `BattleState::FloatNumber`
+  gained a `FloatKind` (Damage / Heal / Miss / Weak / Immune) replacing its bare
+  `heal` bool, so float color is chosen in one switch. Damage/Heal/Miss keep their
+  exact prior colors.
+- **The no-dead-weapon rule.** Immunities use only ice/earth/lightning; weapon
+  elements only fire/holy. The sets are disjoint *by construction* so no basic
+  attack can ever be zeroed — the Dragon has no skills to fall back on, which
+  would make such a fight unwinnable rather than interesting. `test_elements.cpp`
+  pins this against the shipped content, along with the converse (every weapon
+  element is somewhere a weakness, so none is dead flavor).
+
+### The King's Court (Milestone 49)
+
+Battle rules **8 → 9**; generation (10), save (1) and settings (1) untouched.
+The clock is a counter, not a roll — `rollCursor` never moves.
+
+- **A per-turn seam that did not exist.** Before M49 the only boss mechanics were
+  HP-threshold flags checked inside actions. `Battle::beginUnitTurn(actor)` is the
+  new home for rules that fire *because a unit is about to act*, called by **both**
+  drivers immediately after `clearGuard(actor)` — `Simulator::simulateInPlace` and
+  `BattleState::startActorTurn`. It returns a log line (empty when nothing
+  happened); `BattleState` holds it in `turnOpenLine_` and prepends it to that
+  unit's action message so the court's return and the King's blow read as one beat.
+- **The clock itself.** `BossDef.reviveMinionTurns` (optional, 0 = never) resolves
+  onto `Combatant.reviveMinionTurns` in `buildBattle`, with a per-unit
+  `reviveMinionCounter`. On the unit's own turn: if it has no non-boss allies at
+  all, nothing; if any is alive, reset to 0; otherwise increment and, on reaching
+  the threshold, restore every fallen ally to full HP with statuses cleared and
+  reset the counter. **Anchored to the unit's own turns** rather than rounds,
+  because a round counter drifts with speed and turn order while a unit's turn
+  sequence does not. "Its court" is *every non-boss unit on its side* — in a boss
+  battle those are exactly the authored minions, so no boss id is branched on.
+- **`bossOnly` enemies.** `EnemyDef.bossOnly` (optional) marks an enemy that may
+  only ever appear through a boss's `minions[]`. It is a flag rather than a naming
+  convention because **two** paths sweep the entire enemy database and would
+  otherwise field the guards: the generator's empty-pool fallback
+  (`buildPools`) and `endlessWaveTeam`. Both now filter on it, and `buildPools`
+  also filters the *theme* path so content cannot opt a boss-only enemy back in.
+  A mass-sample test (3 themes × 7 towns × 12 seeds, plus 80 endless waves) pins it.
+- **Minions in the castle.** `bossRushTeam()` and `kingTeam()` copy
+  `BossDef.minions` into `team.enemyIds`, so a castle fight is built by exactly
+  the path a dungeon boss encounter uses. A boss with an empty list still fights
+  alone.
+- **The AI constraint that shaped the guards' kits.** `chooseEnemyAction` aims an
+  ally-facing Support skill at the **caster**, not at a chosen ally — there is no
+  "buff the boss" rule. So the guards carry **`all_allies`** buffs (the existing
+  `battle_cry` and `guard_aura`), which `resolveTargets` expands to the whole enemy
+  side and which therefore reach the King. No AI change, no new skills. A test
+  pins that both guards carry a party-wide buff, because a `single_ally` one would
+  silently make the mechanic vanish.
+- **The castle floor replaced sim-tuned scales (owner decision, 2026-07-23).**
+  Every castle challenge must start above the strongest multiplier a dungeon can
+  produce. `castleFloorScalePct(db)` derives that ceiling from the same two rules
+  the generator uses — `combineTownScale(100 + composition.scalePctMax,
+  kTownCount)` = 190 × 3.00 = **570 %** — so the ceiling tracks the ladder and
+  the composition data instead of a literal. Constants after the owner's tuning
+  pass: `kBossRushScalePct` 330 → **580**, `kCastleBaselineScalePct` 300 → **500**
+  (endless now climbs +10 %pts/wave, was +12), `kKingScalePct` 340/310 → **500**.
+  - **The invariant is expressed in effective stats, not percent.** The King at
+    500 % is a 3750 HP fight while the deepest dungeon boss the ladder can field
+    is 2280 at 570 % — a raw-percentage comparison would call that a demotion and
+    be wrong. `castle: the castle outclasses the deepest dungeon` therefore
+    compares scaled HP: the King must exceed both the deepest dungeon boss and
+    the biggest fight the rush fields, and the rush must clear the ceiling on
+    multiplier as well.
+  - This **supersedes** the M44/M49 practice of tuning each challenge down to
+    what the headless simulator could beat. The simulator's party is scripted,
+    element-blind, and item-poor — a floor on player skill, not a ceiling — so
+    clearability is now **recorded** (`[castle-report]`, `[king-report]`) and
+    **manually validated**, not asserted.
+  - Test changes that follow from it: `castle: every challenge starts above the
+    deepest dungeon` is the new invariant (checked against the derived ceiling);
+    `castle: a maxed party clears the Boss Rush…` became `castle: the Boss Rush
+    is a real gauntlet, not a formality`; `relics: the doubled King demands the
+    counterplay` became `relics: the counterplay measurably changes the King
+    fight`, which still pins that an unaided party loses and that the relics buy
+    real time — the part that remains true and worth protecting.
+
+### Presentation & options (Milestone 51)
+
+Pure presentation/options; **no version bumps**. The two new settings fields are
+optional bools with defensive parse, so old `settings.json` loads unchanged.
+
+- **Title phrases.** `states/TitlePhrases.hpp` — a pure `kTitlePhrases` table (+
+  `kMandatedTitlePhrase`). `MainMenuState::onEnter` picks one with
+  `GetRandomValue`, deterministic under the capture harness's pinned
+  `SetRandomSeed`, so `01_title` is reproducible. It pulses on a new **3-step**
+  clock `ui::motionPhase3()` (textHint → textDim → text, ~1.5 Hz) beside the
+  2-step `motionPhase()`. A lint pins the mandated line, the no-genre-words rule,
+  and the fit width.
+- **Settings submenus.** `SettingsState` gains a `Mode` (Top / Audio / Display /
+  Gameplay / Controls) and a per-mode `Row` list built by `rebuild()`; `rowAt`
+  maps the cursor to a `Row` so `adjust`/`activate` are mode-independent. Cancel
+  steps out one level (submenu → Top → save-and-close). Two new optional
+  `Settings` bools: `crtEffect` and `backgroundAudio`, both default false, both
+  round-tripped through the same optional-parse path as `highContrast`.
+- **CRT shader.** `VirtualScreen` owns an embedded GLSL-330 fragment shader
+  (`LoadShaderFromMemory` — no asset, no dependency): faint scanlines + a light
+  aperture mask, **no curvature**. `setCrt(bool)` compiles it lazily on first
+  enable and wraps the `DrawTexturePro` in `blitToWindow` with
+  `BeginShaderMode`/`EndShaderMode`. A compile failure degrades to raylib's
+  default passthrough shader (detected via the missing `crtResolution` uniform),
+  logged once → plain blit. **Capture is unaffected by construction**:
+  `exportImage` reads the pre-shader render target, not the window. `Application`
+  calls `setCrt(settings.crtEffect)` each frame (a cheap bool).
+- **Focus audio.** `Application::processFrame` calls
+  `audio_.setEnabled(IsWindowFocused() || settings_.values.backgroundAudio)` once
+  per frame (`setEnabled` early-returns when unchanged). Default mutes on blur.
+  Capture runs its own loop (not `processFrame`) and forces audio off, so it is
+  doubly unaffected.
+- **AoE tint.** `states/AoeTint.hpp` is **pure**: `aoeTintForSkill(SkillDef)`
+  classifies an `AllEnemies`/`AllAllies` action into Heal/Damage/Debuff (None
+  otherwise), and `aoeTintAlpha(tint, flashStrength, EffectLevel)` returns the
+  overlay alpha (0 for None/Off, half for Reduced, capped at 0.12 × the impact
+  pulse). `BattleState` sets `aoeTint_` in each execute path (skills via the
+  classifier, the Dragon's `attackHitsAll` basic as Damage) and draws one
+  full-screen rect over the battlefield during `BattleStage::Impact`. Both pure
+  helpers are unit-tested; nothing reads the tint back into the sim.
 
 ## 16. Leveling, shops & packaging (Milestone 10)
 
@@ -1220,6 +1475,15 @@ tested; raylib adapters live in `ui/UiDraw`.
   stats via `refreshCharacter`, and heal the max-HP gained. Battle victories in
   the dungeon award the party XP and gold from the defeated team's enemies and
   boss (`xpReward`/`goldReward`). `level`/`xp` persist in the save.
+  - **`kMaxLevel` = 99** (owner decision, 2026-07-23; raised from 50). Stats grow
+    linearly with level, so a level-99 party earns ~2x the level-derived stats of
+    a level-50 one; the shipped growth curves peak far below integer overflow at
+    99 (e.g. a Mage reaches ~756 HP / 235 MAG before gear). `level` is already an
+    int save field, so this is **not** a save-schema change: old saves load
+    unchanged and a level > 50 character round-trips like any other. Everything
+    that reads the cap does so through `kMaxLevel` (`grantXp`, the Training Hall,
+    the "peerless" achievement, `restCost`, the economy/castle sims), so the bump
+    propagates from one constant.
 - **Shops/services:** `ItemShopState` buys consumables; `EquipShopState` buys and
   equips gear; `TrainingHallState` pays gold to level a character up by one
   (gold→level progression alongside battle XP). Parties start with a little gold.
@@ -1236,5 +1500,6 @@ tested; raylib adapters live in `ui/UiDraw`.
 - Save slots, settings, tutorial progress, and scoreboard data use sibling-temp atomic replacement. Save slots retain one `.bak` generation. A failed write leaves the prior destination intact.
 - Scoreboard loading is transactional: malformed data does not replace already-valid in-memory entries.
 - Packaged builds write timestamped persistent logs under the user-data `logs` directory; fatal startup errors show a GUI dialog with the log path.
-- Dungeon generation compatibility is currently version 4.
+- Dungeon generation compatibility is tracked by `kGenerationVersion` in
+  `src/dungeon/RoomLayout.hpp` (with its version-history comment), not here.
 

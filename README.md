@@ -8,20 +8,22 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M45
+> **Status: feature-complete, polished playable build** (milestones M1–M51
 > delivered and owner-approved). In the box: a seven-town difficulty ladder
-> plus a castle endgame (Boss Rush / Endless Rush / a doubled Hollow King),
-> seeded walkable dungeons with room events including the rare Royal Relics,
-> deterministic turn-based combat (statuses, passives, forced-action
-> turn-control, an enmity/threat model with control skills), a
-> stakes-escalation score rule with an honest tagged scoreboard, a black
-> market and legendary tokens/drops, per-town enemies/bosses/equipment with
-> original generated art and music, a light-hearted story serial, three
+> plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
+> the Hollow King flanked by his reviving Royal Guards), seeded walkable
+> dungeons with room events including the rare Royal Relics, deterministic
+> turn-based combat (statuses, passives, forced-action turn-control, sparse
+> elemental weaknesses/immunities, an enmity/threat model with control
+> skills), a stakes-escalation score rule with an honest tagged scoreboard, a
+> black market and legendary tokens/drops, per-town enemies/bosses/equipment
+> with original generated art and music, a light-hearted story serial, three
 > unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
-> paid inn, onboarding, accessibility options, a bestiary, victory records,
-> and achievements. Only the deferred **validation playtesting (M23)** and
-> **release sign-off (M24)** remain. Current status always lives in
-> `docs/milestones.md`.
+> paid inn, compact walk-through towns, onboarding, accessibility options,
+> categorized settings (optional CRT effect, background audio), a bestiary,
+> victory records, achievements, and a fully procedural "8-bit-plus" UI.
+> Only the deferred **validation playtesting (M23)** and **release sign-off
+> (M24)** remain. Current status always lives in `docs/milestones.md`.
 
 ## Requirements
 
@@ -121,10 +123,14 @@ cmake --build build-msvc --config Release
 
 Default bindings — everything except text-delete and the debug toggle is
 **remappable in-game** under **Main Menu → Settings** (also reachable from the
-pause menus). Settings, volumes, window mode, battle/message speed, effect
-intensity, and the high-contrast palette persist in `settings.json` in the
-user data folder; one-time tutorial-prompt progress persists in
-`tutorial.json` beside it (toggle or reset in Settings).
+pause menus). Settings are organized into **Audio / Display / Gameplay /
+Controls** submenus (M51): volumes and a **Background Audio** toggle; window
+mode, a subtle **CRT effect** (off by default), battle flash/shake, and
+high-contrast; battle/message speed and tutorial prompts; and per-device
+remapping. All of it persists in `settings.json` in the user data folder;
+one-time tutorial-prompt progress persists in `tutorial.json` beside it. By
+default the game **mutes when its window loses focus** (turn on Background Audio
+to keep it playing).
 
 | Action                | Keyboard               | Gamepad            |
 |-----------------------|------------------------|--------------------|
@@ -149,10 +155,10 @@ letterbox/pillarbox bars.
    free with a rest token), **Item Shop** (buy consumables), **Equip Shop**
    (buy by category + equip gear — each town unlocks stronger gear as you climb),
    **Training Hall** (level up, and buy passive skills — own many, equip one),
-   **Scoreboard**, **Save Point** (3 slots), and the **Guild**. Roads at the
-   bottom corners connect **seven towns**: each later town raises enemy stats
-   (up to +200 %) and score bonus (up to +100 %); clearing a dungeon in a town
-   unlocks the road onward.
+   **Scoreboard**, **Save Point** (3 slots), and the **Guild**. **Walk out the
+   west/east roads** to move between the **seven towns** (no button — just walk
+   into the road); each later town raises enemy stats (up to +200 %) and score
+   bonus (up to +100 %); clearing a dungeon in a town unlocks the road onward.
 3. At the **Guild**, pick a theme + depth and enter a seeded dungeon. Entering
    autosaves.
 4. Walk the dungeon: enemy teams show a **danger tier**; fight them to clear
@@ -174,10 +180,14 @@ letterbox/pillarbox bars.
    **legendary tokens** won in optional elite challenges.
 7. Clear any **town-7 dungeon** to open the northern road to the **castle** — a
    place above the ladder with the **King's three challenges**: the **Boss Rush**
-   (all 12 bosses back-to-back, no free healing), the **Endless Rush** (escalating
-   waves, survive as long as you can), and **the Hollow King** himself (the hardest
-   fight — immune to blind/silence/confusion, beat him for a unique legendary and a
-   title). The castle keeps its **own records**, separate from your dungeon scores.
+   (all 12 bosses back-to-back **with their minions**, no free healing), the
+   **Endless Rush** (escalating waves, survive as long as you can), and **the
+   Hollow King** himself (the hardest fight — immune to blind/silence/confusion,
+   flanked by **two Royal Guards he calls back from the dead every five turns**;
+   beat him for a unique legendary and a title). The castle keeps its **own records**, separate from your dungeon scores.
+   Failing (or fleeing) a challenge costs **no gold** — but nobody is healed:
+   survivors are carried to the gates at **1 HP**, the fallen stay fallen, and a
+   full wipe leaves exactly one member standing so an inn is always reachable.
 
 ## Project layout
 
@@ -237,7 +247,11 @@ save round-trips via the Save Point + Continue.
 - Status effects include poison, attack/defense buffs/debuffs, and (M35)
   Blind (physical attacks usually miss), Silence (no MP-cost skills), and
   Confusion (forces a basic attack at its own side, on both sides equally since
-  M43) — all deterministic and seeded. Bosses use
+  M43) — all deterministic and seeded. **Elements (M48)** are a deliberately
+  sparse layer: a handful of foes are weak (×150 %) or immune (0 damage, and no
+  status rider) to one element, carried by elemental spells and by five
+  elemental weapons; affinities are shown in the bestiary and the battle target
+  panel for foes you have met. Bosses use
   stats, skills, minions, telegraph text, and a Brute enrage; dynamic summons and
   true multi-wave "rush" are not implemented.
 - Equipment has no per-class restrictions; the economy is lightly tuned.

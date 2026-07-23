@@ -166,6 +166,8 @@
     { "id": "enemy.soul_render.battle", "type": "texture", "path": "textures/enemies/soul_render.png" },
     { "id": "enemy.titan_guard.battle", "type": "texture", "path": "textures/enemies/titan_guard.png" },
     { "id": "enemy.archon_of_ruin.battle", "type": "texture", "path": "textures/enemies/archon_of_ruin.png" },
+    { "id": "enemy.royal_guard_sword.battle", "type": "texture", "path": "textures/enemies/royal_guard_sword.png" },
+    { "id": "enemy.royal_guard_staff.battle", "type": "texture", "path": "textures/enemies/royal_guard_staff.png" },
 
     { "id": "boss.sand_warlord.battle", "type": "texture", "path": "textures/enemies/boss_sand_warlord.png" },
     { "id": "boss.frost_monarch.battle", "type": "texture", "path": "textures/enemies/boss_frost_monarch.png" },
