@@ -63,7 +63,7 @@ bought. The ten passives are **Counter Attack** (retaliate after surviving a
 physical hit), **Evasion** (25 % of physical attacks miss; a Blind attacker always
 misses you), **Spell Ward** (25 % of hostile magic fizzles), **Thorns** (reflect
 20 % of physical damage), **Lifedrink** (heal 15 % of physical damage dealt),
-**Clarity** (+3 MP a round, immune to Silence), **Iron Will** (survive a lethal
+**Clarity** (+2 MP a round, immune to Silence; M43), **Iron Will** (survive a lethal
 blow at 1 HP once a battle), **First Strike** (act first in round 1, +50 % on your
 first hit), **Bodyguard** (soak 25 % of a hit on your weakest ally), and **Keen
 Senses** (immune to Blind, +10 % vs debuffed foes). Enemies and bosses carry
@@ -175,13 +175,17 @@ physical attacks usually miss (the game's first to-hit roll — magic and items 
 unaffected). **Silence** blocks MP-cost skills (basic attacks and items still
 work). **Confusion** takes over a unit's turn entirely: it acts automatically —
 **no player input for a confused character** — lashing out with a basic attack at
-a seeded random member of its own side. A confused unit is **snapped out of it the
+a seeded random member of its own side. Since **M43** this binds **both sides
+equally**: a confused enemy can no longer heal, buff, or curse its way through the
+affliction, because the forced basic attack is enforced in the shared rules every
+turn-decider uses. A confused unit is **snapped out of it the
 moment it takes damage**, so hitting a confused ally (or letting a foe strike your
 confused member) is a real counter. All three are fully deterministic (seeded off the
 battle, so live play and the simulator agree exactly), applied by class skills (a
 Rogue and Ranger blind, a Mage silence and confusion) and enemy kits (disruptors,
 sorcerers, and several bosses now weave them in where the role fits), and all are
-lifted by a **Remedy** item or the Cleric's **Purify**. A miss reads as "Miss!"
+lifted by a **Remedy** item or the Cleric's **Purify** (which since M43 is a pure
+cure — it lifts everything and heals nothing). A miss reads as "Miss!"
 and every affliction shows a labelled icon, so nothing depends on colour alone.
 Afflictions and buffs both **linger** (durations run long), and **poison bites
 hard** (it deals heavy damage each turn), so status play — inflicting, curing,
@@ -324,6 +328,81 @@ ranked. **Achievements** (also from the pause menu) are ~16 original cross-game
 goals — clearing dungeons, climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
+
+**Balance pass (M43).** The endgame arc opens by making consumables a real budget
+decision and healing a real choice, at one battle-rules bump (v4).
+
+- **The repriced shelf:** Remedy **100 g** (was 15), Ether **150 g** (was 60),
+  Hi-Ether **500 g** (was 150), Phoenix Tear **300 g** (was 150) — and a Phoenix
+  Tear now revives at **25 %** HP, not 50 %. Potions are untouched, so HP stays
+  cheap while MP, cures, and resurrection cost what they are worth. One clear's
+  gold buys a handful of Remedies or a single Tear, so the shopping list is a
+  decision rather than a formality.
+- **Purify** lifts every affliction and debuff from the party and **heals
+  nothing**; **Renew** becomes the emergency button — a weak heal that can also
+  **raise a fallen ally at 20 % HP**, the first skill in the game that can.
+- **Battle items now respect the state of their target:** potions, ethers, and
+  cures reach only living allies, and a revive reaches only the fallen. An item
+  with nobody to use it on is greyed out with the reason, so nothing is ever spent
+  on "No effect".
+- **Royal Snacks (250 g)** — "Bring Snacks!" — are sold **only in the first
+  town**. Ordinarily they are a joke: 10 HP and a shrug that lifts ATK-/DEF-. In
+  **the King's fight** they are 100 HP and 10 MP. The King's counterplay starts
+  where the game did.
+- **Clarity** gives **+2 MP** a round (was +3).
+- **Losing a castle challenge costs nothing but the attempt:** the party is fully
+  healed at the castle gates, no gold is taken, and the screen says exactly that.
+  (It always cost nothing; the message used to claim the dungeon's gold penalty.)
+
+**Royal Relics & the doubled King (M44).** The King stops being a wall of stats
+you out-level and becomes a fight you answer with absurd objects.
+
+- **The reliquary** is a rare room event that *replaces* an ordinary rolled event
+  from **town 2, depth 2** onward: **3 %** in town 2, **5 %** in towns 3–6, **7 %**
+  in town 7, **+5 %pts from depth 20 up**, and never more than one per dungeon.
+  It costs nothing and asks nothing — it simply hands over one relic.
+- **Which relic** is a seeded 40 / 40 / 15 / 5 draw over Evil Goose, Tax Sheets,
+  Dragon Crown, Deadly Spoon, with anything you already hold excluded and the rest
+  renormalized; hold all four and the plain draw returns, giving a duplicate. The
+  draw is fixed by the run's seed and the room, so reloading cannot fish for the
+  Spoon.
+- **The four relics** are single-use, aimed at an **enemy**, and sold nowhere:
+  - **Evil Goose** — "A terrifying goose." The target can only **Guard** next turn.
+  - **Tax Sheets** — "Busy your enemies with taxes." The target **loses** its next turn.
+  - **Dragon Crown** — "The real Dragon Crown." Saps the **Hollow King's** attack
+    and defense. Anyone else shrugs — and you keep the crown.
+  - **Deadly Spoon** — "Most deadly thing known to man." **Halves** the target's
+    ATK/MAG/DEF/SPD for the rest of the battle. The rarest, and it shows.
+  The King is **not** immune to any of them: that is the whole point.
+- **The King doubles.** 750 HP (was 560) and doubled ATK/MAG/DEF/SPD
+  (36 / 44 / 36 / 26). A maxed party carrying no relics and no snacks now
+  **loses**; one Tax Sheets, one Evil Goose and a bag of Royal Snacks turn it into
+  a tense win, and each extra relic buys survivors. (His challenge multiplier came
+  down from 420 % to 340 % so the doubled stats land exactly there — the fight is
+  a puzzle now, not a farming toll.)
+
+**The King's classes (M45).** Beating the Hollow King unlocks three more classes
+**for the player, not for that save** — they are offered on every future New
+Game, and a save that already beat him unlocks them retroactively. Until then
+they are listed at character creation as **Locked**, so the reward is visible
+long before it is earned. All three are jokes that are also real classes:
+
+- **Dragon** — enormous stats, **no skills**, **no armor**. Its basic attack hits
+  **every** living foe and leaves poison and blindness on each one it connects
+  with. Its score modifier is **−20 % per Dragon**: overwhelming force is not
+  efficiency, and the scoreboard says so.
+- **Jester** — **uncontrolled**. You do not choose its turns: each round it picks
+  one of its own skills (any it can afford and cast) or a swing, at a foe of its
+  choosing. It carries no weapon, quips one of twelve dry lines about 15 % of the
+  time, and pays **+5 % score per Jester** for the indignity.
+- **Goose** — dreadful stats, **equips nothing at all**. Its heals and cures work
+  — and cheerfully buff **every enemy** at the same time. At level 30 it learns
+  one ultimate that lays every debuff on every foe for 30 MP. **+5 % per Goose.**
+
+The class modifiers are **additive across the party** (three Dragons and a Goose
+= −55 %), shown as their own line on the result screen and tagged on the
+scoreboard. Per M19 they are visible and tagged, never normalized away, and they
+never change how runs are ranked.
 
 ## 11. Bosses
 

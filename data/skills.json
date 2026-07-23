@@ -24,7 +24,7 @@
     { "id": "mend", "name": "Mend", "category": "heal", "target": "single_ally", "power": 20, "mpCost": 5, "description": "Restore a single ally's health." },
     { "id": "group_mend", "name": "Group Mend", "category": "heal", "target": "all_allies", "power": 14, "mpCost": 12, "description": "Restore the whole party's health." },
     { "id": "greater_heal", "name": "Greater Heal", "category": "heal", "target": "single_ally", "power": 40, "mpCost": 10, "description": "A powerful restorative." },
-    { "id": "renew", "name": "Renew", "category": "heal", "target": "single_ally", "power": 26, "mpCost": 7, "description": "Soothing restorative magic." },
+    { "id": "renew", "name": "Renew", "category": "heal", "target": "single_ally", "power": 12, "mpCost": 9, "reviveHpPct": 20, "description": "A thin thread of life: raises a fallen ally at 20% HP, or gently mends a living one." },
 
     { "id": "guard_aura", "name": "Guard Aura", "category": "support", "target": "all_allies", "power": 0, "mpCost": 8, "statusEffect": "defense_up", "statusMagnitude": 30, "statusDuration": 3, "description": "Bolster the party's defenses." },
     { "id": "bulwark", "name": "Bulwark", "category": "support", "target": "self", "power": 0, "mpCost": 6, "statusEffect": "defense_up", "statusMagnitude": 50, "statusDuration": 3, "description": "Brace to absorb incoming blows." },
@@ -56,13 +56,16 @@
     { "id": "flash_arrow", "name": "Flash Arrow", "category": "physical", "target": "single_enemy", "power": 8, "mpCost": 5, "statusEffect": "blind", "statusDuration": 3, "description": "A dazzling shot that blinds its mark." },
     { "id": "silence", "name": "Silence", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 7, "statusEffect": "silence", "statusDuration": 3, "description": "Seals a foe's magic, blocking MP skills." },
     { "id": "bewilder", "name": "Bewilder", "category": "magic", "target": "single_enemy", "element": "dark", "power": 6, "mpCost": 8, "statusEffect": "confusion", "statusDuration": 2, "description": "Addles a foe into striking its own side." },
-    { "id": "purify", "name": "Purify", "category": "heal", "target": "all_allies", "power": 12, "mpCost": 10, "control": "cleanse", "description": "Heals the party and lifts all afflictions." },
+    { "id": "purify", "name": "Purify", "category": "heal", "target": "all_allies", "power": 0, "mpCost": 10, "control": "cleanse", "description": "Lifts every affliction and debuff from the whole party. Heals nothing." },
 
     { "id": "blinding_curse", "name": "Blinding Curse", "category": "support", "target": "single_enemy", "power": 16, "mpCost": 6, "statusEffect": "blind", "statusDuration": 3, "description": "A searing curse that wounds and blinds its mark." },
     { "id": "silencing_word", "name": "Silencing Word", "category": "support", "target": "single_enemy", "power": 16, "mpCost": 7, "statusEffect": "silence", "statusDuration": 3, "description": "A word of unmaking that wounds and seals a foe's magic." },
     { "id": "maddening_gaze", "name": "Maddening Gaze", "category": "support", "target": "single_enemy", "power": 14, "mpCost": 8, "statusEffect": "confusion", "statusDuration": 2, "description": "A gaze that wounds and turns a foe against its own." },
     { "id": "withering_touch", "name": "Withering Touch", "category": "support", "target": "single_enemy", "power": 14, "mpCost": 5, "statusEffect": "poison", "statusMagnitude": 6, "statusDuration": 3, "description": "A touch that wounds and rots a foe from within." },
     { "id": "sovereigns_cataclysm", "name": "Sovereign's Cataclysm", "category": "magic", "target": "all_enemies", "power": 18, "mpCost": 12, "statusEffect": "attack_down", "statusMagnitude": 25, "statusDuration": 3, "description": "Ruin falls on the whole party, sapping their strength." },
-    { "id": "sovereign_smite", "name": "Sovereign's Smite", "category": "physical", "target": "single_enemy", "power": 24, "mpCost": 8, "statusEffect": "defense_down", "statusMagnitude": 30, "statusDuration": 3, "description": "A crushing blow that shatters a foe's guard." }
+    { "id": "sovereign_smite", "name": "Sovereign's Smite", "category": "physical", "target": "single_enemy", "power": 24, "mpCost": 8, "statusEffect": "defense_down", "statusMagnitude": 30, "statusDuration": 3, "description": "A crushing blow that shatters a foe's guard." },
+    { "id": "honking_comfort", "name": "Honking Comfort", "category": "heal", "target": "single_ally", "power": 14, "mpCost": 4, "statusEffect": "attack_up", "statusMagnitude": 15, "statusDuration": 2, "alsoBuffsEnemies": true, "description": "A reassuring honk: heals and heartens one ally. And every enemy." },
+    { "id": "generous_mending", "name": "Generous Mending", "category": "heal", "target": "all_allies", "power": 18, "mpCost": 12, "statusEffect": "defense_up", "statusMagnitude": 20, "statusDuration": 3, "control": "cleanse", "alsoBuffsEnemies": true, "description": "Mends and cleanses the party. Braces the enemies too, alas." },
+    { "id": "everyone_is_welcome", "name": "Everyone Is Welcome", "category": "support", "target": "all_enemies", "power": 0, "mpCost": 30, "statusEffect": "poison", "statusMagnitude": 8, "statusDuration": 3, "description": "The goose has decided everyone should share in everything at once." }
   ]
 }

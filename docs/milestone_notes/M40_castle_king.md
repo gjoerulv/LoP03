@@ -210,7 +210,7 @@ King + Confusion immunity, castle records); `assets/credits.md` + `docs/asset_pi
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. The §D owner decisions were
+- **Status:** complete (approved 2026-07-21). The §D owner decisions were
   implemented as given (King = Keen Senses + Clarity + Counter Attack + Confusion
   immunity; gauntlets give no free healing, items allowed).
 - **Castle place & navigation.** `game/Castle.hpp` (`kCastleTown = 8` — never a

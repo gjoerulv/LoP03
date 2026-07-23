@@ -14,6 +14,9 @@
 namespace cd {
 
 struct AppContext;
+namespace content {
+struct ItemDef;
+}
 
 // Side-view battle screen (enemies left, party right) driving the pure Battle
 // model. Speed-ordered turns; Attack/Skill/Item/Guard/Escape; deterministic
@@ -24,9 +27,11 @@ public:
     // `musicOverride` (M40) replaces the default Boss/Battle track for this fight
     // (e.g. the King's own theme); None keeps the default. `statsSlot` (M42), when
     // given, accumulates this battle's victory tallies into a run's RunStats.
+    // `castleChallenge` (M43) marks a fight fought at the castle, where losing
+    // costs no gold and forfeits no run — so the defeat message tells the truth.
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                 battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None,
-                RunStats* statsSlot = nullptr);
+                RunStats* statsSlot = nullptr, bool castleChallenge = false);
 
     void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
@@ -41,6 +46,12 @@ public:
     // Capture-only: open the skill list for the acting party member, optionally
     // with a supplied skill set, so the widest name + MP column is overflow-checked.
     void captureEnterSkillMenu(std::vector<std::string> skills = {});
+    // Capture-only (M44): open the item list, so the widest item name + count
+    // column (the Royal Relics) is overflow-checked.
+    void captureEnterItemMenu();
+    // Capture-only (M45): show the LONGEST Jester quip, so the mid-screen line is
+    // overflow-checked at its worst case.
+    void captureShowJest();
 #endif
 
 private:
@@ -59,9 +70,12 @@ private:
     void onCommand();
     void onSkillChosen();
     void onItemChosen();
+    // M43: why a battle item is unusable right now ("" when it is usable).
+    std::string itemBlockReason(const content::ItemDef& item) const;
     void executePending(int targetUnit);
     void executeEnemy(int actor);
     void executeConfused(int actor);  // M35: a confused party member auto-attacks an ally
+    void executeUncontrolled(int actor);  // M45: the Jester picks its own turn
     // M42: fold a party action's enemy damage into the run's victory tallies.
     void accumulateStats(const std::vector<int>& hpBefore, int actor, bool offensiveStatus);
     void afterAction();
@@ -97,6 +111,7 @@ private:
     MusicTrack musicOverride_ = MusicTrack::None;
     RunStats* stats_ = nullptr;  // M42: run victory-stat accumulation (optional)
     battle::Outcome result_ = battle::Outcome::Ongoing;
+    bool castleChallenge_ = false;  // M43: castle defeats cost no gold
     bool bossBattle_ = false;
     bool koOccurred_ = false;
     std::string bossTelegraph_;
@@ -120,6 +135,10 @@ private:
     int targetCursor_ = 0;
 
     std::string message_;
+    // M45: the Jester's current quip, shown mid-screen while it lasts. Purely
+    // decorative — nothing reads it back into the battle.
+    std::string jestLine_;
+    float jestTimer_ = 0.0f;
     std::vector<FloatNumber> floats_;
 
     // Staged presentation (M18): the sim result is already final; these only

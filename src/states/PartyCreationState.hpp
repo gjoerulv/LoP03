@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 #include <vector>
 
 #include "states/GameState.hpp"
@@ -23,6 +24,12 @@ public:
 
     void onEnter() override;
     void handleInput(const Input& input) override;
+
+#ifdef CRYSTAL_CAPTURE
+    // Capture-only (M45): put `classId` in a slot so the locked/unlocked states of
+    // the reward classes render deterministically. Not present in shipping builds.
+    void captureSelectClass(int slot, const std::string& classId);
+#endif
     void update(float dt) override;
     void render() override;
 
@@ -33,11 +40,21 @@ private:
     };
 
     void cycleClass(int slotIndex, int direction);
+    // M45: is this class still behind the King? Locked classes stay listed (so the
+    // goal is visible) but cannot start a run.
+    bool classLocked(const content::ClassDef& cls) const;
+    bool anyLockedSelected() const;
     void begin();
 
     AppContext& context_;
     std::vector<const content::ClassDef*> classes_;
     std::array<Slot, 4> slots_;
+#ifdef CRYSTAL_CAPTURE
+    // Capture-only: selections requested before the state was pushed, applied at
+    // the end of onEnter (which the stack runs after the push and which otherwise
+    // resets every slot).
+    std::array<std::string, 4> capturePending_;
+#endif
     int cursor_ = 0;  // 0..3 = party slots, 4 = "Begin"
     bool editing_ = false;
     bool ready_ = false;

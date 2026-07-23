@@ -149,14 +149,34 @@ TEST_CASE("learnset: shipped classes grow their skill set with level", "[learnse
     CHECK_FALSE(has(knownSkillsFor(*knight, 1), "whirlwind"));
     CHECK(has(knownSkillsFor(*knight, 10), "whirlwind"));
 
-    // Every class exposes strictly more skills at the cap than at level 1, and
-    // reaches a satisfying breadth (>= 6).
+    // Every PLAYABLE-FROM-THE-START class exposes strictly more skills at the cap
+    // than at level 1, and reaches a satisfying breadth (>= 6). The M45 reward
+    // classes are deliberately exempt: their identity is what they LACK (the
+    // Dragon has no skills at all, the Goose has three and a terrible idea), so
+    // they are checked against their own intent below.
     for (const auto& [id, cls] : db.classes()) {
+        if (cls.unlockedByKing) {
+            continue;
+        }
         const std::size_t atOne = knownSkillsFor(cls, 1).size();
         const std::size_t atCap = knownSkillsFor(cls, 50).size();
         INFO("class " << id << " lvl1=" << atOne << " cap=" << atCap);
         CHECK(atCap > atOne);
         CHECK(atCap >= 6);
     }
+
+    // M45 reward classes, each odd on purpose.
+    const ClassDef* dragon = db.findClass("dragon");
+    REQUIRE(dragon != nullptr);
+    CHECK(knownSkillsFor(*dragon, 50).empty());  // no skills, ever: it just bites
+
+    const ClassDef* jester = db.findClass("jester");
+    REQUIRE(jester != nullptr);
+    CHECK(knownSkillsFor(*jester, 50).size() > knownSkillsFor(*jester, 1).size());
+
+    const ClassDef* goose = db.findClass("goose");
+    REQUIRE(goose != nullptr);
+    CHECK(has(knownSkillsFor(*goose, 30), "everyone_is_welcome"));   // the level-30 ultimate
+    CHECK_FALSE(has(knownSkillsFor(*goose, 29), "everyone_is_welcome"));
 }
 #endif

@@ -8,6 +8,7 @@
 #include "states/SettingsState.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -54,18 +55,27 @@ void DungeonMenuState::handleInput(const Input& input) {
 void DungeonMenuState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    DrawRectangle(0, 0, w, h, Color{0, 0, 0, 150});
+    namespace style = ui::style;
+    const style::Palette& p = style::palette();
+    ui::drawModalDim(w, h);
 
     const int boxW = 190;
-    const int boxH = 124;
+    const int boxH = 112;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
-    ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{24, 22, 40, 240}, Color{150, 130, 180, 255});
-    ui::drawTextCentered("Dungeon Paused", w / 2, boxY + 12, 14, RAYWHITE);
-    ui::drawMenu(menu_, boxX + 30, boxY + 40, 18, 12, RAYWHITE, Color{90, 90, 110, 255},
-                 Color{240, 220, 120, 255});
-    ui::drawTextCentered("Retreat forfeits dungeon score", w / 2, boxY + boxH - 14, 8,
-                         Color{160, 160, 180, 255});
+    ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
+    // Integrated title plaque riding the top edge.
+    ui::drawTitlePlaque("Dungeon Paused", w / 2, boxY - 10, 12);
+    ui::drawMenu(menu_, boxX + 34, boxY + 26, 18, 12, p.text, p.disabled, p.cursor);
+    ui::drawDivider(boxX + 12, boxY + boxH - 24, boxW - 24);
+    // Retreat consequence as a danger note: warning shape + coral text.
+    const char* note = "Retreat forfeits dungeon score";
+    const int noteW = ui::measureText(note, style::kFontSmall);
+    const int noteX = w / 2 - noteW / 2 + 5;
+    DrawRectangle(noteX - 11, boxY + boxH - 16, 2, 2, p.danger);
+    DrawRectangle(noteX - 13, boxY + boxH - 14, 6, 2, p.danger);
+    DrawRectangle(noteX - 15, boxY + boxH - 12, 10, 2, p.danger);
+    ui::drawText(note, noteX, boxY + boxH - 17, style::kFontSmall, p.dangerText);
 }
 
 }  // namespace cd

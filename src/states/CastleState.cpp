@@ -21,6 +21,7 @@
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -124,26 +125,27 @@ void CastleState::handleInput(const Input& input) {
 void CastleState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{12, 10, 20, 255});
+    const ui::style::Palette& p = ui::style::palette();
+    ClearBackground(p.canvas);
 
-    // Title.
-    ui::drawTextCentered("The Castle", w / 2, 18, 20, Color{220, 190, 110, 255});
-    ui::drawTextCentered("above the seven towns", w / 2, 42, 10, Color{150, 140, 170, 255});
+    // Title plaque with a violet royal accent.
+    ui::drawTitlePlaque("The Castle", w / 2, 10, 20);
+    ui::drawTextCentered("above the seven towns", w / 2, 46, 10, p.textDim);
 
     // Challenge menu (left).
-    const int menuX = 40;
+    const int menuX = 44;
     const int menuY = 78;
-    ui::drawMenu(menu_, menuX, menuY, 18, 12, RAYWHITE, Color{90, 90, 110, 255},
-                 Color{240, 220, 120, 255});
+    const int menuRows = static_cast<int>(menu_.size());
+    ui::drawFrame(24, menuY - 10, 168, menuRows * 18 + 16, ui::FrameStyle::Standard);
+    ui::drawMenu(menu_, menuX, menuY, 18, 12, p.text, p.disabled, p.cursor);
 
     // Records panel (right).
     const CastleRecords& rec = context_.party.castleRecords;
     const int recX = w - 210;
     const int recY = 70;
-    ui::drawFramedPanel(context_.resources, recX, recY, 190, 120, Color{22, 18, 30, 235},
-                        Color{120, 110, 150, 255});
-    ui::drawText("Castle Records", recX + 12, recY + 10, 10, Color{220, 200, 130, 255});
-    const Color label{200, 200, 215, 255};
+    ui::drawFrame(recX, recY, 190, 120, ui::FrameStyle::Reward);
+    ui::drawSectionHeader("Castle Records", recX + 12, recY + 10, 166);
+    const Color label = p.textDim;
     const std::string rush = rec.bossRushCleared()
                                  ? std::to_string(rec.bossRushBestTurns) + " turns"
                                  : std::string("-");
@@ -156,16 +158,16 @@ void CastleState::render() {
     ui::drawText("The King:   " + king, recX + 12, recY + 62, 10, label);
     if (!rec.kingTitle.empty()) {
         ui::drawTextWrapped("Title: " + rec.kingTitle, recX + 12, recY + 82, 166, 10,
-                            Color{235, 210, 130, 255}, "castle.records.title", 2);
+                            p.gold, "castle.records.title", 2);
     }
 
     // The Jester lounges by the throne (M41).
     ui::drawTextCentered("A jester lounges by the throne, waiting to share the tale's end.", w / 2,
-                         h - 28, 8, Color{150, 135, 175, 255});
-    ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
-                                       context_.input.activeDevice(), "Leave")
-                             .c_str(),
-                         w / 2, h - 14, 10, Color{200, 200, 160, 255});
+                         h - 28, 8, ui::lighten(p.magic, 32));
+    ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
+                                              context_.input.activeDevice()),
+                          "Leave"}},
+                        w, h, "castle.footer");
 }
 
 }  // namespace cd

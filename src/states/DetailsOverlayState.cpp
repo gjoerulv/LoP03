@@ -35,7 +35,7 @@ void DetailsOverlayState::handleInput(const Input& input) {
 void DetailsOverlayState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    DrawRectangle(0, 0, w, h, Color{0, 0, 0, 150});
+    ui::drawModalDim(w, h);
 
     const std::vector<std::string> lines =
         ui::wrapText(body_, kTextW, style::kFontBody, ui::raylibMeasure());
@@ -53,8 +53,7 @@ void DetailsOverlayState::render() {
     const int x = (w - kPanelW) / 2;
     const int y = (h - panelH) / 2;
 
-    ui::drawFramedPanel(context_.resources, x, y, kPanelW, panelH,
-                        Color{18, 22, 32, 250}, style::palette().textDim);
+    ui::drawFrame(x, y, kPanelW, panelH, ui::FrameStyle::Raised);
     int ty = y + style::kPad;
     ui::drawTextCentered(title_.c_str(), x + kPanelW / 2, ty, style::kFontHeading,
                          style::palette().text);

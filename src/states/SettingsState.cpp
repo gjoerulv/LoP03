@@ -216,28 +216,29 @@ void SettingsState::handleInput(const Input& input) {
 void SettingsState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{16, 16, 26, 255});
-    ui::drawTextCentered("Settings", w / 2, 14, style::kFontScreenTitle, style::palette().text);
+    const style::Palette& p = style::palette();
+    ClearBackground(p.canvas);
+    ui::drawHeaderBand("Settings", w, p.crystal);
 
     // 15 rows (M22) fit inside 240px at 12px spacing starting higher; the
-    // message line sits between the menu and the footer.
-    ui::drawMenu(menu_, 70, 30, 12, style::kFontMenu, style::palette().text,
-                 style::palette().disabled, style::palette().cursor);
+    // list rides one full-height inset panel.
+    ui::drawFrame(54, 26, w - 108, 15 * 12 + 10, ui::FrameStyle::Inset);
+    ui::drawMenu(menu_, 70, 31, 12, style::kFontMenu, p.text, p.disabled, p.cursor);
 
     if (!message_.empty()) {
-        ui::drawTextFitted(message_, 40, h - 28, w - 80, style::kFontBody,
-                           style::palette().success, "settings.message");
+        ui::drawBanner(ui::BannerKind::Success, message_, 60, h - 40, w - 120,
+                       "settings.message");
     }
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
-    const std::string footer =
-        input::prompt(map, InputAction::MoveLeft, device, "/") + " " +
-        input::prompt(map, InputAction::MoveRight, device, "Adjust") + "    " +
-        input::prompt(map, InputAction::Confirm, device, "Select") + "    " +
-        input::prompt(map, InputAction::Cancel, device, "Save & Back");
-    ui::drawTextCentered(footer.c_str(), w / 2, h - style::kFooterHeight + 2, 9,
-                         style::palette().textHint);
+    ui::drawFooterHints(
+        {{input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
+              input::primaryLabel(map, InputAction::MoveRight, device),
+          "Adjust"},
+         {input::primaryLabel(map, InputAction::Confirm, device), "Select"},
+         {input::primaryLabel(map, InputAction::Cancel, device), "Save & Back"}},
+        w, h, "settings.footer");
 }
 
 }  // namespace cd

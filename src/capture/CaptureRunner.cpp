@@ -21,6 +21,7 @@
 #include "core/GameConfig.hpp"
 #include "dungeon/DungeonGenerator.hpp"
 #include "game/Achievements.hpp"
+#include "game/Profile.hpp"
 #include "game/Castle.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
@@ -41,6 +42,7 @@
 #include "states/ConfirmPromptState.hpp"
 #include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
+#include "states/DungeonMenuState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
 #include "states/EquipShopState.hpp"
@@ -181,6 +183,7 @@ score::RunSummary maximalRunSummary() {
     run.wagerAccepted = true;
     run.townBonusPct = 100;      // M32: max town bonus
     run.stakesPenaltyPct = 99;   // M33/M35: max penalty (-99%) -> town-bonus + penalty rows, fullest panel
+    run.classModPct = -80;       // M45: an all-Dragon party -> the class row, fullest panel
     return run;
 }
 
@@ -236,10 +239,14 @@ int run(const char* outDir) {
         tutorial::TutorialStore tutorial(scratch / "tutorial.json");
         tutorial.state.enabled = false;  // prompts only in their own scene
         AchievementStore achievements(scratch / "achievements.json");
+        // M45: captures run with the reward classes UNLOCKED unless a scene says
+        // otherwise, so the class-select scene can show both states.
+        ProfileStore profile(scratch / "profile.json");
+        profile.data.kingDefeated = true;
 
-        AppContext ctx{resources,  content, saves,       party,
-                       scoreboard, audio,   fade,        input,
-                       settings,   tutorial, achievements,
+        AppContext ctx{resources,  content,  saves,        party,
+                       scoreboard, audio,    fade,         input,
+                       settings,   tutorial, achievements, profile,
                        config::kVirtualWidth, config::kVirtualHeight};
 
         // One full save slot (the others stay empty) for the slot menu.
@@ -380,6 +387,14 @@ int run(const char* outDir) {
              [](StateStack& s, AppContext& c) {
                  s.pushState(std::make_unique<DungeonState>(
                      s, c, dungeon::generate(424242, 10, c.content, "hollow_forest")));
+             }},
+            {"50_dungeon_pause",
+             [](StateStack& s, AppContext& c) {
+                 // M46: the pause modal over a live dungeon — one of the six
+                 // facelift acceptance screens (presentation-only hook).
+                 s.pushState(std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine")));
+                 s.pushState(std::make_unique<DungeonMenuState>(s, c));
              }},
             {"17_battle_five_enemies",
              [&battleSlot](StateStack& s, AppContext& c) {
@@ -545,6 +560,19 @@ int run(const char* outDir) {
                  s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
                                                            MusicTrack::KingBattle));
              }},
+            {"51_battle_high_contrast",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M46: the densest battle layout under the high-contrast
+                 // palette — meters, statuses, focus, and the boss frame must
+                 // keep their shape distinctions, not merely recolor.
+                 ui::style::setHighContrast(true);
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 applyCaptureStatuses(b);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
+             }},
             {"35_castle_result",
              [](StateStack& s, AppContext& c) {
                  // M40: the challenge result overlay with the longest reward text
@@ -661,6 +689,81 @@ int run(const char* outDir) {
                  c.party.gold = gold;
                  c.party.castleRecords.kingTitle.clear();
                  s.pushState(std::make_unique<SlotMenuState>(s, c, SlotMenuMode::Load));
+             }},
+            {"45_relic_event",
+             [](StateStack& s, AppContext& c) {
+                 // M44: a reliquary room with the player facing it, so the event's
+                 // footer prompt is checked in situ. The seed is searched rather
+                 // than pinned: a rare event's seed would rot at the next
+                 // generation bump.
+                 for (std::uint64_t seed = 1; seed < 4000; ++seed) {
+                     dungeon::Dungeon d = dungeon::generate(seed, 20, c.content, "ruined_keep", 7);
+                     bool holdsRelic = false;
+                     for (const dungeon::Room& r : d.rooms) {
+                         holdsRelic = holdsRelic ||
+                                      r.event.kind == dungeon::RoomEventKind::RoyalRelic;
+                     }
+                     if (!holdsRelic) {
+                         continue;
+                     }
+                     auto state = std::make_unique<DungeonState>(s, c, std::move(d));
+                     if (state->captureFaceEvent(dungeon::RoomEventKind::RoyalRelic)) {
+                         s.pushState(std::move(state));
+                         return;
+                     }
+                 }
+             }},
+            {"46_battle_relics",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M44: the battle item list holding all four relics plus the
+                 // snacks — the widest item names and the count column.
+                 for (const char* id : {"evil_goose", "tax_sheets", "dragon_crown",
+                                        "deadly_spoon", "royal_snacks"}) {
+                     c.party.inventory.add(id, 2);
+                 }
+                 battle::Battle b =
+                     battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                            MusicTrack::KingBattle, nullptr, true);
+                 state->captureEnterItemMenu();
+                 s.pushState(std::move(state));
+             }},
+            {"47_class_select_locked",
+             [](StateStack& s, AppContext& c) {
+                 // M45: the reward classes are listed but locked, with the hint —
+                 // the goal is visible from the very first New Game.
+                 c.profile.data.kingDefeated = false;
+                 auto state = std::make_unique<PartyCreationState>(s, c);
+                 state->captureSelectClass(0, "dragon");
+                 state->captureSelectClass(1, "jester");
+                 state->captureSelectClass(2, "goose");
+                 s.pushState(std::move(state));
+             }},
+            {"48_class_select_unlocked",
+             [](StateStack& s, AppContext& c) {
+                 c.profile.data.kingDefeated = true;  // after the King has fallen
+                 auto state = std::make_unique<PartyCreationState>(s, c);
+                 state->captureSelectClass(0, "dragon");
+                 state->captureSelectClass(1, "jester");
+                 state->captureSelectClass(2, "goose");
+                 s.pushState(std::move(state));
+             }},
+            {"49_battle_jest",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M45: the longest quip, mid-screen, over a real battle.
+                 Party jesters = c.party;
+                 if (const content::ClassDef* cls = c.content.findClass("jester")) {
+                     jesters.members.clear();
+                     jesters.members.push_back(createCharacter(*cls, "Christabelle", 30));
+                     for (int i = 1; i < 4; ++i) {
+                         jesters.members.push_back(createCharacter(*cls, "Wolfgangheim", 30));
+                     }
+                 }
+                 battle::Battle b =
+                     battle::buildBattle(jesters, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureShowJest();
+                 s.pushState(std::move(state));
              }},
             {"44_quit_confirm",
              [](StateStack& s, AppContext& c) {

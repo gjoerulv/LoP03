@@ -278,15 +278,21 @@ TEST_CASE("castle: a Support skill with power wounds its target, power-0 does no
 
 // --- Sim-backed clearability ----------------------------------------------
 
-TEST_CASE("castle: a maxed party defeats the King, but it is a hard fight",
+TEST_CASE("castle: the re-statted King beats a maxed party that brought nothing",
           "[castle]") {
+    // M44 re-stat: raw stats and skills alone no longer carry this fight. The
+    // King is now a puzzle you answer with the Royal Relics and Royal Snacks —
+    // the counterplay evidence lives in test_royal_relics.cpp
+    // ("the doubled King demands the counterplay"), which drives the same fight
+    // with obtainable items and wins it. This case pins the other half: an
+    // item-less maxed party loses, so the counterplay is genuinely required.
     const content::ContentDatabase db = loadContent();
     battle::Battle b = battle::buildBattle(maxedParty(db), kingTeam(db), db);
     const battle::SimResult r = battle::simulate(b, db, 400);
     INFO("king rounds=" << r.rounds << " partyAlive=" << r.partyAlive << " hp%="
                         << r.partyHpFraction());
-    CHECK(r.outcome == battle::Outcome::Victory);  // beatable by a maxed party
-    CHECK(r.rounds >= 6);                           // not a pushover
+    CHECK(r.outcome != battle::Outcome::Victory);
+    CHECK(r.rounds >= 6);  // it still takes a real fight to lose
 }
 
 TEST_CASE("castle: a maxed party clears the Boss Rush with no free healing",

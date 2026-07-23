@@ -143,7 +143,7 @@ checklist per `docs/milestone_completion_template.md`.
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. The §D routine choices were
+- **Status:** complete (approved 2026-07-21). The §D routine choices were
   taken as written (recurring wandering storyteller + Jester, two sprites; the
   "Ballad of the Hollow King" premise; the storyteller at `(6,9)`; the Jester as a
   castle menu entry gated on all 7).

@@ -258,3 +258,102 @@ TEST_CASE("validation: themes require enemy and boss pools", "[content]") {
         REQUIRE(db.themeCount() == 0);
     }
 }
+
+// --- M43 schema additions ----------------------------------------------------
+
+TEST_CASE("validation: revive-capable skills are constrained to single-ally heals", "[content]") {
+    SECTION("a well-formed revive heal loads") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseSkills(parse(R"({"version":1,"skills":[
+            {"id":"renew","name":"Renew","category":"heal","target":"single_ally",
+             "power":12,"mpCost":9,"reviveHpPct":20}]})"),
+                    "mem", db, rep);
+        REQUIRE(rep.ok());
+        REQUIRE(db.findSkill("renew") != nullptr);
+        REQUIRE(db.findSkill("renew")->reviveHpPct == 20);
+    }
+    SECTION("a percentage above 100 is reported") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseSkills(parse(R"({"version":1,"skills":[
+            {"id":"renew","name":"Renew","category":"heal","target":"single_ally",
+             "reviveHpPct":140}]})"),
+                    "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+        REQUIRE(db.skillCount() == 0);
+    }
+    SECTION("reviving from a damage skill is reported") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseSkills(parse(R"({"version":1,"skills":[
+            {"id":"zap","name":"Zap","category":"magic","target":"single_enemy",
+             "reviveHpPct":20}]})"),
+                    "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+        REQUIRE(db.skillCount() == 0);
+    }
+    SECTION("reviving a whole party at once is reported") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseSkills(parse(R"({"version":1,"skills":[
+            {"id":"mass","name":"Mass","category":"heal","target":"all_allies",
+             "reviveHpPct":20}]})"),
+                    "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+        REQUIRE(db.skillCount() == 0);
+    }
+    SECTION("a skill without the field cannot revive") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseSkills(parse(R"({"version":1,"skills":[
+            {"id":"mend","name":"Mend","category":"heal","target":"single_ally","power":20}]})"),
+                    "mem", db, rep);
+        REQUIRE(rep.ok());
+        REQUIRE(db.findSkill("mend")->reviveHpPct == 0);
+    }
+}
+
+TEST_CASE("validation: an item's town window is parsed and sanity-checked", "[content]") {
+    SECTION("a town-1-only consumable loads") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseItems(parse(R"({"version":1,"items":[
+            {"id":"royal_snacks","name":"Royal Snacks","type":"consumable","value":250,
+             "minTown":1,"maxTown":1,"effect":"heal","effectAmount":10,"curesDebuffs":true,
+             "kingEffectAmount":100,"kingMpAmount":10}]})"),
+                   "mem", db, rep);
+        REQUIRE(rep.ok());
+        const ItemDef* d = db.findItem("royal_snacks");
+        REQUIRE(d != nullptr);
+        CHECK(d->maxTown == 1);
+        CHECK(d->curesDebuffs);
+        CHECK(d->kingEffectAmount == 100);
+        CHECK(d->kingMpAmount == 10);
+        CHECK(d->availableAtTown(1));
+        CHECK_FALSE(d->availableAtTown(2));
+    }
+    SECTION("an inverted window is reported") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseItems(parse(R"({"version":1,"items":[
+            {"id":"x","name":"X","type":"consumable","minTown":5,"maxTown":2}]})"),
+                   "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+        REQUIRE(db.itemCount() == 0);
+    }
+    SECTION("an item without a window is available everywhere") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseItems(parse(R"({"version":1,"items":[
+            {"id":"potion","name":"Potion","type":"consumable","effect":"heal"}]})"),
+                   "mem", db, rep);
+        REQUIRE(rep.ok());
+        const ItemDef* d = db.findItem("potion");
+        REQUIRE(d != nullptr);
+        CHECK(d->maxTown == 0);
+        CHECK(d->availableAtTown(1));
+        CHECK(d->availableAtTown(7));
+        CHECK_FALSE(d->curesDebuffs);
+    }
+}

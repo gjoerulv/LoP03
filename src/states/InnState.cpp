@@ -11,6 +11,7 @@
 #include "raylib.h"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -88,37 +89,44 @@ void InnState::handleInput(const Input& input) {
 void InnState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ui::drawSceneBackground(context_.resources, "bg.inn", Color{20, 16, 24, 255}, w, h,
+    namespace style = ui::style;
+    const style::Palette& p = style::palette();
+    ui::drawSceneBackground(context_.resources, "bg.inn", p.canvas, w, h,
                             context_.party.currentTown);
 
-    ui::drawTextCentered("Inn", w / 2, 14, 16, RAYWHITE);
-    ui::drawText(TextFormat("Gold: %d", context_.party.gold), w - 150, 12, 11,
-                 Color{230, 220, 150, 255});
-    ui::drawText(TextFormat("Tokens: %d", context_.party.restTokens), w - 150, 26, 11,
-                 Color{240, 200, 140, 255});
-    ui::drawTextCentered("Rest to fully restore HP and MP.", w / 2, 36, 10,
-                         Color{180, 180, 200, 255});
+    ui::drawHeaderBand("Inn", w, p.mpFill, context_.party.gold);
+    ui::drawChip(TextFormat("Rest tokens %d", context_.party.restTokens), 4, 27, p.gold);
+    ui::drawTextCentered("Rest to fully restore HP and MP.", w / 2, 30, style::kFontBody,
+                         p.textDim);
 
-    int y = 58;
+    // Party condition panel: labelled framed meters plus the exact numerals.
+    const int rows = static_cast<int>(context_.party.members.size());
+    ui::drawFrame(28, 46, w - 56, rows * 16 + 14, ui::FrameStyle::Inset);
+    int y = 54;
     for (const Character& c : context_.party.members) {
-        ui::drawTextFitted(TextFormat("%s  Lv.%d", c.name.c_str(), c.level), 40, y, 130, 10,
-                           RAYWHITE, "inn.name");
-        ui::drawText(TextFormat("HP %d/%d   MP %d/%d", c.hp, c.maxHp, c.mp, c.maxMp), 176, y, 10,
-                     Color{170, 220, 170, 255});
+        ui::drawTextFitted(TextFormat("%s  Lv.%d", c.name.c_str(), c.level), 40, y, 126,
+                           style::kFontBody, p.text, "inn.name");
+        ui::drawText("HP", 172, y, style::kFontSmall, p.textDim);
+        ui::drawMeter(186, y + 1, 46, 7, c.hp, c.maxHp, p.hpFill);
+        ui::drawText(TextFormat("%d/%d", c.hp, c.maxHp), 238, y, style::kFontSmall, p.text);
+        ui::drawText("MP", 292, y, style::kFontSmall, p.textDim);
+        ui::drawMeter(306, y + 1, 40, 7, c.mp, c.maxMp, p.mpFill);
+        ui::drawText(TextFormat("%d/%d", c.mp, c.maxMp), 352, y, style::kFontSmall, p.text);
         y += 16;
     }
 
-    ui::drawMenu(menu_, 60, y + 10, 18, 11, RAYWHITE, Color{90, 90, 110, 255},
-                 Color{240, 220, 120, 255});
+    const int menuRows = static_cast<int>(menu_.size());
+    ui::drawFrame(44, y + 6, 300, menuRows * 18 + 14, ui::FrameStyle::Standard);
+    ui::drawMenu(menu_, 66, y + 15, 18, style::kFontMenu, p.text, p.disabled, p.cursor);
 
     if (!message_.empty()) {
-        ui::drawTextCentered(message_.c_str(), w / 2, h - 30, 10, Color{170, 220, 170, 255});
+        ui::drawBanner(ui::BannerKind::Success, message_, 60, h - 46, w - 120, "inn.message");
     }
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
-    const std::string footer = input::prompt(map, InputAction::Confirm, device, "Rest") + "    " +
-                               input::prompt(map, InputAction::Cancel, device, "Back");
-    ui::drawTextCentered(footer.c_str(), w / 2, h - 14, 10, Color{150, 150, 170, 255});
+    ui::drawFooterHints({{input::primaryLabel(map, InputAction::Confirm, device), "Rest"},
+                         {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
+                        w, h, "inn.footer");
 }
 
 }  // namespace cd

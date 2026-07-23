@@ -7,6 +7,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "dungeon/DungeonModel.hpp"
+#include "game/Castle.hpp"  // kKingBossId (M43: King-context items)
 #include "game/Party.hpp"
 
 namespace cd::battle {
@@ -65,7 +66,14 @@ void addStatus(Combatant& c, content::StatusType type, int magnitude, int turns)
     if (type == content::StatusType::None || turns <= 0) {
         return;
     }
-    const int scaledTurns = turns * kStatusDurationMult;  // M35: statuses last 2x their authored duration
+    // M35: statuses last 2x their authored duration - EXCEPT the M44 turn-control
+    // statuses, which take the turn itself. Doubling those would quietly turn one
+    // skipped turn into two, so they are applied exactly as authored. (Statuses
+    // tick at the START of the bearer's turn, before it acts, so a duration of 2
+    // costs it exactly one turn.)
+    const bool turnControl = type == content::StatusType::Terrified ||
+                             type == content::StatusType::Stunned;
+    const int scaledTurns = turnControl ? turns : turns * kStatusDurationMult;
     for (StatusInstance& s : c.statuses) {
         if (s.type == type) {
             s.magnitude = magnitude;
@@ -94,6 +102,20 @@ void clearNegativeStatuses(Combatant& c) {
     c.statuses = std::move(kept);
 }
 
+// M43: lift only the stat debuffs (ATK-/DEF-), leaving poison and the M35
+// afflictions in place. Royal Snacks pick you up; a Remedy is still what cures
+// you.
+bool clearStatDebuffs(Combatant& c) {
+    const std::size_t before = c.statuses.size();
+    c.statuses.erase(std::remove_if(c.statuses.begin(), c.statuses.end(),
+                                    [](const StatusInstance& s) {
+                                        return s.type == content::StatusType::AttackDown ||
+                                               s.type == content::StatusType::DefenseDown;
+                                    }),
+                     c.statuses.end());
+    return c.statuses.size() != before;
+}
+
 const char* statusLabel(content::StatusType type) {
     switch (type) {
         case content::StatusType::Poison: return "Poison";
@@ -104,6 +126,8 @@ const char* statusLabel(content::StatusType type) {
         case content::StatusType::Confusion: return "Confusion";
         case content::StatusType::Silence: return "Silence";
         case content::StatusType::Blind: return "Blind";
+        case content::StatusType::Terrified: return "Terrified";
+        case content::StatusType::Stunned: return "Stunned";
         case content::StatusType::None: return "";
     }
     return "";
@@ -148,6 +172,14 @@ std::uint64_t mix64(std::uint64_t x) {
 constexpr std::uint64_t kSaltBlind = 0xB11D5EED0F0F0F0Full;   // physical miss (Blind + Evasion)
 constexpr std::uint64_t kSaltConfuse = 0xC0FFED15C0117E00ull;
 constexpr std::uint64_t kSaltWard = 0x5FADE0000ABCDEF0ull;    // Spell Ward magic fizzle
+// M45 Jester salts. These mix into a PURE hash (targetJitter), never into the
+// roll stream, so an uncontrolled turn and its quip are reproducible without any
+// ordering contract between the battle screen and the Simulator.
+constexpr std::uint64_t kSaltJesterAct = 0x1E57E7AC7100D1E5ull;   // which action
+constexpr std::uint64_t kSaltJesterAim = 0x1E57E7A10A1D0000ull;   // which target
+constexpr std::uint64_t kSaltJesterLine = 0x1E57E71114E00D1Eull;  // which quip, if any
+// M45: how often an uncontrolled Jester quips (presentation only).
+constexpr int kJestChancePct = 15;
 
 // Small deterministic jitter in [0, range) from the battle seed + round + acting
 // enemy + candidate. Pure, so a given encounter always resolves identically and
@@ -551,6 +583,18 @@ std::string Battle::tickStatuses(int unit) {
 
 std::string Battle::attack(int actor, int target) {
     lastMissed.clear();
+    // M45: a class whose basic attack hits every foe sweeps instead of striking
+    // one — except while confused, when it lashes at a single member of its own
+    // side like anyone else.
+    const Combatant& self = units[static_cast<std::size_t>(actor)];
+    if (self.attackHitsAll && !isConfused(self)) {
+        return attackAll(actor);
+    }
+    return attackOne(actor, target);
+}
+
+std::string Battle::attackOne(int actor, int target) {
+    lastMissed.clear();
     // Confusion (M35): a confused unit swings at a seeded random member of its own
     // side instead. (Draws from the shared roll stream, so live play and the
     // Simulator reproduce it identically.)
@@ -592,10 +636,55 @@ std::string Battle::attack(int actor, int target) {
         log += " " + t.name + " is KO'd!";
     }
     log += extra;
+    log += applyAttackStatuses(actor, target);  // M45 (the Dragon's bite)
     if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
         a.enrageAnnounced = true;
         log = a.name + " flies into a rage! " + log;
     }
+    return log;
+}
+
+std::string Battle::applyAttackStatuses(int actor, int target) {
+    // M45: statuses a class's BASIC attack carries (the Dragon's poison + blind),
+    // applied only on a connecting hit and only to a living target. Empty for
+    // every unit that carries none, so pre-M45 attacks are byte-identical.
+    Combatant& a = units[static_cast<std::size_t>(actor)];
+    Combatant& t = units[static_cast<std::size_t>(target)];
+    if (a.attackStatuses.empty() || !t.alive()) {
+        return "";
+    }
+    std::string log;
+    for (const StatusInstance& s : a.attackStatuses) {
+        if (s.type == content::StatusType::None || isImmuneTo(t, s.type)) {
+            continue;
+        }
+        addStatus(t, s.type, s.magnitude, s.turns);
+        log += " " + t.name + ": " + statusLabel(s.type) + ".";
+    }
+    return log;
+}
+
+std::string Battle::attackAll(int actor) {
+    // M45: an AoE basic attack (the Dragon) resolves as one independent strike per
+    // living foe — its own to-hit roll, its own passive interactions, its own
+    // statuses — so it reads and resolves exactly like the single-target attack it
+    // is repeated from.
+    const Side foe =
+        units[static_cast<std::size_t>(actor)].side == Side::Party ? Side::Enemy : Side::Party;
+    const std::vector<int> targets = aliveIndices(foe);
+    if (targets.empty()) {
+        return units[static_cast<std::size_t>(actor)].name + " finds nothing to strike.";
+    }
+    std::string log = units[static_cast<std::size_t>(actor)].name + " sweeps every foe!";
+    std::vector<int> missed;
+    for (int ti : targets) {
+        if (!units[static_cast<std::size_t>(ti)].alive()) {
+            continue;  // felled by an earlier strike in this same sweep
+        }
+        log += " " + attackOne(actor, ti);
+        missed.insert(missed.end(), lastMissed.begin(), lastMissed.end());
+    }
+    lastMissed = std::move(missed);  // every miss in the sweep, for the floaters
     return log;
 }
 
@@ -735,6 +824,16 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                         addThreat(actor, amt);  // healing draws enmity too (M28)
                     }
                     log += " " + t.name + " recovers " + std::to_string(amt) + " HP.";
+                } else if (skill.reviveHpPct > 0) {
+                    // M43: a revive-capable heal (Renew) raises a KO'd ally at a
+                    // fixed share of its max HP - the skill's own power never
+                    // enters, so reviving is an emergency, not a heal.
+                    const int amt = std::max(1, t.maxHp * skill.reviveHpPct / 100);
+                    t.hp = amt;
+                    if (a.side == Side::Party) {
+                        addThreat(actor, amt);
+                    }
+                    log += " " + t.name + " is revived with " + std::to_string(amt) + " HP!";
                 }
                 break;
             }
@@ -770,6 +869,20 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             log += " " + t.name + ": " + statusLabel(skill.statusEffect) + ".";
         }
     }
+    // M45 (the Goose's tradeoff): a skill authored `alsoBuffsEnemies` applies its
+    // status to every living FOE as well — the price of a goose's kindness. Inert
+    // for every other skill, so nothing else changes.
+    if (skill.alsoBuffsEnemies && skill.statusEffect != content::StatusType::None) {
+        const Side foe = a.side == Side::Party ? Side::Enemy : Side::Party;
+        for (int fi : aliveIndices(foe)) {
+            Combatant& f = units[static_cast<std::size_t>(fi)];
+            if (isImmuneTo(f, skill.statusEffect)) {
+                continue;
+            }
+            addStatus(f, skill.statusEffect, skill.statusMagnitude, skill.statusDuration);
+            log += " " + f.name + " is cheered up: " + statusLabel(skill.statusEffect) + "!";
+        }
+    }
     if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
         a.enrageAnnounced = true;
         log = a.name + " flies into a rage! " + log;
@@ -782,18 +895,33 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
     Combatant& t = units[static_cast<std::size_t>(target)];
     const std::string& who = units[static_cast<std::size_t>(actor)].name;
     std::string log = who + " uses " + item.name + " on " + t.name + ".";
+    // M44: an item restricted to one boss does nothing to anyone else - and the
+    // caller keeps it rather than spending it on nothing (itemAffects).
+    if (!item.requiresBossId.empty() && t.sourceId != item.requiresBossId) {
+        return log + " Nothing happens.";
+    }
+    // M43: an item may carry King-specific amounts (Royal Snacks). kingBattle is
+    // set at buildBattle from the team's boss id, so this branch is content-
+    // derived and identical in live play and the Simulator.
+    const int healAmount =
+        kingBattle && item.kingEffectAmount > 0 ? item.kingEffectAmount : item.effectAmount;
+    const int mpAmount = kingBattle ? item.kingMpAmount : 0;
     switch (item.effect) {
         case content::ConsumableEffect::Heal:
             if (t.alive()) {
-                applyHeal(t, item.effectAmount);
-                log += " HP +" + std::to_string(item.effectAmount) + ".";
+                applyHeal(t, healAmount);
+                log += " HP +" + std::to_string(healAmount) + ".";
+                if (mpAmount > 0) {
+                    t.mp = std::min(t.maxMp, t.mp + mpAmount);
+                    log += " MP +" + std::to_string(mpAmount) + ".";
+                }
             } else {
                 log += " No effect.";
             }
             break;
         case content::ConsumableEffect::RestoreMp:
-            t.mp = std::min(t.maxMp, t.mp + item.effectAmount);
-            log += " MP +" + std::to_string(item.effectAmount) + ".";
+            t.mp = std::min(t.maxMp, t.mp + healAmount);
+            log += " MP +" + std::to_string(healAmount) + ".";
             break;
         case content::ConsumableEffect::Revive:
             if (!t.alive()) {
@@ -811,6 +939,35 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
         case content::ConsumableEffect::None:
             log += " Nothing happens.";
             break;
+    }
+    // M43: an item may also lift the stat debuffs alongside its main effect
+    // (Royal Snacks). Inert for every item that does not ask for it.
+    if (item.curesDebuffs && t.alive() && clearStatDebuffs(t)) {
+        log += " ATK-/DEF- lifted.";
+    }
+    // M44 (Royal Relics): applied statuses and a battle-long stat scale. Both are
+    // data-driven, so no relic has hardcoded behavior in the battle model.
+    if (t.alive()) {
+        for (const content::ItemStatus& s : item.statuses) {
+            if (s.type == content::StatusType::None || isImmuneTo(t, s.type)) {
+                continue;
+            }
+            addStatus(t, s.type, s.magnitude, s.duration);
+            log += " " + t.name + ": " + statusLabel(s.type) + ".";
+        }
+        if (item.statScalePct > 0 && item.statScalePct < 100) {
+            // Enemy stats never persist past a battle, so "for the rest of the
+            // fight" is simply a direct scale of the combatant's own stats. HP/MP
+            // are untouched: this weakens a foe, it does not wound it.
+            const auto scale = [pct = item.statScalePct](int v) {
+                return v > 0 ? std::max(1, v * pct / 100) : v;
+            };
+            t.stats.attack = scale(t.stats.attack);
+            t.stats.magic = scale(t.stats.magic);
+            t.stats.defense = scale(t.stats.defense);
+            t.stats.speed = scale(t.stats.speed);
+            log += " " + t.name + " is diminished for the rest of the battle!";
+        }
     }
     return log;
 }
@@ -843,6 +1000,13 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             // character's level (startingSkills + level-gated grants), derived
             // identically here for live play and the headless simulator.
             u.skillIds = content::knownSkillsFor(*cls, c.level);
+            // M45: class battle traits are resolved once, here, so the pure model
+            // never needs the content database to know how a unit fights.
+            u.attackHitsAll = cls->attackHitsAll;
+            for (const content::AttackStatus& s : cls->attackStatuses) {
+                u.attackStatuses.push_back({s.type, s.magnitude, s.duration});
+            }
+            u.uncontrolled = cls->uncontrolled;
         }
         // M36: own many, equip one - resolve the single equipped passive.
         if (!c.equippedPassive.empty()) {
@@ -862,6 +1026,10 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         s.speed = s.speed * team.statScalePct / 100;
         return s;
     };
+
+    // M43: is this the King's fight? Read once, from content, so item behavior
+    // that keys on it is deterministic and sim-identical.
+    b.kingBattle = team.bossId == kKingBossId;
 
     // Boss combatant (built from a BossDef; its minions follow below).
     if (!team.bossId.empty()) {
@@ -960,10 +1128,151 @@ std::vector<int> turnOrder(const Battle& b) {
     return order;
 }
 
+EnemyChoice confusedChoice(const Battle& b, int actor) {
+    EnemyChoice choice;  // useSkill stays false: confusion forbids deliberate acts
+    choice.forced = ForcedAction::BasicAttack;
+    const Side foe =
+        b.units[static_cast<std::size_t>(actor)].side == Side::Party ? Side::Enemy : Side::Party;
+    const std::vector<int> foes = b.aliveIndices(foe);
+    // attack() redirects to a seeded member of the actor's OWN side, so this is
+    // only a valid nominal target; the actor itself serves when nothing opposes it.
+    choice.target = foes.empty() ? actor : foes.front();
+    return choice;
+}
+
+EnemyChoice uncontrolledChoice(const Battle& b, int actor, const content::ContentDatabase& db) {
+    EnemyChoice choice;
+    const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    const Side foe = self.side == Side::Party ? Side::Enemy : Side::Party;
+    const std::vector<int> foes = b.aliveIndices(foe);
+    if (foes.empty()) {
+        choice.target = -1;
+        return choice;
+    }
+    // Pure hashes of (seed, round, actor) under their own salts: no roll-stream
+    // consumption, so every decider derives the identical turn.
+    const std::uint64_t pickRoll = static_cast<std::uint64_t>(
+        targetJitter(b.rngSeed ^ kSaltJesterAct, b.turnsTaken, actor, 0, 1 << 20));
+    const std::uint64_t aimRoll = static_cast<std::uint64_t>(
+        targetJitter(b.rngSeed ^ kSaltJesterAim, b.turnsTaken, actor, 1, 1 << 20));
+
+    choice.target = foes[static_cast<std::size_t>(aimRoll % foes.size())];
+
+    // Its options: every known skill it can actually cast and afford, plus the
+    // basic attack (always available). An unusable skill is simply not an option,
+    // so a silenced or broke Jester still swings instead of fizzling.
+    std::vector<const std::string*> castable;
+    for (const std::string& sid : self.skillIds) {
+        const content::SkillDef* s = db.findSkill(sid);
+        if (s != nullptr && s->mpCost <= self.mp && canCast(self, *s)) {
+            castable.push_back(&sid);
+        }
+    }
+    const std::size_t options = castable.size() + 1;  // +1 = the basic attack
+    const std::size_t pick = pickRoll % options;
+    if (pick < castable.size()) {
+        choice.useSkill = true;
+        choice.skillId = *castable[pick];
+        // An ally-facing skill is aimed at a random ALLY instead (the Jester is
+        // chaotic, not suicidal).
+        if (const content::SkillDef* s = db.findSkill(choice.skillId);
+            s != nullptr && (s->target == content::SkillTarget::SingleAlly ||
+                             s->target == content::SkillTarget::AllAllies ||
+                             s->target == content::SkillTarget::Self)) {
+            const std::vector<int> allies = b.aliveIndices(self.side);
+            choice.target = allies.empty() ? actor
+                                           : allies[static_cast<std::size_t>(aimRoll %
+                                                                             allies.size())];
+        }
+    }
+    return choice;
+}
+
+bool jestThisTurn(const Battle& b, int actor, int lineCount, int& index) {
+    index = 0;
+    if (lineCount <= 0) {
+        return false;
+    }
+    // Presentation only: its own salt, a pure hash, no rollCursor. Whether a jest
+    // shows can never change how the battle resolves.
+    const long roll = targetJitter(b.rngSeed ^ kSaltJesterLine, b.turnsTaken, actor, 2, 10000);
+    if (roll % 100 >= kJestChancePct) {
+        return false;
+    }
+    index = static_cast<int>((roll / 100) % lineCount);
+    return true;
+}
+
+ForcedAction forcedActionFor(const Combatant& c) {
+    // Order matters only in that a unit can carry more than one: a skipped turn
+    // beats a forced guard, which beats a confused swing, because each is stricter
+    // than the next.
+    if (hasStatus(c, content::StatusType::Stunned)) {
+        return ForcedAction::Skip;
+    }
+    if (hasStatus(c, content::StatusType::Terrified)) {
+        return ForcedAction::Guard;
+    }
+    if (isConfused(c)) {
+        return ForcedAction::BasicAttack;
+    }
+    return ForcedAction::None;
+}
+
+EnemyChoice forcedChoice(const Battle& b, int actor, ForcedAction forced) {
+    if (forced == ForcedAction::BasicAttack) {
+        return confusedChoice(b, actor);
+    }
+    EnemyChoice choice;
+    choice.forced = forced;  // Guard / Skip need no target
+    return choice;
+}
+
+std::vector<int> itemTargets(const Battle& b, Side side, const content::ItemDef& item) {
+    // M44: an enemy-targeting item (the relics) reaches the living foes of `side`.
+    if (item.battleTarget == content::BattleTarget::Enemy) {
+        return b.aliveIndices(side == Side::Party ? Side::Enemy : Side::Party);
+    }
+    const bool wantsFallen = item.effect == content::ConsumableEffect::Revive;
+    std::vector<int> targets;
+    for (std::size_t i = 0; i < b.units.size(); ++i) {
+        if (b.units[i].side == side && b.units[i].alive() != wantsFallen) {
+            targets.push_back(static_cast<int>(i));
+        }
+    }
+    return targets;
+}
+
+bool itemAffects(const Battle& b, int target, const content::ItemDef& item) {
+    if (item.requiresBossId.empty()) {
+        return true;
+    }
+    if (target < 0 || target >= static_cast<int>(b.units.size())) {
+        return false;
+    }
+    return b.units[static_cast<std::size_t>(target)].sourceId == item.requiresBossId;
+}
+
+std::vector<int> skillAllyTargets(const Battle& b, Side side, const content::SkillDef& skill) {
+    std::vector<int> targets;
+    for (std::size_t i = 0; i < b.units.size(); ++i) {
+        if (b.units[i].side == side && (b.units[i].alive() || skill.reviveHpPct > 0)) {
+            targets.push_back(static_cast<int>(i));
+        }
+    }
+    return targets;
+}
+
 EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::ContentDatabase& db) {
     EnemyChoice choice;
 
     const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    // Forced actions (M43 confusion, M44 Terrified/Stunned): a unit whose turn was
+    // taken away never gets to choose. Enforced here, in shared code, so an enemy
+    // caster can no longer heal or curse through it the way it could before v4.
+    if (const ForcedAction forced = forcedActionFor(self); forced != ForcedAction::None) {
+        return forcedChoice(b, actor, forced);
+    }
     // Silence (M35): a silenced enemy cannot use MP-cost skills, so it falls back
     // to any 0-MP skill or a basic attack. canCast enforces exactly that in each
     // skill loop below.

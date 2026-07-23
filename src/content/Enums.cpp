@@ -113,7 +113,7 @@ constexpr std::array<std::pair<std::string_view, ConsumableEffect>, 5> kConsumab
     {"cure", ConsumableEffect::Cure},
 }};
 
-constexpr std::array<std::pair<std::string_view, StatusType>, 9> kStatusTypes{{
+constexpr std::array<std::pair<std::string_view, StatusType>, 11> kStatusTypes{{
     {"none", StatusType::None},
     {"poison", StatusType::Poison},
     {"attack_up", StatusType::AttackUp},
@@ -123,6 +123,13 @@ constexpr std::array<std::pair<std::string_view, StatusType>, 9> kStatusTypes{{
     {"confusion", StatusType::Confusion},
     {"silence", StatusType::Silence},
     {"blind", StatusType::Blind},
+    {"terrified", StatusType::Terrified},  // M44: forced to Guard next turn
+    {"stunned", StatusType::Stunned},      // M44: skips its next turn
+}};
+
+constexpr std::array<std::pair<std::string_view, BattleTarget>, 2> kBattleTargets{{
+    {"ally", BattleTarget::Ally},
+    {"enemy", BattleTarget::Enemy},
 }};
 
 constexpr std::array<std::pair<std::string_view, BossArchetype>, 4> kBossArchetypes{{
@@ -169,6 +176,9 @@ std::optional<ConsumableEffect> parseConsumableEffect(std::string_view s) {
     return parseFrom(kConsumableEffects, s);
 }
 std::optional<StatusType> parseStatusType(std::string_view s) { return parseFrom(kStatusTypes, s); }
+std::optional<BattleTarget> parseBattleTarget(std::string_view s) {
+    return parseFrom(kBattleTargets, s);
+}
 std::optional<BossArchetype> parseBossArchetype(std::string_view s) {
     return parseFrom(kBossArchetypes, s);
 }
@@ -188,6 +198,7 @@ const char* toString(EquipSlot v) { return nameFrom(kEquipSlots, v); }
 const char* toString(Rarity v) { return nameFrom(kRarities, v); }
 const char* toString(ConsumableEffect v) { return nameFrom(kConsumableEffects, v); }
 const char* toString(StatusType v) { return nameFrom(kStatusTypes, v); }
+const char* toString(BattleTarget v) { return nameFrom(kBattleTargets, v); }
 const char* toString(BossArchetype v) { return nameFrom(kBossArchetypes, v); }
 const char* toString(PassiveHook v) { return nameFrom(kPassiveHooks, v); }
 

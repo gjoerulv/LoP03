@@ -16,6 +16,7 @@
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -127,42 +128,43 @@ void BlackMarketState::handleInput(const Input& input) {
 void BlackMarketState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{10, 8, 14, 255});
+    namespace style = ui::style;
+    const style::Palette& p = style::palette();
+    ClearBackground(p.canvas);
 
-    ui::drawTextCentered("Black Market", w / 2, 14, 18, Color{200, 170, 230, 255});
-    // Right-aligned so the readouts clear the wide centered title.
-    ui::drawTextRight(TextFormat("Gold: %d", context_.party.gold), w - 8, 12, 11,
-                      Color{230, 220, 150, 255});
-    ui::drawTextRight(TextFormat("Tokens: %d", context_.party.legendaryTokens), w - 8, 26, 11,
-                      Color{200, 170, 230, 255});
-    ui::drawTextCentered("A hooded dealer offers a single legendary.", w / 2, 36, 10,
-                         Color{180, 170, 200, 255});
+    ui::drawHeaderBand("Black Market", w, p.magic, context_.party.gold);
+    ui::drawChip(TextFormat("Tokens %d", context_.party.legendaryTokens), 4, 27, p.magic);
+    ui::drawTextCentered("A hooded dealer offers a single legendary.", w / 2, 30,
+                         style::kFontBody, p.textDim);
 
+    // The single legendary offer sits in a Reward frame.
     const content::ItemDef* it = context_.content.findItem(itemId_);
     if (it != nullptr) {
         const char* slot = it->slot == content::EquipSlot::Weapon      ? "Weapon"
                            : it->slot == content::EquipSlot::Armor     ? "Armor"
                            : it->slot == content::EquipSlot::Accessory ? "Accessory"
                                                                        : "Relic";
-        ui::drawText(TextFormat("%s  (Legendary %s)", it->name.c_str(), slot), 40, 62, 12,
-                     Color{240, 210, 250, 255});
-        ui::drawTextFitted(statBonusSummary(it->statBonus), 40, 80, w - 80, 10,
-                           Color{170, 220, 170, 255}, "market.stats");
-        ui::drawTextWrapped(it->description, 40, 96, w - 80, 10, Color{200, 200, 215, 255},
+        ui::drawFrame(32, 46, w - 64, 70, ui::FrameStyle::Reward);
+        ui::drawTextFitted(TextFormat("%s  (Legendary %s)", it->name.c_str(), slot), 46, 53,
+                           w - 92, 12, p.gold, "market.name");
+        ui::drawTextFitted(statBonusSummary(it->statBonus), 46, 70, w - 92, style::kFontBody,
+                           p.success, "market.stats");
+        ui::drawTextWrapped(it->description, 46, 85, w - 92, style::kFontBody, p.textDim,
                             "market.desc", 2);
     }
 
-    ui::drawMenu(menu_, 60, 130, 18, 11, RAYWHITE, Color{90, 90, 110, 255},
-                 Color{230, 200, 245, 255});
+    const int rows = static_cast<int>(menu_.size());
+    ui::drawFrame(44, 122, 300, rows * 18 + 14, ui::FrameStyle::Inset);
+    ui::drawMenu(menu_, 66, 131, 18, style::kFontMenu, p.text, p.disabled, p.cursor);
 
     if (!message_.empty()) {
-        ui::drawTextCentered(message_.c_str(), w / 2, h - 30, 10, Color{200, 200, 235, 255});
+        ui::drawBanner(ui::BannerKind::Reward, message_, 60, h - 46, w - 120, "market.message");
     }
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
-    const std::string footer = input::prompt(map, InputAction::Confirm, device, "Choose") + "    " +
-                               input::prompt(map, InputAction::Cancel, device, "Leave");
-    ui::drawTextCentered(footer.c_str(), w / 2, h - 14, 10, Color{150, 150, 170, 255});
+    ui::drawFooterHints({{input::primaryLabel(map, InputAction::Confirm, device), "Choose"},
+                         {input::primaryLabel(map, InputAction::Cancel, device), "Leave"}},
+                        w, h, "market.footer");
 }
 
 }  // namespace cd

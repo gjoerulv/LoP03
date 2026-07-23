@@ -15,6 +15,7 @@
 #include "game/Achievements.hpp"
 #include "game/BossDrops.hpp"
 #include "game/Party.hpp"
+#include "game/Relics.hpp"  // the M44 relic grant (seeded, reload-proof)
 #include "game/WorldLadder.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -212,6 +213,31 @@ void DungeonState::enterRoom(int index, std::optional<dungeon::Dir> entrySide) {
                    static_cast<float>(start.y) * kTile + inset, kPlayerSize, kPlayerSize};
 }
 
+#ifdef CRYSTAL_CAPTURE
+bool DungeonState::captureFaceEvent(dungeon::RoomEventKind kind) {
+    for (std::size_t i = 0; i < dungeon_.rooms.size(); ++i) {
+        if (dungeon_.rooms[i].event.kind != kind) {
+            continue;
+        }
+        enterRoom(static_cast<int>(i), std::nullopt);
+        for (const Marker& m : markers_) {
+            if (m.kind != MarkerKind::Event) {
+                continue;
+            }
+            // Stand one tile above the marker, looking down at it, so the footer
+            // shows the event's trade-off exactly as it does in play.
+            const float inset = (kTile - kPlayerSize) * 0.5f;
+            player_ = Rect{static_cast<float>(m.x) * kTile + inset,
+                           static_cast<float>(m.y - 1) * kTile + inset, kPlayerSize, kPlayerSize};
+            facing_ = Vec2{0.0f, 1.0f};
+            recomputeInteraction(m.x, m.y - 1);
+            return facingMarker_ != nullptr;
+        }
+    }
+    return false;
+}
+#endif
+
 void DungeonState::recomputeInteraction(int tx, int ty) {
     onChest_ = false;
     facingMarker_ = nullptr;
@@ -356,6 +382,24 @@ void DungeonState::resolveEvent() {
             context_.audio.play(Sfx::Interact);
             message_ = "You pocket a free-rest token - redeem it at the inn.";
             break;
+        case dungeon::RoomEventKind::RoyalRelic: {
+            // M44: which relic is granted is decided HERE, at resolution, from a
+            // pure hash of (dungeon seed, room index) and what the party already
+            // owns - so reloading and walking back in reproduces the same relic
+            // rather than rerolling it.
+            std::array<bool, kRelicCount> owned{};
+            for (int i = 0; i < kRelicCount; ++i) {
+                owned[static_cast<std::size_t>(i)] =
+                    context_.party.inventory.count(relicIdAt(i)) >= 1;
+            }
+            const std::string relicId = relicIdAt(relicPickIndex(dungeon_.seed, currentRoom_, owned));
+            context_.party.inventory.add(relicId, 1);
+            const content::ItemDef* it = context_.content.findItem(relicId);
+            context_.audio.play(Sfx::Interact);
+            message_ = "The reliquary yields " + (it != nullptr ? it->name : relicId) +
+                       "! Save it for a foe that deserves it.";
+            break;
+        }
         case dungeon::RoomEventKind::EliteChallenge:
         case dungeon::RoomEventKind::None:
             return;  // challenges resolve through battle, not here
@@ -399,6 +443,11 @@ std::string DungeonState::eventPromptText() const {
         case dungeon::RoomEventKind::RestToken:
             return input::prompt(map, InputAction::Confirm, device, "Rest here") +
                    " - pocket a free-rest token for the inn";
+        case dungeon::RoomEventKind::RoyalRelic:
+            // M44: no cost and no catch - the trade-off is that it is used up in
+            // one battle, which the prompt says before the player commits (M20).
+            return input::prompt(map, InputAction::Confirm, device, "Open the reliquary") +
+                   " - claim one Royal Relic (a single-use battle trick)";
         case dungeon::RoomEventKind::EliteChallenge: {
             if (room.teamIndex < 0 ||
                 room.teamIndex >= static_cast<int>(dungeon_.teams.size())) {
@@ -560,6 +609,9 @@ void DungeonState::completeDungeon() {
     const int stakesPct =
         stakesPenaltyPct(context_.party.stakes, dungeon_.town, dungeon_.depth);
     summary.stakesPenaltyPct = stakesPct;
+    // M45: the party's additive unlockable-class modifier (0 for any party of the
+    // six original classes). Derived from the classes, never hand-set.
+    summary.classModPct = partyClassModPct(context_.party, context_.content);
     // M34: whether this run raises the stakes (the black-market spawn trigger),
     // read from the PRE-run state before it advances below.
     const bool raisedStakes =
@@ -632,7 +684,8 @@ void DungeonState::completeDungeon() {
     entry.partyLevel = highestLevel(context_.party);
     entry.battleRulesVersion = battle::kBattleRulesVersion;
     entry.townIndex = dungeon_.town;  // M32
-    entry.stakesPenaltyPct = stakesPct;  // M33
+    entry.stakesPenaltyPct = stakesPct;      // M33
+    entry.classModPct = summary.classModPct;  // M45 (comparability tag, never ranked)
     context_.scoreboard.add(entry);
     content::LoadReport saveReport;
     context_.scoreboard.save(saveReport);
@@ -735,7 +788,14 @@ void DungeonState::update(float dt) {
         if (facingMarker_->kind == MarkerKind::GuardTeam) {
             maybeTutorialPrompt(stack(), context_, tutorial::kChestGuarded);
         } else if (facingMarker_->kind == MarkerKind::Event) {
-            maybeTutorialPrompt(stack(), context_, tutorial::kEventFirst);
+            // M44: a reliquary is rare enough to deserve its own first-encounter
+            // beat, and it explains what the relics are FOR before the King.
+            const dungeon::RoomEvent& ev =
+                dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].event;
+            maybeTutorialPrompt(stack(), context_,
+                                ev.kind == dungeon::RoomEventKind::RoyalRelic
+                                    ? tutorial::kFirstRelic
+                                    : tutorial::kEventFirst);
         }
     }
 
@@ -750,8 +810,12 @@ void DungeonState::update(float dt) {
 void DungeonState::renderMinimap() const {
     constexpr int cell = 6;
     constexpr int step = 7;
-    const int ox = context_.virtualWidth - dungeon_.gridW * step - 4;
-    const int oy = 4;
+    const int ox = context_.virtualWidth - dungeon_.gridW * step - 10;
+    const int oy = 10;
+
+    // Framed map well (M46) with the shared Inset construction.
+    ui::drawFrame(ox - 6, oy - 6, dungeon_.gridW * step + 12, dungeon_.gridH * step + 12,
+                  ui::FrameStyle::Inset);
 
     for (const dungeon::Room& r : dungeon_.rooms) {
         const int cx = ox + r.gridX * step;
@@ -789,7 +853,51 @@ void DungeonState::renderMinimap() const {
 }
 
 void DungeonState::render() {
-    ClearBackground(BLACK);
+    const ui::style::Palette& pal = ui::style::palette();
+    ClearBackground(pal.canvas);
+
+    // Stage matte (M46): a low-contrast band behind the room's span plus
+    // stepped corner brackets and sparse theme accent pips connect the
+    // playable room to the HUD without painting over it.
+    const int roomW = roomMap_.width() * kTile;
+    const int roomH = roomMap_.height() * kTile;
+    DrawRectangle(0, originY_ - 8, context_.virtualWidth, roomH + 16, pal.panelInset);
+    {
+        const int bx = originX_ - 6;
+        const int by = originY_ - 6;
+        const int bw = roomW + 12;
+        const int bh = roomH + 12;
+        const Color bracket = pal.borderMid;
+        DrawRectangle(bx, by, 10, 2, bracket);
+        DrawRectangle(bx, by, 2, 10, bracket);
+        DrawRectangle(bx + bw - 10, by, 10, 2, bracket);
+        DrawRectangle(bx + bw - 2, by, 2, 10, bracket);
+        DrawRectangle(bx, by + bh - 2, 10, 2, bracket);
+        DrawRectangle(bx, by + bh - 10, 2, 10, bracket);
+        DrawRectangle(bx + bw - 10, by + bh - 2, 10, 2, bracket);
+        DrawRectangle(bx + bw - 2, by + bh - 10, 2, 10, bracket);
+        // Theme accent pips beside the top brackets (shape language shared,
+        // accent per theme: keep=bronze/stone, mine=crystal/violet,
+        // forest=green/ivory).
+        Color accentA = pal.rowBorder;
+        Color accentB = pal.borderLight;
+        if (dungeon_.themeId == "crystal_mine") {
+            accentA = pal.crystal;
+            accentB = pal.magic;
+        } else if (dungeon_.themeId == "hollow_forest") {
+            accentA = pal.success;
+            accentB = pal.text;
+        }
+        const auto pip = [](int x, int y, Color c) {
+            DrawRectangle(x, y + 1, 3, 1, c);
+            DrawRectangle(x + 1, y, 1, 3, c);
+        };
+        pip(bx + 13, by - 1, accentA);
+        pip(bx + 19, by - 1, accentB);
+        pip(bx + bw - 16, by - 1, accentA);
+        pip(bx + bw - 22, by - 1, accentB);
+    }
+
     // Theme tiles from the catalog (M15); colored rectangles remain the
     // fallback for themes that have no art yet.
     const std::string tilePrefix = "tiles." + dungeon_.themeId + ".";
@@ -888,6 +996,11 @@ void DungeonState::render() {
                         glyph = "R";
                         spriteId = "prop.event.rest";
                         break;
+                    case dungeon::RoomEventKind::RoyalRelic:  // M44
+                        c = Color{235, 225, 140, 255};
+                        glyph = "*";
+                        spriteId = "prop.event.relic";
+                        break;
                     case dungeon::RoomEventKind::None:
                         break;
                 }
@@ -943,20 +1056,24 @@ void DungeonState::render() {
                                       static_cast<float>(originY_ + highlight->y * kTile + kTile / 2));
     }
 
-    // HUD: backdrop sized to the measured lines so text never spills past it.
-    const std::string hudLine1 = TextFormat("%s  depth %d  gates %d", dungeon_.themeName.c_str(),
-                                            dungeon_.depth, dungeon_.mandatoryGates);
-    const std::string hudLine2 = TextFormat("Gold %d", context_.party.gold);
-    const int hudW = std::max(ui::measureText(hudLine1, 8), ui::measureText(hudLine2, 8)) + 6;
-    DrawRectangle(2, 2, hudW, 24, Color{0, 0, 0, 150});
-    ui::drawTextFitted(hudLine1, 5, 4, context_.virtualWidth - 10, 8, RAYWHITE, "dungeon.hud");
-    ui::drawTextFitted(hudLine2, 5, 14, context_.virtualWidth - 10, 8,
-                       Color{230, 220, 150, 255}, "dungeon.hud");
+    // HUD (M46): theme/depth, gates, and gold as compact chips top-left.
+    {
+        Color themeAccent = pal.rowBorder;
+        if (dungeon_.themeId == "crystal_mine") {
+            themeAccent = pal.crystal;
+        } else if (dungeon_.themeId == "hollow_forest") {
+            themeAccent = pal.success;
+        }
+        int cx = 4;
+        cx += ui::drawChip(TextFormat("%s  D%d", dungeon_.themeName.c_str(), dungeon_.depth),
+                           cx, 4, themeAccent) + 4;
+        cx += ui::drawChip(TextFormat("Gates %d", dungeon_.mandatoryGates), cx, 4, pal.danger) + 4;
+        ui::drawChip(TextFormat("%dg", context_.party.gold), cx, 4, pal.gold);
+    }
 
     renderMinimap();
 
     const int h = context_.virtualHeight;
-    DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 165});
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
     std::string text;
@@ -996,7 +1113,9 @@ void DungeonState::render() {
             }
             text += "]";
         }
-    } else {
+    }
+    if (text.empty()) {
+        // Idle: structured keycap hint groups in the shared footer strip.
         const std::string moveLabel =
             device == ActiveDevice::Keyboard
                 ? input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
@@ -1004,14 +1123,19 @@ void DungeonState::render() {
                       input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
                       input::primaryLabel(map, InputAction::MoveRight, device)
                 : "D-Pad/Stick";
-        text = "[" + moveLabel + "] Move    " +
-               input::prompt(map, InputAction::Details, device, "Details") + "    " +
-               input::prompt(map, InputAction::Menu, device, "Pause / Retreat");
+        ui::drawFooterHints(
+            {{moveLabel, "Move"},
+             {input::primaryLabel(map, InputAction::Details, device), "Details"},
+             {input::primaryLabel(map, InputAction::Menu, device), "Pause"}},
+            context_.virtualWidth, h, "dungeon.footer");
+    } else {
+        // Contextual prompt or transient message: strip plus one fitted line.
+        ui::drawFooterHints({}, context_.virtualWidth, h, "dungeon.footer");
+        const int promptW = ui::measureText(text, 8);
+        const int promptX = std::max(4, (context_.virtualWidth - promptW) / 2);
+        ui::drawTextFitted(text, promptX, h - 12, context_.virtualWidth - promptX - 4, 8,
+                           pal.text, "dungeon.prompt");
     }
-    const int promptW = ui::measureText(text, 8);
-    const int promptX = std::max(4, (context_.virtualWidth - promptW) / 2);
-    ui::drawTextFitted(text, promptX, h - 13, context_.virtualWidth - promptX - 4, 8,
-                       Color{235, 230, 180, 255}, "dungeon.prompt");
 }
 
 }  // namespace cd

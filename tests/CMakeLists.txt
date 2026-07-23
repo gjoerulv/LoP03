@@ -22,6 +22,7 @@ add_executable(crystal_tests
     test_learnset.cpp
     test_rest.cpp
     test_menu.cpp
+    test_ui_kit.cpp
     test_text_input.cpp
     test_text_layout.cpp
     test_scroll_window.cpp
@@ -47,6 +48,9 @@ add_executable(crystal_tests
     test_scoreboard.cpp
     test_status.cpp
     test_status_v2.cpp
+    test_battle_rules_v4.cpp
+    test_royal_relics.cpp
+    test_kings_classes.cpp
     test_passives.cpp
     test_equipment.cpp
     test_equip_shop_filter.cpp

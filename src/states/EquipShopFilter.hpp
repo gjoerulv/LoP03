@@ -35,7 +35,7 @@ inline std::vector<std::string> equipShopBuyIds(const content::ContentDatabase& 
     std::vector<std::string> ids;
     for (const auto& [id, def] : content.items()) {
         if (isEquippableItem(def) && def.slot == slot &&
-            def.rarity != content::Rarity::Legendary && def.minTown <= town) {
+            def.rarity != content::Rarity::Legendary && def.availableAtTown(town)) {
             ids.push_back(id);
         }
     }

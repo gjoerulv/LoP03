@@ -45,7 +45,12 @@ ScoreBreakdown scoreBreakdown(const RunSummary& run) {
     const int posSubtotal = std::max(0, subtotal);
     b.townBonus = posSubtotal * std::max(0, run.townBonusPct) / 100;
     b.stakesPenalty = posSubtotal * std::max(0, run.stakesPenaltyPct) / 100;
-    b.total = std::max(0, subtotal + b.townBonus - b.stakesPenalty);
+    // Unlockable classes (M45): an additive percentage of the same subtotal,
+    // signed — a Dragon party pays for its power, a Jester/Goose party is paid for
+    // its suffering. Clamped so no party can erase more than the run itself.
+    const int classPct = std::clamp(run.classModPct, -100, 100);
+    b.classMod = posSubtotal * classPct / 100;
+    b.total = std::max(0, subtotal + b.townBonus - b.stakesPenalty + b.classMod);
     return b;
 }
 

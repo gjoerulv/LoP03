@@ -165,7 +165,7 @@
       "id": "the_hollow_king",
       "name": "The Hollow King",
       "archetype": "brute",
-      "stats": { "hp": 560, "attack": 18, "magic": 22, "defense": 18, "speed": 13 },
+      "stats": { "hp": 750, "attack": 36, "magic": 44, "defense": 36, "speed": 26 },
       "skills": ["blinding_curse", "silencing_word", "maddening_gaze", "withering_touch", "sovereigns_cataclysm", "sovereign_smite"],
       "minions": [],
       "passives": ["keen_senses", "clarity", "counter_attack"],

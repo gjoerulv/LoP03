@@ -185,7 +185,7 @@ test checklist per `docs/milestone_completion_template.md`.
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. Implemented / audited against
+- **Status:** complete (approved 2026-07-21). Implemented / audited against
   HEAD `cc1e93d`. The §D routine choices were taken as written; no new owner
   decision arose.
 - **Slice 0 — stakes re-tune.** `game/StakesLadder.hpp`: `kStakesPenaltyPerStep`

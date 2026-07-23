@@ -75,6 +75,18 @@ Character createCharacter(const content::ClassDef& cls, std::string name, int le
 // Restores every member to full HP/MP.
 void healFull(Party& party);
 
+// M45: the party's additive unlockable-class score modifier, summed over the
+// members' `ClassDef::scoreModPct` (0 for any party of the six original classes).
+// Pure and derived — never stored on the party, so it cannot drift from the
+// roster that produced it.
+int partyClassModPct(const Party& party, const content::ContentDatabase& db);
+
+// M45: may this character equip into `slot`? False when its class bans the slot
+// (the Dragon wears no armor, the Jester holds no weapon, the Goose is a goose).
+// One definition, used by the equip shop and any future equip path.
+bool canEquipSlot(const Character& character, content::EquipSlot slot,
+                  const content::ContentDatabase& db);
+
 // Paid rest (M30). The inn cost scales with the highest party level so a full
 // rest stays a real decision as income grows: kBase + kPerLevel*(level-1),
 // clamped to [kBase, kMax]. Constants live here for balance tuning.

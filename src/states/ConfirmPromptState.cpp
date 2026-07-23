@@ -70,27 +70,30 @@ void ConfirmPromptState::handleInput(const Input& input) {
 void ConfirmPromptState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    DrawRectangle(0, 0, w, h, Color{0, 0, 0, 150});  // dim the frozen scene
+    const style::Palette& p = style::palette();
+    ui::drawModalDim(w, h);  // dim the frozen scene
 
-    // Measured height: title + wrapped body + the two answers.
+    // Measured height: title + wrapped body + divider + the two answers.
     const std::vector<std::string> lines =
         ui::wrapText(body_, kTextW, style::kFontBody, ui::raylibMeasure());
     const int bodyH = static_cast<int>(lines.size()) * ui::lineHeight(style::kFontBody);
-    const int panelH = style::kPad + style::kFontHeading + 8 + bodyH + 10 + 2 * kRowH + style::kPad;
+    const int panelH =
+        style::kPad + style::kFontHeading + 8 + bodyH + 14 + 2 * kRowH + style::kPad;
     const int x = (w - kPanelW) / 2;
     const int y = (h - panelH) / 2;
 
-    ui::drawFramedPanel(context_.resources, x, y, kPanelW, panelH, Color{28, 26, 48, 245},
-                        Color{120, 120, 200, 255});
+    // Destructive decision: the Danger frame with its warning tab.
+    ui::drawFrame(x, y, kPanelW, panelH, ui::FrameStyle::Danger);
     int ty = y + style::kPad;
-    ui::drawTextCentered(title_.c_str(), x + kPanelW / 2, ty, style::kFontHeading,
-                         style::palette().cursor);
+    ui::drawTextCentered(title_.c_str(), x + kPanelW / 2, ty, style::kFontHeading, p.text);
     ty += style::kFontHeading + 8;
-    ui::drawTextWrapped(body_, x + style::kPad, ty, kTextW, style::kFontBody,
-                        style::palette().dangerText, "confirm.body");
-    ty += bodyH + 10;
-    ui::drawMenu(menu_, x + style::kPad + 20, ty, kRowH, style::kFontBody, RAYWHITE,
-                 style::palette().disabled, style::palette().cursor);
+    ui::drawTextWrapped(body_, x + style::kPad, ty, kTextW, style::kFontBody, p.dangerText,
+                        "confirm.body");
+    ty += bodyH + 6;
+    ui::drawDivider(x + 10, ty, kPanelW - 20);
+    ty += 8;
+    ui::drawMenu(menu_, x + style::kPad + 20, ty, kRowH, style::kFontBody, p.text, p.disabled,
+                 p.cursor);
 }
 
 }  // namespace cd

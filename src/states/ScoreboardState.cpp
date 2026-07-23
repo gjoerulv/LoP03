@@ -34,7 +34,7 @@ constexpr int kThemeX = 296;     // left edge of Theme (M35: -6px to fit the T# 
 constexpr int kHeaderY = 44;
 constexpr int kRowsY = 60;
 constexpr int kRowH = 13;
-constexpr int kVisibleRows = 11;
+constexpr int kVisibleRows = 10;
 }  // namespace
 
 ScoreboardState::ScoreboardState(StateStack& stack, AppContext& context)
@@ -61,23 +61,24 @@ void ScoreboardState::handleInput(const Input& input) {
 void ScoreboardState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ui::drawSceneBackground(context_.resources, "bg.scoreboard", Color{16, 16, 24, 255},
+    const style::Palette& pal = style::palette();
+    ui::drawSceneBackground(context_.resources, "bg.scoreboard", pal.canvas,
                             context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
-    ui::drawTextCentered("Scoreboard", w / 2, 16, style::kFontScreenTitle, style::palette().text);
+    ui::drawHeaderBand("Scoreboard", w, pal.gold);
 
     const auto& entries = context_.scoreboard.entries();
     if (entries.empty()) {
         ui::drawTextWrapped("No runs recorded yet. Clear a dungeon to set a score!", 60, h / 2,
-                            w - 120, style::kFontBody, style::palette().textDim, "scoreboard.empty", 2);
-        ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Cancel,
-                                           context_.input.activeDevice(), "Back")
-                                 .c_str(),
-                             w / 2, h - style::kFooterHeight + 2, style::kFontBody,
-                             style::palette().textHint);
+                            w - 120, style::kFontBody, pal.textDim, "scoreboard.empty", 2);
+        ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
+                                                  context_.input.activeDevice()),
+                              "Back"}},
+                            w, h, "scoreboard.footer");
         return;
     }
 
-    // Header.
+    // Ranked table in one inset well; header row, then the entries.
+    ui::drawFrame(12, 36, w - 24, 16 + kVisibleRows * kRowH + 10, ui::FrameStyle::Inset);
     ui::drawText("#", kRankX, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Score", kScoreR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawTextRight("Turns", kTurnsR, kHeaderY, style::kFontBody, style::palette().textDim);
@@ -93,7 +94,7 @@ void ScoreboardState::render() {
         const int i = first + row;
         const score::ScoreEntry& e = entries[static_cast<std::size_t>(i)];
         const int y = kRowsY + row * kRowH;
-        const Color rowColor = e.noDeath ? Color{210, 230, 200, 255} : style::palette().text;
+        const Color rowColor = e.noDeath ? pal.success : pal.text;
         ui::drawText(TextFormat("%d", i + 1), kRankX, y, style::kFontBody, rowColor);
         ui::drawTextRight(TextFormat("%d", e.score), kScoreR, y, style::kFontBody, rowColor);
         ui::drawTextRight(TextFormat("%d", e.battleTurns), kTurnsR, y, style::kFontBody,
@@ -128,25 +129,25 @@ void ScoreboardState::render() {
 
     // The honest-comparison conditions (M19 policy): no hidden normalization;
     // players compare runs at matching conditions instead.
-    const int legendY = kRowsY + count * kRowH + 4;
+    const int legendY = kRowsY + count * kRowH + 8;
     ui::drawText("* = no-death   Lv = party level   T# = town", kRankX, legendY,
-             style::kFontSmall, Color{150, 170, 150, 255});
+             style::kFontSmall, pal.success);
     ui::drawText("Compare at same Depth/Lv.  ~ = older battle rules.", kRankX,
-                 legendY + 10, style::kFontSmall, style::palette().textDim);
+                 legendY + 10, style::kFontSmall, pal.textDim);
     if (scroll_.moreAbove() || scroll_.moreBelow(total, kVisibleRows)) {
         ui::drawTextRight(TextFormat("%d-%d of %d   Up/Down: Scroll", first + 1, first + count,
                                      total),
                           w - 16, legendY, style::kFontSmall, style::palette().textDim);
     }
 
-    ui::drawTextCentered((input::prompt(context_.input.map(), InputAction::Details,
-                                        context_.input.activeDevice(), "How scoring works") +
-                          "    " +
-                          input::prompt(context_.input.map(), InputAction::Cancel,
-                                        context_.input.activeDevice(), "Back"))
-                             .c_str(),
-                         w / 2, h - style::kFooterHeight + 2, style::kFontBody,
-                         style::palette().textHint);
+    ui::drawFooterHints(
+        {{input::primaryLabel(context_.input.map(), InputAction::Details,
+                              context_.input.activeDevice()),
+          "How scoring works"},
+         {input::primaryLabel(context_.input.map(), InputAction::Cancel,
+                              context_.input.activeDevice()),
+          "Back"}},
+        w, h, "scoreboard.footer");
 }
 
 }  // namespace cd

@@ -44,6 +44,7 @@ private:
     int selectedMember_ = 0;
     std::vector<std::string> passiveIds_;  // sorted ids backing the passive menu
     std::string message_;
+    bool messageIsError_ = false;  // picks the banner treatment (presentation only)
 };
 
 }  // namespace cd

@@ -174,7 +174,7 @@ added; `docs/manual_test_matrix.md` rows; a manual checklist per
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. Implemented / audited against
+- **Status:** complete (approved 2026-07-21). Implemented / audited against
   HEAD `94c79a1`. Owner confirmed the note-time decisions: **all 10** passives, a
   **flat 1000 gold** price each (chosen over the tiered proposal).
 - **Content type.** `content::PassiveHook` (10 values + inert `None`) with

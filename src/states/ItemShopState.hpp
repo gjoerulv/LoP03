@@ -28,6 +28,7 @@ private:
     ui::ScrollWindow scroll_;
     std::vector<std::string> ids_;
     std::string message_;
+    bool messageIsError_ = false;  // picks the banner treatment (presentation only)
 };
 
 }  // namespace cd

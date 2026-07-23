@@ -30,7 +30,7 @@ namespace {
 
 // Bottom-panel layout (M12): everything must fit inside the 60px panel.
 constexpr int kPanelH = 60;
-constexpr int kListX = 16;       // command/skill/item lists (cursor at x-10)
+constexpr int kListX = 20;       // command/skill/item lists (selection slab at x-12)
 constexpr int kListItemH = 12;
 constexpr int kListRows = 4;     // visible rows in skill/item lists (scrolled)
 // Right column: actor line + descriptions. The split is set by the widest skill
@@ -42,6 +42,26 @@ bool skillNeedsTarget(content::SkillTarget t) {
     return t == content::SkillTarget::SingleEnemy || t == content::SkillTarget::SingleAlly;
 }
 
+// M45: the Jester's mid-battle quips — twelve original dry one-liners in the
+// voice of the castle Jester (M41). Presentation only: which one appears (and
+// whether one appears at all) comes from a pure hash that never touches the
+// battle's roll stream, so a quip can never change an outcome.
+constexpr const char* kJestLines[] = {
+    "I had a plan. It left.",
+    "Do stop me if you've seen this one.",
+    "Gerald would have LOVED that.",
+    "That was intentional. Mostly.",
+    "I'm told there's a strategy. Sounds exhausting.",
+    "Aim is a construct. So is the floor.",
+    "Somewhere, a goose is judging me.",
+    "The spoon is still down the well, you know.",
+    "I meant to do the other thing.",
+    "Bold of you to expect a pattern.",
+    "This is fine. This is the bit that's fine.",
+    "Applause optional. Encouraged, but optional.",
+};
+constexpr int kJestLineCount = static_cast<int>(sizeof(kJestLines) / sizeof(kJestLines[0]));
+
 const char* statusShort(content::StatusType t) {
     switch (t) {
         case content::StatusType::Poison: return "PSN";
@@ -52,6 +72,8 @@ const char* statusShort(content::StatusType t) {
         case content::StatusType::Confusion: return "CNF";
         case content::StatusType::Silence: return "SIL";
         case content::StatusType::Blind: return "BLD";
+        case content::StatusType::Terrified: return "TRF";  // M44: forced to Guard
+        case content::StatusType::Stunned: return "STN";    // M44: skips its turn
         case content::StatusType::None: return "";
     }
     return "";
@@ -125,13 +147,14 @@ std::vector<std::string> statusLines(const battle::Combatant& c, int maxWidth, i
 
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                          battle::BattleResult* resultSlot, MusicTrack musicOverride,
-                         RunStats* statsSlot)
+                         RunStats* statsSlot, bool castleChallenge)
     : GameState(stack),
       context_(context),
       battle_(std::move(battle)),
       resultSlot_(resultSlot),
       musicOverride_(musicOverride),
-      stats_(statsSlot) {
+      stats_(statsSlot),
+      castleChallenge_(castleChallenge) {
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Enemy && c.isBoss) {
             bossBattle_ = true;
@@ -187,6 +210,24 @@ void BattleState::captureEnterSkillMenu(std::vector<std::string> skills) {
     }
     buildSkillMenu();
     phase_ = Phase::ChooseSkill;
+}
+
+void BattleState::captureEnterItemMenu() {
+    captureEnterTargeting();  // reuse: puts a living party member on turn
+    buildItemMenu();
+    phase_ = Phase::ChooseItem;
+}
+
+void BattleState::captureShowJest() {
+    captureEnterTargeting();
+    const char* longest = kJestLines[0];
+    for (const char* line : kJestLines) {
+        if (std::string(line).size() > std::string(longest).size()) {
+            longest = line;
+        }
+    }
+    jestLine_ = longest;
+    jestTimer_ = 999.0f;  // captures render one frame; never expire
 }
 #endif
 
@@ -331,10 +372,14 @@ void BattleState::startActorTurn() {
     }
     battle_.clearGuard(actor);
     if (battle_.units[static_cast<std::size_t>(actor)].side == battle::Side::Party) {
-        // Confusion (M35): a confused character takes no player input — it lashes
-        // out at a seeded random ally automatically, just like an enemy's turn.
-        if (battle::isConfused(battle_.units[static_cast<std::size_t>(actor)])) {
+        // Forced actions (M35 confusion, M44 Terrified/Stunned): a character whose
+        // turn was taken away gets no player input — it resolves automatically,
+        // just like an enemy's turn, through the one shared rule.
+        if (battle::forcedActionFor(battle_.units[static_cast<std::size_t>(actor)]) !=
+            battle::ForcedAction::None) {
             executeConfused(actor);
+        } else if (battle_.units[static_cast<std::size_t>(actor)].uncontrolled) {
+            executeUncontrolled(actor);  // M45: the Jester decides for itself
         } else {
             phase_ = Phase::Command;
             buildCommandMenu();
@@ -416,13 +461,30 @@ void BattleState::buildSkillMenu() {
     skillScroll_.follow(static_cast<int>(skillMenu_.size()), kListRows, skillMenu_.cursor());
 }
 
+std::string BattleState::itemBlockReason(const content::ItemDef& item) const {
+    // M43: why an item is greyed out, spelled out rather than left to the player
+    // to decode (M22, non-color-alone). Empty means the item is usable.
+    if (!battle::itemTargets(battle_, battle::Side::Party, item).empty()) {
+        return "";
+    }
+    if (item.battleTarget == content::BattleTarget::Enemy) {
+        return "No foe left to use this on.";  // M44 relics
+    }
+    return item.effect == content::ConsumableEffect::Revive
+               ? "No fallen ally to revive."
+               : "No able ally to use this on.";
+}
+
 void BattleState::buildItemMenu() {
     itemIds_ = consumableIds();
     std::vector<ui::MenuItem> items;
     for (const std::string& id : itemIds_) {
         const content::ItemDef* it = context_.content.findItem(id);
         const std::string name = it != nullptr ? it->name : id;
-        items.push_back({name, true, "x" + std::to_string(context_.party.inventory.count(id))});
+        // An item with no legal target (M43) is offered greyed, never spent.
+        const bool enabled = it != nullptr && itemBlockReason(*it).empty();
+        items.push_back(
+            {name, enabled, "x" + std::to_string(context_.party.inventory.count(id))});
     }
     itemMenu_.setItems(std::move(items));
     itemScroll_.reset();
@@ -474,7 +536,9 @@ void BattleState::onSkillChosen() {
     }
     if (skillNeedsTarget(s->target)) {
         const bool ally = s->target == content::SkillTarget::SingleAlly;
-        targetCandidates_ = battle_.aliveIndices(ally ? battle::Side::Party : battle::Side::Enemy);
+        // M43: a revive-capable ally skill (Renew) may be aimed at the fallen.
+        targetCandidates_ = ally ? battle::skillAllyTargets(battle_, battle::Side::Party, *s)
+                                 : battle_.aliveIndices(battle::Side::Enemy);
         targetCursor_ = 0;
         phase_ = Phase::ChooseTarget;
     } else {
@@ -486,15 +550,23 @@ void BattleState::onItemChosen() {
     if (itemIds_.empty()) {
         return;
     }
-    pendingItemId_ = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
-    pendingKind_ = PendingKind::Item;
-    // Items target any party member (alive or KO'd, for revives).
-    targetCandidates_.clear();
-    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
-        if (battle_.units[i].side == battle::Side::Party) {
-            targetCandidates_.push_back(static_cast<int>(i));
-        }
+    if (!itemMenu_.currentEnabled()) {
+        context_.audio.play(Sfx::Error);
+        return;  // no legal target; the reason is shown beside the list
     }
+    pendingItemId_ = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
+    const content::ItemDef* it = context_.content.findItem(pendingItemId_);
+    if (it == nullptr) {
+        return;
+    }
+    // M43: candidates follow the item's effect - a potion cannot be poured into a
+    // fallen ally, and a Phoenix Tear reaches only the fallen, so an item can no
+    // longer be spent on a "No effect" no-op. M44: a relic aims at the enemies.
+    targetCandidates_ = battle::itemTargets(battle_, battle::Side::Party, *it);
+    if (targetCandidates_.empty()) {
+        return;
+    }
+    pendingKind_ = PendingKind::Item;
     targetCursor_ = 0;
     phase_ = Phase::ChooseTarget;
 }
@@ -525,8 +597,18 @@ void BattleState::executePending(int targetUnit) {
             break;
         case PendingKind::Item:
             if (const content::ItemDef* it = context_.content.findItem(pendingItemId_)) {
+                // M44: an item that does nothing here (the Dragon Crown outside the
+                // King's fight) is NOT spent - ask before the battle mutates.
+                const bool spends = battle::itemAffects(battle_, targetUnit, *it);
                 message_ = battle_.useItem(actor, targetUnit, *it);
-                context_.party.inventory.remove(pendingItemId_, 1);
+                statusAction = !it->statuses.empty();
+                offensiveStatus =
+                    statusAction && it->battleTarget == content::BattleTarget::Enemy;
+                if (spends) {
+                    context_.party.inventory.remove(pendingItemId_, 1);
+                } else {
+                    message_ += " (kept)";
+                }
             }
             break;
     }
@@ -576,7 +658,15 @@ void BattleState::executeEnemy(int actor) {
     const battle::EnemyChoice choice = battle::chooseEnemyAction(battle_, actor, context_.content);
     int damageSfx = 2;
     bool statusAction = false;
-    if (choice.useSkill) {
+    const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
+    if (choice.forced == battle::ForcedAction::Guard) {
+        // M44 (Evil Goose): the foe is too frightened to do anything but guard.
+        message_ = self.name + " is terrified and can only cower behind its guard!";
+        battle_.guard(actor);
+    } else if (choice.forced == battle::ForcedAction::Skip) {
+        // M44 (Tax Sheets): the foe spends its turn on the paperwork.
+        message_ = self.name + " is buried in paperwork and loses its turn!";
+    } else if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
@@ -597,12 +687,61 @@ void BattleState::executeConfused(int actor) {
     for (const battle::Combatant& u : battle_.units) {
         hpBefore.push_back(u.hp);
     }
-    // attack() performs the confusion redirect internally (a seeded random same-side
-    // target), so the nominal target only needs to be valid; use any living enemy.
-    const std::vector<int> foes = battle_.aliveIndices(battle::Side::Enemy);
-    const int nominal = foes.empty() ? actor : foes.front();
-    message_ = battle_.attack(actor, nominal);
+    // M43/M44: the forced action comes from the shared rule the Simulator and the
+    // enemy AI also use, so an imposed turn resolves identically everywhere.
+    const battle::Combatant& a = battle_.units[static_cast<std::size_t>(actor)];
+    const battle::ForcedAction forced = battle::forcedActionFor(a);
+    const battle::EnemyChoice choice = battle::forcedChoice(battle_, actor, forced);
+    switch (forced) {
+        case battle::ForcedAction::Guard:
+            message_ = a.name + " is terrified and can only cower behind its guard!";
+            battle_.guard(actor);
+            break;
+        case battle::ForcedAction::Skip:
+            message_ = a.name + " is buried in paperwork and loses its turn!";
+            break;
+        case battle::ForcedAction::BasicAttack:
+        case battle::ForcedAction::None:
+            message_ = battle_.attack(actor, choice.target);
+            break;
+    }
     stageNumbers(hpBefore, 2, false);
+    afterAction();
+}
+
+void BattleState::executeUncontrolled(int actor) {
+    std::vector<int> hpBefore;
+    hpBefore.reserve(battle_.units.size());
+    for (const battle::Combatant& u : battle_.units) {
+        hpBefore.push_back(u.hp);
+    }
+    // M45: the same shared, pure rule the Simulator uses — the player gets no say,
+    // and neither driver can drift from the other.
+    const battle::EnemyChoice choice =
+        battle::uncontrolledChoice(battle_, actor, context_.content);
+    int damageSfx = 2;
+    bool statusAction = false;
+    if (choice.target < 0) {
+        message_ = battle_.units[static_cast<std::size_t>(actor)].name + " capers pointlessly.";
+    } else if (choice.useSkill) {
+        if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
+            message_ = battle_.useSkill(actor, choice.target, *s);
+            damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
+            statusAction = s->statusEffect != content::StatusType::None;
+        }
+    } else {
+        message_ = battle_.attack(actor, choice.target);
+    }
+    // The quip rides on top of the resolved action and never changes it: a pure
+    // hash under its own salt, so hiding or showing it cannot move the battle.
+    int line = 0;
+    if (battle::jestThisTurn(battle_, actor, kJestLineCount, line)) {
+        jestLine_ = kJestLines[static_cast<std::size_t>(line)];
+        jestTimer_ =
+            2.0f * settings::messageDurationScale(context_.settings.values.messageSpeed);
+    }
+    accumulateStats(hpBefore, actor, false);
+    stageNumbers(hpBefore, damageSfx, statusAction);
     afterAction();
 }
 
@@ -645,9 +784,14 @@ std::string BattleState::outcomeMessage() const {
         case battle::Outcome::Victory:
             return bossBattle_ ? "Victory! The dungeon boss is defeated!" : "Victory!";
         case battle::Outcome::Defeat:
-            // Defeat consequences are stated, not silent (UI-INFO-014).
-            return "The party has fallen... You are carried back to town; "
-                   "half your gold is lost and the run is forfeit.";
+            // Defeat consequences are stated, not silent (UI-INFO-014) — and
+            // stated TRUTHFULLY (M43): a castle challenge costs no gold and has
+            // no run to forfeit, so it must not borrow the dungeon's penalty.
+            return castleChallenge_
+                       ? "The party has fallen... The castle guard carries you back "
+                         "to the gates. The challenge ends; nothing is lost."
+                       : "The party has fallen... You are carried back to town; "
+                         "half your gold is lost and the run is forfeit.";
         case battle::Outcome::Escaped:
             return "Escaped!";
         case battle::Outcome::Ongoing:
@@ -797,6 +941,12 @@ void BattleState::handleInput(const Input& input) {
 }
 
 void BattleState::update(float dt) {
+    if (jestTimer_ > 0.0f) {  // M45: the Jester's quip fades on its own
+        jestTimer_ -= dt;
+        if (jestTimer_ <= 0.0f) {
+            jestLine_.clear();
+        }
+    }
     // Floating numbers hold still during the impact beat (a brief hit-stop)
     // and rise otherwise.
     if (seq_.stage() != render::BattleStage::Impact) {
@@ -879,6 +1029,7 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         }
     }
 
+    const style::Palette& p = style::palette();
     if (context_.resources.hasTexture(spriteId)) {
         const Texture2D& tex = context_.resources.texture(spriteId);
         const int sx = x + 20 - tex.width / 2;   // bottom-center on the old
@@ -890,8 +1041,9 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
             DrawRectangle(sx, sy, tex.width, tex.height, Fade(WHITE, 0.55f * flash));
         }
         if (targeted) {
-            DrawRectangleLines(sx - 2, sy - 2, tex.width + 4, tex.height + 4,
-                               Color{240, 220, 120, 255});
+            // Corner brackets (M46): shape-first focus that survives grayscale,
+            // hit flashes, and any sprite behind it.
+            ui::drawFocusBrackets(sx - 1, sy - 1, tex.width + 2, tex.height + 2, p.cursor);
         }
     } else {
         const Color body = c.side == battle::Side::Enemy ? Color{170, 80, 90, 255}
@@ -901,36 +1053,32 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
             DrawRectangle(x, y, 40, 16, Fade(WHITE, 0.55f * flash));
         }
         if (targeted) {
-            DrawRectangleLines(x - 2, y - 2, 44, 20, Color{240, 220, 120, 255});
+            ui::drawFocusBrackets(x - 1, y - 1, 42, 18, p.cursor);
         }
     }
     if (current) {
-        ui::drawText(">", x - 9, y + 3, 10, Color{240, 220, 120, 255});
+        // Acting unit: gold chevron with the sanctioned one-pixel nudge.
+        ui::drawChevron(x - 10, y + 4, p.cursor, ui::motionPhase());
     }
 
     // Names are no longer painted over every sprite (M25 slice 2); a unit's
     // name and judgment stats appear on the target-info panel while it is being
     // targeted, and via Details.
-    // HP bar (displayed value).
-    const float hpFrac =
-        c.maxHp > 0 ? static_cast<float>(shownHp) / static_cast<float>(c.maxHp) : 0.0f;
-    DrawRectangle(x, y + 17, 40, 3, Fade(Color{40, 40, 40, 255}, fade));
-    DrawRectangle(x, y + 17, static_cast<int>(40 * (hpFrac < 0.0f ? 0.0f : hpFrac)), 3,
-                  Fade(Color{90, 200, 110, 255}, fade));
+    // Framed HP meter (displayed value); hidden once a sinking KO begins.
+    if (c.side == battle::Side::Party || shownAlive) {
+        ui::drawMeter(x, y + 17, 40, 5, shownHp < 0 ? 0 : shownHp, c.maxHp, p.hpFill);
+    }
     if (c.side == battle::Side::Party) {
-        const float mpFrac =
-            c.maxMp > 0 ? static_cast<float>(c.mp) / static_cast<float>(c.maxMp) : 0.0f;
-        DrawRectangle(x, y + 21, 40, 2, Color{40, 40, 40, 255});
-        DrawRectangle(x, y + 21, static_cast<int>(40 * mpFrac), 2, Color{90, 120, 210, 255});
+        ui::drawMeter(x, y + 23, 40, 4, c.mp < 0 ? 0 : c.mp, c.maxMp, p.mpFill);
         // HP and MP as numerals (M25 slice 3): MP is the resource that gates
         // skills, so its exact value gets the same clarity as HP.
         ui::drawText(TextFormat("HP %d/%d", shownHp < 0 ? 0 : shownHp, c.maxHp), x + 44, y + 4, 8,
-                     RAYWHITE);
+                     p.text);
         ui::drawText(TextFormat("MP %d/%d", c.mp < 0 ? 0 : c.mp, c.maxMp), x + 44, y + 13, 8,
-                     Color{150, 175, 235, 255});
+                     p.mpFill);
     }
     if (!shownAlive) {
-        ui::drawText("KO", x + 13, y + 4, 8, Fade(Color{220, 120, 120, 255}, fade));
+        ui::drawText("KO", x + 13, y + 4, 8, Fade(p.dangerText, fade));
     }
 
     if (!c.statuses.empty() && shownAlive) {
@@ -944,7 +1092,7 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         const std::vector<std::string> lines = statusLines(c, maxWidth, 8, 2);
         for (std::size_t i = 0; i < lines.size(); ++i) {
             ui::drawTextFitted(lines[i], sx, sy + static_cast<int>(i) * 8, maxWidth, 8,
-                               Color{200, 160, 220, 255},
+                               ui::lighten(p.magic, 32),
                                party ? "battle.status.party" : "battle.status.enemy");
         }
     }
@@ -953,7 +1101,37 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
 void BattleState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{18, 16, 24, 255});
+    const style::Palette& pal = style::palette();
+    ClearBackground(pal.canvas);
+
+    // Stage dressing (M46): one broad value band behind the combatants with
+    // ink keylines, side grounding brackets per side, and a violet accent
+    // pair when a boss is on the field. No texture, no noise behind units.
+    {
+        const int bandY = 24;
+        const int bandH = h - kPanelH - 34 - bandY;
+        DrawRectangle(0, bandY, w, bandH, pal.panel);
+        DrawRectangle(0, bandY, w, 1, pal.ink);
+        DrawRectangle(0, bandY + bandH - 1, w, 1, pal.ink);
+        DrawRectangle(0, bandY + 1, w, 1, pal.borderDark);
+        const int gy = bandY + bandH - 8;
+        DrawRectangle(6, gy, 10, 2, pal.borderDark);       // enemy-side bracket
+        DrawRectangle(6, gy - 6, 2, 8, pal.borderDark);
+        DrawRectangle(w - 16, gy, 10, 2, pal.borderDark);  // party-side bracket
+        DrawRectangle(w - 8, gy - 6, 2, 8, pal.borderDark);
+        bool bossOnField = false;
+        for (const battle::Combatant& c : battle_.units) {
+            bossOnField = bossOnField || c.isBoss;
+        }
+        if (bossOnField) {
+            const auto pip = [&pal](int x, int y) {
+                DrawRectangle(x, y + 1, 3, 1, pal.magic);
+                DrawRectangle(x + 1, y, 1, 3, pal.magic);
+            };
+            pip(6, bandY + 4);
+            pip(12, bandY + 4);
+        }
+    }
 
     const int actor = currentActor();
     const bool partyTurn = phase_ == Phase::Command || phase_ == Phase::ChooseTarget ||
@@ -986,21 +1164,36 @@ void BattleState::render() {
         }
     }
 
-    // Turn counter top-right: the top-left is needed by tall enemy columns.
-    ui::drawTextRight(TextFormat("Turns: %d", battle_.turnsTaken), w - 6, 6, 8,
-                      style::palette().textDim);
+    // Turn counter as a compact badge top-right: the top-left is needed by
+    // tall enemy columns; the badge stays quieter than the acting unit.
+    ui::drawChipRight(TextFormat("Turns %d", battle_.turnsTaken), w - 4, 4, pal.gold);
+
+    // M45: the Jester's quip, mid-screen above the panel — decorative, dismissed
+    // by its own timer, and fitted so a long line can never spill.
+    if (!jestLine_.empty()) {
+        ui::drawTextFitted(jestLine_, 20, h - kPanelH - 22, w - 40, style::kFontBody,
+                           pal.gold, "battle.jest");
+    }
 
     // Floating damage / heal numbers.
     for (const FloatNumber& f : floats_) {
         ui::drawText(f.text.c_str(), static_cast<int>(f.x) + shakeX, static_cast<int>(f.y), 10,
-                 f.heal ? Color{120, 220, 120, 255} : Color{245, 120, 120, 255});
+                 f.heal ? pal.success : pal.dangerText);
     }
 
     // Bottom panel: lists live in the left column (scrolled to kListRows),
-    // the actor line and selected-entry description in the right column.
+    // the actor line and selected-entry description in the right column. A
+    // boss introduction gets the Danger frame with its warning tab.
     const int panelY = h - kPanelH - 4;
-    ui::drawFramedPanel(context_.resources, 4, panelY, w - 8, kPanelH, Color{24, 22, 34, 240},
-                        Color{120, 120, 160, 255});
+    const bool bossIntro = phase_ == Phase::Intro && !bossTelegraph_.empty();
+    ui::drawFrame(4, panelY, w - 8, kPanelH,
+                  bossIntro ? ui::FrameStyle::Danger : ui::FrameStyle::Standard);
+    const bool listPhase = phase_ == Phase::Command || phase_ == Phase::ChooseSkill ||
+                           phase_ == Phase::ChooseItem;
+    if (listPhase) {
+        // Column divider separates the list from the info column.
+        DrawRectangle(kInfoX - 10, panelY + 6, 1, kPanelH - 12, pal.borderDark);
+    }
     const int infoW = w - kInfoX - 12;
     const int listLabelW = kInfoX - kListX - 18;
     const InputMap& map = context_.input.map();
@@ -1011,18 +1204,21 @@ void BattleState::render() {
 
     switch (phase_) {
         case Phase::Intro:
-            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 6, 12, style::palette().text);
+            // Headline, telegraph, and confirm prompt as three separated
+            // layers inside the (boss: Danger) frame.
+            ui::drawTextCentered(message_.c_str(), w / 2, panelY + 6, 12, pal.text);
             if (!bossTelegraph_.empty()) {
-                ui::drawTextWrapped(bossTelegraph_, 16, panelY + 22, w - 32, style::kFontBody,
-                                    Color{225, 170, 170, 255}, "battle.telegraph", 2);
+                ui::drawDivider(20, panelY + 21, w - 40);
+                ui::drawTextWrapped(bossTelegraph_, 16, panelY + 25, w - 32, style::kFontBody,
+                                    pal.dangerText, "battle.telegraph", 2);
             }
             ui::drawTextCentered(
                 input::prompt(map, InputAction::Confirm, device, "Begin").c_str(), w / 2,
-                panelY + 48, style::kFontBody, Color{200, 200, 160, 255});
+                panelY + 48, style::kFontBody, pal.gold);
             break;
         case Phase::Command:
-            ui::drawMenu(commandMenu_, kListX, panelY + 5, 11, style::kFontBody, style::palette().text,
-                         style::palette().disabled, style::palette().cursor);
+            ui::drawMenu(commandMenu_, kListX, panelY + 5, 11, style::kFontBody, pal.text,
+                         pal.disabled, pal.cursor);
             ui::drawTextFitted(
                 TextFormat("%s's turn",
                            battle_.units[static_cast<std::size_t>(actor)].name.c_str()),
@@ -1038,9 +1234,9 @@ void BattleState::render() {
             break;
         case Phase::ChooseSkill: {
             ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,
-                                 kListItemH, style::kFontBody, listLabelW, style::palette().text,
-                                 style::palette().disabled, style::palette().cursor, "battle.skills",
-                                 style::kFontSmall, Color{150, 175, 235, 255});
+                                 kListItemH, style::kFontBody, listLabelW, pal.text,
+                                 pal.disabled, pal.cursor, "battle.skills",
+                                 style::kFontSmall, pal.mpFill);
             ui::drawTextFitted("Skill  " + backHint, kInfoX, panelY + 6, infoW, style::kFontBody,
                                style::palette().textDim, "battle.skillhint");
             if (!skillIds_.empty()) {
@@ -1066,15 +1262,20 @@ void BattleState::render() {
         }
         case Phase::ChooseItem: {
             ui::drawMenuScrolled(itemMenu_, itemScroll_, kListRows, kListX, panelY + 6,
-                                 kListItemH, style::kFontBody, listLabelW, style::palette().text,
-                                 style::palette().disabled, style::palette().cursor, "battle.items",
-                                 style::kFontSmall, Color{200, 200, 160, 255});
+                                 kListItemH, style::kFontBody, listLabelW, pal.text,
+                                 pal.disabled, pal.cursor, "battle.items",
+                                 style::kFontSmall, pal.gold);
             ui::drawTextFitted("Item  " + backHint, kInfoX, panelY + 6, infoW, style::kFontBody,
                                style::palette().textDim, "battle.itemhint");
             if (!itemIds_.empty()) {
                 const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
                 if (const content::ItemDef* it = context_.content.findItem(iid)) {
-                    if (!it->description.empty()) {
+                    // M43: a greyed item says why before it says what it does.
+                    const std::string blocked = itemBlockReason(*it);
+                    if (!blocked.empty()) {
+                        ui::drawTextWrapped(blocked, kInfoX, panelY + 20, infoW, style::kFontBody,
+                                            style::palette().textDim, "battle.itemblocked", 2);
+                    } else if (!it->description.empty()) {
                         ui::drawTextWrapped(it->description, kInfoX, panelY + 20, infoW,
                                             style::kFontBody, style::palette().success,
                                             "battle.itemdesc", 2);
@@ -1147,10 +1348,10 @@ void BattleState::render() {
             break;
         case Phase::Done:
             ui::drawTextWrapped(message_, 16, panelY + 10, w - 32, 12,
-                                Color{240, 230, 160, 255}, "battle.outcome", 2);
+                                pal.gold, "battle.outcome", 2);
             ui::drawTextCentered(
                 input::prompt(map, InputAction::Confirm, device, "Continue").c_str(), w / 2,
-                panelY + 44, style::kFontBody, Color{200, 200, 160, 255});
+                panelY + 44, style::kFontBody, pal.gold);
             break;
     }
 }

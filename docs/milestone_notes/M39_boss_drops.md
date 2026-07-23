@@ -161,7 +161,7 @@ shared legendary pool); README (drops line in How-to-play / known limitations);
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. Implemented / audited against
+- **Status:** complete (approved 2026-07-21). Implemented / audited against
   the post-M38 checkout. The §D routine choices were taken as written (linear
   per-mille ramp; floors 15 %/5 %; distinct-salt independent rolls; no
   de-duplication; fires on any eligible boss kill; drops surfaced on the result

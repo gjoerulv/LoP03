@@ -26,6 +26,11 @@ struct RunSummary {
     // Stakes-escalation penalty (M33): a percent (0..90) subtracted from the
     // subtotal for a run that did not raise the stakes. 0 -> no change.
     int stakesPenaltyPct = 0;
+    // Unlockable-class modifier (M45): the party's per-member `scoreModPct`
+    // values added together (e.g. two Dragons and a Jester = -35). Applied to the
+    // subtotal like the town bonus. 0 for any party of the six original classes,
+    // so nothing changes for them.
+    int classModPct = 0;
 };
 
 struct ScoreBreakdown {
@@ -40,6 +45,7 @@ struct ScoreBreakdown {
     int wager = 0;  // +150 / -100 / 0 (M20 wager event)
     int townBonus = 0;  // town-ladder bonus applied to the subtotal (M32)
     int stakesPenalty = 0;  // stakes penalty subtracted from the subtotal (M33, >= 0)
+    int classMod = 0;  // unlockable-class modifier on the subtotal (M45, may be < 0)
     int total = 0;
 };
 

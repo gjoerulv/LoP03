@@ -4,8 +4,8 @@
 
 - **Status:** planned — deferred 2026-07-20; the deferral was extended on
   2026-07-21 when the owner authorized the **M35–M42 endgame program**, so this
-  milestone now runs **after M42** (the tooling described below is already built
-  and stays in the tree). Re-audit this note against the post-M42 checkout before
+  milestone now runs **after M45** (the tooling described below is already built
+  and stays in the tree). Re-audit this note against the post-M45 checkout before
   starting: the capture scenes and the balance battery need extending for the
   **M25–M42** systems — enmity AI, new content, town ladder, stakes penalty
   (re-tuned to −30 %/step, −99 % cap at M35), black market, the new statuses

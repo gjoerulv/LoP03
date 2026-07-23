@@ -75,6 +75,7 @@ add_library(crystal_core STATIC
     src/game/BossDrops.cpp
     src/game/Castle.cpp
     src/game/Achievements.cpp
+    src/game/Profile.cpp
     src/save/SaveSystem.cpp
     src/battle/Battle.cpp
     src/battle/Simulator.cpp

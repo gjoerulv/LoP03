@@ -29,6 +29,16 @@ struct SkillDef {
     // manipulate the threat model instead of (or besides) dealing damage.
     SkillEffect controlEffect = SkillEffect::None;
 
+    // Revive capability (M43): 0 = the skill cannot raise the fallen (every
+    // pre-M43 skill); 1..100 = a KO'd ally target is revived at this percentage
+    // of max HP instead of being skipped. Validated to heal/single_ally only.
+    int reviveHpPct = 0;
+
+    // M45 (the Goose's comedy tradeoff): the skill ALSO applies its status to
+    // every living enemy. Authored on ally-facing skills whose `statusEffect` is
+    // a buff, so healing the party cheers the enemy up too.
+    bool alsoBuffsEnemies = false;
+
     std::string description;
 };
 
@@ -39,6 +49,13 @@ struct LearnEntry {
     int level = 1;      // >= 1
 };
 
+// One status a basic attack applies on a connecting hit (M45, the Dragon).
+struct AttackStatus {
+    StatusType type = StatusType::None;
+    int magnitude = 0;
+    int duration = 0;
+};
+
 struct ClassDef {
     std::string id;
     std::string name;
@@ -47,6 +64,25 @@ struct ClassDef {
     StatGrowth growth;
     std::vector<std::string> startingSkills;  // skill ids (level-1 set)
     std::vector<LearnEntry> learnset;         // level-gated grants (M29)
+
+    // M45 (the King's reward classes). Every field is optional and inert by
+    // default, so the six original classes are untouched. Class identity is data:
+    // no class id is ever branched on in code.
+    bool unlockedByKing = false;              // hidden until the King has fallen
+    std::vector<EquipSlot> equipBans;         // slots this class may never equip
+    bool attackHitsAll = false;               // the basic attack strikes every foe
+    std::vector<AttackStatus> attackStatuses; // applied per connecting basic hit
+    bool uncontrolled = false;                // takes no player input; acts on its own
+    int scoreModPct = 0;                      // per-member additive score modifier
+
+    bool canEquip(EquipSlot slot) const {
+        for (EquipSlot banned : equipBans) {
+            if (banned == slot) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
 // A passive skill (M36): an always-on trait keyed by `hook`, parameterized by a
@@ -118,6 +154,15 @@ struct CompositionDef {
     }
 };
 
+// One status a battle item applies to its target (M44). Authored as a list so an
+// item can carry more than one (the Dragon Crown applies ATK- and DEF-) without
+// the schema growing a field per slot.
+struct ItemStatus {
+    StatusType type = StatusType::None;
+    int magnitude = 0;  // percent for buffs/debuffs, damage for poison
+    int duration = 0;   // turns
+};
+
 struct ItemDef {
     std::string id;
     std::string name;
@@ -126,10 +171,28 @@ struct ItemDef {
     Rarity rarity = Rarity::Common;
     int value = 0;      // gold value (>= 0)
     int minTown = 1;    // per-town gating (M37): stocked/dropped only at town >= minTown
+    int maxTown = 0;    // M43: upper end of the town window (0 = unbounded)
 
     // Consumable behavior.
     ConsumableEffect effect = ConsumableEffect::None;
     int effectAmount = 0;
+    // M43: the item also lifts ATK-/DEF- (stat debuffs only - full affliction
+    // cleansing remains the Cure effect's job).
+    bool curesDebuffs = false;
+    // M43 (Royal Snacks): amounts used INSTEAD of the normal ones when the fight
+    // is the King's (battle::Battle::kingBattle). 0 = no King-specific behavior,
+    // which is every other item. Bespoke King fields follow the M40 precedent
+    // (BossDef::immuneToConfusion).
+    int kingEffectAmount = 0;
+    int kingMpAmount = 0;
+
+    // M44 (Royal Relics). All inert by default, so every pre-M44 item behaves
+    // exactly as before.
+    BattleTarget battleTarget = BattleTarget::Ally;  // which side it may be used on
+    std::vector<ItemStatus> statuses;                // statuses applied to the target
+    std::string requiresBossId;   // non-empty: only this boss is affected at all
+    int statScalePct = 0;         // non-zero: scales the target's ATK/MAG/DEF/SPD
+                                  // for the rest of the battle (50 = halved)
 
     // Equipment/relic flat stat bonus.
     StatBlock statBonus;
@@ -138,6 +201,14 @@ struct ItemDef {
     std::string grantsSkill;
 
     std::string description;
+
+    // M43: the town window this item exists in at all - shop stock, chest
+    // rewards, and dungeon merchant offers all ask this one question, so an
+    // item can never be "sold only in town 1" in one place and everywhere in
+    // another. Unbounded above unless maxTown says otherwise.
+    bool availableAtTown(int town) const {
+        return minTown <= town && (maxTown <= 0 || town <= maxTown);
+    }
 };
 
 struct BossDef {

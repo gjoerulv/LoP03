@@ -9,6 +9,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/Enums.hpp"
 #include "dungeon/Rng.hpp"
+#include "game/Relics.hpp"  // relicEventChancePct (M44)
 #include "game/WorldLadder.hpp"
 
 namespace cd::dungeon {
@@ -66,9 +67,15 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
         if (def.rarity == content::Rarity::Legendary) {
             continue;
         }
-        // Per-town gating (M37): a chest reward only offers gear unlocked at this
-        // town, so higher-town gear appears only in higher-town dungeons.
-        if (def.minTown > town) {
+        // Per-town gating (M37, windowed in M43): a chest reward or merchant
+        // offer only holds what exists at this town, so higher-town gear appears
+        // only in higher-town dungeons and a town-1-only item stays there.
+        if (!def.availableAtTown(town)) {
+            continue;
+        }
+        // M44: a valueless item is never loot either — the Royal Relics come from
+        // their own event and nowhere else.
+        if (def.value <= 0) {
             continue;
         }
         p.items.push_back(id);
@@ -435,6 +442,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
         }
         const int desiredEvents = rng.range(2, 3);
         int made = 0;
+        bool relicPlaced = false;  // M44: at most one relic event per dungeon
         for (std::size_t pi = 0; pi < d.mainPath.size() && made < desiredEvents; ++pi) {
             const int parent = d.mainPath[pi];
             if (d.rooms[static_cast<std::size_t>(parent)].type == RoomType::Boss) {
@@ -467,6 +475,16 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
 
             RoomEvent ev;
             ev.kind = kinds[static_cast<std::size_t>(made)];
+            // Royal Relic (M44): a rare replacement of the rolled event, at most
+            // one per dungeon. The draw is taken only where the event is eligible
+            // (town >= 2, depth >= 2), from this same seeded stream.
+            if (!relicPlaced) {
+                const int relicPct = relicEventChancePct(townIdx, d.depth);
+                if (relicPct > 0 && rng.chance(relicPct)) {
+                    ev.kind = RoomEventKind::RoyalRelic;
+                    relicPlaced = true;
+                }
+            }
             switch (ev.kind) {
                 case RoomEventKind::Shrine:
                     ev.goldCost = 40 + 20 * d.depth;
@@ -509,6 +527,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                 case RoomEventKind::HealingSpring:
                 case RoomEventKind::ScoreWager:
                 case RoomEventKind::RestToken:
+                case RoomEventKind::RoyalRelic:  // the relic is picked at resolution (M44)
                 case RoomEventKind::None:
                     break;
             }

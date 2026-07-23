@@ -65,8 +65,9 @@ Application::Application()
       settings_(paths::userDataDir() / "settings.json"),
       tutorial_(paths::userDataDir() / "tutorial.json"),
       achievements_(paths::userDataDir() / "achievements.json"),
+      profile_(paths::userDataDir() / "profile.json"),
       context_{resources_, content_, saves_, party_, scoreboard_, audio_, fade_,
-               input_, settings_, tutorial_, achievements_, config::kVirtualWidth,
+               input_, settings_, tutorial_, achievements_, profile_, config::kVirtualWidth,
                config::kVirtualHeight},
       stack_(),
       // Off by default (audit UI-LAYOUT-009); F1 toggles it in debug builds.
@@ -98,6 +99,13 @@ Application::Application()
       log::warn("Achievements could not be loaded; starting fresh.");
     }
     for (const auto& e : achvReport.errors()) {
+      log::warn("  " + e.source + ": " + e.context + ": " + e.message);
+    }
+    content::LoadReport profileReport;
+    if (!profile_.load(profileReport)) {
+      log::warn("Profile could not be loaded; starting fresh (classes locked).");
+    }
+    for (const auto& e : profileReport.errors()) {
       log::warn("  " + e.source + ": " + e.context + ": " + e.message);
     }
   }

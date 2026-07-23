@@ -128,7 +128,7 @@ checklist per `docs/milestone_completion_template.md`.
 
 ## K. As-implemented record (2026-07-21)
 
-- **Status:** implemented, awaiting manual approval. Implemented / audited against
+- **Status:** complete (approved 2026-07-21). Implemented / audited against
   HEAD `c9e78a4`. The §D routine choices were taken as written (all-themes gating;
   12 enemies + 6 bosses; new procedural sprites in the approved direction).
 - **Schema + gating.** `EnemyDef.minTown` / `BossDef.minTown` (parsed

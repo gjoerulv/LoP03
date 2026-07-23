@@ -81,7 +81,20 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
         d.statusDuration = r.optIntMin("statusDuration", 0, 0);
         d.controlEffect =
             r.optEnum<SkillEffect>("control", parseSkillEffect, SkillEffect::None, "control effect");
+        d.reviveHpPct = r.optIntMin("reviveHpPct", 0, 0);  // M43 (default 0 = cannot revive)
+        d.alsoBuffsEnemies = r.optBool("alsoBuffsEnemies", false);  // M45 (Goose tradeoff)
         d.description = r.optString("description");
+
+        // Semantic rules tying fields together (M43): a revive-capable skill is a
+        // single-ally heal, and its percentage is a percentage.
+        if (d.reviveHpPct > 100) {
+            rep.add(source, ctx, "'reviveHpPct' must be 0..100");
+        }
+        if (d.reviveHpPct > 0 &&
+            (d.category != SkillCategory::Heal || d.target != SkillTarget::SingleAlly)) {
+            rep.add(source, ctx,
+                    "'reviveHpPct' is only valid on a 'heal' skill targeting 'single_ally'");
+        }
         if (rep.errorCount() != before) {
             return;  // invalid entry; skip
         }
@@ -124,6 +137,45 @@ void parseClasses(const Json& root, const std::string& source, ContentDatabase& 
                 }
             }
         }
+        // M45 reward-class fields: all optional, all inert by default.
+        d.unlockedByKing = r.optBool("unlockedByKing", false);
+        d.attackHitsAll = r.optBool("attackHitsAll", false);
+        d.uncontrolled = r.optBool("uncontrolled", false);
+        d.scoreModPct = r.optInt("scoreModPct", 0);
+        for (const std::string& slot : r.optStringArray("equipBans")) {
+            if (const std::optional<EquipSlot> parsed = parseEquipSlot(slot);
+                parsed && *parsed != EquipSlot::None) {
+                d.equipBans.push_back(*parsed);
+            } else {
+                rep.add(source, ctx, "unknown equip slot '" + slot + "' in 'equipBans'");
+            }
+        }
+        if (const auto it = el.find("attackStatuses"); it != el.end()) {
+            if (!it->is_array()) {
+                rep.add(source, ctx + ".attackStatuses", "expected array");
+            } else {
+                int ai = 0;
+                for (const auto& ae : *it) {
+                    const std::string actx = ctx + ".attackStatuses[" + std::to_string(ai) + "]";
+                    if (!ae.is_object()) {
+                        rep.add(source, actx, "expected object");
+                    } else {
+                        ObjectReader ar(ae, actx, source, rep);
+                        AttackStatus st;
+                        st.type = ar.reqEnum<StatusType>("type", parseStatusType, "status type");
+                        st.magnitude = ar.optIntMin("magnitude", 0, 0);
+                        st.duration = ar.reqIntMin("duration", 1);
+                        d.attackStatuses.push_back(st);
+                    }
+                    ++ai;
+                }
+            }
+        }
+        // Semantic rule: a score modifier is a percentage, not a multiplier.
+        if (d.scoreModPct < -100 || d.scoreModPct > 100) {
+            rep.add(source, ctx, "'scoreModPct' must be -100..100");
+        }
+
         if (rep.errorCount() != before) {
             return;
         }
@@ -178,14 +230,51 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         d.rarity = r.optEnum<Rarity>("rarity", parseRarity, Rarity::Common, "rarity");
         d.value = r.optIntMin("value", 0, 0);
         d.minTown = r.optIntMin("minTown", 1, 1);  // M37 (default 1)
+        d.maxTown = r.optIntMin("maxTown", 0, 0);  // M43 (default 0 = unbounded)
         d.effect = r.optEnum<ConsumableEffect>("effect", parseConsumableEffect,
                                                ConsumableEffect::None, "consumable effect");
         d.effectAmount = r.optIntMin("effectAmount", 0, 0);
+        d.curesDebuffs = r.optBool("curesDebuffs", false);           // M43
+        d.kingEffectAmount = r.optIntMin("kingEffectAmount", 0, 0);  // M43
+        d.kingMpAmount = r.optIntMin("kingMpAmount", 0, 0);          // M43
         d.statBonus = r.optStatBlock("statBonus");
         d.grantsSkill = r.optString("grantsSkill");
         d.description = r.optString("description");
+        // M44: enemy-targetable battle items, applied statuses, a boss
+        // restriction, and a battle-long stat scale (the Royal Relics).
+        d.battleTarget = r.optEnum<BattleTarget>("battleTarget", parseBattleTarget,
+                                                 BattleTarget::Ally, "battle target");
+        d.requiresBossId = r.optString("requiresBossId");
+        d.statScalePct = r.optIntMin("statScalePct", 0, 0);
+        if (const auto it = el.find("statuses"); it != el.end()) {
+            if (!it->is_array()) {
+                rep.add(source, ctx + ".statuses", "expected array");
+            } else {
+                int si = 0;
+                for (const auto& se : *it) {
+                    const std::string sctx = ctx + ".statuses[" + std::to_string(si) + "]";
+                    if (!se.is_object()) {
+                        rep.add(source, sctx, "expected object");
+                    } else {
+                        ObjectReader sr(se, sctx, source, rep);
+                        ItemStatus st;
+                        st.type = sr.reqEnum<StatusType>("type", parseStatusType, "status type");
+                        st.magnitude = sr.optIntMin("magnitude", 0, 0);
+                        st.duration = sr.reqIntMin("duration", 1);
+                        d.statuses.push_back(st);
+                    }
+                    ++si;
+                }
+            }
+        }
 
         // Semantic rules tying fields together.
+        if (d.statScalePct > 100) {
+            rep.add(source, ctx, "'statScalePct' must be 0..100 (it only weakens a target)");
+        }
+        if (d.maxTown > 0 && d.maxTown < d.minTown) {
+            rep.add(source, ctx, "'maxTown' must be >= 'minTown' (or 0 for unbounded)");
+        }
         if (d.type == ItemType::Scroll && d.grantsSkill.empty()) {
             rep.add(source, ctx, "scroll item must specify a non-empty 'grantsSkill'");
         }

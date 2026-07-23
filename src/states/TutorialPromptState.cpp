@@ -36,7 +36,7 @@ void TutorialPromptState::handleInput(const Input& input) {
 void TutorialPromptState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    DrawRectangle(0, 0, w, h, Color{0, 0, 0, 140});  // dim the frozen scene
+    ui::drawModalDim(w, h);  // dim the frozen scene
 
     // Measured height: title + wrapped body + footer hint, then center.
     const std::vector<std::string> lines =
@@ -47,8 +47,8 @@ void TutorialPromptState::render() {
     const int x = (w - kPanelW) / 2;
     const int y = (h - panelH) / 2;
 
-    ui::drawFramedPanel(context_.resources, x, y, kPanelW, panelH,
-                        Color{20, 24, 34, 250}, style::palette().cursor);
+    // Teaching moment: the Crystal frame with its glinting corner pips.
+    ui::drawFrame(x, y, kPanelW, panelH, ui::FrameStyle::Crystal);
     int ty = y + style::kPad;
     ui::drawTextCentered(title_.c_str(), x + kPanelW / 2, ty, style::kFontHeading,
                          style::palette().cursor);

@@ -4,6 +4,7 @@
 
 #include "content/LoadReport.hpp"
 #include "core/AppContext.hpp"
+#include "game/Profile.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -11,6 +12,7 @@
 #include "states/StateStack.hpp"
 #include "states/TownState.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -93,6 +95,12 @@ void SlotMenuState::confirmSelection() {
         rebuild();
     } else {
         if (context_.saves.load(slot, context_.party, report)) {
+            // M45: a party that already beat the King unlocks the reward classes
+            // retroactively — a player who won before this build should not have
+            // to win again.
+            if (context_.party.castleRecords.kingDefeated) {
+                context_.profile.recordKingDefeated();
+            }
             stack().clearStates();
             stack().pushState(std::make_unique<TownState>(stack(), context_));
         } else {
@@ -131,10 +139,13 @@ void SlotMenuState::disarmOverwrite() {
 
 void SlotMenuState::render() {
     const int w = context_.virtualWidth;
-    ClearBackground(Color{14, 14, 22, 255});
+    const int h = context_.virtualHeight;
+    const ui::style::Palette& p = ui::style::palette();
+    ClearBackground(p.canvas);
 
     const char* title = mode_ == SlotMenuMode::Save ? "Save Game" : "Load Game";
-    ui::drawTextCentered(title, w / 2, 28, 18, RAYWHITE);
+    ui::drawTitlePlaque(title, w / 2, 20, 16);
+    ui::drawFrame(32, 64, w - 64, 4 * kRowH + 18, ui::FrameStyle::Standard);
 
     // Rows are drawn here rather than via drawMenu so a slot's King title gets
     // its own line: appended to the label it ran straight off the screen.
@@ -142,30 +153,33 @@ void SlotMenuState::render() {
     for (std::size_t i = 0; i < items.size(); ++i) {
         const int y = kRowsY + static_cast<int>(i) * kRowH;
         const bool isCursor = static_cast<int>(i) == menu_.cursor();
-        Color color = items[i].enabled ? RAYWHITE : Color{90, 90, 110, 255};
+        Color color = items[i].enabled ? p.text : p.disabled;
         if (isCursor && items[i].enabled) {
-            color = Color{240, 220, 120, 255};
-            ui::drawText(">", kRowX - 12, y, 12, color);
+            color = p.cursor;
+            ui::drawSelectionSlab(kRowX - 14, y - 3, w - kRowX - 26, kRowH - 3);
+            ui::drawChevron(kRowX - 11, y + 1, p.cursor, ui::motionPhase());
         }
-        ui::drawTextFitted(items[i].label, kRowX, y, w - kRowX - 16, 12, color, "slot.label");
+        ui::drawTextFitted(items[i].label, kRowX, y, w - kRowX - 48, 12, color, "slot.label");
         if (i < titles_.size() && !titles_[i].empty()) {
-            ui::drawTextFitted(titles_[i], kRowX + 12, y + 13, w - kRowX - 28, 10,
-                               Color{210, 190, 130, 255}, "slot.title");
+            ui::drawTextFitted(titles_[i], kRowX + 12, y + 13, w - kRowX - 60, 10,
+                               p.gold, "slot.title");
         }
     }
 
     if (!message_.empty()) {
-        // Below the deepest row a Load list can reach (4 slots, each able to carry
-        // a title line) and clear of the footer.
-        ui::drawTextCentered(message_.c_str(), w / 2, 190, 10, Color{170, 220, 170, 255});
+        // Below the deepest row a Load list can reach (4 slots, each able to
+        // carry a title line) and clear of the footer. Overwrite arming is a
+        // consequence question, so it rides the Danger banner.
+        ui::drawBanner(pendingOverwrite_ >= 0 ? ui::BannerKind::Danger : ui::BannerKind::Success,
+                       message_, 60, 190, w - 120, "slot.message");
     }
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
-    const std::string footer =
-        input::prompt(map, InputAction::Confirm, device,
-                      mode_ == SlotMenuMode::Save ? "Save" : "Load") +
-        "    " + input::prompt(map, InputAction::Cancel, device, "Back");
-    ui::drawTextCentered(footer.c_str(), w / 2, 218, 10, Color{150, 150, 170, 255});
+    ui::drawFooterHints(
+        {{input::primaryLabel(map, InputAction::Confirm, device),
+          mode_ == SlotMenuMode::Save ? "Save" : "Load"},
+         {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
+        w, h, "slot.footer");
 }
 
 }  // namespace cd

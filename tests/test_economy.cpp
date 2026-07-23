@@ -290,6 +290,45 @@ TEST_CASE("economy report: depth/level/income battery", "[.][economy-report]") {
     SUCCEED();
 }
 
+// M43 affordability battery: what one clear's gold buys at the repriced shelf.
+// The reprices exist to make consumables a real budget decision, so the evidence
+// is "how many, per clear" rather than a pass/fail assertion:
+//   crystal_tests.exe "[economy-report]" -s
+TEST_CASE("economy report: consumable affordability after the M43 reprices",
+          "[.][economy-report]") {
+    const content::ContentDatabase db = loadContent();
+    const char* shelf[] = {"potion",      "hi_potion",    "antidote", "ether",
+                           "hi_ether",    "phoenix_tear", "elixir",   "royal_snacks"};
+    std::cout << "consumable affordability (units bought with ONE clear's gold)\n";
+    std::cout << "depth | gold |";
+    for (const char* id : shelf) {
+        const content::ItemDef* it = db.findItem(id);
+        std::cout << " " << (it != nullptr ? it->name : id) << "(" << (it != nullptr ? it->value : 0)
+                  << "g) |";
+    }
+    std::cout << "\n";
+    for (int depth : {1, 3, 5, 8, 10}) {
+        int worstLv = 0;
+        ClearStats sample;
+        for (std::uint64_t seed : {11ull, 222ull, 3333ull}) {
+            const dungeon::Dungeon d = dungeon::generate(seed, depth, db, "ruined_keep");
+            const int lv = clearingLevel(db, d);
+            if (lv > worstLv) {
+                worstLv = lv;
+                sample = simulateClear(db, d, std::min(lv, kMaxLevel));
+            }
+        }
+        std::cout << depth << " | " << sample.gold << " |";
+        for (const char* id : shelf) {
+            const content::ItemDef* it = db.findItem(id);
+            const int price = it != nullptr && it->value > 0 ? it->value : 1;
+            std::cout << " " << sample.gold / price << " |";
+        }
+        std::cout << "\n";
+    }
+    SUCCEED();
+}
+
 // On-demand drop-rate table (M39) for the milestone note and owner review:
 //   crystal_tests.exe "[economy-report]" -s
 TEST_CASE("economy report: boss drop rates across the ladder", "[.][economy-report]") {

@@ -35,6 +35,7 @@
 #include "render/SpriteDraw.hpp"
 #include "town/Movement.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -340,7 +341,7 @@ void TownState::render() {
     // Building name labels above each building.
     for (const town::Building& b : town_.buildings) {
         const int cx = b.x * ts + b.w * ts / 2;
-        ui::drawTextCentered(b.name.c_str(), cx, b.y * ts - 9, 8, Color{225, 225, 235, 255});
+        ui::drawTextCentered(b.name.c_str(), cx, b.y * ts - 9, 8, ui::style::palette().text);
     }
 
     // Exit signposts by each road out (M32; the M40 castle road is at the top).
@@ -354,7 +355,7 @@ void TownState::render() {
                     : e.toNext ? "Town " + std::to_string(e.destTown) + " >"
                                : "< Town " + std::to_string(e.destTown);
         }
-        const Color col = e.locked ? Color{150, 120, 120, 255} : Color{240, 230, 160, 255};
+        const Color col = e.locked ? ui::style::palette().dangerText : ui::style::palette().gold;
         const int labelY = e.toCastle ? (e.tileY + 1) * ts + 1 : (e.tileY - 1) * ts - 1;
         ui::drawTextCentered(label.c_str(), cx, labelY, 8, col);
     }
@@ -369,7 +370,7 @@ void TownState::render() {
             DrawRectangle(mx * ts + 3, my * ts + 2, ts - 6, ts - 4, Color{120, 70, 150, 255});
         }
         ui::drawTextCentered("Black Market", mx * ts + ts / 2, my * ts - 9, 8,
-                             Color{210, 170, 240, 255});
+                             ui::lighten(ui::style::palette().magic, 40));
     }
 
     // Wandering storyteller (M41): always present at a fixed plaza tile in every town.
@@ -381,7 +382,7 @@ void TownState::render() {
                           Color{150, 120, 60, 255});
         }
         ui::drawTextCentered("Storyteller", kBardTileX * ts + ts / 2, kBardTileY * ts - 9, 8,
-                             Color{220, 200, 140, 255});
+                             ui::style::palette().gold);
     }
 
     // Player: directional walk animation, then static sprite, then rectangle
@@ -400,51 +401,44 @@ void TownState::render() {
                       Color{60, 50, 30, 255});
     }
 
-    // Party HUD (top-left); the backdrop is sized to the measured text so
-    // long names never spill past it.
+    const ui::style::Palette& pal = ui::style::palette();
+    // Party HUD (top-left) as a chip, sized to the measured text so long
+    // names never spill past it.
     std::string hud = "Party:";
     for (const Character& c : context_.party.members) {
         hud += " " + c.name;
     }
-    const int hudW = ui::measureText(hud, 8) + 6;
-    DrawRectangle(2, 2, hudW, 12, Color{0, 0, 0, 140});
-    ui::drawTextFitted(hud, 5, 4, context_.virtualWidth - 10, 8, RAYWHITE, "town.hud");
+    ui::drawChip(hud, 4, 4, pal.crystal);
 
     // Town indicator (top-right): which town of the ladder this is (M32).
-    const std::string townLabel =
-        "Town " + std::to_string(townIdx) + "/" + std::to_string(kTownCount);
-    const int tlW = ui::measureText(townLabel, 8) + 6;
-    DrawRectangle(context_.virtualWidth - tlW - 2, 2, tlW, 12, Color{0, 0, 0, 140});
-    ui::drawTextRight(townLabel.c_str(), context_.virtualWidth - 5, 4, 8,
-                      Color{225, 215, 170, 255});
+    ui::drawChipRight("Town " + std::to_string(townIdx) + "/" + std::to_string(kTownCount),
+                      context_.virtualWidth - 4, 4, pal.gold);
 
     // Interaction prompt, generated from the live bindings (M13).
     const int h = context_.virtualHeight;
     const InputMap& bindings = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
     if (nearDoor_ != nullptr) {
-        DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
+        ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
         const std::string text =
             input::prompt(bindings, InputAction::Confirm, device, "Enter " + nearDoor_->name) +
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
-                             Color{240, 230, 160, 255});
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.text);
     } else if (nearMarket_) {
-        DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
+        ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
         const std::string text =
             input::prompt(bindings, InputAction::Confirm, device, "Browse the Black Market") +
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
-                             Color{215, 175, 245, 255});
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8,
+                             ui::lighten(pal.magic, 40));
     } else if (nearBard_) {
-        DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
+        ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
         const std::string text =
             input::prompt(bindings, InputAction::Confirm, device, "Hear the storyteller") + "   " +
             input::prompt(bindings, InputAction::Menu, device, "Pause");
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
-                             Color{225, 205, 150, 255});
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.gold);
     } else if (nearExit_ != nullptr) {
-        DrawRectangle(0, h - 16, context_.virtualWidth, 16, Color{0, 0, 0, 160});
+        ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
         std::string text;
         if (nearExit_->locked) {
             text = nearExit_->toCastle
@@ -456,9 +450,8 @@ void TownState::render() {
             text = input::prompt(bindings, InputAction::Confirm, device,
                                  "Travel to Town " + std::to_string(nearExit_->destTown));
         }
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
-                             nearExit_->locked ? Color{200, 170, 170, 255}
-                                               : Color{240, 230, 160, 255});
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8,
+                             nearExit_->locked ? pal.dangerText : pal.text);
     } else {
         const std::string moveLabel =
             device == ActiveDevice::Keyboard
@@ -467,10 +460,9 @@ void TownState::render() {
                       input::primaryLabel(bindings, InputAction::MoveLeft, device) + "/" +
                       input::primaryLabel(bindings, InputAction::MoveRight, device)
                 : "D-Pad/Stick";
-        const std::string text = "[" + moveLabel + "] Move   " +
-                                 input::prompt(bindings, InputAction::Menu, device, "Pause");
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 13, 8,
-                             Color{170, 170, 190, 255});
+        ui::drawFooterHints({{moveLabel, "Move"},
+                             {input::primaryLabel(bindings, InputAction::Menu, device), "Pause"}},
+                            context_.virtualWidth, h, "town.footer");
     }
 }
 

@@ -44,7 +44,13 @@ inline constexpr int kBossRushScalePct = 330;
 // boss). Sim-tuned to be beatable by a maxed party but a real war of attrition —
 // its debuff-curses now deal damage every turn (M40 owner refinement), so the
 // scale is lower than a pure-status King would need.
-inline constexpr int kKingScalePct = 420;
+//
+// M44 (owner decision, 2026-07-22): 420 -> 340. The King's BASE stats doubled,
+// which compounds with this multiplier; at 420 % the fight demanded three copies
+// of each 40 % relic plus the 15 % Dragon Crown. At 340 % the approved bar holds
+// exactly — a maxed party with no counterplay still loses, while one Tax Sheets +
+// one Evil Goose + Royal Snacks wins it. Evidence: `[king-report]`.
+inline constexpr int kKingScalePct = 340;
 
 // Endless wave W (0-based): starts at the baseline and escalates ~12 %pts/wave,
 // so a maxed party pushes a meaningful distance before the scale overwhelms.

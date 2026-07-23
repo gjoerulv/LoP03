@@ -34,6 +34,7 @@ inline constexpr const char* kFirstPenalty = "first_penalty";  // M33 stakes pen
 inline constexpr const char* kFirstMarket = "first_market";    // M34 black market
 inline constexpr const char* kFirstCastle = "first_castle";        // M40 castle
 inline constexpr const char* kFirstChallenge = "first_challenge";  // M40 challenges
+inline constexpr const char* kFirstRelic = "first_relic";          // M44 royal relics
 
 struct Beat {
     const char* id;
@@ -90,8 +91,8 @@ inline constexpr Beat kBeats[] = {
      "at the bottom left returns the way you came. Clear one dungeon in a "
      "town to open the road onward from it."},
     {kFirstPenalty, "Raising the stakes",
-     "A run that does not raise the stakes loses score - another 15% each "
-     "time, down to a 90% floor. Raise the town or the depth above your last "
+     "A run that does not raise the stakes loses score - another 30% each "
+     "time, down to a 99% floor. Raise the town or the depth above your last "
      "cleared run to reset it. The Guild shows the penalty before you enter, "
      "so you are never surprised."},
     {kFirstMarket, "The black market",
@@ -108,6 +109,12 @@ inline constexpr Beat kBeats[] = {
      "them wisely. Each pays a one-time reward the first time you clear it; the "
      "King grants a unique legendary and a title. Fall, and you simply return to "
      "the castle to try again."},
+    {kFirstRelic, "A Royal Relic",
+     "Reliquaries are rare, and nobody alive agrees on what the relics inside "
+     "actually DO. A goose. Tax sheets. A spoon. A crown. Each works exactly "
+     "once, on one enemy, in battle - beyond that, all anyone has is the "
+     "storytellers' ballad. Listen to every verse. And mind the spoon. "
+     "Everyone says to mind the spoon. Nobody says why."},
 };
 inline constexpr std::size_t kBeatCount = sizeof(kBeats) / sizeof(kBeats[0]);
 

@@ -28,8 +28,15 @@ namespace cd::battle {
 // identical inputs can change, so the scoreboard can flag runs played under
 // different rules. 0 = pre-M28; 1 = M28 (enmity/targeting/control skills);
 // 2 = M35 (Confusion/Silence/Blind statuses + the seeded to-hit layer);
-// 3 = M36 (passive skills). The program's last rules bump.
-inline constexpr int kBattleRulesVersion = 3;
+// 3 = M36 (passive skills); 4 = M43 (confusion forces a basic attack on BOTH
+// sides, revive-capable heal skills, King-context items, effect-filtered item
+// targeting); 5 = M44 (the Royal Relics: enemy-targetable items, the Terrified /
+// Stunned turn-control statuses, and a battle-long stat scale); 6 = M45 (the
+// uncontrolled turn, the AoE basic attack with attack-applied statuses, the
+// enemy-buffing heal — and the Simulator now tracks `turnsTaken`, which the
+// enemy-targeting tie-break reads, so simulation and live play finally agree on
+// it too).
+inline constexpr int kBattleRulesVersion = 6;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -108,6 +115,15 @@ struct Combatant {
     bool firstStrike = false;             // First Strike
     bool firstStrikeUsed = false;         // once per battle
 
+    // Class battle traits (M45), resolved from the ClassDef at buildBattle so the
+    // pure model never looks a class up. All inert by default.
+    bool attackHitsAll = false;                 // basic attack sweeps every foe
+    // Applied per connecting basic hit. Stored as StatusInstances (the same
+    // {type, magnitude, turns} triple) so the pure model needs no content type
+    // here; buildBattle converts the class's authored list once.
+    std::vector<StatusInstance> attackStatuses;
+    bool uncontrolled = false;                  // acts on its own, seeded
+
     bool alive() const { return hp > 0; }
 };
 
@@ -135,6 +151,12 @@ public:
     // Cleared at the start of every action so it only reflects the latest one.
     std::vector<int> lastMissed;
 
+    // M43: this fight is the King's (set by buildBattle from the team's boss id).
+    // Content-derived, never rolled, so the live screen and the Simulator read the
+    // same flag from the same construction path. Items may carry King-specific
+    // amounts (Royal Snacks).
+    bool kingBattle = false;
+
     bool sideAlive(Side s) const;
     Outcome outcome() const;  // Victory / Defeat / Ongoing (Escaped is set by the caller)
     std::vector<int> aliveIndices(Side s) const;
@@ -151,12 +173,16 @@ public:
     std::string tickStatuses(int unit);
 
     // Each returns a human-readable log line. Skills deduct MP from the actor.
+    // `attack` dispatches to one strike, or (M45) a sweep of every living foe.
     std::string attack(int actor, int target);
     std::string useSkill(int actor, int primaryTarget, const content::SkillDef& skill);
     std::string useItem(int actor, int target, const content::ItemDef& item);
     std::string guard(int actor);
 
 private:
+    std::string attackOne(int actor, int target);   // one strike (the pre-M45 attack)
+    std::string attackAll(int actor);               // M45: one strike per living foe
+    std::string applyAttackStatuses(int actor, int target);  // M45: the Dragon's bite
     std::vector<int> resolveTargets(const content::SkillDef& skill, int actor,
                                     int primaryTarget) const;
     // M35: advance the roll cursor and return a fresh value mixed from rngSeed +
@@ -225,11 +251,66 @@ std::vector<int> turnOrder(const Battle& b);
 // role) — weighing accrued threat, kill pressure, and the backline, with a
 // small seeded tie-break. Pure and reproducible, so live play and the Simulator
 // agree exactly.
+// M44: an action a unit does not get to choose. `None` means it acts normally;
+// the rest are imposed by a status and resolved identically wherever a turn is
+// decided (see forcedActionFor).
+enum class ForcedAction { None, BasicAttack, Guard, Skip };
+
 struct EnemyChoice {
     bool useSkill = false;
     int target = -1;
     std::string skillId;
+    ForcedAction forced = ForcedAction::None;  // M44: set when the turn was taken away
 };
 EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::ContentDatabase& db);
+
+// M44: does a status take this unit's turn away, and how? The single source of
+// truth for every imposed action — Confusion (M35/M43) forces a basic attack,
+// Terrified forces a Guard, Stunned skips the turn entirely. Immunities are
+// honoured through the isConfused-style queries. Pure.
+ForcedAction forcedActionFor(const Combatant& c);
+
+// M44: the EnemyChoice a forced action resolves to, ready to apply. Callers that
+// decide turns (BattleState, the Simulator, chooseEnemyAction) ask this once at
+// the top of a turn and obey it — the M43 lesson, generalized.
+EnemyChoice forcedChoice(const Battle& b, int actor, ForcedAction forced);
+
+// M45: the turn an UNCONTROLLED unit (the Jester) takes for itself — a seeded
+// pick among its affordable, castable known skills plus the basic attack, aimed
+// at a random living foe. Pure: it hashes (rngSeed, turnsTaken, actor) the way
+// `targetJitter` does and never advances `rollCursor`, so BattleState, the
+// Simulator, and chooseEnemyAction all derive the same turn without having to
+// consume the roll stream in the same order.
+EnemyChoice uncontrolledChoice(const Battle& b, int actor, const content::ContentDatabase& db);
+
+// M45: does the Jester quip this turn, and which line? `index` is only meaningful
+// when it returns true. Presentation only — a pure hash under its own salt that
+// never touches `rollCursor`, so showing (or hiding) a jest cannot change how a
+// battle resolves.
+bool jestThisTurn(const Battle& b, int actor, int lineCount, int& index);
+
+// M43: the forced action of a confused unit — a basic attack, never a skill.
+// `attack()` then performs the seeded same-side redirect, so the returned target
+// is only a nominal living opposing unit (the actor itself if its foes are all
+// down). EVERY caller that decides a turn — BattleState, the Simulator, and
+// chooseEnemyAction — routes confusion through this one function, so live play
+// and simulation agree by construction rather than by careful duplication.
+EnemyChoice confusedChoice(const Battle& b, int actor);
+
+// M43: the units a battle item may be used on, from the actor's side. An ally
+// item filters by effect (Heal / RestoreMp / Cure / None reach the living; Revive
+// reaches only the fallen); an enemy item (M44's relics) reaches the living foes
+// of `side`. Empty means the item has no legal target and must not be spent.
+// Pure, so the battle screen and the tests share one rule.
+std::vector<int> itemTargets(const Battle& b, Side side, const content::ItemDef& item);
+
+// M44: would this item do anything at all to this target? False only for an item
+// restricted to a boss (`requiresBossId`) used on anything else — the caller keeps
+// such an item instead of spending it on nothing.
+bool itemAffects(const Battle& b, int target, const content::ItemDef& item);
+
+// M43: the ally targets a single-ally skill may be aimed at — the living, plus
+// the KO'd when the skill can revive them (SkillDef::reviveHpPct > 0).
+std::vector<int> skillAllyTargets(const Battle& b, Side side, const content::SkillDef& skill);
 
 }  // namespace cd::battle

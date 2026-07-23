@@ -8,33 +8,20 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build.** Town hub, seeded
-> walkable dungeons, deterministic turn-based combat with status effects, an
-> enmity/targeting model with control skills, danger ratings, scoring +
-> scoreboard, content (classes/enemies/elites/bosses/items/skills/themes) with
-> level-based class learnsets, equipment, XP/leveling, shops, a paid inn, and a
-> controls screen are all in. The post-M10 completion program (M11–M22) and the
-> M25–M30 polish program — UI/text safety, input remapping, replaceable assets,
-> generated 16-bit-style art, compact rooms, encounter variety, a full original
-> soundscape, onboarding + accessibility, an original bitmap font, per-enemy
-> art, environment/ambience identity, smarter enemy AI, expanded content, and a
-> paid-rest economy — are delivered, as is the **M31–M34 expansion**: a
-> seven-town difficulty ladder with per-town art and music, a stakes-escalation
-> score rule, a black market selling legendary gear for gold or elite-challenge
-> tokens, and categorized equip shopping. The **M35–M42 endgame program**
-> (statuses v2, passives, per-town content, boss drops, a castle with the King,
-> story, and enrichment features) is underway — **M35** (statuses + to-hit layer),
-> **M36** (10 passive skills), **M37** (per-town equipment), **M38** (12 per-town
-> enemies + 6 per-town bosses), and **M39** (seeded, reload-proof boss legendary &
-> token drops), **M40** (the castle above the seven towns, with Boss Rush /
-> Endless Rush / the Hollow King challenges, its own records and rewards kept outside
-> the dungeon scoreboard), and **M41** (an original light-hearted story serial — a
-> wandering storyteller in every town and a Jester punchline at the castle) are
-> approved, and **M42** (enrichment — a bestiary, result-screen victory stats +
-> personal records, and ~16 achievements) is implemented and awaiting approval,
-> closing the endgame program. The deferred
-> **validation/balance playtesting (M23)** and **release packaging/sign-off
-> (M24)** run last — see `docs/completion_roadmap.md` and `docs/milestones.md`.
+> **Status: feature-complete, polished playable build** (milestones M1–M45
+> delivered and owner-approved). In the box: a seven-town difficulty ladder
+> plus a castle endgame (Boss Rush / Endless Rush / a doubled Hollow King),
+> seeded walkable dungeons with room events including the rare Royal Relics,
+> deterministic turn-based combat (statuses, passives, forced-action
+> turn-control, an enmity/threat model with control skills), a
+> stakes-escalation score rule with an honest tagged scoreboard, a black
+> market and legendary tokens/drops, per-town enemies/bosses/equipment with
+> original generated art and music, a light-hearted story serial, three
+> unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
+> paid inn, onboarding, accessibility options, a bestiary, victory records,
+> and achievements. Only the deferred **validation playtesting (M23)** and
+> **release sign-off (M24)** remain. Current status always lives in
+> `docs/milestones.md`.
 
 ## Requirements
 
@@ -249,7 +236,8 @@ save round-trips via the Save Point + Continue.
   with F5); missing files fall back to synthesized placeholders or silence.
 - Status effects include poison, attack/defense buffs/debuffs, and (M35)
   Blind (physical attacks usually miss), Silence (no MP-cost skills), and
-  Confusion (attacks its own side) — all deterministic and seeded. Bosses use
+  Confusion (forces a basic attack at its own side, on both sides equally since
+  M43) — all deterministic and seeded. Bosses use
   stats, skills, minions, telegraph text, and a Brute enrage; dynamic summons and
   true multi-wave "rush" are not implemented.
 - Equipment has no per-class restrictions; the economy is lightly tuned.

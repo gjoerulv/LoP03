@@ -10,6 +10,7 @@
 #include "core/FadeController.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "game/Party.hpp"
+#include "game/Profile.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -20,6 +21,7 @@
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
 #include "ui/UiDraw.hpp"
+#include "ui/UiStyle.hpp"
 
 namespace cd {
 
@@ -70,8 +72,10 @@ void CastleChallengeState::startNextFight() {
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
     const MusicTrack music =
         kind_ == CastleChallenge::King ? MusicTrack::KingBattle : MusicTrack::None;
-    stack().pushState(
-        std::make_unique<BattleState>(stack(), context_, std::move(b), &result_, music));
+    // M43: the last argument marks this as a castle fight, so a defeat message
+    // never claims the dungeon's gold penalty.
+    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &result_,
+                                                    music, nullptr, true));
 }
 
 void CastleChallengeState::onResume() {
@@ -94,6 +98,12 @@ void CastleChallengeState::finish(bool cleared) {
     context_.audio.setMusic(MusicTrack::Castle);
     CastleRecords& rec = context_.party.castleRecords;
     std::string msg;
+    // M43: a lost challenge costs nothing but the attempt. The party is patched
+    // up at the castle gates — no gold penalty, no forfeited run — and the text
+    // below says so, so the screen and the battle's defeat line agree.
+    if (!cleared) {
+        healFull(context_.party);
+    }
     switch (kind_) {
         case CastleChallenge::BossRush:
             if (cleared) {
@@ -110,8 +120,11 @@ void CastleChallengeState::finish(bool cleared) {
                            " legendary tokens.";
                 }
             } else {
-                msg = "The gauntlet fells you after " + std::to_string(wavesWon_) +
-                      " of 12 bosses. Rest and return.";
+                // M43: the roster is derived, never a literal — adding a boss
+                // must not leave this line quietly lying.
+                msg = "The gauntlet fells you after " + std::to_string(wavesWon_) + " of " +
+                      std::to_string(bossRushOrder(context_.content).size()) +
+                      " bosses. Rest and return.";
             }
             break;
         case CastleChallenge::Endless: {
@@ -135,7 +148,14 @@ void CastleChallengeState::finish(bool cleared) {
                     rec.kingBestTurns = totalRounds_;
                 }
                 rec.kingDefeated = true;
+                // M45: the kill belongs to the PLAYER, not this save — it unlocks
+                // the three reward classes for every future New Game.
+                const bool newlyUnlocked = context_.profile.recordKingDefeated();
                 msg = "The Hollow King falls in " + std::to_string(totalRounds_) + " turns!";
+                if (newlyUnlocked) {
+                    msg += " The Dragon, the Jester and the Goose will answer your call from "
+                           "now on - in any new party.";
+                }
                 if (first) {
                     rec.kingTitle = kKingTitle;
                     context_.party.inventory.add(kKingLegendaryId, 1);
@@ -150,6 +170,9 @@ void CastleChallengeState::finish(bool cleared) {
                 msg = "The King proves too mighty. Return stronger.";
             }
             break;
+    }
+    if (!cleared) {
+        msg += " You are patched up at the gates; nothing is lost.";
     }
     resultText_ = msg;
     // M42: a challenge win may unlock castle achievements; toast them above the
@@ -178,7 +201,8 @@ void CastleChallengeState::handleInput(const Input& input) {
 void CastleChallengeState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
-    ClearBackground(Color{10, 8, 16, 255});
+    const ui::style::Palette& p = ui::style::palette();
+    ClearBackground(p.canvas);
     if (!done_) {
         return;  // transient between fights (a BattleState is normally on top)
     }
@@ -186,15 +210,15 @@ void CastleChallengeState::render() {
     const int boxH = 150;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
-    ui::drawFramedPanel(context_.resources, boxX, boxY, boxW, boxH, Color{22, 18, 30, 245},
-                        Color{200, 170, 90, 255});
-    ui::drawTextCentered(challengeName(kind_), w / 2, boxY + 14, 16, Color{235, 210, 130, 255});
-    ui::drawTextWrapped(resultText_, boxX + 16, boxY + 44, boxW - 32, 10, RAYWHITE,
+    ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
+    ui::drawTextCentered(challengeName(kind_), w / 2, boxY + 12, 16, p.gold);
+    ui::drawDivider(boxX + 14, boxY + 34, boxW - 28);
+    ui::drawTextWrapped(resultText_, boxX + 16, boxY + 42, boxW - 32, 10, p.text,
                         "castle.challenge.result", 6);
     ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,
                                        context_.input.activeDevice(), "Return to the Castle")
                              .c_str(),
-                         w / 2, boxY + boxH - 16, 10, Color{200, 200, 160, 255});
+                         w / 2, boxY + boxH - 16, 10, p.gold);
 }
 
 }  // namespace cd
