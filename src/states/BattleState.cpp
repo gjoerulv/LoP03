@@ -1010,10 +1010,12 @@ void BattleState::handleInput(const Input& input) {
         return;
     }
 
-    // M52: the Menu/Pause action opens the scrollable battle log in any phase but
-    // the final outcome (where Confirm dismisses the whole battle). The overlay
-    // closes on the same Menu action, or Cancel. No new hint text (owner decision).
-    if (phase_ != Phase::Done && input.pressed(InputAction::Menu)) {
+    // M52: the Menu/Pause action opens the scrollable battle log. Available in
+    // EVERY phase — including Resolve and Done — so a party the player never gets
+    // to command (a full Jester party, which only ever sees Intro/Resolve/Done)
+    // can still review the fight. The overlay closes on the same Menu action, or
+    // Cancel.
+    if (input.pressed(InputAction::Menu)) {
         context_.audio.play(Sfx::Confirm);
         stack().pushState(std::make_unique<BattleLogState>(stack(), context_, log_));
         return;
@@ -1375,6 +1377,9 @@ void BattleState::render() {
     const std::string backHint = input::prompt(map, InputAction::Cancel, device, "Back") +
                                  "  " +
                                  input::prompt(map, InputAction::Details, device, "Details");
+    // M52: how to open the battle log — shown during action selection and, for a
+    // Jester party, during the auto-resolved turns (it is openable in every phase).
+    const std::string logHint = input::prompt(map, InputAction::Menu, device, "Log");
 
     switch (phase_) {
         case Phase::Intro:
@@ -1405,6 +1410,11 @@ void BattleState::render() {
                 ui::drawTextFitted(why, kInfoX, panelY + 20, infoW, style::kFontBody,
                                    style::palette().textDim, "battle.why");
             }
+            // M52: Details + Log hints in the info column's free bottom row.
+            ui::drawTextFitted(input::prompt(map, InputAction::Details, device, "Details") + "  " +
+                                   logHint,
+                               kInfoX, panelY + 48, infoW, style::kFontSmall,
+                               style::palette().textHint, "battle.cmdhint");
             break;
         case Phase::ChooseSkill: {
             ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,
@@ -1533,6 +1543,10 @@ void BattleState::render() {
             break;
         }
         case Phase::Resolve:
+            // M52: a Jester party only ever sees this phase, so the log hint rides
+            // the top-right corner above the resolve message.
+            ui::drawTextRight(logHint, w - 10, panelY + 5, style::kFontSmall,
+                              style::palette().textHint);
             ui::drawTextWrapped(message_, 16, panelY + 14, w - 32, style::kFontBody,
                                 style::palette().text, "battle.message", 3);
             break;

@@ -615,15 +615,17 @@ secret, none touching the core loop:
   the SFX slider as it was since M27. It **defaults to 5/10** — quieter by
   design — and applies live and at startup. Old settings files (with no ambience
   field) load at 0.5.
-- An **in-battle battle log**: the **Menu/Pause** action opens a scrollable
-  overlay of the **last 30 action results** (the exact lines the battle showed);
-  the same action, or Cancel, closes it. It is presentation-only — a mid-fight
-  memory aid that never affects how the battle resolves and is gone when the
-  battle ends.
+- An **in-battle battle log**: the **Menu/Pause** action (hinted on the command
+  menu, and openable in **any** phase — including the auto-played turns of a full
+  Jester party) opens a scrollable overlay of the **last 30 action results** (the
+  exact lines the battle showed); the same action, or Cancel, closes it. It is
+  presentation-only — a mid-fight memory aid that never affects how the battle
+  resolves and is gone when the battle ends.
 - The **Equip Shop** now shows the **owned count** beside each buy price, and
   the equip flow shows the **currently equipped item** in the chosen slot plus
-  the **stat difference** of the highlighted candidate (green for a net gain,
-  coral for a loss), so gear decisions read at a glance.
+  the **stat difference** of the highlighted candidate, **coloured per stat**
+  (each raised stat green, each lowered stat coral, unchanged stats normal), so a
+  mixed swap reads truthfully at a glance.
 - Bestiary **max stats** (see §10), the **Dragon Crown's hidden effect** against
   the King's revive clock (see §10, Royal Relics — a deliberate secret), and the
   **high-stakes black-market path** (see §10, Black market) round out the

@@ -192,6 +192,15 @@ TEST_CASE("comforts: equip diff formats summaries, deltas, and signs",
 
     // A pure upgrade reads positive.
     CHECK(equip::deltaSign(sword, StatBlock{}) > 0);
+
+    // Per-stat deltas (for the coloured panel): all five, in display order.
+    const auto deltas = equip::statDeltas(dagger, sword);
+    REQUIRE(deltas.size() == 5);
+    CHECK(std::string(deltas[0].tag) == "HP");
+    CHECK(deltas[0].value == 0);   // unchanged -> normal colour
+    CHECK(std::string(deltas[1].tag) == "ATK");
+    CHECK(deltas[1].value == -3);  // loss -> coral
+    CHECK(deltas[4].value == 2);   // SPD gain -> green
 }
 
 // === E4: bestiary max-stats math =============================================

@@ -1490,13 +1490,16 @@ unchanged.
   model or `rollCursor`**, and is freed with the battle by construction.
   `BattleLogState` is a transparent (`rendersBelow`) overlay — a Raised M46 panel
   with `ui::ScrollWindow` over the `ui::wrapText`-wrapped lines — opened AND
-  closed by `InputAction::Menu` (Cancel also closes), in any phase but `Done`.
+  closed by `InputAction::Menu` (Cancel also closes), in **every** phase (so a
+  Jester party that never reaches a command phase can still review the fight). A
+  `[Menu] Log` hint rides the command menu and the resolve line.
 - **Equip-shop QoL (E3).** `bonusDelta`/`statBonusSummary` are promoted into the
   pure header `states/EquipDiff.hpp` (`cd::equip`), shared by the Buy detail, the
-  Details overlay, and the new equip-flow diff, plus a `deltaSign` for one-place
-  colour choice. Buy rows gain the owned-count column (`x%-3d%5dg`, the item-shop
-  idiom); the `EquipItem` panel shows the current slot item + the highlighted
-  candidate's diff (success/danger/dim by `deltaSign`).
+  Details overlay, and the new equip-flow diff, plus `statDeltas` (per-field
+  deltas) and `deltaSign`. Buy rows gain the owned-count column (`x%-3d%5dg`, the
+  item-shop idiom); the `EquipItem` panel shows the current slot item + the
+  highlighted candidate's diff coloured **per stat** via `statDeltas` (each gain
+  green, each loss coral, unchanged normal).
 - **Bestiary max stats (E4).** `content::scaledStats(StatBlock, pct)` (Stats.hpp)
   is the single home for the per-field ×pct/100 multiply; `buildBattle`'s `scaled`
   lambda now calls it (a behaviour-identical dedup). `DangerRating` scales the

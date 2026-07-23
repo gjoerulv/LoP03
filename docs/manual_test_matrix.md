@@ -26,10 +26,14 @@ The older rows below are retained as historical baseline evidence and are **not*
 > Battle log** — in any battle, the **Menu/Pause** key opens a scrollable overlay
 > of the last actions (exactly the lines the battle showed, newest at the
 > bottom, Up/Down scroll); the same key or Cancel closes it; it never changes the
-> fight and is gone in the next battle. **(3) Equip shop** — Buy rows show an
-> owned-count column beside the price; the equip flow (char → slot → item) shows
-> the **current** item in that slot and the **stat diff** of the highlighted
-> candidate (green gain / coral loss / dim no-change), including Unequip. **(4)
+> fight and is gone in the next battle. Confirm it opens even for a **full Jester
+> party** (which auto-plays every turn — the hint rides the resolve line, and the
+> command menu shows a `[Menu] Log` hint for controlled parties). **(3) Equip
+> shop** — Buy rows show an owned-count column beside the price; the equip flow
+> (char → slot → item) shows the **current** item in that slot and the
+> **per-stat** diff of the highlighted candidate — **each raised stat green, each
+> lowered stat coral, unchanged white** (a mixed swap like ATK up / SPD down shows
+> two colours on one line), including Unequip. **(4)
 > Bestiary max stats** — every known foe shows a `max` line under its base stats;
 > spot-check the **King** (base HP 750, max 3750) and confirm the panel is not
 > clipped; unknown foes still read `?`. **(5) The Crown's secret** — in the King

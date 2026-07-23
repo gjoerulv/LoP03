@@ -98,8 +98,10 @@ All held. Load-bearing facts:
   wrapped lines (`ui::wrapText` at panel width), more-above/below chevrons, and
   a footer (Up/Down Scroll, Menu/Cancel Close).
 - **Input:** `BattleState::handleInput` — `pressed(InputAction::Menu)` pushes the
-  overlay (any phase except `Done`); inside the overlay Menu or Cancel closes.
-  No new hint text (owner decision).
+  overlay in **every** phase (so a full Jester party, which only ever sees
+  Intro/Resolve/Done, can still review the fight); inside the overlay Menu or
+  Cancel closes. A `[Menu] Log` hint sits on the command menu (with Details) and
+  on the resolve line for the auto-played Jester case (owner feedback, see §J).
 
 ### E3 — Equip-shop QoL
 
@@ -111,11 +113,13 @@ All held. Load-bearing facts:
   `openItemDetails`.
 - In `Phase::EquipItem` the info panel becomes the current slot item + the diff:
   a `Current: <name or (none)>` line with the slot's bonus summary in `textDim`,
-  and a `Diff: <bonusDelta>` (or `no change`) line for the highlighted candidate,
-  coloured by net sign (positive → success, negative → dangerText, else
-  textDim; the sign is carried in text too). Cursor 0 (Unequip) diffs
+  and a `Diff:` line for the highlighted candidate drawn **per stat** (`statDeltas`)
+  — each stat in its own colour: a gain in `success` (green), a loss in
+  `dangerText` (coral), no change in normal `text`. Cursor 0 (Unequip) diffs
   `StatBlock{}` vs current. The item description moves out of the EquipItem panel
   (Buy and the Details overlay keep it) — a deliberate deviation recorded below.
+  (Per-stat colouring refined from a single net-sign line colour on owner
+  feedback — see §J.)
 
 ### E4 — Bestiary max stats
 
@@ -244,6 +248,23 @@ manual approval**.
   `docs/game_design.md`, `docs/technical_design.md`, `docs/manual_test_matrix.md`,
   `README.md`, and this note.
 
+### Post-implementation refinements (owner feedback, 2026-07-24)
+
+- **Battle log always openable + hinted.** The Menu gate was widened from "any
+  phase but Done" to **every phase**, so a full Jester party (which never reaches
+  a command phase) can open the log during its auto-played turns. A `[Menu] Log`
+  hint now shows on the command menu (beside a `[Details]` hint) and, for the
+  Jester case, top-right on the resolve line. The hint was intentionally kept off
+  the Skill/Item sub-menu lines: appending it there ran the `battle.skillhint` /
+  `battle.itemhint` strings 1–2px past the panel (the long `[Backspace]` Cancel
+  label), and those sub-menus are reached from the command menu where the hint
+  already showed.
+- **Per-stat equip diff colour.** The equip-flow `Diff:` line now colours **each
+  stat individually** — a gain green, a loss coral, no change in normal text —
+  via a new pure `equip::statDeltas`, instead of tinting the whole line one
+  net-sign colour. `deltaSign` is retained (tested) but no longer drives the
+  panel.
+
 ### Deviations from the plan
 
 1. **Bestiary max-stats layout.** The plan sketched a separate three-line "At
@@ -278,7 +299,7 @@ Built from a **Developer PowerShell for VS 2022** shell (per README / the
 
 - `cmake --build --preset debug` → exit 0, no project warnings.
 - `cmake --build --preset release` → exit 0, no project warnings.
-- `build-msvc\crystal_tests.exe` → **All tests passed (62095 assertions in 497
+- `build-msvc\crystal_tests.exe` → **All tests passed (62101 assertions in 497
   test cases)**; `build-msvc-rel\crystal_tests.exe` → same 497/497.
 - `ctest --preset debug` and `ctest --preset release` → **100% passed, 497/497**
   each.

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <string>
 
 #include "content/Stats.hpp"
@@ -59,6 +60,24 @@ inline int deltaSign(const content::StatBlock& next, const content::StatBlock& c
                     (next.magic - cur.magic) + (next.defense - cur.defense) +
                     (next.speed - cur.speed);
     return sum > 0 ? 1 : (sum < 0 ? -1 : 0);
+}
+
+// One stat's label and its signed change (next vs current).
+struct StatDelta {
+    const char* tag;
+    int value;
+};
+
+// The five per-field deltas in display order (HP ATK MAG DEF SPD), so the equip
+// panel can colour each stat on its own — up green, down coral, unchanged normal
+// — instead of tinting the whole line one colour.
+inline std::array<StatDelta, 5> statDeltas(const content::StatBlock& next,
+                                           const content::StatBlock& cur) {
+    return {{{"HP", next.maxHp - cur.maxHp},
+             {"ATK", next.attack - cur.attack},
+             {"MAG", next.magic - cur.magic},
+             {"DEF", next.defense - cur.defense},
+             {"SPD", next.speed - cur.speed}}};
 }
 
 }  // namespace cd::equip

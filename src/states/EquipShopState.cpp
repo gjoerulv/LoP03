@@ -406,12 +406,21 @@ void EquipShopState::render() {
                 cand = candItem->statBonus;
             }
         }
-        const std::string d = equip::bonusDelta(cand, curBonus);
-        const int sign = equip::deltaSign(cand, curBonus);
-        const Color dcol = sign > 0 ? p.success : (sign < 0 ? p.dangerText : p.textDim);
-        ui::drawTextFitted(std::string("Diff: ") + (d.empty() ? "no change" : d), kListX - 14,
-                           infoY + 6 + ui::lineHeight(style::kFontBody), 332, style::kFontBody,
-                           dcol, "equipshop.diff");
+        // M52: each stat coloured by its own change — a gain green, a loss coral,
+        // no change in normal text — so a mixed swap (ATK up, SPD down) reads
+        // truthfully instead of the whole line taking one colour.
+        const int dy = infoY + 6 + ui::lineHeight(style::kFontBody);
+        int dx = kListX - 14;
+        ui::drawText("Diff:", dx, dy, style::kFontBody, p.textDim);
+        dx += ui::measureText("Diff:", style::kFontBody) + 6;
+        for (const equip::StatDelta& sd : equip::statDeltas(cand, curBonus)) {
+            const Color segColor =
+                sd.value > 0 ? p.success : (sd.value < 0 ? p.dangerText : p.text);
+            const std::string seg =
+                std::string(sd.tag) + " " + (sd.value > 0 ? "+" : "") + std::to_string(sd.value);
+            ui::drawText(seg, dx, dy, style::kFontBody, segColor);
+            dx += ui::measureText(seg, style::kFontBody) + 8;
+        }
     }
 
     // Transient feedback rides an overlay banner (drawn last, like a toast).
