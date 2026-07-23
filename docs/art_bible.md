@@ -11,8 +11,14 @@
 1. **Readable first.** Every gameplay-relevant thing (exits, enemies, chests,
    the player) must read in silhouette at native 426×240. Atmosphere never
    outranks legibility.
-2. **Restrained dark fantasy.** Muted, slightly desaturated stone-and-earth
-   world; quiet dread rather than gore or noise.
+2. **Humorous 8-bit-plus fantasy micro-caricature** (owner-approved, M46 —
+   supersedes the original "restrained dark fantasy / quiet dread" wording):
+   Atari-era geometric economy, early-console silhouette readability, a
+   brighter storybook palette, deliberately oversized equipment. Playful but
+   not childish; humor comes from small visual exaggerations, never at the
+   cost of information. The world/tile/sprite art authored under the earlier
+   mood remains shipped and compatible — the M46 UI palette warms the frame
+   around it.
 3. **Crystal as light.** Luminous cyan/violet crystal accents are the world's
    focal contrast — used sparingly (markers, UI glints, the emblem, boss
    presence), never as wallpaper.
@@ -91,13 +97,16 @@ reserved for their meanings and never decorative.
   constraint (§7): the base stays near the prior flat fill so M12 contrast
   holds, and a missing background falls back to that flat fill.
 
-## 7. UI ornament
+## 7. UI ornament (M46)
 
-- Nine-patch dark-steel frame with tiny cyan corner glints; panel fills stay
-  the current near-black blues so M12 text contrast is preserved.
+- The UI is a **procedural kit**, not framed art: `drawFrame` variants with
+  stepped ink corners, top-left light, selection slabs, keycap footers,
+  framed meters, and sparse crystal/gold pips — palette roles and
+  construction rules live in `src/ui/UiStyle.hpp` / `src/ui/UiDraw.hpp`
+  (see `docs/ui_style_guide.md` §4–§9). The M15 nine-patch frame texture
+  remains loadable/manifest-replaceable but is unused by screens.
 - The crystal emblem (32×32 cluster) marks the title screen only.
-- Text uses the original pixel bitmap font delivered in **M25** (an owner-gated
-  decision, taken then — not part of this M15 slice); see
+- Text uses the original pixel bitmap font delivered in **M25**; see
   `docs/ui_style_guide.md` §2.
 
 ## 8. Animation conventions (implemented, M17)

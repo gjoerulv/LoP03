@@ -723,4 +723,48 @@ doubled King together (M44): shipping the threat without its counterplay
 would make the summit a wall, and shipping relics first would trivialize the
 current King. Classes last (M45): they are the reward for the fight M44
 defines, and their score modifiers should be tuned against the final King
-economy. M23 → M24 run after M45.
+economy. The owner-directed M46 presentation facelift followed.
+
+## 16. Court & Comfort program (M47–M51) — direction
+
+Added 2026-07-23, after M43–M46 merged and the owner specified eleven
+features. Scope and owner decisions live in `docs/milestones.md` (the
+program section); this section records only why and in what order.
+
+### Why this phase exists
+
+The King fell too gently (a lost challenge healed the party for free), his
+throne room is empty of court, the Boss Rush is a line of lonely bosses, and
+several comfort seams remain: town exits hidden by the M46 footer, no way to
+quit from play, a flat settings list, and a damage model with no elemental
+texture. This program raises the endgame's stakes and manners at once —
+harsher defeats with a guaranteed way home, a guarded King on a deterministic
+revive clock, sparse elemental affinities that reward preparation without a
+matchup spreadsheet, a town that is walked rather than operated, and options
+(CRT, background audio, categorized settings) that respect the player.
+
+### Quality bars for this phase
+
+All prior bars still apply. Additionally:
+
+1. **Harshness never soft-locks.** Every defeat outcome leaves a playable
+   state (the full-wipe survivor rule exists for exactly this); clearability
+   of the guarded King and the minion-bearing Boss Rush is re-proven with
+   sim evidence under the new defeat stakes before shipping.
+2. **Sparse means sparse.** Elements are curated seasoning (a handful of
+   tags, shown honestly once encountered), never a coverage matrix; Dark
+   stays reserved.
+3. **Comfort changes keep determinism and compatibility.** New battle rules
+   live in shared code (rules bumps 7/8/9); settings/schema additions are
+   optional fields with defaults; the CRT shader isolates at the blit and
+   fails soft; capture stays byte-identical.
+
+### Ordering rationale
+
+Rules and flow first (M47): the defeat stakes and Purify scope change the
+baselines the King/rush balance work must be judged against, and the quit/
+pause comforts are independent quick wins. Elements next (M48): the guards'
+kits and any boss affinities build on them. The King's Court third (M49):
+it is balanced against the M47 stakes with M48 tools. The town rework (M50)
+and the presentation/options pass (M51) are self-contained and land last so
+the balance-critical work is never blocked on UI. M23 → M24 run after M51.

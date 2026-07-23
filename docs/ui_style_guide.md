@@ -1,15 +1,15 @@
 # UI Style Guide — Baseline Contract (M11)
 
-> Status: **implemented (M12)** for measurement, wrapping, overflow policy,
-> list scrolling, and typography roles — the roles/colors/spacing live in
-> `src/ui/UiStyle.hpp`, the policies in `src/ui/TextLayout` +
-> `src/ui/UiDraw` (see `docs/technical_design.md` §15). Still *not* an art
-> bible — final colors, frames, and motifs are decided in M15; the original
-> bitmap **font** was delivered in M25 (§2, §11).
-> Not yet migrated to the system: party creation, save slots, Guild, pause
-> menus (they fit today); prompt strings become binding-derived in M13.
-> Any bounded draw that cannot fit logs `[ui-overflow]` and clips — a clean
-> log during the manual matrix is part of screen acceptance.
+> Status: **implemented** — measurement, wrapping, overflow policy, list
+> scrolling, and typography roles landed in M12 (`src/ui/TextLayout` +
+> `src/ui/UiDraw`; see `docs/technical_design.md` §15); prompt labels are
+> binding-derived since M13; the original bitmap **font** arrived in M25
+> (§2, §11); and the **M46 procedural UI kit** delivered the final visual
+> identity ("humorous 8-bit-plus fantasy micro-caricature") — palette roles
+> and constructions live in `src/ui/UiStyle.hpp` / `src/ui/UiDraw.hpp` and
+> are summarized in `docs/technical_design.md` §15. Every screen is
+> migrated. Any bounded draw that cannot fit logs `[ui-overflow]` and
+> clips — a clean log during the manual matrix is part of screen acceptance.
 
 ## 1. Canvas and safe bounds
 
@@ -77,23 +77,28 @@ building labels over the mid-green town field.
 Text over variable art must get a stable backing (panel strip, shadow, or
 outline) — rule inherited from CLAUDE.md.
 
-**Palette accessor (M22, owner-approved).** Shared UI colors are now read
-through `style::palette()` (`src/ui/UiStyle.*`): a standard table
-byte-identical to the legacy constants, and a high-contrast table (pure
-white text, brightened dim/hint/disabled/accent roles) selected by the
-Settings "High Contrast" toggle. The palette is the one deliberate
+**Palette accessor (M22; re-valued and extended in M46).** Shared UI colors
+are read through `style::palette()` (`src/ui/UiStyle.*`): a **28-role
+semantic table** (text, surfaces, borders, accents, meters, structure) on
+the owner-approved storybook foundation, and a high-contrast twin (pure
+white text, brighter borders, darker fills — separation increases) selected
+by the Settings "High Contrast" toggle. The palette is the one deliberate
 mutable-global exception: a single table pointer, written only by the
-settings-apply path (Application startup and the Settings row), single
-threaded. New code uses `palette()`; the legacy constants remain only for
-compile-time contexts and as the standard table's definition. The
-high-contrast mode brightens roles — it never removes the marker+color
-double-signal rules above.
+settings-apply path, single threaded. New code uses `palette()` roles — no
+ad-hoc `Color` literals outside world-space art; the legacy constants
+remain only for compile-time contexts and equal the standard text roles
+(test-pinned, with contrast floors, in `tests/test_ui_kit.cpp`). The
+high-contrast mode never removes the marker+shape+color double-signal
+rules above.
 
 ## 5. Focus and selection
 
-- Current convention: `>` cursor glyph + yellow tint `(240,220,120)`. Keep
-  both signals: **marker + color** — color alone is prohibited for selection,
-  danger, rarity, status, and availability (CLAUDE.md).
+- Convention (M46): a focused row carries **three signals** — the selection
+  slab (`drawSelectionSlab`: rowFill + gold border + end-cap), a stepped
+  chevron (with the sanctioned 1px `motionPhase()` nudge), and
+  cursor-tinted text. Battle targeting uses `drawFocusBrackets`. Color
+  alone is prohibited for selection, danger, rarity, status, and
+  availability (CLAUDE.md).
 - Focus must always be visible: selected rows may never scroll out of the
   viewport or render under other content (M12-b contract).
 - Exactly one focused element per screen; modals take exclusive focus.
@@ -132,22 +137,24 @@ debug build must produce a visible/logged diagnostic (M12-a deliverable).
 
 ## 9. Panels
 
-- Current identity: double-border 16-bit frame (`drawPanel`: fill + border +
-  darkened inner line). Keep as the placeholder identity until M15 restyles
-  it through the asset/theme pipeline.
-- Overlay modals dim the background (`0,0,0,150` — pause menus). Keep.
+- Identity (M46): the procedural `drawFrame` construction — hard 2px offset
+  shadow, ink keyline, mid border, top-left highlight, bottom-right depth,
+  2px stepped ink corners — in its `FrameStyle` variants (Standard / Raised
+  / Inset / Danger / Reward / Crystal / Overlay). The nine-patch
+  `drawFramedPanel` path remains functional and manifest-replaceable but is
+  unused by screens.
+- Overlay modals dim the background via `drawModalDim` (`palette().modalDim`).
 
-## 10. Unresolved decisions (owned by later milestones)
+## 10. Formerly unresolved decisions — all settled
 
-- **M12:** final role set and row-height table; scroll vs paginate for the
-  scoreboard; where the encounter preview (UI-INFO-005) lives; whether 8px
-  survives as a role; description-line pattern in lists (UI-INFO-004).
-- **M13:** prompt-label grammar ("Confirm/Cancel" vs key names) and
-  device-specific hint layout in the footer.
-- **M15:** palette, frame art, iconography, motif language — final visual
-  identity. (**Fonts** were deferred here; the original bitmap font was
-  delivered in **M25** — see §2 and §11.)
-- **Owner decision pending:** default-off for the debug overlay
+The open questions this section once tracked are resolved: the role set and
+scrolling policies landed in M12 (scoreboard scrolls; 8px survives as the
+caption floor), prompt grammar became binding-derived in M13 (M46 renders
+hints as keycap groups via `drawFooterHints`), the debug overlay defaults
+to hidden (M12), the bitmap font shipped in M25, and the final visual
+identity — palette, frames, iconography, motif language — is the **M46
+procedural kit** (§4, §5, §9; `src/ui/UiStyle.hpp` / `src/ui/UiDraw.hpp`
+are the authority).
 
 ## 11. HUD conventions (M25)
 
@@ -161,14 +168,13 @@ debug build must produce a visible/logged diagnostic (M12-a deliverable).
   target, and active statuses. M28's enmity model depends on this panel.
 - **Numeric resources.** Resources that gate decisions (HP and **MP**) are
   shown as `label cur/max` numerals, not only bars.
-- **Inline adjustable values.** A value the player adjusts sits on the row that
-  changes it: compose the value into the menu label on rebuild (the
-  `SettingsState::volumeLabel` / `GuildState::rebuild` idiom). `ui::MenuItem`
-  holds only `label` + `enabled` — adding a value field is a wider change that
-  must be escalated, not assumed. Non-adjustable readouts (e.g. the Guild seed)
-  may remain separate.
+- **Inline adjustable values.** A value the player adjusts sits on the row
+  that changes it — either composed into the label on rebuild (the
+  `SettingsState::volumeLabel` idiom) or rendered as an M46 stepper row
+  (label + arrows + framed value capsule, the Guild/party-creation idiom).
+  `ui::MenuItem` carries `label` + `enabled` + the optional right-aligned
+  `suffix` column (M42). Non-adjustable readouts (e.g. the Guild seed chip)
+  stay separate.
 - **Developer diagnostics** (e.g. the title-screen content-count line) are
   gated out of Release with `CRYSTAL_SHIPPING_BUILD`; the version stamp stays
   in Release so bug reports can cite a build.
-  (UI-LAYOUT-009) and removal of the stale title label (UI-TEXT-010) —
-  recommended to bundle with M12-a.

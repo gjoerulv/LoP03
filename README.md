@@ -8,7 +8,7 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M45
+> **Status: feature-complete, polished playable build** (milestones M1–M46
 > delivered and owner-approved). In the box: a seven-town difficulty ladder
 > plus a castle endgame (Boss Rush / Endless Rush / a doubled Hollow King),
 > seeded walkable dungeons with room events including the rare Royal Relics,
@@ -19,9 +19,11 @@ music, or text. Built in **C++20** with **raylib**.
 > original generated art and music, a light-hearted story serial, three
 > unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
 > paid inn, onboarding, accessibility options, a bestiary, victory records,
-> and achievements. Only the deferred **validation playtesting (M23)** and
-> **release sign-off (M24)** remain. Current status always lives in
-> `docs/milestones.md`.
+> achievements, and a fully procedural "8-bit-plus" UI (M46). Next: the
+> **M47–M51 Court & Comfort program** (castle stakes, elements, the King's
+> guards, town travel, presentation options), then the deferred
+> **validation playtesting (M23)** and **release sign-off (M24)**. Current
+> status always lives in `docs/milestones.md`.
 
 ## Requirements
 

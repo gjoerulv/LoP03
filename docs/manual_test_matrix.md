@@ -18,6 +18,13 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M46 update:** every screen was restyled by the procedural UI kit
+> (selection slabs + chevrons, keycap footers, framed meters, header bands,
+> shape-iconed banners; see `docs/ui_style_guide.md`). Rows below describe
+> **content and behavior**, which are unchanged — read visual phrasing
+> ("yellow cursor", "footer string") as the M46 equivalents. Capture scene
+> filenames remain valid (the set is 51 scenes as of M46).
+>
 > **M27 update:** environment & ambience identity. Each of the six town
 > services (Inn, Item Shop, Equip Shop, Training Hall, Scoreboard, Guild) now
 > draws its own full-screen background instead of a flat fill — verify at W1–W6
@@ -261,7 +268,7 @@ sound fires.
 | 11 | Quit to Title (unsaved) | progress since last save; try Cancel, "Keep Playing", and "Quit to Title" (M42 fix) | not run | not run | a Yes/No prompt appears with the cursor on "Keep Playing"; Cancel and "Keep Playing" return to the pause menu with the run intact; only "Quit to Title" leaves | n/a | confirm/cancel sfx | 44_quit_confirm.png | not run |
 | 12 | Inn | hurt party, then full | not run | not run | check %-pad columns (UI-TEXT-017) | n/a | heal sfx | 12_inn.png | not run |
 | 13 | Item shop | buy; not-enough-gold; owned counts | not run | not run | not run | not run | confirm/cancel sfx | 13_item_shop.png | not run |
-| 14 | Equip shop: buy by category (M31) | Buy Gear → Weapons / Armor / Accessories → browse a filtered list; confirm the current-category name shows in the hint; Cancel steps back one level each (Buy→Category→Menu) | not run | not run | category menu + each filtered list fit (≤9 rows; capture-verified clean) | check cursor on each level | confirm/cancel sfx | 24_equip_categories.png, 09_equip_shop.png | not run |
+| 14 | Equip shop: buy by category (M31) | Buy Gear → Weapons / Armor / Accessories → browse a filtered list; confirm the current-category name shows in the hint; Cancel steps back one level each (Buy→Category→Menu) | not run | not run | category menu + each filtered list fit (≤8 visible rows since M46, scrolling; capture-verified clean) | check cursor on each level | confirm/cancel sfx | 24_equip_categories.png, 09_equip_shop.png | not run |
 | 14b | Equip shop: relics under Accessories (M31) | open Buy Accessories; confirm the 4 relics (Ember Charm, Titan Heart, Assassin Sigil, Guardian Crest) appear and are absent from Weapons/Armor | not run | not run | relic names fit rows | not run | not run | — | not run |
 | 15 | Equip shop: equip flow | char→slot→item, unequip, swap | not run | not run | not run | not run | not run | 15_equip_flow.png | not run |
 | 16 | Training hall | affordable, poor, max-level rows | not run | not run | check pad columns | pass? | heal sfx | 16_training_hall.png | not run |

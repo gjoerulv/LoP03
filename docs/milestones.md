@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M45** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M51** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -53,26 +53,33 @@
 | 43 | Balance pass & audit fixes | ☑ complete (approved) |
 | 44 | Royal Relics & the doubled King | ☑ complete (approved) |
 | 45 | The King's classes: Dragon, Jester, Goose | ☑ complete (approved) |
+| 46 | Presentation facelift: procedural UI kit | ☑ complete (approved) |
+| 47 | Rules & flow pass | ☐ planned |
+| 48 | Elements | ☐ planned |
+| 49 | The King's Court | ☐ planned |
+| 50 | Town travel rework | ☐ planned |
+| 51 | Presentation & options | ☐ planned |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
 (M35 → M36 → M37 → M38 → M39 → M40 → M41 → M42), then the **M43–M45 King's
-Gambit program** (M43 → M44 → M45, authorized 2026-07-22), **then** M23 → M24.
-M23/M24 were deferred by the owner on 2026-07-20: the game is not
+Gambit program** (M43 → M44 → M45, authorized 2026-07-22), then **M46** (the
+owner-directed presentation facelift), then the **M47–M51 Court & Comfort
+program** (M47 → M48 → M49 → M50 → M51, authorized 2026-07-23), **then**
+M23 → M24. M23/M24 were deferred by the owner on 2026-07-20: the game is not
 release-ready, so validating and packaging it would have measured the wrong
 build. Their existing tooling and packaging work is retained, not discarded —
-only their position in the sequence changed. Each expansion program (M31–M34
-towns/stakes/market, 2026-07-20; M35–M42 endgame, 2026-07-21; M43–M45 King's
-Gambit, 2026-07-22) was authorized as content/systems work the game needs
-before M23/M24 are worth running. See the program sections below.
+only their position in the sequence changed. Each expansion program was
+authorized as content/systems work the game needs before M23/M24 are worth
+running. See the program sections below.
 
-**With M45 the King's Gambit program is finished, and with it the expansion
-work: M23 → M24 are next.** Both must be re-audited against the post-M45
-checkout before they begin — the capture set is now 49 scenes, the balance
-batteries have grown (`[economy-report]`, `[castle-report]`, `[king-report]`,
-`[classes-report]`), and the packaging manifest must account for everything
-M43–M45 added (the relic prop, three class sprites, and the new `profile.json`
-user-data file).
+**M46 closed the facelift; the M47–M51 Court & Comfort program runs next,
+then M23 → M24.** M23/M24 must be re-audited against the post-M51 checkout
+before they begin — the capture set has grown (51 scenes as of M46), the
+balance batteries have grown (`[economy-report]`, `[castle-report]`,
+`[king-report]`, `[classes-report]`), and the packaging manifest must account
+for everything the expansions added (the relic prop, three class sprites, and
+the `profile.json` user-data file, plus whatever M47–M51 adds).
 
 ## M1 — Project foundation
 
@@ -778,20 +785,20 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M45** (the
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M51** (the
   deferral has been extended by each expansion program the owner authorized:
-  M31–M34, M35–M42, and M43–M45). The tooling, diagnostics, lint/mass/report
+  M31–M34, M35–M42, M43–M45, the M46 facelift, and M47–M51). The tooling, diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
-  Re-audit this note against the post-M45 checkout before starting — the
-  capture scene list is now **49 scenes** and the balance batteries have grown
-  (`[economy-report]`, `[castle-report]`, `[king-report]`, `[classes-report]`);
-  both need extending for everything M25–M45 added (AI, content, art, town
-  ladder, stakes, black market, statuses/passives, castle challenges, relics,
-  and the unlockable classes). **M45 is implemented, so this is next in line
-  once the owner approves it.**
+  Re-audit this note against the post-M51 checkout before starting — the
+  capture scene list has grown (**51 scenes** as of M46) and the balance
+  batteries have grown (`[economy-report]`, `[castle-report]`, `[king-report]`,
+  `[classes-report]`); both need extending for everything M25–M51 added (AI,
+  content, art, town ladder, stakes, black market, statuses/passives, castle
+  challenges, relics, the unlockable classes, the M46 UI kit, and the M47–M51
+  program). **Runs after the M47–M51 Court & Comfort program.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -1881,3 +1888,127 @@ Owner decisions taken at planning time (2026-07-22, via Q&A):
 - **Owner manual validation:** whether the classes are funny AND playable;
   jest-line tone; score-modifier feel.
 - **Milestone note:** authored at authorization.
+
+## M46 — Presentation facelift: procedural UI kit
+
+- **Status:** ☑ complete (approved) — merged to main by the owner 2026-07-23
+  (`2d9d0da`, merge `e9f7a37`) after playtesting. An owner-directed,
+  presentation-only milestone executed from a written brief rather than a
+  pre-authored note; `docs/milestone_notes/M46_presentation_facelift.md` is
+  the as-implemented record. Transformed the whole UI to the owner-approved
+  **"humorous 8-bit-plus fantasy micro-caricature"** direction with a
+  procedural kit (no image assets): a 28-role semantic palette with a
+  high-contrast twin (`src/ui/UiStyle.*`), frame variants / plaques / chips /
+  keycap footers / framed meters / selection slabs / banners and a sanctioned
+  two-frame motion clock (`src/ui/UiDraw.*`), applied across every screen.
+  Gameplay, content, saves, controls, resolution, sprites, backgrounds, and
+  the bitmap font were untouched. Two capture scenes were added (dungeon
+  pause, high-contrast battle → **51 scenes**) and a UI-kit test file
+  (contrast floors, meter/footer math → **431 tests**). Two tutorial texts
+  were also corrected in the same merge at the owner's request: the Royal
+  Relic beat is now cryptic (effects implied through the storytellers), and
+  the stakes beat quotes the real −30 %/−99 % numbers.
+- **Goal:** replace the default-programmer-UI look with one coherent,
+  chunky, warm, procedural construction language at 426×240.
+- **Out of scope (and untouched):** all gameplay rules, content JSON, save
+  semantics, generation, audio, sprites/backgrounds, dependencies.
+
+---
+
+## Court & Comfort program (M47–M51)
+
+Authorized by the owner 2026-07-23 (plan approved the same day; owner
+decisions taken via Q&A at planning time). Eleven features grouped into five
+milestones. The full technical plan lives with the implementing session; the
+ledger entries below are the authoritative scope summaries.
+
+**Execution order:** M47 → M48 → M49 → M50 → M51, **then** M23 → M24.
+Cross-cutting rules unchanged (optional-field/defensive-load schema motion,
+M19 tag-never-normalize scoring, shared `battle::` code for every battle rule
+so sim == live, statuses stop at `implemented, awaiting manual approval`).
+Planned version bumps: M47 → battle rules 7, M48 → rules 8, M49 → rules 9;
+**no** generation, save, or settings version bumps anywhere in the program.
+
+Owner decisions taken at planning time (2026-07-23, via Q&A):
+
+- **Elements:** weakness = ×150 % damage, immunity = 0; affinities are shown
+  for encountered foes (bestiary + target panel) and floats say
+  "Weak!"/"Immune".
+- **Guard revive:** the King revives both Royal Guards **every time** the
+  both-KO'd-for-5-of-his-turns condition recurs.
+- **Castle defeat:** survivors drop to 1 HP, **KO'd members stay KO'd**, MP
+  untouched, no gold penalty; on a **full wipe exactly one member** (first in
+  party order) is left at 1 HP. Escape keeps battle-end HP/MP.
+- **Defaults:** CRT effect ships Off; losing window focus now **mutes audio
+  by default** with a new "Background Audio" toggle to keep it playing.
+
+## M47 — Rules & flow pass
+
+- **Status:** ☐ planned.
+- **Goal:** four quick wins at one battle-rules bump (6 → 7): Purify cleanses
+  **afflictions only** (Poison, Blind, Silence, Confusion — ATK-/DEF-
+  debuffs survive; it already heals nothing); the castle defeat/escape rule
+  above; the Menu action closes the pause menus; a **Quit** flow from the
+  town and dungeon pause menus offering Quit to Title / **Quit Game** / Keep
+  Playing (`ConfirmPromptState` generalized to N answers).
+- **Out of scope:** any content tagging (M48); guard/rush changes (M49).
+- **Acceptance criteria:** cleanse scope proven sim == live; castle
+  writeback covers partial/full-wipe/escape cases; quit prompts navigate and
+  the app exits cleanly; full suite + capture green.
+
+## M48 — Elements
+
+- **Status:** ☐ planned.
+- **Goal:** element weakness/immunity (battle rules 7 → 8): optional
+  `weaknesses[]`/`immunities[]` on enemies/bosses, optional weapon `element`,
+  one pure `elementModifier` at the shared damage choke point (skills AND
+  weapon-elemental basic attacks; immune hits deal 0 and apply no riders);
+  sparse curated tags (fire/ice/lightning/earth/holy; Dark reserved); reveal
+  UI per the owner decision.
+- **Acceptance criteria:** modifier math + validators (weakness ∩ immunity
+  = ∅, element on weapons only) tested; sim == live on tagged fights;
+  balance battery shows no degenerate fight; capture + lint green.
+
+## M49 — The King's Court
+
+- **Status:** ☐ planned.
+- **Goal:** the King fights with **two Royal Guards** (new enemies: high
+  DEF/MAG, decent HP, low SPD; iron_will + evasion + spell_ward; damaging
+  magic + King buffs; referenced only from the King's `minions[]`) and a
+  deterministic **revive clock** in shared `battle::` code (rules 8 → 9):
+  on his 5th turn with both guards down he revives both at full HP,
+  repeatably. The **Boss Rush now fields each boss's dungeon minions** via
+  `bossRushTeam()`. Clearability re-proven with sim evidence; scale
+  constants may be retuned inside the milestone.
+- **Acceptance criteria:** revive clock deterministic and sim == live;
+  guards never appear in dungeons; Boss Rush and King fights remain
+  clearable under the M47 defeat stakes (evidence tables in the note);
+  sprites + lint + capture green.
+
+## M50 — Town travel rework
+
+- **Status:** ☐ planned.
+- **Goal:** a compact centered town (~24×12 tiles with the M46 stage
+  matte); exits become **walk-through road triggers** (no Confirm) placed
+  clear of the footer (west = previous town, east = next, north = castle);
+  arrival spawns at the entrance matching where you came from; a latch
+  prevents arrive→bounce loops. Building doors keep Confirm. No version
+  bumps; spawn memory is transient.
+- **Acceptance criteria:** layout invariants + spawn mapping tested; no
+  bounce loops; refreshed town captures clean; manual walk of every edge.
+
+## M51 — Presentation & options
+
+- **Status:** ☐ planned.
+- **Goal:** randomized comedic title phrase (must include "Geese and
+  Dragons; Spoons and Snacks!"; never a genre description; light 3-step
+  pulse); **Settings submenus** (Audio / Display / Gameplay / Controls +
+  reset), with new optional fields `crtEffect` (Off) and `backgroundAudio`
+  (Off = mute when unfocused); the **CRT shader** (embedded GLSL, applied
+  only at the `VirtualScreen` blit, graceful fallback, no curvature); a
+  faint **AoE screen tint** on all-target actions (≤ ~0.12 alpha, single
+  decay pulse, gated by the flash setting). No version bumps.
+- **Acceptance criteria:** settings round-trip with/without new fields;
+  capture determinism holds (pinned seed picks the phrase; capture exports
+  the pre-shader virtual target); tint respects Off/Reduced; full suite +
+  capture green.

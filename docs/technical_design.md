@@ -232,7 +232,8 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
-is not Release) renders 22 scenario states — every screen family, all
+is not Release) renders one scenario per screen family (the authoritative
+list lives in `src/capture/CaptureRunner.cpp`; 51 scenes as of M46) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
@@ -1209,9 +1210,36 @@ tested; raylib adapters live in `ui/UiDraw`.
   sized to measured text; dungeon fight prompt includes the team name; title
   menu centered on measured labels; result-panel pitch; Inn/Training Hall
   drop `%-N s` pseudo-columns. Debug overlay now starts hidden (F1 toggles).
-- **Not yet migrated** (fit today, tracked in the audit register): party
-  creation, save slots, Guild, pause menus. Hard-coded control-prompt strings
-  everywhere are M13 scope (binding-derived labels).
+- **Migration is complete:** every screen renders through the measured
+  helpers, and control prompts are binding-derived (M13). The M46 kit below
+  is the visual layer on top of these guarantees.
+
+### Procedural UI kit (Milestone 46)
+
+The owner-approved facelift ("humorous 8-bit-plus fantasy micro-caricature")
+is implemented as a procedural kit — raylib primitives only, no image
+assets. Authority for roles and construction is the code:
+`src/ui/UiStyle.hpp` (a 28-role semantic `Palette` with a high-contrast
+twin; `palette()` stays the single accessor) and `src/ui/UiDraw.hpp`
+(`FrameStyle` variants sharing one construction — hard 2px offset shadow,
+ink keyline, mid border, top-left light, bottom-right depth, stepped ink
+corners — plus plaques, header bands, chips, keycaps, structured footer
+hints, shape-iconed banners, framed meters, selection slabs, focus
+brackets, and `motionPhase()`, the sanctioned two-frame ~2.5 Hz clock).
+Rules that bind new UI work:
+
+- draw through the kit and `palette()` roles — no ad-hoc `Color` literals
+  outside world-space art;
+- selection uses three signals (slab + chevron + brighter text); danger,
+  disabled, and reward states always pair shape/text with color;
+- everything integer-aligned at 426×240; no gradients, antialiasing, or
+  blurred shadows; motion never moves layout or text and stays readable on
+  either frame;
+- `tests/test_ui_kit.cpp` pins contrast floors for both palettes and the
+  border-luminance ordering — palette changes must keep it green;
+- the nine-patch `drawFramedPanel`/`ui.frame.default` path still works and
+  stays manifest-replaceable, but no screen uses it: the procedural kit is
+  the identity.
 
 ## 16. Leveling, shops & packaging (Milestone 10)
 
@@ -1236,5 +1264,6 @@ tested; raylib adapters live in `ui/UiDraw`.
 - Save slots, settings, tutorial progress, and scoreboard data use sibling-temp atomic replacement. Save slots retain one `.bak` generation. A failed write leaves the prior destination intact.
 - Scoreboard loading is transactional: malformed data does not replace already-valid in-memory entries.
 - Packaged builds write timestamped persistent logs under the user-data `logs` directory; fatal startup errors show a GUI dialog with the log path.
-- Dungeon generation compatibility is currently version 4.
+- Dungeon generation compatibility is tracked by `kGenerationVersion` in
+  `src/dungeon/RoomLayout.hpp` (with its version-history comment), not here.
 
