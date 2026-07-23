@@ -103,6 +103,11 @@ void drawFrame(int x, int y, int w, int h, FrameStyle style);
 // element stays readable captured on either frame.
 int motionPhase();
 
+// Three-frame rhythm (0/1/2) for a gentle brightness ramp — the M51 title
+// phrase pulses textHint -> textDim -> text on this clock (~1.5 Hz). Same
+// contract: never moves layout, readable on any frame.
+int motionPhase3();
+
 // Pure kit math (unit-tested headlessly in tests/test_ui_kit.cpp).
 // Fill width for a meter: 0 at empty, innerWidth at full, never 0 while
 // current > 0 (a sliver of life must stay visible).

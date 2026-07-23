@@ -212,6 +212,18 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
         report.add(kSource, "gameplay.highContrast", "expected a boolean");
       }
     }
+    // M51: optional bools; absent = false so older files load unchanged.
+    const auto optBool = [&](const char* key, bool& out) {
+      if (const auto f = it->find(key); f != it->end()) {
+        if (f->is_boolean()) {
+          out = f->get<bool>();
+        } else {
+          report.add(kSource, std::string("gameplay.") + key, "expected a boolean");
+        }
+      }
+    };
+    optBool("crtEffect", values.crtEffect);
+    optBool("backgroundAudio", values.backgroundAudio);
   }
 
   if (const auto it = root.find("bindings"); it != root.end() && it->is_object()) {
@@ -267,7 +279,9 @@ std::string serializeSettings(const Settings& values, const InputMap& map) {
                       {"messageSpeed", std::string(messageSpeedName(values.messageSpeed))},
                       {"effectFlash", std::string(effectLevelName(values.effectFlash))},
                       {"effectShake", std::string(effectLevelName(values.effectShake))},
-                      {"highContrast", values.highContrast}};
+                      {"highContrast", values.highContrast},
+                      {"crtEffect", values.crtEffect},
+                      {"backgroundAudio", values.backgroundAudio}};
 
   Json keyboard = Json::object();
   Json gamepad = Json::object();

@@ -1428,6 +1428,47 @@ The clock is a counter, not a roll — `rollCursor` never moves.
     fight`, which still pins that an unaided party loses and that the relics buy
     real time — the part that remains true and worth protecting.
 
+### Presentation & options (Milestone 51)
+
+Pure presentation/options; **no version bumps**. The two new settings fields are
+optional bools with defensive parse, so old `settings.json` loads unchanged.
+
+- **Title phrases.** `states/TitlePhrases.hpp` — a pure `kTitlePhrases` table (+
+  `kMandatedTitlePhrase`). `MainMenuState::onEnter` picks one with
+  `GetRandomValue`, deterministic under the capture harness's pinned
+  `SetRandomSeed`, so `01_title` is reproducible. It pulses on a new **3-step**
+  clock `ui::motionPhase3()` (textHint → textDim → text, ~1.5 Hz) beside the
+  2-step `motionPhase()`. A lint pins the mandated line, the no-genre-words rule,
+  and the fit width.
+- **Settings submenus.** `SettingsState` gains a `Mode` (Top / Audio / Display /
+  Gameplay / Controls) and a per-mode `Row` list built by `rebuild()`; `rowAt`
+  maps the cursor to a `Row` so `adjust`/`activate` are mode-independent. Cancel
+  steps out one level (submenu → Top → save-and-close). Two new optional
+  `Settings` bools: `crtEffect` and `backgroundAudio`, both default false, both
+  round-tripped through the same optional-parse path as `highContrast`.
+- **CRT shader.** `VirtualScreen` owns an embedded GLSL-330 fragment shader
+  (`LoadShaderFromMemory` — no asset, no dependency): faint scanlines + a light
+  aperture mask, **no curvature**. `setCrt(bool)` compiles it lazily on first
+  enable and wraps the `DrawTexturePro` in `blitToWindow` with
+  `BeginShaderMode`/`EndShaderMode`. A compile failure degrades to raylib's
+  default passthrough shader (detected via the missing `crtResolution` uniform),
+  logged once → plain blit. **Capture is unaffected by construction**:
+  `exportImage` reads the pre-shader render target, not the window. `Application`
+  calls `setCrt(settings.crtEffect)` each frame (a cheap bool).
+- **Focus audio.** `Application::processFrame` calls
+  `audio_.setEnabled(IsWindowFocused() || settings_.values.backgroundAudio)` once
+  per frame (`setEnabled` early-returns when unchanged). Default mutes on blur.
+  Capture runs its own loop (not `processFrame`) and forces audio off, so it is
+  doubly unaffected.
+- **AoE tint.** `states/AoeTint.hpp` is **pure**: `aoeTintForSkill(SkillDef)`
+  classifies an `AllEnemies`/`AllAllies` action into Heal/Damage/Debuff (None
+  otherwise), and `aoeTintAlpha(tint, flashStrength, EffectLevel)` returns the
+  overlay alpha (0 for None/Off, half for Reduced, capped at 0.12 × the impact
+  pulse). `BattleState` sets `aoeTint_` in each execute path (skills via the
+  classifier, the Dragon's `attackHitsAll` basic as Damage) and draws one
+  full-screen rect over the battlefield during `BattleStage::Impact`. Both pure
+  helpers are unit-tested; nothing reads the tint back into the sim.
+
 ## 16. Leveling, shops & packaging (Milestone 10)
 
 - **XP/leveling (`game/Party`):** `xpToNext(level)` defines the curve;

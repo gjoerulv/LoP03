@@ -123,10 +123,14 @@ cmake --build build-msvc --config Release
 
 Default bindings — everything except text-delete and the debug toggle is
 **remappable in-game** under **Main Menu → Settings** (also reachable from the
-pause menus). Settings, volumes, window mode, battle/message speed, effect
-intensity, and the high-contrast palette persist in `settings.json` in the
-user data folder; one-time tutorial-prompt progress persists in
-`tutorial.json` beside it (toggle or reset in Settings).
+pause menus). Settings are organized into **Audio / Display / Gameplay /
+Controls** submenus (M51): volumes and a **Background Audio** toggle; window
+mode, a subtle **CRT effect** (off by default), battle flash/shake, and
+high-contrast; battle/message speed and tutorial prompts; and per-device
+remapping. All of it persists in `settings.json` in the user data folder;
+one-time tutorial-prompt progress persists in `tutorial.json` beside it. By
+default the game **mutes when its window loses focus** (turn on Background Audio
+to keep it playing).
 
 | Action                | Keyboard               | Gamepad            |
 |-----------------------|------------------------|--------------------|

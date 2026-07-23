@@ -564,6 +564,24 @@ answers: to the title, to the desktop, or keep playing), with the cursor startin
 on the safe answer and Cancel resolving to it.
 These are engineering bars, not formal WCAG claims.
 
+**Presentation & options (M51).** Five closing polish features, none touching
+gameplay:
+- The **title screen** greets you with one of a dozen original dry-comedy
+  one-liners (chosen per visit, pulsing gently) — never a description of the
+  genre. "Geese and Dragons; Spoons and Snacks!" is in the pool.
+- **Settings are organized into submenus** — Audio / Display / Gameplay /
+  Controls, plus Reset — so the option list is no longer one long scroll. Cancel
+  steps back one level, then saves and closes.
+- A subtle **CRT effect** (Display → CRT Effect, **Off by default**) adds faint
+  scanlines and a light mask with **no curvature**, so the pixels stay crisp.
+- **Losing window focus now mutes the audio by default**; a new **Background
+  Audio** toggle (Audio submenu) keeps it playing. (A deliberate change — the
+  game used to always play.)
+- An **all-target action** (a mass spell, the Goose's ultimate, the Dragon's
+  sweep) briefly **tints the whole screen** during its impact — heal green,
+  damage coral, debuff violet — a single faint pulse, gated by the Battle Flash
+  setting, never a strobe.
+
 ## 13. First-complete-version content target
 
 6 classes (each with a level-based learnset) · 26 normal enemy types · 17 elites ·

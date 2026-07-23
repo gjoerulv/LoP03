@@ -167,6 +167,45 @@ private:
     bool valid_ = false;
 };
 
+class ShaderHandle {
+public:
+    ShaderHandle() = default;
+    explicit ShaderHandle(Shader shader) : shader_(shader), valid_(true) {}
+    ~ShaderHandle() { reset(); }
+
+    ShaderHandle(const ShaderHandle&) = delete;
+    ShaderHandle& operator=(const ShaderHandle&) = delete;
+
+    ShaderHandle(ShaderHandle&& other) noexcept { moveFrom(other); }
+    ShaderHandle& operator=(ShaderHandle&& other) noexcept {
+        if (this != &other) {
+            reset();
+            moveFrom(other);
+        }
+        return *this;
+    }
+
+    bool valid() const { return valid_; }
+    const Shader& get() const { return shader_; }
+
+    void reset() {
+        if (valid_) {
+            UnloadShader(shader_);
+            valid_ = false;
+        }
+    }
+
+private:
+    void moveFrom(ShaderHandle& other) {
+        shader_ = other.shader_;
+        valid_ = other.valid_;
+        other.valid_ = false;
+    }
+
+    Shader shader_{};
+    bool valid_ = false;
+};
+
 class FontHandle {
 public:
     FontHandle() = default;

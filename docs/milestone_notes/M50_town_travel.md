@@ -2,8 +2,9 @@
 
 ## A. Status and authority
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23) — authored
-  just-in-time on 2026-07-23 from the
+- **Status:** ☑ complete (approved) — approved by the owner **2026-07-23** after
+  manual testing, committed as `4640c50`. Authored just-in-time on 2026-07-23
+  from the
   owner-approved M47–M51 "Court & Comfort" plan. Fourth milestone of that
   program; M51 follows, **then** M23 → M24. See §J for the as-implemented record.
 - **Authority:** `CLAUDE.md` → this note → `docs/milestones.md` →

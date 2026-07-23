@@ -207,6 +207,8 @@ int drawTextWrappedCentered(const std::string& text, int centerX, int y, int max
 
 int motionPhase() { return static_cast<int>(GetTime() * 2.5) & 1; }
 
+int motionPhase3() { return static_cast<int>(GetTime() * 1.5) % 3; }
+
 int meterFillWidth(int current, int maxValue, int innerWidth) {
     if (maxValue <= 0 || current <= 0 || innerWidth <= 0) {
         return 0;

@@ -57,8 +57,8 @@
 | 47 | Rules & flow pass | ☑ complete (approved) |
 | 48 | Elements | ☑ complete (approved) |
 | 49 | The King's Court | ☑ complete (approved) |
-| 50 | Town travel rework | ◑ implemented, awaiting manual approval |
-| 51 | Presentation & options | ☐ planned |
+| 50 | Town travel rework | ☑ complete (approved) |
+| 51 | Presentation & options | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -2033,8 +2033,9 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M50 — Town travel rework
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
-  `ee079d4`). The town is now a compact 24×12 centred layout inside the M46 stage
+- **Status:** ☑ complete (approved) — approved by the owner **2026-07-23** after
+  manual testing, committed as `4640c50`. Base checkout was `ee079d4`. The town
+  is now a compact 24×12 centred layout inside the M46 stage
   matte; its edges are **walk-through road triggers** (no Confirm) — west =
   previous town, east = next, north = castle — with an anti-bounce latch and
   entrance-memory spawns (arrive one tile inside the matching edge). Pure
@@ -2054,7 +2055,19 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M51 — Presentation & options
 
-- **Status:** ☐ planned.
+- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
+  `4640c50`). The final Court & Comfort milestone: a randomized comedic **title
+  phrase** (incl. "Geese and Dragons; Spoons and Snacks!"; never a genre
+  description; 3-step pulse); **Settings submenus** (Audio / Display / Gameplay /
+  Controls / Reset) with two new optional bools `crtEffect` (Off) and
+  `backgroundAudio` (Off); an embedded-GLSL **CRT shader** at the window blit
+  (graceful fallback, no curvature, capture-inert); **focus-aware audio** (mutes
+  on blur unless Background Audio is on); and a faint **AoE screen tint** on
+  all-target actions, gated by the flash setting. **No version bumps** (settings
+  1, save 1, generation 10, rules 9); old `settings.json` loads unchanged.
+  **485/485 tests** green in Debug and Release, `--capture` **61/61** clean (3
+  new scenes). `docs/milestone_notes/M51_presentation_options.md` §J is the
+  as-implemented record.
 - **Goal:** randomized comedic title phrase (must include "Geese and
   Dragons; Spoons and Snacks!"; never a genre description; light 3-step
   pulse); **Settings submenus** (Audio / Display / Gameplay / Controls +

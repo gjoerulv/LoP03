@@ -7,6 +7,7 @@
 #include "battle/Battle.hpp"
 #include "game/RunStats.hpp"
 #include "render/BattleSequencer.hpp"
+#include "states/AoeTint.hpp"
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
 #include "ui/ScrollWindow.hpp"
@@ -59,6 +60,9 @@ public:
     // Capture-only (M49): fell the King's court and take the turn his revive
     // clock fires on, so the announcement is the shared rule's own words.
     void captureCourtRevival();
+    // Capture-only (M51): resolve an all-enemies skill and freeze the impact beat
+    // so the AoE screen tint is captured as produced.
+    void captureAoeImpact(const std::string& skillId);
 #endif
 
 private:
@@ -145,6 +149,14 @@ private:
     std::string pendingItemId_;
     std::vector<int> targetCandidates_;
     int targetCursor_ = 0;
+
+    // M51: the flavour of an all-target action being presented, drawn as a faint
+    // full-screen tint during the impact beat. Set when such an action resolves,
+    // cleared when the presentation sequence ends.
+    AoeTint aoeTint_ = AoeTint::None;
+    // Capture-only: hold the sequencer at the impact beat (declared always; only
+    // set under CRYSTAL_CAPTURE) so the AoE-tint scene renders deterministically.
+    bool captureFreezeSeq_ = false;
 
     std::string message_;
     // M49: what a per-turn boss rule announced at the top of this turn (the

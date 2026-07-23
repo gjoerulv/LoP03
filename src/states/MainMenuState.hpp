@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
 
@@ -22,6 +24,7 @@ private:
 
     AppContext& context_;
     ui::Menu menu_;
+    std::string phrase_;  // M51: the comedic phrase picked for this title visit
 };
 
 }  // namespace cd

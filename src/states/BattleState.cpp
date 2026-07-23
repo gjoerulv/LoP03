@@ -230,6 +230,34 @@ void BattleState::captureShowJest() {
     jestTimer_ = 999.0f;  // captures render one frame; never expire
 }
 
+void BattleState::captureAoeImpact(const std::string& skillId) {
+    // M51: resolve a real all-enemies skill, then drive the sequencer to its
+    // impact beat and freeze it there, so the captured frame shows the AoE tint
+    // exactly as the game produces it.
+    captureEnterTargeting();
+    const int actor = currentActor();
+    battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
+    self.mp = self.maxMp = std::max(self.maxMp, 999);
+    const std::vector<int> foes = battle_.aliveIndices(battle::Side::Enemy);
+    if (foes.empty()) {
+        return;
+    }
+    pendingKind_ = PendingKind::Skill;
+    pendingSkillId_ = skillId;
+    executePending(foes.front());  // sets aoeTint_, stages floats, starts the sequencer
+    for (int i = 0; i < 300 && seq_.stage() != render::BattleStage::Impact && !seq_.finished();
+         ++i) {
+        seq_.update(0.01f);
+        if (seq_.takeCommit()) {
+            commitPresentation();
+        }
+    }
+    captureFreezeSeq_ = true;
+    for (FloatNumber& f : floats_) {
+        f.timer = 999.0f;
+    }
+}
+
 void BattleState::captureCourtRevival() {
     // M49: fell the King's court and wind his clock to one turn short, then take
     // that turn — so the captured announcement is produced by the shared rule
@@ -653,10 +681,16 @@ void BattleState::executePending(int targetUnit) {
     int damageSfx = 2;
     bool statusAction = false;
     bool offensiveStatus = false;  // M42: a status-carrying skill aimed at enemies
+    aoeTint_ = AoeTint::None;      // M51: set below when an all-target action resolves
     switch (pendingKind_) {
-        case PendingKind::Attack:
+        case PendingKind::Attack: {
+            const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
+            if (self.attackHitsAll && !battle::isConfused(self)) {
+                aoeTint_ = AoeTint::Damage;  // the Dragon's sweep
+            }
             message_ = battle_.attack(actor, targetUnit);
             break;
+        }
         case PendingKind::Skill:
             if (const content::SkillDef* s = context_.content.findSkill(pendingSkillId_)) {
                 message_ = battle_.useSkill(actor, targetUnit, *s);
@@ -665,6 +699,7 @@ void BattleState::executePending(int targetUnit) {
                 offensiveStatus = statusAction &&
                                   (s->target == content::SkillTarget::SingleEnemy ||
                                    s->target == content::SkillTarget::AllEnemies);
+                aoeTint_ = aoeTintForSkill(*s);
             }
             break;
         case PendingKind::Item:
@@ -730,6 +765,7 @@ void BattleState::executeEnemy(int actor) {
     const battle::EnemyChoice choice = battle::chooseEnemyAction(battle_, actor, context_.content);
     int damageSfx = 2;
     bool statusAction = false;
+    aoeTint_ = AoeTint::None;  // M51
     const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
     if (choice.forced == battle::ForcedAction::Guard) {
         // M44 (Evil Goose): the foe is too frightened to do anything but guard.
@@ -743,8 +779,12 @@ void BattleState::executeEnemy(int actor) {
             message_ = battle_.useSkill(actor, choice.target, *s);
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
             statusAction = s->statusEffect != content::StatusType::None;
+            aoeTint_ = aoeTintForSkill(*s);
         }
     } else if (choice.target >= 0) {
+        if (self.attackHitsAll && !battle::isConfused(self)) {
+            aoeTint_ = AoeTint::Damage;
+        }
         message_ = battle_.attack(actor, choice.target);
     } else {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
@@ -770,6 +810,7 @@ void BattleState::executeConfused(int actor) {
     const battle::Combatant& a = battle_.units[static_cast<std::size_t>(actor)];
     const battle::ForcedAction forced = battle::forcedActionFor(a);
     const battle::EnemyChoice choice = battle::forcedChoice(battle_, actor, forced);
+    aoeTint_ = AoeTint::None;  // M51: a confused unit only ever makes a single-target swing
     switch (forced) {
         case battle::ForcedAction::Guard:
             message_ = a.name + " is terrified and can only cower behind its guard!";
@@ -799,6 +840,7 @@ void BattleState::executeUncontrolled(int actor) {
         battle::uncontrolledChoice(battle_, actor, context_.content);
     int damageSfx = 2;
     bool statusAction = false;
+    aoeTint_ = AoeTint::None;  // M51
     if (choice.target < 0) {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " capers pointlessly.";
     } else if (choice.useSkill) {
@@ -806,8 +848,13 @@ void BattleState::executeUncontrolled(int actor) {
             message_ = battle_.useSkill(actor, choice.target, *s);
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
             statusAction = s->statusEffect != content::StatusType::None;
+            aoeTint_ = aoeTintForSkill(*s);
         }
     } else {
+        const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
+        if (self.attackHitsAll && !battle::isConfused(self)) {
+            aoeTint_ = AoeTint::Damage;
+        }
         message_ = battle_.attack(actor, choice.target);
     }
     // The quip rides on top of the resolved action and never changes it: a pure
@@ -1051,6 +1098,11 @@ void BattleState::update(float dt) {
     if (phase_ != Phase::Resolve) {
         return;
     }
+#ifdef CRYSTAL_CAPTURE
+    if (captureFreezeSeq_) {
+        return;  // hold the impact beat so a capture can render the AoE tint
+    }
+#endif
     seq_.update(dt);
     if (seq_.takeCommit()) {
         commitPresentation();
@@ -1272,10 +1324,24 @@ void BattleState::render() {
                      color);
     }
 
-    // Bottom panel: lists live in the left column (scrolled to kListRows),
-    // the actor line and selected-entry description in the right column. A
-    // boss introduction gets the Danger frame with its warning tab.
+    // M51: faint full-screen tint for an all-target action, drawn over the
+    // battlefield (above the bottom panel) during the impact beat only. A single
+    // decay pulse via flashStrength — never a strobe — gated by the flash setting.
     const int panelY = h - kPanelH - 4;
+    if (seq_.stage() == render::BattleStage::Impact && aoeTint_ != AoeTint::None) {
+        const float a = aoeTintAlpha(aoeTint_, seq_.flashStrength(),
+                                     context_.settings.values.effectFlash);
+        if (a > 0.0f) {
+            Color tint = pal.danger;
+            if (aoeTint_ == AoeTint::Heal) {
+                tint = pal.success;
+            } else if (aoeTint_ == AoeTint::Debuff) {
+                tint = pal.magic;
+            }
+            tint.a = static_cast<unsigned char>(a * 255.0f);
+            DrawRectangle(0, 0, w, panelY, tint);
+        }
+    }
     const bool bossIntro = phase_ == Phase::Intro && !bossTelegraph_.empty();
     ui::drawFrame(4, panelY, w - 8, kPanelH,
                   bossIntro ? ui::FrameStyle::Danger : ui::FrameStyle::Standard);

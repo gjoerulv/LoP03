@@ -313,7 +313,16 @@ int run(const char* outDir) {
              }},
             {"03_settings",
              [](StateStack& s, AppContext& c) {
+                 // M51: the top-level category picker (Audio / Display / ...).
                  s.pushState(std::make_unique<SettingsState>(s, c));
+             }},
+            {"60_settings_display",
+             [](StateStack& s, AppContext& c) {
+                 // M51: the Display submenu, showing the CRT Effect toggle and the
+                 // effect/contrast rows.
+                 auto st = std::make_unique<SettingsState>(s, c);
+                 st->captureShowDisplay();
+                 s.pushState(std::move(st));
              }},
             {"04_remap_keyboard",
              [](StateStack& s, AppContext& c) {
@@ -790,6 +799,16 @@ int run(const char* outDir) {
                  s.pushState(std::make_unique<TownState>(s, c));
                  s.pushState(std::make_unique<TownMenuState>(s, c));
                  pushQuitPrompt(s, c, quit::kTownBody);
+             }},
+            {"61_aoe_tint",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M51: an all-enemies spell frozen at its impact beat, so the
+                 // faint AoE screen tint is captured as the game draws it.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureAoeImpact("radiance");  // all_enemies holy damage -> danger tint
+                 s.pushState(std::move(state));
              }},
             {"53_battle_weak_hit",
              [&battleSlot](StateStack& s, AppContext& c) {
