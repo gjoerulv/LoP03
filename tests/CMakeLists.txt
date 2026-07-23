@@ -64,6 +64,7 @@ add_executable(crystal_tests
     test_composition.cpp
     test_events.cpp
     test_leveling.cpp
+    test_comforts.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core Catch2::Catch2WithMain)

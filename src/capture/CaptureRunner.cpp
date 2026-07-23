@@ -33,6 +33,8 @@
 #include "score/Scoreboard.hpp"
 #include "score/Scoring.hpp"
 #include "settings/Settings.hpp"
+#include "states/BattleLog.hpp"
+#include "states/BattleLogState.hpp"
 #include "states/BattleState.hpp"
 #include "states/BlackMarketState.hpp"
 #include "states/AchievementsState.hpp"
@@ -892,6 +894,48 @@ int run(const char* outDir) {
                      s, c, dungeon::generate(424242, 8, c.content, "crystal_mine")));
                  s.pushState(std::make_unique<DungeonMenuState>(s, c));
                  pushQuitPrompt(s, c, quit::kDungeonBody);
+             }},
+            {"62_battle_log",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M52: the scrollable battle log over a live battle, filled with
+                 // worst-case long lines and scrolled up so both the more-above
+                 // and more-below carets render — the overflow check for the
+                 // wrapped list.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot));
+                 BattleLog log;
+                 for (int i = 0; i < 20; ++i) {
+                     log.push("WWWWWWWWWWWW uses Sovereign's Cataclysm on The Hollow King. "
+                              "HP +240. MP +60. ATK-/DEF- lifted. (" + std::to_string(i + 1) +
+                              ")");
+                 }
+                 auto overlay = std::make_unique<BattleLogState>(s, c, log);
+                 overlay->captureScrollUp(4);
+                 s.pushState(std::move(overlay));
+             }},
+            {"63_equip_diff",
+             [](StateStack& s, AppContext& c) {
+                 // M52: the equip-item detail panel — the slot's current item plus
+                 // the stat diff for the highlighted candidate. Member 0 wears a
+                 // weapon and carries two candidate weapons, then the item list is
+                 // opened on a real candidate (row 1).
+                 c.party.currentTown = 7;
+                 c.party.members[0].weapon = "iron_sword";
+                 c.party.inventory.add("war_hammer", 1);
+                 c.party.inventory.add("steel_sword", 2);
+                 refreshCharacter(c.party.members[0], c.content);
+                 auto state = std::make_unique<EquipShopState>(s, c);
+                 state->captureEnterEquipItem(0, content::EquipSlot::Weapon);
+                 s.pushState(std::move(state));
+             }},
+            {"64_settings_audio",
+             [](StateStack& s, AppContext& c) {
+                 // M52: the Audio submenu, showing the new Ambience Volume row
+                 // between SFX and Background Audio.
+                 auto st = std::make_unique<SettingsState>(s, c);
+                 st->captureShowAudio();
+                 s.pushState(std::move(st));
              }},
         };
 

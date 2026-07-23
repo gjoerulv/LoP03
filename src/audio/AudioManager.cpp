@@ -302,8 +302,8 @@ void AudioManager::startAmbience() {
     }
     const std::size_t idx = ambienceIndex(currentAmbience_);
     if (idx < kAmbienceCount && fileAmbience_[idx].valid()) {
-        // Ambience follows the SFX slider (M27 owner decision), not Music.
-        SetMusicVolume(fileAmbience_[idx].get(), sfxVolume_ * fileAmbienceVolume_[idx]);
+        // M52: ambience uses its own slider (it followed SFX in M27).
+        SetMusicVolume(fileAmbience_[idx].get(), ambienceVolume_ * fileAmbienceVolume_[idx]);
         PlayMusicStream(fileAmbience_[idx].get());
     }
     // No synthesized ambience tier: missing files mean silence.
@@ -384,10 +384,11 @@ void AudioManager::setEnabled(bool enabled) {
     }
 }
 
-void AudioManager::setVolumes(float master, float music, float sfx) {
+void AudioManager::setVolumes(float master, float music, float sfx, float ambience) {
     masterVolume_ = clamp01(master);
     musicVolume_ = clamp01(music);
     sfxVolume_ = clamp01(sfx);
+    ambienceVolume_ = clamp01(ambience);
     if (!ready_) {
         return;
     }
@@ -410,8 +411,8 @@ void AudioManager::setVolumes(float master, float music, float sfx) {
     if (currentAmbience_ != AmbienceTrack::None) {
         const std::size_t idx = ambienceIndex(currentAmbience_);
         if (idx < kAmbienceCount && fileAmbience_[idx].valid()) {
-            // Ambience follows the SFX slider (M27 owner decision), not Music.
-        SetMusicVolume(fileAmbience_[idx].get(), sfxVolume_ * fileAmbienceVolume_[idx]);
+            // M52: ambience uses its own slider (it followed SFX in M27).
+            SetMusicVolume(fileAmbience_[idx].get(), ambienceVolume_ * fileAmbienceVolume_[idx]);
         }
     }
 }

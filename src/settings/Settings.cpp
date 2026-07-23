@@ -155,6 +155,8 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
     values.masterVolume = clamp01(audio.optFloat("master", 1.0f));
     values.musicVolume = clamp01(audio.optFloat("music", 1.0f));
     values.sfxVolume = clamp01(audio.optFloat("sfx", 1.0f));
+    // M52: optional; absent keeps the 0.5 default so pre-M52 files load unchanged.
+    values.ambienceVolume = clamp01(audio.optFloat("ambience", 0.5f));
   }
 
   if (const auto it = root.find("display"); it != root.end() && it->is_object()) {
@@ -273,7 +275,8 @@ std::string serializeSettings(const Settings& values, const InputMap& map) {
   root["version"] = kSettingsVersion;
   root["audio"] = {{"master", values.masterVolume},
                    {"music", values.musicVolume},
-                   {"sfx", values.sfxVolume}};
+                   {"sfx", values.sfxVolume},
+                   {"ambience", values.ambienceVolume}};
   root["display"] = {{"borderless", values.borderlessFullscreen}};
   root["gameplay"] = {{"battleSpeed", std::string(battleSpeedName(values.battleSpeed))},
                       {"messageSpeed", std::string(messageSpeedName(values.messageSpeed))},

@@ -635,12 +635,15 @@ void DungeonState::completeDungeon() {
             afterCompletedRun(context_.party.stakes, dungeon_.town, dungeon_.depth);
     }
 
-    // M34: a stakes-raising completed run in town >= 2 may spawn the black
-    // market, seeded from this run so reloading the entry autosave cannot reroll
-    // it. The offer persists in the party save until purchased; a later hit
-    // replaces it. Only reached on a real completion (total > 0).
-    if (blackMarketShouldSpawn(total > 0, raisedStakes, dungeon_.town, dungeon_.seed,
-                               dungeon_.depth)) {
+    // M34/M52: the black market may spawn from a stakes-raising scoring run in
+    // town >= 2 (the 20% path) OR from any beaten boss at town 7 depth >= 20 (the
+    // independent 34% path). completeDungeon is only reached on a real completion,
+    // so `completed` is true here; the score/stakes still gate the 20% path.
+    // Seeded from this run, so reloading the entry autosave cannot reroll it; the
+    // offer persists in the party save until purchased, and a later hit replaces
+    // it.
+    if (blackMarketShouldSpawn(total > 0, /*completed=*/true, raisedStakes, dungeon_.town,
+                               dungeon_.seed, dungeon_.depth)) {
         // Shared legendary pool (M39): the market and boss drops draw the same set.
         const std::vector<std::string> legendaryIds = legendaryDropPool(context_.content);
         if (!legendaryIds.empty()) {

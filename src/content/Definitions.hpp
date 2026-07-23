@@ -227,6 +227,11 @@ struct ItemDef {
     std::string requiresBossId;   // non-empty: only this boss is affected at all
     int statScalePct = 0;         // non-zero: scales the target's ATK/MAG/DEF/SPD
                                   // for the rest of the battle (50 = halved)
+    // M52 (the Dragon Crown's hidden effect): used on a boss carrying a revive
+    // clock (the King), this ends it — his fallen court never returns. Schema-
+    // driven so no item id is branched on; valid only with battleTarget: enemy.
+    // Inert (false) for every other item, so pre-M52 battles are unchanged.
+    bool disablesMinionRevive = false;
 
     // Equipment/relic flat stat bonus.
     StatBlock statBonus;

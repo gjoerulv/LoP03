@@ -281,6 +281,7 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
                                                  BattleTarget::Ally, "battle target");
         d.requiresBossId = r.optString("requiresBossId");
         d.statScalePct = r.optIntMin("statScalePct", 0, 0);
+        d.disablesMinionRevive = r.optBool("disablesMinionRevive", false);  // M52
         if (const auto it = el.find("statuses"); it != el.end()) {
             if (!it->is_array()) {
                 rep.add(source, ctx + ".statuses", "expected array");
@@ -322,6 +323,12 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         // armour piece claiming one is a content mistake worth catching.
         if (d.element != Element::None && d.slot != EquipSlot::Weapon) {
             rep.add(source, ctx, "'element' is only valid on a weapon (slot 'weapon')");
+        }
+        // M52: the revive-clock disable only means anything as an enemy-targeted
+        // battle item (it acts on the foe it is used on), so flag a misplacement.
+        if (d.disablesMinionRevive && d.battleTarget != BattleTarget::Enemy) {
+            rep.add(source, ctx,
+                    "'disablesMinionRevive' is only valid with battleTarget 'enemy'");
         }
 
         if (rep.errorCount() != before) {

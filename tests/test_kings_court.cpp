@@ -98,8 +98,11 @@ std::string takeKingTurns(Battle& b, int n) {
 
 }  // namespace
 
-TEST_CASE("court: the battle-rules version is 9", "[court][battle]") {
-    CHECK(kBattleRulesVersion == 9);
+TEST_CASE("court: the battle-rules version is at least 9", "[court][battle]") {
+    // The revive clock was introduced at rules 9; later bumps (M52's Crown) keep
+    // it, so pin the floor rather than the exact value (the M48/rules-v7
+    // precedent).
+    CHECK(kBattleRulesVersion >= 9);
 }
 
 TEST_CASE("court: the clock fires on the King's 5th turn with both guards down",

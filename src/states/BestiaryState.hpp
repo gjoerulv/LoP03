@@ -43,6 +43,10 @@ private:
         std::string flavor;                  // boss description, or empty
         bool boss = false;
         bool known = false;                  // party has faced it
+        // M52: the strongest real fight context this foe appears in, as a
+        // stat-scale percent (foeMaxScalePct), for the "at their strongest"
+        // readout. Computed once at construction where the content DB is handy.
+        int maxScalePct = 0;
     };
 
     void renderDetail(const Entry& entry, int px, int pw);

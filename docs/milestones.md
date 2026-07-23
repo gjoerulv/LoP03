@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M51** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M52** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -59,6 +59,7 @@
 | 49 | The King's Court | ☑ complete (approved) |
 | 50 | Town travel rework | ☑ complete (approved) |
 | 51 | Presentation & options | ☑ complete (approved) |
+| 52 | Comforts & secrets | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -73,9 +74,10 @@ only their position in the sequence changed. Each expansion program was
 authorized as content/systems work the game needs before M23/M24 are worth
 running. See the program sections below.
 
-**With M51 the Court & Comfort program is finished, and with it the expansion
-work: M23 → M24 are next.** Both must be re-audited against the post-M51
-checkout before they begin — the capture set has grown (61 scenes as of M51),
+**With M51 the Court & Comfort program is finished. One quality-of-life
+milestone, M52 "Comforts & secrets", runs first (authorized 2026-07-23);
+then M23 → M24.** Both must be re-audited against the post-M52
+checkout before they begin — the capture set has grown (64 scenes as of M52),
 the balance batteries have grown (`[economy-report]`, `[castle-report]` with
 its rush sweep, `[king-report]`, `[classes-report]`), and the packaging
 manifest must account for everything the expansions added (the relic prop,
@@ -788,22 +790,23 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M51** (the
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M52** (the
   deferral has been extended by each expansion program the owner authorized:
-  M31–M34, M35–M42, M43–M45, the M46 facelift, and M47–M51). The tooling, diagnostics, lint/mass/report
+  M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51, and the M52
+  quality-of-life pass). The tooling, diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
-  Re-audit this note against the post-M51 checkout before starting — the
-  capture scene list has grown (**61 scenes** as of M51) and the balance
+  Re-audit this note against the post-M52 checkout before starting — the
+  capture scene list has grown (**64 scenes** as of M52) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
   `[king-report]`, `[classes-report]`); both need extending for everything
-  M25–M51 added (AI, content, art, town ladder, stakes, black market,
+  M25–M52 added (AI, content, art, town ladder, stakes, black market,
   statuses/passives, castle challenges, relics, the unlockable classes, the
-  M46 UI kit, elements, the King's Court, walk-through towns, and the M51
-  options). **The Court & Comfort program is complete: this is next in line
-  once the owner schedules it.**
+  M46 UI kit, elements, the King's Court, walk-through towns, the M51
+  options, and the M52 comforts/secrets). **M52 is the last authorized
+  expansion; this is next in line once the owner schedules it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -2089,3 +2092,71 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
   capture determinism holds (pinned seed picks the phrase; capture exports
   the pre-shader virtual target); tint respects Off/Reduced; full suite +
   capture green.
+
+## M52 — Comforts & secrets
+
+Authorized by the owner on 2026-07-23 as one quality-of-life milestone before
+M23/M24, bundling six independent comforts and secrets. It is the last
+authorized expansion; M23 → M24 follow.
+
+- **Status:** ◑ implemented, awaiting manual approval — authorized 2026-07-23;
+  implemented 2026-07-24 on base checkout `f387588` ("M51" + docs, clean tree).
+  **497/497 tests** green in Debug and Release (was 485; +12 M52 cases),
+  `--capture` **64/64** clean (was 61); one battle-rules bump (9 → 10), no other
+  version change. See `docs/milestone_notes/M52_comforts_secrets.md` §J.
+- **Goal:** six focused improvements, none of which changes the core loop:
+  (1) an **ambience volume slider** independent of SFX (default 5/10);
+  (2) an **in-battle battle log** — Menu opens/closes a scrollable list of the
+  last 30 action results; (3) an **equip-shop QoL lift** — buy rows show owned
+  count, the equip flow shows the current slot item and the stat diff of the
+  highlighted candidate; (4) **bestiary max stats** — each known foe's
+  strongest real-context stats beside its base stats; (5) the **Dragon
+  Crown's hidden effect** — used on the King it silently ends his revive
+  clock; (6) a **high-stakes black-market spawn** — an independent 34 % path at
+  town 7, depth ≥ 20.
+- **Player-facing outcome:** quieter, separately-tunable ambience; a readable
+  action history mid-fight; clearer equip decisions; a fuller bestiary; a
+  discoverable-but-unexplained relic interaction against the King; and a second
+  reason for the market to appear on top-end runs.
+- **Engineering outcome:** one battle-rules bump (**9 → 10**) for the Crown's
+  hidden effect, living entirely in shared `battle::` code (`Battle::useItem`)
+  and driven by an optional `ItemDef.disablesMinionRevive` schema field (no id
+  is branched on), so sim == live and no player-facing text is produced. A new
+  optional `ambienceVolume` settings field (absent = 0.5) and a second,
+  fresh-salt black-market roll add behaviour without a settings, save, or
+  generation version bump. The battle log is presentation-only: a 30-entry ring
+  buffer owned by `BattleState`, never touching the battle model or
+  `rollCursor`. New pure helpers (`content::scaledStats`, an `EquipDiff` header,
+  a bestiary `foeMaxScalePct`) are headless-tested; existing helpers are
+  promoted rather than duplicated.
+- **Primary deliverables:** the six features above; `tests/test_comforts.cpp`
+  plus targeted extensions; new capture scenes (61 → 64) for the battle-log
+  overlay, the equip diff panel, and the bestiary max-stats block; all affected
+  design/architecture/manual-test/README docs updated.
+- **Out of scope:** M23/M24; any change to the core loop, scoring, generation,
+  or save/settings schemas beyond the two additive optional fields; the endless
+  rush's (unbounded) max-stats display.
+- **Dependencies:** M51 complete (satisfied 2026-07-23); the M46 UI kit for all
+  UI work; the M49 revive clock (`Combatant.reviveMinionTurns`) for the Crown.
+- **Acceptance criteria:** ambience independent + default 5, applied live and at
+  startup, old files load at 0.5; Menu opens a scrollable log of the last 30
+  exact shown lines that dies with the battle and never touches the battle
+  stream; equip buy rows show count + price and the equip flow shows current +
+  diff; bestiary shows base and strongest-context stats per the four-context
+  rule (regular ×5.70, guards/King ×5.00, bosses ×5.80; endless excluded); the
+  Crown silently ends the King's revive clock (rules 10, sim == live,
+  schema-driven, no text); a town-7 depth-20 boss kill rolls the independent
+  34 % spawn regardless of stakes/penalty/score with the 20 % rule unchanged;
+  full suite green from 485 in Debug AND Release, capture clean with the new
+  scenes, no generation/save/settings version change.
+- **Automated validation:** the full Catch2 suite (Debug and Release) plus the
+  `--capture` overflow check, all green; new tests for each feature.
+- **Owner manual validation:** the ambience feel; the log's usefulness
+  mid-fight; the equip-diff readability; whether the Crown's secret stays
+  discoverable-but-hidden; and a town-7 depth-20 penalized run spawning the
+  market.
+- **Milestone note:** `docs/milestone_notes/M52_comforts_secrets.md`
+
+**Execution order:** M52 (one milestone), **then** M23 → M24 (re-audited
+against the post-M52 checkout). The Crown's rules bump is the only version
+change; ambience and the high-stakes market are additive and unversioned.

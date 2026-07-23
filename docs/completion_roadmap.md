@@ -767,4 +767,44 @@ pause comforts are independent quick wins. Elements next (M48): the guards'
 kits and any boss affinities build on them. The King's Court third (M49):
 it is balanced against the M47 stakes with M48 tools. The town rework (M50)
 and the presentation/options pass (M51) are self-contained and land last so
-the balance-critical work is never blocked on UI. M23 → M24 run after M51.
+the balance-critical work is never blocked on UI. M23 → M24 run after M51,
+unless a later expansion is authorized (M52 was).
+
+## 17. Comforts & secrets (M52) — direction
+
+Authorized 2026-07-23 as one quality-of-life milestone before M23/M24, and the
+last authorized expansion. Scope and owner decisions live in
+`docs/milestones.md` and `docs/milestone_notes/M52_comforts_secrets.md`; this
+section records only why and in what order.
+
+### Why this phase exists
+
+M47–M51 closed the endgame's stakes and manners. Six small comforts and one
+secret remained worth doing before the game is validated and packaged: ambience
+was chained to the SFX slider and always full-blast; a battle offered no way to
+review what just happened; the equip shop hid owned counts and stat diffs; the
+bestiary stopped at base stats; the Dragon Crown had no special interaction
+with the King it names; and the black market never rewarded the deepest,
+highest-stakes runs. None of these touches the core loop.
+
+### Quality bars for this phase
+
+All prior bars still apply. Additionally:
+
+1. **Secrets stay determined and shared.** The Crown's hidden effect lives in
+   shared `battle::` code and is schema-driven (an optional field, no id
+   branched on), so simulation and live play agree by construction and design
+   docs — not the game — are where the secret is written down.
+2. **Comforts stay additive.** Ambience and the high-stakes market add a field
+   and a fresh-salt roll with no settings/save/generation version bump; the
+   battle log is presentation-only and never reads or writes the battle model.
+3. **The densest panels stay overflow-clean.** New readouts (the equip diff,
+   the bestiary max stats) are fitted and verified against the worst-case
+   capture scenes (the King's bestiary entry, the town-7 buy list).
+
+### Ordering rationale
+
+One milestone, six independent slices; the only cross-cutting change is the
+Crown's rules bump (9 → 10), so it and its schema field are implemented and
+tested as a unit. M23 → M24 run after M52, re-audited against the post-M52
+checkout.

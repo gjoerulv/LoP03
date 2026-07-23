@@ -20,8 +20,10 @@ music, or text. Built in **C++20** with **raylib**.
 > with original generated art and music, a light-hearted story serial, three
 > unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
 > paid inn, compact walk-through towns, onboarding, accessibility options,
-> categorized settings (optional CRT effect, background audio), a bestiary,
-> victory records, achievements, and a fully procedural "8-bit-plus" UI.
+> categorized settings (optional CRT effect, background audio, an independent
+> ambience slider), an in-battle action log, a bestiary (with each foe's
+> strongest-context stats), victory records, achievements, and a fully
+> procedural "8-bit-plus" UI.
 > Only the deferred **validation playtesting (M23)** and **release sign-off
 > (M24)** remain. Current status always lives in `docs/milestones.md`.
 
@@ -124,7 +126,8 @@ cmake --build build-msvc --config Release
 Default bindings — everything except text-delete and the debug toggle is
 **remappable in-game** under **Main Menu → Settings** (also reachable from the
 pause menus). Settings are organized into **Audio / Display / Gameplay /
-Controls** submenus (M51): volumes and a **Background Audio** toggle; window
+Controls** submenus (M51): master/music/SFX volumes, a separate **Ambience
+Volume** slider (M52, default 5) and a **Background Audio** toggle; window
 mode, a subtle **CRT effect** (off by default), battle flash/shake, and
 high-contrast; battle/message speed and tutorial prompts; and per-device
 remapping. All of it persists in `settings.json` in the user data folder;
@@ -177,7 +180,10 @@ letterbox/pillarbox bars.
    town with half your gold. Upgrade, then dive deeper — runs scale with depth,
    town, and seed, endlessly. A stakes-raising clear in town 2+ can (20 %,
    seeded) spawn a **black market** selling one legendary piece for gold or
-   **legendary tokens** won in optional elite challenges.
+   **legendary tokens** won in optional elite challenges — and any boss kill at
+   **town 7, depth 20+** rolls a second, independent **34 %** chance of the
+   dealer, regardless of score or stakes (M52). During any battle, **Menu/Pause**
+   opens a scrollable **battle log** of the last actions.
 7. Clear any **town-7 dungeon** to open the northern road to the **castle** — a
    place above the ladder with the **King's three challenges**: the **Boss Rush**
    (all 12 bosses back-to-back **with their minions**, no free healing), the

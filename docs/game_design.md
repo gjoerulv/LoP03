@@ -275,6 +275,14 @@ offer waits until bought; a later stakes-raising hit replaces it. Legendaries ar
 aspirational endgame gear (sim-validated not to trivialize the top town), the
 prize for climbing and taking optional risks.
 
+**High-stakes market path (M52).** On top of that 20 % rule, **any** beaten
+dungeon boss at **town 7, depth 20 or deeper** rolls a **second, independent
+34 % chance** of the same dealer appearing — regardless of score, stakes, or a
+penalty that floors the run's score to 0 (retreats and defeats never count). It
+rides its own fresh seeded stream (a run can win one roll and lose the other),
+so it is reload-proof the same way, and it simply gives the deepest top-end runs
+a reliably better shot at a legendary. The 20 % rule is unchanged.
+
 **Boss legendary & token drops (M39).** Beating a dungeon boss in **town 3 or
 higher** and at **depth 4 or deeper** rolls two independent rewards, seeded from
 the run (so a reload can't reroll them): a chance of **legendary tokens** and a
@@ -326,6 +334,14 @@ menu) is a codex of the whole roster: a foe you have fought shows its sprite,
 stats, behaviour profile (role/tier or boss archetype), tags, passives (one per
 line), and — for bosses — its flavor text; a foe you have not met yet reads as an
 unknown, so the roster's size and your progress through it are always visible.
+Each known foe also shows a `max` line beneath its base stats (M52): its stats
+**at their strongest real fight context**, so a codex entry conveys not just what
+a foe is worth on paper but how dangerous it becomes at the top of the game. The
+context is the hardest place the foe is actually fought — regular enemies (and
+elites) at the town-7 dungeon ceiling (×5.70), the Royal Guards and the King at
+his throne-room scale (×5.00), and every other boss at the Boss Rush (×5.80). The
+**Endless Rush is deliberately excluded**: its scale climbs without bound, so no
+single "strongest" number would be honest.
 **Victory stats** appear on the clear screen's Run-stats view: this run's
 total damage, biggest single hit, statuses inflicted, and the party MVP, plus your
 personal records (biggest hit ever, most damage in a run) — display-only, never
@@ -377,7 +393,16 @@ you out-level and becomes a fight you answer with absurd objects.
   - **Evil Goose** — "A terrifying goose." The target can only **Guard** next turn.
   - **Tax Sheets** — "Busy your enemies with taxes." The target **loses** its next turn.
   - **Dragon Crown** — "The real Dragon Crown." Saps the **Hollow King's** attack
-    and defense. Anyone else shrugs — and you keep the crown.
+    and defense. Anyone else shrugs — and you keep the crown. **Hidden effect
+    (M52):** used on the King, it *also* permanently ends his revive clock — his
+    fallen Royal Guards never return for the rest of the fight. This is a
+    **deliberately hidden** interaction: the game shows no text for it (he simply
+    stops calling them back), so it stays discoverable-but-unexplained. Recorded
+    here because the design docs are the truth; the game keeps the secret. It is
+    schema-driven (an optional `disablesMinionRevive` item flag, no item id is
+    special-cased) and lives in shared battle code, so simulation and live play
+    resolve it identically — the one battle-rules bump this milestone makes
+    (rules 9 → 10).
   - **Deadly Spoon** — "Most deadly thing known to man." **Halves** the target's
     ATK/MAG/DEF/SPD for the rest of the battle. The rarest, and it shows.
   The King is **not** immune to any of them: that is the whole point.
@@ -583,6 +608,26 @@ gameplay:
   sweep) briefly **tints the whole screen** during its impact — heal green,
   damage coral, debuff violet — a single faint pulse, gated by the Battle Flash
   setting, never a strobe.
+
+**Comforts & secrets (M52).** Six small quality-of-life additions and one
+secret, none touching the core loop:
+- **Ambience has its own volume slider** (Audio submenu), no longer chained to
+  the SFX slider as it was since M27. It **defaults to 5/10** — quieter by
+  design — and applies live and at startup. Old settings files (with no ambience
+  field) load at 0.5.
+- An **in-battle battle log**: the **Menu/Pause** action opens a scrollable
+  overlay of the **last 30 action results** (the exact lines the battle showed);
+  the same action, or Cancel, closes it. It is presentation-only — a mid-fight
+  memory aid that never affects how the battle resolves and is gone when the
+  battle ends.
+- The **Equip Shop** now shows the **owned count** beside each buy price, and
+  the equip flow shows the **currently equipped item** in the chosen slot plus
+  the **stat difference** of the highlighted candidate (green for a net gain,
+  coral for a loss), so gear decisions read at a glance.
+- Bestiary **max stats** (see §10), the **Dragon Crown's hidden effect** against
+  the King's revive clock (see §10, Royal Relics — a deliberate secret), and the
+  **high-stakes black-market path** (see §10, Black market) round out the
+  milestone.
 
 ## 13. First-complete-version content target
 

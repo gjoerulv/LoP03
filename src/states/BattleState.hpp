@@ -8,6 +8,7 @@
 #include "game/RunStats.hpp"
 #include "render/BattleSequencer.hpp"
 #include "states/AoeTint.hpp"
+#include "states/BattleLog.hpp"
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
 #include "ui/ScrollWindow.hpp"
@@ -159,6 +160,10 @@ private:
     bool captureFreezeSeq_ = false;
 
     std::string message_;
+    // M52: presentation-only ring buffer of the exact lines shown after each
+    // resolved action, opened as a scrollable overlay by the Menu action. Owned
+    // here, so it is freed with the battle; it never touches the battle model.
+    BattleLog log_;
     // M49: what a per-turn boss rule announced at the top of this turn (the
     // King's revive clock). Prepended to the acting unit's own message so the
     // court's return is explained in the same beat, then cleared.

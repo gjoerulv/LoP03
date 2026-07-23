@@ -1038,6 +1038,16 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
     if (!item.requiresBossId.empty() && t.sourceId != item.requiresBossId) {
         return log + " Nothing happens.";
     }
+    // M52 (the Dragon Crown's hidden effect): used on a boss carrying a revive
+    // clock (the King), it ends the clock so his fallen court never returns.
+    // Schema-driven (no item id is branched on), in this shared path so the
+    // Simulator and live play agree by construction. Deliberately silent — no
+    // line is appended, so the King simply stops calling his guards back. The
+    // design docs record it; the game hides it.
+    if (item.disablesMinionRevive) {
+        t.reviveMinionTurns = 0;
+        t.reviveMinionCounter = 0;
+    }
     // M43: an item may carry King-specific amounts (Royal Snacks). kingBattle is
     // set at buildBattle from the team's boss id, so this branch is content-
     // derived and identical in live play and the Simulator.
@@ -1162,15 +1172,11 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
     }
 
     // Depth stat scaling (M20 composition): applied identically here and in
-    // the danger assessment, so labels never lie about what spawns.
+    // the danger assessment, so labels never lie about what spawns. M52: the
+    // per-field multiply lives in content::scaledStats so the bestiary's
+    // max-stats readout uses the exact same rule.
     const auto scaled = [&team](const content::StatBlock& base) {
-        content::StatBlock s = base;
-        s.maxHp = s.maxHp * team.statScalePct / 100;
-        s.attack = s.attack * team.statScalePct / 100;
-        s.magic = s.magic * team.statScalePct / 100;
-        s.defense = s.defense * team.statScalePct / 100;
-        s.speed = s.speed * team.statScalePct / 100;
-        return s;
+        return content::scaledStats(base, team.statScalePct);
     };
 
     // M43: is this the King's fight? Read once, from content, so item behavior

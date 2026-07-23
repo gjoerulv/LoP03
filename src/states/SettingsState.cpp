@@ -47,6 +47,11 @@ void SettingsState::captureShowDisplay() {
     menu_.setCursor(0);
     rebuild();
 }
+void SettingsState::captureShowAudio() {
+    mode_ = Mode::Audio;
+    menu_.setCursor(0);
+    rebuild();
+}
 #endif
 
 SettingsState::Row SettingsState::rowAt(int index) const {
@@ -79,6 +84,7 @@ void SettingsState::rebuild() {
             add(volumeLabel("Master Volume", v.masterVolume), Row::MasterVolume);
             add(volumeLabel("Music Volume", v.musicVolume), Row::MusicVolume);
             add(volumeLabel("SFX Volume", v.sfxVolume), Row::SfxVolume);
+            add(volumeLabel("Ambience Volume", v.ambienceVolume), Row::AmbienceVolume);
             add(toggleLabel("Background Audio", v.backgroundAudio), Row::BackgroundAudio);
             add("Back", Row::Back);
             break;
@@ -121,7 +127,7 @@ void SettingsState::rebuild() {
 
 void SettingsState::applyAudio() {
     const settings::Settings& v = context_.settings.values;
-    context_.audio.setVolumes(v.masterVolume, v.musicVolume, v.sfxVolume);
+    context_.audio.setVolumes(v.masterVolume, v.musicVolume, v.sfxVolume, v.ambienceVolume);
 }
 
 void SettingsState::saveSettings() {
@@ -146,6 +152,10 @@ void SettingsState::adjust(Row row, int direction) {
         case Row::MasterVolume: v.masterVolume = stepVolume(v.masterVolume); applyAudio(); break;
         case Row::MusicVolume: v.musicVolume = stepVolume(v.musicVolume); applyAudio(); break;
         case Row::SfxVolume: v.sfxVolume = stepVolume(v.sfxVolume); applyAudio(); break;
+        case Row::AmbienceVolume:
+            v.ambienceVolume = stepVolume(v.ambienceVolume);
+            applyAudio();
+            break;
         case Row::BackgroundAudio: v.backgroundAudio = !v.backgroundAudio; break;
         case Row::Window: v.borderlessFullscreen = !v.borderlessFullscreen; break;
         case Row::CrtEffect: v.crtEffect = !v.crtEffect; break;  // Application reads it each frame

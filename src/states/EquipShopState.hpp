@@ -31,6 +31,9 @@ public:
     // Capture-only (M37): open straight into a filtered buy list, to overflow-check
     // the scrolling list at max stock (town 7).
     void captureEnterBuyList(content::EquipSlot slot);
+    // Capture-only (M52): open the equip-item list for a member's slot, so the
+    // current + diff detail panel is overflow-checked.
+    void captureEnterEquipItem(int charIndex, content::EquipSlot slot);
 #endif
 
 private:

@@ -6,11 +6,13 @@
 #include "content/Definitions.hpp"
 #include "content/Enums.hpp"
 #include "core/AppContext.hpp"
+#include "game/Castle.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "render/SpriteDraw.hpp"
+#include "states/BestiaryStats.hpp"
 #include "states/StateStack.hpp"
 #include "ui/TextLayout.hpp"
 #include "ui/UiDraw.hpp"
@@ -72,6 +74,9 @@ BestiaryState::BestiaryState(StateStack& stack, AppContext& context)
     const auto known = [&seen](const std::string& id) {
         return std::find(seen.begin(), seen.end(), id) != seen.end();
     };
+    // M52: the dungeon ceiling, derived once from the shipped composition + ladder
+    // (570% at the shipped values), feeds the "at their strongest" scale below.
+    const int castleFloor = castleFloorScalePct(context_.content);
 
     // The whole roster, enemies first then bosses, each alphabetical. An entry
     // keeps its slot when it is discovered, so the list never reshuffles.
@@ -89,6 +94,7 @@ BestiaryState::BestiaryState(StateStack& stack, AppContext& context)
         e.weakTo = elementNames(def.affinity.weaknesses);    // M48
         e.immuneTo = elementNames(def.affinity.immunities);
         e.known = known(id);
+        e.maxScalePct = foeMaxScalePct(false, def.bossOnly, false, castleFloor);  // M52
         entries_.push_back(std::move(e));
     }
     const std::size_t firstBoss = entries_.size();
@@ -105,6 +111,7 @@ BestiaryState::BestiaryState(StateStack& stack, AppContext& context)
         e.immuneTo = elementNames(def.affinity.immunities);
         e.flavor = def.description;
         e.known = known(id);
+        e.maxScalePct = foeMaxScalePct(true, false, id == kKingBossId, castleFloor);  // M52
         entries_.push_back(std::move(e));
     }
     const auto byName = [](const Entry& a, const Entry& b) { return a.name < b.name; };
@@ -165,11 +172,24 @@ void BestiaryState::renderDetail(const Entry& e, int px, int pw) {
     int y = std::max(ty + 4, 82);  // clears the 32px sprite well
     const content::StatBlock& s = e.stats;
     if (e.known) {
-        ui::drawText(TextFormat("HP %d   ATK %d   MAG %d", s.maxHp, s.attack, s.magic), px + 12, y,
-                     style::kFontBody, style::palette().textDim);
+        // M52: base stats, then the strongest real-context values on ONE more
+        // line, positionally matching the labels above (HP ATK MAG DEF SPD). The
+        // context scale is foeMaxScalePct (regular ×5.70, guards/King ×5.00,
+        // bosses ×5.80; the unbounded endless rush is excluded); the per-field
+        // multiply is content::scaledStats, shared with buildBattle so the
+        // numbers cannot lie. Kept to two lines — exactly the base pair's old
+        // footprint — so the densest entry (the King, scene 41, whose long flavor
+        // has no spare room) stays overflow-clean. Documented in game_design.md.
+        const content::StatBlock m = content::scaledStats(s, e.maxScalePct);
+        ui::drawTextFitted(TextFormat("HP %d ATK %d MAG %d DEF %d SPD %d", s.maxHp, s.attack,
+                                      s.magic, s.defense, s.speed),
+                           px + 12, y, bodyW, style::kFontBody, style::palette().textDim,
+                           "bestiary.stats");
         y += 13;
-        ui::drawText(TextFormat("DEF %d   SPD %d", s.defense, s.speed), px + 12, y,
-                     style::kFontBody, style::palette().textDim);
+        ui::drawTextFitted(TextFormat("max %d %d %d %d %d", m.maxHp, m.attack, m.magic, m.defense,
+                                      m.speed),
+                           px + 12, y, bodyW, style::kFontBody, style::palette().textHint,
+                           "bestiary.statsmax");
     } else {
         ui::drawText("HP ?   ATK ?   MAG ?", px + 12, y, style::kFontBody,
                      style::palette().disabled);

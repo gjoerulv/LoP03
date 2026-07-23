@@ -15,6 +15,7 @@
 #include "input/PromptLabels.hpp"
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
+#include "states/BattleLogState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
@@ -508,6 +509,7 @@ void BattleState::advanceTurn() {
     result_ = battle_.outcome();
     phase_ = Phase::Done;
     message_ = outcomeMessage();
+    log_.push(message_);  // M52
 }
 
 std::vector<std::string> BattleState::consumableIds() const {
@@ -617,6 +619,7 @@ void BattleState::onCommand() {
         case 4:  // Escape
             result_ = battle::Outcome::Escaped;
             message_ = "The party flees the battle!";
+            log_.push(message_);  // M52: fleeing bypasses afterAction
             phase_ = Phase::Done;
             break;
         default:
@@ -871,6 +874,10 @@ void BattleState::executeUncontrolled(int actor) {
 }
 
 void BattleState::afterAction() {
+    // M52: every resolved action reaches this one choke point with message_
+    // already final (the turnOpenLine_ prepend and the item "(kept)" suffix both
+    // happen upstream), so the log records exactly what the screen shows.
+    log_.push(message_);
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Party && c.hp <= 0) {
             koOccurred_ = true;
@@ -1003,6 +1010,15 @@ void BattleState::handleInput(const Input& input) {
         return;
     }
 
+    // M52: the Menu/Pause action opens the scrollable battle log in any phase but
+    // the final outcome (where Confirm dismisses the whole battle). The overlay
+    // closes on the same Menu action, or Cancel. No new hint text (owner decision).
+    if (phase_ != Phase::Done && input.pressed(InputAction::Menu)) {
+        context_.audio.play(Sfx::Confirm);
+        stack().pushState(std::make_unique<BattleLogState>(stack(), context_, log_));
+        return;
+    }
+
     switch (phase_) {
         case Phase::Intro:
             if (input.pressed(InputAction::Confirm)) {
@@ -1116,6 +1132,7 @@ void BattleState::update(float dt) {
         result_ = o;
         phase_ = Phase::Done;
         message_ = outcomeMessage();
+        log_.push(message_);  // M52: the final outcome line, the last log entry
         // One-shot jingle on the music channel (M21); if its file is missing
         // the AudioManager falls back to the matching stinger SFX.
         context_.audio.setMusic(o == battle::Outcome::Victory ? MusicTrack::Victory

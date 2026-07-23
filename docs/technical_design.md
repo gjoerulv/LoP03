@@ -1468,6 +1468,65 @@ optional bools with defensive parse, so old `settings.json` loads unchanged.
   full-screen rect over the battlefield during `BattleStage::Impact`. Both pure
   helpers are unit-tested; nothing reads the tint back into the sim.
 
+### Comforts & secrets (Milestone 52)
+
+Six independent features. The **only version change is `battle::kBattleRulesVersion`
+9 → 10** (the Crown's hidden effect changes how identical inputs resolve);
+`kGenerationVersion` (10), `kSaveVersion` (1), and `kSettingsVersion` (1) are all
+unchanged.
+
+- **Ambience volume (E1).** `Settings` gains an optional `ambienceVolume` (absent
+  = 0.5, clamped, the `highContrast` precedent — no `kSettingsVersion` bump).
+  `AudioManager::setVolumes` takes a 4th `ambience` param feeding a new
+  `ambienceVolume_` member, which replaces `sfxVolume_` at both ambience-gain
+  sites (`startAmbience`, `setVolumes`) — undoing the M27 chaining. Callers:
+  `Application` startup and `SettingsState::applyAudio`. A new
+  `Row::AmbienceVolume` sits between SFX and Background Audio.
+- **Battle log (E2).** `states/BattleLog.hpp` is a **pure** 30-entry ring buffer
+  of the exact `message_` strings (the `QuitPrompt.hpp` precedent). `BattleState`
+  owns one and pushes at the single `afterAction()` choke point every resolved
+  action passes through with `message_` already final (plus the two paths that
+  bypass it — the flee line and the outcome line). It **never touches the battle
+  model or `rollCursor`**, and is freed with the battle by construction.
+  `BattleLogState` is a transparent (`rendersBelow`) overlay — a Raised M46 panel
+  with `ui::ScrollWindow` over the `ui::wrapText`-wrapped lines — opened AND
+  closed by `InputAction::Menu` (Cancel also closes), in any phase but `Done`.
+- **Equip-shop QoL (E3).** `bonusDelta`/`statBonusSummary` are promoted into the
+  pure header `states/EquipDiff.hpp` (`cd::equip`), shared by the Buy detail, the
+  Details overlay, and the new equip-flow diff, plus a `deltaSign` for one-place
+  colour choice. Buy rows gain the owned-count column (`x%-3d%5dg`, the item-shop
+  idiom); the `EquipItem` panel shows the current slot item + the highlighted
+  candidate's diff (success/danger/dim by `deltaSign`).
+- **Bestiary max stats (E4).** `content::scaledStats(StatBlock, pct)` (Stats.hpp)
+  is the single home for the per-field ×pct/100 multiply; `buildBattle`'s `scaled`
+  lambda now calls it (a behaviour-identical dedup). `DangerRating` scales the
+  **summed threat scalar**, not a `StatBlock`, so it deliberately does not route
+  through `scaledStats` — doing so would change integer rounding and move the
+  danger battery. `states/BestiaryStats.hpp` adds the pure
+  `foeMaxScalePct(boss, bossOnly, isKing, castleFloorPct)` four-context rule
+  (King 500, other boss max(floor,580)=580, guard 500, regular floor=570; endless
+  excluded). The bestiary shows a `max` line under the base stats — kept to the
+  base pair's two-line footprint so the King's flavor-dense entry stays
+  overflow-clean.
+- **The Crown's secret (E5).** Optional `ItemDef.disablesMinionRevive` (loaded
+  beside `requiresBossId`; validated to `battleTarget: enemy` only; no id
+  branched on). In shared `Battle::useItem`, after the boss-restriction guard
+  passes, a flagged item zeroes the target's `reviveMinionTurns`/
+  `reviveMinionCounter`, so `beginUnitTurn`'s early-out keeps the court down
+  forever. **No text is appended** — the effect is hidden in play and precise
+  only in `Battle.hpp`'s version-history comment. Being in the shared path makes
+  it sim == live by construction. `dragon_crown` carries the flag; this is the
+  rules 9 → 10 bump.
+- **High-stakes market (E6).** `BlackMarket.hpp` gains
+  `kBlackMarketHighStakes{ChancePct=34,Town=7,Depth=20}` and
+  `blackMarketHighStakesRolls`, which hashes the same seed under a **fresh XOR
+  salt** (`kBlackMarketHighStakesSalt`) so it is an independent, reload-proof
+  stream from the 20 % roll. `blackMarketShouldSpawn` gains a `completed`
+  parameter and an OR-path (`completed && town >= 7 && depth >= 20 && high roll`)
+  with no score/stakes condition; `DungeonState::completeDungeon` passes
+  `completed = true` (it is only reached on a beaten boss). No version bump — the
+  path only adds spawns where none happened, seeded like the old one.
+
 ## 16. Leveling, shops & packaging (Milestone 10)
 
 - **XP/leveling (`game/Party`):** `xpToNext(level)` defines the curve;

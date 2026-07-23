@@ -83,7 +83,8 @@ Application::Application()
     }
     audio_.setVolumes(settings_.values.masterVolume,
                       settings_.values.musicVolume,
-                      settings_.values.sfxVolume);
+                      settings_.values.sfxVolume,
+                      settings_.values.ambienceVolume);
     ui::style::setHighContrast(settings_.values.highContrast);
   }
   {

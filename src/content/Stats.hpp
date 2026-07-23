@@ -23,4 +23,20 @@ struct StatGrowth {
     float speed = 0.0f;
 };
 
+// M52: the one home for the per-field enemy stat scale (×pct/100, integer floor
+// per field). buildBattle applies this to every scaled combatant; the bestiary
+// uses it to show a foe's strongest-context stats. Keeping the multiply here
+// means the two can never drift. Pure and header-only. (DangerRating scales the
+// summed threat scalar, not a StatBlock, so it deliberately does not route
+// through this — see the M52 note.)
+inline StatBlock scaledStats(const StatBlock& base, int pct) {
+    StatBlock s;
+    s.maxHp = base.maxHp * pct / 100;
+    s.attack = base.attack * pct / 100;
+    s.magic = base.magic * pct / 100;
+    s.defense = base.defense * pct / 100;
+    s.speed = base.speed * pct / 100;
+    return s;
+}
+
 }  // namespace cd::content

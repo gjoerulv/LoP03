@@ -41,8 +41,12 @@ namespace cd::battle {
 // attack deals x1.5 to a weak foe and nothing at all — riders included — to an
 // immune one); 9 = M49 (the revive clock: a boss carrying `reviveMinionTurns`
 // raises its whole fallen court on the Nth of its own turns with all of them
-// down, repeatably).
-inline constexpr int kBattleRulesVersion = 9;
+// down, repeatably); 10 = M52 (an enemy-targeted item flagged
+// `disablesMinionRevive` ends that revive clock on the boss it is used on — the
+// Dragon Crown against the King — so identical inputs now resolve to a court
+// that stays down; deliberately produces no log line, so the effect is hidden
+// in play and recorded only in the design docs).
+inline constexpr int kBattleRulesVersion = 10;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;

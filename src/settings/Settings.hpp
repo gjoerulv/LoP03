@@ -42,6 +42,10 @@ struct Settings {
     float masterVolume = 1.0f;  // 0..1
     float musicVolume = 1.0f;   // 0..1
     float sfxVolume = 1.0f;     // 0..1
+    // M52 (owner-approved): ambience gets its own slider instead of following
+    // SFX (the M27 chaining). Optional field; absent = 0.5 (default 5/10), so
+    // pre-M52 files load quieter-by-design rather than at the old effective 1.0.
+    float ambienceVolume = 0.5f;  // 0..1
     bool borderlessFullscreen = false;
     BattleSpeed battleSpeed = BattleSpeed::Normal;
     MessageSpeed messageSpeed = MessageSpeed::Normal;

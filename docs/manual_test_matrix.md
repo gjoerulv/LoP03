@@ -18,12 +18,37 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M52 update:** comforts & secrets (the capture set is **64 scenes**). Checks:
+> **(1) Ambience volume** — Settings → Audio now lists **Ambience Volume**
+> between SFX and Background Audio (default **5**); lower it in a dungeon and the
+> theme bed gets quieter while music and SFX are unaffected; it persists across a
+> restart; a `settings.json` with no `audio.ambience` field loads at 5. **(2)
+> Battle log** — in any battle, the **Menu/Pause** key opens a scrollable overlay
+> of the last actions (exactly the lines the battle showed, newest at the
+> bottom, Up/Down scroll); the same key or Cancel closes it; it never changes the
+> fight and is gone in the next battle. **(3) Equip shop** — Buy rows show an
+> owned-count column beside the price; the equip flow (char → slot → item) shows
+> the **current** item in that slot and the **stat diff** of the highlighted
+> candidate (green gain / coral loss / dim no-change), including Unequip. **(4)
+> Bestiary max stats** — every known foe shows a `max` line under its base stats;
+> spot-check the **King** (base HP 750, max 3750) and confirm the panel is not
+> clipped; unknown foes still read `?`. **(5) The Crown's secret** — in the King
+> fight, let his court fall and use the **Dragon Crown** on the King; his Royal
+> Guards must **never come back** for the rest of the fight, and the game shows
+> **no message** saying so (it should be discoverable-but-unexplained). Used on
+> anyone but the King it does nothing and is kept. **(6) High-stakes market** —
+> beat a boss at **town 7, depth 20+** on a **penalized/score-0** run
+> (accept a wager you can't out-turn, or a stakes penalty); over a few such runs
+> the black-market dealer should appear noticeably more often than the old 20 %
+> would explain, and reloading the entry autosave cannot reroll a given run's
+> result.
+>
 > **M46 update:** every screen was restyled by the procedural UI kit
 > (selection slabs + chevrons, keycap footers, framed meters, header bands,
 > shape-iconed banners; see `docs/ui_style_guide.md`). Rows below describe
 > **content and behavior**, which are unchanged — read visual phrasing
 > ("yellow cursor", "footer string") as the M46 equivalents. Capture scene
-> filenames remain valid (the set is 51 scenes as of M46).
+> filenames remain valid (the set is 51 scenes as of M46, 64 as of M52).
 >
 > **M27 update:** environment & ambience identity. Each of the six town
 > services (Inn, Item Shop, Equip Shop, Training Hall, Scoreboard, Guild) now
@@ -38,9 +63,9 @@ The older rows below are retained as historical baseline evidence and are **not*
 > enter Ruined Keep / Crystal Mine / Hollow Forest dungeons from the Guild and
 > confirm the ambience changes to that theme's bed (this was broken — the town
 > bed used to play in every dungeon), and returning to town switches back.
-> **Slider reroute (supersedes the M21-update note):** the
-> **SFX** slider now moves ambience volume and the **Music** slider no longer
-> does (music still follows Music) — check both in a dungeon. Missing-background
+> **Slider history (see the M52 update — this is now superseded):** M27 moved
+> ambience off the Music slider and onto the **SFX** slider; **M52 gives ambience
+> its own slider entirely** (see the M52 update below). Missing-background
 > drill: delete a `assets/textures/backgrounds/*.png` from the build → that
 > service falls back to its old flat fill, no crash.
 >
@@ -103,9 +128,10 @@ The older rows below are retained as historical baseline evidence and are **not*
 > footsteps cadence while walking (town + dungeon) without spamming; doors,
 > chests, merchant/omen interactions, and "cannot pay/afford" refusals each
 > have a distinct sound (refusals buzz, not the cancel blip); physical vs
-> magic hits vs status casts sound different in battle; volume sliders
-> (master/music/SFX) behave, persist, and ambience follows the music
-> slider; nothing clips at maximum volumes; rapid menu scrolling sounds
+> magic hits vs status casts sound different in battle; the volume sliders
+> (master/music/SFX/ambience since M52 — ambience originally followed music,
+> then SFX) behave and persist; nothing clips at maximum volumes; rapid menu
+> scrolling sounds
 > clean; delete any WAV from the build's `assets/audio/` → silence or
 > synth fallback + a log line, never a crash (drill scripted: title.wav);
 > a full run muted loses no essential information. Final soundscape

@@ -28,6 +28,9 @@ public:
     // Capture-only (M51): open the Display submenu so its rows (incl. CRT Effect)
     // are captured.
     void captureShowDisplay();
+    // Capture-only (M52): open the Audio submenu so its rows (incl. the new
+    // Ambience Volume row) are overflow-checked.
+    void captureShowAudio();
 #endif
 
 private:
@@ -41,7 +44,7 @@ private:
         // Top-level category entries (Confirm opens the submenu).
         CatAudio, CatDisplay, CatGameplay, CatControls, ResetAll, Back,
         // Audio.
-        MasterVolume, MusicVolume, SfxVolume, BackgroundAudio,
+        MasterVolume, MusicVolume, SfxVolume, AmbienceVolume, BackgroundAudio,
         // Display.
         Window, CrtEffect, BattleFlash, BattleShake, HighContrast,
         // Gameplay.
