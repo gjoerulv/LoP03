@@ -92,7 +92,9 @@ void removeStatus(Combatant& c, content::StatusType type) {
 
 void clearNegativeStatuses(Combatant& c) {
     // Cure strips every negative status (poison, ATK-/DEF- debuffs, and the M35
-    // Confusion/Silence/Blind), keeping only the beneficial buffs.
+    // Confusion/Silence/Blind), keeping only the beneficial buffs. This is the
+    // ITEM rule (Remedy/Antidote) — M47 narrowed the SKILL cleanse below, and
+    // deliberately left this one alone so cure items are unchanged.
     std::vector<StatusInstance> kept;
     for (const StatusInstance& s : c.statuses) {
         if (s.type == content::StatusType::AttackUp || s.type == content::StatusType::DefenseUp) {
@@ -100,6 +102,24 @@ void clearNegativeStatuses(Combatant& c) {
         }
     }
     c.statuses = std::move(kept);
+}
+
+// M47 (rules v7): the `cleanse` skill control lifts AFFLICTIONS only — Poison,
+// Blind, Silence, Confusion. ATK-/DEF- now survive a Purify (a cure item or
+// Royal Snacks is what lifts those), and so do the M44 turn-control statuses,
+// which take the turn they were bought with. Returns whether anything went, so
+// the log can stay honest.
+bool clearAfflictions(Combatant& c) {
+    const std::size_t before = c.statuses.size();
+    c.statuses.erase(std::remove_if(c.statuses.begin(), c.statuses.end(),
+                                    [](const StatusInstance& s) {
+                                        return s.type == content::StatusType::Poison ||
+                                               s.type == content::StatusType::Blind ||
+                                               s.type == content::StatusType::Silence ||
+                                               s.type == content::StatusType::Confusion;
+                                    }),
+                     c.statuses.end());
+    return c.statuses.size() != before;
 }
 
 // M43: lift only the stat debuffs (ATK-/DEF-), leaving poison and the M35
@@ -855,11 +875,12 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                 break;  // status still applied below
         }
 
-        // Cleanse (M35): strip every negative status from an ally target, so a
-        // heal/support skill can double as a cure (Cleric's Purify).
+        // Cleanse (M35, narrowed in M47): lift the afflictions from an ally
+        // target, so a heal/support skill can double as a cure (the Cleric's
+        // Purify). Since rules v7 the stat debuffs survive it — a cleanse
+        // answers poison/blind/silence/confusion, not a weakened sword arm.
         if (skill.controlEffect == content::SkillEffect::Cleanse && t.alive() &&
-            t.side == a.side && !t.statuses.empty()) {
-            clearNegativeStatuses(t);
+            t.side == a.side && clearAfflictions(t)) {
             log += " " + t.name + " is cleansed.";
         }
 

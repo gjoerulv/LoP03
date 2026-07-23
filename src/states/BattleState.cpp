@@ -787,9 +787,12 @@ std::string BattleState::outcomeMessage() const {
             // Defeat consequences are stated, not silent (UI-INFO-014) — and
             // stated TRUTHFULLY (M43): a castle challenge costs no gold and has
             // no run to forfeit, so it must not borrow the dungeon's penalty.
+            // M47: it is no longer free either — the survivors are left at 1 HP
+            // and the fallen stay fallen, so the line no longer says "nothing
+            // is lost".
             return castleChallenge_
                        ? "The party has fallen... The castle guard carries you back "
-                         "to the gates. The challenge ends; nothing is lost."
+                         "to the gates. No gold is taken, but nobody is healed."
                        : "The party has fallen... You are carried back to town; "
                          "half your gold is lost and the run is forfeit.";
         case battle::Outcome::Escaped:

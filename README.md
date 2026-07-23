@@ -19,7 +19,7 @@ music, or text. Built in **C++20** with **raylib**.
 > original generated art and music, a light-hearted story serial, three
 > unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
 > paid inn, onboarding, accessibility options, a bestiary, victory records,
-> achievements, and a fully procedural "8-bit-plus" UI (M46). Next: the
+> achievements, and a fully procedural "8-bit-plus" UI (M46). In progress: the
 > **M47–M51 Court & Comfort program** (castle stakes, elements, the King's
 > guards, town travel, presentation options), then the deferred
 > **validation playtesting (M23)** and **release sign-off (M24)**. Current
@@ -180,6 +180,9 @@ letterbox/pillarbox bars.
    waves, survive as long as you can), and **the Hollow King** himself (the hardest
    fight — immune to blind/silence/confusion, beat him for a unique legendary and a
    title). The castle keeps its **own records**, separate from your dungeon scores.
+   Failing (or fleeing) a challenge costs **no gold** — but nobody is healed:
+   survivors are carried to the gates at **1 HP**, the fallen stay fallen, and a
+   full wipe leaves exactly one member standing so an inn is always reachable.
 
 ## Project layout
 

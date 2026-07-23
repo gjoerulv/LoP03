@@ -338,9 +338,10 @@ decision and healing a real choice, at one battle-rules bump (v4).
   cheap while MP, cures, and resurrection cost what they are worth. One clear's
   gold buys a handful of Remedies or a single Tear, so the shopping list is a
   decision rather than a formality.
-- **Purify** lifts every affliction and debuff from the party and **heals
-  nothing**; **Renew** becomes the emergency button — a weak heal that can also
-  **raise a fallen ally at 20 % HP**, the first skill in the game that can.
+- **Purify** lifts the party's afflictions and **heals nothing** (M47 narrowed
+  its scope further — see below); **Renew** becomes the emergency button — a weak
+  heal that can also **raise a fallen ally at 20 % HP**, the first skill in the
+  game that can.
 - **Battle items now respect the state of their target:** potions, ethers, and
   cures reach only living allies, and a revive reaches only the fallen. An item
   with nobody to use it on is greyed out with the reason, so nothing is ever spent
@@ -350,9 +351,10 @@ decision and healing a real choice, at one battle-rules bump (v4).
   **the King's fight** they are 100 HP and 10 MP. The King's counterplay starts
   where the game did.
 - **Clarity** gives **+2 MP** a round (was +3).
-- **Losing a castle challenge costs nothing but the attempt:** the party is fully
-  healed at the castle gates, no gold is taken, and the screen says exactly that.
-  (It always cost nothing; the message used to claim the dungeon's gold penalty.)
+- **Losing a castle challenge takes no gold:** the message used to claim the
+  dungeon's gold penalty, and no longer does. (M43 also fully healed the party at
+  the gates; **M47 removed that free heal** — see the castle-stakes section
+  below.)
 
 **Royal Relics & the doubled King (M44).** The King stops being a wall of stats
 you out-level and becomes a fight you answer with absurd objects.
@@ -404,6 +406,32 @@ The class modifiers are **additive across the party** (three Dragons and a Goose
 scoreboard. Per M19 they are visible and tagged, never normalized away, and they
 never change how runs are ranked.
 
+**Rules & flow pass (M47).** Four small changes that sharpen the endgame and the
+edges of the interface, at one battle-rules bump (v7).
+
+- **Purify cleanses afflictions, not weakness.** A `cleanse` skill now lifts
+  **Poison, Blind, Silence and Confusion** only; **ATK- and DEF- survive it**, as
+  do the Royal Relics' Terrified/Stunned. Cure **items** (a Remedy) are unchanged
+  and still lift everything, and Royal Snacks still lift the stat debuffs alone —
+  so each answer to a bad status now has a distinct shape, and a Cleric can no
+  longer erase a boss's whole debuff kit for 10 MP. (The same narrowing applies to
+  the Goose's Generous Mending, the only other skill that cleanses.) Purify still
+  heals nothing.
+- **Losing at the castle costs something.** A failed — or fled — challenge no
+  longer heals the party at the gates. Everyone still standing is carried out at
+  **1 HP**, the **fallen stay fallen**, and **MP is untouched**; a total wipe
+  leaves **exactly one member** on their feet so an Inn is always reachable. Still
+  **no gold penalty** and still no run to forfeit: the King takes your strength,
+  not your purse. Fleeing keeps whatever HP/MP the fight ended with, minus the
+  heal that used to follow. Dungeon defeat is unchanged (half your gold, full
+  heal).
+- **Pause closes with the same key it opens with.** Tab / Start now closes the
+  town and dungeon pause menus, alongside Cancel.
+- **You can quit the game from inside the game.** Both pause menus offer **Quit**
+  → **Quit to Title / Quit Game / Keep Playing**, with the cursor on Keep Playing
+  and the warning stating what that screen actually loses (in a dungeon: the run
+  goes, the entry autosave stays).
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1
@@ -444,8 +472,9 @@ no color-only or sound-only information anywhere; a High Contrast palette
 toggle; battle flash/shake reducible to off; message pacing and battle
 speed configurable; Settings reachable before starting a game; destructive
 actions need explicit confirmation — a save overwrite takes a second Confirm on
-the same slot, and quitting to the title asks a Yes/No question outright, with the
-cursor starting on the safe answer.
+the same slot, and quitting asks its question outright (since M47 with three
+answers: to the title, to the desktop, or keep playing), with the cursor starting
+on the safe answer and Cancel resolving to it.
 These are engineering bars, not formal WCAG claims.
 
 ## 13. First-complete-version content target

@@ -54,7 +54,7 @@
 | 44 | Royal Relics & the doubled King | ☑ complete (approved) |
 | 45 | The King's classes: Dragon, Jester, Goose | ☑ complete (approved) |
 | 46 | Presentation facelift: procedural UI kit | ☑ complete (approved) |
-| 47 | Rules & flow pass | ☐ planned |
+| 47 | Rules & flow pass | ◑ implemented, awaiting manual approval |
 | 48 | Elements | ☐ planned |
 | 49 | The King's Court | ☐ planned |
 | 50 | Town travel rework | ☐ planned |
@@ -1944,7 +1944,16 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M47 — Rules & flow pass
 
-- **Status:** ☐ planned.
+- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
+  `8dfbc25`, which contains the M43–M46 merge `e9f7a37`). **442/442 tests green
+  in Debug and Release** (431 baseline + 11 new), `--capture` **52/52** scenes
+  overflow-clean (`44_quit_confirm` rebuilt, `52_dungeon_quit` added).
+  `battle::kBattleRulesVersion` **6 → 7**; generation (10), save (1) and settings
+  (1) versions unchanged. `docs/milestone_notes/M47_rules_flow_pass.md` §J is the
+  as-implemented record. **Two decisions need the owner's eye:** the narrowed
+  cleanse also narrows the Goose's Generous Mending (the plan assumed Purify was
+  the only `cleanse` skill — it is not), and a *fled* castle challenge takes the
+  same 1-HP clamp as a lost one.
 - **Goal:** four quick wins at one battle-rules bump (6 → 7): Purify cleanses
   **afflictions only** (Poison, Blind, Silence, Confusion — ATK-/DEF-
   debuffs survive; it already heals nothing); the castle defeat/escape rule

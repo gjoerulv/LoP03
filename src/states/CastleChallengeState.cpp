@@ -98,11 +98,15 @@ void CastleChallengeState::finish(bool cleared) {
     context_.audio.setMusic(MusicTrack::Castle);
     CastleRecords& rec = context_.party.castleRecords;
     std::string msg;
-    // M43: a lost challenge costs nothing but the attempt. The party is patched
-    // up at the castle gates — no gold penalty, no forfeited run — and the text
-    // below says so, so the screen and the battle's defeat line agree.
+    // M47: a lost challenge costs no gold and forfeits no run — but it is no
+    // longer free. Whoever was still standing is carried to the gates at 1 HP,
+    // the fallen stay fallen, MP is untouched, and a total wipe leaves exactly
+    // one member on their feet. An escape takes this same path (finish(false)),
+    // so fleeing keeps the battle-end HP/MP it earned, minus the free heal that
+    // used to follow. The text below says so, so the screen and the battle's
+    // defeat line agree.
     if (!cleared) {
-        healFull(context_.party);
+        clampCastleDefeat(context_.party);
     }
     switch (kind_) {
         case CastleChallenge::BossRush:
@@ -172,7 +176,8 @@ void CastleChallengeState::finish(bool cleared) {
             break;
     }
     if (!cleared) {
-        msg += " You are patched up at the gates; nothing is lost.";
+        msg += " You are carried to the gates, barely breathing. No gold is taken, "
+               "but nothing is healed - find an inn.";
     }
     resultText_ = msg;
     // M42: a challenge win may unlock castle achievements; toast them above the

@@ -7,8 +7,8 @@
 #include "raylib.h"
 #include "states/AchievementsState.hpp"
 #include "states/BestiaryState.hpp"
-#include "states/ConfirmPromptState.hpp"
-#include "states/MainMenuState.hpp"
+#include "states/QuitFlow.hpp"
+#include "states/QuitPrompt.hpp"
 #include "states/SettingsState.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -21,7 +21,7 @@ constexpr int kResume = 0;
 constexpr int kBestiary = 1;
 constexpr int kAchievements = 2;
 constexpr int kSettings = 3;
-constexpr int kQuitToTitle = 4;
+constexpr int kQuit = 4;
 }  // namespace
 
 TownMenuState::TownMenuState(StateStack& stack, AppContext& context)
@@ -30,7 +30,7 @@ TownMenuState::TownMenuState(StateStack& stack, AppContext& context)
                     {"Bestiary", true},
                     {"Achievements", true},
                     {"Settings", true},
-                    {"Quit to Title", true}});
+                    {"Quit", true}});
 }
 
 void TownMenuState::handleInput(const Input& input) {
@@ -40,7 +40,9 @@ void TownMenuState::handleInput(const Input& input) {
     if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
     }
-    if (input.pressed(InputAction::Cancel)) {
+    // M47: the key that opened the pause menu closes it again (Tab / Start),
+    // alongside Cancel. One action, both devices, no new hint text.
+    if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Menu)) {
         stack().popState();
         return;
     }
@@ -58,22 +60,13 @@ void TownMenuState::handleInput(const Input& input) {
             case kSettings:
                 stack().pushState(std::make_unique<SettingsState>(stack(), context_));
                 break;
-            case kQuitToTitle: {
+            case kQuit:
                 // Destructive-action confirmation (M22): progress since the last
                 // save is lost, so quitting asks the question outright rather than
-                // arming a second press on the same entry.
-                StateStack* stackPtr = &stack();
-                AppContext* contextPtr = &context_;
-                stack().pushState(std::make_unique<ConfirmPromptState>(
-                    stack(), context_, "Quit to Title",
-                    "Progress since your last save will be lost.", "Quit to Title",
-                    "Keep Playing", [stackPtr, contextPtr]() {
-                        stackPtr->clearStates();
-                        stackPtr->pushState(
-                            std::make_unique<MainMenuState>(*stackPtr, *contextPtr));
-                    }));
+                // arming a second press on the same entry. M47 turned the single
+                // answer into three (title / desktop / stay).
+                pushQuitPrompt(stack(), context_, quit::kTownBody);
                 break;
-            }
             default:
                 break;
         }

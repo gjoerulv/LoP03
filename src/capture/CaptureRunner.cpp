@@ -39,7 +39,6 @@
 #include "states/BestiaryState.hpp"
 #include "states/CastleChallengeState.hpp"
 #include "states/CastleState.hpp"
-#include "states/ConfirmPromptState.hpp"
 #include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonMenuState.hpp"
@@ -52,6 +51,8 @@
 #include "states/ItemShopState.hpp"
 #include "states/MainMenuState.hpp"
 #include "states/PartyCreationState.hpp"
+#include "states/QuitFlow.hpp"
+#include "states/QuitPrompt.hpp"
 #include "states/RemapState.hpp"
 #include "states/ScoreDetailsText.hpp"
 #include "states/ScoreboardState.hpp"
@@ -768,12 +769,20 @@ int run(const char* outDir) {
             {"44_quit_confirm",
              [](StateStack& s, AppContext& c) {
                  // The pause menu's quit question, over the pause panel it opens
-                 // from — the same strings TownMenuState passes.
+                 // from. M47: three answers, raised through the same helper the
+                 // menu uses, so the scene cannot drift from the game.
                  s.pushState(std::make_unique<TownState>(s, c));
                  s.pushState(std::make_unique<TownMenuState>(s, c));
-                 s.pushState(std::make_unique<ConfirmPromptState>(
-                     s, c, "Quit to Title", "Progress since your last save will be lost.",
-                     "Quit to Title", "Keep Playing", []() {}));
+                 pushQuitPrompt(s, c, quit::kTownBody);
+             }},
+            {"52_dungeon_quit",
+             [](StateStack& s, AppContext& c) {
+                 // M47: the same question from inside a run — the taller pause
+                 // panel with its new Quit row, and the dungeon-honest body.
+                 s.pushState(std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine")));
+                 s.pushState(std::make_unique<DungeonMenuState>(s, c));
+                 pushQuitPrompt(s, c, quit::kDungeonBody);
              }},
         };
 

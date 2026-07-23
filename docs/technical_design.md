@@ -587,7 +587,8 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   evolve the stream in lockstep (`turnsTaken` — frozen at 0 in the Simulator — is
   never used for it). Misses are recorded in `Battle.lastMissed` for the "Miss!"
   floaters. `SkillEffect::Cleanse` lets a skill strip an ally's negative statuses
-  (Cleric's Purify), and the `Cure` consumable clears the new afflictions too.
+  (Cleric's Purify) — **narrowed to the four afflictions in M47**, see the
+  rules-v7 section — and the `Cure` consumable clears the new afflictions too.
   **Owner balance tune (2026-07-21):** every applied status lasts
   `kStatusDurationMult`× its authored duration (2×, in `addStatus`), poison ticks
   `kPoisonDamageMult`× its authored magnitude (2×, in `tickStatuses`), and
@@ -672,9 +673,11 @@ A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down, and th
 M35 Confusion/Silence/Blind). Skills/items apply them to their targets;
 `Battle::tickStatuses` (called at each unit's turn start) deals poison and ages
 durations. Buffs/debuffs scale the effective attack/defense used in the damage
-formulas; `Cure`/Remedy items and `SkillEffect::Cleanse` (the Cleric's Purify)
-strip every negative status (poison, debuffs, and the M35 afflictions). See §10's
-M35 bullet for the Confusion/Silence/Blind behaviour and the seeded to-hit stream.
+formulas; `Cure`/Remedy items strip every negative status (poison, debuffs, and
+the M35 afflictions), while `SkillEffect::Cleanse` (the Cleric's Purify) lifts
+**only the four afflictions** since M47 — the rules-v7 section has the split. See
+§10's M35 bullet for the Confusion/Silence/Blind behaviour and the seeded to-hit
+stream.
 A **Brute** boss `enrages` (×1.5 attack below half HP) and
 shows a telegraph line; **Commander/Rush** bosses field a fixed minion team
 (dynamic summons / true waves are deferred). The base (no-status, non-boss)
@@ -1025,10 +1028,10 @@ default, so pre-M43 saves and content load unchanged).
   `equipShopBuyIds`, and the generator's chest/merchant pools. The item shop had
   no gating at all before this.
 - **Truthful castle defeat.** `BattleState` takes a `castleChallenge` flag and
-  drops the dungeon's "half your gold is lost" claim for those fights;
-  `CastleChallengeState::finish(false)` fully heals the party (`healFull`) and
-  says so, and the boss-rush defeat line counts `bossRushOrder(db).size()` rather
-  than a literal 12.
+  drops the dungeon's "half your gold is lost" claim for those fights, and the
+  boss-rush defeat line counts `bossRushOrder(db).size()` rather than a literal
+  12. (M43 also had `CastleChallengeState::finish(false)` call `healFull`; **M47
+  replaced that with `clampCastleDefeat`** — see the rules-v7 section.)
 - **Versions (at M43).** `battle::kBattleRulesVersion` **4** (confusion
   enforcement, revive skills, King items, item-target filtering all change how
   identical inputs resolve); `dungeon::kGenerationVersion` **9** (a dungeon
@@ -1178,12 +1181,14 @@ tested; raylib adapters live in `ui/UiDraw`.
   `drawTextRight`; `drawTextFitted` (fits-or-clips + logs); `drawTextWrapped`
   (bounded lines + logs); `drawTextWrappedCentered` (the same, every line centered
   on a point); `drawMenuScrolled` (window slice + arrows).
-- **`states/ConfirmPromptState`**: a reusable transparent Yes/No modal (dims and
-  freezes the scene below, measured panel: title + wrapped consequence + two
-  answers) that runs a supplied `std::function` on yes. The cursor starts on the
-  safe answer and Cancel answers no. Used by the pause menu's Quit to Title, which
-  previously armed a second Confirm on the same entry and explained itself with a
-  warning line — a pattern that reads as a dead key press.
+- **`states/ConfirmPromptState`**: a reusable transparent confirmation modal
+  (dims and freezes the scene below, measured panel: title + wrapped consequence
+  + the answer rows) that runs a supplied `std::function` for the chosen answer.
+  The cursor starts on the safe answer and Cancel resolves to it. Used by the
+  pause menus' Quit, which previously armed a second Confirm on the same entry
+  and explained itself with a warning line — a pattern that reads as a dead key
+  press. **M47 generalized it from Yes/No to N answers** (see the rules-v7
+  section).
 - **`MenuItem::suffix`** (M42 follow-up): an optional trailing column drawn
   right-aligned at the row's right edge by `drawMenuScrolled`, in its own font
   size/color. The column is reserved *first* and the label is fitted to what is
@@ -1240,6 +1245,63 @@ Rules that bind new UI work:
 - the nine-patch `drawFramedPanel`/`ui.frame.default` path still works and
   stays manifest-replaceable, but no screen uses it: the procedural kit is
   the identity.
+
+### Rules & flow pass (Milestone 47)
+
+Battle rules **6 → 7**; `kGenerationVersion` (10), `kSaveVersion` (1) and
+`kSettingsVersion` (1) all unchanged. Nothing here adds a roll, so a seed
+reproduces the same dungeon and the same action stream — only how a cleanse
+resolves changed, which is exactly what the rules bump records.
+
+- **The cleanse split.** `Battle.cpp` now holds three status-clearing rules
+  instead of two, and which one runs is decided by *what did it*, not by who was
+  hit:
+  - `clearAfflictions` — **Poison / Blind / Silence / Confusion only**. The body
+    of `SkillEffect::Cleanse` (Purify and, since M45, the Goose's Generous
+    Mending — those are the only two `"cleanse"` skills in `data/skills.json`).
+    It returns whether anything went, so the log claims a cleanse only when one
+    happened.
+  - `clearNegativeStatuses` — everything except the two buffs. **Unchanged**, and
+    now used *only* by `ConsumableEffect::Cure` (a Remedy). It was tempting to
+    rename and narrow it in place; that would have silently changed cure items,
+    which are not in this milestone's scope.
+  - `clearStatDebuffs` — ATK-/DEF- only (M43 Royal Snacks). Untouched.
+
+  The rule lives inside `Battle::useSkill`, which `BattleState` calls directly
+  and the `Simulator` reaches through `applyChoice` — one code path, so sim ==
+  live by construction rather than by agreement. `tests/test_rules_v7_flow.cpp`
+  asserts that agreement explicitly (same statuses, HP, MP, and `rollCursor`)
+  so a future fork fails loudly.
+- **`clampCastleDefeat(Party&)`** (`game/Party.hpp`, beside `healFull`): living
+  members → `hp = 1`, KO'd members stay at 0, MP untouched, and a party with no
+  survivors gets member 0 at 1 HP. Pure and unit-tested.
+  `CastleChallengeState::finish(false)` calls it where it used to call
+  `healFull`. Both a defeat and an **escape** take that path (`onResume` sends
+  every non-Victory outcome to `finish(false)`), so fleeing keeps its battle-end
+  HP/MP minus the free heal. `BattleState::finish` already wrote HP/MP back for
+  every outcome, so no write-back work was needed. Dungeon defeat
+  (`DungeonState`: `healFull` + half gold) is untouched. Three texts that
+  promised the old heal were corrected in the same slice: the challenge result
+  line, `BattleState::outcomeMessage`'s castle branch, and the `first_challenge`
+  tutorial beat.
+- **`ConfirmPromptState` takes N answers.** `Answer { label, onChoose }` plus a
+  `safeIndex` (the row the cursor starts on and the row Cancel resolves to); a
+  null `onChoose` means "just dismiss". The panel measures
+  `answers.size() * kRowH`. The pre-M47 Yes/No constructor is kept and delegates,
+  so the widget still has a one-line form (no caller uses it today).
+- **The quit flow.** `states/QuitPrompt.hpp` is **pure** (raylib-free, the
+  `EquipShopFilter` precedent): the three labels, their indices, the safe row,
+  and the two warning bodies — so the model is unit-testable in the headless
+  suite. `states/QuitFlow.{hpp,cpp}` binds those strings to actions in one
+  `pushQuitPrompt(stack, context, body)` that the town menu, the dungeon menu,
+  and both capture scenes call, so a scene cannot drift from the game.
+  **Quit Game is `clearStates()` and nothing pushed** — `Application::run`'s
+  `!stack_.empty()` guard then ends the loop on the next frame. No exit flag, no
+  forced `CloseWindow`; settings already persist on change.
+- **Menu closes a pause menu.** `TownMenuState` and `DungeonMenuState` treat
+  `InputAction::Menu` like `Cancel`. The state-transition input suppression in
+  `Application::processFrame` is what keeps a held Tab from opening and closing
+  in the same press.
 
 ## 16. Leveling, shops & packaging (Milestone 10)
 

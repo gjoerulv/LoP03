@@ -75,6 +75,13 @@ Character createCharacter(const content::ClassDef& cls, std::string name, int le
 // Restores every member to full HP/MP.
 void healFull(Party& party);
 
+// M47 — the castle's price of failure. A lost (or fled) castle challenge no
+// longer heals the party: everyone who was still standing ends at exactly 1 HP,
+// the fallen stay fallen, and MP is untouched. A total wipe leaves the FIRST
+// member at 1 HP so the party can always limp to an Inn. No gold is taken (the
+// castle never charged any) and no run is forfeited. Pure and unit-tested.
+void clampCastleDefeat(Party& party);
+
 // M45: the party's additive unlockable-class score modifier, summed over the
 // members' `ClassDef::scoreModPct` (0 for any party of the six original classes).
 // Pure and derived — never stored on the party, so it cannot drift from the

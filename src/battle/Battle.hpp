@@ -35,8 +35,9 @@ namespace cd::battle {
 // uncontrolled turn, the AoE basic attack with attack-applied statuses, the
 // enemy-buffing heal — and the Simulator now tracks `turnsTaken`, which the
 // enemy-targeting tie-break reads, so simulation and live play finally agree on
-// it too).
-inline constexpr int kBattleRulesVersion = 6;
+// it too); 7 = M47 (the `cleanse` skill control lifts afflictions only — the
+// ATK-/DEF- debuffs now survive a Purify, while cure ITEMS are unchanged).
+inline constexpr int kBattleRulesVersion = 7;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
