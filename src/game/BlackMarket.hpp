@@ -28,15 +28,16 @@ struct BlackMarketOffer {
     int tileY = 0;
 };
 
-// Seeded free plaza tiles in the fixed 26x15 town layout (all open Ground,
-// avoiding buildings, their doors, the road exits, and the player spawn 12,8).
+// Seeded free plaza tiles in the compact 24x12 town layout (M50): all open
+// Ground, clear of buildings, their doors, the road-trigger tiles, the bard
+// spot, and the player spawn (11,5).
 struct MarketTile {
     int x;
     int y;
 };
 inline constexpr int kBlackMarketTileCount = 5;
 inline constexpr MarketTile kBlackMarketTiles[kBlackMarketTileCount] = {
-    {5, 7}, {20, 7}, {9, 8}, {16, 6}, {12, 6},
+    {5, 5}, {18, 5}, {9, 6}, {14, 6}, {5, 10},
 };
 
 // SplitMix64-style finalizer for a well-mixed deterministic hash.

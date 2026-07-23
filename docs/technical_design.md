@@ -760,13 +760,26 @@ everywhere, so pre-M32 behaviour, seeds, and scores are unchanged.
   (0 = legacy → town 1), written by `DungeonState`, round-tripped by
   `Scoreboard`, and shown as "T#" on the scoreboard (Theme-column tag for
   town ≥ 2) and the result breakdown — never used for ranking (M19 policy).
-- **Travel & unlock.** `town::buildTown(town, hasPrev, hasNext, nextUnlocked)`
-  carves bottom-left/right road exits (`TownExit`s); `TownState` builds for the
-  live `currentTown`, renders signposts + a "Town n/7" indicator, and switches
-  town in place on Confirm at an unlocked exit (rebuild + fade + music). Boss
-  victory sets `highestUnlockedTown = unlockAfterClear(...)`. `TownState` is a
-  single persistent state (dungeon returns pop back to it), so every entry
-  reflects `currentTown` for free.
+- **Travel & unlock (reworked M50).** `town::buildTown` builds a compact centred
+  24×12 layout (`kTownWidth`/`kTownHeight`) drawn inside the M46 stage matte, with
+  **walk-through road triggers** on the edges (`TownExit`s): west = previous town,
+  east = next, north gap = castle (town 7). `TownState` keeps `player_`, collision,
+  and every tile query in tile-local space and adds `originX_/originY_` only at
+  render time — the `DungeonState` split — so centring touched no movement logic.
+  Travel resolves in `update()` when the player walks onto an **armed, unlocked**
+  trigger (no Confirm): a locked road shows its footer reason instead.
+  `travelTo(dest, TownEntry)` rebuilds in place (fade + door SFX + per-town music)
+  and the arrival spawn lands **one tile inside the matching edge** (travelling
+  east → the destination's west road, and vice-versa), so movement reads as
+  continuous. Two anti-bounce guards: the arrival is never *on* a trigger, and a
+  latch (`travelArmed_`, cleared on every spawn/`onResume`, set once the player is
+  off all triggers) stops a walk-through exit — including the castle-return, which
+  pops back onto the north trigger — from firing immediately. The `TownEntry` hint
+  is transient (never persisted). Boss victory still sets `highestUnlockedTown`.
+  Layout-coupled coordinates (`kBlackMarketTiles`, the bard tile) were re-authored
+  for the compact interior; `SaveSystem` defensively snaps a pre-M50 market offer
+  whose stored tile is no longer a valid plaza cell onto `kBlackMarketTiles[0]`
+  (no schema change).
 - **Presentation resolution (all with base fallback).** Per-town exterior tiles
   `tiles.town.<n>.<kind>` (`TownState`), per-town service interiors
   `bg.<place>.<n>` (a town-aware `ui::drawSceneBackground` overload used by the

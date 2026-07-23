@@ -9,6 +9,7 @@
 #include "dungeon/DungeonGenerator.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "game/BlackMarket.hpp"
+#include "town/TownData.hpp"
 
 // M34 black market: the pure, deterministic spawn rules (seeded roll, price,
 // tile/item picks) and the shipped legendary roster. Save round-trip lives in
@@ -60,10 +61,11 @@ TEST_CASE("black market: candidate tiles are interior plaza cells, not the spawn
           "[blackmarket]") {
     for (const MarketTile& t : kBlackMarketTiles) {
         CHECK(t.x > 0);
-        CHECK(t.x < 25);
+        CHECK(t.x < cd::town::kTownWidth - 1);   // inside the border (M50: 24 wide)
         CHECK(t.y > 0);
-        CHECK(t.y < 14);
-        CHECK_FALSE((t.x == 12 && t.y == 8));  // not the player spawn tile
+        CHECK(t.y < cd::town::kTownHeight - 1);  // inside the border (M50: 12 tall)
+        CHECK_FALSE((t.x == cd::town::kSpawnTileX &&
+                     t.y == cd::town::kSpawnTileY));  // not the player spawn tile
     }
 }
 

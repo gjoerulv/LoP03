@@ -285,7 +285,7 @@ TEST_CASE("save: town-ladder fields round-trip and default/clamp safely (M32)", 
     p.highestUnlockedTown = 5;
     p.stakes = {4, 7, 3};  // M33: prev stakes (town 4, depth 7), 3 penalty steps
     p.legendaryTokens = 4;  // M34
-    p.blackMarket = {true, 3, "iron_sword", 5750, 5, 7};  // M34 offer (item known to makeDb)
+    p.blackMarket = {true, 3, "iron_sword", 5750, 18, 5};  // M34 offer on a current plaza tile
 
     content::LoadReport rep;
     REQUIRE(saves.save(save::SaveSlot::Manual1, p, rep));
@@ -302,8 +302,8 @@ TEST_CASE("save: town-ladder fields round-trip and default/clamp safely (M32)", 
     REQUIRE(loaded.blackMarket.town == 3);
     REQUIRE(loaded.blackMarket.itemId == "iron_sword");
     REQUIRE(loaded.blackMarket.priceGold == 5750);
-    REQUIRE(loaded.blackMarket.tileX == 5);
-    REQUIRE(loaded.blackMarket.tileY == 7);
+    REQUIRE(loaded.blackMarket.tileX == 18);  // a current plaza tile round-trips exactly
+    REQUIRE(loaded.blackMarket.tileY == 5);
 
     // Defensive: an offer whose item the content no longer knows is dropped.
     Party stale;
@@ -315,6 +315,21 @@ TEST_CASE("save: town-ladder fields round-trip and default/clamp safely (M32)", 
     content::LoadReport repS2;
     REQUIRE(saves.load(save::SaveSlot::Manual3, staleLoaded, repS2));
     REQUIRE_FALSE(staleLoaded.blackMarket.present);  // dropped, not dangling
+
+    // M50 defensive: a present offer saved on a tile the compact town no longer
+    // has (e.g. an old 26x15 plaza cell) snaps onto a current plaza tile on load,
+    // so the NPC stays reachable rather than stranded on a wall.
+    Party oldTile;
+    oldTile.members.push_back(createCharacter(*db.findClass("knight"), "Mira"));
+    oldTile.blackMarket = {true, 3, "iron_sword", 5750, 20, 7};  // a pre-M50 tile
+    content::LoadReport repO;
+    REQUIRE(saves.save(save::SaveSlot::Manual3, oldTile, repO));
+    Party oldLoaded;
+    content::LoadReport repO2;
+    REQUIRE(saves.load(save::SaveSlot::Manual3, oldLoaded, repO2));
+    REQUIRE(oldLoaded.blackMarket.present);
+    REQUIRE(oldLoaded.blackMarket.tileX == kBlackMarketTiles[0].x);
+    REQUIRE(oldLoaded.blackMarket.tileY == kBlackMarketTiles[0].y);
 
     // Backward compatibility: a pre-M32/M33 save with no town/stakes fields loads
     // as 1/1 and a fresh (zero) stakes state.

@@ -453,8 +453,21 @@ int run(const char* outDir) {
                  // not leak into the town-1 scenes above.
                  c.party.currentTown = 6;
                  c.party.highestUnlockedTown = 6;  // next (town 7) exit reads locked
-                 c.party.blackMarket = {true, 6, "dawnforged_blade", 6500, 16, 6};  // M34 NPC
+                 c.party.blackMarket = {true, 6, "dawnforged_blade", 6500, 14, 6};  // M34 NPC
                  s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"59_town_road",
+             [](StateStack& s, AppContext& c) {
+                 // M50: the walk-through road affordance — the player parked on an
+                 // unlocked west road trigger, with the "Walk out to Town N"
+                 // signpost and footer. Placed after the ladder scene; the town
+                 // mutation is set explicitly so nothing leaks in.
+                 c.party.currentTown = 3;
+                 c.party.highestUnlockedTown = 3;
+                 c.party.blackMarket = {};  // no NPC in this shot
+                 auto town = std::make_unique<TownState>(s, c);
+                 town->captureStandAtWestExit();
+                 s.pushState(std::move(town));
              }},
             {"26_guild_penalty",
              [](StateStack& s, AppContext& c) {

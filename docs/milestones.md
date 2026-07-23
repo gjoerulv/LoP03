@@ -56,8 +56,8 @@
 | 46 | Presentation facelift: procedural UI kit | ☑ complete (approved) |
 | 47 | Rules & flow pass | ☑ complete (approved) |
 | 48 | Elements | ☑ complete (approved) |
-| 49 | The King's Court | ◑ implemented, awaiting manual approval |
-| 50 | Town travel rework | ☐ planned |
+| 49 | The King's Court | ☑ complete (approved) |
+| 50 | Town travel rework | ◑ implemented, awaiting manual approval |
 | 51 | Presentation & options | ☐ planned |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
@@ -1994,8 +1994,10 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M49 — The King's Court
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
-  `d9d9960`). **477/477 tests** (462 baseline + 15 new) green in Debug and
+- **Status:** ☑ complete (approved) — approved by the owner **2026-07-23** after
+  manual testing, committed as `ee079d4`. Includes the owner-directed castle
+  raise and the level-cap 50 → 99 change made during review. Base checkout was
+  `d9d9960`. **477/477 tests** (462 baseline + 15 new) green in Debug and
   Release, `--capture` **58/58** scenes overflow-clean (2 added: the court
   mid-battle and the revive announcement).
   `battle::kBattleRulesVersion` **8 → 9**; generation (10), save (1)
@@ -2031,7 +2033,16 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M50 — Town travel rework
 
-- **Status:** ☐ planned.
+- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
+  `ee079d4`). The town is now a compact 24×12 centred layout inside the M46 stage
+  matte; its edges are **walk-through road triggers** (no Confirm) — west =
+  previous town, east = next, north = castle — with an anti-bounce latch and
+  entrance-memory spawns (arrive one tile inside the matching edge). Pure
+  town-layer work: **no version bumps** (save 1, generation 10, rules 9, settings
+  1); old saves load, and a pre-M50 black-market offer on a now-invalid tile is
+  defensively snapped to a valid one. A capture scene (`59_town_road`) was added
+  → **59 scenes**. `docs/milestone_notes/M50_town_travel.md` §J is the
+  as-implemented record.
 - **Goal:** a compact centered town (~24×12 tiles with the M46 stage
   matte); exits become **walk-through road triggers** (no Confirm) placed
   clear of the footer (west = previous town, east = next, north = castle);

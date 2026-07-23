@@ -2,8 +2,11 @@
 
 ## A. Status and authority
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23) — authored
-  just-in-time on 2026-07-23 from the
+- **Status:** ☑ complete (approved) — approved by the owner **2026-07-23** after
+  manual testing, committed as `ee079d4`. Approval covers the base milestone plus
+  the two owner-directed changes made during review: the castle raised above the
+  ladder (Boss Rush 580 %, King 500 %, Endless 500 %+10 %/wave) and the level cap
+  50 → 99. Authored just-in-time on 2026-07-23 from the
   owner-approved M47–M51 "Court & Comfort" plan. Third milestone of that
   program; M50 → M51 follow, **then** M23 → M24. See §J for the as-implemented
   record.

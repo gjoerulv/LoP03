@@ -83,10 +83,13 @@ the cost and tokens held; declining is **never a soft-lock** — HP/MP persist,
 battles still pay gold, and the token is a relief valve, so a wounded, broke
 party can always earn its way back to health.
 
-**The town ladder (M32).** Town is not a single place but a chain of **seven**
-towns, each harder and higher-scoring. The bottom-right road leads to the next
-town, the bottom-left back to the previous one; travel between reached towns is
-free and instant (fade + a darker, more sinister music track per town). A
+**The town ladder (M32; travel reworked M50).** Town is not a single place but a
+chain of **seven** towns, each harder and higher-scoring. The town is a compact,
+centred layout whose **edges are walk-through roads** (M50): walk into the **east**
+road for the next town, the **west** road for the previous one — no button press,
+and arriving drops you at the matching edge so travel reads as one continuous
+walk. Travel between reached towns is free and instant (fade + a darker, more
+sinister music track per town). A
 higher town multiplies every enemy team's stats — **+0/25/50/75/100/150/200 %**
 across towns 1–7 (composed on top of depth scaling; danger labels rise
 honestly) — and grants a **visible score bonus** on the whole run subtotal —

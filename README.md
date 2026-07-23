@@ -151,10 +151,10 @@ letterbox/pillarbox bars.
    free with a rest token), **Item Shop** (buy consumables), **Equip Shop**
    (buy by category + equip gear — each town unlocks stronger gear as you climb),
    **Training Hall** (level up, and buy passive skills — own many, equip one),
-   **Scoreboard**, **Save Point** (3 slots), and the **Guild**. Roads at the
-   bottom corners connect **seven towns**: each later town raises enemy stats
-   (up to +200 %) and score bonus (up to +100 %); clearing a dungeon in a town
-   unlocks the road onward.
+   **Scoreboard**, **Save Point** (3 slots), and the **Guild**. **Walk out the
+   west/east roads** to move between the **seven towns** (no button — just walk
+   into the road); each later town raises enemy stats (up to +200 %) and score
+   bonus (up to +100 %); clearing a dungeon in a town unlocks the road onward.
 3. At the **Guild**, pick a theme + depth and enter a seeded dungeon. Entering
    autosaves.
 4. Walk the dungeon: enemy teams show a **danger tier**; fight them to clear
