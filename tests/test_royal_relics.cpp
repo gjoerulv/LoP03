@@ -509,15 +509,27 @@ TEST_CASE("relics: the King carries the M44 stats", "[relics][king][data]") {
     CHECK(king->stats.speed == 26);
 }
 
-TEST_CASE("relics: the doubled King demands the counterplay", "[relics][king][balance]") {
+TEST_CASE("relics: the counterplay measurably changes the King fight",
+          "[relics][king][balance]") {
+    // History: this case asserted the M44 bar — the approved counterplay WINS and
+    // an unaided party loses — and every King scale from M44 to M49 was tuned to
+    // satisfy it. The owner superseded that on 2026-07-23: the castle now starts
+    // above the dungeon ceiling (see kKingScalePct / castleFloorScalePct) and is
+    // explicitly not tuned to what the scripted sim can beat.
+    //
+    // What survives is the part that is still true and still worth protecting:
+    // the relics must MATTER. The sim's fixed strategy is a floor on player
+    // skill, so it is used here to prove the counterplay moves the fight in the
+    // right direction, not to certify that the fight is winnable. Winnability is
+    // an owner manual-validation item (matrix row 125), with the full ladder
+    // recorded in [king-report].
     const content::ContentDatabase db = loadContent();
 
     Battle bare = buildBattle(maxedParty(db), kingTeam(db), db);
     const SimResult unaided = runScripted(bare, db, 400, nullptr);
-    INFO("unaided: outcome=" << static_cast<int>(unaided.outcome) << " rounds=" << unaided.rounds);
+    INFO("unaided: outcome=" << static_cast<int>(unaided.outcome) << " rounds="
+                             << unaided.rounds << " kingHp%=" << unaided.partyHpFraction());
 
-    // The approved bar (owner, 2026-07-22): ONE of each 40 % relic plus snacks —
-    // never the 15 % Crown and never the 5 % Spoon.
     Counterplay plan;
     plan.sheets = 1;
     plan.geese = 1;
@@ -527,8 +539,12 @@ TEST_CASE("relics: the doubled King demands the counterplay", "[relics][king][ba
     INFO("with counterplay: outcome=" << static_cast<int>(aided.outcome)
                                       << " rounds=" << aided.rounds
                                       << " alive=" << aided.partyAlive);
-    CHECK(aided.outcome == Outcome::Victory);          // beatable WITH obtainable counterplay
-    CHECK_FALSE(unaided.outcome == Outcome::Victory);  // and not without it
+
+    // The King is never a walkover for an unaided party.
+    CHECK_FALSE(unaided.outcome == Outcome::Victory);
+    // And the counterplay buys real time: the armed party survives strictly
+    // longer than the bare one. If a relic ever stops mattering, this fails.
+    CHECK(aided.rounds > unaided.rounds);
 }
 
 // On-demand table for the milestone note and owner review:
@@ -570,25 +586,42 @@ TEST_CASE("king report: what it takes to fell the doubled King", "[.][king-repor
                   << " | " << r.partyAlive << " | " << r.partyHpFraction() << "\n";
     }
 
-    // What stat scale would make the PLAN's intended counterplay (one of each
-    // 40% relic + snacks, no Crown, no Spoon) sufficient? Evidence for the owner.
-    std::cout << "\nscale sweep — plan counterplay = 1 sheets + 1 goose + 20 snacks\n";
-    std::cout << "scale% | eff hp | nothing | plan counterplay (outcome/rounds/alive)\n";
-    for (int scale : {420, 380, 340, 300, 260, 220}) {
+    // Scale sweep across the CASTLE-FLOOR regime (owner decision 2026-07-23: every
+    // castle scale sits above the 570 % dungeon ceiling). Two counterplay columns:
+    // the M44 "plan" bar, and the absolute maximum a player could ever bring
+    // (3 of each 40 % relic + the Crown + the Spoon + 30 snacks) — so the owner
+    // can see not just whether the intended answer works, but whether ANY answer
+    // the game contains does.
+    const int floorPct = castleFloorScalePct(db);
+    std::cout << "\nscale sweep — dungeon ceiling is " << floorPct << "%\n";
+    std::cout << "scale% | eff hp | nothing | plan (1+1+20) | MAX (3+3+30+crown+spoon)\n";
+    for (int scale : {440, 460, 480, kKingScalePct, 520, 540, floorPct + 10, 700}) {
         dungeon::EnemyTeam team = kingTeam(db);
         team.statScalePct = scale;
         Battle bare = buildBattle(maxedParty(db), team, db);
         const int effHp = bare.units[static_cast<std::size_t>(kingIndex(bare))].maxHp;
         const SimResult none = runScripted(bare, db, 400, nullptr);
+
         Counterplay plan;
         plan.sheets = 1;
         plan.geese = 1;
         plan.snacks = 20;
         Battle armed = buildBattle(maxedParty(db), team, db);
         const SimResult r = runScripted(armed, db, 400, counterplayHook(db, plan));
+
+        Counterplay best;
+        best.sheets = 3;
+        best.geese = 3;
+        best.snacks = 30;
+        best.crowns = 1;
+        best.spoons = 1;
+        Battle maxed = buildBattle(maxedParty(db), team, db);
+        const SimResult m = runScripted(maxed, db, 400, counterplayHook(db, best));
+
         std::cout << scale << " | " << effHp << " | " << static_cast<int>(none.outcome) << "/"
                   << none.rounds << " | " << static_cast<int>(r.outcome) << "/" << r.rounds << "/"
-                  << r.partyAlive << "\n";
+                  << r.partyAlive << " | " << static_cast<int>(m.outcome) << "/" << m.rounds << "/"
+                  << m.partyAlive << "\n";
     }
     SUCCEED();
 }

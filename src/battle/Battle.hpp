@@ -39,8 +39,10 @@ namespace cd::battle {
 // ATK-/DEF- debuffs now survive a Purify, while cure ITEMS are unchanged);
 // 8 = M48 (element weakness/immunity: a tagged skill or weapon-elemental basic
 // attack deals x1.5 to a weak foe and nothing at all — riders included — to an
-// immune one).
-inline constexpr int kBattleRulesVersion = 8;
+// immune one); 9 = M49 (the revive clock: a boss carrying `reviveMinionTurns`
+// raises its whole fallen court on the Nth of its own turns with all of them
+// down, repeatably).
+inline constexpr int kBattleRulesVersion = 9;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -139,6 +141,13 @@ struct Combatant {
     std::vector<content::Element> weaknesses;
     std::vector<content::Element> immunities;
 
+    // The revive clock (M49), resolved from the BossDef at buildBattle. 0 = this
+    // unit never revives its fallen court, which is every unit but the King.
+    // The counter advances only on this unit's OWN turns, so it cannot drift
+    // with speed or turn order the way a round counter would.
+    int reviveMinionTurns = 0;
+    int reviveMinionCounter = 0;
+
     bool alive() const { return hp > 0; }
 };
 
@@ -188,6 +197,12 @@ public:
     void beginRound();
 
     void clearGuard(int unit);  // call at the start of a unit's turn (also clears intercept)
+    // M49: the per-turn rules that run when a unit is about to act, after its
+    // statuses have ticked and its guard has dropped. Today that is exactly one
+    // rule — the King's revive clock — but the seam exists so a future per-turn
+    // boss mechanic has one home that BOTH drivers already call. Returns a log
+    // line, empty when nothing happened.
+    std::string beginUnitTurn(int actor);
     // Drops the previous action's presentation marks (missed / weak / immune).
     // Called at the top of every action so the lists only ever describe the
     // latest one.

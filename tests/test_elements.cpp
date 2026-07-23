@@ -96,8 +96,10 @@ content::LoadReport parseEnemiesFrom(const std::string& json, content::ContentDa
 
 }  // namespace
 
-TEST_CASE("elements: the battle-rules version is 8", "[battle][elements]") {
-    CHECK(kBattleRulesVersion == 8);
+TEST_CASE("elements: the v8 element rules are in force", "[battle][elements]") {
+    // The exact pin lives with the newest rules milestone's suite (M49 = 9), so
+    // a later bump does not have to edit every past milestone's tests.
+    CHECK(kBattleRulesVersion >= 8);
 }
 
 TEST_CASE("elements: modifier math", "[battle][elements]") {

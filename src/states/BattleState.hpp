@@ -56,6 +56,9 @@ public:
     // and freeze its floats, so the "Weak!" / "Immune" readouts are captured as
     // the game produces them.
     void captureElementHit(const content::SkillDef& skill);
+    // Capture-only (M49): fell the King's court and take the turn his revive
+    // clock fires on, so the announcement is the shared rule's own words.
+    void captureCourtRevival();
 #endif
 
 private:
@@ -144,6 +147,10 @@ private:
     int targetCursor_ = 0;
 
     std::string message_;
+    // M49: what a per-turn boss rule announced at the top of this turn (the
+    // King's revive clock). Prepended to the acting unit's own message so the
+    // court's return is explained in the same beat, then cleared.
+    std::string turnOpenLine_;
     // M45: the Jester's current quip, shown mid-screen while it lasts. Purely
     // decorative — nothing reads it back into the battle.
     std::string jestLine_;

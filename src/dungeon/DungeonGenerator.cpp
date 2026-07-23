@@ -35,16 +35,21 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
                  int town) {
     Pools p;
     // Per-town gating (M38): an enemy spawns only once town >= its minTown.
+    // M49: a `bossOnly` enemy (the Royal Guards) is never generated at all — it
+    // exists solely in a boss's minion list. Checked on BOTH paths below,
+    // including a theme that names one explicitly, so the rule cannot be
+    // sidestepped by content.
+    const auto spawnable = [town](const content::EnemyDef* def) {
+        return def != nullptr && !def->bossOnly && def->minTown <= town;
+    };
     if (theme != nullptr) {
         for (const std::string& id : theme->normalEnemies) {
-            const content::EnemyDef* def = db.findEnemy(id);
-            if (def != nullptr && def->minTown <= town) {
+            if (spawnable(db.findEnemy(id))) {
                 p.normalEnemies.push_back(id);
             }
         }
         for (const std::string& id : theme->eliteEnemies) {
-            const content::EnemyDef* def = db.findEnemy(id);
-            if (def != nullptr && def->minTown <= town) {
+            if (spawnable(db.findEnemy(id))) {
                 p.eliteEnemies.push_back(id);
             }
         }
@@ -52,7 +57,7 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
     if (p.normalEnemies.empty()) {
         // Fallback: every enemy in the database (town-gated), split by tier.
         for (const auto& [id, def] : db.enemies()) {
-            if (def.minTown > town) {
+            if (!spawnable(&def)) {
                 continue;
             }
             if (def.tier == content::EnemyTier::Elite) {

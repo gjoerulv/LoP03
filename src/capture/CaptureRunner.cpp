@@ -550,9 +550,12 @@ int run(const char* outDir) {
                  // M40: the King fight (its own sprite + telegraph), the hardest
                  // battle in the game. The King is dealt all three control statuses
                  // it is immune to -> they must NOT show as labels (display fix).
+                 // M49: he now fights with his court, so the statuses go on the
+                 // BOSS only — the guards are not immune, and labelling them too
+                 // would bury the very thing this scene exists to check.
                  battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
                  for (battle::Combatant& u : b.units) {
-                     if (u.side == battle::Side::Enemy) {
+                     if (u.side == battle::Side::Enemy && u.isBoss) {
                          u.statuses.push_back({content::StatusType::Blind, 0, 4});
                          u.statuses.push_back({content::StatusType::Silence, 0, 4});
                          u.statuses.push_back({content::StatusType::Confusion, 0, 4});
@@ -802,6 +805,28 @@ int run(const char* outDir) {
                  if (const content::SkillDef* blizzard = c.content.findSkill("blizzard")) {
                      state->captureElementHit(*blizzard);
                  }
+                 s.pushState(std::move(state));
+             }},
+            {"57_kings_court",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M49: the King as he is now fought — flanked by both Royal
+                 // Guards. Three enemy rows plus the party, so the battle
+                 // layout is overflow-checked at the court's width.
+                 battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                            MusicTrack::KingBattle);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
+             }},
+            {"58_court_revived",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M49: the revive announcement. The guards are felled and the
+                 // King's clock is wound to one turn short, so the captured line
+                 // is the real one the shared rule produces.
+                 battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                            MusicTrack::KingBattle);
+                 state->captureCourtRevival();
                  s.pushState(std::move(state));
              }},
             {"56_battle_target_affinity",

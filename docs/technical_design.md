@@ -1348,6 +1348,73 @@ untagged fight resolves byte-identically to M47.
   pins this against the shipped content, along with the converse (every weapon
   element is somewhere a weakness, so none is dead flavor).
 
+### The King's Court (Milestone 49)
+
+Battle rules **8 → 9**; generation (10), save (1) and settings (1) untouched.
+The clock is a counter, not a roll — `rollCursor` never moves.
+
+- **A per-turn seam that did not exist.** Before M49 the only boss mechanics were
+  HP-threshold flags checked inside actions. `Battle::beginUnitTurn(actor)` is the
+  new home for rules that fire *because a unit is about to act*, called by **both**
+  drivers immediately after `clearGuard(actor)` — `Simulator::simulateInPlace` and
+  `BattleState::startActorTurn`. It returns a log line (empty when nothing
+  happened); `BattleState` holds it in `turnOpenLine_` and prepends it to that
+  unit's action message so the court's return and the King's blow read as one beat.
+- **The clock itself.** `BossDef.reviveMinionTurns` (optional, 0 = never) resolves
+  onto `Combatant.reviveMinionTurns` in `buildBattle`, with a per-unit
+  `reviveMinionCounter`. On the unit's own turn: if it has no non-boss allies at
+  all, nothing; if any is alive, reset to 0; otherwise increment and, on reaching
+  the threshold, restore every fallen ally to full HP with statuses cleared and
+  reset the counter. **Anchored to the unit's own turns** rather than rounds,
+  because a round counter drifts with speed and turn order while a unit's turn
+  sequence does not. "Its court" is *every non-boss unit on its side* — in a boss
+  battle those are exactly the authored minions, so no boss id is branched on.
+- **`bossOnly` enemies.** `EnemyDef.bossOnly` (optional) marks an enemy that may
+  only ever appear through a boss's `minions[]`. It is a flag rather than a naming
+  convention because **two** paths sweep the entire enemy database and would
+  otherwise field the guards: the generator's empty-pool fallback
+  (`buildPools`) and `endlessWaveTeam`. Both now filter on it, and `buildPools`
+  also filters the *theme* path so content cannot opt a boss-only enemy back in.
+  A mass-sample test (3 themes × 7 towns × 12 seeds, plus 80 endless waves) pins it.
+- **Minions in the castle.** `bossRushTeam()` and `kingTeam()` copy
+  `BossDef.minions` into `team.enemyIds`, so a castle fight is built by exactly
+  the path a dungeon boss encounter uses. A boss with an empty list still fights
+  alone.
+- **The AI constraint that shaped the guards' kits.** `chooseEnemyAction` aims an
+  ally-facing Support skill at the **caster**, not at a chosen ally — there is no
+  "buff the boss" rule. So the guards carry **`all_allies`** buffs (the existing
+  `battle_cry` and `guard_aura`), which `resolveTargets` expands to the whole enemy
+  side and which therefore reach the King. No AI change, no new skills. A test
+  pins that both guards carry a party-wide buff, because a `single_ally` one would
+  silently make the mechanic vanish.
+- **The castle floor replaced sim-tuned scales (owner decision, 2026-07-23).**
+  Every castle challenge must start above the strongest multiplier a dungeon can
+  produce. `castleFloorScalePct(db)` derives that ceiling from the same two rules
+  the generator uses — `combineTownScale(100 + composition.scalePctMax,
+  kTownCount)` = 190 × 3.00 = **570 %** — so the ceiling tracks the ladder and
+  the composition data instead of a literal. Constants after the owner's tuning
+  pass: `kBossRushScalePct` 330 → **580**, `kCastleBaselineScalePct` 300 → **500**
+  (endless now climbs +10 %pts/wave, was +12), `kKingScalePct` 340/310 → **500**.
+  - **The invariant is expressed in effective stats, not percent.** The King at
+    500 % is a 3750 HP fight while the deepest dungeon boss the ladder can field
+    is 2280 at 570 % — a raw-percentage comparison would call that a demotion and
+    be wrong. `castle: the castle outclasses the deepest dungeon` therefore
+    compares scaled HP: the King must exceed both the deepest dungeon boss and
+    the biggest fight the rush fields, and the rush must clear the ceiling on
+    multiplier as well.
+  - This **supersedes** the M44/M49 practice of tuning each challenge down to
+    what the headless simulator could beat. The simulator's party is scripted,
+    element-blind, and item-poor — a floor on player skill, not a ceiling — so
+    clearability is now **recorded** (`[castle-report]`, `[king-report]`) and
+    **manually validated**, not asserted.
+  - Test changes that follow from it: `castle: every challenge starts above the
+    deepest dungeon` is the new invariant (checked against the derived ceiling);
+    `castle: a maxed party clears the Boss Rush…` became `castle: the Boss Rush
+    is a real gauntlet, not a formality`; `relics: the doubled King demands the
+    counterplay` became `relics: the counterplay measurably changes the King
+    fight`, which still pins that an unaided party loses and that the relics buy
+    real time — the part that remains true and worth protecting.
+
 ## 16. Leveling, shops & packaging (Milestone 10)
 
 - **XP/leveling (`game/Party`):** `xpToNext(level)` defines the curve;
@@ -1355,6 +1422,15 @@ untagged fight resolves byte-identically to M47.
   stats via `refreshCharacter`, and heal the max-HP gained. Battle victories in
   the dungeon award the party XP and gold from the defeated team's enemies and
   boss (`xpReward`/`goldReward`). `level`/`xp` persist in the save.
+  - **`kMaxLevel` = 99** (owner decision, 2026-07-23; raised from 50). Stats grow
+    linearly with level, so a level-99 party earns ~2x the level-derived stats of
+    a level-50 one; the shipped growth curves peak far below integer overflow at
+    99 (e.g. a Mage reaches ~756 HP / 235 MAG before gear). `level` is already an
+    int save field, so this is **not** a save-schema change: old saves load
+    unchanged and a level > 50 character round-trips like any other. Everything
+    that reads the cap does so through `kMaxLevel` (`grantXp`, the Training Hall,
+    the "peerless" achievement, `restCost`, the economy/castle sims), so the bump
+    propagates from one constant.
 - **Shops/services:** `ItemShopState` buys consumables; `EquipShopState` buys and
   equips gear; `TrainingHallState` pays gold to level a character up by one
   (gold→level progression alongside battle XP). Parties start with a little gold.

@@ -2,7 +2,8 @@
 
 ## A. Status and authority
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23) — authored
+- **Status:** ☑ complete (approved) — approved by the owner **2026-07-23** after
+  manual testing, committed as `d9d9960`. Authored
   just-in-time on 2026-07-23 from the
   owner-approved M47–M51 "Court & Comfort" plan. Second milestone of that
   program; M49 → M50 → M51 follow, **then** M23 → M24. See §J for the

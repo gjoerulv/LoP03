@@ -135,6 +135,10 @@ SimResult simulateInPlace(Battle& battle, const content::ContentDatabase& db, in
                 continue;
             }
             battle.clearGuard(actor);
+            // M49: per-turn boss rules (the King's revive clock). The same call
+            // BattleState makes, in the same place, so the clock cannot tick
+            // differently in the two drivers.
+            battle.beginUnitTurn(actor);
 
             if (battle.units[static_cast<std::size_t>(actor)].side == Side::Party) {
                 applyChoice(battle, actor, choosePartyAction(battle, actor, db), db);

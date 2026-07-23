@@ -28,35 +28,75 @@ enum class CastleChallenge { BossRush, Endless, King };
 
 // --- Challenge scaling -----------------------------------------------------
 // Every fight is a normal Battle whose team.statScalePct sets the enemy stat
-// multiplier (buildBattle scales boss/enemy stats by statScalePct/100). These are
-// SIM-TUNED endgame values (a t7/d8 dungeon boss is ~354 %; the party's real
-// ceiling is well below the extreme t7/d20 ~570 %). The challenges' difficulty
-// comes as much from ATTRITION (no free healing across a gauntlet) as from raw
-// scale, so per-fight scales are moderate while the King — a solo boss with high
-// base stats and a nasty passive/status kit — is the hardest single fight.
-inline constexpr int kCastleBaselineScalePct = 300;  // endless wave-0 / reference
-
-// Boss Rush: each solo boss at a moderate scale — the challenge is chaining all 12
-// with no free healing.
-inline constexpr int kBossRushScalePct = 330;
-
-// The King: the hardest single fight (its base stats also sit above every dungeon
-// boss). Sim-tuned to be beatable by a maxed party but a real war of attrition —
-// its debuff-curses now deal damage every turn (M40 owner refinement), so the
-// scale is lower than a pure-status King would need.
+// multiplier (buildBattle scales boss/enemy stats by statScalePct/100).
 //
-// M44 (owner decision, 2026-07-22): 420 -> 340. The King's BASE stats doubled,
-// which compounds with this multiplier; at 420 % the fight demanded three copies
-// of each 40 % relic plus the 15 % Dragon Crown. At 340 % the approved bar holds
-// exactly — a maxed party with no counterplay still loses, while one Tax Sheets +
-// one Evil Goose + Royal Snacks wins it. Evidence: `[king-report]`.
-inline constexpr int kKingScalePct = 340;
+// **The castle floor (owner decision, 2026-07-23).** Every castle challenge must
+// START above the strongest thing a dungeon can produce. The dungeon ceiling is
+// town 7 at the depth cap: `combineTownScale(100 + statScalePct(depth), 7)` =
+// 190 x 3.00 = **570 %**. The castle is the place above the ladder, so no castle
+// scale may sit under that — previously the Boss Rush (260 %) and the King
+// (310 %) both did, which made a deep town-7 dungeon boss a bigger per-fight
+// number than anything in the throne room. That is now a pinned invariant
+// (`castleFloorScalePct`, asserted in test_castle.cpp against the shipped
+// composition + ladder rather than against a literal).
+//
+// This deliberately supersedes the M44/M49 sim-tuned values. The challenges are
+// no longer tuned to "what the simulator can beat" — the owner's call is that
+// the castle is meant to be very hard, and the sim's scripted party is a floor
+// on player skill, not a ceiling. What a maxed party actually achieves at these
+// scales is RECORDED (`[castle-report]`, `[king-report]`) rather than asserted.
+// Owner tuning pass (2026-07-23, after reviewing the 600/600/700 sim results):
+// Boss Rush 580 %, King 500 %, endless from 500 % at +10 %pts/wave.
+//
+// Note that the King's and the endless opening scale now sit BELOW the 570 %
+// ladder ceiling as raw multipliers. That is deliberate and it does not put
+// those fights below the dungeons, because a multiplier is only half the story:
+// the King's BASE stats tower over every dungeon boss (750 HP / 44 MAG / 26 SPD
+// against the Dread Sovereign's 400 / 30 / 12), so at 500 % he is a 3750 HP
+// fight where the deepest possible dungeon boss is 2280. The invariant that
+// actually matters is therefore expressed in EFFECTIVE stats, not in percent —
+// see `castle: the castle outclasses the deepest dungeon` in test_castle.cpp.
+inline constexpr int kCastleBaselineScalePct = 500;  // endless wave-0 / reference
 
-// Endless wave W (0-based): starts at the baseline and escalates ~12 %pts/wave,
-// so a maxed party pushes a meaningful distance before the scale overwhelms.
+// Boss Rush: twelve bosses, each with the minions it brings in a dungeon, with
+// no free healing between fights — and each of them scaled above the deepest
+// dungeon boss as a raw multiplier too. Attrition on top of a scale that already
+// exceeds the ladder.
+inline constexpr int kBossRushScalePct = 580;
+
+// The King: the hardest single fight in the game, and the hardest thing in the
+// castle. His base stats already sit above every dungeon boss (750 HP / 44 MAG /
+// 26 SPD against the Dread Sovereign's 400 / 30 / 12), he carries three passives
+// and immunity to all three control statuses, his debuff-curses deal damage every
+// turn (M40), and since M49 two Royal Guards brace him and return every five of
+// his turns.
+//
+// History: M44 set 420 -> 340 and M49 340 -> 310, both tuned to the point where
+// the simulator's scripted party could just win with the approved counterplay.
+// The owner superseded that approach on 2026-07-23 (700 %), then tuned it back to
+// **500 %** after seeing that nothing in the game could beat him above the floor.
+// At 500 % he is a 3750 HP fight with 220 MAG and 130 SPD, plus two guards he
+// revives — comfortably the largest single fight in the game even though the raw
+// percentage is under the ladder's 570 % ceiling.
+//
+// Note for future tuning: `buildBattle` seeds the targeting tie-break from the
+// combatants' NAMES, so renaming a unit in this fight shifts the sim's outcome
+// at the margin. Re-run the sweep after any rename, not before.
+inline constexpr int kKingScalePct = 500;
+
+// The dungeon ceiling every castle scale must exceed: the town-ladder multiplier
+// at town `kTownCount` applied to the depth-capped composition scaling. Pure and
+// derived from the same rules the generator uses, so the invariant cannot drift
+// if the ladder or the composition data changes. Defined in Castle.cpp to keep
+// this header free of the generator's includes.
+int castleFloorScalePct(const content::ContentDatabase& content);
+
+// Endless wave W (0-based): starts at the baseline and escalates 10 %pts/wave,
+// so the opening waves are already endgame and the climb passes the ladder's
+// 570 % ceiling within a handful of waves and never stops.
 inline int endlessWaveScalePct(int wave) {
     const int w = wave < 0 ? 0 : wave;
-    return kCastleBaselineScalePct + 12 * w;
+    return kCastleBaselineScalePct + 10 * w;
 }
 
 // Endless team size grows with the wave, capped at 5.

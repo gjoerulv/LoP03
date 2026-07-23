@@ -105,7 +105,14 @@ int restCost(const Party& party);
 // Highest level among living/all members (0 if empty) — used for save summaries.
 int highestLevel(const Party& party);
 
-inline constexpr int kMaxLevel = 50;
+// The level cap. Raised 50 -> 99 (owner decision, 2026-07-23): an overpowered
+// ceiling so a fully-levelled party can actually answer the raised castle
+// challenges. Stats grow linearly with level (base + growth x (level-1)), so a
+// level-99 party earns roughly double the level-earned stats of a level-50 one;
+// nothing in the growth curves comes near integer overflow at 99. `level` is
+// already an int save field, so no save-schema change: old saves (level <= 50)
+// load unchanged, and a level > 50 character round-trips like any other.
+inline constexpr int kMaxLevel = 99;
 
 // XP required to advance FROM `level` to the next level.
 int xpToNext(int level);

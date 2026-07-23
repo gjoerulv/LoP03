@@ -239,6 +239,7 @@ void parseEnemies(const Json& root, const std::string& source, ContentDatabase& 
         d.passives = r.optStringArray("passives");  // M36 (optional)
         d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
         d.affinity = readAffinity(r, source, ctx, rep);  // M48 (optional)
+        d.bossOnly = r.optBool("bossOnly", false);       // M49 (optional)
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
         if (rep.errorCount() != before) {
@@ -348,6 +349,7 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.passives = r.optStringArray("passives");  // M36 (optional)
         d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
         d.affinity = readAffinity(r, source, ctx, rep);              // M48 (optional)
+        d.reviveMinionTurns = r.optIntMin("reviveMinionTurns", 0, 0);  // M49 (0 = never)
         d.immuneToConfusion = r.optBool("immuneToConfusion", false);  // M40 (the King)
         d.telegraph = r.optString("telegraph");
         d.xpReward = r.optIntMin("xpReward", 0, 0);

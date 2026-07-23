@@ -291,13 +291,15 @@ an inn, a save point, the party's **castle records**, and the **King's three
 challenges**, each a step above normal play and each paying a **one-time first-clear
 reward**:
 
-- **Boss Rush** — the full 12-boss roster, back to back, with **no free healing
-  between fights** (items and skills still work). Record: fewest total turns.
+- **Boss Rush** — the full 12-boss roster, back to back, **each with its own
+  minions** (M49), with **no free healing between fights** (items and skills
+  still work). Record: fewest total turns.
 - **Endless Rush** — deterministic escalating waves; survive as long as you can, no
   free healing. Record: best wave reached.
 - **The Hollow King** — the hardest fight in the game. A bespoke boss above every
   town-7 foe, immune to Blind, Silence, **and** Confusion, striking your afflicted
-  party harder as the fight wears on, with a kit that inflicts every status. Beating
+  party harder as the fight wears on, with a kit that inflicts every status —
+  and, since M49, **two Royal Guards he keeps calling back**. Beating
   him the first time grants a **unique legendary** (the Sovereign's Regalia, won
   nowhere else), a **visible title**, gold, and tokens.
 
@@ -461,6 +463,57 @@ Dragon) has nothing else — so a wielded element that could be nullified would 
 a trap rather than a decision. Immunities use ice, earth and lightning; weapons
 use fire and holy. Dark stays reserved for later content.
 
+**The King's Court (M49).** The Hollow King stops fighting alone. Two **Royal
+Guards** — the **Throne Blade** and the **Throne Stave** — stand with him:
+armoured, slow, magic-heavy, and built to last rather than to burst. They carry
+**iron will**, **evasion** and a **spell ward** between them, and their support
+skills brace the *whole court*, so killing the King through a wall of buffs is
+the real problem. Each has one elemental weakness (lightning and earth) and no
+immunity, so the M48 tools answer them.
+
+And they do not stay down. On the **fifth of the King's own turns with both
+guards fallen**, he calls them back at full health, unmarked — **every time the
+condition recurs**, for as long as the fight lasts. The clock resets the moment
+one of them is standing. Cutting the escort down is therefore a tempo decision,
+not a checklist: you either kill the King inside the window you bought, or you
+pay for the court twice.
+
+**The castle floor (owner decision, 2026-07-23).** The castle is the place
+*above* the ladder, and its numbers now say so: **every challenge starts above
+the strongest multiplier a dungeon can produce** (town 7 at the depth cap,
+×5.70). Previously the Boss Rush (×2.60) and even the King (×3.10) sat *below* a
+deep town-7 dungeon boss, which made the throne room a smaller number than the
+place you climbed out of. The new floor is a derived invariant, not a literal:
+it is computed from the same town-ladder and depth-curve rules the generator
+uses, so it moves if they do.
+
+- **Boss Rush ×5.80**, twelve bosses with their minions and no free healing —
+  above the ladder ceiling on the multiplier alone.
+- **Endless Rush from ×5.00**, climbing ×0.10 per wave, passing the ladder
+  ceiling within a handful of waves and never stopping.
+- **The Hollow King ×5.00** — a lower percentage than the rush, and still by far
+  the largest single fight in the game: his base stats are so far above any
+  dungeon boss that ×5.00 makes him a **3750 HP** opponent where the deepest
+  dungeon boss the ladder can produce is 2280. Against a **level-99** party (the
+  cap, raised from 50 so the endgame has an answer) the simulation beats him with
+  three Tax Sheets, three Evil Geese and a bag of Royal Snacks — three survivors
+  at a third health — and comfortably with the Dragon Crown and Deadly Spoon on
+  top. He rewards a full relic haul without demanding the absolute maximum, and a
+  party carrying nothing still loses.
+
+Because a multiplier alone is misleading once base stats differ this much, the
+"castle outranks the ladder" rule is enforced in **effective stats**, not in
+percent.
+
+This deliberately supersedes the earlier approach of tuning each challenge down
+to whatever the headless simulator could beat. The castle is meant to be very
+hard; the simulator's scripted party is a floor on player skill, not a ceiling.
+
+**The Boss Rush grows a court too (M49).** Every boss in the gauntlet now brings
+the **same minions it brings in a dungeon**, so the rush finally tests the fights
+the game actually taught — and, under the castle floor above, each of them is
+scaled beyond the deepest dungeon boss as well.
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1
@@ -474,7 +527,9 @@ unique mechanic, escapable (but escaping fails the score). Archetypes:
 
 ## 12. Progression & failure
 
-XP/levels, gold, shops/upgrades in town. Abandoned/failed dungeon → 0 dungeon
+XP/levels (cap **99**, raised from 50 in 2026-07-23 so a fully-levelled party can
+answer the raised castle challenges), gold, shops/upgrades in town.
+Abandoned/failed dungeon → 0 dungeon
 score. Successful escape → keep basic XP/gold but no dungeon score. Death →
 return to town, 0 dungeon score, partial gold loss. **Recovery is a paid loop
 (M30):** healing costs gold at the inn (or a free-rest token), so gold now has a

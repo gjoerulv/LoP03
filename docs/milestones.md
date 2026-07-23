@@ -55,8 +55,8 @@
 | 45 | The King's classes: Dragon, Jester, Goose | ☑ complete (approved) |
 | 46 | Presentation facelift: procedural UI kit | ☑ complete (approved) |
 | 47 | Rules & flow pass | ☑ complete (approved) |
-| 48 | Elements | ◑ implemented, awaiting manual approval |
-| 49 | The King's Court | ☐ planned |
+| 48 | Elements | ☑ complete (approved) |
+| 49 | The King's Court | ◑ implemented, awaiting manual approval |
 | 50 | Town travel rework | ☐ planned |
 | 51 | Presentation & options | ☐ planned |
 
@@ -1968,8 +1968,10 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M48 — Elements
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
-  `91b2335`). **462/462 tests** (442 baseline + 20 new element cases) green in
+- **Status:** ☑ complete (approved) — approved by the owner **2026-07-23** after
+  manual testing; committed as `d9d9960` (whose message reads "M47" — the
+  contents are M48). Base checkout was
+  `91b2335`. **462/462 tests** (442 baseline + 20 new element cases) green in
   Debug and Release, `--capture` **56/56** scenes overflow-clean (4 added: the weak and
   immune floats, the target-panel chips, the bestiary affinity block).
   `battle::kBattleRulesVersion` **7 → 8**; generation (10), save (1) and
@@ -1992,7 +1994,28 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M49 — The King's Court
 
-- **Status:** ☐ planned.
+- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
+  `d9d9960`). **477/477 tests** (462 baseline + 15 new) green in Debug and
+  Release, `--capture` **58/58** scenes overflow-clean (2 added: the court
+  mid-battle and the revive announcement).
+  `battle::kBattleRulesVersion` **8 → 9**; generation (10), save (1)
+  and settings (1) unchanged. `docs/milestone_notes/M49_kings_court.md` §J is the
+  as-implemented record. **Castle raised above the ladder (owner override +
+  tuning pass, 2026-07-23):** the castle now outclasses the deepest dungeon
+  (town 7 / depth cap = 570 %) — `kBossRushScalePct` **580**,
+  `kCastleBaselineScalePct` **500** (endless +10 %pts/wave), `kKingScalePct`
+  **500**. Because the King's base stats already dwarf every dungeon boss, the
+  "above the ladder" invariant is enforced in **effective stats** (King = 3750 HP
+  vs the deepest dungeon boss's 2280), derived from the live ladder rules. This
+  supersedes the M44/M49 practice of tuning to what the headless sim could clear;
+  the affected clearability assertions were re-pointed. **The level cap was also
+  raised 50 → 99** (owner decision, 2026-07-23; `kMaxLevel` — a progression change
+  outside the castle) so the endgame party can answer the raised challenges: at
+  level 99 the King at 500 % is beatable with a full relic haul (3+3 relics +
+  snacks → win, 3 survivors @33 % HP), comfortable with the Crown/Spoon; the M44
+  plan bar (1+1) still loses, by design, and a bare party still loses. Beating him
+  unlocks the three M45 classes, so **matrix row 125 (does the gate feel right?)
+  is a blocking manual question.** See the note's §J.
 - **Goal:** the King fights with **two Royal Guards** (new enemies: high
   DEF/MAG, decent HP, low SPD; iron_will + evasion + spell_ward; damaging
   magic + King buffs; referenced only from the King's `minions[]`) and a

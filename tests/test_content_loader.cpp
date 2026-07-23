@@ -136,7 +136,7 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     REQUIRE(ok);
     REQUIRE(db.classCount() == 9);  // 6 original + 3 M45 King-reward classes
     REQUIRE(db.skillCount() == 57);  // +3 M45 Goose skills
-    REQUIRE(db.enemyCount() == 43);  // +12 M38 per-town enemies (4 normal + 8 elite)
+    REQUIRE(db.enemyCount() == 45);  // +12 M38 per-town enemies, +2 M49 Royal Guards
     REQUIRE(db.itemCount() == 74);  // +1 M43 Royal Snacks, +4 M44 Royal Relics
     REQUIRE(db.bossCount() == 13);  // +1 M40 The Hollow King
     REQUIRE(db.themeCount() == 3);

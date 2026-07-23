@@ -4,8 +4,20 @@
 
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
+#include "game/WorldLadder.hpp"
 
 namespace cd {
+
+int castleFloorScalePct(const content::ContentDatabase& content) {
+    // The strongest multiplier the ladder can produce: the deepest depth (the
+    // composition's own cap makes anything past it identical) at the last town.
+    // Derived from the same two rules the generator uses — combineTownScale over
+    // the composition's depth curve — so this can never drift from the dungeons
+    // it is supposed to sit above.
+    const content::CompositionDef& comp = content.composition();
+    const int deepestDepthScaled = 100 + comp.scalePctMax;
+    return combineTownScale(deepestDepthScaled, kTownCount);
+}
 
 std::vector<std::string> bossRushOrder(const content::ContentDatabase& content) {
     std::vector<std::string> ids;
@@ -32,6 +44,10 @@ dungeon::EnemyTeam bossRushTeam(const content::ContentDatabase& content, int ind
     team.statScalePct = kBossRushScalePct;
     if (const content::BossDef* b = content.findBoss(id)) {
         team.name = b->name;
+        // M49: a rush boss brings the same court it brings in a dungeon. A boss
+        // with an empty minion list still fights alone, so this is one rule for
+        // all thirteen rather than a rush-specific roster.
+        team.enemyIds = b->minions;
     }
     return team;
 }
@@ -40,7 +56,12 @@ dungeon::EnemyTeam endlessWaveTeam(const content::ContentDatabase& content, int 
     dungeon::EnemyTeam team;
     std::vector<std::string> pool;
     for (const auto& [id, def] : content.enemies()) {
-        (void)def;
+        // M49: the Royal Guards belong to the King's throne room and nowhere
+        // else — the endless pool is the other place that sweeps the whole
+        // enemy database, so it needs the same guard as the generator's.
+        if (def.bossOnly) {
+            continue;
+        }
         pool.push_back(id);
     }
     std::sort(pool.begin(), pool.end());
@@ -65,6 +86,7 @@ dungeon::EnemyTeam kingTeam(const content::ContentDatabase& content) {
     team.statScalePct = kKingScalePct;
     if (const content::BossDef* b = content.findBoss(kKingBossId)) {
         team.name = b->name;
+        team.enemyIds = b->minions;  // M49: the King's Royal Guards
     }
     return team;
 }

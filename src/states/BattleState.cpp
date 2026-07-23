@@ -230,6 +230,31 @@ void BattleState::captureShowJest() {
     jestTimer_ = 999.0f;  // captures render one frame; never expire
 }
 
+void BattleState::captureCourtRevival() {
+    // M49: fell the King's court and wind his clock to one turn short, then take
+    // that turn — so the captured announcement is produced by the shared rule
+    // rather than written here.
+    captureEnterTargeting();
+    int kingIndex = -1;
+    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        battle::Combatant& u = battle_.units[i];
+        if (u.side != battle::Side::Enemy) {
+            continue;
+        }
+        if (u.isBoss) {
+            kingIndex = static_cast<int>(i);
+        } else {
+            u.hp = 0;  // the court falls
+        }
+    }
+    if (kingIndex >= 0) {
+        battle::Combatant& k = battle_.units[static_cast<std::size_t>(kingIndex)];
+        k.reviveMinionCounter = k.reviveMinionTurns - 1;
+        message_ = battle_.beginUnitTurn(kingIndex);
+    }
+    phase_ = Phase::Resolve;
+}
+
 void BattleState::captureElementHit(const content::SkillDef& skill) {
     // M48: resolve a REAL elemental hit against the enemy side, then stage and
     // commit its presentation, so the captured floats are the ones the game
@@ -408,6 +433,16 @@ void BattleState::startActorTurn() {
         return;
     }
     battle_.clearGuard(actor);
+    // M49: per-turn boss rules (the King's revive clock) — the same shared call
+    // the Simulator makes. Its announcement is carried into the turn's message
+    // so the revived court is explained rather than just appearing.
+    turnOpenLine_ = battle_.beginUnitTurn(actor);
+    if (!turnOpenLine_.empty()) {
+        message_ = turnOpenLine_;
+        // The court came back at full HP: refresh the shown bars at once, the
+        // way a status tick does, so the panel never lags the model.
+        commitPresentation();
+    }
     if (battle_.units[static_cast<std::size_t>(actor)].side == battle::Side::Party) {
         // Forced actions (M35 confusion, M44 Terrified/Stunned): a character whose
         // turn was taken away gets no player input — it resolves automatically,
@@ -713,6 +748,12 @@ void BattleState::executeEnemy(int actor) {
         message_ = battle_.attack(actor, choice.target);
     } else {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
+    }
+    // M49: a per-turn rule that fired this turn (the revive clock) is announced
+    // ahead of whatever the unit then did, so the two read as one beat.
+    if (!turnOpenLine_.empty()) {
+        message_ = turnOpenLine_ + " " + message_;
+        turnOpenLine_.clear();
     }
     stageNumbers(hpBefore, damageSfx, statusAction);
     afterAction();

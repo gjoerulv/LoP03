@@ -577,6 +577,47 @@ bool canCast(const Combatant& c, const content::SkillDef& skill) {
     return !(isSilenced(c) && skill.mpCost > 0);
 }
 
+std::string Battle::beginUnitTurn(int actor) {
+    if (actor < 0 || actor >= static_cast<int>(units.size())) {
+        return "";
+    }
+    Combatant& a = units[static_cast<std::size_t>(actor)];
+    if (a.reviveMinionTurns <= 0) {
+        return "";  // every unit but the King
+    }
+    // "His court" is every non-boss unit on his own side — in a boss battle
+    // those are exactly the boss's authored minions, so the rule needs no id
+    // branching and works for any boss that ever carries the clock.
+    std::vector<int> court;
+    bool anyAlive = false;
+    for (std::size_t i = 0; i < units.size(); ++i) {
+        const Combatant& u = units[i];
+        if (u.side != a.side || u.isBoss || static_cast<int>(i) == actor) {
+            continue;
+        }
+        court.push_back(static_cast<int>(i));
+        anyAlive = anyAlive || u.alive();
+    }
+    if (court.empty()) {
+        return "";  // a king with no court has nothing to count toward
+    }
+    if (anyAlive) {
+        a.reviveMinionCounter = 0;  // one still stands: the clock restarts
+        return "";
+    }
+    ++a.reviveMinionCounter;
+    if (a.reviveMinionCounter < a.reviveMinionTurns) {
+        return "";
+    }
+    a.reviveMinionCounter = 0;  // and it will happen again, and again
+    for (int ci : court) {
+        Combatant& c = units[static_cast<std::size_t>(ci)];
+        c.hp = c.maxHp;
+        c.statuses.clear();  // raised whole, not raised wounded
+    }
+    return a.name + " strikes the floor: \"RISE.\" The court stands again, unmarked.";
+}
+
 void Battle::clearActionMarks() {
     lastMissed.clear();
     lastWeak.clear();
@@ -1156,6 +1197,7 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             u.confusionImmune = boss->immuneToConfusion;  // M40 (the King)
             u.weaknesses = boss->affinity.weaknesses;     // M48
             u.immunities = boss->affinity.immunities;
+            u.reviveMinionTurns = boss->reviveMinionTurns;  // M49 (0 = never)
             applyPassives(u, boss->passives, db);  // M36 (bosses may carry several)
             b.units.push_back(std::move(u));
         }

@@ -176,10 +176,11 @@ letterbox/pillarbox bars.
    **legendary tokens** won in optional elite challenges.
 7. Clear any **town-7 dungeon** to open the northern road to the **castle** — a
    place above the ladder with the **King's three challenges**: the **Boss Rush**
-   (all 12 bosses back-to-back, no free healing), the **Endless Rush** (escalating
-   waves, survive as long as you can), and **the Hollow King** himself (the hardest
-   fight — immune to blind/silence/confusion, beat him for a unique legendary and a
-   title). The castle keeps its **own records**, separate from your dungeon scores.
+   (all 12 bosses back-to-back **with their minions**, no free healing), the
+   **Endless Rush** (escalating waves, survive as long as you can), and **the
+   Hollow King** himself (the hardest fight — immune to blind/silence/confusion,
+   flanked by **two Royal Guards he calls back from the dead every five turns**;
+   beat him for a unique legendary and a title). The castle keeps its **own records**, separate from your dungeon scores.
    Failing (or fleeing) a challenge costs **no gold** — but nobody is healed:
    survivors are carried to the gates at **1 HP**, the fallen stay fallen, and a
    full wipe leaves exactly one member standing so an inn is always reachable.
