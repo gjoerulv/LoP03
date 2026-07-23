@@ -1090,13 +1090,12 @@ ordinary inventory items).
 - **Non-consumption.** `itemAffects(b, target, item)` is false only for a
   `requiresBossId` item on the wrong target; `BattleState` asks **before** the
   battle mutates and keeps the item when it did nothing.
-- **The King.** `the_hollow_king` is 750 / 36 / 44 / 36 / 26, and `kKingScalePct`
-  came **420 % → 340 %** (owner decision, 2026-07-22): the doubled base multiplies
-  through the challenge scale, and at 420 % the fight demanded far more counterplay
-  than the milestone approved. Effective at 340 %: 2550 HP, 122 ATK, 149 MAG,
-  122 DEF, 88 SPD. The counterplay battery lives in `test_royal_relics.cpp`
-  (`[king-report]` prints the loadout table and the stat-scale sweep that backed
-  the decision).
+- **The King.** `the_hollow_king` is 750 / 36 / 44 / 36 / 26. `kKingScalePct`
+  was 420 % → 340 % here (owner decision, 2026-07-22) and has since been
+  retuned by the M49 castle floor — the **current** scale constants,
+  effective stats, and counterplay bar live in the King's-Court section
+  (Milestone 49) below; `test_royal_relics.cpp` (`[king-report]`) still
+  prints the loadout table and stat-scale sweep.
 
 ### The King's classes (Milestone 45)
 

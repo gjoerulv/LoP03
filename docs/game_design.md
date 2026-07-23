@@ -382,11 +382,13 @@ you out-level and becomes a fight you answer with absurd objects.
     ATK/MAG/DEF/SPD for the rest of the battle. The rarest, and it shows.
   The King is **not** immune to any of them: that is the whole point.
 - **The King doubles.** 750 HP (was 560) and doubled ATK/MAG/DEF/SPD
-  (36 / 44 / 36 / 26). A maxed party carrying no relics and no snacks now
-  **loses**; one Tax Sheets, one Evil Goose and a bag of Royal Snacks turn it into
-  a tense win, and each extra relic buys survivors. (His challenge multiplier came
-  down from 420 % to 340 % so the doubled stats land exactly there — the fight is
-  a puzzle now, not a farming toll.)
+  (36 / 44 / 36 / 26). A party carrying no relics and no snacks **loses**, and
+  relics buy survivors — the fight is a puzzle, not a farming toll. (The
+  challenge multiplier and the counterplay bar have been retuned twice since
+  this milestone; the current fight — his Royal Guards, the revive clock, the
+  ×5.00 castle-floor scale, and the level-99 three-relic bar — is described
+  under **The King's Court** and **The castle floor** below, which supersede
+  the numbers this paragraph originally carried.)
 
 **The King's classes (M45).** Beating the Hollow King unlocks three more classes
 **for the player, not for that save** — they are offered on every future New

@@ -58,7 +58,7 @@
 | 48 | Elements | ☑ complete (approved) |
 | 49 | The King's Court | ☑ complete (approved) |
 | 50 | Town travel rework | ☑ complete (approved) |
-| 51 | Presentation & options | ◑ implemented, awaiting manual approval |
+| 51 | Presentation & options | ☑ complete (approved) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -73,13 +73,16 @@ only their position in the sequence changed. Each expansion program was
 authorized as content/systems work the game needs before M23/M24 are worth
 running. See the program sections below.
 
-**M46 closed the facelift; the M47–M51 Court & Comfort program runs next,
-then M23 → M24.** M23/M24 must be re-audited against the post-M51 checkout
-before they begin — the capture set has grown (51 scenes as of M46), the
-balance batteries have grown (`[economy-report]`, `[castle-report]`,
-`[king-report]`, `[classes-report]`), and the packaging manifest must account
-for everything the expansions added (the relic prop, three class sprites, and
-the `profile.json` user-data file, plus whatever M47–M51 adds).
+**With M51 the Court & Comfort program is finished, and with it the expansion
+work: M23 → M24 are next.** Both must be re-audited against the post-M51
+checkout before they begin — the capture set has grown (61 scenes as of M51),
+the balance batteries have grown (`[economy-report]`, `[castle-report]` with
+its rush sweep, `[king-report]`, `[classes-report]`), and the packaging
+manifest must account for everything the expansions added (the relic prop,
+three class sprites, two Royal Guard sprites, and the `profile.json`
+user-data file). The M49 castle retune (Boss Rush 580 % / King 500 % /
+Endless 500 % +10 %pts per wave, level cap 99) is the balance baseline M23
+playtests should judge.
 
 ## M1 — Project foundation
 
@@ -793,12 +796,14 @@ milestone is not automatic authorization to start the next.
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
   Re-audit this note against the post-M51 checkout before starting — the
-  capture scene list has grown (**51 scenes** as of M46) and the balance
-  batteries have grown (`[economy-report]`, `[castle-report]`, `[king-report]`,
-  `[classes-report]`); both need extending for everything M25–M51 added (AI,
-  content, art, town ladder, stakes, black market, statuses/passives, castle
-  challenges, relics, the unlockable classes, the M46 UI kit, and the M47–M51
-  program). **Runs after the M47–M51 Court & Comfort program.**
+  capture scene list has grown (**61 scenes** as of M51) and the balance
+  batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
+  `[king-report]`, `[classes-report]`); both need extending for everything
+  M25–M51 added (AI, content, art, town ladder, stakes, black market,
+  statuses/passives, castle challenges, relics, the unlockable classes, the
+  M46 UI kit, elements, the King's Court, walk-through towns, and the M51
+  options). **The Court & Comfort program is complete: this is next in line
+  once the owner schedules it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -2055,7 +2060,11 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M51 — Presentation & options
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-23 after
+  manual testing ("M47–M51 is done"), committed as `64d220e`; the audit that
+  accompanied the approval re-verified **485/485 tests in Debug and Release**
+  and `--capture` **61/61** at that commit, closing the Court & Comfort
+  program (base checkout
   `4640c50`). The final Court & Comfort milestone: a randomized comedic **title
   phrase** (incl. "Geese and Dragons; Spoons and Snacks!"; never a genre
   description; 3-step pulse); **Settings submenus** (Audio / Display / Gameplay /

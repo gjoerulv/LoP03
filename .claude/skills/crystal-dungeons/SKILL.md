@@ -204,18 +204,19 @@ authorization to start the next.
 inspection only. The owner handles all commits and pushes.
 
 Milestones: `docs/milestones.md` is the single source for statuses — trust it
-over any restatement, including this one. Everything through **M46** is
-`complete (approved)`: the M35–M42 endgame program, the M43–M45 King's Gambit
-program (approved 2026-07-22), and **M46** (the procedural UI facelift,
-merged 2026-07-23 — see `docs/milestone_notes/M46_presentation_facelift.md`
-and `docs/ui_style_guide.md` for the kit that now binds all UI work). Next is
-the **M47–M51 Court & Comfort program** (authorized 2026-07-23; scope and
-owner decisions in the ledger's program section). The
+over any restatement, including this one. Everything through **M51** is
+`complete (approved)`: the expansion programs (M35–M42 endgame, M43–M45
+King's Gambit, M46 facelift, M47–M51 Court & Comfort — the last approved
+2026-07-23) are all closed. The M46 UI kit
+(`docs/ui_style_guide.md`) binds all UI work; the M49 castle retune (Boss
+Rush 580 % / King 500 % / Endless +10 %pts per wave, level cap 99) is the
+balance baseline. Only the
 deliberately deferred **M23** (validation/playtesting/balance) and **M24**
-(release packaging) run **last, after M51**: their tooling and packaging are
+(release packaging) remain, in that order: their tooling and packaging are
 built (v0.9.0 RC flow), awaiting owner-run external playtests
 (`docs/playtest_protocol.md`) and a clean-machine sign-off; version bumps to
-1.0.0 after playtests pass. Details: `docs/milestones.md` + one note per
+1.0.0 after playtests pass. Both must be re-audited against the post-M51
+checkout first. Details: `docs/milestones.md` + one note per
 milestone under `docs/milestone_notes/`.
 
 ## Verification checklist (before claiming done)

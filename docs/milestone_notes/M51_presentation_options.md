@@ -2,7 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23) — authored
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-23 after
+  manual testing ("M47–M51 is done"), committed as `64d220e`; the audit that
+  accompanied the approval re-verified 485/485 tests (Debug **and** Release)
+  and `--capture` 61/61 at that commit. Authored
   just-in-time on 2026-07-23 from the
   owner-approved M47–M51 "Court & Comfort" plan. **Final milestone** of that
   program; after it, M23 → M24 remain (deferred). See §J for the as-implemented

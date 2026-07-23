@@ -11,6 +11,7 @@
 *.pdb
 *.ilk
 
+.localDocs/
 # CMake
 CMakeCache.txt
 CMakeFiles/

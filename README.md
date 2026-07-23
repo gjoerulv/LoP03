@@ -8,22 +8,22 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M46
+> **Status: feature-complete, polished playable build** (milestones M1–M51
 > delivered and owner-approved). In the box: a seven-town difficulty ladder
-> plus a castle endgame (Boss Rush / Endless Rush / a doubled Hollow King),
-> seeded walkable dungeons with room events including the rare Royal Relics,
-> deterministic turn-based combat (statuses, passives, forced-action
-> turn-control, an enmity/threat model with control skills), a
-> stakes-escalation score rule with an honest tagged scoreboard, a black
-> market and legendary tokens/drops, per-town enemies/bosses/equipment with
-> original generated art and music, a light-hearted story serial, three
+> plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
+> the Hollow King flanked by his reviving Royal Guards), seeded walkable
+> dungeons with room events including the rare Royal Relics, deterministic
+> turn-based combat (statuses, passives, forced-action turn-control, sparse
+> elemental weaknesses/immunities, an enmity/threat model with control
+> skills), a stakes-escalation score rule with an honest tagged scoreboard, a
+> black market and legendary tokens/drops, per-town enemies/bosses/equipment
+> with original generated art and music, a light-hearted story serial, three
 > unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
-> paid inn, onboarding, accessibility options, a bestiary, victory records,
-> achievements, and a fully procedural "8-bit-plus" UI (M46). In progress: the
-> **M47–M51 Court & Comfort program** (castle stakes, elements, the King's
-> guards, town travel, presentation options), then the deferred
-> **validation playtesting (M23)** and **release sign-off (M24)**. Current
-> status always lives in `docs/milestones.md`.
+> paid inn, compact walk-through towns, onboarding, accessibility options,
+> categorized settings (optional CRT effect, background audio), a bestiary,
+> victory records, achievements, and a fully procedural "8-bit-plus" UI.
+> Only the deferred **validation playtesting (M23)** and **release sign-off
+> (M24)** remain. Current status always lives in `docs/milestones.md`.
 
 ## Requirements
 

@@ -184,7 +184,11 @@ bottom corners" sentence), this note's §J.
 
 ## J. As-implemented record
 
-All slices landed as planned.
+All slices landed as planned. Verified 2026-07-23 on `ee079d4`: **479/479
+tests** (477 baseline + 2 net new town cases) green, `--capture` **59/59**
+scenes overflow-clean — the same figures M51's note records as its baseline.
+(This evidence line was added in the post-program audit; the original note
+omitted it.)
 
 ### As built
 
