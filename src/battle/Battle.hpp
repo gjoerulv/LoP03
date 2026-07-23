@@ -36,8 +36,11 @@ namespace cd::battle {
 // enemy-buffing heal — and the Simulator now tracks `turnsTaken`, which the
 // enemy-targeting tie-break reads, so simulation and live play finally agree on
 // it too); 7 = M47 (the `cleanse` skill control lifts afflictions only — the
-// ATK-/DEF- debuffs now survive a Purify, while cure ITEMS are unchanged).
-inline constexpr int kBattleRulesVersion = 7;
+// ATK-/DEF- debuffs now survive a Purify, while cure ITEMS are unchanged);
+// 8 = M48 (element weakness/immunity: a tagged skill or weapon-elemental basic
+// attack deals x1.5 to a weak foe and nothing at all — riders included — to an
+// immune one).
+inline constexpr int kBattleRulesVersion = 8;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -125,6 +128,17 @@ struct Combatant {
     std::vector<StatusInstance> attackStatuses;
     bool uncontrolled = false;                  // acts on its own, seeded
 
+    // Elements (M48), resolved at buildBattle so the pure model never reads
+    // content. `weaponElement` is the element this unit's BASIC attacks carry —
+    // from its equipped weapon, so enemies (which have no weapons) always swing
+    // unelemented. The two lists are what this unit is weak/immune TO: empty for
+    // every untagged foe and for every party member (the layer is
+    // one-directional by design — see the M48 note). Stored as bare element
+    // lists, like `attackStatuses`, so the pure model needs no content struct.
+    content::Element weaponElement = content::Element::None;
+    std::vector<content::Element> weaknesses;
+    std::vector<content::Element> immunities;
+
     bool alive() const { return hp > 0; }
 };
 
@@ -151,6 +165,11 @@ public:
     // Unit indices that the last action missed (Blind), for the "Miss!" floaters.
     // Cleared at the start of every action so it only reflects the latest one.
     std::vector<int> lastMissed;
+    // M48: unit indices the last action hit weakly / could not hurt at all, for
+    // the "Weak!" / "Immune" floaters. Presentation only — nothing in the model
+    // reads them — and cleared alongside lastMissed by clearActionMarks().
+    std::vector<int> lastWeak;
+    std::vector<int> lastImmune;
 
     // M43: this fight is the King's (set by buildBattle from the team's boss id).
     // Content-derived, never rolled, so the live screen and the Simulator read the
@@ -169,6 +188,10 @@ public:
     void beginRound();
 
     void clearGuard(int unit);  // call at the start of a unit's turn (also clears intercept)
+    // Drops the previous action's presentation marks (missed / weak / immune).
+    // Called at the top of every action so the lists only ever describe the
+    // latest one.
+    void clearActionMarks();
     // Applies poison, decrements durations, removes expired statuses. Returns a
     // log line (empty if nothing happened). Call at the start of a unit's turn.
     std::string tickStatuses(int unit);
@@ -237,6 +260,25 @@ inline bool isImmuneTo(const Combatant& c, content::StatusType t) {
 // M35: may this combatant cast this skill? False only if silenced and the skill
 // costs MP (silence blocks MP-cost skills; 0-MP skills, items, attacks are fine).
 // MP affordability is a separate check the callers still apply.
+// M48 — the element rule, as one pure function. Returns a PERCENTAGE applied to
+// already-computed damage: 150 when `defender` is weak to `e`, 0 when it is
+// immune, 100 otherwise (including `Element::None`, every untagged foe, and every
+// party member). It is a lookup, never a roll — `rollCursor` is untouched, so
+// adding elements changed no seeded stream.
+//
+// Applied as the LAST step inside physicalDamage/magicDamage, after their
+// max(1, ...) floor — otherwise an immune hit would deal the floor's 1 instead of
+// 0. Both drivers reach those helpers through the same five call sites, so sim ==
+// live by construction.
+inline constexpr int kElementWeakPct = 150;
+inline constexpr int kElementImmunePct = 0;
+int elementModifier(const Combatant& defender, content::Element e);
+
+// True when `e` deals nothing to `defender` — the same rule as above, named for
+// the places that must ALSO skip the rider (an immune hit applies no
+// attack-status and no skill status).
+bool isImmuneToElement(const Combatant& defender, content::Element e);
+
 bool canCast(const Combatant& c, const content::SkillDef& skill);
 
 // Builds combatants from the party and an enemy team.

@@ -108,8 +108,11 @@ Character member(const char* name, int maxHp, int hp, int maxMp, int mp) {
 
 }  // namespace
 
-TEST_CASE("rules v7: the battle-rules version is 7", "[battle][rules]") {
-    CHECK(kBattleRulesVersion == 7);
+TEST_CASE("rules v7: the cleanse narrowing is in force", "[battle][rules]") {
+    // The v7 rules are still in force at or above their own version. The EXACT
+    // pin lives with the newest rules milestone's tests (M48 = 8), so a later
+    // bump does not have to edit every past milestone's suite.
+    CHECK(kBattleRulesVersion >= 7);
 }
 
 TEST_CASE("rules v7: Purify lifts afflictions and leaves the stat debuffs",

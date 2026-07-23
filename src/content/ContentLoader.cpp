@@ -60,6 +60,38 @@ void forEachEntry(const Json& root, const std::string& source, const char* array
     }
 }
 
+// M48: reads the optional `weaknesses[]` / `immunities[]` element arrays shared
+// by enemies and bosses. `none` is rejected rather than ignored — it means
+// nothing and is far more likely to be a typo than an intent. The two sets must
+// be disjoint: a foe that is both weak and immune to an element is a content
+// error, not a precedence puzzle for the damage code to answer.
+ElementAffinity readAffinity(ObjectReader& r, const std::string& source, const std::string& ctx,
+                             LoadReport& rep) {
+    ElementAffinity a;
+    const auto readList = [&](const char* key, std::vector<Element>& out) {
+        for (const std::string& name : r.optStringArray(key)) {
+            const std::optional<Element> parsed = parseElement(name);
+            if (!parsed) {
+                rep.add(source, ctx, "unknown element '" + name + "' in '" + key + "'");
+            } else if (*parsed == Element::None) {
+                rep.add(source, ctx, "'none' is not a valid entry in '" + std::string(key) + "'");
+            } else {
+                out.push_back(*parsed);
+            }
+        }
+    };
+    readList("weaknesses", a.weaknesses);
+    readList("immunities", a.immunities);
+    for (Element w : a.weaknesses) {
+        if (a.immuneTo(w)) {
+            rep.add(source, ctx,
+                    "element '" + std::string(toString(w)) +
+                        "' is listed in both 'weaknesses' and 'immunities'");
+        }
+    }
+    return a;
+}
+
 }  // namespace
 
 void parseSkills(const Json& root, const std::string& source, ContentDatabase& db,
@@ -206,6 +238,7 @@ void parseEnemies(const Json& root, const std::string& source, ContentDatabase& 
         d.skills = r.optStringArray("skills");
         d.passives = r.optStringArray("passives");  // M36 (optional)
         d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
+        d.affinity = readAffinity(r, source, ctx, rep);  // M48 (optional)
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
         if (rep.errorCount() != before) {
@@ -228,6 +261,7 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         d.type = r.reqEnum<ItemType>("type", parseItemType, "item type");
         d.slot = r.optEnum<EquipSlot>("slot", parseEquipSlot, EquipSlot::None, "equip slot");
         d.rarity = r.optEnum<Rarity>("rarity", parseRarity, Rarity::Common, "rarity");
+        d.element = r.optEnum<Element>("element", parseElement, Element::None, "element");  // M48
         d.value = r.optIntMin("value", 0, 0);
         d.minTown = r.optIntMin("minTown", 1, 1);  // M37 (default 1)
         d.maxTown = r.optIntMin("maxTown", 0, 0);  // M43 (default 0 = unbounded)
@@ -282,6 +316,12 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
             d.slot == EquipSlot::None) {
             rep.add(source, ctx, "equipment/relic must specify a non-'none' 'slot'");
         }
+        // M48: only a weapon can carry an element — it is the wielder's basic
+        // attack that gets it, so the field is meaningless anywhere else and an
+        // armour piece claiming one is a content mistake worth catching.
+        if (d.element != Element::None && d.slot != EquipSlot::Weapon) {
+            rep.add(source, ctx, "'element' is only valid on a weapon (slot 'weapon')");
+        }
 
         if (rep.errorCount() != before) {
             return;
@@ -307,6 +347,7 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.minions = r.optStringArray("minions");
         d.passives = r.optStringArray("passives");  // M36 (optional)
         d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
+        d.affinity = readAffinity(r, source, ctx, rep);              // M48 (optional)
         d.immuneToConfusion = r.optBool("immuneToConfusion", false);  // M40 (the King)
         d.telegraph = r.optString("telegraph");
         d.xpReward = r.optIntMin("xpReward", 0, 0);

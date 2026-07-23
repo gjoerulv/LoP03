@@ -52,6 +52,10 @@ public:
     // Capture-only (M45): show the LONGEST Jester quip, so the mid-screen line is
     // overflow-checked at its worst case.
     void captureShowJest();
+    // Capture-only (M48): resolve a real elemental skill against the enemy side
+    // and freeze its floats, so the "Weak!" / "Immune" readouts are captured as
+    // the game produces them.
+    void captureElementHit(const content::SkillDef& skill);
 #endif
 
 private:
@@ -82,12 +86,17 @@ private:
     void finish();
     std::string outcomeMessage() const;
 
+    // M48: what a float MEANS, so its color is chosen in one place. Damage/Heal/
+    // Miss keep exactly the colors they had before; Weak and Immune are the new
+    // element readouts (always paired with their own words, never color alone).
+    enum class FloatKind { Damage, Heal, Miss, Weak, Immune };
+
     struct FloatNumber {
         float x = 0.0f;
         float y = 0.0f;
         float timer = 0.0f;
         std::string text;
-        bool heal = false;
+        FloatKind kind = FloatKind::Damage;
     };
     int enemyBaseY() const;
     void unitScreenPos(int index, int& outX, int& outY) const;

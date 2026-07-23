@@ -2,7 +2,10 @@
 
 ## A. Status and authority
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23) — authored
+- **Status:** ☑ complete (approved) — approved by the owner **2026-07-23** after
+  manual testing, committed as `91b2335`. The owner accepted both decision points
+  raised in §J: the narrowed cleanse applies to Generous Mending too, and a fled
+  castle challenge takes the same 1-HP clamp as a lost one. Authored
   just-in-time on 2026-07-23 from the
   owner-approved M47–M51 "Court & Comfort" plan (authorized 2026-07-23). The
   first milestone of that program; M48 → M49 → M50 → M51 follow, **then**

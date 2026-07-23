@@ -775,6 +775,58 @@ int run(const char* outDir) {
                  s.pushState(std::make_unique<TownMenuState>(s, c));
                  pushQuitPrompt(s, c, quit::kTownBody);
              }},
+            {"53_battle_weak_hit",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M48: a real fire hit on the fire-weak Frost Monarch — the
+                 // "Weak!" float, and the target panel's affinity chips behind it.
+                 dungeon::EnemyTeam team;
+                 team.bossId = "frost_monarch";
+                 team.statScalePct = 100;
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 if (const content::SkillDef* fireball = c.content.findSkill("fireball")) {
+                     state->captureElementHit(*fireball);
+                 }
+                 s.pushState(std::move(state));
+             }},
+            {"54_battle_immune_hit",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M48: the same foe, hit with the ice it is immune to — the
+                 // "Immune" float, which is the ONLY thing that marks a hit that
+                 // moved no HP at all.
+                 dungeon::EnemyTeam team;
+                 team.bossId = "frost_monarch";
+                 team.statScalePct = 100;
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 if (const content::SkillDef* blizzard = c.content.findSkill("blizzard")) {
+                     state->captureElementHit(*blizzard);
+                 }
+                 s.pushState(std::move(state));
+             }},
+            {"56_battle_target_affinity",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M48: the target-info panel for a foe with BOTH affinities —
+                 // the two chips on the vitals row, checked against the panel's
+                 // 60px budget.
+                 dungeon::EnemyTeam team;
+                 team.bossId = "frost_monarch";
+                 team.statScalePct = 100;
+                 battle::Battle b = battle::buildBattle(c.party, team, c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
+             }},
+            {"55_bestiary_affinity",
+             [](StateStack& s, AppContext& c) {
+                 // M48: a known foe carrying BOTH a weakness and an immunity, so
+                 // the affinity block is overflow-checked alongside the passives
+                 // and flavor it shares the panel with.
+                 c.party.encountered.push_back("frost_monarch");
+                 auto state = std::make_unique<BestiaryState>(s, c);
+                 state->captureSelect("frost_monarch");
+                 s.pushState(std::move(state));
+             }},
             {"52_dungeon_quit",
              [](StateStack& s, AppContext& c) {
                  // M47: the same question from inside a run — the taller pause

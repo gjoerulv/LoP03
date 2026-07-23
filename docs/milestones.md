@@ -54,8 +54,8 @@
 | 44 | Royal Relics & the doubled King | ☑ complete (approved) |
 | 45 | The King's classes: Dragon, Jester, Goose | ☑ complete (approved) |
 | 46 | Presentation facelift: procedural UI kit | ☑ complete (approved) |
-| 47 | Rules & flow pass | ◑ implemented, awaiting manual approval |
-| 48 | Elements | ☐ planned |
+| 47 | Rules & flow pass | ☑ complete (approved) |
+| 48 | Elements | ◑ implemented, awaiting manual approval |
 | 49 | The King's Court | ☐ planned |
 | 50 | Town travel rework | ☐ planned |
 | 51 | Presentation & options | ☐ planned |
@@ -1944,8 +1944,9 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M47 — Rules & flow pass
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
-  `8dfbc25`, which contains the M43–M46 merge `e9f7a37`). **442/442 tests green
+- **Status:** ☑ complete (approved) — approved by the owner **2026-07-23** after
+  manual testing; committed as `91b2335` ("M47"). Base checkout was
+  `8dfbc25`, which contains the M43–M46 merge `e9f7a37`. **442/442 tests green
   in Debug and Release** (431 baseline + 11 new), `--capture` **52/52** scenes
   overflow-clean (`44_quit_confirm` rebuilt, `52_dungeon_quit` added).
   `battle::kBattleRulesVersion` **6 → 7**; generation (10), save (1) and settings
@@ -1967,7 +1968,18 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
 
 ## M48 — Elements
 
-- **Status:** ☐ planned.
+- **Status:** ◑ implemented, awaiting manual approval (2026-07-23; base checkout
+  `91b2335`). **462/462 tests** (442 baseline + 20 new element cases) green in
+  Debug and Release, `--capture` **56/56** scenes overflow-clean (4 added: the weak and
+  immune floats, the target-panel chips, the bestiary affinity block).
+  `battle::kBattleRulesVersion` **7 → 8**; generation (10), save (1) and
+  settings (1) unchanged. `docs/milestone_notes/M48_elements.md` §J is the
+  as-implemented record. **Worth the owner's eye:** the shipped skills were
+  *already* element-tagged (the field was parsed and ignored since M2), so
+  `data/skills.json` needed no edit — including two `dark` skills that no foe
+  reacts to; and the curation follows a **no-dead-weapon rule** (immunities use
+  ice/earth/lightning, weapons use fire/holy, pinned by test) so no basic
+  attack can ever be reduced to zero.
 - **Goal:** element weakness/immunity (battle rules 7 → 8): optional
   `weaknesses[]`/`immunities[]` on enemies/bosses, optional weapon `element`,
   one pure `elementModifier` at the shared damage choke point (skills AND

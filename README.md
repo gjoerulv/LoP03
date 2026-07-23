@@ -242,7 +242,11 @@ save round-trips via the Save Point + Continue.
 - Status effects include poison, attack/defense buffs/debuffs, and (M35)
   Blind (physical attacks usually miss), Silence (no MP-cost skills), and
   Confusion (forces a basic attack at its own side, on both sides equally since
-  M43) — all deterministic and seeded. Bosses use
+  M43) — all deterministic and seeded. **Elements (M48)** are a deliberately
+  sparse layer: a handful of foes are weak (×150 %) or immune (0 damage, and no
+  status rider) to one element, carried by elemental spells and by five
+  elemental weapons; affinities are shown in the bestiary and the battle target
+  panel for foes you have met. Bosses use
   stats, skills, minions, telegraph text, and a Brute enrage; dynamic summons and
   true multi-wave "rush" are not implemented.
 - Equipment has no per-class restrictions; the economy is lightly tuned.

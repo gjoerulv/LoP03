@@ -1303,6 +1303,51 @@ resolves changed, which is exactly what the rules bump records.
   `Application::processFrame` is what keeps a held Tab from opening and closing
   in the same press.
 
+### Elements (Milestone 48)
+
+Battle rules **7 → 8**; generation (10), save (1) and settings (1) untouched.
+No new randomness: the modifier is a lookup, `rollCursor` never moves, and an
+untagged fight resolves byte-identically to M47.
+
+- **One rule, one function.** `battle::elementModifier(defender, element)` returns
+  a percentage — `kElementWeakPct` (150), `kElementImmunePct` (0), or 100 — and is
+  the only place that decision is made. `isImmuneToElement` is the same rule named
+  for the two sites that must also skip the *rider*.
+- **Where it is applied, and why there.** Inside `physicalDamage` and
+  `magicDamage`, as the **last step, after their `std::max(1, …)` floor**. Applying
+  it earlier would let the floor turn an immune hit into 1 damage. There is no
+  single damage choke point in this codebase — those two pure helpers are computed
+  at five sites (`attackOne`, the Counter Attack inside `dealPhysical`, and the
+  skill Physical / Magic / Support-with-power branches) — so putting the rule
+  *inside the helpers* is what covers all five by construction, in both drivers.
+- **What supplies the element.** A skill uses `SkillDef.element` (parsed since M2,
+  inert until now). A basic attack uses `Combatant.weaponElement`, resolved once in
+  `buildBattle` from the wielder's equipped `ItemDef.element` — the M45 pattern, so
+  the pure model still never reads content. A **counter-attack is a basic attack**
+  and carries the counter-attacker's own weapon element.
+- **Immunity blocks riders.** An immune target takes no attack-status
+  (`applyAttackStatuses` is skipped) and no skill status or cleanse — the skill
+  loop `continue`s after marking it. An immune hit is **not** a miss: it connects,
+  reads differently in the log, and is recorded separately.
+- **Schema (all optional, defensive).** `EnemyDef`/`BossDef` gain an
+  `ElementAffinity` (`weaknesses[]` + `immunities[]`, with `weakTo`/`immuneTo`
+  predicates); `ItemDef` gains `element`. Validation rejects unknown element names,
+  `none` inside either array, overlapping weakness/immunity sets, and `element` on
+  a non-weapon item. Absent fields mean "no affinity", which is every pre-M48 file
+  — so no content version moved.
+- **Presentation channel.** `Battle::lastWeak` / `lastImmune` mirror the M35
+  `lastMissed` list and are cleared together by the new `clearActionMarks()`;
+  `attackAll` accumulates all three across a sweep. `BattleState::FloatNumber`
+  gained a `FloatKind` (Damage / Heal / Miss / Weak / Immune) replacing its bare
+  `heal` bool, so float color is chosen in one switch. Damage/Heal/Miss keep their
+  exact prior colors.
+- **The no-dead-weapon rule.** Immunities use only ice/earth/lightning; weapon
+  elements only fire/holy. The sets are disjoint *by construction* so no basic
+  attack can ever be zeroed — the Dragon has no skills to fall back on, which
+  would make such a fight unwinnable rather than interesting. `test_elements.cpp`
+  pins this against the shipped content, along with the converse (every weapon
+  element is somewhere a weakness, so none is dead flavor).
+
 ## 16. Leveling, shops & packaging (Milestone 10)
 
 - **XP/leveling (`game/Party`):** `xpToNext(level)` defines the curve;

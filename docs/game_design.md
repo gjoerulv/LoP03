@@ -432,6 +432,35 @@ edges of the interface, at one battle-rules bump (v7).
   and the warning stating what that screen actually loses (in a dungeon: the run
   goes, the entry autosave stays).
 
+**Elements (M48).** A thin, sparse affinity layer over the existing damage
+formulas, at one battle-rules bump (v8). Some foes have an **elemental weakness**
+(that element deals **×150 %**) or an **immunity** (that element deals **nothing
+at all** — no damage and no status rider; an immune blow lands and accomplishes
+nothing, which the log and the float both say outright, and which never reads as
+a miss). Nothing is ever both.
+
+Elements reach a foe two ways: a **skill's own element** (the shipped fire, ice,
+lightning, earth and holy spells were always authored with one — until now it
+did nothing), and a **weapon's element**, which every basic attack of its wielder
+carries. Five weapons are elemental, spanning the ladder from the town-1 **Holy
+Mace** to the legendary **Dawnforged Blade**, so the system is met early and
+still matters late. Enemies carry no weapons, so their own basic attacks stay
+unelemented, and the party has no affinities — the layer only ever describes
+foes.
+
+**Affinities are shown, never guessed at.** A foe the party has fought lists
+`Weak: Fire` / `Immune: Ice` in the **bestiary**; the **battle target panel**
+shows the same as chips while you aim at it; and a resolved hit floats **"Weak!"**
+(gold) or **"Immune"** (coral) beside the number. Every one is shape *and* text,
+never color alone.
+
+The curation is deliberately small — 8 enemies, 3 bosses, 5 weapons — and follows
+one hard rule: **no weapon element is ever an immunity anywhere in the game.** A
+skill can be swapped for another, but a basic attack cannot, and one class (the
+Dragon) has nothing else — so a wielded element that could be nullified would be
+a trap rather than a decision. Immunities use ice, earth and lightning; weapons
+use fire and holy. Dark stays reserved for later content.
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1

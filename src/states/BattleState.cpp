@@ -229,6 +229,32 @@ void BattleState::captureShowJest() {
     jestLine_ = longest;
     jestTimer_ = 999.0f;  // captures render one frame; never expire
 }
+
+void BattleState::captureElementHit(const content::SkillDef& skill) {
+    // M48: resolve a REAL elemental hit against the enemy side, then stage and
+    // commit its presentation, so the captured floats are the ones the game
+    // actually produces rather than hand-placed text.
+    captureEnterTargeting();
+    const int actor = currentActor();
+    std::vector<int> hpBefore;
+    for (const battle::Combatant& c : battle_.units) {
+        hpBefore.push_back(c.hp);
+    }
+    const std::vector<int> foes = battle_.aliveIndices(battle::Side::Enemy);
+    if (!foes.empty()) {
+        // Afford the skill without inventing a silly MP bar in the capture.
+        battle::Combatant& a = battle_.units[static_cast<std::size_t>(actor)];
+        a.maxMp = std::max(a.maxMp, skill.mpCost);
+        a.mp = a.maxMp;
+        message_ = battle_.useSkill(actor, foes.front(), skill);
+    }
+    stageNumbers(hpBefore, 4);
+    commitPresentation();
+    for (FloatNumber& f : floats_) {
+        f.timer = 999.0f;  // captures render one frame; never expire
+    }
+    phase_ = Phase::Resolve;
+}
 #endif
 
 int BattleState::enemyBaseY() const {
@@ -280,7 +306,7 @@ void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
         f.x = static_cast<float>(x) + 14.0f;
         f.y = static_cast<float>(y);
         f.timer = 0.9f;
-        f.heal = delta > 0;
+        f.kind = delta > 0 ? FloatKind::Heal : FloatKind::Damage;
         f.text = delta > 0 ? "+" + std::to_string(delta) : std::to_string(-delta);
         pendingFloats_.push_back(std::move(f));
         if (delta > 0) {
@@ -293,23 +319,34 @@ void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
             anyKo = true;
         }
     }
-    // "Miss!" floaters for Blind misses (M35): the missed units took no HP delta,
-    // so they are surfaced here from the action's recorded miss list.
-    for (int mi : battle_.lastMissed) {
-        if (mi < 0 || mi >= static_cast<int>(battle_.units.size())) {
-            continue;
+    // Marks the action recorded rather than deltas: a Blind miss (M35) and the
+    // M48 element readouts. An immune target took no HP delta at all, so this is
+    // the only way it is ever surfaced; a weak one gets the word beside its
+    // (larger) number, so the size is explained rather than just felt.
+    const auto markFloats = [this](const std::vector<int>& units, const char* text,
+                                   FloatKind kind, float yOffset) {
+        for (int ui : units) {
+            if (ui < 0 || ui >= static_cast<int>(battle_.units.size())) {
+                continue;
+            }
+            int mx = 0;
+            int my = 0;
+            unitScreenPos(ui, mx, my);
+            FloatNumber f;
+            f.x = static_cast<float>(mx) + 14.0f;
+            f.y = static_cast<float>(my) + yOffset;
+            f.timer = 0.9f;
+            f.kind = kind;
+            f.text = text;
+            pendingFloats_.push_back(std::move(f));
         }
-        int mx = 0;
-        int my = 0;
-        unitScreenPos(mi, mx, my);
-        FloatNumber f;
-        f.x = static_cast<float>(mx) + 14.0f;
-        f.y = static_cast<float>(my);
-        f.timer = 0.9f;
-        f.heal = false;
-        f.text = "Miss!";
-        pendingFloats_.push_back(std::move(f));
-    }
+    };
+    markFloats(battle_.lastMissed, "Miss!", FloatKind::Miss, 0.0f);
+    // Both element words sit a row ABOVE the unit: a weak hit shares its slot
+    // with the damage number, and an immune hit would otherwise print straight
+    // over the sprite it just failed to hurt.
+    markFloats(battle_.lastWeak, "Weak!", FloatKind::Weak, -10.0f);
+    markFloats(battle_.lastImmune, "Immune", FloatKind::Immune, -10.0f);
     pendingSfx_ = anyKo ? 3 : (anyDamage ? damageSfx : (anyHeal ? 1 : (statusAction ? 5 : 0)));
 }
 
@@ -1178,10 +1215,20 @@ void BattleState::render() {
                            pal.gold, "battle.jest");
     }
 
-    // Floating damage / heal numbers.
+    // Floating damage / heal numbers, and the M48 element readouts.
     for (const FloatNumber& f : floats_) {
+        Color color = pal.dangerText;
+        switch (f.kind) {
+            case FloatKind::Heal: color = pal.success; break;
+            case FloatKind::Weak: color = pal.gold; break;
+            // The approved coral — the `danger` role, not `dangerText`, so an
+            // "Immune" never reads as just another damage number.
+            case FloatKind::Immune: color = pal.danger; break;
+            case FloatKind::Damage:
+            case FloatKind::Miss: break;  // unchanged from pre-M48
+        }
         ui::drawText(f.text.c_str(), static_cast<int>(f.x) + shakeX, static_cast<int>(f.y), 10,
-                 f.heal ? pal.success : pal.dangerText);
+                     color);
     }
 
     // Bottom panel: lists live in the left column (scrolled to kListRows),
@@ -1307,6 +1354,22 @@ void BattleState::render() {
                 }
                 ui::drawTextFitted(vitals, kListX, panelY + 22, w - 2 * kListX, style::kFontBody,
                                    style::palette().text, "battle.target.vitals");
+                // M48: the target's element affinities, as chips on the vitals
+                // row (the one row with free space on its right). Chips are
+                // outline + fill + accent bar + label, so the reveal is shape
+                // AND text. Absent entirely for an untagged foe, so nothing
+                // moves in the fights that have no elements.
+                int chipRight = w - 12;
+                for (const content::Element e : t.immunities) {
+                    chipRight = ui::drawChipRight(std::string("Immune ") + content::elementDisplayName(e),
+                                                  chipRight, panelY + 20, style::palette().danger) -
+                                4;
+                }
+                for (const content::Element e : t.weaknesses) {
+                    chipRight = ui::drawChipRight(std::string("Weak ") + content::elementDisplayName(e),
+                                                  chipRight, panelY + 20, style::palette().gold) -
+                                4;
+                }
                 const std::string stats =
                     "ATK " + std::to_string(t.stats.attack) + "    MAG " +
                     std::to_string(t.stats.magic) + "    DEF " + std::to_string(t.stats.defense) +

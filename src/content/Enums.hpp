@@ -100,6 +100,10 @@ std::optional<BossArchetype> parseBossArchetype(std::string_view s);
 std::optional<PassiveHook> parsePassiveHook(std::string_view s);
 
 const char* toString(Element v);
+
+// M48: the element's name as a PLAYER sees it ("Fire", not the JSON id "fire").
+// One table, so the bestiary and the battle target panel can never disagree.
+const char* elementDisplayName(Element v);
 const char* toString(SkillCategory v);
 const char* toString(SkillEffect v);
 const char* toString(SkillTarget v);

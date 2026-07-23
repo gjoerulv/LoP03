@@ -187,6 +187,20 @@ std::optional<PassiveHook> parsePassiveHook(std::string_view s) {
 }
 
 const char* toString(Element v) { return nameFrom(kElements, v); }
+
+const char* elementDisplayName(Element v) {
+    switch (v) {
+        case Element::None: return "None";
+        case Element::Fire: return "Fire";
+        case Element::Ice: return "Ice";
+        case Element::Lightning: return "Lightning";
+        case Element::Earth: return "Earth";
+        case Element::Holy: return "Holy";
+        case Element::Dark: return "Dark";
+    }
+    return "None";
+}
+
 const char* toString(SkillCategory v) { return nameFrom(kSkillCategories, v); }
 const char* toString(SkillEffect v) { return nameFrom(kSkillEffects, v); }
 const char* toString(SkillTarget v) { return nameFrom(kSkillTargets, v); }

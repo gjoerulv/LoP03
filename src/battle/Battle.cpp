@@ -12,6 +12,30 @@
 
 namespace cd::battle {
 
+// M48 — the element rule. Deliberately the only place the x0 / x1 / x1.5
+// decision is made, so a future affinity source (equipment, a status) has one
+// obvious home. Pure: no rolls, no content lookups.
+int elementModifier(const Combatant& defender, content::Element e) {
+    if (e == content::Element::None) {
+        return 100;
+    }
+    for (content::Element x : defender.immunities) {
+        if (x == e) {
+            return kElementImmunePct;  // checked first: immunity is absolute
+        }
+    }
+    for (content::Element x : defender.weaknesses) {
+        if (x == e) {
+            return kElementWeakPct;
+        }
+    }
+    return 100;
+}
+
+bool isImmuneToElement(const Combatant& defender, content::Element e) {
+    return elementModifier(defender, e) == kElementImmunePct;
+}
+
 namespace {
 
 int statusSum(const Combatant& c, content::StatusType type) {
@@ -44,20 +68,25 @@ int effectiveAttack(const Combatant& a) {
 
 int effectiveDefense(const Combatant& d) { return d.stats.defense * defensePercent(d) / 100; }
 
-int physicalDamage(const Combatant& a, const Combatant& d, int power) {
+// M48: `element` is applied LAST, after the max(1, ...) floor — an immune hit
+// must land on 0, and the floor would otherwise turn it into 1. Guarding and
+// affinity therefore compose multiplicatively, which is what a player reading
+// "guarded" and "immune" separately would expect.
+int physicalDamage(const Combatant& a, const Combatant& d, int power,
+                   content::Element element) {
     int dmg = std::max(1, effectiveAttack(a) + power - effectiveDefense(d) / 2);
     if (d.guarding) {
         dmg = std::max(1, dmg / 2);
     }
-    return dmg;
+    return dmg * elementModifier(d, element) / 100;
 }
 
-int magicDamage(const Combatant& a, const Combatant& d, int power) {
+int magicDamage(const Combatant& a, const Combatant& d, int power, content::Element element) {
     int dmg = std::max(1, a.stats.magic + power - effectiveDefense(d) / 4);
     if (d.guarding) {
         dmg = std::max(1, dmg / 2);
     }
-    return dmg;
+    return dmg * elementModifier(d, element) / 100;
 }
 
 int healValue(const Combatant& a, int power) { return power + a.stats.magic / 2; }
@@ -497,7 +526,9 @@ int Battle::dealPhysical(int actor, int target, int baseDmg, std::string& extra)
     if (actor != target && t.alive() && t.counterAttack && !t.counteredThisRound &&
         a.alive()) {  // Counter Attack (M36): one basic retaliation per round
         t.counteredThisRound = true;
-        const int cdmg = physicalDamage(t, a, 0);
+        // M48: a counter IS a basic attack, so it swings the counter-attacker's
+        // own weapon element.
+        const int cdmg = physicalDamage(t, a, 0, t.weaponElement);
         applyDamage(a, cdmg);
         if (t.side == Side::Party) {
             addThreat(target, cdmg);
@@ -546,6 +577,12 @@ bool canCast(const Combatant& c, const content::SkillDef& skill) {
     return !(isSilenced(c) && skill.mpCost > 0);
 }
 
+void Battle::clearActionMarks() {
+    lastMissed.clear();
+    lastWeak.clear();
+    lastImmune.clear();
+}
+
 void Battle::clearGuard(int unit) {
     if (unit >= 0 && unit < static_cast<int>(units.size())) {
         units[static_cast<std::size_t>(unit)].guarding = false;
@@ -554,7 +591,7 @@ void Battle::clearGuard(int unit) {
 }
 
 std::string Battle::tickStatuses(int unit) {
-    lastMissed.clear();
+    clearActionMarks();
     std::string log;
     Combatant& c = units[static_cast<std::size_t>(unit)];
 
@@ -602,7 +639,7 @@ std::string Battle::tickStatuses(int unit) {
 }
 
 std::string Battle::attack(int actor, int target) {
-    lastMissed.clear();
+    clearActionMarks();
     // M45: a class whose basic attack hits every foe sweeps instead of striking
     // one — except while confused, when it lashes at a single member of its own
     // side like anyone else.
@@ -614,7 +651,7 @@ std::string Battle::attack(int actor, int target) {
 }
 
 std::string Battle::attackOne(int actor, int target) {
-    lastMissed.clear();
+    clearActionMarks();
     // Confusion (M35): a confused unit swings at a seeded random member of its own
     // side instead. (Draws from the shared roll stream, so live play and the
     // Simulator reproduce it identically.)
@@ -642,7 +679,11 @@ std::string Battle::attackOne(int actor, int target) {
         }
         return miss;
     }
-    int base = physicalDamage(a, t, 0);
+    // M48: a basic attack carries the attacker's weapon element (None for every
+    // enemy, which has no weapon, and for anyone holding untagged steel).
+    const content::Element element = a.weaponElement;
+    const int mod = elementModifier(t, element);
+    int base = physicalDamage(a, t, 0, element);
     if (opener) {
         base *= 2;  // Rush: opening fury
     }
@@ -652,11 +693,22 @@ std::string Battle::attackOne(int actor, int target) {
     if (opener) {
         log += " (opening fury!)";
     }
+    if (mod == kElementImmunePct) {
+        // Not a miss: the blow lands and does nothing. Recorded for the float
+        // and said plainly in the log, so the two never disagree.
+        lastImmune.push_back(target);
+        log += " " + t.name + " is immune!";
+    } else if (mod == kElementWeakPct) {
+        lastWeak.push_back(target);
+        log += " It is devastating!";
+    }
     if (!t.alive()) {
         log += " " + t.name + " is KO'd!";
     }
     log += extra;
-    log += applyAttackStatuses(actor, target);  // M45 (the Dragon's bite)
+    if (mod != kElementImmunePct) {
+        log += applyAttackStatuses(actor, target);  // M45 (the Dragon's bite)
+    }
     if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
         a.enrageAnnounced = true;
         log = a.name + " flies into a rage! " + log;
@@ -697,14 +749,21 @@ std::string Battle::attackAll(int actor) {
     }
     std::string log = units[static_cast<std::size_t>(actor)].name + " sweeps every foe!";
     std::vector<int> missed;
+    std::vector<int> weak;
+    std::vector<int> immune;
     for (int ti : targets) {
         if (!units[static_cast<std::size_t>(ti)].alive()) {
             continue;  // felled by an earlier strike in this same sweep
         }
         log += " " + attackOne(actor, ti);
+        // attackOne clears the marks per strike, so the sweep accumulates them.
         missed.insert(missed.end(), lastMissed.begin(), lastMissed.end());
+        weak.insert(weak.end(), lastWeak.begin(), lastWeak.end());
+        immune.insert(immune.end(), lastImmune.begin(), lastImmune.end());
     }
-    lastMissed = std::move(missed);  // every miss in the sweep, for the floaters
+    lastMissed = std::move(missed);  // every mark in the sweep, for the floaters
+    lastWeak = std::move(weak);
+    lastImmune = std::move(immune);
     return log;
 }
 
@@ -727,7 +786,7 @@ std::vector<int> Battle::resolveTargets(const content::SkillDef& skill, int acto
 }
 
 std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillDef& skill) {
-    lastMissed.clear();
+    clearActionMarks();
     // Silence (M35): MP-cost skills are blocked (0-MP skills, items, and basic
     // attacks are fine). Guarded here too, so no caller can slip a silenced cast
     // past the battle menu / AI filters and desync live play from the Simulator.
@@ -806,9 +865,13 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             log += " " + t.name + " wards the spell!";
             continue;  // Spell Ward (M36): the spell fizzles - no damage or status
         }
+        // M48: the skill's own element decides the affinity, for every category —
+        // a Heal or Support skill is element-neutral in practice because every
+        // shipped one is authored `none`.
+        const int mod = elementModifier(t, skill.element);
         switch (skill.category) {
             case content::SkillCategory::Physical: {
-                int base = physicalDamage(a, t, skill.power);
+                int base = physicalDamage(a, t, skill.power, skill.element);
                 if (opener) {
                     base *= 2;  // Rush: opening fury
                 }
@@ -822,7 +885,7 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                 break;
             }
             case content::SkillCategory::Magic: {
-                int base = magicDamage(a, t, skill.power);
+                int base = magicDamage(a, t, skill.power, skill.element);
                 base = base * (100 + empowerPct) / 100;
                 if (opener) {
                     base *= 2;  // Rush: opening fury
@@ -864,7 +927,7 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                 // for all prior content (battles stay byte-identical).
                 if (skill.power > 0 && t.side != a.side && t.alive()) {
                     std::string extra;
-                    const int base = magicDamage(a, t, skill.power);
+                    const int base = magicDamage(a, t, skill.power, skill.element);
                     const int dealt = dealMagic(actor, ti, base, extra);
                     log += " " + t.name + " takes " + std::to_string(dealt) + ".";
                     if (!t.alive()) {
@@ -873,6 +936,19 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                     log += extra;
                 }
                 break;  // status still applied below
+        }
+
+        // M48: an immune target took nothing and takes no rider either — the
+        // spell washed over it. A weak one is called out so the number is
+        // explained. Both are marks for the floats, never model state.
+        if (mod == kElementImmunePct) {
+            lastImmune.push_back(ti);
+            log += " " + t.name + " is immune!";
+            continue;  // no cleanse, no status: nothing of this skill reached it
+        }
+        if (mod == kElementWeakPct) {
+            lastWeak.push_back(ti);
+            log += " It is devastating!";
         }
 
         // Cleanse (M35, narrowed in M47): lift the afflictions from an ally
@@ -912,7 +988,7 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
 }
 
 std::string Battle::useItem(int actor, int target, const content::ItemDef& item) {
-    lastMissed.clear();
+    clearActionMarks();
     Combatant& t = units[static_cast<std::size_t>(target)];
     const std::string& who = units[static_cast<std::size_t>(actor)].name;
     std::string log = who + " uses " + item.name + " on " + t.name + ".";
@@ -994,7 +1070,7 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
 }
 
 std::string Battle::guard(int actor) {
-    lastMissed.clear();
+    clearActionMarks();
     Combatant& a = units[static_cast<std::size_t>(actor)];
     a.guarding = true;
     return a.name + " guards.";
@@ -1028,6 +1104,14 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
                 u.attackStatuses.push_back({s.type, s.magnitude, s.duration});
             }
             u.uncontrolled = cls->uncontrolled;
+        }
+        // M48: the equipped weapon's element, resolved once here — so a basic
+        // attack carries it without the pure model ever asking what is equipped.
+        // Empty hands and untagged steel both mean None.
+        if (!c.weapon.empty()) {
+            if (const content::ItemDef* weapon = db.findItem(c.weapon)) {
+                u.weaponElement = weapon->element;
+            }
         }
         // M36: own many, equip one - resolve the single equipped passive.
         if (!c.equippedPassive.empty()) {
@@ -1070,6 +1154,8 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             u.rushOpener = boss->archetype == content::BossArchetype::Rush;
             u.telegraph = boss->telegraph;
             u.confusionImmune = boss->immuneToConfusion;  // M40 (the King)
+            u.weaknesses = boss->affinity.weaknesses;     // M48
+            u.immunities = boss->affinity.immunities;
             applyPassives(u, boss->passives, db);  // M36 (bosses may carry several)
             b.units.push_back(std::move(u));
         }
@@ -1095,6 +1181,8 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         u.skillIds = def->skills;
         u.isBoss = false;  // minions are not the boss
         u.name = def->name;
+        u.weaknesses = def->affinity.weaknesses;  // M48
+        u.immunities = def->affinity.immunities;
         if (totals[id] > 1) {
             const int n = seen[id]++;
             u.name += ' ';
