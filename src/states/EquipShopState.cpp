@@ -123,6 +123,14 @@ void EquipShopState::captureEnterEquipItem(int charIndex, content::EquipSlot slo
 #endif
 
 void EquipShopState::rebuild() {
+    // M58: transient feedback ("Bought ...", "Not enough gold", "... cannot equip
+    // ...") belongs to the screen it was raised on. rebuild() runs on every phase
+    // change (Confirm forward, Cancel back, a completed equip), so clearing here
+    // makes the message fade the moment you leave that character's / list's menu
+    // instead of lingering forever. It never wipes a just-set message: every path
+    // that sets message_ breaks WITHOUT calling rebuild in the same step.
+    message_.clear();
+    messageIsError_ = false;
     rowIds_.clear();
     std::vector<ui::MenuItem> items;
 

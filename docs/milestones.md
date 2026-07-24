@@ -65,6 +65,7 @@
 | 55 | Theme rites (per-theme dungeon events) | ◑ implemented, awaiting manual approval |
 | 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ◑ implemented, awaiting manual approval |
 | 57 | Advanced CRT post-process (0–10 CRT Strength) | ◑ implemented, awaiting manual approval |
+| 58 | Fixes: equip message, Deadly Spoon once, geese scare the King | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -74,7 +75,8 @@ owner-directed presentation facelift), then the **M47–M51 Court & Comfort
 program** (M47 → M48 → M49 → M50 → M51, authorized 2026-07-23), then **M52**
 (comforts & secrets, authorized 2026-07-23), then the **M53–M56 adjustment
 program** (M53 → M54 → M55 → M56, authorized 2026-07-24), then **M57** (the
-owner-directed advanced CRT post-process, authorized 2026-07-24), **then**
+owner-directed advanced CRT post-process, authorized 2026-07-24), then **M58**
+(three owner-directed fixes, authorized 2026-07-24), **then**
 M23 → M24.
 M23/M24 were deferred by the owner on 2026-07-20: the game is not
 release-ready, so validating and packaging it would have measured the wrong
@@ -83,9 +85,9 @@ only their position in the sequence changed. Each expansion program was
 authorized as content/systems work the game needs before M23/M24 are worth
 running. See the program sections below.
 
-**With the M53–M56 adjustment program (authorized 2026-07-24) and the M57 CRT
-post-process (authorized 2026-07-24) done, M23 → M24 are the next thing after
-them, and nothing else stands before them.** M53–M56 then M57 run before
+**With the M53–M56 adjustment program, the M57 CRT post-process, and the M58
+fixes (all authorized 2026-07-24) done, M23 → M24 are the next thing after them,
+and nothing else stands before them.** M53–M56 then M57 then M58 run before
 M23/M24; each stops at `implemented, awaiting manual approval` for the owner. When they close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (64 scenes
 as of M52, more as M53–M56 add scenes), the balance batteries have grown
@@ -2377,3 +2379,48 @@ version bump** (`kSettingsVersion` stays **1**; the field change is defensive).
 - **Owner decisions (2026-07-24):** slider 0–10 (each step 0.1); legacy
   `crtEffect: true` maps to strength 3/10; default 0 on a new install.
 - **Milestone note:** `docs/milestone_notes/M57_crt_strength.md`
+
+## M58 — Fixes: equip message, Deadly Spoon once, geese scare the King
+
+Owner-directed fixes, authorized 2026-07-24, run after M57 and before the
+M23/M24 release track. Three items: one UI bug, one item bug, one new King-fight
+mechanic. **Battle rules `10 → 11`** (the only version change; save, generation,
+settings, achievements untouched).
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24 on
+  base `3181aa8` + M57. **532/532 Debug** and **528/528 Release** tests green (+2
+  new: Deadly-Spoon idempotency and the geese-scare rule); `--capture` **75/75**
+  clean. No warnings.
+  **⚠ Escalation note:** items 2 & 3 change King-fight behaviour and forced a
+  rules bump and a new combat rule — both owner-gated. The clarifying questions
+  (rules bump / per-Goose odds / scope) were put to the owner but **dismissed
+  without an answer**, so the recommended defaults were implemented and are flagged
+  here for approval: **bump to 11**, **additive 10% × living Geese**, **only the
+  King's own action is skipped (his court still acts)**, re-rolled each King turn.
+  All three are one-line adjustments if the owner wants otherwise.
+- **Item 1 — equip message lingered (UI, no rules impact).** In
+  `EquipShopState` the "A <class> cannot equip <slot>." refusal (and the buy
+  feedback) was set but never cleared, so it stayed on screen forever. Fixed by
+  clearing `message_` at the top of `rebuild()`, which runs on every phase change,
+  so the note fades the moment you leave that character's / list's menu.
+- **Item 2 — Deadly Spoon stacked (battle behaviour).** The relic's `statScalePct`
+  re-scaled a foe's ATK/MAG/DEF/SPD on every use (50 % → 25 % → …). Now a
+  per-combatant `statDiminished` guard applies the halving **at most once per
+  foe**; a second spoon reports "already diminished" and changes nothing.
+- **Item 3 — geese scare the King (new combat rule).** Each of the Hollow King's
+  own turns, a **10 % × living-Goose-class party members** chance he is scared into
+  doing nothing (his court still acts). Decided in the shared, seeded battle model
+  (`kingScaredThisTurn` — a pure hash of `rngSeed`/`turnsTaken`/`actor` like the
+  targeting jitter, so the Simulator and live play agree and `rollCursor` is never
+  disturbed) and gated in `chooseEnemyAction`. It **does** change King-fight
+  outcomes for a seed (hence the rules bump). Presented like the Jester's dry
+  quips — a gold line above the panel: *"The geese scare the King…"* — while the
+  resolve line reads that the King loses its turn.
+- **Out of scope:** any save/generation/settings/resolution change; retuning the
+  King or other content to compensate for the new counterplay (an owner call at
+  approval); M23/M24 work.
+- **Owner decisions (2026-07-24, defaults — dismissed questions):** rules bump
+  10→11; additive 10 %/Goose (4-Goose party ⇒ 40 %); living Geese only; King's own
+  action only; per-turn re-roll. Display wording lightly polished from the owner's
+  *"The geese scares the king…"* to *"The geese scare the King…"*.
+- **Milestone note:** `docs/milestone_notes/M58_fixes.md`

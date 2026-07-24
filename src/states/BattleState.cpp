@@ -783,8 +783,21 @@ void BattleState::executeEnemy(int actor) {
         message_ = self.name + " is terrified and can only cower behind its guard!";
         battle_.guard(actor);
     } else if (choice.forced == battle::ForcedAction::Skip) {
-        // M44 (Tax Sheets): the foe spends its turn on the paperwork.
-        message_ = self.name + " is buried in paperwork and loses its turn!";
+        // M58: the geese scare the King into doing nothing. Detected with the same
+        // condition chooseEnemyAction used (no status took the turn AND the scare
+        // roll landed), so the flavour is right even when he is also stunned. The
+        // line rides the Jester-quip channel — a gold line above the panel — so it
+        // reads like the Jester's dry quips, as requested.
+        if (battle::forcedActionFor(self) == battle::ForcedAction::None &&
+            battle::kingScaredThisTurn(battle_, actor)) {
+            message_ = self.name + " loses its turn!";
+            jestLine_ = "The geese scare the King...";
+            jestTimer_ =
+                2.0f * settings::messageDurationScale(context_.settings.values.messageSpeed);
+        } else {
+            // M44 (Tax Sheets): the foe spends its turn on the paperwork.
+            message_ = self.name + " is buried in paperwork and loses its turn!";
+        }
     } else if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);

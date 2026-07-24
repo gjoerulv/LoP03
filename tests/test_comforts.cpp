@@ -281,7 +281,7 @@ TEST_CASE("comforts: the Crown does nothing off the King and is kept",
 
 TEST_CASE("comforts: the effect is hidden and drove battle rules to 10",
           "[comforts][crown]") {
-    CHECK(kBattleRulesVersion == 10);
+    CHECK(kBattleRulesVersion >= 10);  // M52 drove it to 10; M58 bumped it to 11
 
     content::ContentDatabase db = loadContent();
     const content::ItemDef* crown = db.findItem("dragon_crown");

@@ -404,7 +404,9 @@ you out-level and becomes a fight you answer with absurd objects.
     resolve it identically — the one battle-rules bump this milestone makes
     (rules 9 → 10).
   - **Deadly Spoon** — "Most deadly thing known to man." **Halves** the target's
-    ATK/MAG/DEF/SPD for the rest of the battle. The rarest, and it shows.
+    ATK/MAG/DEF/SPD for the rest of the battle. The rarest, and it shows. **Once
+    per foe** (M58): a second Spoon on an already-diminished target does nothing
+    (it no longer stacks down to a quarter).
   The King is **not** immune to any of them: that is the whole point.
 - **The King doubles.** 750 HP (was 560) and doubled ATK/MAG/DEF/SPD
   (36 / 44 / 36 / 26). A party carrying no relics and no snacks **loses**, and
@@ -432,6 +434,11 @@ long before it is earned. All three are jokes that are also real classes:
 - **Goose** — dreadful stats, **equips nothing at all**. Its heals and cures work
   — and cheerfully buff **every enemy** at the same time. At level 30 it learns
   one ultimate that lays every debuff on every foe for 30 MP. **+5 % per Goose.**
+  Against the **Hollow King** it has a hidden edge (M58): each of the King's own
+  turns he has a **10 % chance per living Goose** in the party to be scared into
+  doing nothing — *"The geese scare the King…"* flashes above the panel like a
+  Jester quip — while his court fights on. A full four-Goose party unnerves him
+  40 % of his turns.
 
 The class modifiers are **additive across the party** (three Dragons and a Goose
 = −55 %), shown as their own line on the result screen and tagged on the

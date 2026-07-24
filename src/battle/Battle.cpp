@@ -217,6 +217,11 @@ constexpr std::uint64_t kSaltJesterAim = 0x1E57E7A10A1D0000ull;   // which targe
 constexpr std::uint64_t kSaltJesterLine = 0x1E57E71114E00D1Eull;  // which quip, if any
 // M45: how often an uncontrolled Jester quips (presentation only).
 constexpr int kJestChancePct = 15;
+// M58: the "geese scare the King" rule. Its own salt keeps its per-turn roll
+// clear of every other pure-hash stream. 10% per living Goose, additive.
+constexpr std::uint64_t kSaltGooseScare = 0x600D6005E5CA1E00ull;  // "goose scare"
+constexpr int kGoosePerScarePct = 10;
+constexpr const char* kGooseClassId = "goose";
 
 // Small deterministic jitter in [0, range) from the battle seed + round + acting
 // enemy + candidate. Pure, so a given encounter always resolves identically and
@@ -1132,14 +1137,22 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
             // Enemy stats never persist past a battle, so "for the rest of the
             // fight" is simply a direct scale of the combatant's own stats. HP/MP
             // are untouched: this weakens a foe, it does not wound it.
-            const auto scale = [pct = item.statScalePct](int v) {
-                return v > 0 ? std::max(1, v * pct / 100) : v;
-            };
-            t.stats.attack = scale(t.stats.attack);
-            t.stats.magic = scale(t.stats.magic);
-            t.stats.defense = scale(t.stats.defense);
-            t.stats.speed = scale(t.stats.speed);
-            log += " " + t.name + " is diminished for the rest of the battle!";
+            // M58: applied at most ONCE per foe — a second Deadly Spoon no longer
+            // re-halves an already-diminished target (which used to stack to a
+            // quarter, an eighth, ...).
+            if (t.statDiminished) {
+                log += " " + t.name + " is already diminished.";
+            } else {
+                const auto scale = [pct = item.statScalePct](int v) {
+                    return v > 0 ? std::max(1, v * pct / 100) : v;
+                };
+                t.stats.attack = scale(t.stats.attack);
+                t.stats.magic = scale(t.stats.magic);
+                t.stats.defense = scale(t.stats.defense);
+                t.stats.speed = scale(t.stats.speed);
+                t.statDiminished = true;
+                log += " " + t.name + " is diminished for the rest of the battle!";
+            }
         }
     }
     return log;
@@ -1385,6 +1398,38 @@ bool jestThisTurn(const Battle& b, int actor, int lineCount, int& index) {
     return true;
 }
 
+int geeseScaringKing(const Battle& b) {
+    if (!b.kingBattle) {
+        return 0;
+    }
+    int geese = 0;
+    for (const Combatant& u : b.units) {
+        if (u.side == Side::Party && u.alive() && u.sourceId == kGooseClassId) {
+            ++geese;
+        }
+    }
+    return geese;
+}
+
+bool kingScaredThisTurn(const Battle& b, int actor) {
+    if (actor < 0 || actor >= static_cast<int>(b.units.size())) {
+        return false;
+    }
+    const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    if (!self.isBoss || !b.kingBattle) {
+        return false;
+    }
+    const int geese = geeseScaringKing(b);
+    if (geese <= 0) {
+        return false;
+    }
+    const int chance = std::min(geese * kGoosePerScarePct, 100);
+    // Pure hash under its own salt (never advances rollCursor), so the Simulator
+    // and BattleState derive the same answer for the same (seed, turn, actor).
+    const long roll = targetJitter(b.rngSeed ^ kSaltGooseScare, b.turnsTaken, actor, 3, 10000);
+    return (roll % 100) < chance;
+}
+
 ForcedAction forcedActionFor(const Combatant& c) {
     // Order matters only in that a unit can carry more than one: a skipped turn
     // beats a forced guard, which beats a confused swing, because each is stricter
@@ -1454,6 +1499,14 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
     // caster can no longer heal or curse through it the way it could before v4.
     if (const ForcedAction forced = forcedActionFor(self); forced != ForcedAction::None) {
         return forcedChoice(b, actor, forced);
+    }
+    // M58: with no status already taking his turn, the Hollow King can be scared
+    // into doing nothing by Geese in the party (10% per living Goose). Same shared
+    // rule the Simulator obeys, so sim == live.
+    if (kingScaredThisTurn(b, actor)) {
+        EnemyChoice scared;
+        scared.forced = ForcedAction::Skip;
+        return scared;
     }
     // Silence (M35): a silenced enemy cannot use MP-cost skills, so it falls back
     // to any 0-MP skill or a basic attack. canCast enforces exactly that in each

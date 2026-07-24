@@ -636,3 +636,126 @@ TEST_CASE("king report: what it takes to fell the doubled King", "[.][king-repor
     }
     SUCCEED();
 }
+
+// --- M58 -------------------------------------------------------------------
+
+TEST_CASE("relics: a Deadly Spoon diminishes a foe only once (M58)", "[relics]") {
+    content::ContentDatabase db = loadContent();
+    Battle b = board();  // Ogre at index 2: atk 30, mag 20, def 20, spd 12
+    const int foe = 2;
+    const content::StatBlock before = b.units[static_cast<std::size_t>(foe)].stats;
+
+    (void)b.useItem(0, foe, relic(db, "deadly_spoon"));
+    CHECK(b.units[static_cast<std::size_t>(foe)].statDiminished);
+    CHECK(b.units[static_cast<std::size_t>(foe)].stats.attack == std::max(1, before.attack / 2));
+    CHECK(b.units[static_cast<std::size_t>(foe)].stats.magic == std::max(1, before.magic / 2));
+    CHECK(b.units[static_cast<std::size_t>(foe)].stats.defense == std::max(1, before.defense / 2));
+    CHECK(b.units[static_cast<std::size_t>(foe)].stats.speed == std::max(1, before.speed / 2));
+    const content::StatBlock afterFirst = b.units[static_cast<std::size_t>(foe)].stats;
+
+    // A second spoon must NOT halve again (it used to stack to a quarter).
+    const std::string second = b.useItem(0, foe, relic(db, "deadly_spoon"));
+    CHECK(b.units[static_cast<std::size_t>(foe)].stats.attack == afterFirst.attack);
+    CHECK(b.units[static_cast<std::size_t>(foe)].stats.magic == afterFirst.magic);
+    CHECK(b.units[static_cast<std::size_t>(foe)].stats.defense == afterFirst.defense);
+    CHECK(b.units[static_cast<std::size_t>(foe)].stats.speed == afterFirst.speed);
+    CHECK(second.find("already diminished") != std::string::npos);
+}
+
+namespace {
+// A King fight with `geese` living Goose-class party members (a lone Hero when
+// none), for the M58 scare rule. Hand-built so the test controls the roster.
+Battle kingWithGeese(int geese) {
+    Battle b;
+    for (int i = 0; i < geese; ++i) {
+        Combatant g = partyMember("Goose" + std::to_string(i), 200, 20, 15);
+        g.sourceId = "goose";
+        b.units.push_back(g);
+    }
+    if (geese == 0) {
+        b.units.push_back(partyMember("Hero", 200, 20, 15));
+    }
+    Combatant king = enemyUnit("The Hollow King", std::string(kKingBossId), 3000);
+    king.isBoss = true;
+    b.units.push_back(king);
+    b.kingBattle = true;
+    b.threat.assign(b.units.size(), 0);
+    b.rngSeed = 0x600D6005ull;
+    return b;
+}
+}  // namespace
+
+TEST_CASE("relics: geese scare the King into doing nothing (M58)", "[relics][king]") {
+    content::ContentDatabase db = loadContent();
+
+    SECTION("no geese -> never scared, and outside a King fight it is inert") {
+        Battle b = kingWithGeese(0);
+        const int king = kingIndex(b);
+        REQUIRE(king >= 0);
+        CHECK(geeseScaringKing(b) == 0);
+        int scared = 0;
+        for (int t = 1; t <= 500; ++t) {
+            b.turnsTaken = t;
+            if (kingScaredThisTurn(b, king)) {
+                ++scared;
+            }
+        }
+        CHECK(scared == 0);
+
+        // The same roster in a non-King fight scares no one, even with geese.
+        Battle notKing = kingWithGeese(3);
+        notKing.kingBattle = false;
+        CHECK(geeseScaringKing(notKing) == 0);
+        notKing.turnsTaken = 7;
+        CHECK_FALSE(kingScaredThisTurn(notKing, kingIndex(notKing)));
+    }
+
+    SECTION("only LIVING geese count") {
+        Battle b = kingWithGeese(3);
+        CHECK(geeseScaringKing(b) == 3);
+        b.units[0].hp = 0;  // a downed goose scares no one
+        CHECK(geeseScaringKing(b) == 2);
+    }
+
+    SECTION("rate is ~10% per living goose, and deterministic") {
+        for (int geese : {1, 2, 4}) {
+            Battle b = kingWithGeese(geese);
+            const int king = kingIndex(b);
+            int scared = 0;
+            const int N = 5000;
+            for (int t = 1; t <= N; ++t) {
+                b.turnsTaken = t;
+                const bool a = kingScaredThisTurn(b, king);
+                CHECK(a == kingScaredThisTurn(b, king));  // pure/deterministic
+                if (a) {
+                    ++scared;
+                }
+            }
+            const double rate = 100.0 * scared / N;
+            const double expected = geese * 10.0;
+            CHECK(rate > expected - 5.0);
+            CHECK(rate < expected + 5.0);
+        }
+    }
+
+    SECTION("chooseEnemyAction skips exactly when the King is scared (sim == live)") {
+        Battle b = kingWithGeese(4);  // 40% -> both outcomes appear across the sweep
+        const int king = kingIndex(b);
+        int skips = 0;
+        int acts = 0;
+        for (int t = 1; t <= 300; ++t) {
+            b.turnsTaken = t;
+            const bool scared = kingScaredThisTurn(b, king);
+            const EnemyChoice c = chooseEnemyAction(b, king, db);
+            if (scared) {
+                CHECK(c.forced == ForcedAction::Skip);
+                ++skips;
+            } else {
+                CHECK(c.forced != ForcedAction::Skip);
+                ++acts;
+            }
+        }
+        CHECK(skips > 0);
+        CHECK(acts > 0);
+    }
+}

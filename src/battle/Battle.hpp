@@ -45,8 +45,14 @@ namespace cd::battle {
 // `disablesMinionRevive` ends that revive clock on the boss it is used on — the
 // Dragon Crown against the King — so identical inputs now resolve to a court
 // that stays down; deliberately produces no log line, so the effect is hidden
-// in play and recorded only in the design docs).
-inline constexpr int kBattleRulesVersion = 10;
+// in play and recorded only in the design docs);
+// 11 = M58 (two King-fight behaviour changes: a Deadly Spoon's stat halving now
+// applies at most once per foe — a second spoon no longer re-halves — and the
+// Hollow King has a 10%-per-living-Goose chance, each of his own turns, to be
+// scared into doing nothing; the scare is a pure hash of the battle seed like the
+// targeting jitter, so the Simulator and live play agree, but it changes how a
+// King fight resolves for a given seed).
+inline constexpr int kBattleRulesVersion = 11;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -92,6 +98,10 @@ struct Combatant {
     // guard.
     bool intercepting = false;
     bool isBoss = false;
+    // M58 (Deadly Spoon): set once a battle-long stat-scale relic has diminished
+    // this unit, so a second such relic cannot halve its stats again. Battle-only
+    // state, never persisted.
+    bool statDiminished = false;
     // Boss archetype mechanics (M20, owner-approved; all deterministic).
     bool enrages = false;             // Brute: deals more damage below half HP
     bool enrageAnnounced = false;     // Brute: the rage line is shown once
@@ -367,6 +377,20 @@ EnemyChoice uncontrolledChoice(const Battle& b, int actor, const content::Conten
 // never touches `rollCursor`, so showing (or hiding) a jest cannot change how a
 // battle resolves.
 bool jestThisTurn(const Battle& b, int actor, int lineCount, int& index);
+
+// M58: how many living Goose-class party members are present in a King fight
+// (0 outside a King fight). Read by the scare rule below.
+int geeseScaringKing(const Battle& b);
+
+// M58: is the Hollow King scared into doing nothing on `actor`'s turn? True only
+// when `actor` is the boss of a King fight and a per-turn roll lands under
+// 10% × living Geese. Like `jestThisTurn`/`uncontrolledChoice` this is a PURE hash
+// of (rngSeed, turnsTaken, actor) under its own salt, so it never advances
+// `rollCursor` yet resolves identically in the Simulator and live play — but
+// UNLIKE a quip it feeds `chooseEnemyAction` and so DOES change how a King fight
+// resolves (hence the kBattleRulesVersion bump). BattleState also calls it to
+// choose the "geese scare" flavour over the ordinary skip line.
+bool kingScaredThisTurn(const Battle& b, int actor);
 
 // M43: the forced action of a confused unit — a basic attack, never a skill.
 // `attack()` then performs the seeded same-side redirect, so the returned target

@@ -1087,6 +1087,21 @@ ordinary inventory items).
   M43 rule, now carrying three imposed actions instead of one. `applyChoice` is
   exported from `Simulator.hpp` so it (and a scripted battery) resolve a forced
   turn the same way.
+- **The geese scare the King (M58).** `chooseEnemyAction`, after the status-forced
+  check, asks `kingScaredThisTurn(b, actor)`: in a King fight, on the King's own
+  turn, a **10 % × living Goose-class party members** chance (additive) to return a
+  `ForcedAction::Skip`. Only the King skips; his court acts. The roll is a pure
+  hash of `(rngSeed, turnsTaken, actor)` under its own salt (the `targetJitter`
+  pattern) so it never advances `rollCursor` and the Simulator and live play agree
+  — but because it feeds `chooseEnemyAction` it **changes** how a King fight
+  resolves for a seed, so it is the M58 `kBattleRulesVersion` **10 → 11** bump.
+  `BattleState` re-derives the same predicate (with `forcedActionFor(self) == None`)
+  to show the "geese scare the King" flavour on the Jester-quip channel instead of
+  the Tax-Sheets skip line.
+- **Battle-long stat scale applies once (M58).** A relic's `statScalePct` (the
+  Deadly Spoon) sets `Combatant::statDiminished` and skips the halving if it is
+  already set, so a second Spoon on the same foe no longer re-scales. Battle-only
+  state; part of the same rules 10 → 11 bump.
 - **Non-consumption.** `itemAffects(b, target, item)` is false only for a
   `requiresBossId` item on the wrong target; `BattleState` asks **before** the
   battle mutates and keeps the item when it did nothing.
