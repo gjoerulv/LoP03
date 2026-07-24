@@ -204,10 +204,11 @@ authorization to start the next.
 inspection only. The owner handles all commits and pushes.
 
 Milestones: `docs/milestones.md` is the single source for statuses — trust it
-over any restatement, including this one. Everything through **M51** is
+over any restatement, including this one. Everything through **M52** is
 `complete (approved)`: the expansion programs (M35–M42 endgame, M43–M45
-King's Gambit, M46 facelift, M47–M51 Court & Comfort — the last approved
-2026-07-23) are all closed. The M46 UI kit
+King's Gambit, M46 facelift, M47–M51 Court & Comfort, and the M52
+comforts-and-secrets milestone — the last approved 2026-07-24) are all
+closed. The M46 UI kit
 (`docs/ui_style_guide.md`) binds all UI work; the M49 castle retune (Boss
 Rush 580 % / King 500 % / Endless +10 %pts per wave, level cap 99) is the
 balance baseline. Only the

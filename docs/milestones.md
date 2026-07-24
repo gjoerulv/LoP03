@@ -59,7 +59,7 @@
 | 49 | The King's Court | ☑ complete (approved) |
 | 50 | Town travel rework | ☑ complete (approved) |
 | 51 | Presentation & options | ☑ complete (approved) |
-| 52 | Comforts & secrets | ◑ implemented, awaiting manual approval |
+| 52 | Comforts & secrets | ☑ complete (approved) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -74,9 +74,8 @@ only their position in the sequence changed. Each expansion program was
 authorized as content/systems work the game needs before M23/M24 are worth
 running. See the program sections below.
 
-**With M51 the Court & Comfort program is finished. One quality-of-life
-milestone, M52 "Comforts & secrets", runs first (authorized 2026-07-23);
-then M23 → M24.** Both must be re-audited against the post-M52
+**With M52 every authorized expansion is finished: M23 → M24 are next, and
+nothing else stands before them.** Both must be re-audited against the post-M52
 checkout before they begin — the capture set has grown (64 scenes as of M52),
 the balance batteries have grown (`[economy-report]`, `[castle-report]` with
 its rush sweep, `[king-report]`, `[classes-report]`), and the packaging
@@ -2099,11 +2098,14 @@ Authorized by the owner on 2026-07-23 as one quality-of-life milestone before
 M23/M24, bundling six independent comforts and secrets. It is the last
 authorized expansion; M23 → M24 follow.
 
-- **Status:** ◑ implemented, awaiting manual approval — authorized 2026-07-23;
-  implemented 2026-07-24 on base checkout `f387588` ("M51" + docs, clean tree).
-  **497/497 tests** green in Debug and Release (was 485; +12 M52 cases),
-  `--capture` **64/64** clean (was 61); one battle-rules bump (9 → 10), no other
-  version change. See `docs/milestone_notes/M52_comforts_secrets.md` §J.
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing ("M52 is done"), committed as `b547779` + `7444406`; the
+  audit that accompanied the approval re-verified **497/497 tests in Debug
+  and Release** and `--capture` **64/64** at `7444406`. Authorized
+  2026-07-23; implemented 2026-07-24 on base checkout `f387588`
+  (was 485 tests; +12 M52 cases; capture was 61); one battle-rules bump
+  (9 → 10), no other version change. See
+  `docs/milestone_notes/M52_comforts_secrets.md` §J.
 - **Goal:** six focused improvements, none of which changes the core loop:
   (1) an **ambience volume slider** independent of SFX (default 5/10);
   (2) an **in-battle battle log** — Menu opens/closes a scrollable list of the

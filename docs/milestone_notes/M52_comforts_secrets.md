@@ -6,7 +6,9 @@
 > an equip-shop QoL lift, bestiary max stats, the Dragon Crown's hidden effect,
 > and a high-stakes black-market spawn.
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-07-24)
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing ("M52 is done"); the accompanying audit re-verified 497/497
+  tests (Debug and Release) and `--capture` 64/64 at `7444406`.
 - **Authorized:** 2026-07-23 (owner), as one quality-of-life milestone before
   M23/M24; the last authorized expansion.
 - **Base checkout:** `f387588` ("Merge pull request #16 … claude05" = M51
