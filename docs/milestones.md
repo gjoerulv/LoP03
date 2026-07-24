@@ -64,6 +64,7 @@
 | 54 | Arms of the ladder (equipment rebalance) | ◑ implemented, awaiting manual approval |
 | 55 | Theme rites (per-theme dungeon events) | ◑ implemented, awaiting manual approval |
 | 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ◑ implemented, awaiting manual approval |
+| 57 | Advanced CRT post-process (0–10 CRT Strength) | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -72,7 +73,9 @@ Gambit program** (M43 → M44 → M45, authorized 2026-07-22), then **M46** (the
 owner-directed presentation facelift), then the **M47–M51 Court & Comfort
 program** (M47 → M48 → M49 → M50 → M51, authorized 2026-07-23), then **M52**
 (comforts & secrets, authorized 2026-07-23), then the **M53–M56 adjustment
-program** (M53 → M54 → M55 → M56, authorized 2026-07-24), **then** M23 → M24.
+program** (M53 → M54 → M55 → M56, authorized 2026-07-24), then **M57** (the
+owner-directed advanced CRT post-process, authorized 2026-07-24), **then**
+M23 → M24.
 M23/M24 were deferred by the owner on 2026-07-20: the game is not
 release-ready, so validating and packaging it would have measured the wrong
 build. Their existing tooling and packaging work is retained, not discarded —
@@ -80,10 +83,10 @@ only their position in the sequence changed. Each expansion program was
 authorized as content/systems work the game needs before M23/M24 are worth
 running. See the program sections below.
 
-**With the M53–M56 adjustment program (authorized 2026-07-24) M23 → M24 are the
-next thing after it, and nothing else stands before them.** M53–M56 run in
-order before M23/M24; each stops at `implemented, awaiting manual approval` for
-the owner. When they close, both M23 and M24 must be re-audited against the
+**With the M53–M56 adjustment program (authorized 2026-07-24) and the M57 CRT
+post-process (authorized 2026-07-24) done, M23 → M24 are the next thing after
+them, and nothing else stands before them.** M53–M56 then M57 run before
+M23/M24; each stops at `implemented, awaiting manual approval` for the owner. When they close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (64 scenes
 as of M52, more as M53–M56 add scenes), the balance batteries have grown
 (`[economy-report]`, `[castle-report]` with its rush sweep, `[king-report]`,
@@ -2329,6 +2332,48 @@ adds zero rolls and is never set by the Simulator.
   skippable.
 - **Milestone note:** `docs/milestone_notes/M56_boss_stagecraft.md`
 
-**Execution order:** M53 → M54 → M55 → M56, **then** M23 → M24 (re-audited
-against the then-current checkout). Generation **10 → 11** in M55 is the only
-version change in the program.
+**Execution order:** M53 → M54 → M55 → M56, then **M57**, **then** M23 → M24
+(re-audited against the then-current checkout). Generation **10 → 11** in M55
+is the only version change in that program.
+
+## M57 — Advanced CRT post-process (0–10 CRT Strength)
+
+Owner-directed implementation task, authorized 2026-07-24, run after the
+M53–M56 program and before the M23/M24 release track. **Pure presentation** —
+no gameplay, save, generation, battle-rules, or resolution change, and **no
+version bump** (`kSettingsVersion` stays **1**; the field change is defensive).
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24 on
+  base checkout `3181aa8`. Replaces the M51 Boolean **CRT Effect** with a
+  persistent **0–10 CRT Strength** slider (stored as a 0.0–1.0 `crtIntensity`)
+  driving an advanced single-pass GLSL-330 consumer-CRT shader (barrel curvature,
+  rounded edge + vignette, source-anchored scanlines, a destination-anchored RGB
+  slot mask that fades when the window is too small to resolve it, horizontal
+  beam spread, thresholded bright-pixel glow, chroma convergence, mild tonal
+  response, and restrained high-strength grain), each sub-effect on its own
+  non-linear activation curve. **530/530 Debug** and **526/526 Release** tests
+  green (+4 net: the M51 CRT round-trip case is replaced by five migration/clamp/
+  precedence/step cases); `--capture` **75/75** clean (the Display submenu now
+  reads *CRT Strength*, still overflow-clean). Strength **0 is the exact
+  unfiltered blit** (the shader is never even compiled at 0); capture stays
+  **pre-shader and byte-unaffected** by construction. GLSL confirmed to compile
+  on the owner's GPU via an offline harness, and the look reviewed at strengths
+  0/3/5/6/7/10 across 426×240, 1278×720, and 1920×1080. See
+  `docs/milestone_notes/M57_crt_strength.md` §J. **Window-level visual feel
+  remains an owner sign-off.**
+- **Goal:** a scalable, readable CRT filter that resembles a stable ~1985
+  consumer television at higher strengths and is off at 0 — presentation only.
+- **Engineering outcome:** `settings::Settings::crtEffect` (bool) → `crtIntensity`
+  (float, 0..1); defensive parse (valid `crtIntensity` wins; legacy `crtEffect`
+  migrates true→0.3 / false→0.0; absent→0.0; malformed→reported + safe default),
+  serializing only the new field; `VirtualScreen::setCrt(bool)` →
+  `setCrtIntensity(float)` with lazy single compile on first strength > 0, cached
+  uniform locations, and the shader source moved to `render/CrtShaderSource.hpp`;
+  a 0–10 slider row in Settings → Display using the same step/clamp discipline as
+  volume, with pure `crtStrengthStep`/`crtIntensityFromStep` helpers.
+- **Out of scope:** any gameplay/save/determinism/resolution change; new asset
+  types; a general post-processing graph; other display filters; changing the
+  capture output; a `kSettingsVersion` bump.
+- **Owner decisions (2026-07-24):** slider 0–10 (each step 0.1); legacy
+  `crtEffect: true` maps to strength 3/10; default 0 on a new install.
+- **Milestone note:** `docs/milestone_notes/M57_crt_strength.md`

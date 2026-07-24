@@ -33,6 +33,11 @@ std::optional<MessageSpeed> messageSpeedFromName(std::string_view name);
 std::string_view effectLevelName(EffectLevel s);
 std::optional<EffectLevel> effectLevelFromName(std::string_view name);
 
+// M57: CRT strength slider conversion (pure, headless-testable). The stored
+// value is a 0..1 intensity; the player sees an integer 0..10.
+int crtStrengthStep(float intensity);       // round(clamp01(intensity) * 10) -> 0..10
+float crtIntensityFromStep(int step);        // clamp(step, 0, 10) / 10 -> 0..1
+
 // Seconds a battle action's resolve pause lasts (Confirm always skips it).
 float resolveSeconds(BattleSpeed s);
 // Multiplier applied to transient on-screen message durations.
@@ -54,12 +59,14 @@ struct Settings {
     // M22 (owner-approved): switchable high-contrast UI palette. Optional
     // field; absent = standard palette, so older files load unchanged.
     bool highContrast = false;
-    // M51 (owner-approved), both optional bools, absent = false so older files
-    // load unchanged:
-    //  - crtEffect: a subtle scanline/mask shader at the window blit (Off default).
-    //  - backgroundAudio: keep audio playing while the window is unfocused
-    //    (Off default = mute when unfocused, a deliberate behaviour change).
-    bool crtEffect = false;
+    // M57 (owner-approved): CRT post-process strength, 0.0..1.0, exposed to the
+    // player as a 0..10 slider (each step = 0.1). 0 = the exact unfiltered blit.
+    // Optional field; absent falls back to the legacy M51 crtEffect bool
+    // (true -> 0.3 preserves the old subtle look, false -> 0.0), else 0.0.
+    float crtIntensity = 0.0f;
+    // M51 (owner-approved), optional bool, absent = false so older files load
+    // unchanged: keep audio playing while the window is unfocused (Off default =
+    // mute when unfocused, a deliberate behaviour change).
     bool backgroundAudio = false;
 };
 

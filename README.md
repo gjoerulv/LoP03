@@ -20,7 +20,7 @@ music, or text. Built in **C++20** with **raylib**.
 > with original generated art and music, a light-hearted story serial, three
 > unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
 > paid inn, compact walk-through towns, onboarding, accessibility options,
-> categorized settings (optional CRT effect, background audio, an independent
+> categorized settings (a 0–10 CRT Strength filter, background audio, an independent
 > ambience slider), an in-battle action log, a bestiary (with each foe's
 > strongest-context stats), victory records, achievements, and a fully
 > procedural "8-bit-plus" UI.
@@ -138,8 +138,8 @@ Default bindings — everything except text-delete and the debug toggle is
 pause menus). Settings are organized into **Audio / Display / Gameplay /
 Controls** submenus (M51): master/music/SFX volumes, a separate **Ambience
 Volume** slider (M52, default 5) and a **Background Audio** toggle; window
-mode, a subtle **CRT effect** (off by default), battle flash/shake, and
-high-contrast; battle/message speed and tutorial prompts; and per-device
+mode, a **CRT Strength** slider (M57, 0–10, 0 by default), battle flash/shake,
+and high-contrast; battle/message speed and tutorial prompts; and per-device
 remapping. All of it persists in `settings.json` in the user data folder;
 one-time tutorial-prompt progress persists in `tutorial.json` beside it. By
 default the game **mutes when its window loses focus** (turn on Background Audio

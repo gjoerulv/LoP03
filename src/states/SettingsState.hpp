@@ -46,7 +46,7 @@ private:
         // Audio.
         MasterVolume, MusicVolume, SfxVolume, AmbienceVolume, BackgroundAudio,
         // Display.
-        Window, CrtEffect, BattleFlash, BattleShake, HighContrast,
+        Window, CrtStrength, BattleFlash, BattleShake, HighContrast,
         // Gameplay.
         BattleSpeed, MessageSpeed, TutorialPrompts, ResetTutorial,
         // Controls.

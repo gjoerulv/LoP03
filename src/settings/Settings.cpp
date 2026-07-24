@@ -67,6 +67,15 @@ std::optional<EffectLevel> effectLevelFromName(std::string_view name) {
   return std::nullopt;
 }
 
+int crtStrengthStep(float intensity) {
+  const float clamped = std::clamp(intensity, 0.0f, 1.0f);
+  return static_cast<int>(clamped * 10.0f + 0.5f);
+}
+
+float crtIntensityFromStep(int step) {
+  return static_cast<float>(std::clamp(step, 0, 10)) / 10.0f;
+}
+
 float resolveSeconds(BattleSpeed s) {
   switch (s) {
   case BattleSpeed::Normal: return 0.9f;
@@ -214,18 +223,38 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
         report.add(kSource, "gameplay.highContrast", "expected a boolean");
       }
     }
-    // M51: optional bools; absent = false so older files load unchanged.
-    const auto optBool = [&](const char* key, bool& out) {
-      if (const auto f = it->find(key); f != it->end()) {
-        if (f->is_boolean()) {
-          out = f->get<bool>();
+    // M57: CRT strength is a 0..1 intensity. Precedence: a valid numeric
+    // crtIntensity wins; otherwise migrate the legacy M51 crtEffect bool
+    // (true -> 0.3 preserves the old subtle look, false -> 0.0); absent both
+    // keeps the 0.0 default. A malformed crtIntensity is reported and falls
+    // through to the legacy/default path.
+    bool crtResolved = false;
+    if (const auto ci = it->find("crtIntensity"); ci != it->end()) {
+      if (ci->is_number()) {
+        values.crtIntensity = clamp01(ci->get<float>());
+        crtResolved = true;
+      } else {
+        report.add(kSource, "gameplay.crtIntensity", "expected a number");
+      }
+    }
+    if (!crtResolved) {
+      if (const auto ce = it->find("crtEffect"); ce != it->end()) {
+        if (ce->is_boolean()) {
+          values.crtIntensity = ce->get<bool>() ? 0.3f : 0.0f;
         } else {
-          report.add(kSource, std::string("gameplay.") + key, "expected a boolean");
+          report.add(kSource, "gameplay.crtEffect", "expected a boolean");
         }
       }
-    };
-    optBool("crtEffect", values.crtEffect);
-    optBool("backgroundAudio", values.backgroundAudio);
+    }
+
+    // M51: optional bool; absent = false so older files load unchanged.
+    if (const auto f = it->find("backgroundAudio"); f != it->end()) {
+      if (f->is_boolean()) {
+        values.backgroundAudio = f->get<bool>();
+      } else {
+        report.add(kSource, "gameplay.backgroundAudio", "expected a boolean");
+      }
+    }
   }
 
   if (const auto it = root.find("bindings"); it != root.end() && it->is_object()) {
@@ -283,7 +312,7 @@ std::string serializeSettings(const Settings& values, const InputMap& map) {
                       {"effectFlash", std::string(effectLevelName(values.effectFlash))},
                       {"effectShake", std::string(effectLevelName(values.effectShake))},
                       {"highContrast", values.highContrast},
-                      {"crtEffect", values.crtEffect},
+                      {"crtIntensity", values.crtIntensity},
                       {"backgroundAudio", values.backgroundAudio}};
 
   Json keyboard = Json::object();

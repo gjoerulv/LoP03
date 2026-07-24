@@ -207,8 +207,9 @@ void Application::processFrame() {
   // (Capture runs its own loop, not this one, and forces audio off — unaffected.)
   audio_.setEnabled(IsWindowFocused() || settings_.values.backgroundAudio);
 
-  // M51: the CRT scanline shader follows its setting (cheap bool toggle).
-  screen_.setCrt(settings_.values.crtEffect);
+  // M57: the CRT post-process follows its 0..1 strength setting (a cheap float;
+  // the shader stays uncompiled while strength is 0).
+  screen_.setCrtIntensity(settings_.values.crtIntensity);
 
   GameState* const topBefore = stack_.top();
   stack_.handleInput(input_);

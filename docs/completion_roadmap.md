@@ -854,4 +854,18 @@ everything after it. The equipment rebalance (M54) precedes the content that
 grants gear and gold (M55's events are tuned against the final prices). The
 theme events (M55) are the one gameplay/generation change and carry the only
 version bump. Boss stagecraft (M56) is pure presentation and closes the program.
+
+## 19. Advanced CRT post-process (M57) — direction
+
+An owner-directed, presentation-only implementation task (authorized 2026-07-24)
+that runs after M53–M56 and before M23/M24. It replaces the M51 Boolean CRT
+Effect with a persistent **0–10 CRT Strength** slider driving a single-pass
+consumer-CRT shader (curvature, scanlines, a destination-space slot mask, beam
+spread, glow, chroma bleed, vignette, restrained grain), each sub-effect on its
+own non-linear activation so the slider reads as one continuum. Strength 0 is the
+exact unfiltered blit; capture stays pre-filter; no gameplay, save, generation,
+battle-rules, resolution, or settings-version change. Window-level visual feel is
+an owner sign-off; the deterministic parts (setting migration, clamping, step
+conversion) are unit-tested.
+
 M23 → M24 run after M56, re-audited against the then-current checkout.

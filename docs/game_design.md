@@ -599,8 +599,11 @@ gameplay:
 - **Settings are organized into submenus** — Audio / Display / Gameplay /
   Controls, plus Reset — so the option list is no longer one long scroll. Cancel
   steps back one level, then saves and closes.
-- A subtle **CRT effect** (Display → CRT Effect, **Off by default**) adds faint
-  scanlines and a light mask with **no curvature**, so the pixels stay crisp.
+- A scalable **CRT Strength** control (Display → CRT Strength, a **0–10 slider,
+  0 by default**). 0 is the plain crisp image; higher values progressively add a
+  stable ~1985 consumer-CRT look (curved glass, scanlines, a subtle slot mask,
+  gentle glow, curved dark corners) that stays readable — ~3 matches the old
+  subtle effect, 5–6 is a convincing clean CRT, 10 is heavy but still playable.
 - **Losing window focus now mutes the audio by default**; a new **Background
   Audio** toggle (Audio submenu) keeps it playing. (A deliberate change — the
   game used to always play.)

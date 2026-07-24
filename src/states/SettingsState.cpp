@@ -33,6 +33,12 @@ std::string volumeLabel(const char* name, float v) {
 std::string toggleLabel(const char* name, bool on) {
     return std::string(name) + ":  < " + (on ? "On" : "Off") + " >";
 }
+
+// M57: the CRT strength row reads as a 0..10 slider, mirroring the volume rows.
+std::string crtStrengthLabel(float intensity) {
+    return std::string("CRT Strength:  < ") +
+           std::to_string(settings::crtStrengthStep(intensity)) + " >";
+}
 }  // namespace
 
 SettingsState::SettingsState(StateStack& stack, AppContext& context)
@@ -92,7 +98,7 @@ void SettingsState::rebuild() {
             add(std::string("Window:  < ") + (v.borderlessFullscreen ? "Borderless" : "Windowed") +
                     " >",
                 Row::Window);
-            add(toggleLabel("CRT Effect", v.crtEffect), Row::CrtEffect);
+            add(crtStrengthLabel(v.crtIntensity), Row::CrtStrength);
             add(std::string("Battle Flash:  < ") +
                     std::string(settings::effectLevelName(v.effectFlash)) + " >",
                 Row::BattleFlash);
@@ -158,7 +164,10 @@ void SettingsState::adjust(Row row, int direction) {
             break;
         case Row::BackgroundAudio: v.backgroundAudio = !v.backgroundAudio; break;
         case Row::Window: v.borderlessFullscreen = !v.borderlessFullscreen; break;
-        case Row::CrtEffect: v.crtEffect = !v.crtEffect; break;  // Application reads it each frame
+        case Row::CrtStrength:
+            // Same safe step/clamp discipline as volume; Application reads it each frame.
+            v.crtIntensity = stepVolume(v.crtIntensity);
+            break;
         case Row::BattleFlash:
             v.effectFlash = static_cast<settings::EffectLevel>(cycle3(static_cast<int>(v.effectFlash)));
             break;

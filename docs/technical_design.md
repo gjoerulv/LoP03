@@ -1445,15 +1445,32 @@ optional bools with defensive parse, so old `settings.json` loads unchanged.
   steps out one level (submenu → Top → save-and-close). Two new optional
   `Settings` bools: `crtEffect` and `backgroundAudio`, both default false, both
   round-tripped through the same optional-parse path as `highContrast`.
-- **CRT shader.** `VirtualScreen` owns an embedded GLSL-330 fragment shader
-  (`LoadShaderFromMemory` — no asset, no dependency): faint scanlines + a light
-  aperture mask, **no curvature**. `setCrt(bool)` compiles it lazily on first
-  enable and wraps the `DrawTexturePro` in `blitToWindow` with
-  `BeginShaderMode`/`EndShaderMode`. A compile failure degrades to raylib's
-  default passthrough shader (detected via the missing `crtResolution` uniform),
-  logged once → plain blit. **Capture is unaffected by construction**:
-  `exportImage` reads the pre-shader render target, not the window. `Application`
-  calls `setCrt(settings.crtEffect)` each frame (a cheap bool).
+- **CRT post-process (M57).** `VirtualScreen` owns an advanced single-pass
+  GLSL-330 fragment shader whose source lives in `render/CrtShaderSource.hpp`
+  (`cd::kCrtFragmentSource`, `LoadShaderFromMemory` — no asset, no dependency).
+  It is driven by a **0.0–1.0 strength** (`settings.crtIntensity`, exposed as a
+  0–10 slider); at each rising strength more of a stable ~1985 consumer CRT
+  appears — barrel curvature, a rounded black edge + vignette, source-anchored
+  scanlines (dark gaps, never dead rows), a **destination-pixel** RGB slot mask
+  that fades below ~2× scale, horizontal beam spread, luminance-thresholded
+  bright-pixel glow, chroma convergence, a mild tonal response, and restrained
+  high-strength grain — each on its own non-linear activation curve.
+  `setCrtIntensity(float)` clamps, compiles the shader **lazily on the first
+  strength > 0** (at most once) and caches five uniform locations
+  (`crtIntensity`, `crtSourceRes`, `crtOutputRes`, `crtSourceTexel`, `crtTime`),
+  then `blitToWindow` sets them and wraps the `DrawTexturePro` in
+  `BeginShaderMode`/`EndShaderMode`. **Strength 0 uses the plain blit and never
+  compiles the shader**, so 0 is the exact unfiltered image at only a float's
+  cost. A compile failure degrades to raylib's default passthrough shader
+  (detected via the missing `crtIntensity` uniform), logged once → plain blit.
+  The pass is a fixed 11 texture samples (no loops, no intermediate target).
+  **Capture is unaffected by construction**: `exportImage` reads the pre-shader
+  render target, not the window. `Application` calls
+  `setCrtIntensity(settings.crtIntensity)` each frame (a cheap float).
+  The setting is defensive: a valid numeric `crtIntensity` wins; else the legacy
+  M51 `crtEffect` bool migrates (`true→0.3`, `false→0.0`); absent → 0.0; malformed
+  → reported + safe default. Only `crtIntensity` is serialized; **no
+  `kSettingsVersion` bump**.
 - **Focus audio.** `Application::processFrame` calls
   `audio_.setEnabled(IsWindowFocused() || settings_.values.backgroundAudio)` once
   per frame (`setEnabled` early-returns when unchanged). Default mutes on blur.
