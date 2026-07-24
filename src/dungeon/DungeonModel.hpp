@@ -18,8 +18,12 @@ enum class RoomType { Start, Normal, Treasure, Boss, Event };
 // confirmation.
 // M44 adds RoyalRelic: a rare event that REPLACES one of the rolled events (it is
 // never part of the shuffled kind list), granting one of the four Royal Relics.
+// M55 adds the three per-theme rites (ArmoryGhost / MinersCache / ElderRoot): each
+// is GUARANTEED exactly once per dungeon of its theme (forced onto the first event
+// slot) and never appears outside that theme. See dungeon/ThemeEvents.hpp.
 enum class RoomEventKind {
-    None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken, RoyalRelic
+    None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken, RoyalRelic,
+    ArmoryGhost, MinersCache, ElderRoot
 };
 
 struct RoomEvent {

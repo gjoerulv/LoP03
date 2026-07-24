@@ -366,7 +366,7 @@ drive letters, and `..` traversal; all data/save file access goes through it.
 |---------------------------------|----------------|-------------------------------------|
 | `CRYSTAL_BUILD_TESTS`           | ON             | Build Catch2 tests + register CTest |
 | `CRYSTAL_WARNINGS_AS_ERRORS`    | OFF            | Treat project warnings as errors    |
-| `CRYSTAL_ENABLE_DEBUG_OVERLAY`  | ON (Debug)     | Compile the runtime debug overlay   |
+| `CRYSTAL_ENABLE_DEBUG_OVERLAY`  | ON (Debug)     | Compile the runtime debug overlay + the M53 debug menu (`CRYSTAL_DEBUG_OVERLAY`); never in Release |
 
 ## 6. Testing strategy
 
@@ -1529,6 +1529,142 @@ unchanged.
   with no score/stakes condition; `DungeonState::completeDungeon` passes
   `completed = true` (it is only reached on a beaten boss). No version bump — the
   path only adds spawns where none happened, seeded like the old one.
+
+### Toolbelt & trims (Milestone 53)
+
+Four independent adjustments. **No version bumps** anywhere: `kBattleRulesVersion`
+(10), `kGenerationVersion` (10), `kSaveVersion` (1), `kSettingsVersion` (1), and
+`kAchievementVersion` (1) are all unchanged (verified before and after).
+
+- **Debug menu + cheats (S1, development-only).** `core/DebugCheats.hpp` is an
+  *unconditional* `struct DebugCheats { bool godMode; bool requestDungeonClear; }`
+  held as a value member on `AppContext` (macro-independent layout; the single
+  `Application::context_` owns it, aggregate-initialized by default). Every reader
+  and writer is `#ifdef CRYSTAL_DEBUG_OVERLAY`. `states/DebugMenuState.*` is
+  compiled into the target unconditionally but its whole `.cpp` body is under that
+  ifdef (the CaptureRunner/BattleState-capture precedent), so a Release binary
+  defines none of it and never references it (the pause-menu "Debug" rows are
+  ifdef'd too, appended after Quit with `kDebug = kQuit + 1`; box height +18). The
+  menu is SettingsState-shaped (a `ui::Menu` + a parallel `Row`/`RowDef` vector,
+  `drawMenuScrolled` + `ScrollWindow`, values as the right-aligned row `suffix`):
+  per-member Lv steppers (set level, `xp=0`, `refreshCharacter`, full heal),
+  gold/token/town steppers, castle unlock, item grants, black-market spawn (town),
+  god-mode toggle, instant dungeon clear (dungeon), reward-class unlock, bestiary
+  fill. "Learn all skills" was dropped: learnsets derive purely from level
+  (`knownSkillsFor` in `buildBattle`), so the Lv-99 stepper covers it.
+- **God mode (the one Battle touch).** `battle::Battle` gains
+  `bool debugPartyUnkillable = false;` inside `#ifndef CRYSTAL_SHIPPING_BUILD`
+  (compiled out of Release entirely). `applyDamage` was promoted from a file-local
+  free helper to a **private `Battle` member** (all six callers were already
+  `Battle` methods, so no call-site changes; it moved out of the anonymous
+  namespace to namespace scope so a member can legally be defined) and now reads
+  the flag directly. There are exactly **two ifdef'd clamp sites**, both
+  Iron-Will-shaped (a lethal blow to a *party* unit leaves 1 HP): the `applyDamage`
+  chokepoint and the **poison tick** in `tickStatuses` (which bypasses it). The
+  BattleState ctor copies `context_.cheats.godMode` into the flag (also
+  `#ifndef CRYSTAL_SHIPPING_BUILD`). The Simulator and tests never set it, so with
+  the default the streams are byte-identical and **there is no
+  `kBattleRulesVersion` bump** (the flag does not exist in shipped binaries).
+  Hygiene: `DungeonState::completeDungeon` skips the scoreboard write when god mode
+  is on (a `submitScore` bool, `false` only under the debug ifdef). The
+  instant-clear request is consumed in `DungeonState::update` and routed through
+  the real `completeDungeon()` so scoring/unlocks/market rolls stay honest.
+- **Five save slots (S2).** `SaveSlot` gains `Manual4/Manual5`; `kSaveSlotCount`
+  4 to 6; stems `save_slot4/5`, names "Slot 4/5". The per-file schema is untouched
+  (**no `kSaveVersion` bump**); old slot files load, empty slots read "(empty)".
+  `SlotMenuState` tightened to a static six-row layout (title y=14, rows at
+  `kRowsY=52`/`kRowH=24`, frame sized from the actual row count, which also fixes
+  the prior Save-mode overshoot; banner at 204). `MainMenuState::anySaveExists` and
+  the `43_slot_menu_load` capture scene iterate all slots.
+- **Champion (S3).** The `champion` predicate in `Achievements.cpp` reads the
+  persisted `castleRecords.kingBestTurns` against `kChampionKingTurns` (=15, beside
+  the def): `kingBestTurns > 0 && kingBestTurns <= kChampionKingTurns`. The
+  `achievements.json` id set and `kAchievementVersion` are untouched, so earned
+  unlocks persist and a save already this efficient retro-unlocks. Kingslayer (the
+  "beat him at all" achievement) is unchanged.
+- **Weapon element chips (S4).** `states/ElementChip.hpp` is a pure header-only
+  `ui::elementAccent(content::Element, const Palette&)` mapping each element to an
+  existing M46 palette role (Fire->danger, Ice->crystal, Lightning/Holy->gold,
+  Earth->success, Dark->magic; no new palette entries). `EquipShopState` draws a
+  `drawChipRight` element chip in three places (Buy info panel, EquipItem diff row,
+  Gear Details body) via `content::elementDisplayName`; only weapons carry an
+  element, so armor/accessory rows show nothing. The battle target-panel chips are
+  the visual idiom.
+
+### Theme rites (Milestone 55)
+
+One guaranteed per-theme room event, and the program's **only version change**:
+`kGenerationVersion` **10 → 11** ([RoomLayout.hpp](../src/dungeon/RoomLayout.hpp)
+history line). Save (1), battle rules (10), settings (1), achievements (1)
+unchanged.
+
+- **Model.** `RoomEventKind` gains `ArmoryGhost`, `MinersCache`, `ElderRoot`.
+  Pure, raylib-free helpers live in
+  [dungeon/ThemeEvents.hpp/.cpp](../src/dungeon/ThemeEvents.hpp) (headless-tested):
+  `themeEventKind(themeId)` (ruined_keep→Ghost, crystal_mine→Cache,
+  hollow_forest→Root, else None), `nextRarityUp`, `armoryGhostUpgrade`,
+  `minersCacheWound`/`minersCacheGold`, `elderRootPrice`/`elderRootXp`, and
+  `themeEventHash` (a SplitMix64 finalizer over seed+room+salt, the black-market/
+  relic precedent).
+- **Generator guarantee.** In the event loop
+  ([DungeonGenerator.cpp](../src/dungeon/DungeonGenerator.cpp)) the **first**
+  created event slot (`made == 0`) is forced to `themeEventKind(d.themeId)` and the
+  RoyalRelic replacement draw **skips that slot** (`themeSlot` guard), so the rite
+  owns exactly one slot per dungeon and a relic never displaces it. Empty/unknown
+  themes force nothing (`themeSlot` false), so empty-theme generation is
+  **byte-identical** and only the three real themes shift under v11. The ElderRoot
+  `goldCost` and the MinersCache guaranteed `itemId` are baked in at generation
+  (reload-proof); the cache gold, the root XP, and the ghost's upgrade are derived
+  at resolution.
+- **Resolution.** `DungeonState::resolveEvent` handles MinersCache (a
+  `minersCacheWound` = maxHp/3 clamp-to-1 to each standing member + `minersCacheGold`
+  + the baked item) and ElderRoot (pay `goldCost`, `grantPartyXp(elderRootXp)`)
+  directly. **The Armory Ghost is interactive:** it pushes `states/ArmoryGhostState`
+  (the equip-shop list idiom over eligible inventory pieces — equippable,
+  non-legendary), which on a chosen trade computes `armoryGhostUpgrade(db, id,
+  themeEventHash(seed, room, fnv(id)))`, swaps the piece, and sets
+  `event->resolved`. `DungeonState::onResume` rebuilds the room's markers when a
+  resolved event is detected on return. Event markers use a distinct glyph+colour
+  per rite (no bespoke art yet; the presentation lint's event-sprite allow-list is
+  unaffected).
+
+### Boss stagecraft (Milestone 56)
+
+Pure presentation — no battle-rule, scoring, generation, or save change, **no
+version bump**. Two verified hazards respected: the boss intro is **pushed on top
+of** the caller (never `replaceState`), and neither backdrops nor the intro touch
+`Battle.rngSeed`/`rollCursor`.
+
+- **Backdrops (B1).** `render/BattleBackdrop.hpp/.cpp`: `enum class BackdropStage`
+  (named to avoid the BattleSequencer's own `render::BattleStage`); pure
+  `stageForTheme` and `buildBackdrop(stage, band, phase, accents) ->
+  vector<BackdropRect>` with a role enum
+  (Ink/BorderDark/AccentCrystal/AccentMagic/AccentGold) and a thin raylib
+  `drawBattleBackdrop` mapping roles to `palette()`. `BattleState` gains a trailing
+  defaulted `render::BackdropStage stage = Plain`; `DungeonState::startBattle`
+  passes `stageForTheme(themeId)` and `CastleChallengeState` passes `Castle`. Drawn
+  in `render()` between the flat band fill and the ink keylines/pips. The subdued
+  rules (<= 25 % coverage, the central float corridor kept clear, `accents=false`
+  drops accents, determinism) are asserted in `tests/test_battle_backdrop.cpp`.
+- **Crystal Shatter (B2).** `states/BossIntroState` is pushed on top of the caller
+  carrying the full BattleState launch payload (built `Battle`, result/stats
+  slots, music, castle flag, stage, presentation seed); `rendersBelow()=true`,
+  `updatesBelow()=false`. Its pure `states/BossIntroTimeline.hpp`
+  (Hold 0.10 -> Build 0.45 -> Peak 0.15 -> Handoff 0.20, `skip()` -> Handoff) and
+  `buildIntroShards` (a seeded, presentation-only layout) are headless-tested. On
+  `done()`/skip it pushes `BattleState`, calls `fade.start()` (BattleState does not
+  fade on its own), and its `onResume` pops itself when the battle pops;
+  `DungeonState`/`CastleChallengeState` `onResume` are guarded against an `Ongoing`
+  result. Routed for every boss-team battle (`bossId` non-empty); Endless waves
+  stay plain. Photosensitivity: the single Peak pulse uses `bossIntroPulseAlpha`
+  (the M51 AoE-tint contract — 0.12 cap, gated by `effectFlash`); the darkening is
+  an uncapped fade; shake honours `effectShake`.
+- **Deviation from the plan (documented):** the shatter is **abstract** (seeded
+  crystal shards over a darkening field) — **no live-scene snapshot service** and
+  no Application framebuffer-read hook. Reading the active virtual target mid-draw
+  is fragile for a cosmetic flourish, and `BattleState::onEnter` does not fade on
+  its own (the plan assumed it did). The owner-decided outcome (a skippable
+  Crystal Shatter for every boss-team battle) is delivered; reversible later.
 
 ## 16. Leveling, shops & packaging (Milestone 10)
 

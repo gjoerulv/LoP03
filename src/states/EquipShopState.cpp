@@ -7,7 +7,9 @@
 
 #include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
+#include "content/Enums.hpp"  // Element, elementDisplayName
 #include "states/DetailsOverlayState.hpp"
+#include "states/ElementChip.hpp"  // ui::elementAccent
 #include "states/EquipDiff.hpp"
 #include "states/EquipShopFilter.hpp"
 #include "content/Definitions.hpp"
@@ -286,6 +288,9 @@ void EquipShopState::openItemDetails() {
     }
     std::string body = it->name + " - " + slotLabel(it->slot) + ", " +
                        std::to_string(it->value) + "g.";
+    if (it->element != content::Element::None) {  // M53: weapons carry an element
+        body += std::string("\nElement: ") + content::elementDisplayName(it->element);
+    }
     const std::string own = equip::bonusDelta(it->statBonus, content::StatBlock{});
     if (!own.empty()) {
         body += "\nBonus: " + own;
@@ -375,7 +380,18 @@ void EquipShopState::render() {
         // Buy keeps the slot/bonus/description line — the shopping decision.
         if (const content::ItemDef* detail =
                 context_.content.findItem(rowIds_[static_cast<std::size_t>(menu_.cursor())])) {
-            ui::drawTextWrapped(equipDetail(*detail), kListX - 14, infoY + 6, 332,
+            // M53: a weapon's element rides a right-aligned chip on the panel's
+            // top line; the description wraps in whatever room is left of it, so
+            // the two never collide.
+            int textW = 332;
+            if (detail->element != content::Element::None) {
+                const int chipLeft =
+                    ui::drawChipRight(content::elementDisplayName(detail->element),
+                                      kListX - 24 + 352 - 8, infoY + 5,
+                                      ui::elementAccent(detail->element, p));
+                textW = chipLeft - (kListX - 14) - 6;
+            }
+            ui::drawTextWrapped(equipDetail(*detail), kListX - 14, infoY + 6, textW,
                                 style::kFontBody, p.textDim, "equipshop.detail", 2);
         }
     } else if (phase_ == Phase::EquipItem) {
@@ -400,9 +416,11 @@ void EquipShopState::render() {
 
         // Unequip (cursor 0) diffs an empty bonus; a candidate diffs its own.
         content::StatBlock cand{};
+        const content::ItemDef* candItem = nullptr;
         if (menu_.cursor() >= 1 && !rowIds_.empty()) {
-            if (const content::ItemDef* candItem = context_.content.findItem(
-                    rowIds_[static_cast<std::size_t>(menu_.cursor() - 1)])) {
+            candItem = context_.content.findItem(
+                rowIds_[static_cast<std::size_t>(menu_.cursor() - 1)]);
+            if (candItem != nullptr) {
                 cand = candItem->statBonus;
             }
         }
@@ -420,6 +438,13 @@ void EquipShopState::render() {
                 std::string(sd.tag) + " " + (sd.value > 0 ? "+" : "") + std::to_string(sd.value);
             ui::drawText(seg, dx, dy, style::kFontBody, segColor);
             dx += ui::measureText(seg, style::kFontBody) + 8;
+        }
+        // M53: a weapon candidate's element rides a right-aligned chip on the
+        // diff row, where the short stat segments leave the right side free.
+        if (candItem != nullptr && candItem->element != content::Element::None) {
+            ui::drawChipRight(content::elementDisplayName(candItem->element),
+                              kListX - 24 + 352 - 8, dy - 1,
+                              ui::elementAccent(candItem->element, p));
         }
     }
 

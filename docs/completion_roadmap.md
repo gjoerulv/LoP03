@@ -808,3 +808,50 @@ One milestone, six independent slices; the only cross-cutting change is the
 Crown's rules bump (9 → 10), so it and its schema field are implemented and
 tested as a unit. M23 → M24 run after M52, re-audited against the post-M52
 checkout.
+
+## 18. Adjustment program (M53–M56) — direction
+
+Authorized 2026-07-24 as one more program before M23/M24 — a focused adjustment
+pass (a debug toolbelt, more save slots, a meaningful Champion, an equipment
+buff, per-theme dungeon events and battle backdrops, and a dramatic boss
+transition). Not new genre scope; the core loop is unchanged. Scope and owner
+decisions live in `docs/milestones.md` (the program section) and the
+per-milestone notes; this section records only why and in what order.
+
+### Why this phase exists
+
+M52 closed the last comforts, but a handful of adjustments still stand between
+the game and a release-worthy build: manual testing is slow without a cheat
+menu, three save slots is stingy, the Champion achievement asks nothing of the
+player, the mid-ladder equipment tiers feel flat, dungeon themes lack a signature
+event, and every boss battle opens the same way against the same flat band. This
+program spends one pass on all of it before M23/M24 measure the build.
+
+### Quality bars for this phase
+
+All prior bars (§4, §5, §9, §10, §12–§17) still apply. Additionally:
+
+1. **Development-only means development-only.** The debug menu and god mode must
+   be structurally absent from Release binaries (compiled out, not merely hidden)
+   and must add zero rolls to the deterministic battle/generation streams; the
+   Simulator never touches them.
+2. **Content buffs stay content.** The equipment rebalance is a `data/` change
+   with no schema or version motion; balance is re-proven with the batteries and
+   reported, never silently compensated for by retuning enemies.
+3. **New chance rides the seed.** The theme events roll on the existing seeded
+   event machinery (the RoyalRelic precedent) and bump `generationVersion` once
+   (10 → 11); the boss transition and backdrops are pure presentation whose only
+   randomness is a hash of the dungeon seed, never `rollCursor`.
+4. **Stagecraft never punishes score play or photosensitive players.** The boss
+   intro is always skippable with Confirm and obeys the M51 AoE-tint
+   photosensitivity contract (single decay, alpha cap, gated by the flash
+   setting); backdrops stay subdued and readable in high contrast.
+
+### Ordering rationale
+
+The debug toolbelt (M53) ships first because it accelerates manual testing of
+everything after it. The equipment rebalance (M54) precedes the content that
+grants gear and gold (M55's events are tuned against the final prices). The
+theme events (M55) are the one gameplay/generation change and carry the only
+version bump. Boss stagecraft (M56) is pure presentation and closes the program.
+M23 → M24 run after M56, re-audited against the then-current checkout.

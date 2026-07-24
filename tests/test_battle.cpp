@@ -184,3 +184,73 @@ TEST_CASE("battle: enemy AI targets a living party member", "[battle]") {
     const EnemyChoice choice = chooseEnemyAction(b, 1, db);
     REQUIRE(choice.target == 0);
 }
+
+// M53 debug god mode. The flag only exists in non-shipping builds (it is
+// compiled out of Release), so these cases are guarded the same way — Release
+// still builds and runs the rest of the suite.
+#ifndef CRYSTAL_SHIPPING_BUILD
+TEST_CASE("battle: god mode keeps the party alive but still kills enemies", "[battle][debug]") {
+    const content::ContentDatabase db = makeDb();
+
+    // Baseline (flag off, the default): a lethal hit KOs the party unit.
+    Battle base = buildBattle(oneKnight(db), goblinTeam(1), db);
+    base.units[0].hp = 1;
+    base.attack(1, 0);  // goblin strikes the knight for 2 -> would be 0
+    CHECK(base.units[0].hp == 0);
+    CHECK_FALSE(base.units[0].alive());
+
+    // Flag on: the same lethal hit leaves the party unit at 1 HP.
+    Battle god = buildBattle(oneKnight(db), goblinTeam(1), db);
+    god.debugPartyUnkillable = true;
+    god.units[0].hp = 1;
+    god.attack(1, 0);
+    CHECK(god.units[0].hp == 1);
+    CHECK(god.units[0].alive());
+
+    // God mode never shields ENEMIES: a lethal party hit still kills the goblin.
+    Battle kill = buildBattle(oneKnight(db), goblinTeam(1), db);
+    kill.debugPartyUnkillable = true;
+    kill.units[1].hp = 1;
+    kill.attack(0, 1);  // knight strikes the goblin
+    CHECK(kill.units[1].hp == 0);
+    CHECK_FALSE(kill.units[1].alive());
+}
+
+TEST_CASE("battle: god mode clamps the poison tick that bypasses applyDamage",
+          "[battle][debug]") {
+    const content::ContentDatabase db = makeDb();
+    Battle b = buildBattle(oneKnight(db), goblinTeam(1), db);
+    b.debugPartyUnkillable = true;
+    b.units[0].hp = 1;
+    b.units[0].statuses.push_back({content::StatusType::Poison, 50, 3});  // 100 dmg
+    b.tickStatuses(0);
+    CHECK(b.units[0].hp == 1);  // would have dropped to 0 without the clamp
+    CHECK(b.units[0].alive());
+}
+
+TEST_CASE("battle: god mode does not consume Iron Will", "[battle][debug]") {
+    const content::ContentDatabase db = makeDb();
+    Battle b = buildBattle(oneKnight(db), goblinTeam(1), db);
+    b.debugPartyUnkillable = true;
+    b.units[0].ironWill = true;
+    b.units[0].hp = 1;
+    b.attack(1, 0);  // lethal; god mode handles it before Iron Will is checked
+    CHECK(b.units[0].hp == 1);
+    CHECK_FALSE(b.units[0].ironWillUsed);  // still available
+}
+
+TEST_CASE("battle: god mode off leaves the roll stream byte-identical", "[battle][debug]") {
+    const content::ContentDatabase db = makeDb();
+    // A blinded attacker draws from the roll stream. Whether the flag is left at
+    // its default or set false explicitly, the outcome and rollCursor must match.
+    Battle a = buildBattle(oneKnight(db), goblinTeam(1), db);
+    Battle b = buildBattle(oneKnight(db), goblinTeam(1), db);
+    b.debugPartyUnkillable = false;  // explicit; a leaves it defaulted
+    a.units[0].statuses.push_back({content::StatusType::Blind, 0, 3});
+    b.units[0].statuses.push_back({content::StatusType::Blind, 0, 3});
+    a.attack(0, 1);
+    b.attack(0, 1);
+    CHECK(a.rollCursor == b.rollCursor);
+    CHECK(a.units[1].hp == b.units[1].hp);
+}
+#endif  // CRYSTAL_SHIPPING_BUILD

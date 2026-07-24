@@ -17,11 +17,12 @@ namespace save {
 
 inline constexpr int kSaveVersion = 1;
 
-// Three manual slots plus a dedicated autosave slot. Autosave is written on
-// dungeon entry (wired in the dungeon milestone); loading any slot always places
-// the party in town.
-enum class SaveSlot { Auto, Manual1, Manual2, Manual3 };
-inline constexpr int kSaveSlotCount = 4;
+// Five manual slots plus a dedicated autosave slot (M53; was three). Autosave is
+// written on dungeon entry; loading any slot always places the party in town.
+// The count grew by adding new slot filenames, not by changing the per-file
+// schema, so kSaveVersion is unchanged and old slot files load untouched.
+enum class SaveSlot { Auto, Manual1, Manual2, Manual3, Manual4, Manual5 };
+inline constexpr int kSaveSlotCount = 6;
 
 const char* slotFileStem(SaveSlot slot);
 const char* slotDisplayName(SaveSlot slot);

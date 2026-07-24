@@ -23,6 +23,8 @@ const char* slotFileStem(SaveSlot slot) {
   case SaveSlot::Manual1: return "save_slot1";
   case SaveSlot::Manual2: return "save_slot2";
   case SaveSlot::Manual3: return "save_slot3";
+  case SaveSlot::Manual4: return "save_slot4";
+  case SaveSlot::Manual5: return "save_slot5";
   }
   return "save_slot1";
 }
@@ -33,6 +35,8 @@ const char* slotDisplayName(SaveSlot slot) {
   case SaveSlot::Manual1: return "Slot 1";
   case SaveSlot::Manual2: return "Slot 2";
   case SaveSlot::Manual3: return "Slot 3";
+  case SaveSlot::Manual4: return "Slot 4";
+  case SaveSlot::Manual5: return "Slot 5";
   }
   return "Slot";
 }

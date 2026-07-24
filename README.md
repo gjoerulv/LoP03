@@ -24,8 +24,12 @@ music, or text. Built in **C++20** with **raylib**.
 > ambience slider), an in-battle action log, a bestiary (with each foe's
 > strongest-context stats), victory records, achievements, and a fully
 > procedural "8-bit-plus" UI.
-> Only the deferred **validation playtesting (M23)** and **release sign-off
-> (M24)** remain. Current status always lives in `docs/milestones.md`.
+> The **M53–M56 adjustment program** (a debug toolbelt + five save slots + a
+> tougher Champion; an equipment rebalance; per-theme dungeon rites; and boss
+> battle backdrops + a Crystal Shatter boss intro) is **implemented and awaiting
+> the owner's manual approval**. After it, only the deferred **validation
+> playtesting (M23)** and **release sign-off (M24)** remain. Current status always
+> lives in `docs/milestones.md`.
 
 ## Requirements
 
@@ -88,6 +92,12 @@ cmake --build --preset debug
 cmake --preset msvc-release    # shipping: static CRT, no capture CLI
 cmake --build --preset release
 ```
+
+The **development** build also carries a **debug menu** (M53), opened from the
+**Debug** row on either pause menu (town or dungeon): set levels/gold/tokens/town,
+grant items, toggle a party **god mode**, instantly clear a dungeon, unlock the
+reward classes, and fill the bestiary. It is gated on the debug overlay and is
+structurally absent from the Release preset — no shipping build can reach it.
 
 The release preset links the **static MSVC runtime**, so the packaged exe
 runs on a Windows machine without Visual Studio or the VC++ redistributable.
@@ -158,7 +168,7 @@ letterbox/pillarbox bars.
    free with a rest token), **Item Shop** (buy consumables), **Equip Shop**
    (buy by category + equip gear — each town unlocks stronger gear as you climb),
    **Training Hall** (level up, and buy passive skills — own many, equip one),
-   **Scoreboard**, **Save Point** (3 slots), and the **Guild**. **Walk out the
+   **Scoreboard**, **Save Point** (5 slots), and the **Guild**. **Walk out the
    west/east roads** to move between the **seven towns** (no button — just walk
    into the road); each later town raises enemy stats (up to +200 %) and score
    bonus (up to +100 %); clearing a dungeon in a town unlocks the road onward.

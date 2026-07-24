@@ -190,6 +190,16 @@ public:
     // amounts (Royal Snacks).
     bool kingBattle = false;
 
+#ifndef CRYSTAL_SHIPPING_BUILD
+    // M53 debug god mode: while set, no PARTY unit can be reduced below 1 HP by
+    // any damage source (the applyDamage chokepoint and the poison tick that
+    // bypasses it both clamp it). Set once in the BattleState ctor from the debug
+    // cheat flag; NEVER set by the Simulator or the tests, so the flag-off path
+    // (default) is byte-identical and there is no kBattleRulesVersion bump. The
+    // whole member is compiled out of shipping builds, so it cannot exist there.
+    bool debugPartyUnkillable = false;
+#endif
+
     bool sideAlive(Side s) const;
     Outcome outcome() const;  // Victory / Defeat / Ongoing (Escaped is set by the caller)
     std::vector<int> aliveIndices(Side s) const;
@@ -223,6 +233,13 @@ public:
     std::string guard(int actor);
 
 private:
+    // M53: promoted from a file-local free function to a member so it can honour
+    // the debug god-mode clamp without threading a flag through its six callers
+    // (all of which are already Battle methods). Applies `dmg` to `d`, honouring
+    // Iron Will and (debug builds only) party god mode; snaps the bearer out of
+    // confusion on any real hit.
+    void applyDamage(Combatant& d, int dmg);
+
     std::string attackOne(int actor, int target);   // one strike (the pre-M45 attack)
     std::string attackAll(int actor);               // M45: one strike per living foe
     std::string applyAttackStatuses(int actor, int target);  // M45: the Dragon's bite

@@ -31,8 +31,13 @@ constexpr int kSettings = 3;
 constexpr int kQuit = 4;
 
 bool anySaveExists(const save::SaveSystem& saves) {
-    return saves.exists(save::SaveSlot::Auto) || saves.exists(save::SaveSlot::Manual1) ||
-           saves.exists(save::SaveSlot::Manual2) || saves.exists(save::SaveSlot::Manual3);
+    // Any of the autosave + manual slots (M53: kSaveSlotCount grew 4 -> 6).
+    for (int i = 0; i < save::kSaveSlotCount; ++i) {
+        if (saves.exists(static_cast<save::SaveSlot>(i))) {
+            return true;
+        }
+    }
+    return false;
 }
 }  // namespace
 

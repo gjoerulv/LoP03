@@ -6,6 +6,7 @@
 #include "audio/AudioRoles.hpp"
 #include "battle/Battle.hpp"
 #include "game/RunStats.hpp"
+#include "render/BattleBackdrop.hpp"
 #include "render/BattleSequencer.hpp"
 #include "states/AoeTint.hpp"
 #include "states/BattleLog.hpp"
@@ -31,9 +32,12 @@ public:
     // given, accumulates this battle's victory tallies into a run's RunStats.
     // `castleChallenge` (M43) marks a fight fought at the castle, where losing
     // costs no gold and forfeits no run — so the defeat message tells the truth.
+    // `stage` (M56) selects the per-theme battle backdrop; Plain is the neutral
+    // default so every existing call site keeps compiling unchanged.
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                 battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None,
-                RunStats* statsSlot = nullptr, bool castleChallenge = false);
+                RunStats* statsSlot = nullptr, bool castleChallenge = false,
+                render::BackdropStage stage = render::BackdropStage::Plain);
 
     void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
@@ -129,6 +133,7 @@ private:
     RunStats* stats_ = nullptr;  // M42: run victory-stat accumulation (optional)
     battle::Outcome result_ = battle::Outcome::Ongoing;
     bool castleChallenge_ = false;  // M43: castle defeats cost no gold
+    render::BackdropStage stage_ = render::BackdropStage::Plain;  // M56: theme backdrop
     bool bossBattle_ = false;
     bool koOccurred_ = false;
     std::string bossTelegraph_;

@@ -4,6 +4,8 @@
 #include <cmath>
 #include <vector>
 
+#include "content/Enums.hpp"
+#include "states/ElementChip.hpp"  // M53: ui::elementAccent
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
 
@@ -126,4 +128,31 @@ TEST_CASE("high-contrast keeps every new role at least as bright", "[ui-kit]") {
     CHECK(luminance(high.panel) <= luminance(standard.panel));
     CHECK(luminance(high.footerFill) <= luminance(standard.footerFill));
     style::setHighContrast(false);
+}
+
+TEST_CASE("elementAccent: every element maps to an existing palette role", "[ui-kit]") {
+    // M53: the equip-shop weapon-element chip reuses M46 palette roles rather
+    // than introducing new colours. Each element resolves to one of them, and
+    // the mapping is stable and readable (chip labels are large text vs the
+    // canvas — a 3:1 target).
+    namespace content = cd::content;
+    const style::Palette& p = style::palette();
+    auto sameColor = [](Color a, Color b) {
+        return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+    };
+    CHECK(sameColor(ui::elementAccent(content::Element::Fire, p), p.danger));
+    CHECK(sameColor(ui::elementAccent(content::Element::Ice, p), p.crystal));
+    CHECK(sameColor(ui::elementAccent(content::Element::Lightning, p), p.gold));
+    CHECK(sameColor(ui::elementAccent(content::Element::Earth, p), p.success));
+    CHECK(sameColor(ui::elementAccent(content::Element::Holy, p), p.gold));
+    CHECK(sameColor(ui::elementAccent(content::Element::Dark, p), p.magic));
+    // None falls back to muted text, never an accent role.
+    CHECK(sameColor(ui::elementAccent(content::Element::None, p), p.textDim));
+    // Every accent reads against the canvas at the large-text bar.
+    for (content::Element e : {content::Element::Fire, content::Element::Ice,
+                               content::Element::Lightning, content::Element::Earth,
+                               content::Element::Holy, content::Element::Dark}) {
+        INFO(content::elementDisplayName(e));
+        CHECK(contrast(ui::elementAccent(e, p), p.canvas) >= 3.0);
+    }
 }

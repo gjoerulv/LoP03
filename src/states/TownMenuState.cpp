@@ -13,6 +13,9 @@
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
+#ifdef CRYSTAL_DEBUG_OVERLAY
+#include "states/DebugMenuState.hpp"
+#endif
 
 namespace cd {
 
@@ -22,6 +25,9 @@ constexpr int kBestiary = 1;
 constexpr int kAchievements = 2;
 constexpr int kSettings = 3;
 constexpr int kQuit = 4;
+#ifdef CRYSTAL_DEBUG_OVERLAY
+constexpr int kDebug = kQuit + 1;  // appended after Quit in debug builds only
+#endif
 }  // namespace
 
 TownMenuState::TownMenuState(StateStack& stack, AppContext& context)
@@ -31,6 +37,9 @@ TownMenuState::TownMenuState(StateStack& stack, AppContext& context)
                     {"Achievements", true},
                     {"Settings", true},
                     {"Quit", true}});
+#ifdef CRYSTAL_DEBUG_OVERLAY
+    menu_.addItem("Debug", true);
+#endif
 }
 
 void TownMenuState::handleInput(const Input& input) {
@@ -67,6 +76,12 @@ void TownMenuState::handleInput(const Input& input) {
                 // answer into three (title / desktop / stay).
                 pushQuitPrompt(stack(), context_, quit::kTownBody);
                 break;
+#ifdef CRYSTAL_DEBUG_OVERLAY
+            case kDebug:
+                stack().pushState(std::make_unique<DebugMenuState>(stack(), context_,
+                                                                   /*inDungeon=*/false));
+                break;
+#endif
             default:
                 break;
         }
@@ -81,7 +96,10 @@ void TownMenuState::render() {
     ui::drawModalDim(w, h);
 
     const int boxW = 220;
-    const int boxH = 132;  // fits the 5 pause entries (M42)
+    int boxH = 132;  // fits the 5 pause entries (M42)
+#ifdef CRYSTAL_DEBUG_OVERLAY
+    boxH += 18;  // M53: the extra "Debug" row
+#endif
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);

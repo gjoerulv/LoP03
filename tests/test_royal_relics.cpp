@@ -542,9 +542,20 @@ TEST_CASE("relics: the counterplay measurably changes the King fight",
 
     // The King is never a walkover for an unaided party.
     CHECK_FALSE(unaided.outcome == Outcome::Victory);
-    // And the counterplay buys real time: the armed party survives strictly
-    // longer than the bare one. If a relic ever stops mattering, this fails.
-    CHECK(aided.rounds > unaided.rounds);
+    // The counterplay must move the fight in the party's favour. Pre-M54 both
+    // fights were losses, so "matters" meant the armed party survived strictly
+    // longer. The **M54 equipment rebalance (doubled endgame gear)** tipped it:
+    // the modest 1+1+20 "plan" counterplay now WINS (15 rounds, 2 survivors)
+    // where the unaided maxed party still loses (21 rounds) — a stronger proof
+    // that relics matter (a loss became a win), reported to the owner as a
+    // balance shift (winnability stays an owner manual item, matrix row 125).
+    // The assertion now checks the durable intent: the counterplay either wins
+    // outright or (if a future retune makes both lose again) lasts strictly
+    // longer. If a relic ever stops mattering, this still fails. (Computed into a
+    // bool because Catch2's CHECK cannot decompose a top-level ||.)
+    const bool counterplayHelped =
+        aided.outcome == Outcome::Victory || aided.rounds > unaided.rounds;
+    CHECK(counterplayHelped);
 }
 
 // On-demand table for the milestone note and owner review:

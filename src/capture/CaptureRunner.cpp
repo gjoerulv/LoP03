@@ -36,6 +36,7 @@
 #include "states/BattleLog.hpp"
 #include "states/BattleLogState.hpp"
 #include "states/BattleState.hpp"
+#include "states/BossIntroState.hpp"
 #include "states/BlackMarketState.hpp"
 #include "states/AchievementsState.hpp"
 #include "states/BestiaryState.hpp"
@@ -43,6 +44,9 @@
 #include "states/CastleState.hpp"
 #include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
+#ifdef CRYSTAL_DEBUG_OVERLAY
+#include "states/DebugMenuState.hpp"
+#endif
 #include "states/DungeonMenuState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
@@ -703,15 +707,16 @@ int run(const char* outDir) {
              }},
             {"43_slot_menu_load",
              [](StateStack& s, AppContext& c) {
-                 // The deepest slot list: four occupied rows, each carrying a
-                 // title line, plus a message under them.
+                 // The deepest slot list (M53): six occupied rows (autosave +
+                 // five manual), each carrying a title line, plus a message under
+                 // them.
                  const int gold = c.party.gold;
                  c.party.gold = 999999;
                  c.party.castleRecords.kingTitle = kKingTitle;
                  content::LoadReport report;
                  for (save::SaveSlot slot :
                       {save::SaveSlot::Auto, save::SaveSlot::Manual1, save::SaveSlot::Manual2,
-                       save::SaveSlot::Manual3}) {
+                       save::SaveSlot::Manual3, save::SaveSlot::Manual4, save::SaveSlot::Manual5}) {
                      c.saves.save(slot, c.party, report);
                  }
                  c.party.gold = gold;
@@ -935,6 +940,129 @@ int run(const char* outDir) {
                  // between SFX and Background Audio.
                  auto st = std::make_unique<SettingsState>(s, c);
                  st->captureShowAudio();
+                 s.pushState(std::move(st));
+             }},
+#ifdef CRYSTAL_DEBUG_OVERLAY
+            {"65_debug_menu",
+             [](StateStack& s, AppContext& c) {
+                 // M53: the development-only debug console with its longest labels
+                 // and widest values (max gold, the dungeon-only instant-clear
+                 // row present). Only compiled when the debug overlay is enabled,
+                 // which the capture (debug) build is.
+                 c.party.gold = 9999999;
+                 c.party.legendaryTokens = 99;
+                 s.pushState(std::make_unique<DebugMenuState>(s, c, /*inDungeon=*/true));
+             }},
+#endif
+            {"66_armory_ghost",
+             [](StateStack& s, AppContext& c) {
+                 // M55: the Ruined Keep's guaranteed Armory Ghost, faced so its
+                 // footer trade-off is checked in situ. The rite is guaranteed, so
+                 // any themed seed holds it; a tiny loop just picks one whose
+                 // marker the player can stand in front of.
+                 for (std::uint64_t seed = 1; seed < 200; ++seed) {
+                     dungeon::Dungeon d =
+                         dungeon::generate(seed, 20, c.content, "ruined_keep", 7);
+                     auto state = std::make_unique<DungeonState>(s, c, std::move(d));
+                     if (state->captureFaceEvent(dungeon::RoomEventKind::ArmoryGhost)) {
+                         s.pushState(std::move(state));
+                         return;
+                     }
+                 }
+             }},
+            {"67_miners_cache",
+             [](StateStack& s, AppContext& c) {
+                 // M55: the Crystal Mine's guaranteed Miner's Cache.
+                 for (std::uint64_t seed = 1; seed < 200; ++seed) {
+                     dungeon::Dungeon d =
+                         dungeon::generate(seed, 20, c.content, "crystal_mine", 7);
+                     auto state = std::make_unique<DungeonState>(s, c, std::move(d));
+                     if (state->captureFaceEvent(dungeon::RoomEventKind::MinersCache)) {
+                         s.pushState(std::move(state));
+                         return;
+                     }
+                 }
+             }},
+            {"68_elder_root",
+             [](StateStack& s, AppContext& c) {
+                 // M55: the Hollow Forest's guaranteed Elder Root. Gold is set high
+                 // so the affordable "pay for XP" prompt shows (not the refusal).
+                 c.party.gold = 99999;
+                 for (std::uint64_t seed = 1; seed < 200; ++seed) {
+                     dungeon::Dungeon d =
+                         dungeon::generate(seed, 20, c.content, "hollow_forest", 7);
+                     auto state = std::make_unique<DungeonState>(s, c, std::move(d));
+                     if (state->captureFaceEvent(dungeon::RoomEventKind::ElderRoot)) {
+                         s.pushState(std::move(state));
+                         return;
+                     }
+                 }
+             }},
+            // M56: the four per-theme battle backdrops behind a live battle, one
+            // per stage, so the subdued dressing is checked against the combatants
+            // and the grounding.
+            {"69_backdrop_keep",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Keep));
+             }},
+            {"70_backdrop_mine",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Mine));
+             }},
+            {"71_backdrop_forest",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Forest));
+             }},
+            {"72_backdrop_castle",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Castle));
+             }},
+            {"73_backdrop_mine_hc",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // High contrast: the Mine backdrop must drop its crystal accent but
+                 // keep the silhouettes. (The loop resets high contrast after.)
+                 ui::style::setHighContrast(true);
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Mine));
+             }},
+            {"74_boss_intro_build",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M56: the Crystal Shatter mid-Build (growing cracks + the boss
+                 // name/telegraph), frozen. The King has the longest telegraph.
+                 battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 auto st = std::make_unique<BossIntroState>(s, c, std::move(b), &battleSlot,
+                                                            MusicTrack::None, nullptr, false,
+                                                            render::BackdropStage::Castle, 42u);
+                 st->captureSetTime(BossIntroTimeline::kHold + BossIntroTimeline::kBuild * 0.65f);
+                 s.pushState(std::move(st));
+             }},
+            {"75_boss_intro_peak",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M56: the Peak beat (dim pulse + shake) with the longest telegraph.
+                 battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 auto st = std::make_unique<BossIntroState>(s, c, std::move(b), &battleSlot,
+                                                            MusicTrack::None, nullptr, false,
+                                                            render::BackdropStage::Castle, 42u);
+                 st->captureSetTime(BossIntroTimeline::kBuildEnd + BossIntroTimeline::kPeak * 0.5f);
                  s.pushState(std::move(st));
              }},
         };

@@ -148,14 +148,22 @@ std::vector<std::string> statusLines(const battle::Combatant& c, int maxWidth, i
 
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                          battle::BattleResult* resultSlot, MusicTrack musicOverride,
-                         RunStats* statsSlot, bool castleChallenge)
+                         RunStats* statsSlot, bool castleChallenge, render::BackdropStage stage)
     : GameState(stack),
       context_(context),
       battle_(std::move(battle)),
       resultSlot_(resultSlot),
       musicOverride_(musicOverride),
       stats_(statsSlot),
-      castleChallenge_(castleChallenge) {
+      castleChallenge_(castleChallenge),
+      stage_(stage) {
+#ifndef CRYSTAL_SHIPPING_BUILD
+    // M53 debug god mode: seed the battle's party-unkillable flag from the debug
+    // cheat. Off in every normal/shipping/sim path (the cheat can only be set by
+    // the debug menu, itself compiled out of Release), so the battle stream is
+    // untouched.
+    battle_.debugPartyUnkillable = context_.cheats.godMode;
+#endif
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Enemy && c.isBoss) {
             bossBattle_ = true;
@@ -1263,6 +1271,12 @@ void BattleState::render() {
         const int bandY = 24;
         const int bandH = h - kPanelH - 34 - bandY;
         DrawRectangle(0, bandY, w, bandH, pal.panel);
+        // M56: the subdued per-theme backdrop sits on the flat band fill, under
+        // the ink keylines/brackets/pips below (so the M46 grounding stays crisp).
+        // Accents are dropped in high contrast; a static 2-frame glint uses the
+        // shared UI motion phase.
+        render::drawBattleBackdrop(stage_, {0, bandY, w, bandH}, ui::motionPhase(),
+                                   !context_.settings.values.highContrast);
         DrawRectangle(0, bandY, w, 1, pal.ink);
         DrawRectangle(0, bandY + bandH - 1, w, 1, pal.ink);
         DrawRectangle(0, bandY + 1, w, 1, pal.borderDark);

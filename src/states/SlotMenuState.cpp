@@ -37,8 +37,10 @@ std::string slotTitle(save::SaveSystem& saves, save::SaveSlot slot) {
 }
 
 constexpr int kRowX = 56;
-constexpr int kRowsY = 76;
-constexpr int kRowH = 26;
+// M53: tighter static layout so all six Load rows (autosave + five manual), each
+// able to carry a King-title second line, fit at 426x240 without scrolling.
+constexpr int kRowsY = 52;
+constexpr int kRowH = 24;
 }  // namespace
 
 SlotMenuState::SlotMenuState(StateStack& stack, AppContext& context, SlotMenuMode mode)
@@ -52,11 +54,12 @@ void SlotMenuState::rebuild() {
     std::vector<ui::MenuItem> items;
 
     if (mode_ == SlotMenuMode::Load) {
-        slots_ = {save::SaveSlot::Auto, save::SaveSlot::Manual1, save::SaveSlot::Manual2,
-                  save::SaveSlot::Manual3};
+        slots_ = {save::SaveSlot::Auto,    save::SaveSlot::Manual1, save::SaveSlot::Manual2,
+                  save::SaveSlot::Manual3, save::SaveSlot::Manual4, save::SaveSlot::Manual5};
     } else {
         // The autosave slot is not manually writable.
-        slots_ = {save::SaveSlot::Manual1, save::SaveSlot::Manual2, save::SaveSlot::Manual3};
+        slots_ = {save::SaveSlot::Manual1, save::SaveSlot::Manual2, save::SaveSlot::Manual3,
+                  save::SaveSlot::Manual4, save::SaveSlot::Manual5};
     }
 
     for (save::SaveSlot slot : slots_) {
@@ -144,12 +147,15 @@ void SlotMenuState::render() {
     ClearBackground(p.canvas);
 
     const char* title = mode_ == SlotMenuMode::Save ? "Save Game" : "Load Game";
-    ui::drawTitlePlaque(title, w / 2, 20, 16);
-    ui::drawFrame(32, 64, w - 64, 4 * kRowH + 18, ui::FrameStyle::Standard);
+    ui::drawTitlePlaque(title, w / 2, 14, 16);
 
     // Rows are drawn here rather than via drawMenu so a slot's King title gets
     // its own line: appended to the label it ran straight off the screen.
     const std::vector<ui::MenuItem>& items = menu_.items();
+    // Frame sized from the ACTUAL row count (M53): fits the six Load rows and no
+    // longer overshoots in Save mode, where there are fewer.
+    const int rows = static_cast<int>(items.size());
+    ui::drawFrame(32, 40, w - 64, rows * kRowH + 18, ui::FrameStyle::Standard);
     for (std::size_t i = 0; i < items.size(); ++i) {
         const int y = kRowsY + static_cast<int>(i) * kRowH;
         const bool isCursor = static_cast<int>(i) == menu_.cursor();
@@ -167,11 +173,12 @@ void SlotMenuState::render() {
     }
 
     if (!message_.empty()) {
-        // Below the deepest row a Load list can reach (4 slots, each able to
-        // carry a title line) and clear of the footer. Overwrite arming is a
-        // consequence question, so it rides the Danger banner.
+        // Below the deepest row a Load list can reach (6 slots, each able to
+        // carry a title line: y=52..172, deepest title ~185, frame bottom ~202)
+        // and clear of the footer. Overwrite arming is a consequence question, so
+        // it rides the Danger banner.
         ui::drawBanner(pendingOverwrite_ >= 0 ? ui::BannerKind::Danger : ui::BannerKind::Success,
-                       message_, 60, 190, w - 120, "slot.message");
+                       message_, 60, 204, w - 120, "slot.message");
     }
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();

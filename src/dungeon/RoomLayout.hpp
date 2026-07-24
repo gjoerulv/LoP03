@@ -31,8 +31,12 @@ namespace cd::dungeon {
 // consumables a dungeon merchant offers and adds a town-1-only item to the town-1
 // chest/merchant pools; version 10 (M44) draws the Royal Relic replacement roll
 // from the event stream at town >= 2 / depth >= 2, so a seed's events shift —
-// each changes generated output for a seed (owner-approved).
-inline constexpr int kGenerationVersion = 10;
+// each changes generated output for a seed (owner-approved);
+// version 11 (M55) guarantees one per-theme rite (Armory Ghost / Miner's Cache /
+// Elder Root) on the first event slot of every themed dungeon and skips the relic
+// draw on that slot, so a themed seed's events shift (owner-approved). Empty-theme
+// generation is unchanged.
+inline constexpr int kGenerationVersion = 11;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

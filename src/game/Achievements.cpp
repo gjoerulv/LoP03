@@ -51,7 +51,13 @@ bool achievementMet(const std::string& id, const Party& p, const AchvContext& ct
         }
         return false;
     }
-    if (id == "champion") return !p.castleRecords.kingTitle.empty();
+    // M53: Champion is now an efficiency goal — beating the King in
+    // kChampionKingTurns turns or fewer — read from the persisted best. A save
+    // whose recorded best is already at/under the bar retro-unlocks it (a player
+    // who beat him efficiently before this build should not have to again).
+    if (id == "champion")
+        return p.castleRecords.kingBestTurns > 0 &&
+               p.castleRecords.kingBestTurns <= kChampionKingTurns;
     if (id == "naturalist") return p.encountered.size() >= 30;
     return false;
 }

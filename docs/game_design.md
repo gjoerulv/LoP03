@@ -631,6 +631,67 @@ secret, none touching the core loop:
   **high-stakes black-market path** (see §10, Black market) round out the
   milestone.
 
+**Toolbelt & trims (M53).** Four small adjustments, none touching the core loop:
+- The **Save Point** now offers **five manual slots** (was three) plus the
+  autosave slot; every slot is visible on the Load screen and old saves load
+  unchanged.
+- The **Champion** achievement is now an efficiency goal — **"Defeat the Hollow
+  King in 15 turns or fewer"** — read from your best King-fight turn count.
+  (Just *beating* the King is the separate **Kingslayer** achievement.) A save
+  that already beat him that quickly unlocks it retroactively.
+- The **Equip Shop** shows a **weapon's element** (Fire, Holy, …) as a small
+  coloured chip in the Buy list, the Equip list, and the Gear Details overlay, so
+  the five elemental weapons are identifiable before purchase or equip. (The
+  affinity layer itself is unchanged — see Elements in §9.)
+- A **development-only debug menu** (never present in a shipping build) is added
+  for testing; it has no player-facing behaviour and is described in
+  `docs/technical_design.md`.
+
+**Arms of the ladder (M54).** A substantial, owner-approved **equipment
+rebalance** so gear feels like it climbs with the seven-town ladder. It is a
+`data/items.json`-only change (no schema, no version bump): positive
+ATK/MAG/DEF/SPD **and price** scale from ×1.0 at the weakest non-legendary up to
+×2.0 at the strongest town-7 epics, with legendaries at ×2.5. **HP bonuses, stat
+penalties, pure-HP items, and legendary prices are deliberately never scaled**,
+and the ten weakest pieces are unchanged. Enemies were **not** retuned to
+compensate. Consequence for the owner's eye: the far stronger endgame gear lowers
+the counterplay a maxed party needs against the Hollow King (a fully unaided
+party still loses, but a modest snack/relic loadout that used to lose now wins) —
+a balance shift reported for review, with King winnability remaining an owner
+manual item.
+
+**Theme rites (M55).** Each of the three dungeon themes now hides **one signature
+room event, guaranteed exactly once per dungeon** and never appearing in another
+theme (this is the only generation change in the program: **generation version
+10 → 11**). Each states its full trade-off in the footer before you Confirm, like
+every event:
+- **The Armory Ghost** (Ruined Keep) — trade one piece of gear from your bag for
+  a random piece **one rarity finer, same slot, sight unseen**. An epic can even
+  yield a legendary (a third way to find one); the offered piece is consumed and
+  the ghost declines legendaries. No gold, no fight, no score effect. You pick
+  which piece to offer from a list.
+- **Miner's Cache** (Crystal Mine) — clear a rockfall for a rich cache: **a third
+  of each standing hero's max HP** (never fatal) in exchange for gold well above a
+  trapped chest **plus a guaranteed item**. Deliberately a bit harsher than the
+  25 % trapped chest, and more rewarding.
+- **The Elder Root** (Hollow Forest) — **pay town-scaled gold for party XP** worth
+  about one elite battle, spending **zero battle turns** (your score is untouched)
+  — the inverse of grinding fights for XP. Refused if you cannot pay.
+
+**Boss stagecraft (M56).** Pure presentation, no rules change:
+- Every battle now wears a **subdued per-theme backdrop** behind the combatants —
+  a broken-parapet Keep, a crystal-cluster Mine, a trunk-columned Forest, or a
+  bannered Castle throne room — kept deliberately quiet (small silhouettes low and
+  along a top skyline strip, the central action corridor left clear) so it sets
+  the place without competing with the fight. In **high contrast** the backdrops
+  simplify (accents drop, silhouettes stay).
+- Every battle against a **boss team** (a dungeon boss, a Boss Rush wave, or the
+  Hollow King) opens with a dramatic **Crystal Shatter** transition — cracks grow,
+  the screen darkens with a single dim pulse, and the scene shatters into crystal
+  shards before the battle lands. It is **always skippable** with Confirm and obeys
+  the reduced-motion/flash settings (the pulse is gated by Battle Flash, the shake
+  by Battle Shake); Endless Rush waves stay plain.
+
 ## 13. First-complete-version content target
 
 6 classes (each with a level-based learnset) · 26 normal enemy types · 17 elites ·

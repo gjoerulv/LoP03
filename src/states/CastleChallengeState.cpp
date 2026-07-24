@@ -16,7 +16,9 @@
 #include "raylib.h"
 #include "game/Achievements.hpp"
 #include "states/AchievementToast.hpp"
+#include "render/BattleBackdrop.hpp"
 #include "states/BattleState.hpp"
+#include "states/BossIntroState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
@@ -72,15 +74,31 @@ void CastleChallengeState::startNextFight() {
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
     const MusicTrack music =
         kind_ == CastleChallenge::King ? MusicTrack::KingBattle : MusicTrack::None;
-    // M43: the last argument marks this as a castle fight, so a defeat message
-    // never claims the dungeon's gold penalty.
-    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &result_,
-                                                    music, nullptr, true));
+    // M43: the `true` marks this as a castle fight, so a defeat message never
+    // claims the dungeon's gold penalty. M56: castle fights wear the Castle
+    // backdrop; a boss-team fight (a Boss Rush wave or the King) opens with the
+    // Crystal Shatter, which then launches the same battle. Endless waves have no
+    // bossId and stay plain. The intro seed is a stable function of the wave.
+    const std::uint64_t introSeed = 0xB055C0DE0000ull + static_cast<std::uint64_t>(wave_);
+    if (!team.bossId.empty()) {
+        stack().pushState(std::make_unique<BossIntroState>(
+            stack(), context_, std::move(b), &result_, music, nullptr, /*castleChallenge=*/true,
+            render::BackdropStage::Castle, introSeed));
+    } else {
+        stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &result_,
+                                                        music, nullptr, /*castleChallenge=*/true,
+                                                        render::BackdropStage::Castle));
+    }
 }
 
 void CastleChallengeState::onResume() {
     if (done_) {
         return;  // the overlay is up; input pops us
+    }
+    // M56: the fight now runs behind BossIntroState for boss waves; only act once
+    // the battle has truly ended (a still-Ongoing result means a spurious resume).
+    if (result_.outcome == battle::Outcome::Ongoing) {
+        return;
     }
     context_.fade.start();
     totalRounds_ += result_.rounds;

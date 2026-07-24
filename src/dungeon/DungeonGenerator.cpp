@@ -9,6 +9,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/Enums.hpp"
 #include "dungeon/Rng.hpp"
+#include "dungeon/ThemeEvents.hpp"  // M55 per-theme rites (themeEventKind, prices)
 #include "game/Relics.hpp"  // relicEventChancePct (M44)
 #include "game/WorldLadder.hpp"
 
@@ -480,10 +481,24 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
 
             RoomEvent ev;
             ev.kind = kinds[static_cast<std::size_t>(made)];
+            // M55: the FIRST event slot of a themed dungeon is the theme's
+            // guaranteed rite (Armory Ghost / Miner's Cache / Elder Root). It
+            // replaces the rolled kind, and the relic draw below SKIPS this slot,
+            // so a relic never displaces the rite. Empty/unknown themes force
+            // nothing (themeSlot stays false) and generate exactly as before.
+            bool themeSlot = false;
+            if (made == 0) {
+                const RoomEventKind rite = themeEventKind(d.themeId);
+                if (rite != RoomEventKind::None) {
+                    ev.kind = rite;
+                    themeSlot = true;
+                }
+            }
             // Royal Relic (M44): a rare replacement of the rolled event, at most
             // one per dungeon. The draw is taken only where the event is eligible
-            // (town >= 2, depth >= 2), from this same seeded stream.
-            if (!relicPlaced) {
+            // (town >= 2, depth >= 2), from this same seeded stream — never on the
+            // theme-rite slot (M55).
+            if (!relicPlaced && !themeSlot) {
                 const int relicPct = relicEventChancePct(townIdx, d.depth);
                 if (relicPct > 0 && rng.chance(relicPct)) {
                     ev.kind = RoomEventKind::RoyalRelic;
@@ -529,9 +544,19 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                     }
                     break;
                 }
+                case RoomEventKind::ElderRoot:  // M55: town-scaled price paid for XP
+                    ev.goldCost = elderRootPrice(townIdx, d.depth);
+                    break;
+                case RoomEventKind::MinersCache:  // M55: a guaranteed item baked in now
+                    if (!pools.items.empty()) {
+                        ev.itemId = pools.items[static_cast<std::size_t>(rng.range(
+                            0, static_cast<int>(pools.items.size()) - 1))];
+                    }
+                    break;
                 case RoomEventKind::HealingSpring:
                 case RoomEventKind::ScoreWager:
                 case RoomEventKind::RestToken:
+                case RoomEventKind::ArmoryGhost:  // M55: the upgrade is picked at trade time
                 case RoomEventKind::RoyalRelic:  // the relic is picked at resolution (M44)
                 case RoomEventKind::None:
                     break;

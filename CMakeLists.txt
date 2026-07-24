@@ -93,8 +93,10 @@ add_library(crystal_core STATIC
     src/dungeon/DungeonModel.cpp
     src/dungeon/DungeonGenerator.cpp
     src/dungeon/RoomLayout.cpp
+    src/dungeon/ThemeEvents.cpp
     src/render/SpriteDraw.cpp
     src/render/BattleSequencer.cpp
+    src/render/BattleBackdrop.cpp
     src/danger/DangerRating.cpp
     src/score/Scoring.cpp
     src/score/Scoreboard.cpp
@@ -112,8 +114,10 @@ add_library(crystal_core STATIC
     src/states/CastleChallengeState.cpp
     src/states/GuildState.cpp
     src/states/DungeonState.cpp
+    src/states/ArmoryGhostState.cpp
     src/states/DungeonMenuState.cpp
     src/states/BattleState.cpp
+    src/states/BossIntroState.cpp
     src/states/BattleLogState.cpp
     src/states/DungeonResultState.cpp
     src/states/ScoreboardState.cpp
@@ -127,6 +131,9 @@ add_library(crystal_core STATIC
     src/states/ConfirmPromptState.cpp
     src/states/QuitFlow.cpp
     src/states/DetailsOverlayState.cpp
+    # M53: development-only debug menu. Compiled unconditionally; its body is
+    # entirely under #ifdef CRYSTAL_DEBUG_OVERLAY, so it is empty in Release.
+    src/states/DebugMenuState.cpp
 )
 
 target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"

@@ -60,30 +60,39 @@
 | 50 | Town travel rework | ☑ complete (approved) |
 | 51 | Presentation & options | ☑ complete (approved) |
 | 52 | Comforts & secrets | ☑ complete (approved) |
+| 53 | Toolbelt & trims (debug menu, 5 save slots, Champion, element chips) | ◑ implemented, awaiting manual approval |
+| 54 | Arms of the ladder (equipment rebalance) | ◑ implemented, awaiting manual approval |
+| 55 | Theme rites (per-theme dungeon events) | ◑ implemented, awaiting manual approval |
+| 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
 (M35 → M36 → M37 → M38 → M39 → M40 → M41 → M42), then the **M43–M45 King's
 Gambit program** (M43 → M44 → M45, authorized 2026-07-22), then **M46** (the
 owner-directed presentation facelift), then the **M47–M51 Court & Comfort
-program** (M47 → M48 → M49 → M50 → M51, authorized 2026-07-23), **then**
-M23 → M24. M23/M24 were deferred by the owner on 2026-07-20: the game is not
+program** (M47 → M48 → M49 → M50 → M51, authorized 2026-07-23), then **M52**
+(comforts & secrets, authorized 2026-07-23), then the **M53–M56 adjustment
+program** (M53 → M54 → M55 → M56, authorized 2026-07-24), **then** M23 → M24.
+M23/M24 were deferred by the owner on 2026-07-20: the game is not
 release-ready, so validating and packaging it would have measured the wrong
 build. Their existing tooling and packaging work is retained, not discarded —
 only their position in the sequence changed. Each expansion program was
 authorized as content/systems work the game needs before M23/M24 are worth
 running. See the program sections below.
 
-**With M52 every authorized expansion is finished: M23 → M24 are next, and
-nothing else stands before them.** Both must be re-audited against the post-M52
-checkout before they begin — the capture set has grown (64 scenes as of M52),
-the balance batteries have grown (`[economy-report]`, `[castle-report]` with
-its rush sweep, `[king-report]`, `[classes-report]`), and the packaging
-manifest must account for everything the expansions added (the relic prop,
-three class sprites, two Royal Guard sprites, and the `profile.json`
-user-data file). The M49 castle retune (Boss Rush 580 % / King 500 % /
-Endless 500 % +10 %pts per wave, level cap 99) is the balance baseline M23
-playtests should judge.
+**With the M53–M56 adjustment program (authorized 2026-07-24) M23 → M24 are the
+next thing after it, and nothing else stands before them.** M53–M56 run in
+order before M23/M24; each stops at `implemented, awaiting manual approval` for
+the owner. When they close, both M23 and M24 must be re-audited against the
+then-current checkout before they begin — the capture set has grown (64 scenes
+as of M52, more as M53–M56 add scenes), the balance batteries have grown
+(`[economy-report]`, `[castle-report]` with its rush sweep, `[king-report]`,
+`[classes-report]`), and the packaging manifest must account for everything the
+expansions added (the relic prop, three class sprites, two Royal Guard sprites,
+and the `profile.json` user-data file). The M49 castle retune (Boss Rush 580 % /
+King 500 % / Endless 500 % +10 %pts per wave, level cap 99) is the balance
+baseline M23 playtests should judge; the M54 equipment rebalance is the gear
+baseline they should judge alongside it.
 
 ## M1 — Project foundation
 
@@ -2159,6 +2168,167 @@ authorized expansion; M23 → M24 follow.
   market.
 - **Milestone note:** `docs/milestone_notes/M52_comforts_secrets.md`
 
-**Execution order:** M52 (one milestone), **then** M23 → M24 (re-audited
-against the post-M52 checkout). The Crown's rules bump is the only version
-change; ambience and the high-stakes market are additive and unversioned.
+**Execution order:** M52 (one milestone), **then** the M53–M56 adjustment
+program, **then** M23 → M24 (re-audited against the then-current checkout). The
+Crown's rules bump is the only M52 version change; ambience and the high-stakes
+market are additive and unversioned.
+
+## Adjustment program (M53–M56)
+
+Authorized by the owner on 2026-07-24 as one more program before the M23/M24
+release track — an adjustment pass, not new genre scope. Four milestones
+implemented in order, each stopping at `implemented, awaiting manual approval`.
+Owner decisions were taken via Q&A at planning time (2026-07-24) and are
+recorded per milestone. The core loop is unchanged. Version discipline: the
+**only** planned version bump in the whole program is generation **10 → 11** in
+M55 (the theme events change the event roll for a seed). Battle rules stay at
+**10**, save at **1**, settings at **1**, achievements at **1**: new save slots
+are new filenames (not a schema change), equipment values are content inputs
+(not battle rules), god mode is compiled out of shipping builds and defaults
+off, and the Champion condition change touches neither the achievements-file
+schema nor already-earned unlocks.
+
+**Determinism law for the program.** Boss-intro presentation and battle
+backdrops never touch `Battle.rngSeed`/`rollCursor` (their shard/glint
+randomness is a pure hash of the dungeon seed); theme-event resolution rolls
+ride the existing seeded event machinery (the RoyalRelic precedent); god mode
+adds zero rolls and is never set by the Simulator.
+
+### M53 — Toolbelt & trims
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24 on
+  base checkout `07a13bb`. **505/505 Debug** and **501/501 Release** tests green
+  (the 4 god-mode cases are debug-only, so Release has 4 fewer by design);
+  `--capture` **65/65** clean (added `65_debug_menu`). No version bumps. Champion
+  N kept at 15, confirmed against the `[king-report]` battery (best sim win = 12
+  turns; adequate wins land at 20–21, so 15 separates optimal from adequate). See
+  `docs/milestone_notes/M53_toolbelt_trims.md` §J.
+- **Goal:** four independent quality/comfort items. (1) A **debug menu**
+  reachable from both pause menus in development builds only (gated on
+  `CRYSTAL_DEBUG_OVERLAY`, structurally absent from Release), offering
+  level/gold/token/town/inventory/black-market cheats, a **god mode**
+  (party-unkillable), an instant dungeon clear through the real completion path,
+  reward-class unlock, and bestiary fill. (2) **Five manual save slots** (was
+  three) plus the autosave slot, all visible and loadable at 426×240 with old
+  saves intact. (3) The **Champion** achievement becomes *"Defeat the Hollow
+  King in N turns or fewer"* (N tuned via the simulator and reported), reading
+  the persisted `castleRecords.kingBestTurns`. (4) **Weapon element** shown in
+  the equip shop (Buy/Equip/Details) via the existing element data + chip
+  primitives.
+- **Engineering outcome:** a new `DebugMenuState` whose body is entirely under
+  `#ifdef CRYSTAL_DEBUG_OVERLAY` (file compiled unconditionally, the
+  BattleState-capture-block precedent); an unconditional `DebugCheats` struct on
+  AppContext (macro-independent layout) with ifdef'd readers/writers; a single
+  `battle::Battle::debugPartyUnkillable` flag inside `#ifndef
+  CRYSTAL_SHIPPING_BUILD` clamped at exactly the two lethal-party-damage sites
+  (`applyDamage` chokepoint + the poison tick that bypasses it), never set by
+  the Simulator so streams stay byte-identical and **no battle-rules bump**;
+  scoreboard submission skipped when god mode is on. `SaveSlot` gains
+  `Manual4/Manual5` (`kSaveSlotCount = 6`, no save-version bump). The Champion
+  predicate reads `kingBestTurns` against a constant `kChampionKingTurns`
+  (retro-unlock for saves already at/under N is acceptable and documented).
+- **Out of scope:** anything shipping in a Release binary changing behaviour;
+  M54–M56 work.
+- **Owner decisions (2026-07-24):** Champion = King in ≤ N turns (N reported);
+  all four debug-menu extras included (legendary-token stepper, instant dungeon
+  clear, unlock reward classes, fill bestiary) on top of the core cheat set.
+- **Milestone note:** `docs/milestone_notes/M53_toolbelt_trims.md`
+
+### M54 — Arms of the ladder (equipment rebalance)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24.
+  `data/items.json` matches the approved spreadsheet exactly (48 pieces changed;
+  HP bonuses, penalties, pure-HP items, legendary prices, and the ten weakest
+  untouched); **no version bumps**. **505/505 Debug** and **501/501 Release**
+  tests green; `--capture` **65/65** clean with the widened prices. **Owner-review
+  balance shift:** the doubled endgame gear makes the Hollow King beatable with a
+  modest counterplay that previously lost (a fully unaided maxed party still
+  loses); reported with before/after `[king-report]` tables, not compensated by
+  retuning enemies (one `[balance]` test's now-invalid premise was corrected, not
+  an enemy value). No degenerate turn-order dominance, so the half-rate-SPD
+  fallback did not fire. See `docs/milestone_notes/M54_arms_of_the_ladder.md` §J.
+- **Goal:** a substantial, owner-approved buff to non-trivial equipment so the
+  gear on the ladder feels like it climbs with the towns. `data/items.json`
+  only: positive ATK/MAG/DEF/SPD and price scaled by an owner-approved factor
+  (weakest unchanged → strongest non-legendary ×2, legendary ×2.5); HP bonuses,
+  stat penalties, pure-HP items, and legendary prices are never scaled.
+- **Engineering outcome:** content-only change; no schema, no version bumps.
+  The balance/economy batteries are re-run and the before/after reported;
+  enemies are **not** silently retuned to compensate (shifts are reported and
+  escalated if a case breaks). An SPD-scaling caveat is flagged to the owner
+  (SPD scales with the same factor; the fallback if turn-order dominance appears
+  is half-rate SPD scaling, escalated with data).
+- **Out of scope:** enemy/boss rebalancing; any code change; M53/M55/M56 work.
+- **Owner decisions (2026-07-24):** the M54 spreadsheet is approved — implement
+  it exactly.
+- **Milestone note:** `docs/milestone_notes/M54_arms_of_the_ladder.md`
+
+### M55 — Theme rites (per-theme dungeon events)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24.
+  Each theme guarantees its rite exactly once (Ruined Keep = Armory Ghost, Crystal
+  Mine = Miner's Cache, Hollow Forest = Elder Root), never cross-theme;
+  **`kGenerationVersion` 10 → 11** (the program's only version bump); determinism
+  preserved and empty-theme generation byte-identical. **515/515 Debug** and
+  **511/511 Release** tests green (+10 `test_theme_events.cpp` cases; one
+  `test_events.cpp` count updated for the new guaranteed kind, not a generation
+  change); `--capture` **68/68** clean (+3 event-prompt scenes). See
+  `docs/milestone_notes/M55_theme_rites.md` §J.
+- **Goal:** one unique room event per theme, each guaranteed exactly once per
+  dungeon and never appearing outside its theme: **The Armory Ghost** (Ruined
+  Keep — trade one inventory equipment piece for a seeded random piece one
+  rarity tier up, same slot, sight unseen), **Miner's Cache** (Crystal Mine — a
+  one-third max-HP wound to each standing member, never fatal, for gold strictly
+  above a trapped chest plus a guaranteed item roll), and **The Elder Root**
+  (Hollow Forest — pay town-scaled gold for party XP comparable to one elite
+  battle at that town/depth).
+- **Engineering outcome:** `RoomEventKind` gains three kinds; the generator
+  guarantees the active theme's event once (replacing the first rolled event
+  slot, the RoyalRelic rare-replacement draw skipping that slot); all rolls
+  seeded (RoyalRelic precedent). **`kGenerationVersion` 10 → 11** (the only
+  version bump in the program). Resolution follows the existing
+  `eventPromptText` / `resolveEvent` pattern with a marker sprite per kind.
+- **Out of scope:** new themes; changing existing events; M53/M54/M56 work.
+- **Owner decisions (2026-07-24):** the three events above; Miner's Cache
+  calibrated more rewarding than a trapped chest but slightly more damaging.
+- **Milestone note:** `docs/milestone_notes/M55_theme_rites.md`
+
+### M56 — Boss stagecraft (battle backdrops + Crystal Shatter)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24.
+  Pure presentation: per-theme battle backdrops (Keep/Mine/Forest/Castle + Plain)
+  behind the M46 grounding, and a skippable **Crystal Shatter** boss intro for
+  every boss-team battle (dungeon bosses, Boss Rush waves, the King; Endless stays
+  plain). **No version bump.** Both hazards respected (intro is push-on-top, never
+  `replaceState`; `rollCursor` untouched). **526/526 Debug** and **522/522
+  Release** tests green (+11: `test_battle_backdrop` + `test_boss_intro`);
+  `--capture` **75/75** clean (+7 scenes). **Deviation:** the shatter is abstract
+  (seeded crystal shards) rather than a live-scene snapshot — simpler and safe, the
+  same player-facing effect; documented in
+  `docs/milestone_notes/M56_boss_stagecraft.md` §J.
+- **Goal:** per-theme subdued **battle backdrops** (Keep / Mine / Forest /
+  Castle, plus Plain fallback) behind the M46 battle grounding, and a dramatic
+  **Crystal Shatter** boss-intro transition played for **every** battle against
+  a boss team (dungeon bosses, Boss Rush waves, and the King), always skippable
+  with Confirm.
+- **Engineering outcome:** pure `render::BattleBackdrop` (stage mapping +
+  geometry builder with a role enum and a thin raylib mapper) subject to
+  mechanically-tested "subdued" rules (≤ ~25 % band coverage, silhouettes low,
+  ≤ 1 accent role, high-contrast simplifies rather than suppresses); a new
+  `BossIntroState` **pushed on top of** the caller (never `replaceState`, whose
+  queued Pop fires a spurious `onResume` below) carrying a `BattleLaunch`
+  payload; a small RAII virtual-target **snapshot service** on AppContext with
+  one Application hook; a pure header-only `BossIntroTimeline`
+  (Hold→Build→Peak→Handoff, dt-injected). Presentation-only: the pulse follows
+  the M51 AoE-tint photosensitivity contract (single decay, alpha cap 0.12,
+  gated by effectFlash), darkening is an uncapped fade, and `rollCursor` is
+  never touched (shard layout is a pure hash of the dungeon seed).
+- **Out of scope:** any battle-rule/scoring change; audio work; M53/M54/M55
+  work.
+- **Owner decisions (2026-07-24):** Crystal Shatter for every boss-team battle,
+  skippable.
+- **Milestone note:** `docs/milestone_notes/M56_boss_stagecraft.md`
+
+**Execution order:** M53 → M54 → M55 → M56, **then** M23 → M24 (re-audited
+against the then-current checkout). Generation **10 → 11** in M55 is the only
+version change in the program.

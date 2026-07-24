@@ -182,21 +182,9 @@ const char* statusLabel(content::StatusType type) {
     return "";
 }
 
-void applyDamage(Combatant& d, int dmg) {
-    // Iron Will (M36): a lethal blow leaves the holder at 1 HP, once per battle.
-    if (dmg > 0 && d.hp > 0 && d.hp - dmg <= 0 && d.ironWill && !d.ironWillUsed) {
-        d.ironWillUsed = true;
-        d.hp = 1;
-    } else {
-        d.hp = std::max(0, d.hp - dmg);
-    }
-    // Confusion (M35): a hit snaps its bearer out of confusion. Single chokepoint
-    // for all attack/skill damage (poison DoT does not route through here), so the
-    // rule holds identically in live play and the Simulator.
-    if (dmg > 0) {
-        removeStatus(d, content::StatusType::Confusion);
-    }
-}
+// applyDamage is a Battle member (M53) so it can honour the debug god-mode
+// clamp; its definition lives at namespace scope just after this anonymous
+// namespace closes (a member cannot be defined inside an anonymous namespace).
 
 void applyHeal(Combatant& d, int amount) {
     if (d.hp <= 0) {
@@ -372,6 +360,34 @@ int physicalMissPct(const Combatant& a, const Combatant& d) {
 }
 
 }  // namespace
+
+void Battle::applyDamage(Combatant& d, int dmg) {
+#ifndef CRYSTAL_SHIPPING_BUILD
+    // M53 debug god mode: a party unit never drops below 1 HP from a hit routed
+    // through here. Same shape as Iron Will, but repeatable and party-wide; still
+    // snaps the unit out of confusion like any real hit. Compiled out of shipping
+    // builds and off by default, so the normal path below is untouched.
+    if (debugPartyUnkillable && d.side == Side::Party && dmg > 0 && d.hp > 0 &&
+        d.hp - dmg <= 0) {
+        d.hp = 1;
+        removeStatus(d, content::StatusType::Confusion);
+        return;
+    }
+#endif
+    // Iron Will (M36): a lethal blow leaves the holder at 1 HP, once per battle.
+    if (dmg > 0 && d.hp > 0 && d.hp - dmg <= 0 && d.ironWill && !d.ironWillUsed) {
+        d.ironWillUsed = true;
+        d.hp = 1;
+    } else {
+        d.hp = std::max(0, d.hp - dmg);
+    }
+    // Confusion (M35): a hit snaps its bearer out of confusion. Single chokepoint
+    // for all attack/skill damage (poison DoT does not route through here), so the
+    // rule holds identically in live play and the Simulator.
+    if (dmg > 0) {
+        removeStatus(d, content::StatusType::Confusion);
+    }
+}
 
 bool Battle::sideAlive(Side s) const {
     for (const Combatant& c : units) {
@@ -661,7 +677,16 @@ std::string Battle::tickStatuses(int unit) {
     for (StatusInstance& s : c.statuses) {
         if (s.type == content::StatusType::Poison && c.hp > 0) {
             const int dmg = s.magnitude * kPoisonDamageMult;  // M35: poison deals 2x
-            c.hp = std::max(0, c.hp - dmg);
+            // Poison bypasses applyDamage, so the M53 god-mode clamp is repeated
+            // here (the second and last clamp site). floor stays 0 in every
+            // shipping/sim/test path, so this is byte-identical when off.
+            int floor = 0;
+#ifndef CRYSTAL_SHIPPING_BUILD
+            if (debugPartyUnkillable && c.side == Side::Party) {
+                floor = 1;
+            }
+#endif
+            c.hp = std::max(floor, c.hp - dmg);
             log += c.name + " takes " + std::to_string(dmg) + " poison damage.";
             if (!c.alive()) {
                 log += " " + c.name + " is KO'd!";
