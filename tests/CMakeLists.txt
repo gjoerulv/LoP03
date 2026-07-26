@@ -68,9 +68,15 @@ add_executable(crystal_tests
     test_events.cpp
     test_leveling.cpp
     test_comforts.cpp
+    test_editor_canonical.cpp
+    test_editor_descriptors.cpp
+    test_editor_enum_lists.cpp
+    test_battle_observer.cpp
+    test_editor_simlab.cpp
 )
 
-target_link_libraries(crystal_tests PRIVATE crystal_core Catch2::Catch2WithMain)
+target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core
+                                            Catch2::Catch2WithMain)
 set_project_warnings(crystal_tests)
 
 # Absolute paths to the shipped content/assets, so tests validate the real files.

@@ -11,8 +11,16 @@ bool isAllowedNameChar(int codepoint) {
     return codepoint == ' ' || codepoint == '-' || codepoint == '\'';
 }
 
-TextInput::TextInput(std::size_t maxLength, std::string initial) : maxLength_(maxLength) {
+bool isAllowedPrintableChar(int codepoint) { return codepoint >= 32 && codepoint <= 126; }
+
+TextInput::TextInput(std::size_t maxLength, std::string initial, TextFilter filter)
+    : maxLength_(maxLength), filter_(filter) {
     setValue(std::move(initial));
+}
+
+bool TextInput::allowed(int codepoint) const {
+    return filter_ == TextFilter::Printable ? isAllowedPrintableChar(codepoint)
+                                            : isAllowedNameChar(codepoint);
 }
 
 void TextInput::setValue(std::string value) {
@@ -21,14 +29,14 @@ void TextInput::setValue(std::string value) {
         if (value_.size() >= maxLength_) {
             break;
         }
-        if (isAllowedNameChar(static_cast<unsigned char>(c))) {
+        if (allowed(static_cast<unsigned char>(c))) {
             value_.push_back(c);
         }
     }
 }
 
 void TextInput::appendCodepoint(int codepoint) {
-    if (full() || !isAllowedNameChar(codepoint)) {
+    if (full() || !allowed(codepoint)) {
         return;
     }
     value_.push_back(static_cast<char>(codepoint));

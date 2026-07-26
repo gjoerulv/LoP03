@@ -60,12 +60,14 @@
 | 50 | Town travel rework | ☑ complete (approved) |
 | 51 | Presentation & options | ☑ complete (approved) |
 | 52 | Comforts & secrets | ☑ complete (approved) |
-| 53 | Toolbelt & trims (debug menu, 5 save slots, Champion, element chips) | ◑ implemented, awaiting manual approval |
-| 54 | Arms of the ladder (equipment rebalance) | ◑ implemented, awaiting manual approval |
-| 55 | Theme rites (per-theme dungeon events) | ◑ implemented, awaiting manual approval |
-| 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ◑ implemented, awaiting manual approval |
-| 57 | Advanced CRT post-process (0–10 CRT Strength) | ◑ implemented, awaiting manual approval |
-| 58 | Fixes: equip message, Deadly Spoon once, geese scare the King | ◑ implemented, awaiting manual approval |
+| 53 | Toolbelt & trims (debug menu, 5 save slots, Champion, element chips) | ☑ complete (approved) |
+| 54 | Arms of the ladder (equipment rebalance) | ☑ complete (approved) |
+| 55 | Theme rites (per-theme dungeon events) | ☑ complete (approved) |
+| 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ☑ complete (approved) |
+| 57 | Advanced CRT post-process (0–10 CRT Strength) | ☑ complete (approved) |
+| 58 | Fixes: equip message, Deadly Spoon once, geese scare the King | ☑ complete (approved) |
+| 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ◑ implemented, awaiting manual approval |
+| 60 | CrystalForge sim lab, battle observer, test runner | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -85,10 +87,11 @@ only their position in the sequence changed. Each expansion program was
 authorized as content/systems work the game needs before M23/M24 are worth
 running. See the program sections below.
 
-**With the M53–M56 adjustment program, the M57 CRT post-process, and the M58
-fixes (all authorized 2026-07-24) done, M23 → M24 are the next thing after them,
-and nothing else stands before them.** M53–M56 then M57 then M58 run before
-M23/M24; each stops at `implemented, awaiting manual approval` for the owner. When they close, both M23 and M24 must be re-audited against the
+**M53–M58 are all complete (approved 2026-07-24). The owner then authorized
+the M59–M60 CrystalForge program (2026-07-24) — a designer-facing content
+editor with validation, a battle-sim lab, and a per-category test runner —
+which runs next, then M23 → M24, and nothing else stands before them.**
+When M59/M60 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (64 scenes
 as of M52, more as M53–M56 add scenes), the balance batteries have grown
 (`[economy-report]`, `[castle-report]` with its rush sweep, `[king-report]`,
@@ -2201,8 +2204,9 @@ adds zero rolls and is never set by the Simulator.
 
 ### M53 — Toolbelt & trims
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24 on
-  base checkout `07a13bb`. **505/505 Debug** and **501/501 Release** tests green
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (M53–M58 batch approval during M59/M60 planning); implemented
+  2026-07-24 on base checkout `07a13bb`. **505/505 Debug** and **501/501 Release** tests green
   (the 4 god-mode cases are debug-only, so Release has 4 fewer by design);
   `--capture` **65/65** clean (added `65_debug_menu`). No version bumps. Champion
   N kept at 15, confirmed against the `[king-report]` battery (best sim win = 12
@@ -2241,7 +2245,8 @@ adds zero rolls and is never set by the Simulator.
 
 ### M54 — Arms of the ladder (equipment rebalance)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24.
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (M53–M58 batch approval); implemented 2026-07-24.
   `data/items.json` matches the approved spreadsheet exactly (48 pieces changed;
   HP bonuses, penalties, pure-HP items, legendary prices, and the ten weakest
   untouched); **no version bumps**. **505/505 Debug** and **501/501 Release**
@@ -2270,7 +2275,8 @@ adds zero rolls and is never set by the Simulator.
 
 ### M55 — Theme rites (per-theme dungeon events)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24.
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (M53–M58 batch approval); implemented 2026-07-24.
   Each theme guarantees its rite exactly once (Ruined Keep = Armory Ghost, Crystal
   Mine = Miner's Cache, Hollow Forest = Elder Root), never cross-theme;
   **`kGenerationVersion` 10 → 11** (the program's only version bump); determinism
@@ -2300,7 +2306,8 @@ adds zero rolls and is never set by the Simulator.
 
 ### M56 — Boss stagecraft (battle backdrops + Crystal Shatter)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24.
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (M53–M58 batch approval); implemented 2026-07-24.
   Pure presentation: per-theme battle backdrops (Keep/Mine/Forest/Castle + Plain)
   behind the M46 grounding, and a skippable **Crystal Shatter** boss intro for
   every boss-team battle (dungeon bosses, Boss Rush waves, the King; Endless stays
@@ -2345,7 +2352,8 @@ M53–M56 program and before the M23/M24 release track. **Pure presentation** �
 no gameplay, save, generation, battle-rules, or resolution change, and **no
 version bump** (`kSettingsVersion` stays **1**; the field change is defensive).
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24 on
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (confirmed during M59/M60 planning); implemented 2026-07-24 on
   base checkout `3181aa8`. Replaces the M51 Boolean **CRT Effect** with a
   persistent **0–10 CRT Strength** slider (stored as a 0.0–1.0 `crtIntensity`)
   driving an advanced single-pass GLSL-330 consumer-CRT shader (barrel curvature,
@@ -2387,17 +2395,15 @@ M23/M24 release track. Three items: one UI bug, one item bug, one new King-fight
 mechanic. **Battle rules `10 → 11`** (the only version change; save, generation,
 settings, achievements untouched).
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-24 on
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (confirmed during M59/M60 planning); implemented 2026-07-24 on
   base `3181aa8` + M57. **532/532 Debug** and **528/528 Release** tests green (+2
   new: Deadly-Spoon idempotency and the geese-scare rule); `--capture` **75/75**
   clean. No warnings.
-  **⚠ Escalation note:** items 2 & 3 change King-fight behaviour and forced a
-  rules bump and a new combat rule — both owner-gated. The clarifying questions
-  (rules bump / per-Goose odds / scope) were put to the owner but **dismissed
-  without an answer**, so the recommended defaults were implemented and are flagged
-  here for approval: **bump to 11**, **additive 10% × living Geese**, **only the
-  King's own action is skipped (his court still acts)**, re-rolled each King turn.
-  All three are one-line adjustments if the owner wants otherwise.
+  The escalation defaults flagged at implementation time (rules bump **10 → 11**,
+  **additive 10% × living Geese**, **only the King's own action is skipped — his
+  court still acts**, re-rolled each King turn) stand approved with this batch
+  approval; the owner raised no objection after playing the fight.
 - **Item 1 — equip message lingered (UI, no rules impact).** In
   `EquipShopState` the "A <class> cannot equip <slot>." refusal (and the buy
   feedback) was set but never cleared, so it stayed on screen forever. Fixed by
@@ -2424,3 +2430,60 @@ settings, achievements untouched).
   action only; per-turn re-roll. Display wording lightly polished from the owner's
   *"The geese scares the king…"* to *"The geese scare the King…"*.
 - **Milestone note:** `docs/milestone_notes/M58_fixes.md`
+
+## The M59–M60 CrystalForge program (authorized 2026-07-24)
+
+A designer-facing content-editor tool, planned 2026-07-24 (plan approved by the
+owner) and run before the M23/M24 release track. **CrystalForge** is a separate
+executable in this repo linking `crystal_core`, so its validation and its
+battle sims are the game's own code and can never drift. Zero new
+dependencies; the game binary gains no process execution and no behavior
+change (the M60 battle observer is record-only, default-null, and proven
+outcome-neutral by a parity test — no `kBattleRulesVersion` bump; no version
+bumps anywhere in the program).
+
+### M59 — CrystalForge editor core
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-25
+  on base checkout `7c8f32d` (baseline re-verified 532/532 Debug first). The
+  `[editor]` battery is 12 cases / 2913 assertions green; the one-time
+  canonicalization rewrote all 9 data files with a reviewed minimal diff and
+  `0 content error(s) before and after`; the tool smoke-launched clean.
+  Mid-program full-suite: **544/544 Debug** with M59 alone; the program's
+  closing evidence (with M60) is under M60 below. See
+  `docs/milestone_notes/M59_crystalforge_core.md`.
+- **Goal:** browse/edit/save every `data/` category (skills, classes, enemies,
+  bosses, items, passives, themes, composition, story) in a 1280×720 desktop
+  window drawn with the game's own M46 UI kit; edits mutate `ordered_json`
+  documents (unknown keys survive); saves go through an atomic canonical
+  writer; every save re-runs the real loader + `validateReferences` with
+  jump-to-entity errors, plus a small in-process quick-sim sanity battery.
+  Includes a **one-time canonicalization of `data/*.json`** (formatting only,
+  proven value-identical by database comparison).
+- **Owner decisions (2026-07-24):** UI = the game's own kit (no Dear ImGui —
+  no new dependency); quick checks + spawned `crystal_tests.exe` runs; sim
+  reports with observer telemetry; two milestones (M59 core, M60 sim lab).
+- **Milestone note:** `docs/milestone_notes/M59_crystalforge_core.md`
+
+### M60 — CrystalForge sim lab, battle observer, test runner
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-25
+  directly after M59. The observer parity test proves byte-identical
+  outcomes and `rollCursor` with a recorder attached (**no rules bump**;
+  battle rules stay 11) and exact per-unit HP reconciliation; the `[editor]`
+  battery is 19 cases / 3101 assertions green; the per-category filter was
+  exercised live (`[#test_danger]` → exactly its 6 cases). **Closing program
+  verification (M59+M60): 552/552 Debug and 548/548 Release tests green
+  (the 4-case gap is the debug-only god-mode battery; CrystalForge built in
+  BOTH configs), `--capture` 75/75 scenes clean (the game's presentation is
+  untouched), zero project-code warnings on a forced recompile of the new
+  TUs.** See `docs/milestone_notes/M60_crystalforge_simlab.md`.
+- **Goal:** a sim lab (party/opponent builders incl. castle presets, seed
+  sweeps of 10/100/1000 with win rate / turn stats / HP / danger rating,
+  per-skill and per-combatant telemetry via a record-only battle observer,
+  delta vs the previous run, markdown/CSV export to a git-ignored `reports/`
+  dir) and a per-category test runner that spawns `crystal_tests.exe` with
+  tag filters and streams results live (`platform::ProcessRunner`, compiled
+  only into the editor library — the game binary still cannot execute
+  processes, structurally).
+- **Milestone note:** `docs/milestone_notes/M60_crystalforge_simlab.md`

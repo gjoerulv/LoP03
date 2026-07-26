@@ -12,6 +12,8 @@
 *.ilk
 
 .localDocs/
+capdir60/
+
 # CMake
 CMakeCache.txt
 CMakeFiles/
@@ -35,3 +37,6 @@ Thumbs.db
 # Local save/config data (game writes to the user data dir, but ignore any local copies)
 /saves/
 *.sav
+
+# CrystalForge sim-lab report exports (M60)
+/reports/

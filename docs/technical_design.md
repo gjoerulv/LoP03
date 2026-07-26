@@ -1733,3 +1733,83 @@ of** the caller (never `replaceState`), and neither backdrops nor the intro touc
 - Dungeon generation compatibility is tracked by `kGenerationVersion` in
   `src/dungeon/RoomLayout.hpp` (with its version-history comment), not here.
 
+## 17. CrystalForge content editor (M59–M60)
+
+A separate development executable (`CRYSTAL_ENABLE_EDITOR`, default ON; never
+staged by `tools/package.ps1`, which copies an explicit file list). The pure
+parts live in the always-built `crystal_editor_core` static library so the
+test suite covers them regardless of the option; only the windowed tool
+(`src/editor/EditorMain.cpp` + `EditorShell.cpp`) is optional. Designer-facing
+usage lives in `docs/editor_guide.md`; this section is the architecture.
+
+- **Zero drift by construction.** The editor links `crystal_core` and
+  validates through the real `content::loadAll`-family parsers (in-memory
+  via the exported `parse*` functions + `validateReferences`) into a scratch
+  `ContentDatabase`; its quick checks (and the M60 sim lab) run the real
+  `battle::simulate`. Nothing content-semantic is reimplemented.
+- **Documents, not Defs.** The source of truth while editing is one
+  `nlohmann::ordered_json` document per data file (`EditorDocs`) — plain
+  `nlohmann::json` sorts keys alphabetically and would churn every
+  hand-authored file. Edits mutate the document by key; unknown/future keys
+  ride along untouched (shown as dimmed rows); the content Def structs are
+  never serialized back.
+- **Canonical writer** (`editor/CanonicalJson`): every save serializes
+  through one formatter — 2-space root, one compact entity per line for
+  `skills`/`enemies`/`items`/`passives`, block entities elsewhere, nested
+  values inline, arrays-of-objects one per line — then replaces the file via
+  `platform::AtomicFile`. The shipped files were normalized once at M59;
+  `tests/test_editor_canonical.cpp` pins value preservation, idempotence,
+  and byte-stability (line-ending tolerant for git autocrlf), so formatting
+  can never drift again. `CrystalForge --canonicalize` is the headless
+  repair path.
+- **Schema descriptors** (`editor/FieldDescriptor` + `CategoryDescriptors`):
+  one `FieldDesc` per JSON key the loader reads drives the form UI and the
+  omit-when-default write policy (optional fields at their default are
+  erased, matching the sparse authoring style; loader-required keys are
+  always written). Descriptor keys are the LOADER's keys (e.g. a skill's
+  `control`, flat `weaknesses`/`immunities` on foes).
+  `tests/test_editor_descriptors.cpp` sweeps every key in the shipped data
+  (recursing into nested objects/arrays) against the tables, so a new
+  content key without a descriptor fails the suite. Enum pickers read the
+  `content::*Ids()` lists exported from the same tables `parse*` uses.
+- **Shell** (`editor/EditorShell`): a standalone loop (not the game's
+  StateStack — that is entangled with AppContext) drawing the M46 UI kit at
+  a 640×360 logical canvas blitted 2× into a 1280×720 window (pixel fonts
+  render at native sizes; kit metrics are unchanged). Keyboard-first with an
+  editor-level mouse layer; `src/ui/` itself stays mouse-free. The one `ui`
+  change for the editor is additive: `ui::TextInput` gained an optional
+  `TextFilter::Printable` mode (the game's name entry is untouched).
+- **Quick checks** (`editor/EditorValidation`): three fixed seeded battles
+  (fresh party / mid-ladder boss / Boss Rush opener at castle scale) through
+  `battle::simulate` — deliberately NOT the King, whom approved balance has
+  defeating any party without Royal-Relic counterplay the sim's AI cannot
+  use. Informational, never blocking.
+- **Battle observer (M60)** — the one shared-code touch:
+  `battle/BattleObserver.hpp` defines a record-only event interface (Action /
+  Damage / Heal / KO / Revive, all amounts EFFECTIVE post-clamp);
+  `Battle::observer` is a non-owning pointer, default null, never set by the
+  game or the Simulator. Every emit site is one skipped null-check branch —
+  no rolls, no other branching — so outcomes and `rollCursor` are
+  byte-identical with and without a recorder
+  (`tests/test_battle_observer.cpp` pins parity AND that each unit's HP
+  delta reconciles exactly against the recorded amounts). **No
+  `kBattleRulesVersion` bump.** The poison tick (which bypasses
+  `applyDamage`) emits its own event, mirroring the M53 god-mode clamp
+  lesson.
+- **Sim lab (M60)** (`editor/SimLab`, `editor/BattleRecorder.hpp`): a pure
+  config (member specs / opponent modes incl. the castle presets) swept over
+  N seeded battles via `battle::simulateInPlace` with a per-run recorder
+  merged into aggregate telemetry; markdown/CSV reports (with deltas vs the
+  previous run) export to the git-ignored `reports/`. Deterministic —
+  pinned by `tests/test_editor_simlab.cpp`.
+- **Test runner (M60)** (`editor/TestRunner` + `platform/Process`): category
+  → Catch2 test-spec mapping using `--filenames-as-tags` (verified in the
+  pinned v3.15.1), spawned via `platform::ProcessRunner` (CreateProcessW +
+  a background stdout-pipe reader draining into a locked line queue the
+  shell polls per frame). `Process.cpp` is compiled ONLY into
+  `crystal_editor_core`, which the game exe never links — game code
+  structurally cannot execute processes.
+- The game binary is untouched except additive content helpers
+  (`enumValues`-style id lists, two exported parser declarations) and the
+  observer above; no version bumps anywhere.
+

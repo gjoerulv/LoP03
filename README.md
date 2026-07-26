@@ -225,10 +225,36 @@ src/
   battle/    deterministic turn-based combat + headless simulator
   ui/        Menu, TextInput (pure) + UiDraw helpers
   states/    game states (menu, town, dungeon, battle, shops, ...)
+  editor/    CrystalForge content editor (separate dev tool; never shipped)
 data/        JSON content (classes, enemies, items, skills, bosses, themes)
 tests/       Catch2 unit/integration tests (headless)
 docs/        design + technical + milestone docs
 ```
+
+## Development tools
+
+**CrystalForge** (M59) is a designer-facing content editor built alongside the
+game (`CRYSTAL_ENABLE_EDITOR`, on by default; `tools/package.ps1` never stages
+it). It links the game's own loader, validator, and battle simulator, so what
+it accepts and what it simulates can never drift from the game:
+
+```powershell
+cmake --build --preset debug --target CrystalForge
+.\build-msvc\CrystalForge.exe
+```
+
+It edits the **source-tree `data/`** (pass `--data <dir>` to point elsewhere)
+in a 1280x720 window: pick a category, pick an entry, edit fields; `Ctrl+S`
+saves through an atomic canonical writer and re-validates everything (errors
+jump to the offending entity); `F5` re-validates on demand and runs a
+three-battle quick-sim sanity battery. `N`/`D`/`Del` add, duplicate, and
+delete entries (deletes warn about dangling references). The game reads its
+content at startup — restart it (or rebuild, which recopies `data/`) to see
+edits in play. `CrystalForge --canonicalize` reformats every data file through
+the canonical writer headlessly (used once at M59; safe to re-run — it proves
+values unchanged by re-validating through the real loader).
+
+See `docs/editor_guide.md` for the full designer workflow.
 
 ## Testing / smoke test
 

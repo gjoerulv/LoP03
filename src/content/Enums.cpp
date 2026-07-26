@@ -216,4 +216,35 @@ const char* toString(BattleTarget v) { return nameFrom(kBattleTargets, v); }
 const char* toString(BossArchetype v) { return nameFrom(kBossArchetypes, v); }
 const char* toString(PassiveHook v) { return nameFrom(kPassiveHooks, v); }
 
+namespace {
+
+// M59: the id column of a parse table, in declaration order.
+template <typename E, std::size_t N>
+std::vector<std::string_view> idsFrom(const std::array<std::pair<std::string_view, E>, N>& table) {
+    std::vector<std::string_view> ids;
+    ids.reserve(N);
+    for (const auto& [key, value] : table) {
+        ids.push_back(key);
+    }
+    return ids;
+}
+
+}  // namespace
+
+std::vector<std::string_view> elementIds() { return idsFrom(kElements); }
+std::vector<std::string_view> skillCategoryIds() { return idsFrom(kSkillCategories); }
+std::vector<std::string_view> skillEffectIds() { return idsFrom(kSkillEffects); }
+std::vector<std::string_view> skillTargetIds() { return idsFrom(kSkillTargets); }
+std::vector<std::string_view> enemyTagIds() { return idsFrom(kEnemyTags); }
+std::vector<std::string_view> enemyTierIds() { return idsFrom(kEnemyTiers); }
+std::vector<std::string_view> enemyRoleIds() { return idsFrom(kEnemyRoles); }
+std::vector<std::string_view> itemTypeIds() { return idsFrom(kItemTypes); }
+std::vector<std::string_view> equipSlotIds() { return idsFrom(kEquipSlots); }
+std::vector<std::string_view> rarityIds() { return idsFrom(kRarities); }
+std::vector<std::string_view> consumableEffectIds() { return idsFrom(kConsumableEffects); }
+std::vector<std::string_view> statusTypeIds() { return idsFrom(kStatusTypes); }
+std::vector<std::string_view> battleTargetIds() { return idsFrom(kBattleTargets); }
+std::vector<std::string_view> bossArchetypeIds() { return idsFrom(kBossArchetypes); }
+std::vector<std::string_view> passiveHookIds() { return idsFrom(kPassiveHooks); }
+
 }  // namespace cd::content

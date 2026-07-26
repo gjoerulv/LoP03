@@ -39,6 +39,9 @@ option(CRYSTAL_ENABLE_DEBUG_OVERLAY "Compile the runtime debug overlay" ON)
 # M23 capture CLI (--capture): dev builds only; Release never compiles it
 # even when the option is ON.
 option(CRYSTAL_ENABLE_CAPTURE      "Compile the deterministic capture CLI" ON)
+# M59: the CrystalForge content-editor tool (a separate executable; never
+# staged by tools/package.ps1, which copies an explicit file list).
+option(CRYSTAL_ENABLE_EDITOR       "Build the CrystalForge content editor" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CompilerWarnings)
@@ -196,6 +199,41 @@ add_custom_command(TARGET CrystalDungeons POST_BUILD
     COMMENT "Copying data/ and assets/ next to CrystalDungeons.exe")
 
 # ---------------------------------------------------------------------------
+# CrystalForge content editor (M59). The pure core (documents, descriptors,
+# canonical writer, validation) is a library so the tests always cover it; only
+# the windowed tool itself is optional. Neither ships: tools/package.ps1 stages
+# an explicit file list that never includes them.
+# ---------------------------------------------------------------------------
+add_library(crystal_editor_core STATIC
+    src/editor/CanonicalJson.cpp
+    src/editor/FieldDescriptor.cpp
+    src/editor/CategoryDescriptors.cpp
+    src/editor/EditorDocs.cpp
+    src/editor/EditorValidation.cpp
+    src/editor/SimLab.cpp
+    src/editor/TestRunner.cpp
+    # M60: process spawning lives ONLY here — the game exe never links this
+    # library, so game code structurally cannot execute processes.
+    src/platform/Process.cpp
+)
+target_link_libraries(crystal_editor_core PUBLIC crystal_core)
+set_project_warnings(crystal_editor_core)
+
+if(CRYSTAL_ENABLE_EDITOR)
+    add_executable(CrystalForge
+        src/editor/EditorMain.cpp
+        src/editor/EditorShell.cpp
+    )
+    target_link_libraries(CrystalForge PRIVATE crystal_editor_core)
+    set_project_warnings(CrystalForge)
+    # The editor works on the SOURCE-TREE data (the files the owner commits),
+    # and reads the shipped fonts for its UI — the CRYSTAL_TEST_DATA_DIR idiom.
+    target_compile_definitions(CrystalForge PRIVATE
+        CRYSTAL_EDITOR_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data"
+        CRYSTAL_EDITOR_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets")
+endif()
+
+# ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
 if(CRYSTAL_BUILD_TESTS)
@@ -205,4 +243,5 @@ endif()
 
 message(STATUS "CrystalDungeons configured: tests=${CRYSTAL_BUILD_TESTS} "
                "warnings_as_errors=${CRYSTAL_WARNINGS_AS_ERRORS} "
-               "debug_overlay=${CRYSTAL_ENABLE_DEBUG_OVERLAY}")
+               "debug_overlay=${CRYSTAL_ENABLE_DEBUG_OVERLAY} "
+               "editor=${CRYSTAL_ENABLE_EDITOR}")

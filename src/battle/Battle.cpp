@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include "battle/BattleObserver.hpp"
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "dungeon/DungeonModel.hpp"
@@ -11,6 +12,19 @@
 #include "game/Party.hpp"
 
 namespace cd::battle {
+
+namespace {
+
+// M60: the single shape of every telemetry emit — one skipped branch when no
+// recorder is attached, so the null path (the game, the Simulator, every
+// pre-M60 test) is byte-identical by construction.
+inline void emitEvent(const Battle& b, const BattleEvent& event) {
+    if (b.observer != nullptr) {
+        b.observer->onEvent(event);
+    }
+}
+
+}  // namespace
 
 // M48 — the element rule. Deliberately the only place the x0 / x1 / x1.5
 // decision is made, so a future affinity source (equipment, a status) has one
@@ -367,6 +381,10 @@ int physicalMissPct(const Combatant& a, const Combatant& d) {
 }  // namespace
 
 void Battle::applyDamage(Combatant& d, int dmg) {
+    // M60 telemetry: effective damage (and a KO) is known only after the
+    // clamps below, so the emits bracket the whole body. `d` always refers
+    // into `units`, so its index is recoverable for the event.
+    const int hpBefore = d.hp;
 #ifndef CRYSTAL_SHIPPING_BUILD
     // M53 debug god mode: a party unit never drops below 1 HP from a hit routed
     // through here. Same shape as Iron Will, but repeatable and party-wide; still
@@ -376,6 +394,11 @@ void Battle::applyDamage(Combatant& d, int dmg) {
         d.hp - dmg <= 0) {
         d.hp = 1;
         removeStatus(d, content::StatusType::Confusion);
+        if (observer != nullptr && hpBefore > d.hp) {
+            emitEvent(*this, {BattleEvent::Type::Damage, -1,
+                              static_cast<int>(&d - units.data()), hpBefore - d.hp, false,
+                              false, {}});
+        }
         return;
     }
 #endif
@@ -391,6 +414,14 @@ void Battle::applyDamage(Combatant& d, int dmg) {
     // rule holds identically in live play and the Simulator.
     if (dmg > 0) {
         removeStatus(d, content::StatusType::Confusion);
+    }
+    if (observer != nullptr && hpBefore > d.hp) {
+        const int index = static_cast<int>(&d - units.data());
+        emitEvent(*this, {BattleEvent::Type::Damage, -1, index, hpBefore - d.hp, false, false,
+                          {}});
+        if (d.hp == 0) {
+            emitEvent(*this, {BattleEvent::Type::KO, -1, index, 0, false, false, {}});
+        }
     }
 }
 
@@ -540,7 +571,12 @@ int Battle::dealPhysical(int actor, int target, int baseDmg, std::string& extra)
     if (a.lifedrinkPct > 0 && dmg > 0 && a.alive()) {  // Lifedrink (M36)
         const int heal = dmg * a.lifedrinkPct / 100;
         if (heal > 0) {
+            const int hpBefore = a.hp;  // M60 telemetry (effective gain)
             applyHeal(a, heal);
+            if (observer != nullptr && a.hp > hpBefore) {
+                emitEvent(*this, {BattleEvent::Type::Heal, actor, actor, a.hp - hpBefore, false,
+                                  false, {}});
+            }
             extra += " " + a.name + " drains " + std::to_string(heal) + " HP.";
         }
     }
@@ -633,8 +669,12 @@ std::string Battle::beginUnitTurn(int actor) {
     a.reviveMinionCounter = 0;  // and it will happen again, and again
     for (int ci : court) {
         Combatant& c = units[static_cast<std::size_t>(ci)];
+        const bool wasDown = !c.alive();
         c.hp = c.maxHp;
         c.statuses.clear();  // raised whole, not raised wounded
+        if (wasDown) {  // M60 telemetry
+            emitEvent(*this, {BattleEvent::Type::Revive, actor, ci, c.maxHp, false, false, {}});
+        }
     }
     return a.name + " strikes the floor: \"RISE.\" The court stands again, unmarked.";
 }
@@ -691,7 +731,15 @@ std::string Battle::tickStatuses(int unit) {
                 floor = 1;
             }
 #endif
+            const int hpBefore = c.hp;  // M60: the tick bypasses applyDamage's emit too
             c.hp = std::max(floor, c.hp - dmg);
+            if (observer != nullptr && hpBefore > c.hp) {
+                emitEvent(*this, {BattleEvent::Type::Damage, -1, unit, hpBefore - c.hp, true,
+                                  false, {}});
+                if (c.hp == 0) {
+                    emitEvent(*this, {BattleEvent::Type::KO, -1, unit, 0, false, false, {}});
+                }
+            }
             log += c.name + " takes " + std::to_string(dmg) + " poison damage.";
             if (!c.alive()) {
                 log += " " + c.name + " is KO'd!";
@@ -711,6 +759,8 @@ std::string Battle::tickStatuses(int unit) {
 
 std::string Battle::attack(int actor, int target) {
     clearActionMarks();
+    // M60 telemetry: a basic attack is an Action with an empty id.
+    emitEvent(*this, {BattleEvent::Type::Action, actor, target, 0, false, false, {}});
     // M45: a class whose basic attack hits every foe sweeps instead of striking
     // one — except while confused, when it lashes at a single member of its own
     // side like anyone else.
@@ -866,6 +916,9 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                skill.name + "!";
     }
     primaryTarget = redirectTarget(units, actor, primaryTarget);  // M28 intercept
+    // M60 telemetry: the cast is real from here on (silence already returned).
+    emitEvent(*this, {BattleEvent::Type::Action, actor, primaryTarget, 0, false, false,
+                      skill.id});
     Combatant& a = units[static_cast<std::size_t>(actor)];
     a.mp = std::max(0, a.mp - skill.mpCost);
     const bool opener = a.rushOpener && !a.actedOnce;
@@ -973,7 +1026,12 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             case content::SkillCategory::Heal: {
                 if (t.alive()) {
                     const int amt = healValue(a, skill.power);
+                    const int hpBefore = t.hp;  // M60: record the EFFECTIVE gain
                     applyHeal(t, amt);
+                    if (observer != nullptr && t.hp > hpBefore) {
+                        emitEvent(*this, {BattleEvent::Type::Heal, actor, ti, t.hp - hpBefore,
+                                          false, false, {}});
+                    }
                     if (a.side == Side::Party) {
                         addThreat(actor, amt);  // healing draws enmity too (M28)
                     }
@@ -984,6 +1042,8 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                     // enters, so reviving is an emergency, not a heal.
                     const int amt = std::max(1, t.maxHp * skill.reviveHpPct / 100);
                     t.hp = amt;
+                    emitEvent(*this,
+                              {BattleEvent::Type::Revive, actor, ti, amt, false, false, {}});
                     if (a.side == Side::Party) {
                         addThreat(actor, amt);
                     }
@@ -1068,6 +1128,8 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
     if (!item.requiresBossId.empty() && t.sourceId != item.requiresBossId) {
         return log + " Nothing happens.";
     }
+    // M60 telemetry: the item takes effect from here (a kept relic is no use).
+    emitEvent(*this, {BattleEvent::Type::Action, actor, target, 0, false, true, item.id});
     // M52 (the Dragon Crown's hidden effect): used on a boss carrying a revive
     // clock (the King), it ends the clock so his fallen court never returns.
     // Schema-driven (no item id is branched on), in this shared path so the
@@ -1087,7 +1149,12 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
     switch (item.effect) {
         case content::ConsumableEffect::Heal:
             if (t.alive()) {
+                const int hpBefore = t.hp;  // M60 telemetry (effective gain)
                 applyHeal(t, healAmount);
+                if (observer != nullptr && t.hp > hpBefore) {
+                    emitEvent(*this, {BattleEvent::Type::Heal, actor, target, t.hp - hpBefore,
+                                      false, false, {}});
+                }
                 log += " HP +" + std::to_string(healAmount) + ".";
                 if (mpAmount > 0) {
                     t.mp = std::min(t.maxMp, t.mp + mpAmount);
@@ -1105,6 +1172,8 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
             if (!t.alive()) {
                 const int amt = item.effectAmount;
                 t.hp = amt <= 100 ? std::max(1, t.maxHp * amt / 100) : amt;
+                emitEvent(*this,
+                          {BattleEvent::Type::Revive, actor, target, t.hp, false, false, {}});
                 log += " " + t.name + " is revived!";
             } else {
                 log += " No effect.";

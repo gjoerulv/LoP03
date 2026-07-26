@@ -868,4 +868,19 @@ battle-rules, resolution, or settings-version change. Window-level visual feel i
 an owner sign-off; the deterministic parts (setting migration, clamping, step
 conversion) are unit-tested.
 
-M23 → M24 run after M56, re-audited against the then-current checkout.
+## 20. CrystalForge content editor (M59–M60) — direction
+
+An owner-authorized tooling program (planned and approved 2026-07-24) that runs
+after M58 and before M23/M24: **CrystalForge**, a designer-facing content
+editor shipped as a separate executable in this repo. It links `crystal_core`
+directly, so content validation (the real loader + `validateReferences`) and
+battle simulation (the real `battle::simulate`) can never drift from the game.
+M59 delivers the editor core — browse/edit/save every `data/` category with a
+canonical `ordered_json` writer, jump-to-entity validation, and a quick-sim
+sanity battery. M60 adds the sim lab (seed-sweep reports with per-skill /
+per-combatant telemetry via a record-only battle observer, delta comparison,
+report export) and a per-category test runner that spawns `crystal_tests.exe`.
+Zero new dependencies; no version bumps; the game binary gains no process
+execution and no behavior change. Scope lives in the ledger (`docs/milestones.md`).
+
+M23 → M24 run after M60, re-audited against the then-current checkout.

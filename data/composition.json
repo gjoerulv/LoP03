@@ -12,6 +12,13 @@
     "maxSupport": 1,
     "minDamage": 1
   },
-  "boss": { "minMinions": 1, "maxMinions": 3 },
-  "statScale": { "startDepth": 5, "pctPerDepth": 6, "pctMax": 90 }
+  "boss": {
+    "minMinions": 1,
+    "maxMinions": 3
+  },
+  "statScale": {
+    "startDepth": 5,
+    "pctPerDepth": 6,
+    "pctMax": 90
+  }
 }

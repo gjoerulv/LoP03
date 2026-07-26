@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string_view>
+#include <vector>
 
 // Content vocabulary enums and their string<->enum mappings. Raylib-free and
 // JSON-free so they can be reused by simulation and unit-tested headlessly.
@@ -126,5 +127,26 @@ const char* toString(StatusType v);
 const char* toString(BattleTarget v);
 const char* toString(BossArchetype v);
 const char* toString(PassiveHook v);
+
+// M59 (CrystalForge): every valid data id for an enum, in declaration order,
+// built from the same tables the parse* functions read — one source, so an id
+// the editor offers is always an id the loader accepts. Includes "none" where
+// the enum has one; callers that must not author it (the loader's typo guard)
+// filter it out themselves.
+std::vector<std::string_view> elementIds();
+std::vector<std::string_view> skillCategoryIds();
+std::vector<std::string_view> skillEffectIds();
+std::vector<std::string_view> skillTargetIds();
+std::vector<std::string_view> enemyTagIds();
+std::vector<std::string_view> enemyTierIds();
+std::vector<std::string_view> enemyRoleIds();
+std::vector<std::string_view> itemTypeIds();
+std::vector<std::string_view> equipSlotIds();
+std::vector<std::string_view> rarityIds();
+std::vector<std::string_view> consumableEffectIds();
+std::vector<std::string_view> statusTypeIds();
+std::vector<std::string_view> battleTargetIds();
+std::vector<std::string_view> bossArchetypeIds();
+std::vector<std::string_view> passiveHookIds();
 
 }  // namespace cd::content

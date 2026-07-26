@@ -10,12 +10,10 @@
     { "id": "phoenix_tear", "name": "Phoenix Tear", "type": "consumable", "rarity": "rare", "value": 300, "effect": "revive", "effectAmount": 25, "description": "Revives a fallen ally with 25% HP." },
     { "id": "elixir", "name": "Elixir", "type": "consumable", "rarity": "epic", "value": 400, "effect": "heal", "effectAmount": 300, "description": "Restores a great deal of HP." },
     { "id": "royal_snacks", "name": "Royal Snacks", "type": "consumable", "rarity": "uncommon", "value": 250, "minTown": 1, "maxTown": 1, "effect": "heal", "effectAmount": 10, "curesDebuffs": true, "kingEffectAmount": 100, "kingMpAmount": 10, "description": "Bring Snacks!" },
-
     { "id": "evil_goose", "name": "Evil Goose", "type": "consumable", "rarity": "epic", "value": 0, "battleTarget": "enemy", "statuses": [ { "type": "terrified", "duration": 2 } ], "description": "A terrifying goose. The foe can only cower behind its guard next turn." },
     { "id": "tax_sheets", "name": "Tax Sheets", "type": "consumable", "rarity": "epic", "value": 0, "battleTarget": "enemy", "statuses": [ { "type": "stunned", "duration": 2 } ], "description": "Busy your enemies with taxes. The foe loses its next turn." },
     { "id": "dragon_crown", "name": "Dragon Crown", "type": "consumable", "rarity": "epic", "value": 0, "battleTarget": "enemy", "requiresBossId": "the_hollow_king", "disablesMinionRevive": true, "statuses": [ { "type": "attack_down", "magnitude": 40, "duration": 4 }, { "type": "defense_down", "magnitude": 40, "duration": 4 } ], "description": "The real Dragon Crown. Only the Hollow King cares - it saps his attack and defense." },
     { "id": "deadly_spoon", "name": "Deadly Spoon", "type": "consumable", "rarity": "epic", "value": 0, "battleTarget": "enemy", "statScalePct": 50, "description": "Most deadly thing known to man. Halves a foe's ATK, MAG, DEF and SPD for the rest of the battle." },
-
     { "id": "iron_sword", "name": "Iron Sword", "type": "equipment", "slot": "weapon", "rarity": "common", "value": 120, "statBonus": { "attack": 6 }, "description": "A dependable iron blade." },
     { "id": "steel_sword", "name": "Steel Sword", "type": "equipment", "slot": "weapon", "rarity": "uncommon", "value": 290, "statBonus": { "attack": 11 }, "description": "A finely forged steel blade." },
     { "id": "short_bow", "name": "Short Bow", "type": "equipment", "slot": "weapon", "rarity": "common", "value": 110, "statBonus": { "attack": 5, "speed": 2 }, "description": "A light, quick bow." },
@@ -24,7 +22,6 @@
     { "id": "oak_staff", "name": "Oak Staff", "type": "equipment", "slot": "weapon", "rarity": "common", "value": 120, "statBonus": { "magic": 8 }, "description": "A staff that channels magic." },
     { "id": "crystal_wand", "name": "Crystal Wand", "type": "equipment", "slot": "weapon", "rarity": "rare", "value": 400, "statBonus": { "magic": 14 }, "description": "A wand humming with power." },
     { "id": "holy_mace", "name": "Holy Mace", "type": "equipment", "slot": "weapon", "rarity": "uncommon", "value": 280, "element": "holy", "statBonus": { "attack": 9, "magic": 4 }, "description": "A blessed mace. Its blows carry holy light." },
-
     { "id": "leather_armor", "name": "Leather Armor", "type": "equipment", "slot": "armor", "rarity": "common", "value": 90, "statBonus": { "defense": 4 }, "description": "Light, flexible protection." },
     { "id": "chain_mail", "name": "Chain Mail", "type": "equipment", "slot": "armor", "rarity": "uncommon", "value": 240, "statBonus": { "defense": 9 }, "description": "Interlocking steel rings." },
     { "id": "plate_armor", "name": "Plate Armor", "type": "equipment", "slot": "armor", "rarity": "rare", "value": 460, "statBonus": { "defense": 17, "speed": -2 }, "description": "Heavy, full-body plate." },
@@ -33,48 +30,39 @@
     { "id": "oak_shield", "name": "Oak Shield", "type": "equipment", "slot": "armor", "rarity": "common", "value": 100, "statBonus": { "defense": 5 }, "description": "A sturdy wooden shield." },
     { "id": "tower_shield", "name": "Tower Shield", "type": "equipment", "slot": "armor", "rarity": "rare", "value": 380, "statBonus": { "defense": 12, "hp": 20 }, "description": "A massive protective shield." },
     { "id": "travel_cloak", "name": "Travel Cloak", "type": "equipment", "slot": "armor", "rarity": "common", "value": 80, "statBonus": { "defense": 2, "speed": 2 }, "description": "A worn but useful cloak." },
-
     { "id": "swift_boots", "name": "Swift Boots", "type": "equipment", "slot": "accessory", "rarity": "uncommon", "value": 150, "statBonus": { "speed": 4 }, "description": "Boots that quicken the step." },
     { "id": "power_ring", "name": "Power Ring", "type": "equipment", "slot": "accessory", "rarity": "uncommon", "value": 170, "statBonus": { "attack": 5 }, "description": "A ring that lends strength." },
     { "id": "mana_band", "name": "Mana Band", "type": "equipment", "slot": "accessory", "rarity": "uncommon", "value": 170, "statBonus": { "magic": 5 }, "description": "A band that focuses magic." },
     { "id": "guard_pendant", "name": "Guard Pendant", "type": "equipment", "slot": "accessory", "rarity": "uncommon", "value": 160, "statBonus": { "defense": 4 }, "description": "A protective charm." },
     { "id": "vitality_charm", "name": "Vitality Charm", "type": "equipment", "slot": "accessory", "rarity": "uncommon", "value": 170, "statBonus": { "hp": 30 }, "description": "A charm brimming with vigor." },
-
     { "id": "ember_charm", "name": "Ember Charm", "type": "relic", "slot": "accessory", "rarity": "rare", "value": 320, "statBonus": { "magic": 7 }, "description": "A warm charm that sharpens spellcraft." },
     { "id": "titan_heart", "name": "Titan Heart", "type": "relic", "slot": "accessory", "rarity": "rare", "value": 320, "statBonus": { "hp": 50 }, "description": "A relic that swells one's vitality." },
     { "id": "assassin_sigil", "name": "Assassin Sigil", "type": "relic", "slot": "accessory", "rarity": "epic", "value": 690, "statBonus": { "attack": 11, "speed": 5 }, "description": "A sigil prized by killers." },
     { "id": "guardian_crest", "name": "Guardian Crest", "type": "relic", "slot": "accessory", "rarity": "epic", "value": 720, "statBonus": { "defense": 13, "hp": 20 }, "description": "An ancient crest of protection." },
-
     { "id": "honed_saber", "name": "Honed Saber", "type": "equipment", "slot": "weapon", "rarity": "rare", "value": 400, "minTown": 2, "statBonus": { "attack": 12 }, "description": "A saber honed for the road ahead." },
     { "id": "aether_wand", "name": "Aether Wand", "type": "equipment", "slot": "weapon", "rarity": "rare", "value": 400, "minTown": 2, "statBonus": { "magic": 12 }, "description": "A wand thrumming with aether." },
     { "id": "banded_mail", "name": "Banded Mail", "type": "equipment", "slot": "armor", "rarity": "rare", "value": 350, "minTown": 2, "statBonus": { "defense": 10 }, "description": "Overlapping bands of tempered steel." },
     { "id": "hunters_charm", "name": "Hunter's Charm", "type": "equipment", "slot": "accessory", "rarity": "rare", "value": 320, "minTown": 2, "statBonus": { "attack": 5, "speed": 2 }, "description": "A charm favored by hunters." },
-
     { "id": "war_pike", "name": "War Pike", "type": "equipment", "slot": "weapon", "rarity": "rare", "value": 620, "minTown": 3, "statBonus": { "attack": 16 }, "description": "A long pike with deadly reach." },
     { "id": "seer_scepter", "name": "Seer Scepter", "type": "equipment", "slot": "weapon", "rarity": "rare", "value": 620, "minTown": 3, "statBonus": { "magic": 16 }, "description": "A scepter that sharpens the sight." },
     { "id": "reinforced_plate", "name": "Reinforced Plate", "type": "equipment", "slot": "armor", "rarity": "rare", "value": 560, "minTown": 3, "statBonus": { "defense": 14, "hp": 15 }, "description": "Plate reinforced at every seam." },
     { "id": "arcane_locket", "name": "Arcane Locket", "type": "equipment", "slot": "accessory", "rarity": "rare", "value": 490, "minTown": 3, "statBonus": { "magic": 7 }, "description": "A locket that focuses arcane power." },
-
     { "id": "greatcleaver", "name": "Greatcleaver", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 940, "minTown": 4, "statBonus": { "attack": 20 }, "description": "A cleaver that fells in one blow." },
     { "id": "runic_staff", "name": "Runic Staff", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 940, "minTown": 4, "statBonus": { "magic": 19 }, "description": "A staff carved with battle runes." },
     { "id": "warden_plate", "name": "Warden Plate", "type": "equipment", "slot": "armor", "rarity": "epic", "value": 860, "minTown": 4, "statBonus": { "defense": 18 }, "description": "The plate of a seasoned warden." },
     { "id": "vigor_pendant", "name": "Vigor Pendant", "type": "equipment", "slot": "accessory", "rarity": "epic", "value": 560, "minTown": 4, "statBonus": { "hp": 60 }, "description": "A pendant swelling with vigor." },
-
     { "id": "obsidian_blade", "name": "Obsidian Blade", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1390, "minTown": 5, "statBonus": { "attack": 24, "speed": 3 }, "description": "A blade of razor obsidian." },
     { "id": "starcaller_rod", "name": "Starcaller Rod", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1390, "minTown": 5, "statBonus": { "magic": 22 }, "description": "A rod that calls distant stars." },
     { "id": "aegis_mail", "name": "Aegis Mail", "type": "equipment", "slot": "armor", "rarity": "epic", "value": 1260, "minTown": 5, "statBonus": { "defense": 22, "hp": 25 }, "description": "Mail that turns the harshest blow." },
     { "id": "swiftwind_ring", "name": "Swiftwind Ring", "type": "equipment", "slot": "accessory", "rarity": "epic", "value": 1060, "minTown": 5, "statBonus": { "speed": 10 }, "description": "A ring light as the wind." },
-
     { "id": "dragonfang", "name": "Dragonfang", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1970, "minTown": 6, "element": "fire", "statBonus": { "attack": 28 }, "description": "A blade forged from a dragon's fang. It still runs hot." },
     { "id": "voidcaller_wand", "name": "Voidcaller Wand", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 1970, "minTown": 6, "statBonus": { "magic": 26 }, "description": "A wand that whispers to the void." },
     { "id": "titan_plate", "name": "Titan Plate", "type": "equipment", "slot": "armor", "rarity": "epic", "value": 1790, "minTown": 6, "statBonus": { "defense": 26 }, "description": "Plate cut for a titan's frame." },
     { "id": "warlords_signet", "name": "Warlord's Signet", "type": "equipment", "slot": "accessory", "rarity": "epic", "value": 1620, "minTown": 6, "statBonus": { "attack": 13 }, "description": "The signet of a feared warlord." },
-
     { "id": "sunforged_greatblade", "name": "Sunforged Greatblade", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 2900, "minTown": 7, "element": "fire", "statBonus": { "attack": 36 }, "description": "A greatblade quenched in sunfire, and never quite cooled." },
     { "id": "celestial_staff", "name": "Celestial Staff", "type": "equipment", "slot": "weapon", "rarity": "epic", "value": 2900, "minTown": 7, "element": "holy", "statBonus": { "magic": 34 }, "description": "A staff that channels the heavens, and strikes with them." },
     { "id": "bulwark_of_ages", "name": "Bulwark of Ages", "type": "equipment", "slot": "armor", "rarity": "epic", "value": 2690, "minTown": 7, "statBonus": { "defense": 33, "hp": 30 }, "description": "Armor that has weathered ages." },
     { "id": "sages_diadem", "name": "Sage's Diadem", "type": "equipment", "slot": "accessory", "rarity": "epic", "value": 2460, "minTown": 7, "statBonus": { "magic": 17, "defense": 6 }, "description": "The diadem of an elder sage." },
-
     { "id": "dawnforged_blade", "name": "Dawnforged Blade", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 5000, "element": "holy", "statBonus": { "attack": 50, "speed": 5 }, "description": "A blade lit with the first dawn. Holy light rides every swing." },
     { "id": "stormcaller_rod", "name": "Stormcaller Rod", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 5000, "statBonus": { "magic": 45, "hp": 12 }, "description": "A rod that calls down the storm." },
     { "id": "aegis_eternal", "name": "Aegis Eternal", "type": "equipment", "slot": "armor", "rarity": "legendary", "value": 5000, "statBonus": { "defense": 45, "hp": 40 }, "description": "Plate that has never once yielded." },
@@ -84,7 +72,6 @@
     { "id": "voidpiercer_rod", "name": "Voidpiercer Rod", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 6000, "statBonus": { "magic": 55 }, "description": "A rod that pierces the void itself." },
     { "id": "kingsbane_spear", "name": "Kingsbane Spear", "type": "equipment", "slot": "weapon", "rarity": "legendary", "value": 6500, "statBonus": { "attack": 55, "speed": 8 }, "description": "The spear that felled a tyrant king." },
     { "id": "sovereigns_regalia", "name": "Sovereign's Regalia", "type": "equipment", "slot": "accessory", "rarity": "legendary", "value": 9000, "statBonus": { "attack": 25, "magic": 25, "defense": 25, "speed": 10, "hp": 40 }, "description": "The regalia of the Hollow King, won only by breaking his throne." },
-
     { "id": "scroll_fireball", "name": "Scroll: Fireball", "type": "scroll", "rarity": "rare", "value": 180, "grantsSkill": "fireball", "description": "Teaches the Fireball skill." },
     { "id": "scroll_greater_heal", "name": "Scroll: Greater Heal", "type": "scroll", "rarity": "rare", "value": 200, "grantsSkill": "greater_heal", "description": "Teaches the Greater Heal skill." },
     { "id": "scroll_whirlwind", "name": "Scroll: Whirlwind", "type": "scroll", "rarity": "rare", "value": 190, "grantsSkill": "whirlwind", "description": "Teaches the Whirlwind skill." }

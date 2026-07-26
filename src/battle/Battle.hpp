@@ -24,6 +24,8 @@ struct EnemyTeam;
 
 namespace cd::battle {
 
+struct BattleObserver;  // M60 record-only telemetry hook (battle/BattleObserver.hpp)
+
 // Battle-resolution rules version. Bumped when the outcome of a battle for
 // identical inputs can change, so the scoreboard can flag runs played under
 // different rules. 0 = pre-M28; 1 = M28 (enmity/targeting/control skills);
@@ -209,6 +211,14 @@ public:
     // whole member is compiled out of shipping builds, so it cannot exist there.
     bool debugPartyUnkillable = false;
 #endif
+
+    // M60: record-only telemetry hook (see battle/BattleObserver.hpp for the
+    // full contract). Non-owning, default null — the game and the Simulator
+    // never set it; the editor's sim lab and the parity test do. Null means
+    // every emit site is a single skipped branch: outcomes and rollCursor are
+    // byte-identical either way, so there is no rules-version bump. A raw
+    // pointer keeps Battle trivially copyable (copies share the recorder).
+    BattleObserver* observer = nullptr;
 
     bool sideAlive(Side s) const;
     Outcome outcome() const;  // Victory / Defeat / Ongoing (Escaped is set by the caller)

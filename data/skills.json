@@ -10,7 +10,6 @@
     { "id": "piercing_arrow", "name": "Piercing Arrow", "category": "physical", "target": "single_enemy", "power": 14, "mpCost": 5, "description": "An armor-piercing shot." },
     { "id": "venom_fang", "name": "Venom Fang", "category": "physical", "target": "single_enemy", "power": 9, "mpCost": 5, "statusEffect": "poison", "statusMagnitude": 6, "statusDuration": 3, "description": "A bite that injects venom." },
     { "id": "crippling_blow", "name": "Crippling Blow", "category": "physical", "target": "single_enemy", "power": 10, "mpCost": 6, "statusEffect": "defense_down", "statusMagnitude": 25, "statusDuration": 3, "description": "A blow that weakens the foe's guard." },
-
     { "id": "fireball", "name": "Fireball", "category": "magic", "target": "single_enemy", "element": "fire", "power": 14, "mpCost": 6, "description": "Hurl a ball of flame." },
     { "id": "frost_lance", "name": "Frost Lance", "category": "magic", "target": "single_enemy", "element": "ice", "power": 14, "mpCost": 6, "description": "Impale a foe on a spear of ice." },
     { "id": "spark", "name": "Spark", "category": "magic", "target": "single_enemy", "element": "lightning", "power": 13, "mpCost": 5, "description": "A jolt of lightning." },
@@ -20,23 +19,19 @@
     { "id": "shadow_bolt", "name": "Shadow Bolt", "category": "magic", "target": "single_enemy", "element": "dark", "power": 15, "mpCost": 7, "description": "A bolt of dark energy." },
     { "id": "holy_ray", "name": "Holy Ray", "category": "magic", "target": "single_enemy", "element": "holy", "power": 15, "mpCost": 7, "description": "A searing ray of light." },
     { "id": "venom_mist", "name": "Venom Mist", "category": "magic", "target": "all_enemies", "power": 8, "mpCost": 10, "statusEffect": "poison", "statusMagnitude": 5, "statusDuration": 3, "description": "A cloud of poison engulfs all foes." },
-
     { "id": "mend", "name": "Mend", "category": "heal", "target": "single_ally", "power": 20, "mpCost": 5, "description": "Restore a single ally's health." },
     { "id": "group_mend", "name": "Group Mend", "category": "heal", "target": "all_allies", "power": 14, "mpCost": 12, "description": "Restore the whole party's health." },
     { "id": "greater_heal", "name": "Greater Heal", "category": "heal", "target": "single_ally", "power": 40, "mpCost": 10, "description": "A powerful restorative." },
     { "id": "renew", "name": "Renew", "category": "heal", "target": "single_ally", "power": 12, "mpCost": 9, "reviveHpPct": 20, "description": "A thin thread of life: raises a fallen ally at 20% HP, or gently mends a living one." },
-
     { "id": "guard_aura", "name": "Guard Aura", "category": "support", "target": "all_allies", "power": 0, "mpCost": 8, "statusEffect": "defense_up", "statusMagnitude": 30, "statusDuration": 3, "description": "Bolster the party's defenses." },
     { "id": "bulwark", "name": "Bulwark", "category": "support", "target": "self", "power": 0, "mpCost": 6, "statusEffect": "defense_up", "statusMagnitude": 50, "statusDuration": 3, "description": "Brace to absorb incoming blows." },
     { "id": "battle_cry", "name": "Battle Cry", "category": "support", "target": "all_allies", "power": 0, "mpCost": 8, "statusEffect": "attack_up", "statusMagnitude": 25, "statusDuration": 3, "description": "Rally the party to strike harder." },
     { "id": "focus", "name": "Focus", "category": "support", "target": "self", "power": 0, "mpCost": 6, "statusEffect": "attack_up", "statusMagnitude": 40, "statusDuration": 3, "description": "Sharpen your aim and resolve." },
     { "id": "weaken", "name": "Weaken", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "attack_down", "statusMagnitude": 30, "statusDuration": 3, "description": "Sap a foe's strength." },
     { "id": "sunder", "name": "Sunder", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "defense_down", "statusMagnitude": 30, "statusDuration": 3, "description": "Shatter a foe's defenses." },
-
     { "id": "taunt", "name": "Taunt", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "taunt", "description": "Goad the enemy into striking you instead of your allies." },
     { "id": "fade", "name": "Fade", "category": "support", "target": "self", "power": 0, "mpCost": 3, "control": "fade", "description": "Slip from the enemy's attention, shedding focus." },
     { "id": "redirect", "name": "Redirect", "category": "support", "target": "self", "power": 0, "mpCost": 4, "control": "intercept", "description": "Take single blows meant for allies until your next turn." },
-
     { "id": "shield_bash", "name": "Shield Bash", "category": "physical", "target": "single_enemy", "power": 12, "mpCost": 5, "statusEffect": "defense_down", "statusMagnitude": 20, "statusDuration": 3, "description": "A shield blow that batters down a foe's guard." },
     { "id": "execute", "name": "Execute", "category": "physical", "target": "single_enemy", "power": 21, "mpCost": 9, "description": "A finishing strike aimed to end the fight." },
     { "id": "aimed_shot", "name": "Aimed Shot", "category": "physical", "target": "single_enemy", "power": 18, "mpCost": 6, "description": "A slow, deadly precise shot." },
@@ -44,20 +39,16 @@
     { "id": "hamstring", "name": "Hamstring", "category": "physical", "target": "single_enemy", "power": 8, "mpCost": 6, "statusEffect": "attack_down", "statusMagnitude": 25, "statusDuration": 3, "description": "Cripple a foe's strength." },
     { "id": "rend", "name": "Rend", "category": "physical", "target": "single_enemy", "power": 11, "mpCost": 5, "statusEffect": "poison", "statusMagnitude": 5, "statusDuration": 3, "description": "A deep cut that bleeds." },
     { "id": "eviscerate", "name": "Eviscerate", "category": "physical", "target": "single_enemy", "power": 24, "mpCost": 10, "description": "A brutal killing blow." },
-
     { "id": "arcane_burst", "name": "Arcane Burst", "category": "magic", "target": "single_enemy", "power": 17, "mpCost": 7, "description": "A blast of raw arcane force." },
     { "id": "smite", "name": "Smite", "category": "magic", "target": "single_enemy", "element": "holy", "power": 12, "mpCost": 6, "description": "Strike a foe with holy force." },
     { "id": "radiance", "name": "Radiance", "category": "magic", "target": "all_enemies", "element": "holy", "power": 10, "mpCost": 12, "description": "Searing light burns every foe." },
-
     { "id": "intimidate", "name": "Intimidate", "category": "support", "target": "all_enemies", "power": 0, "mpCost": 10, "statusEffect": "attack_down", "statusMagnitude": 20, "statusDuration": 3, "description": "Cow every foe into weaker blows." },
     { "id": "iron_will", "name": "Iron Will", "category": "support", "target": "self", "power": 0, "mpCost": 8, "statusEffect": "defense_up", "statusMagnitude": 60, "statusDuration": 4, "description": "Steel yourself against all harm." },
-
     { "id": "smoke_screen", "name": "Smoke Screen", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 6, "statusEffect": "blind", "statusDuration": 3, "description": "Blinds a foe so its physical blows go wide." },
     { "id": "flash_arrow", "name": "Flash Arrow", "category": "physical", "target": "single_enemy", "power": 8, "mpCost": 5, "statusEffect": "blind", "statusDuration": 3, "description": "A dazzling shot that blinds its mark." },
     { "id": "silence", "name": "Silence", "category": "support", "target": "single_enemy", "power": 0, "mpCost": 7, "statusEffect": "silence", "statusDuration": 3, "description": "Seals a foe's magic, blocking MP skills." },
     { "id": "bewilder", "name": "Bewilder", "category": "magic", "target": "single_enemy", "element": "dark", "power": 6, "mpCost": 8, "statusEffect": "confusion", "statusDuration": 2, "description": "Addles a foe into striking its own side." },
     { "id": "purify", "name": "Purify", "category": "heal", "target": "all_allies", "power": 0, "mpCost": 10, "control": "cleanse", "description": "Lifts every affliction from the whole party. Heals nothing, and leaves ATK-/DEF- alone." },
-
     { "id": "blinding_curse", "name": "Blinding Curse", "category": "support", "target": "single_enemy", "power": 16, "mpCost": 6, "statusEffect": "blind", "statusDuration": 3, "description": "A searing curse that wounds and blinds its mark." },
     { "id": "silencing_word", "name": "Silencing Word", "category": "support", "target": "single_enemy", "power": 16, "mpCost": 7, "statusEffect": "silence", "statusDuration": 3, "description": "A word of unmaking that wounds and seals a foe's magic." },
     { "id": "maddening_gaze", "name": "Maddening Gaze", "category": "support", "target": "single_enemy", "power": 14, "mpCost": 8, "statusEffect": "confusion", "statusDuration": 2, "description": "A gaze that wounds and turns a foe against its own." },
