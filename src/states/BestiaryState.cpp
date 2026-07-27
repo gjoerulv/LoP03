@@ -111,7 +111,8 @@ BestiaryState::BestiaryState(StateStack& stack, AppContext& context)
         e.immuneTo = elementNames(def.affinity.immunities);
         e.flavor = def.description;
         e.known = known(id);
-        e.maxScalePct = foeMaxScalePct(true, false, id == kKingBossId, castleFloor);  // M52
+        e.maxScalePct = foeMaxScalePct(true, false, id == kKingBossId || id == kDuckBossId,
+                                       castleFloor);  // M52 (M61: the Duck's own arena)
         entries_.push_back(std::move(e));
     }
     const auto byName = [](const Entry& a, const Entry& b) { return a.name < b.name; };

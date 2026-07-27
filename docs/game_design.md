@@ -318,6 +318,31 @@ Castle records live **entirely apart from the dungeon scoreboard** (score
 comparability is preserved); challenges never touch your dungeon score, stakes, or
 the scoreboard. Travel back to town is free.
 
+**Goose Town & the Deadly Duck (M61).** Fell the King with **at least one
+Goose in the party** and the north road out of town 7 forks: beside the
+castle now sits **Goose Town**, the pond beyond it. It works like the castle
+(inn, save point, its own Pond Record) with a single challenge — the game's
+true final fight, a **no-heal gauntlet**:
+
+1. **The Evil Geese** — five of them, a diverse cast (bruiser, magic sniper,
+   healer, disruptor, poison attrition), each with **one elemental weakness
+   and two passive skills**, each at ~500 effective HP — and each with a
+   **10% chance per turn to simply "Quack."** and do nothing.
+2. **The Deadly Duck** — the mightiest foe in the realm, above the King in
+   every effective stat, at **5000 effective HP**. His basic attack strikes
+   the **whole party** and inflicts statuses (ATK-down + poison); he is
+   **immune to every affliction** — poison, blind, silence, confusion,
+   terror, stun, all of it bounces off — yet **stat debuffs still land**, so
+   the Deadly Spoon (and honest healing) is the obtainable counterplay, the
+   King's own design philosophy one step up. He carries **Counter Attack,
+   Thorns and Spell Ward**, and he enrages.
+
+The **Goofy Jester** by the pond tells the legendary "Ballad of the Deadly
+Duck" (pure flavor, all original). Clearing the gauntlet earns the
+**Quackbane** achievement and a repeatable fewest-turns Pond Record — the
+prize is the deed. Like every castle-tier fight, defeat costs no gold but
+carries you out at 1 HP.
+
 **Story & lore (M41).** A light-hearted running serial threads the climb: a
 **wandering storyteller** stands in every town and, town by town, spins the
 increasingly absurd "Ballad of the Hollow King" — one verse per town, growing
@@ -338,15 +363,17 @@ Each known foe also shows a `max` line beneath its base stats (M52): its stats
 **at their strongest real fight context**, so a codex entry conveys not just what
 a foe is worth on paper but how dangerous it becomes at the top of the game. The
 context is the hardest place the foe is actually fought — regular enemies (and
-elites) at the town-7 dungeon ceiling (×5.70), the Royal Guards and the King at
-his throne-room scale (×5.00), and every other boss at the Boss Rush (×5.80). The
+elites) at the town-7 dungeon ceiling (×5.70), an own-arena boss (the King's
+throne room; since M61 also the Deadly Duck's pond) and its bossOnly court (the
+Royal Guards, the Evil Geese) at the bespoke ×5.00 arena scale, and every other
+boss at the Boss Rush (×5.80). The
 **Endless Rush is deliberately excluded**: its scale climbs without bound, so no
 single "strongest" number would be honest.
 **Victory stats** appear on the clear screen's Run-stats view: this run's
 total damage, biggest single hit, statuses inflicted, and the party MVP, plus your
 personal records (biggest hit ever, most damage in a run) — display-only, never
-ranked. **Achievements** (also from the pause menu) are ~16 original cross-game
-goals — clearing dungeons, climbing the ladder, beating the King's challenges,
+ranked. **Achievements** (also from the pause menu) are 17 original cross-game
+goals (16 at M42; M61 added Quackbane) — clearing dungeons, climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
 

@@ -53,8 +53,17 @@ struct BattleObserver;  // M60 record-only telemetry hook (battle/BattleObserver
 // Hollow King has a 10%-per-living-Goose chance, each of his own turns, to be
 // scared into doing nothing; the scare is a pure hash of the battle seed like the
 // targeting jitter, so the Simulator and live play agree, but it changes how a
-// King fight resolves for a given seed).
-inline constexpr int kBattleRulesVersion = 11;
+// King fight resolves for a given seed);
+// 12 = M61 (the Goose Town rules, all schema-driven and inert for every prior
+// foe: an enemy authored `doNothingPct` may simply do nothing on its own turn
+// — a pure seeded hash like the King's scare, its flavour line authored as
+// `doNothingText` ("Quack.") — a boss authored `attackHitsAll` /
+// `attackStatuses` swings the M45 class machinery from the enemy side, and a
+// boss authored `immuneToAfflictions` shrugs off every affliction — poison,
+// confusion, silence, blind, terrified, stunned — while ATK-/DEF- debuffs
+// still land. No shipped pre-M61 content carries any of the fields, so every
+// earlier battle resolves byte-identically).
+inline constexpr int kBattleRulesVersion = 12;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -138,13 +147,24 @@ struct Combatant {
     bool firstStrikeUsed = false;         // once per battle
 
     // Class battle traits (M45), resolved from the ClassDef at buildBattle so the
-    // pure model never looks a class up. All inert by default.
+    // pure model never looks a class up. All inert by default. M61: bosses may
+    // carry the same two (the Deadly Duck) — buildBattle resolves either source
+    // into these fields, so the pure model never knows which side authored them.
     bool attackHitsAll = false;                 // basic attack sweeps every foe
     // Applied per connecting basic hit. Stored as StatusInstances (the same
     // {type, magnitude, turns} triple) so the pure model needs no content type
     // here; buildBattle converts the class's authored list once.
     std::vector<StatusInstance> attackStatuses;
     bool uncontrolled = false;                  // acts on its own, seeded
+
+    // M61 (the Goose Town): a foe authored `doNothingPct` may spend its own turn
+    // doing nothing — a pure seeded roll (see doesNothingThisTurn), flavour text
+    // authored alongside it. A boss authored `immuneToAfflictions` blocks EVERY
+    // affliction at the addStatus chokepoint (poison/confusion/silence/blind/
+    // terrified/stunned) while stat debuffs still land. Both default inert.
+    int doNothingPct = 0;
+    std::string doNothingText;
+    bool afflictionImmune = false;
 
     // Elements (M48), resolved at buildBattle so the pure model never reads
     // content. `weaponElement` is the element this unit's BASIC attacks carry —
@@ -304,11 +324,24 @@ inline bool isSilenced(const Combatant& c) {
 inline bool isBlinded(const Combatant& c) {
     return hasStatus(c, content::StatusType::Blind) && !c.blindImmune;
 }
+// M61: is this status an AFFLICTION — a "bad status" in the owner's sense?
+// Poison, the M35 control trio, and the M44 turn-takers. Deliberately broader
+// than a cleanse's reach (a cleanse cannot refund a turn-control status, but
+// immunity stops one from ever landing). The ATK-/DEF- stat debuffs are NOT
+// afflictions: an affliction-immune boss can still be debuffed by design.
+inline bool isAffliction(content::StatusType t) {
+    return t == content::StatusType::Poison || t == content::StatusType::Confusion ||
+           t == content::StatusType::Silence || t == content::StatusType::Blind ||
+           t == content::StatusType::Terrified || t == content::StatusType::Stunned;
+}
+
 // M40: whether this unit is immune to a status type. A stored status the unit is
 // immune to has no effect (the queries above ignore it), so it must never be shown
 // as afflicted either — display sites skip statuses for which this is true.
+// M61: `afflictionImmune` (the Deadly Duck) covers every affliction at once.
 inline bool isImmuneTo(const Combatant& c, content::StatusType t) {
-    return (t == content::StatusType::Blind && c.blindImmune) ||
+    return (c.afflictionImmune && isAffliction(t)) ||
+           (t == content::StatusType::Blind && c.blindImmune) ||
            (t == content::StatusType::Silence && c.silenceImmune) ||
            (t == content::StatusType::Confusion && c.confusionImmune);
 }
@@ -401,6 +434,14 @@ int geeseScaringKing(const Battle& b);
 // resolves (hence the kBattleRulesVersion bump). BattleState also calls it to
 // choose the "geese scare" flavour over the ordinary skip line.
 bool kingScaredThisTurn(const Battle& b, int actor);
+
+// M61: does an authored do-nothing foe (a Quacking goose) spend `actor`'s own
+// turn doing nothing? True when the unit carries `doNothingPct` and a per-turn
+// roll lands under it — the same pure-hash shape as the King's scare (its own
+// salt, never advances `rollCursor`, identical in the Simulator and live play).
+// Feeds `chooseEnemyAction` (part of rules v12); BattleState also calls it to
+// show the authored `doNothingText` over the ordinary skip line.
+bool doesNothingThisTurn(const Battle& b, int actor);
 
 // M43: the forced action of a confused unit — a basic attack, never a skill.
 // `attack()` then performs the seeded same-side redirect, so the returned target

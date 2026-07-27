@@ -12,7 +12,7 @@
 *.ilk
 
 .localDocs/
-capdir60/
+capdir*/
 
 # CMake
 CMakeCache.txt

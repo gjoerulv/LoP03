@@ -42,6 +42,7 @@
 #include "states/BestiaryState.hpp"
 #include "states/CastleChallengeState.hpp"
 #include "states/CastleState.hpp"
+#include "states/GooseTownState.hpp"
 #include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #ifdef CRYSTAL_DEBUG_OVERLAY
@@ -1064,6 +1065,23 @@ int run(const char* outDir) {
                                                             render::BackdropStage::Castle, 42u);
                  st->captureSetTime(BossIntroTimeline::kBuildEnd + BossIntroTimeline::kPeak * 0.5f);
                  s.pushState(std::move(st));
+             }},
+            {"76_goose_town",
+             [](StateStack& s, AppContext& c) {
+                 // M61: the Goose Town hub with a felled-Duck record — the
+                 // fullest layout for the overflow check.
+                 c.party.gooseTownUnlocked = true;
+                 c.party.castleRecords.duckBestTurns = 27;
+                 s.pushState(std::make_unique<GooseTownState>(s, c));
+             }},
+            {"77_duck_battle",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M61: the Deadly Duck fight — the biggest HP number the battle
+                 // panel will ever show, plus his telegraph and passive chips.
+                 battle::Battle b = battle::buildBattle(c.party, duckTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Castle));
              }},
         };
 

@@ -18,6 +18,11 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M61 update:** Goose Town & the Deadly Duck (the capture set is **77
+> scenes** — 64 as of M52, +11 across M53–M58, +2 in M61). Rows 144–146 below;
+> the full step-by-step owner checklist is
+> `docs/milestone_notes/M61_goose_town.md` §G, which those rows summarize.
+>
 > **M52 update:** comforts & secrets (the capture set is **64 scenes**). Checks:
 > **(1) Ambience volume** — Settings → Audio now lists **Ambience Volume**
 > between SFX and Background Audio (default **5**); lower it in a dungeon and the
@@ -433,6 +438,9 @@ sound fires.
 | 141 | Equip refusal message clears (M58) | Equipment Shop → Equip → a class barred from a slot (e.g. a **Dragon** into **Armor**); read the *"A Dragon cannot equip Armor."* note; then Cancel back to the character/slot list, or pick another character | not run | not run | the refusal shows while you are on that slot, then **disappears** the moment you leave that character's / list's menu (it used to linger forever); buy feedback ("Bought…", "Not enough gold") clears the same way when you leave the buy list | n/a | error sfx on refusal | 09_equip_shop.png | not run |
 | 142 | Deadly Spoon applies once (M58) | in a battle, use a **Deadly Spoon** on a foe, then use a **second** Deadly Spoon on the **same** foe | not run | not run | the first halves its ATK/MAG/DEF/SPD ("…is diminished for the rest of the battle!"); the second reports the foe **is already diminished** and does **not** halve again (no quarter/eighth stacking) | n/a | item sfx | — | not run |
 | 143 | Geese scare the King (M58) | fight the **Hollow King** with **1+ Goose** in the party (more Geese = more often); watch several of the King's turns | not run | not run | roughly **10 % per living Goose** of the King's own turns he does nothing — *"The geese scare the King…"* flashes above the panel like a Jester quip and the resolve line says he loses his turn; **his court still acts**; a downed Goose stops counting; with **no** Goose it never happens. **Judge whether 10 %/Goose feels right, and whether the King needs rebalancing against a Goose party** | n/a | n/a | — | not run |
+| 144 | Goose Town unlock & road fork (M61) | fell the King with **≥ 1 Goose** in the party; walk town 7's north road; try both fork answers and Cancel; save in Goose Town, reload | not run | not run | the King-victory text announces Goose Town; the north road now shows a **Castle / Goose Town** prompt (Cancel steps back); without the unlock the road still leads straight to the castle; the unlock survives a save/reload; the Goofy Jester's tale fits its panel | cursor visible in the fork prompt | door/confirm sfx | 76_goose_town.png | not run |
+| 145 | The Duck gauntlet (M61) | fight the gauntlet; lose once, win once (bring the **Deadly Spoon** + healing — the itemless sim loses by design) | not run | not run | five Evil Geese first (each ~500 HP; occasional *"Quack."* turns, ~1 in 10 per goose), then the **Deadly Duck alone** (5000 HP, Crystal Shatter + King theme): his basic attack hits the **whole party** and applies ATK-down + poison; your afflictions (poison/blind/Evil Goose/Tax Sheets…) **bounce off him** while the Spoon lands; Counter/Thorns/Spell Ward chips visible; no healing between the two fights; defeat pays the castle's 1-HP price. **Judge the difficulty bar** | HP bars/status tags fit six enemies and the big fight | King battle music on the Duck | 77_duck_battle.png | not run |
+| 146 | Pond records & exclusions (M61) | win the gauntlet; check the result, Goose Town records, achievements, bestiary; then run a Boss Rush and a dungeon | not run | not run | the result shows total gauntlet turns; **Quackbane** toasts; the Pond Records panel shows the best turns (a faster rerun improves it); the bestiary lists the Duck (max = ×5.00) and the Evil Geese; the Duck **never** appears in the Boss Rush or any dungeon and the geese never in endless waves; an ordinary dungeon battle and a King fight play exactly as before (rules v12 changes nothing pre-M61) | records panel not clipped | achievement toast | 76_goose_town.png | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

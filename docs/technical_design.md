@@ -183,12 +183,14 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = **10** (M29 enlarged the theme enemy/boss pools; M30 added
+  `kGenerationVersion` = **11** (M29 enlarged the theme enemy/boss pools; M30 added
   the RestToken event; M37 gave the merchant a 75 % bargain and gated chest gear by
   town; **M38 gates the per-town enemy/boss pools by `minTown`**; **M43 reprices
   the consumables a merchant offers and windows item pools by
   `availableAtTown`**; **M44 draws the Royal Relic replacement roll from the event
-  stream** — each changes a seed's roster/events/rewards; owner-approved bumps).
+  stream**; **M55 guarantees each theme's rite event once per dungeon** — each
+  changes a seed's roster/events/rewards; owner-approved bumps. The
+  version-history comment in `src/dungeon/RoomLayout.hpp` is the authority).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager/rest-token) realized as an
@@ -233,7 +235,7 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; 51 scenes as of M46) — all
+list lives in `src/capture/CaptureRunner.cpp`; 77 scenes as of M61) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
@@ -467,8 +469,9 @@ provisional `magic`-scaled pool until the combat milestone.
 ### Save format & rules
 
 Versioned JSON (`version` must equal `kSaveVersion`, currently `1`) under the
-user data dir (`%APPDATA%/CrystalDungeons/saves` on Windows). **Slots:** three
-manual (`save_slot1..3.json`) plus an autosave (`save_auto.json`).
+user data dir (`%APPDATA%/CrystalDungeons/saves` on Windows). **Slots:** five
+manual (`save_slot1..5.json`; three until M53) plus an autosave
+(`save_auto.json`).
 
 ```json
 { "version": 1, "gold": 150,
@@ -520,7 +523,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 10; 1 = the pre-M16 fixed 26×15 rooms) is
+  `kGenerationVersion` (currently 11; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
   (owner decision 2026-07-19).
@@ -891,8 +894,9 @@ castle is reached, and left, only through its own states.
   deferral — see the note's §K.)
 - **`CastleChallengeState`** runs a challenge as a sequence of `BattleState`s with
   **persistent HP/MP** (no free healing; `BattleState` writes hp/mp back to the party
-  between fights). Boss Rush enumerates `bossRushOrder` (the 12 bosses, King-excluded,
-  sorted) at `kBossRushScalePct`; Endless builds `endlessWaveTeam` from a fixed seed
+  between fights). Boss Rush enumerates `bossRushOrder` (the 12 dungeon bosses,
+  sorted — the King is excluded here, and M61 excludes the Deadly Duck by the
+  same rule) at `kBossRushScalePct`; Endless builds `endlessWaveTeam` from a fixed seed
   (`kEndlessSeed`, blackMarketHash stream) with escalating scale/size; the King is
   `kingTeam` at `kKingScalePct` with `MusicTrack::KingBattle` (a new optional
   `BattleState` music override). On finish it updates the records, pays the one-time
@@ -1540,7 +1544,8 @@ unchanged.
   danger battery. `states/BestiaryStats.hpp` adds the pure
   `foeMaxScalePct(boss, bossOnly, isKing, castleFloorPct)` four-context rule
   (King 500, other boss max(floor,580)=580, guard 500, regular floor=570; endless
-  excluded). The bestiary shows a `max` line under the base stats — kept to the
+  excluded; M61 widened `isKing` to `ownArena` so the Deadly Duck shares the
+  bespoke-arena context). The bestiary shows a `max` line under the base stats — kept to the
   base pair's two-line footprint so the King's flavor-dense entry stays
   overflow-clean.
 - **The Crown's secret (E5).** Optional `ItemDef.disablesMinionRevive` (loaded
@@ -1812,4 +1817,29 @@ usage lives in `docs/editor_guide.md`; this section is the architecture.
 - The game binary is untouched except additive content helpers
   (`enumValues`-style id lists, two exported parser declarations) and the
   observer above; no version bumps anywhere.
+
+## 18. Goose Town & the Deadly Duck (M61)
+
+Battle rules **11 → 12** (history in `battle/Battle.hpp`, the single source).
+Three schema-driven mechanics, all inert for pre-M61 content:
+`EnemyDef.doNothingPct/doNothingText` (a per-own-turn pure-hash skip under
+its own salt — `battle::doesNothingThisTurn`, the King-scare shape, hooked
+into `chooseEnemyAction`; `rollCursor` untouched), boss-side
+`attackHitsAll`/`attackStatuses` (resolved by `buildBattle` into the same
+M45 Combatant fields the classes use), and `BossDef.immuneToAfflictions`
+(a shared `isAffliction` classifier guarded once at the `addStatus`
+chokepoint and folded into `isImmuneTo`, so blocked statuses are never shown;
+stat debuffs and relic stat-scaling still land — the fight's counterplay).
+Flow: `Party.gooseTownUnlocked` + `CastleRecords.duckBestTurns` (optional
+save fields, no `kSaveVersion` bump), a `RoadForkState` on town 7's north
+road, a castle-style `GooseTownState`, and a `CastleChallenge::DuckGauntlet`
+kind reusing the whole no-heal challenge machinery. The Duck is excluded
+from the Boss Rush by the King's own rule (`bossRushOrder`), tops the
+bestiary at his own-arena scale (`foeMaxScalePct`), and his court pairing is
+authored content (the Evil Geese are his `minions` list). The story loader's
+town range grew to 9 (the Goofy Jester's beat); towns 1–7's Loremaster mask
+is untouched. Balance is asserted at the King's bar: the gauntlet falls to a
+maxed party with the obtainable counterplay (sim-scripted Spoon + healing,
+5/5 seeds) while the bare itemless sim losing (0/5) is recorded as the
+intended difficulty.
 

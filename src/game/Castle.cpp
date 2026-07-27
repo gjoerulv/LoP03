@@ -26,6 +26,9 @@ std::vector<std::string> bossRushOrder(const content::ContentDatabase& content) 
         if (id == kKingBossId) {
             continue;  // the King is its own challenge, not part of the rush roster
         }
+        if (id == kDuckBossId) {
+            continue;  // M61: the Duck has his own pond, same rule as the King
+        }
         ids.push_back(id);
     }
     std::sort(ids.begin(), ids.end());
@@ -87,6 +90,32 @@ dungeon::EnemyTeam kingTeam(const content::ContentDatabase& content) {
     if (const content::BossDef* b = content.findBoss(kKingBossId)) {
         team.name = b->name;
         team.enemyIds = b->minions;  // M49: the King's Royal Guards
+    }
+    return team;
+}
+
+dungeon::EnemyTeam gooseWaveTeam(const content::ContentDatabase& content) {
+    // M61: the gauntlet's opening fight is the Duck's authored court — the five
+    // Evil Geese live on his BossDef's `minions` list, so the pairing is
+    // content, not a hardcoded roster.
+    dungeon::EnemyTeam team;
+    team.name = "The Evil Geese";
+    team.statScalePct = kGooseTownScalePct;
+    if (const content::BossDef* b = content.findBoss(kDuckBossId)) {
+        team.enemyIds = b->minions;
+    }
+    return team;
+}
+
+dungeon::EnemyTeam duckTeam(const content::ContentDatabase& content) {
+    // M61: the Duck fights ALONE — his court already fell in the first fight,
+    // so unlike every other boss team his authored minions stay out of it.
+    dungeon::EnemyTeam team;
+    team.isBoss = true;
+    team.bossId = kDuckBossId;
+    team.statScalePct = kGooseTownScalePct;
+    if (const content::BossDef* b = content.findBoss(kDuckBossId)) {
+        team.name = b->name;
     }
     return team;
 }

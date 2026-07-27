@@ -73,6 +73,7 @@ add_executable(crystal_tests
     test_editor_enum_lists.cpp
     test_battle_observer.cpp
     test_editor_simlab.cpp
+    test_goose_town.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

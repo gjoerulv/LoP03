@@ -23,8 +23,12 @@ class ContentDatabase;
 }
 
 inline constexpr int kCastleTown = 8;  // distinct place, NOT a ladder town
+// M61: the Goose Town — a second place above the ladder, unlocked by felling
+// the King with at least one Goose in the party. Like kCastleTown it is a
+// distinct id (used by the story beat), never a ladder town.
+inline constexpr int kGooseTown = 9;
 
-enum class CastleChallenge { BossRush, Endless, King };
+enum class CastleChallenge { BossRush, Endless, King, DuckGauntlet };
 
 // --- Challenge scaling -----------------------------------------------------
 // Every fight is a normal Battle whose team.statScalePct sets the enemy stat
@@ -114,6 +118,17 @@ inline constexpr const char* kKingBossId = "the_hollow_king";
 inline constexpr const char* kKingLegendaryId = "sovereigns_regalia";  // King-only unique
 inline constexpr const char* kKingTitle = "Breaker of the Hollow Throne";
 
+// --- The Goose Town (M61) ---------------------------------------------------
+// The documented content-id exceptions, following kKingBossId: the Goose class
+// (already read by the M58 scare rule) and the Deadly Duck, who is excluded
+// from the Boss Rush roster the way the King is (he has his own arena).
+inline constexpr const char* kGooseClassId = "goose";
+inline constexpr const char* kDuckBossId = "deadly_duck";
+// The gauntlet's scale. At 500% the Duck's authored base (1000 HP) lands on
+// the owner-specified 5000 EFFECTIVE HP — the largest fight in the game — and
+// each Evil Goose (base 100) on ~500. Same reference scale as the King's.
+inline constexpr int kGooseTownScalePct = 500;
+
 // --- Records (persisted as optional Party save fields, NOT the scoreboard) ---
 struct CastleRecords {
     int bossRushBestTurns = 0;  // 0 = never cleared; fewer is better
@@ -121,10 +136,13 @@ struct CastleRecords {
     bool kingDefeated = false;
     int kingBestTurns = 0;      // 0 = never; fewer is better
     std::string kingTitle;      // the visible title earned for the first King kill
+    int duckBestTurns = 0;      // M61: 0 = the Duck still swims; fewer is better
 
     bool bossRushCleared() const { return bossRushBestTurns > 0; }
+    bool duckDefeated() const { return duckBestTurns > 0; }  // M61
     bool anyRecord() const {
-        return bossRushBestTurns > 0 || endlessBestWave > 0 || kingDefeated;
+        return bossRushBestTurns > 0 || endlessBestWave > 0 || kingDefeated ||
+               duckBestTurns > 0;
     }
 };
 
@@ -139,6 +157,9 @@ inline bool endlessImproved(const CastleRecords& r, int wave) {
 }
 inline bool kingImproved(const CastleRecords& r, int turns) {
     return turns > 0 && (!r.kingDefeated || turns < r.kingBestTurns);
+}
+inline bool duckImproved(const CastleRecords& r, int turns) {  // M61
+    return turns > 0 && (r.duckBestTurns == 0 || turns < r.duckBestTurns);
 }
 
 // --- One-time first-clear rewards ------------------------------------------
@@ -160,5 +181,9 @@ dungeon::EnemyTeam bossRushTeam(const content::ContentDatabase& content, int ind
 dungeon::EnemyTeam endlessWaveTeam(const content::ContentDatabase& content, int wave);
 // The King's solo boss team at kKingScalePct.
 dungeon::EnemyTeam kingTeam(const content::ContentDatabase& content);
+// M61: the Goose Town gauntlet — the five Evil Geese, then the Deadly Duck
+// alone (his court fell in the first fight), both at kGooseTownScalePct.
+dungeon::EnemyTeam gooseWaveTeam(const content::ContentDatabase& content);
+dungeon::EnemyTeam duckTeam(const content::ContentDatabase& content);
 
 }  // namespace cd

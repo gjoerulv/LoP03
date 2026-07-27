@@ -883,4 +883,16 @@ report export) and a per-category test runner that spawns `crystal_tests.exe`.
 Zero new dependencies; no version bumps; the game binary gains no process
 execution and no behavior change. Scope lives in the ledger (`docs/milestones.md`).
 
-M23 → M24 run after M60, re-audited against the then-current checkout.
+## 21. Goose Town & the Deadly Duck (M61) — direction
+
+An owner-directed content capstone (authorized 2026-07-25): a hidden ultimate
+challenge that rewards the game's own joke classes. Felling the King with a
+Goose in the party opens **Goose Town**, a castle-style hub whose single
+challenge is a two-stage no-heal gauntlet — five Evil Geese, then the Deadly
+Duck, the game's statistical apex. All mechanics are schema-driven (rules
+v11 → 12, inert for every pre-M61 battle), the gauntlet reuses the castle
+challenge machinery wholesale, and the balance bar deliberately mirrors the
+King's: beyond the itemless simulator, beatable with obtainable counterplay,
+finally judged by the owner's own hands.
+
+M23 → M24 run after M61, re-audited against the then-current checkout.

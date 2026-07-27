@@ -78,6 +78,8 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["castleKingDefeated"] = party.castleRecords.kingDefeated;
   root["castleKingBestTurns"] = party.castleRecords.kingBestTurns;
   root["castleKingTitle"] = party.castleRecords.kingTitle;
+  root["castleDuckBestTurns"] = party.castleRecords.duckBestTurns;  // M61 (optional; old -> 0)
+  root["gooseTownUnlocked"] = party.gooseTownUnlocked;              // M61 (optional; old -> false)
   root["storyMet"] = party.storyMet;  // M41 (optional; old -> 0)
   root["encountered"] = party.encountered;             // M42 (optional; old -> empty)
   root["recordBiggestHit"] = party.recordBiggestHit;   // M42 (optional; old -> 0)
@@ -196,6 +198,8 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   loaded.castleRecords.kingDefeated = rootReader.optBool("castleKingDefeated", false);
   loaded.castleRecords.kingBestTurns = rootReader.optIntMin("castleKingBestTurns", 0, 0);
   loaded.castleRecords.kingTitle = rootReader.optString("castleKingTitle");
+  loaded.castleRecords.duckBestTurns = rootReader.optIntMin("castleDuckBestTurns", 0, 0);  // M61
+  loaded.gooseTownUnlocked = rootReader.optBool("gooseTownUnlocked", false);               // M61
   loaded.storyMet = rootReader.optIntMin("storyMet", 0, 0);  // M41 (optional; old -> 0)
   loaded.encountered = rootReader.optStringArray("encountered");  // M42 (optional; old -> empty)
   loaded.recordBiggestHit = rootReader.optIntMin("recordBiggestHit", 0, 0);  // M42

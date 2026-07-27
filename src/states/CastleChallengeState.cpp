@@ -34,6 +34,7 @@ const char* challengeName(CastleChallenge kind) {
         case CastleChallenge::BossRush: return "Boss Rush";
         case CastleChallenge::Endless: return "Endless Rush";
         case CastleChallenge::King: return "The Hollow King";
+        case CastleChallenge::DuckGauntlet: return "The Deadly Duck";  // M61
     }
     return "";
 }
@@ -45,6 +46,11 @@ dungeon::EnemyTeam teamFor(CastleChallenge kind, int wave, const content::Conten
         case CastleChallenge::BossRush: return bossRushTeam(db, wave);
         case CastleChallenge::Endless: return endlessWaveTeam(db, wave);
         case CastleChallenge::King: return wave == 0 ? kingTeam(db) : dungeon::EnemyTeam{};
+        case CastleChallenge::DuckGauntlet:  // M61: the Evil Geese, then the Duck
+            if (wave == 0) {
+                return gooseWaveTeam(db);
+            }
+            return wave == 1 ? duckTeam(db) : dungeon::EnemyTeam{};
     }
     return {};
 }
@@ -72,8 +78,11 @@ void CastleChallengeState::startNextFight() {
         return;
     }
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
-    const MusicTrack music =
-        kind_ == CastleChallenge::King ? MusicTrack::KingBattle : MusicTrack::None;
+    // M61: the Duck borrows the King's battle theme — his pond, his anthem.
+    const MusicTrack music = kind_ == CastleChallenge::King ||
+                                     (kind_ == CastleChallenge::DuckGauntlet && wave_ == 1)
+                                 ? MusicTrack::KingBattle
+                                 : MusicTrack::None;
     // M43: the `true` marks this as a castle fight, so a defeat message never
     // claims the dungeon's gold penalty. M56: castle fights wear the Castle
     // backdrop; a boss-team fight (a Boss Rush wave or the King) opens with the
@@ -188,8 +197,37 @@ void CastleChallengeState::finish(bool cleared) {
                            std::to_string(kKingRewardGold) + " gold, +" +
                            std::to_string(kKingRewardTokens) + " tokens.";
                 }
+                // M61: fell the King with a Goose in the party and something
+                // stirs by the pond. Party membership is the rule (fallen geese
+                // honked their part too); the marker is the documented class-id
+                // constant the M58 scare rule reads.
+                if (!context_.party.gooseTownUnlocked) {
+                    for (const Character& member : context_.party.members) {
+                        if (member.classId == kGooseClassId) {
+                            context_.party.gooseTownUnlocked = true;
+                            msg += " Your geese honk in triumph - and something answers "
+                                   "from a pond beyond the castle. Goose Town has opened.";
+                            break;
+                        }
+                    }
+                }
             } else {
                 msg = "The King proves too mighty. Return stronger.";
+            }
+            break;
+        case CastleChallenge::DuckGauntlet:  // M61
+            if (cleared) {
+                if (duckImproved(rec, totalRounds_)) {
+                    rec.duckBestTurns = totalRounds_;
+                }
+                msg = "The Deadly Duck sinks beneath the pond in " +
+                      std::to_string(totalRounds_) +
+                      " turns! The geese fall silent. Nothing in the realm out-fights "
+                      "you now.";
+            } else {
+                msg = wavesWon_ == 0
+                          ? "The Evil Geese overwhelm you. The Duck never even surfaced."
+                          : "The Deadly Duck proves deadlier. Return stronger.";
             }
             break;
     }

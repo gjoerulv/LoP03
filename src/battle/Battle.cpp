@@ -109,6 +109,13 @@ void addStatus(Combatant& c, content::StatusType type, int magnitude, int turns)
     if (type == content::StatusType::None || turns <= 0) {
         return;
     }
+    // M61: an affliction-immune unit (the Deadly Duck) shrugs off every
+    // affliction at this single chokepoint — poison, confusion, silence, blind,
+    // terrified, stunned — while stat debuffs (and buffs) still land. Display
+    // sites skip these via isImmuneTo, so a blocked status is also never shown.
+    if (c.afflictionImmune && isAffliction(type)) {
+        return;
+    }
     // M35: statuses last 2x their authored duration - EXCEPT the M44 turn-control
     // statuses, which take the turn itself. Doubling those would quietly turn one
     // skipped turn into two, so they are applied exactly as authored. (Statuses
@@ -235,7 +242,9 @@ constexpr int kJestChancePct = 15;
 // clear of every other pure-hash stream. 10% per living Goose, additive.
 constexpr std::uint64_t kSaltGooseScare = 0x600D6005E5CA1E00ull;  // "goose scare"
 constexpr int kGoosePerScarePct = 10;
-constexpr const char* kGooseClassId = "goose";
+// M61: the authored do-nothing roll (a Quacking goose). Its own salt, same
+// pure-hash contract as the scare above.
+constexpr std::uint64_t kSaltDoNothing = 0x0DAC0DAC0DAC0001ull;
 
 // Small deterministic jitter in [0, range) from the battle seed + round + acting
 // enemy + candidate. Pure, so a given encounter always resolves identically and
@@ -1311,6 +1320,20 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             u.weaknesses = boss->affinity.weaknesses;     // M48
             u.immunities = boss->affinity.immunities;
             u.reviveMinionTurns = boss->reviveMinionTurns;  // M49 (0 = never)
+            // M61 (the Deadly Duck): a boss may swing the M45 class machinery —
+            // an all-party basic attack with status riders — and shrug off every
+            // affliction (the three legacy flags follow so the status queries
+            // and display chips agree with the blanket immunity).
+            u.attackHitsAll = boss->attackHitsAll;
+            for (const content::AttackStatus& s : boss->attackStatuses) {
+                u.attackStatuses.push_back({s.type, s.magnitude, s.duration});
+            }
+            u.afflictionImmune = boss->immuneToAfflictions;
+            if (boss->immuneToAfflictions) {
+                u.confusionImmune = true;
+                u.silenceImmune = true;
+                u.blindImmune = true;
+            }
             applyPassives(u, boss->passives, db);  // M36 (bosses may carry several)
             b.units.push_back(std::move(u));
         }
@@ -1338,6 +1361,8 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         u.name = def->name;
         u.weaknesses = def->affinity.weaknesses;  // M48
         u.immunities = def->affinity.immunities;
+        u.doNothingPct = def->doNothingPct;    // M61 (a Quacking goose)
+        u.doNothingText = def->doNothingText;
         if (totals[id] > 1) {
             const int n = seen[id]++;
             u.name += ' ';
@@ -1499,6 +1524,20 @@ bool kingScaredThisTurn(const Battle& b, int actor) {
     return (roll % 100) < chance;
 }
 
+bool doesNothingThisTurn(const Battle& b, int actor) {
+    if (actor < 0 || actor >= static_cast<int>(b.units.size())) {
+        return false;
+    }
+    const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    if (self.doNothingPct <= 0) {
+        return false;  // every pre-M61 foe
+    }
+    // Pure hash under its own salt, exactly the King-scare shape: the Simulator
+    // and BattleState derive the same answer, and rollCursor never moves.
+    const long roll = targetJitter(b.rngSeed ^ kSaltDoNothing, b.turnsTaken, actor, 4, 10000);
+    return (roll % 100) < std::min(self.doNothingPct, 100);
+}
+
 ForcedAction forcedActionFor(const Combatant& c) {
     // Order matters only in that a unit can carry more than one: a skipped turn
     // beats a forced guard, which beats a confused swing, because each is stricter
@@ -1576,6 +1615,13 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
         EnemyChoice scared;
         scared.forced = ForcedAction::Skip;
         return scared;
+    }
+    // M61: an authored do-nothing foe (a Quacking goose) may spend the turn on
+    // nothing at all. Same shared rule, same skip shape, rules v12.
+    if (doesNothingThisTurn(b, actor)) {
+        EnemyChoice idle;
+        idle.forced = ForcedAction::Skip;
+        return idle;
     }
     // Silence (M35): a silenced enemy cannot use MP-cost skills, so it falls back
     // to any 0-MP skill or a basic attack. canCast enforces exactly that in each

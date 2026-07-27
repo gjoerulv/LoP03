@@ -137,6 +137,12 @@ struct EnemyDef {
     // generator's empty-pool fallback and endlessWaveTeam), so simply leaving it
     // out of every theme would not be enough. Default false = ordinary enemy.
     bool bossOnly = false;
+    // M61 (the Evil Geese): a per-own-turn chance (0-100) this foe simply does
+    // nothing, with the flavour line shown when it happens ("Quack."). Decided
+    // by a pure seeded hash in shared battle code (rules v12); 0 = never, which
+    // is every pre-M61 enemy.
+    int doNothingPct = 0;
+    std::string doNothingText;
     int xpReward = 0;
     int goldReward = 0;
 };
@@ -267,6 +273,14 @@ struct BossDef {
     // `immuneToConfusion` precedent.
     int reviveMinionTurns = 0;
     bool immuneToConfusion = false;     // M40: bespoke status immunity (the King)
+    // M61 (the Deadly Duck), all inert by default so every pre-M61 boss is
+    // untouched: the basic attack sweeps the whole party (the M45 class
+    // machinery, boss-side), applies status riders per connecting hit, and
+    // `immuneToAfflictions` shrugs off every affliction — poison, confusion,
+    // silence, blind, terrified, stunned — while ATK-/DEF- debuffs still land.
+    bool attackHitsAll = false;
+    std::vector<AttackStatus> attackStatuses;
+    bool immuneToAfflictions = false;
     std::string telegraph;              // flavor line shown when the battle begins
     int xpReward = 0;
     int goldReward = 0;

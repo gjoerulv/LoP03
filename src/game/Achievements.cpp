@@ -59,6 +59,7 @@ bool achievementMet(const std::string& id, const Party& p, const AchvContext& ct
         return p.castleRecords.kingBestTurns > 0 &&
                p.castleRecords.kingBestTurns <= kChampionKingTurns;
     if (id == "naturalist") return p.encountered.size() >= 30;
+    if (id == "quackbane") return p.castleRecords.duckDefeated();  // M61
     return false;
 }
 

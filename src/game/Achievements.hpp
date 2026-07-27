@@ -48,6 +48,7 @@ inline constexpr AchievementDef kAchievements[] = {
     {"peerless", "Peerless", "Raise a hero to level 99."},
     {"champion", "Champion", "Defeat the Hollow King in 15 turns or fewer."},
     {"naturalist", "Naturalist", "Record 30 different foes in the bestiary."},
+    {"quackbane", "Quackbane", "Fell the Deadly Duck."},  // M61 (locked shows ???)
 };
 inline constexpr int kAchievementCount =
     static_cast<int>(sizeof(kAchievements) / sizeof(kAchievements[0]));

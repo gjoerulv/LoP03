@@ -115,6 +115,8 @@ add_library(crystal_core STATIC
     src/states/BlackMarketState.cpp
     src/states/CastleState.cpp
     src/states/CastleChallengeState.cpp
+    src/states/GooseTownState.cpp
+    src/states/RoadForkState.cpp
     src/states/GuildState.cpp
     src/states/DungeonState.cpp
     src/states/ArmoryGhostState.cpp

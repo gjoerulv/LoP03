@@ -92,6 +92,36 @@ ElementAffinity readAffinity(ObjectReader& r, const std::string& source, const s
     return a;
 }
 
+// M45/M61: reads the optional `attackStatuses[]` rider list ({type, magnitude,
+// duration} per connecting basic hit) — authored on classes since M45 and on
+// bosses since M61 (the Deadly Duck), one reader so the two can never drift.
+void readAttackStatuses(const Json& el, const std::string& source, const std::string& ctx,
+                        LoadReport& rep, std::vector<AttackStatus>& out) {
+    const auto it = el.find("attackStatuses");
+    if (it == el.end()) {
+        return;
+    }
+    if (!it->is_array()) {
+        rep.add(source, ctx + ".attackStatuses", "expected array");
+        return;
+    }
+    int ai = 0;
+    for (const auto& ae : *it) {
+        const std::string actx = ctx + ".attackStatuses[" + std::to_string(ai) + "]";
+        if (!ae.is_object()) {
+            rep.add(source, actx, "expected object");
+        } else {
+            ObjectReader ar(ae, actx, source, rep);
+            AttackStatus st;
+            st.type = ar.reqEnum<StatusType>("type", parseStatusType, "status type");
+            st.magnitude = ar.optIntMin("magnitude", 0, 0);
+            st.duration = ar.reqIntMin("duration", 1);
+            out.push_back(st);
+        }
+        ++ai;
+    }
+}
+
 }  // namespace
 
 void parseSkills(const Json& root, const std::string& source, ContentDatabase& db,
@@ -182,27 +212,7 @@ void parseClasses(const Json& root, const std::string& source, ContentDatabase& 
                 rep.add(source, ctx, "unknown equip slot '" + slot + "' in 'equipBans'");
             }
         }
-        if (const auto it = el.find("attackStatuses"); it != el.end()) {
-            if (!it->is_array()) {
-                rep.add(source, ctx + ".attackStatuses", "expected array");
-            } else {
-                int ai = 0;
-                for (const auto& ae : *it) {
-                    const std::string actx = ctx + ".attackStatuses[" + std::to_string(ai) + "]";
-                    if (!ae.is_object()) {
-                        rep.add(source, actx, "expected object");
-                    } else {
-                        ObjectReader ar(ae, actx, source, rep);
-                        AttackStatus st;
-                        st.type = ar.reqEnum<StatusType>("type", parseStatusType, "status type");
-                        st.magnitude = ar.optIntMin("magnitude", 0, 0);
-                        st.duration = ar.reqIntMin("duration", 1);
-                        d.attackStatuses.push_back(st);
-                    }
-                    ++ai;
-                }
-            }
-        }
+        readAttackStatuses(el, source, ctx, rep, d.attackStatuses);
         // Semantic rule: a score modifier is a percentage, not a multiplier.
         if (d.scoreModPct < -100 || d.scoreModPct > 100) {
             rep.add(source, ctx, "'scoreModPct' must be -100..100");
@@ -240,8 +250,18 @@ void parseEnemies(const Json& root, const std::string& source, ContentDatabase& 
         d.minTown = r.optIntMin("minTown", 1, 1);   // M38 (default 1)
         d.affinity = readAffinity(r, source, ctx, rep);  // M48 (optional)
         d.bossOnly = r.optBool("bossOnly", false);       // M49 (optional)
+        d.doNothingPct = r.optIntMin("doNothingPct", 0, 0);  // M61 (the geese)
+        d.doNothingText = r.optString("doNothingText");
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
+        // M61 semantic rules: the chance is a percentage, and the flavour line
+        // belongs to the roll that shows it.
+        if (d.doNothingPct > 100) {
+            rep.add(source, ctx, "'doNothingPct' must be 0..100");
+        }
+        if (!d.doNothingText.empty() && d.doNothingPct <= 0) {
+            rep.add(source, ctx, "'doNothingText' requires 'doNothingPct' > 0");
+        }
         if (rep.errorCount() != before) {
             return;
         }
@@ -358,6 +378,9 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.affinity = readAffinity(r, source, ctx, rep);              // M48 (optional)
         d.reviveMinionTurns = r.optIntMin("reviveMinionTurns", 0, 0);  // M49 (0 = never)
         d.immuneToConfusion = r.optBool("immuneToConfusion", false);  // M40 (the King)
+        d.attackHitsAll = r.optBool("attackHitsAll", false);          // M61 (the Duck)
+        readAttackStatuses(el, source, ctx, rep, d.attackStatuses);   // M61 (the Duck)
+        d.immuneToAfflictions = r.optBool("immuneToAfflictions", false);  // M61 (the Duck)
         d.telegraph = r.optString("telegraph");
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
@@ -404,8 +427,9 @@ void parseStory(const Json& root, const std::string& source, ContentDatabase& db
         const std::size_t before = rep.errorCount();
         ObjectReader r(el, ctx, source, rep);
         StoryBeat d;
-        // town 1..7 are the storyteller's installments; 8 (the castle) is the Jester.
-        d.town = r.reqIntRange("town", 1, 8);
+        // town 1..7 are the storyteller's installments; 8 (the castle) is the
+        // Jester; 9 (M61, the Goose Town) is the Goofy Jester's duck tale.
+        d.town = r.reqIntRange("town", 1, 9);
         d.speaker = r.reqString("speaker");
         d.title = r.reqString("title");
         d.body = r.reqString("body");

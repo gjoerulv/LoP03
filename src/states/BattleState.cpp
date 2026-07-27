@@ -794,6 +794,13 @@ void BattleState::executeEnemy(int actor) {
             jestLine_ = "The geese scare the King...";
             jestTimer_ =
                 2.0f * settings::messageDurationScale(context_.settings.values.messageSpeed);
+        } else if (battle::forcedActionFor(self) == battle::ForcedAction::None &&
+                   battle::doesNothingThisTurn(battle_, actor)) {
+            // M61: an authored do-nothing foe (a Quacking goose). The authored
+            // line is the whole show; a foe authored without one keeps the
+            // generic skip below via the empty check.
+            message_ = self.name + ": " +
+                       (self.doNothingText.empty() ? std::string("...") : self.doNothingText);
         } else {
             // M44 (Tax Sheets): the foe spends its turn on the paperwork.
             message_ = self.name + " is buried in paperwork and loses its turn!";

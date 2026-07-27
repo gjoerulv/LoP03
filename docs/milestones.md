@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M52** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs once M59–M61 close** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -68,6 +68,7 @@
 | 58 | Fixes: equip message, Deadly Spoon once, geese scare the King | ☑ complete (approved) |
 | 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ◑ implemented, awaiting manual approval |
 | 60 | CrystalForge sim lab, battle observer, test runner | ◑ implemented, awaiting manual approval |
+| 61 | Goose Town & the Deadly Duck (rules v12) | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -90,14 +91,17 @@ running. See the program sections below.
 **M53–M58 are all complete (approved 2026-07-24). The owner then authorized
 the M59–M60 CrystalForge program (2026-07-24) — a designer-facing content
 editor with validation, a battle-sim lab, and a per-category test runner —
-which runs next, then M23 → M24, and nothing else stands before them.**
-When M59/M60 close, both M23 and M24 must be re-audited against the
-then-current checkout before they begin — the capture set has grown (64 scenes
-as of M52, more as M53–M56 add scenes), the balance batteries have grown
-(`[economy-report]`, `[castle-report]` with its rush sweep, `[king-report]`,
-`[classes-report]`), and the packaging manifest must account for everything the
-expansions added (the relic prop, three class sprites, two Royal Guard sprites,
-and the `profile.json` user-data file). The M49 castle retune (Boss Rush 580 % /
+and M61, Goose Town & the Deadly Duck (2026-07-25). M59–M61 sit at
+`implemented, awaiting manual approval`; then M23 → M24, and nothing else
+stands before them.**
+When M59–M61 close, both M23 and M24 must be re-audited against the
+then-current checkout before they begin — the capture set has grown (**77
+scenes** as of M61), the balance batteries have grown (`[economy-report]`,
+`[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
+and the M61 `[goose]` battery), and the packaging manifest must account for
+everything the expansions added (the relic prop, three class sprites, two
+Royal Guard sprites, the M61 goose/duck placeholder sprite rows, and the
+`profile.json` user-data file). The M49 castle retune (Boss Rush 580 % /
 King 500 % / Endless 500 % +10 %pts per wave, level cap 99) is the balance
 baseline M23 playtests should judge; the M54 equipment rebalance is the gear
 baseline they should judge alongside it.
@@ -806,23 +810,25 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M52** (the
-  deferral has been extended by each expansion program the owner authorized:
-  M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51, and the M52
-  quality-of-life pass). The tooling, diagnostics, lint/mass/report
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs once M59–M61
+  close** (the deferral has been extended by each expansion program the
+  owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
+  M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
+  and M61). The tooling, diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
-  Re-audit this note against the post-M52 checkout before starting — the
-  capture scene list has grown (**64 scenes** as of M52) and the balance
+  Re-audit this note against the post-M61 checkout before starting — the
+  capture scene list has grown (**77 scenes** as of M61) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
-  `[king-report]`, `[classes-report]`); both need extending for everything
-  M25–M52 added (AI, content, art, town ladder, stakes, black market,
-  statuses/passives, castle challenges, relics, the unlockable classes, the
-  M46 UI kit, elements, the King's Court, walk-through towns, the M51
-  options, and the M52 comforts/secrets). **M52 is the last authorized
-  expansion; this is next in line once the owner schedules it.**
+  `[king-report]`, `[classes-report]`, `[goose]`); both need extending for
+  everything M25–M61 added (AI, content, art, town ladder, stakes, black
+  market, statuses/passives, castle challenges, relics, the unlockable
+  classes, the M46 UI kit, elements, the King's Court, walk-through towns,
+  the M51 options, the M52 comforts/secrets, the M53–M58 adjustments, and
+  M61's Goose Town). **M61 is the last authorized expansion; this is next
+  in line once the owner schedules it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -2487,3 +2493,45 @@ bumps anywhere in the program).
   only into the editor library — the game binary still cannot execute
   processes, structurally).
 - **Milestone note:** `docs/milestone_notes/M60_crystalforge_simlab.md`
+
+## M61 — Goose Town & the Deadly Duck (authorized 2026-07-25)
+
+Owner brief in two parts: the geese-scare rule (verified **already shipped in
+M58**, approved — no work) and a new ultimate fight. Plan approved 2026-07-25
+("I agree 100%"). **Battle rules `11 → 12`** (the only version change:
+schema-driven do-nothing turns, boss-side all-party attacks with status
+riders, and blanket affliction immunity — no pre-M61 content carries the
+fields, so every earlier battle resolves byte-identically).
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-25 on the tree carrying M59/M60. `[goose]` battery 13 cases / 980
+  assertions green (Duck 5000 effective HP and per-stat supremacy in every
+  authored context; quack determinism with `rollCursor` untouched;
+  affliction immunity vs debuffs; save round-trip; Quackbane); `[editor]`
+  19 cases / 3232 assertions green (descriptors cover the new schema;
+  authored data is byte-canonical); `--capture` **77/77** clean
+  (+`76_goose_town`, `77_duck_battle`). **Balance bar = the King's own
+  (owner philosophy, M49/M54):** the gauntlet falls 5/5 seeds to a maxed
+  party using the obtainable counterplay (one Deadly Spoon — not a status,
+  so it pierces the immunity — plus healing items) and 0/5 to the bare
+  itemless sim, recorded not asserted. **Closing verification: 562/562 Debug
+  and 558/558 Release tests green (the 4-case gap is the debug-only god-mode
+  battery), `--capture` 77/77 clean.** Six stale test premises the new
+  content exposed (sprite-lint rows, the bossOnly count, the castle-outclass
+  sweep, entity-count pins, the story shape, and a 14-line tale vs a 12-line
+  panel) were fixed and are itemized in the note. See
+  `docs/milestone_notes/M61_goose_town.md`.
+- **Goal:** fell the King with at least one Goose in the party and **Goose
+  Town** opens at the castle's own entrance (the north road forks). A
+  castle-style hub with one challenge — a no-heal gauntlet: five **Evil
+  Geese** (diverse roles, one weakness + two passives each, ~500 effective
+  HP, 10% per-turn "Quack." do-nothing), then **the Deadly Duck**: 5000
+  effective HP, the highest effective stats of any foe, an all-party basic
+  attack with ATK-down/poison riders, immunity to every affliction (still
+  debuffable), Counter Attack + Thorns + Spell Ward. The **Goofy Jester**
+  tells the Duck's legendary tale (story beat, town 9). Reward: the
+  **Quackbane** achievement + a repeatable best-turns Pond Record.
+- **Owner decisions (2026-07-25):** reward = achievement + record only;
+  no-heal gauntlet; keep the M58 geese-scare wording; "I agree 100%" covers
+  the Quackbane name and all plan recommendations.
+- **Milestone note:** `docs/milestone_notes/M61_goose_town.md`

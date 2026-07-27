@@ -42,6 +42,9 @@ struct Party {
     // kept entirely separate from the dungeon scoreboard. See game/Castle.hpp.
     bool castleUnlocked = false;
     CastleRecords castleRecords;
+    // M61: the Goose Town — opened by felling the King with at least one Goose
+    // in the party. Optional save field (old saves -> locked).
+    bool gooseTownUnlocked = false;
     // Story serial (M41): a 7-bit mask of which town installments have been heard
     // (see game/Story.hpp). Optional save field; old saves -> 0 (nothing heard).
     int storyMet = 0;

@@ -21,6 +21,7 @@
 #include "states/BlackMarketState.hpp"
 #include "states/CastleState.hpp"
 #include "states/EquipShopState.hpp"
+#include "states/RoadForkState.hpp"
 #include "states/GuildState.hpp"
 #include "states/InnState.hpp"
 #include "states/ItemShopState.hpp"
@@ -339,7 +340,13 @@ void TownState::update(float dt) {
         travelArmed_ = false;
         if (exit.toCastle) {
             context_.audio.play(Sfx::Door);  // M40: climb to the castle (not a town)
-            stack().pushState(std::make_unique<CastleState>(stack(), context_));
+            if (context_.party.gooseTownUnlocked) {
+                // M61: with Goose Town open, the north road forks — one prompt,
+                // two destinations, Cancel stepping back onto the road.
+                stack().pushState(std::make_unique<RoadForkState>(stack(), context_));
+            } else {
+                stack().pushState(std::make_unique<CastleState>(stack(), context_));
+            }
         } else {
             // Travelling east (toNext) lands you at the destination's WEST road,
             // and vice-versa, so movement reads as continuous.

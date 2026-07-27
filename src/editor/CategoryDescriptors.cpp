@@ -222,6 +222,8 @@ std::vector<FieldDesc> enemyDescs() {
         enList("weaknesses", "Weak To", ids(content::elementIds())),
         enList("immunities", "Immune To", ids(content::elementIds())),
         bl("bossOnly", "Boss Only"),
+        num("doNothingPct", "Do-Nothing % (M61)", 0, 100),
+        str("doNothingText", "Do-Nothing Line"),
         num("xpReward", "XP Reward", 0, 99999),
         num("goldReward", "Gold Reward", 0, 99999),
     };
@@ -242,6 +244,9 @@ std::vector<FieldDesc> bossDescs() {
         enList("immunities", "Immune To", ids(content::elementIds())),
         num("reviveMinionTurns", "Revive Minions (turns)", 0, 99),
         bl("immuneToConfusion", "Immune To Confusion"),
+        bl("attackHitsAll", "Attack Hits All (M61)"),
+        objArr("attackStatuses", "Attack Statuses", statusRiderChildren()),
+        bl("immuneToAfflictions", "Immune To Afflictions"),
         txt("telegraph", "Telegraph"),
         num("xpReward", "XP Reward", 0, 99999),
         num("goldReward", "Gold Reward", 0, 99999),
@@ -334,7 +339,7 @@ std::vector<FieldDesc> compositionDescs() {
 
 std::vector<FieldDesc> storyDescs() {
     return {
-        num("town", "Town (8 = castle)", 1, 8, 1, 1, true),
+        num("town", "Town (8 castle, 9 goose town)", 1, 9, 1, 1, true),
         str("speaker", "Speaker", true),
         str("title", "Title", true),
         txt("body", "Body", true),

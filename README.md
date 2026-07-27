@@ -8,28 +8,30 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M52
+> **Status: feature-complete, polished playable build** (milestones M1–M58
 > delivered and owner-approved). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
-> dungeons with room events including the rare Royal Relics, deterministic
-> turn-based combat (statuses, passives, forced-action turn-control, sparse
-> elemental weaknesses/immunities, an enmity/threat model with control
-> skills), a stakes-escalation score rule with an honest tagged scoreboard, a
-> black market and legendary tokens/drops, per-town enemies/bosses/equipment
-> with original generated art and music, a light-hearted story serial, three
-> unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
-> paid inn, compact walk-through towns, onboarding, accessibility options,
-> categorized settings (a 0–10 CRT Strength filter, background audio, an independent
-> ambience slider), an in-battle action log, a bestiary (with each foe's
-> strongest-context stats), victory records, achievements, and a fully
-> procedural "8-bit-plus" UI.
-> The **M53–M56 adjustment program** (a debug toolbelt + five save slots + a
-> tougher Champion; an equipment rebalance; per-theme dungeon rites; and boss
-> battle backdrops + a Crystal Shatter boss intro) is **implemented and awaiting
-> the owner's manual approval**. After it, only the deferred **validation
-> playtesting (M23)** and **release sign-off (M24)** remain. Current status always
-> lives in `docs/milestones.md`.
+> dungeons with room events including the rare Royal Relics and per-theme
+> rites, deterministic turn-based combat (statuses, passives, forced-action
+> turn-control, sparse elemental weaknesses/immunities, an enmity/threat
+> model with control skills), a stakes-escalation score rule with an honest
+> tagged scoreboard, a black market and legendary tokens/drops, per-town
+> enemies/bosses/equipment with original generated art and music, a
+> light-hearted story serial, three unlockable reward classes (Dragon /
+> Jester / Goose), learnsets, shops, a paid inn, compact walk-through towns,
+> five save slots + autosave, a debug toolbelt in dev builds, onboarding,
+> accessibility options, categorized settings (a 0–10 CRT Strength filter,
+> background audio, an independent ambience slider), an in-battle action
+> log, a bestiary (with each foe's strongest-context stats), victory
+> records, achievements, boss battle backdrops with a Crystal Shatter
+> intro, and a fully procedural "8-bit-plus" UI.
+> Awaiting the owner's manual approval: the **CrystalForge content editor**
+> (M59–M60, see *Development tools*) and **Goose Town & the Deadly Duck**
+> (M61 — fell the King with a Goose in the party and the ultimate gauntlet
+> opens). After those, only the deferred **validation playtesting (M23)**
+> and **release sign-off (M24)** remain. Current status always lives in
+> `docs/milestones.md`.
 
 ## Requirements
 
@@ -204,6 +206,10 @@ letterbox/pillarbox bars.
    Failing (or fleeing) a challenge costs **no gold** — but nobody is healed:
    survivors are carried to the gates at **1 HP**, the fallen stay fallen, and a
    full wipe leaves exactly one member standing so an inn is always reachable.
+8. One secret remains beyond the castle: defeat the King with **at least one
+   Goose in the party** and the north road forks to **Goose Town** — a pond-side
+   hub with the game's true final fight, a two-stage no-heal gauntlet (five Evil
+   Geese, then the **Deadly Duck**) with its own best-turns Pond Record.
 
 ## Project layout
 

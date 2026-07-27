@@ -180,6 +180,25 @@
       "xpReward": 500,
       "goldReward": 300,
       "description": "The sovereign of the castle above the seven towns - the hardest foe in the realm. Fought only in his throne room; his regalia is won nowhere else."
+    },
+    {
+      "id": "deadly_duck",
+      "name": "The Deadly Duck",
+      "archetype": "brute",
+      "stats": { "hp": 1000, "attack": 40, "magic": 46, "defense": 40, "speed": 28 },
+      "skills": [],
+      "minions": ["evil_goose_vanguard", "evil_goose_hexwing", "evil_goose_mender", "evil_goose_trickster", "evil_goose_bogfeather"],
+      "passives": ["counter_attack", "thorns", "spell_ward"],
+      "attackHitsAll": true,
+      "attackStatuses": [
+        { "type": "attack_down", "magnitude": 15, "duration": 2 },
+        { "type": "poison", "magnitude": 8, "duration": 2 }
+      ],
+      "immuneToAfflictions": true,
+      "telegraph": "The Deadly Duck surfaces. Every wingbeat scours the whole party, and no affliction sticks to those feathers.",
+      "xpReward": 800,
+      "goldReward": 500,
+      "description": "The terror beneath the pond, mightier than the Hollow King himself. The geese speak of him only in whispers. Fought nowhere but Goose Town."
     }
   ]
 }

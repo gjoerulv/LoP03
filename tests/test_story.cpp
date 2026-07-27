@@ -29,13 +29,14 @@ content::ContentDatabase loadContent() {
 
 TEST_CASE("story: the shipped serial is 7 town beats + the Jester, all filled", "[story]") {
     const content::ContentDatabase db = loadContent();
-    CHECK(db.storyCount() == 8);  // towns 1..7 + the castle Jester
+    // Towns 1..7 + the castle Jester + the Goose Town's Goofy Jester (M61).
+    CHECK(db.storyCount() == 9);
 
     std::set<int> towns;
     for (const content::StoryBeat& b : db.story()) {
         INFO("story town " << b.town);
         CHECK(b.town >= 1);
-        CHECK(b.town <= kCastleTown);
+        CHECK(b.town <= kGooseTown);
         CHECK(towns.insert(b.town).second);  // unique town
         CHECK(!b.speaker.empty());
         CHECK(!b.title.empty());
@@ -48,6 +49,9 @@ TEST_CASE("story: the shipped serial is 7 town beats + the Jester, all filled", 
     const content::StoryBeat* jester = db.findStoryBeat(kCastleTown);
     REQUIRE(jester != nullptr);
     CHECK(jester->speaker == "The Jester");
+    const content::StoryBeat* goofy = db.findStoryBeat(kGooseTown);  // M61
+    REQUIRE(goofy != nullptr);
+    CHECK(goofy->speaker == "The Goofy Jester");
     CHECK(db.findStoryBeat(99) == nullptr);  // no beat for a non-existent place
 }
 
