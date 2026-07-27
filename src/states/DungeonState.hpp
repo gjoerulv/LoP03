@@ -43,7 +43,8 @@ public:
 #endif
 
 private:
-    enum class MarkerKind { GateTeam, GuardTeam, Boss, Chest, Event };
+    // M65 adds MapPiece; M66 adds the treasure-map Chart and the Buried spot.
+    enum class MarkerKind { GateTeam, GuardTeam, Boss, Chest, Event, MapPiece, Chart, Buried };
     enum class EncounterKind { None, Gate, Guard, Boss, Challenge };
     struct Marker {
         int x = 0;
@@ -74,6 +75,9 @@ private:
     void recomputeInteraction(int playerTileX, int playerTileY);
     void interact();
     void openChest();
+    void takeMapPiece();  // M65: pick up a Secret Map Piece (4th reveals the treasure)
+    void readChart();     // M66: the single-use map reveals the buried spot
+    void digBuried();     // M66: claim the buried treasure (a curio / a token)
     void resolveEvent();  // applies a non-battle event's stated trade-off
     std::string eventPromptText() const;  // the pre-confirmation trade-off line
     void startBattle(int teamIndex, EncounterKind kind, dungeon::Dir gateDir);
@@ -94,6 +98,10 @@ private:
     std::vector<Marker> markers_;
     const Marker* facingMarker_ = nullptr;
     bool onChest_ = false;
+    bool onMapPiece_ = false;  // M65: standing on a Secret Map Piece
+    bool onChart_ = false;     // M66: standing on the dungeon treasure map
+    bool onBuried_ = false;    // M66: standing on the (revealed) buried spot
+    bool chartFound_ = false;  // M66: the map was read this run
 
     std::vector<danger::Tier> teamTier_;  // precomputed danger per team
     RunStats run_;

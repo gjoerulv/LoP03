@@ -74,6 +74,10 @@ add_executable(crystal_tests
     test_battle_observer.cpp
     test_editor_simlab.cpp
     test_goose_town.cpp
+    test_milestones.cpp
+    test_scrolls.cpp
+    test_treasure_map.cpp
+    test_curios.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

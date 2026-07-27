@@ -78,11 +78,13 @@ void CastleChallengeState::startNextFight() {
         return;
     }
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
-    // M61: the Duck borrows the King's battle theme — his pond, his anthem.
-    const MusicTrack music = kind_ == CastleChallenge::King ||
-                                     (kind_ == CastleChallenge::DuckGauntlet && wave_ == 1)
-                                 ? MusicTrack::KingBattle
-                                 : MusicTrack::None;
+    // M62: the Duck no longer borrows the King's theme — his pond, his own
+    // anthem (MusicTrack::DuckBattle, battle-tier synth fallback).
+    const MusicTrack music =
+        kind_ == CastleChallenge::King
+            ? MusicTrack::KingBattle
+            : (kind_ == CastleChallenge::DuckGauntlet && wave_ == 1 ? MusicTrack::DuckBattle
+                                                                    : MusicTrack::None);
     // M43: the `true` marks this as a castle fight, so a defeat message never
     // claims the dungeon's gold penalty. M56: castle fights wear the Castle
     // backdrop; a boss-team fight (a Boss Rush wave or the King) opens with the
@@ -255,7 +257,7 @@ void CastleChallengeState::captureKingReward() {
 
 void CastleChallengeState::handleInput(const Input& input) {
     if (done_ && (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel))) {
-        stack().popState();  // back to the castle hub
+        stack().popState();  // back to whichever hub pushed us (castle or Goose Town)
     }
 }
 
@@ -276,8 +278,13 @@ void CastleChallengeState::render() {
     ui::drawDivider(boxX + 14, boxY + 34, boxW - 28);
     ui::drawTextWrapped(resultText_, boxX + 16, boxY + 42, boxW - 32, 10, p.text,
                         "castle.challenge.result", 6);
+    // M62: the Duck gauntlet pops back to Goose Town, not the castle — the
+    // prompt says where you actually go.
+    const char* returnLabel = kind_ == CastleChallenge::DuckGauntlet
+                                  ? "Return to Goose Town"
+                                  : "Return to the Castle";
     ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,
-                                       context_.input.activeDevice(), "Return to the Castle")
+                                       context_.input.activeDevice(), returnLabel)
                              .c_str(),
                          w / 2, boxY + boxH - 16, 10, p.gold);
 }

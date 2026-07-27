@@ -895,4 +895,18 @@ challenge machinery wholesale, and the balance bar deliberately mirrors the
 King's: beyond the itemless simulator, beatable with obtainable counterplay,
 finally judged by the owner's own hands.
 
-M23 → M24 run after M61, re-audited against the then-current checkout.
+## 22. The M62–M66 program — direction
+
+Owner-authorized 2026-07-27 (one plan, one approval, two bonus-table review
+rounds): close the audit findings and the Purify heal leak while giving the
+Duck his own face and anthem (M62); give every class a permanent identity
+choice at levels 10/20/30 (M63); make the inert-since-M2 scroll system real
+and give the party a proper ledger (M64); and pay the exploration itch twice
+over with the two treasure-map systems — the town puzzle map's exclusive
+Lost Scrolls (M65) and the dungeon charts' curio collection (M66). Quality
+bars held throughout: every combat rule in shared `battle::` code (rules
+12→13→14), every generation change a pure-hash addition (11→12→13, all
+other rolls of a seed byte-identical), every save field optional and
+defensively dropped, and the capture lint as the layout referee.
+
+M23 → M24 run after M66, re-audited against the then-current checkout.

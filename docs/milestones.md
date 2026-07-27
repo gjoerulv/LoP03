@@ -69,6 +69,11 @@
 | 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ◑ implemented, awaiting manual approval |
 | 60 | CrystalForge sim lab, battle observer, test runner | ◑ implemented, awaiting manual approval |
 | 61 | Goose Town & the Deadly Duck (rules v12) | ◑ implemented, awaiting manual approval |
+| 62 | Fixes & Duck stagecraft (Purify no-heal rules v13, goose/duck art, Duck theme) | ◑ implemented, awaiting manual approval |
+| 63 | Class level milestones (pick 1 of 2 at Lv 10/20/30; rules v14) | ◑ implemented, awaiting manual approval |
+| 64 | Scroll learning + Party panel | ◑ implemented, awaiting manual approval |
+| 65 | Town puzzle map (HoMM2 homage; generation v12) | ◑ implemented, awaiting manual approval |
+| 66 | Dungeon treasure map + curios (generation v13) | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -91,17 +96,21 @@ running. See the program sections below.
 **M53–M58 are all complete (approved 2026-07-24). The owner then authorized
 the M59–M60 CrystalForge program (2026-07-24) — a designer-facing content
 editor with validation, a battle-sim lab, and a per-category test runner —
-and M61, Goose Town & the Deadly Duck (2026-07-25). M59–M61 sit at
-`implemented, awaiting manual approval`; then M23 → M24, and nothing else
-stands before them.**
-When M59–M61 close, both M23 and M24 must be re-audited against the
-then-current checkout before they begin — the capture set has grown (**77
-scenes** as of M61), the balance batteries have grown (`[economy-report]`,
+M61, Goose Town & the Deadly Duck (2026-07-25), and on 2026-07-27 the
+M62–M66 program (fixes & Duck stagecraft; class level milestones; scroll
+learning + a party panel; the town puzzle map; the dungeon treasure map —
+plan approved with the 54-entry bonus table). M59–M66 ALL sit at `implemented,
+awaiting manual approval`; then M23 → M24, and nothing else stands before
+them.**
+When M59–M66 close, both M23 and M24 must be re-audited against the
+then-current checkout before they begin — the capture set has grown (**82
+scenes** as of M66), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
-and the M61 `[goose]` battery), and the packaging manifest must account for
-everything the expansions added (the relic prop, three class sprites, two
-Royal Guard sprites, the M61 goose/duck placeholder sprite rows, and the
-`profile.json` user-data file). The M49 castle retune (Boss Rush 580 % /
+and the M61–M66 `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`
+batteries), and the packaging manifest must account for everything the
+expansions added (the relic prop, three class sprites, two Royal Guard
+sprites, the M62 goose/duck sprites and Duck theme, `data/milestones.json`,
+and the `profile.json` user-data file). The M49 castle retune (Boss Rush 580 % /
 King 500 % / Endless 500 % +10 %pts per wave, level cap 99) is the balance
 baseline M23 playtests should judge; the M54 equipment rebalance is the gear
 baseline they should judge alongside it.
@@ -2535,3 +2544,110 @@ fields, so every earlier battle resolves byte-identically).
   no-heal gauntlet; keep the M58 geese-scare wording; "I agree 100%" covers
   the Quackbane name and all plan recommendations.
 - **Milestone note:** `docs/milestone_notes/M61_goose_town.md`
+
+## The M62–M66 program (authorized 2026-07-27)
+
+Plan approved by the owner 2026-07-27 after a Q&A (all 9 classes get
+milestones; choice at the level-up moment; repeatable puzzle-map cycles;
+class-agnostic treasure scrolls; the inert shipped scrolls fixed too; 12
+curios) and two bonus-table review rounds (five rows rebalanced at the
+owner's direction; the Goose scare-doubling option cut — the scare stays a
+secret). The approval covers: battle rules 12→13→14, generation 11→12→13,
+the `data/milestones.json` v1 schema, the new optional save fields, the
+54-entry bonus table, the 6 treasure-scroll skills, the Curator achievement,
+and the new music track + sprites. Full plan detail: the approved plan file;
+running scope: the sections below.
+
+### M62 — Fixes & Duck stagecraft
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. **Purify heals nothing** (the heal formula's magic/2 term had
+  leaked through every Purify cast since M43 — invisible to the old
+  full-HP test board; the v13 case uses a wounded one): battle rules
+  **12 → 13**, the guard at the shared `useSkill` chokepoint, powered
+  cleanses still heal. Kind-aware challenge prompt ("Return to Goose
+  Town"). Bespoke generated sprites for the five Evil Geese + the crownless
+  Deadly Duck (appended + reseeded; **every pre-existing PNG byte-identical**,
+  proven by git after regeneration) and a new `MusicTrack::DuckBattle`
+  waddle-march for the Duck wave. One honest count pin updated (39 shipped
+  WAVs). **Closing verification: 563/563 Debug and 559/559 Release tests
+  green; `--capture` 77/77 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M62_duck_polish.md`
+
+### M63 — Class level milestones
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. Every class picks 1 of 2 permanent bonuses at levels 10/20/30:
+  `data/milestones.json` v1 (the 54 owner-approved entries, verbatim) with a
+  37-value `MilestoneEffect` enum, loader semantics (tier/option), and
+  cross-checks (classId + complete a/b pairs); an editor Milestones
+  category; `Character.milestone10/20/30` optional save fields with
+  class/tier-mismatch drops; a postponable `MilestoneChoiceState` modal
+  prompted at the level-up moments (battle XP, Elder Root, Training Hall,
+  town arrival for old saves) that drains every pending choice in one
+  visit; stat effects in `refreshCharacter`, battle effects resolved at
+  `buildBattle` into shared-code rules (sim == live). **Battle rules
+  13 → 14** — a milestone-free party resolves byte-identically. `[milestone]`
+  battery 16 cases / 289 assertions green; capture `78_milestone_choice`.
+  **Closing verification: 579/579 Debug and 575/575 Release tests green;
+  `--capture` 78/78 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M63_class_milestones.md`
+
+### M64 — Scroll learning + Party panel
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. `grantsSkill` finally works (the three shipped scrolls were
+  inert since M2 — no code consumed the field): `Character.extraSkills`
+  (optional save field, defensive drops), `game/Scrolls.hpp`
+  (`allKnownSkills` = learnset ∪ extras, the one rule buildBattle and the
+  panel share; refusal rules so a scroll is never wasted), and a
+  Bestiary-style **PartyState** from BOTH pause menus — stats with the gear
+  share, equipment, passives, M63 milestone choices, every known skill with
+  scroll marks — hosting the Use-Scroll picker. Class-agnostic (owner
+  decision). No version bumps. `[scroll]` battery 4 cases / 27 assertions
+  green; capture `79_party_panel`.
+  **Closing verification: 583/583 Debug and 579/579 Release tests green;
+  `--capture` 79/79 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M64_scrolls_party_panel.md`
+
+### M65 — Town puzzle map
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. Secret Map Pieces (≤1 per dungeon, ~10% seeded by a PURE
+  seed hash — every other roll of a seed byte-identical; **generation
+  11 → 12**) fill a four-quadrant HoMM2-style parchment on the new town
+  pause-menu **Maps** screen; the FOURTH piece reveals a dig spot
+  (walkability-pinned plaza tile) in that run's town, guarded by a seeded
+  dungeon-roster boss + court at that dungeon's own boss scale (castle
+  defeat semantics, retries keep the map). The dig teaches one of **six
+  exclusive Lost Scrolls immediately** (fixed no-repeat order; six new
+  class-agnostic skills; value-0 items so no pool ever leaks them), then
+  pays token+gold; cycles repeat. Optional save fields with ghost-guard
+  deactivation. `[treasure]` battery 5 cases / 301 assertions green;
+  capture `80_puzzle_map` + `81_treasure_dig`. Two stale premises fixed
+  honestly (the M55 exact gen-version pin relaxed; the Lost Scrolls moved
+  to epic so the legendary-gear invariant stays meaningful).
+  **Closing verification: 588/588 Debug and 584/584 Release tests green;
+  `--capture` 81/81 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M65_town_puzzle_map.md`
+
+### M66 — Dungeon treasure map + curios
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. ~12% of dungeons hide a cyan CHART whose reading immediately
+  reveals a buried treasure elsewhere in the SAME dungeon (a gold X on the
+  minimap + a HUD chip; single-use, live-run only; **generation 12 → 13**,
+  the same pure-hash discipline — everything else in a seed byte-identical).
+  Digging pays 1 of **12 original curios** (4 per theme, a constexpr table;
+  seeded theme-first no-repeat draw) shown in the Maps screen's collection
+  grid; the 18th achievement **Curator** fires at the dozen, after which
+  treasures pay a legendary token. `Party.ownedCurios` optional save field.
+  `[curio]` battery 5 cases / 774 assertions green; capture
+  `82_curio_collection` (the overflow lint caught the first curio names and
+  a scene-state leak — both fixed, itemized in the note).
+  **Closing verification: 593/593 Debug and 589/589 Release tests green;
+  `--capture` 82/82 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M66_dungeon_treasure_curios.md`
+
+**Execution order:** M62 → M63 → M64 → M65 → M66, then M23 → M24
+(re-audited against the then-current checkout).

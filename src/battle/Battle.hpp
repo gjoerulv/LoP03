@@ -62,8 +62,22 @@ struct BattleObserver;  // M60 record-only telemetry hook (battle/BattleObserver
 // boss authored `immuneToAfflictions` shrugs off every affliction — poison,
 // confusion, silence, blind, terrified, stunned — while ATK-/DEF- debuffs
 // still land. No shipped pre-M61 content carries any of the fields, so every
-// earlier battle resolves byte-identically).
-inline constexpr int kBattleRulesVersion = 12;
+// earlier battle resolves byte-identically);
+// 13 = M62 (Purify heals nothing, at last: a pure cleanse — a heal-category
+// skill with power 0 and the cleanse control — no longer applies the heal
+// formula's magic/2 term. The skill's description promised this since M43;
+// the code now keeps the promise. Cleanses with real power — Generous
+// Mending — still heal. Changes how any battle containing a Purify cast
+// resolves, hence the bump);
+// 14 = M63 (class level milestones: at levels 10/20/30 a party member's
+// chosen data/milestones.json bonus resolves onto its Combatant at
+// buildBattle — damage/heal/status modifiers, guard-block and weakness
+// overrides, double strikes and reduced-strength sweeps, first-hit
+// immunity, Iron Will healing, on-kill/on-death triggers, and grants of
+// the existing passive hooks. A party with no chosen milestones resolves
+// byte-identically; any chosen battle-side milestone changes outcomes,
+// hence the bump).
+inline constexpr int kBattleRulesVersion = 14;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -165,6 +179,33 @@ struct Combatant {
     int doNothingPct = 0;
     std::string doNothingText;
     bool afflictionImmune = false;
+
+    // M63 level-milestone battle effects, resolved from the character's chosen
+    // milestones at buildBattle (party members only; every field default-inert
+    // so a milestone-free battle is byte-identical). Grants of existing passive
+    // hooks reuse the M36 fields above.
+    int basicAttackPct = 0;       // basic attacks deal +N%
+    int magicSkillPct = 0;        // magic-category skills deal +N%
+    int aoeSpellPct = 0;          // all-enemy skills deal +N%
+    int healCastPct = 0;          // heals this unit casts restore +N%
+    int executePct = 0;           // +N% damage vs foes below half HP
+    int vsAfflictedPct = 0;       // +N% damage vs foes carrying any negative status
+    int weaknessBonusPct = 0;     // this attacker's weak hits deal N% (0 = the 150 default)
+    int statusTurnsBonus = 0;     // statuses this unit applies last +N effective turns
+    int doubleStrikePct = 0;      // basic attack strikes twice; the second at N%
+    int sweepScalePct = 0;        // its attackHitsAll sweep strikes at N% (0 = full)
+    int tauntDebuffPct = 0;       // its Taunt also inflicts ATK- (N%) on every foe
+    int guardBlockPct = 0;        // guarding blocks N% (0 = the 50 default)
+    bool firstHitImmune = false;  // the first damaging hit taken deals 0, once
+    bool firstHitImmuneUsed = false;
+    int ironWillHealPct = 0;      // Iron Will restores N% max HP when it fires
+    int reviveAtPct = 0;          // revive-capable heals raise at N% when higher
+    bool purifyHeals = false;     // its pure cleanses heal again (undoes M62 for it)
+    int goldBonusPct = 0;         // battle gold +N% while it stands (partyGoldBonusPct)
+    int itemPotencyPct = 0;       // items this unit uses are +N% potent
+    bool noEnemyBuff = false;     // suppresses `alsoBuffsEnemies` on its casts
+    int onKillPartyAtkUpPct = 0;  // felling a foe: its side gains ATK+ (N%)
+    int onDeathFoeDebuffPct = 0;  // falling: the other side suffers ATK-/DEF- (N%)
 
     // Elements (M48), resolved at buildBattle so the pure model never reads
     // content. `weaponElement` is the element this unit's BASIC attacks carry —
@@ -278,9 +319,15 @@ private:
     // (all of which are already Battle methods). Applies `dmg` to `d`, honouring
     // Iron Will and (debug builds only) party god mode; snaps the bearer out of
     // confusion on any real hit.
-    void applyDamage(Combatant& d, int dmg);
+    // M63: `extra` (when the caller has a log to grow) receives the
+    // first-hit-glance and on-death lines; nullptr callers stay silent.
+    void applyDamage(Combatant& d, int dmg, std::string* extra = nullptr);
+    // M63 (Standing Ovation): called where an explicit killer is known.
+    std::string rallyOnKill(int killer);
 
-    std::string attackOne(int actor, int target);   // one strike (the pre-M45 attack)
+    // M63: `scalePct` scales the strike (a Double Nock second arrow, a Rain
+    // of Arrows sweep); 100 = the ordinary full-strength attack.
+    std::string attackOne(int actor, int target, int scalePct = 100);
     std::string attackAll(int actor);               // M45: one strike per living foe
     std::string applyAttackStatuses(int actor, int target);  // M45: the Dragon's bite
     std::vector<int> resolveTargets(const content::SkillDef& skill, int actor,

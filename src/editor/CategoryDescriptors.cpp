@@ -293,6 +293,23 @@ std::vector<FieldDesc> passiveDescs() {
     };
 }
 
+std::vector<FieldDesc> milestoneDescs() {
+    // M63 class level-milestone bonuses. Every key is loader-required except
+    // magnitude (optIntMin default 0, omitted at 0 like the sparse style).
+    FieldDesc classRef = ref("classId", "Class", Category::Classes);
+    classRef.required = true;  // reqString in the loader: always written
+    return {
+        idField(),
+        classRef,
+        num("level", "Level (10/20/30)", 10, 30, 10, 10, true),
+        en("option", "Option", {"a", "b"}, "a", true),
+        str("name", "Name", true),
+        txt("description", "Description", true),
+        en("effect", "Effect", ids(content::milestoneEffectIds()), "stat_max_hp_pct", true),
+        num("magnitude", "Magnitude", 0, 300),
+    };
+}
+
 std::vector<FieldDesc> themeDescs() {
     return {
         idField(),
@@ -356,6 +373,7 @@ const std::vector<CategoryInfo>& categories() {
         {Category::Bosses, "bosses.json", "bosses", "Bosses", true},
         {Category::Items, "items.json", "items", "Items", true},
         {Category::Passives, "passives.json", "passives", "Passives", true},
+        {Category::Milestones, "milestones.json", "milestones", "Milestones", true},
         {Category::Themes, "dungeon_themes.json", "themes", "Themes", true},
         {Category::Composition, "composition.json", "", "Composition", false},
         {Category::Story, "story.json", "story", "Story", false},
@@ -379,6 +397,7 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
     static const std::vector<FieldDesc> kBosses = bossDescs();
     static const std::vector<FieldDesc> kItems = itemDescs();
     static const std::vector<FieldDesc> kPassives = passiveDescs();
+    static const std::vector<FieldDesc> kMilestones = milestoneDescs();
     static const std::vector<FieldDesc> kThemes = themeDescs();
     static const std::vector<FieldDesc> kComposition = compositionDescs();
     static const std::vector<FieldDesc> kStory = storyDescs();
@@ -389,6 +408,7 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
         case Category::Bosses: return kBosses;
         case Category::Items: return kItems;
         case Category::Passives: return kPassives;
+        case Category::Milestones: return kMilestones;
         case Category::Themes: return kThemes;
         case Category::Composition: return kComposition;
         case Category::Story: return kStory;

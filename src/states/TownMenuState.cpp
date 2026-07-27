@@ -7,6 +7,8 @@
 #include "raylib.h"
 #include "states/AchievementsState.hpp"
 #include "states/BestiaryState.hpp"
+#include "states/MapsState.hpp"   // M65
+#include "states/PartyState.hpp"  // M64
 #include "states/QuitFlow.hpp"
 #include "states/QuitPrompt.hpp"
 #include "states/SettingsState.hpp"
@@ -21,10 +23,12 @@ namespace cd {
 
 namespace {
 constexpr int kResume = 0;
-constexpr int kBestiary = 1;
-constexpr int kAchievements = 2;
-constexpr int kSettings = 3;
-constexpr int kQuit = 4;
+constexpr int kParty = 1;    // M64
+constexpr int kMaps = 2;     // M65
+constexpr int kBestiary = 3;
+constexpr int kAchievements = 4;
+constexpr int kSettings = 5;
+constexpr int kQuit = 6;
 #ifdef CRYSTAL_DEBUG_OVERLAY
 constexpr int kDebug = kQuit + 1;  // appended after Quit in debug builds only
 #endif
@@ -33,6 +37,8 @@ constexpr int kDebug = kQuit + 1;  // appended after Quit in debug builds only
 TownMenuState::TownMenuState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {
     menu_.setItems({{"Resume", true},
+                    {"Party", true},
+                    {"Maps", true},
                     {"Bestiary", true},
                     {"Achievements", true},
                     {"Settings", true},
@@ -59,6 +65,12 @@ void TownMenuState::handleInput(const Input& input) {
         switch (menu_.cursor()) {
             case kResume:
                 stack().popState();
+                break;
+            case kParty:
+                stack().pushState(std::make_unique<PartyState>(stack(), context_));
+                break;
+            case kMaps:
+                stack().pushState(std::make_unique<MapsState>(stack(), context_));
                 break;
             case kBestiary:
                 stack().pushState(std::make_unique<BestiaryState>(stack(), context_));
@@ -96,7 +108,7 @@ void TownMenuState::render() {
     ui::drawModalDim(w, h);
 
     const int boxW = 220;
-    int boxH = 132;  // fits the 5 pause entries (M42)
+    int boxH = 168;  // fits the 7 pause entries (M42; +Party M64, +Maps M65)
 #ifdef CRYSTAL_DEBUG_OVERLAY
     boxH += 18;  // M53: the extra "Debug" row
 #endif

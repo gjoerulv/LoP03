@@ -191,10 +191,12 @@ best-turns record; the two fights are a no-heal gauntlet.
 
 ## H. Known limitations
 
-- The Duck and the Evil Geese render with sprite-catalog fallbacks until
-  art is directed (placeholder rule; flagged for the owner).
-- Goose Town reuses the castle's music and the Castle battle backdrop — a
-  bespoke pond stage is presentation the owner may direct later.
+- ~~The Duck and the Evil Geese render with sprite-catalog fallbacks~~ —
+  **addressed in M62** (bespoke generated sprites).
+- Goose Town's hub reuses the castle's music and its fights the Castle
+  battle backdrop — a bespoke pond stage is presentation the owner may
+  direct later. ~~The Duck fight borrows the King's theme~~ — **addressed in
+  M62** (`MusicTrack::DuckBattle`).
 - The road signpost still reads "^ Castle" at the fork (the prompt carries
   the choice); easy to retext on request.
 - The gauntlet, like the castle, is deliberately beyond the itemless

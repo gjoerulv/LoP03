@@ -1843,3 +1843,110 @@ maxed party with the obtainable counterplay (sim-scripted Spoon + healing,
 5/5 seeds) while the bare itemless sim losing (0/5) is recorded as the
 intended difficulty.
 
+## 19. M62 — fixes & Duck stagecraft
+
+Battle rules **12 → 13** (history in `battle/Battle.hpp`): a **pure cleanse**
+— a heal-category skill with `power == 0` and the cleanse control (Purify) —
+now heals nothing. The heal formula (`power + magic/2`) had leaked its
+magic/2 term through every Purify cast since M43; the guard sits in
+`Battle::useSkill`'s Heal branch (shared code, sim == live), skips the heal,
+its log line, and its heal-threat, and leaves powered cleanses (Generous
+Mending) healing. The v13 test uses a WOUNDED board — the v7 "heals nothing"
+case had checked at full HP, where the leak clamped invisibly.
+
+Presentation: the challenge result overlay's confirm prompt is kind-aware
+("Return to Goose Town" for the Duck gauntlet). The five Evil Geese and the
+Deadly Duck get bespoke generated sprites (`generate_textures.ps1`, appended
++ reseeded so every earlier PNG stays byte-identical; the Duck is
+deliberately **crownless** — the pond needs none of that). A new
+`MusicTrack::DuckBattle` (`music.duck`, battle-tier synth fallback) plays for
+the gauntlet's Duck wave instead of the borrowed King theme.
+
+## 20. M63 — class level milestones
+
+Battle rules **13 → 14**. `data/milestones.json` (schema v1): 54 one-line
+entries — 9 classes × tiers 10/20/30 × options a/b — each one
+`MilestoneEffect` (a 37-value enum, the PassiveHook pattern) + one
+magnitude. Loader: `parseMilestones` (tier/option semantics) +
+`validateReferences` (classId + complete a/b pairs). Editor: a Milestones
+category (descriptors, canonical inline style, real-parser validation).
+
+`Character.milestone10/20/30` persist the chosen ids (optional save fields;
+a load drops an id the content no longer knows OR that mismatches the
+class+tier, so the tier re-asks). `game/Milestones.hpp` is the pure core:
+`kMilestoneTiers`, `milestoneSlot`, `pendingMilestoneTier`,
+`chosenMilestone`, `forEachChosenMilestone`, `partyGoldBonusPct` (standing
+members — applied at the dungeon's gold-award site, the one place battle
+gold exists). `MilestoneChoiceState` (modal, Cancel = postpone, drains all
+pending choices in one visit) is prompted at the level-up moments: the
+dungeon's post-battle XP award, the Elder Root, the Training Hall, and town
+arrival for old saves.
+
+Resolution splits by nature: `stat_*_pct` effects in `refreshCharacter`
+(after class + gear, so menus show the truth; max-MP scales after
+`deriveMaxMp`); everything else at `buildBattle` via `applyMilestones`,
+layered after the equipped passive (grants take `std::max` / OR, never
+weakening it). Engine hooks, all in shared `battle::` code: damage/heal
+percents in the damage helpers and `useSkill`; `guardedDamage` +
+`attackerElementMod` (guard-block and weakness overrides inside
+`physicalDamage`/`magicDamage`, integer-identical at the defaults);
+`attackOne` gained a `scalePct` (double strike / reduced sweep);
+`addStatus` gained post-scale `extraTurns` (never turn-control);
+`applyDamage` gained the first-hit glance, the Iron Will surge (its own
+observer Heal so telemetry reconciles), and the on-death curse (the poison
+tick repeats it — the god-mode precedent); `rallyOnKill` fires where an
+explicit killer is known (main hits, thorns, counters). A party with no
+chosen milestones resolves byte-identically to v13.
+
+## 21. M64 — scroll learning + the Party panel
+
+No version bumps. `Character.extraSkills` (optional save field; unknown ids
+dropped, deduped) + `game/Scrolls.hpp` (pure): `allKnownSkills` = the class
+learnset ∪ scroll extras, deduped — the ONE rule `buildBattle`'s skill list
+and the party panel both read; `scrollRefusal`/`learnScroll` implement the
+never-wasted rule (already-known refuses, class-agnostic per the owner).
+This makes `ItemDef.grantsSkill` real for the first time — it was loaded
+and validated since M2 but consumed nowhere. `PartyState` (both pause
+menus, "Party" row): member list + detail (stats with the summed equipped
+`statBonus` share, gear, passives, M63 choices, skills with `*` marks) and
+the Use-Scroll picker (consume-on-success via `Inventory::remove`).
+
+## 22. M65 — the town puzzle map
+
+Generation **11 → 12** (`RoomLayout.hpp` history): ~10% of dungeons carry
+`Dungeon.mapPieceRoom` — a plain Normal room picked by a **pure seed hash**
+(own salts, never the generator Rng, so every other roll of a seed is
+byte-identical to v11). `game/TreasureMap.hpp` is the pure core:
+`TreasureReveal` (an optional Party record), `kDigTile` (plaza tile whose
+walkability a test pins against `town::buildTown`), the six-entry
+`treasureScrollPool` + `nextTreasureScroll` (fixed no-repeat order; the
+scroll items are `value: 0`, so the M44 valueless rule keeps every pool
+clean), and `treasureGuardBossId` (`bossRushOrder[mix(seed)]`).
+`DungeonState` adds a stand-on `MarkerKind::MapPiece` (glyph marker on the
+room's `centerSpawn`, the M55-rite precedent); the fourth pickup writes the
+reveal — town, seeded guard, and the dungeon's OWN boss-team
+`statScalePct` (the owner's "same level" rule). `TownState` shows the
+X-scored dig tile; `TreasureFightState` runs the guard (his authored
+court, the stored scale, Crystal Shatter, `castleChallenge` semantics +
+`clampCastleDefeat`, retry keeps the reveal) and awards the scroll through
+the M64 learn rules via an on-the-spot member picker, or the token+gold
+fallback once the pool is spent. `MapsState` (town pause menu) draws the
+four-quadrant procedural sketch. Save: all fields optional; a reveal whose
+guard the content no longer knows deactivates on load.
+
+## 23. M66 — the dungeon treasure map + curios
+
+Generation **12 → 13**: ~12% of dungeons carry `Dungeon.chartRoom` +
+`buriedRoom` (distinct Normal rooms, never the M65 map-piece room — the
+three stand-on markers share the layout's center tile), the same
+pure-seed-hash contract. `DungeonState`: `MarkerKind::Chart/Buried`,
+`readChart` (sets the live `chartFound_`, lights a minimap X over the
+buried room + a HUD chip) and `digBuried` (a seeded curio award). Live-run
+only — dungeon state is never persisted mid-run, so an unclaimed X dies
+with the run by design. `game/Curios.hpp`: a 12-entry constexpr table
+(4 per theme, the kAchievements pattern), `pickCurio` (unowned theme-first,
+any-unowned spill, empty when complete → the caller pays a legendary
+token), deterministic per (owned, theme, seed). `Party.ownedCurios`
+(optional save field, table-validated on load); the 18th achievement
+**Curator**; the Maps screen's masked collection grid.
+

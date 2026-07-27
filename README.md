@@ -27,11 +27,19 @@ music, or text. Built in **C++20** with **raylib**.
 > records, achievements, boss battle backdrops with a Crystal Shatter
 > intro, and a fully procedural "8-bit-plus" UI.
 > Awaiting the owner's manual approval: the **CrystalForge content editor**
-> (M59–M60, see *Development tools*) and **Goose Town & the Deadly Duck**
+> (M59–M60, see *Development tools*), **Goose Town & the Deadly Duck**
 > (M61 — fell the King with a Goose in the party and the ultimate gauntlet
-> opens). After those, only the deferred **validation playtesting (M23)**
-> and **release sign-off (M24)** remain. Current status always lives in
-> `docs/milestones.md`.
+> opens), the **M62 polish** (Purify truly heals nothing, bespoke
+> goose/duck art, the Duck's own battle theme), and the **M63 class level
+> milestones** (pick 1 of 2 permanent class bonuses at levels 10/20/30 —
+> all nine classes), **M64 scroll learning + the Party panel** (skill
+> scrolls finally teach; a detailed party ledger on both pause menus), and
+> the two treasure-map systems: **M65's town puzzle map** (a HoMM2 homage —
+> four Secret Map Pieces reveal a boss-guarded dig paying exclusive Lost
+> Scrolls) and **M66's single-use dungeon charts** (a minimap X, twelve
+> collectable curios, the Curator achievement). After those, only the
+> deferred **validation playtesting (M23)** and **release sign-off (M24)**
+> remain. Current status always lives in `docs/milestones.md`.
 
 ## Requirements
 

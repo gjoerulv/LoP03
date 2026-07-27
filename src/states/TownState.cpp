@@ -19,6 +19,8 @@
 #include "resource/ResourceManager.hpp"
 #include "states/AchievementToast.hpp"
 #include "states/BlackMarketState.hpp"
+#include "states/MilestoneChoiceState.hpp"  // M63
+#include "states/TreasureFightState.hpp"    // M65
 #include "states/CastleState.hpp"
 #include "states/EquipShopState.hpp"
 #include "states/RoadForkState.hpp"
@@ -155,6 +157,10 @@ void TownState::onEnter() {
     context_.fade.start();
     applyTownAudio();
     maybeTutorialPrompt(stack(), context_, tutorial::kTownWelcome);
+    // M63: an old save (or a fresh load) may carry earned-but-unchosen level
+    // milestones — prompt once on arrival. Event-driven sites (battle XP, the
+    // Training Hall, the Elder Root) cover everything after this.
+    maybePushMilestoneChoice(stack(), context_);
 }
 
 void TownState::onResume() {
@@ -237,6 +243,21 @@ bool TownState::onBardTile() const {
     return tx == kBardTileX && ty == kBardTileY;
 }
 
+bool TownState::digHere() const {  // M65
+    return context_.party.treasure.active &&
+           context_.party.treasure.town == clampTown(context_.party.currentTown);
+}
+
+bool TownState::onDigTile() const {  // M65
+    if (!digHere()) {
+        return false;
+    }
+    const int ts = town::Tilemap::kTileSize;
+    const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
+    const int ty = static_cast<int>((player_.y + player_.h * 0.5f) / ts);
+    return tx == kDigTileX && ty == kDigTileY;
+}
+
 const town::Building* TownState::buildingAtPlayerTile() const {
     const int ts = town::Tilemap::kTileSize;
     const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
@@ -289,6 +310,10 @@ void TownState::handleInput(const Input& input) {
         } else if (nearMarket_) {
             context_.audio.play(Sfx::Confirm);
             stack().pushState(std::make_unique<BlackMarketState>(stack(), context_));
+        } else if (nearDig_) {
+            // M65: the puzzle map's dig spot — the guarded treasure fight.
+            context_.audio.play(Sfx::Confirm);
+            stack().pushState(std::make_unique<TreasureFightState>(stack(), context_));
         } else if (nearBard_) {
             // M41: hear the storyteller's installment for this town, and remember it.
             const int town = clampTown(context_.party.currentTown);
@@ -327,7 +352,9 @@ void TownState::update(float dt) {
     nearDoor_ = buildingAtPlayerTile();
     nearExit_ = nearDoor_ == nullptr ? exitAtPlayerTile() : nullptr;
     nearMarket_ = (nearDoor_ == nullptr && nearExit_ == nullptr) && onBlackMarketTile();
-    nearBard_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_) && onBardTile();
+    nearDig_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_) && onDigTile();
+    nearBard_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_ && !nearDig_) &&
+                onBardTile();
 
     // M50: walk-through travel. The latch arms once the player is off every
     // trigger, so arriving beside an edge (or resuming onto the castle road)
@@ -449,6 +476,18 @@ void TownState::render() {
                              ui::lighten(pal.magic, 40));
     }
 
+    // M65: the treasure dig spot — a bold X on the plaza while the puzzle map
+    // points at THIS town. Primitives (world-space art), no asset needed.
+    if (digHere()) {
+        const int dx = ox + kDigTileX * ts;
+        const int dy = oy + kDigTileY * ts;
+        for (int s = 2; s < ts - 2; ++s) {
+            DrawRectangle(dx + s, dy + s, 2, 2, Color{224, 96, 84, 255});
+            DrawRectangle(dx + ts - s, dy + s, 2, 2, Color{224, 96, 84, 255});
+        }
+        ui::drawTextCentered("Dig Site", dx + ts / 2, dy - 9, 8, pal.danger);
+    }
+
     // Wandering storyteller (M41): always present at a fixed plaza tile in every town.
     {
         const float bcx = ox + kBardTileX * ts + ts * 0.5f;
@@ -507,6 +546,14 @@ void TownState::render() {
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
         ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8,
                              ui::lighten(pal.magic, 40));
+    } else if (nearDig_) {
+        // M65: the fight is announced before the shovel bites.
+        ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
+        const std::string text =
+            input::prompt(bindings, InputAction::Confirm, device,
+                          "Dig for the treasure - its guardian will not like it") +
+            "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.danger);
     } else if (nearBard_) {
         ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
         const std::string text =

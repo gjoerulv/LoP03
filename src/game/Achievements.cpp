@@ -6,6 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "game/Curios.hpp"  // M66: kCurioCount for the Curator predicate
 #include "game/Party.hpp"
 #include "game/Story.hpp"
 #include "platform/AtomicFile.hpp"
@@ -60,6 +61,9 @@ bool achievementMet(const std::string& id, const Party& p, const AchvContext& ct
                p.castleRecords.kingBestTurns <= kChampionKingTurns;
     if (id == "naturalist") return p.encountered.size() >= 30;
     if (id == "quackbane") return p.castleRecords.duckDefeated();  // M61
+    if (id == "curator") {  // M66
+        return static_cast<int>(p.ownedCurios.size()) >= kCurioCount;
+    }
     return false;
 }
 

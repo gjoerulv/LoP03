@@ -88,6 +88,23 @@ struct ClassDef {
 // A passive skill (M36): an always-on trait keyed by `hook`, parameterized by a
 // single `magnitude`, purchased per character for `price` gold at the Training
 // Hall. Also carried by enemies/bosses (an optional list on their defs).
+// A class level-milestone bonus (M63): one of the two permanent choices a
+// character of `classId` makes on reaching `level` (10/20/30). `option` is
+// "a" or "b" (exactly one of each per class+level, validated); the chosen
+// entry's id persists on the Character. One `effect` + one `magnitude`
+// (0 where the effect needs none) — compound behaviours are their own
+// effect values, the PassiveHook precedent.
+struct MilestoneDef {
+    std::string id;
+    std::string classId;
+    int level = 0;            // 10, 20 or 30
+    std::string option;       // "a" | "b"
+    std::string name;
+    std::string description;  // shown on the choice modal and the party panel
+    MilestoneEffect effect = MilestoneEffect::None;
+    int magnitude = 0;
+};
+
 struct PassiveDef {
     std::string id;
     std::string name;

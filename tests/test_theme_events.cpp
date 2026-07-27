@@ -22,7 +22,9 @@ using namespace cd;
 using namespace cd::dungeon;
 
 TEST_CASE("theme rites: generation version bumped to 11", "[theme-events]") {
-    CHECK(kGenerationVersion == 11);
+    // The v11 rules are in force at or above their own version; the EXACT pin
+    // lives with the newest generation milestone's tests (M65 = 12).
+    CHECK(kGenerationVersion >= 11);
 }
 
 TEST_CASE("theme rites: one rite per theme; empty/unknown themes force nothing",

@@ -154,6 +154,7 @@ bool buildDatabase(const EditorDocs& docs, content::ContentDatabase& db,
         {Category::Bosses, &content::parseBosses},
         {Category::Themes, &content::parseThemes},
         {Category::Passives, &content::parsePassives},
+        {Category::Milestones, &content::parseMilestones},  // M63
         {Category::Composition, &content::parseComposition},
         {Category::Story, &content::parseStory},
     };

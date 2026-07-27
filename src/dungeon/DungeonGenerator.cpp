@@ -575,6 +575,58 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
         }
     }
 
+    // --- Secret Map Piece (M65, generation v12): ~10% of dungeons hide one
+    // piece in a plain Normal room. Decided by a PURE hash of the seed (its
+    // own salts — never the generator Rng), so every other roll of a seed is
+    // byte-identical to v11; the piece is strictly new output.
+    {
+        constexpr int kMapPieceChancePct = 10;
+        constexpr std::uint64_t kSaltMapPieceRoll = 0x4D41505031ull;  // "MAPP1"
+        constexpr std::uint64_t kSaltMapPiecePick = 0x4D41505032ull;
+        if (themeEventHash(d.seed, 0, kSaltMapPieceRoll) % 100 <
+            static_cast<std::uint64_t>(kMapPieceChancePct)) {
+            std::vector<int> plain;
+            for (std::size_t i = 0; i < d.rooms.size(); ++i) {
+                if (d.rooms[i].type == RoomType::Normal) {
+                    plain.push_back(static_cast<int>(i));
+                }
+            }
+            if (!plain.empty()) {
+                d.mapPieceRoom = plain[static_cast<std::size_t>(
+                    themeEventHash(d.seed, 1, kSaltMapPiecePick) % plain.size())];
+            }
+        }
+    }
+
+    // --- Dungeon treasure map (M66, generation v13): ~12% of dungeons hide a
+    // CHART in one Normal room pointing at treasure BURIED in another. Same
+    // pure-hash contract as the map piece; the two rooms are always distinct
+    // and never the map-piece room (its marker owns that room's center tile).
+    {
+        constexpr int kChartChancePct = 12;
+        constexpr std::uint64_t kSaltChartRoll = 0xC4A47001ull;
+        constexpr std::uint64_t kSaltChartPick = 0xC4A47002ull;
+        constexpr std::uint64_t kSaltBuriedPick = 0xC4A47003ull;
+        if (themeEventHash(d.seed, 2, kSaltChartRoll) % 100 <
+            static_cast<std::uint64_t>(kChartChancePct)) {
+            std::vector<int> plain;
+            for (std::size_t i = 0; i < d.rooms.size(); ++i) {
+                if (d.rooms[i].type == RoomType::Normal &&
+                    static_cast<int>(i) != d.mapPieceRoom) {
+                    plain.push_back(static_cast<int>(i));
+                }
+            }
+            if (plain.size() >= 2) {
+                const std::size_t chartAt = static_cast<std::size_t>(
+                    themeEventHash(d.seed, 3, kSaltChartPick) % plain.size());
+                d.chartRoom = plain[chartAt];
+                plain.erase(plain.begin() + static_cast<std::ptrdiff_t>(chartAt));
+                d.buriedRoom = plain[static_cast<std::size_t>(
+                    themeEventHash(d.seed, 4, kSaltBuriedPick) % plain.size())];
+            }
+        }
+    }
+
     return d;
 }
 

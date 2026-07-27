@@ -15,7 +15,18 @@ namespace cd::editor {
 
 // Which data file a reference field points into (also the editor's category
 // list). Composition is the one non-array file (nested section objects).
-enum class Category { Skills, Classes, Enemies, Bosses, Items, Passives, Themes, Composition, Story };
+enum class Category {
+    Skills,
+    Classes,
+    Enemies,
+    Bosses,
+    Items,
+    Passives,
+    Milestones,  // M63
+    Themes,
+    Composition,
+    Story
+};
 inline constexpr int kCategoryCount = 9;
 
 enum class FieldKind {

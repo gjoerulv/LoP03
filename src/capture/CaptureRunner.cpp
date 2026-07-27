@@ -43,6 +43,11 @@
 #include "states/CastleChallengeState.hpp"
 #include "states/CastleState.hpp"
 #include "states/GooseTownState.hpp"
+#include "states/MilestoneChoiceState.hpp"
+#include "game/Curios.hpp"
+#include "states/MapsState.hpp"
+#include "states/PartyState.hpp"
+#include "states/TreasureFightState.hpp"
 #include "states/StoryDialogState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #ifdef CRYSTAL_DEBUG_OVERLAY
@@ -1082,6 +1087,65 @@ int run(const char* outDir) {
                  s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
                                                            MusicTrack::None, nullptr, false,
                                                            render::BackdropStage::Castle));
+             }},
+            {"82_curio_collection",
+             [](StateStack& s, AppContext& c) {
+                 // M66: the Maps screen at its fullest — a revealed treasure
+                 // line + seven owned curios in the collection grid.
+                 c.party.treasure.active = true;
+                 c.party.treasure.town = 6;
+                 c.party.treasure.bossId = bossRushOrder(c.content).front();
+                 for (int i = 0; i < 7; ++i) {
+                     c.party.ownedCurios.push_back(kCurios[i].id);
+                 }
+                 c.party.treasureScrollsAwarded = {"treasure_scroll_meteor"};
+                 s.pushState(std::make_unique<MapsState>(s, c));
+             }},
+            {"80_puzzle_map",
+             [](StateStack& s, AppContext& c) {
+                 // M65: the half-solved puzzle map (two quadrants + status).
+                 // Self-contained: scene 82 runs earlier on the same party,
+                 // so its reveal/curios are cleared here.
+                 c.party.mapPieces = 2;
+                 c.party.treasure = TreasureReveal{};
+                 c.party.ownedCurios.clear();
+                 c.party.treasureScrollsAwarded.clear();
+                 s.pushState(std::make_unique<MapsState>(s, c));
+             }},
+            {"81_treasure_dig",
+             [](StateStack& s, AppContext& c) {
+                 // M65: the dug-up treasure overlay at its fullest — the
+                 // scroll's learn-it-now text plus the member picker.
+                 auto st = std::make_unique<TreasureFightState>(s, c);
+                 st->captureResult();
+                 s.pushState(std::move(st));
+             }},
+            {"79_party_panel",
+             [](StateStack& s, AppContext& c) {
+                 // M64: the party panel at its fullest — a high level with
+                 // unchosen milestone hints, a scroll-learned skill mark, and
+                 // a teaching scroll in the bag for the footer.
+                 if (!c.party.members.empty()) {
+                     c.party.members[0].level = 30;
+                     c.party.members[0].extraSkills.push_back("fireball");
+                     refreshCharacter(c.party.members[0], c.content);
+                 }
+                 c.party.inventory.add("scroll_whirlwind", 1);
+                 s.pushState(std::make_unique<PartyState>(s, c));
+             }},
+            {"78_milestone_choice",
+             [](StateStack& s, AppContext& c) {
+                 // M63: the level-milestone choice modal over the town. The
+                 // shown tier is FORCED via captureSelect; the member's choice
+                 // is pre-set so the town's own auto-prompt stays quiet.
+                 if (!c.party.members.empty()) {
+                     c.party.members[0].level = 10;
+                     c.party.members[0].milestone10 = "chosen";  // non-empty = not pending
+                 }
+                 s.pushState(std::make_unique<TownState>(s, c));
+                 auto st = std::make_unique<MilestoneChoiceState>(s, c);
+                 st->captureSelect(0, 10);
+                 s.pushState(std::move(st));
              }},
         };
 

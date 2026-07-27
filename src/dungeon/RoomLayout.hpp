@@ -35,8 +35,16 @@ namespace cd::dungeon {
 // version 11 (M55) guarantees one per-theme rite (Armory Ghost / Miner's Cache /
 // Elder Root) on the first event slot of every themed dungeon and skips the relic
 // draw on that slot, so a themed seed's events shift (owner-approved). Empty-theme
-// generation is unchanged.
-inline constexpr int kGenerationVersion = 11;
+// generation is unchanged;
+// version 12 (M65) seeds a Secret Map Piece into ~10% of dungeons (one Normal
+// room, a pure hash of the dungeon seed — no Rng draw, so every OTHER roll of a
+// seed is byte-identical; the piece itself is new output, hence the bump,
+// owner-approved);
+// version 13 (M66) seeds a single-use dungeon treasure map into ~12% of
+// dungeons (a chart room + a distinct buried room, both Normal, never the
+// map-piece room; the same pure-hash contract — only new output, everything
+// else byte-identical; owner-approved).
+inline constexpr int kGenerationVersion = 13;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

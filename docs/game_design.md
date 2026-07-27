@@ -55,6 +55,27 @@ from the class and the character's level (not stored), so leveling mid-run
 immediately unlocks the new options and no save is ever invalidated. By the
 level cap each class commands roughly six to seven skills.
 
+**Level milestones (M63).** At levels **10, 20 and 30** every character —
+all nine classes, the joke classes included — chooses **one of two
+permanent class bonuses** at the level-up moment (a modal; postponing is
+allowed and it simply re-asks at the next level-up or town visit). The
+choices are authored in `data/milestones.json` (owner-approved table:
+stat percents, damage/heal modifiers, granted passive traits, and signature
+effects like the Guardian's first-hit-glances-off, the Ranger's double
+shot, the Cleric's *Purifying Light* — which deliberately buys back
+Purify's pre-M62 healing — and the Jester's on-kill/on-death theatrics).
+Choices are permanent, persist in the save, and old saves simply get asked
+on arrival. Battle-side effects are part of battle rules **v14**.
+
+**Scroll learning and the Party panel (M64).** Skill **scrolls** finally
+teach: using one (from the new **Party** panel on either pause menu) has a
+chosen character learn its skill **permanently** — any class, any scroll
+(class-agnostic by owner decision), refused with a reason if the character
+already knows it, so a scroll is never wasted. The Party panel itself is
+the party's ledger: stats with the gear share spelled out, equipment,
+passives, milestone choices, and every known skill (scroll-learned ones
+marked). The M65 treasure maps pay exclusive scrolls into this same system.
+
 **Passive skills (M36).** Beyond skills, each character can carry a **passive** —
 an always-on battle trait bought at the Training Hall for gold. The economy is
 **own many, equip one**: purchased passives stay owned, and the single equipped
@@ -341,7 +362,34 @@ The **Goofy Jester** by the pond tells the legendary "Ballad of the Deadly
 Duck" (pure flavor, all original). Clearing the gauntlet earns the
 **Quackbane** achievement and a repeatable fewest-turns Pond Record — the
 prize is the deed. Like every castle-tier fight, defeat costs no gold but
-carries you out at 1 HP.
+carries you out at 1 HP. Since **M62** the fight wears its own face: bespoke
+sprites for the five geese and the crownless Duck, and the Duck fights to his
+own anthem — a lumbering, waddling minor-key march — instead of borrowing the
+King's theme.
+
+**The town puzzle map (M65, a Heroes of Might and Magic 2 homage).** About
+one dungeon in ten hides a **Secret Map Piece** in a plain room (seeded —
+a reload cannot move it). Four pieces complete a parchment sketch (the new
+**Maps** screen on the town pause menu, filling in quadrant by quadrant)
+and reveal a **buried treasure in the town where the fourth piece was
+found**, marked by an X-scored dig spot on the plaza. Digging wakes its
+guardian — a boss from the dungeon roster with its court, at exactly the
+boss scale of the dungeon that yielded the final piece — fought at castle
+stakes (no score, no gold penalty, carried out at 1 HP; the map keeps the
+spot for retries). The prize: one of **six Lost Scrolls found nowhere
+else**, its skill **learned on the spot** by a chosen member (the M64
+scroll system); once all six are dug up, further treasures pay a legendary
+token and gold. The map then resets — the cycle repeats forever.
+
+**The dungeon treasure map + curios (M66).** Rarer still (~1 dungeon in 8),
+a weathered **chart of the current dungeon** waits in a plain room: reading
+it instantly marks a buried treasure elsewhere in that same run — a gold X
+on the minimap — but the map is **single-use**: leave without digging and
+it is lost with the run. The dig pays one of **twelve original curios**
+(four per dungeon theme, drawn unowned-first from the run's own theme),
+collected on the Maps screen. Gathering the full dozen earns the
+**Curator** achievement, after which buried treasures pay a legendary
+token. Curios are pure collection joy — no stats, no score.
 
 **Story & lore (M41).** A light-hearted running serial threads the climb: a
 **wandering storyteller** stands in every town and, town by town, spins the
@@ -372,8 +420,8 @@ single "strongest" number would be honest.
 **Victory stats** appear on the clear screen's Run-stats view: this run's
 total damage, biggest single hit, statuses inflicted, and the party MVP, plus your
 personal records (biggest hit ever, most damage in a run) — display-only, never
-ranked. **Achievements** (also from the pause menu) are 17 original cross-game
-goals (16 at M42; M61 added Quackbane) — clearing dungeons, climbing the ladder, beating the King's challenges,
+ranked. **Achievements** (also from the pause menu) are 18 original cross-game
+goals (16 at M42; M61 added Quackbane, M66 the Curator) — clearing dungeons, climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
 
@@ -387,7 +435,9 @@ decision and healing a real choice, at one battle-rules bump (v4).
   gold buys a handful of Remedies or a single Tear, so the shopping list is a
   decision rather than a formality.
 - **Purify** lifts the party's afflictions and **heals nothing** (M47 narrowed
-  its scope further — see below); **Renew** becomes the emergency button — a weak
+  its scope further — see below; a heal-formula leak quietly let it heal
+  magic/2 anyway until **M62** closed it, battle rules v13); **Renew** becomes
+  the emergency button — a weak
   heal that can also **raise a fallen ally at 20 % HP**, the first skill in the
   game that can.
 - **Battle items now respect the state of their target:** potions, ethers, and

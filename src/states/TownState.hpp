@@ -43,6 +43,8 @@ private:
     bool blackMarketHere() const;  // an offer is present and belongs to this town
     bool onBlackMarketTile() const;
     bool onBardTile() const;  // M41: standing on the wandering storyteller's tile
+    bool digHere() const;     // M65: the revealed treasure belongs to this town
+    bool onDigTile() const;   // M65: standing on the dig spot
 
     AppContext& context_;
     town::TownLayout town_;
@@ -56,6 +58,7 @@ private:
     const town::Building* nearDoor_ = nullptr;
     const town::TownExit* nearExit_ = nullptr;
     bool nearMarket_ = false;  // M34: standing on the black-market NPC tile
+    bool nearDig_ = false;     // M65: standing on the treasure dig spot
     bool nearBard_ = false;    // M41: standing on the storyteller's tile
     // M50 anti-bounce latch: a walk-through exit fires only once the player has
     // stood on a non-trigger tile since the last spawn/resume, so arriving next

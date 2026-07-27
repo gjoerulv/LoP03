@@ -5,6 +5,7 @@
 #include "core/AppContext.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
+#include "states/PartyState.hpp"  // M64
 #include "states/QuitFlow.hpp"
 #include "states/QuitPrompt.hpp"
 #include "states/SettingsState.hpp"
@@ -19,9 +20,10 @@ namespace cd {
 
 namespace {
 constexpr int kResume = 0;
-constexpr int kSettings = 1;
-constexpr int kRetreat = 2;
-constexpr int kQuit = 3;
+constexpr int kParty = 1;  // M64
+constexpr int kSettings = 2;
+constexpr int kRetreat = 3;
+constexpr int kQuit = 4;
 #ifdef CRYSTAL_DEBUG_OVERLAY
 constexpr int kDebug = kQuit + 1;  // appended after Quit in debug builds only
 #endif
@@ -29,8 +31,11 @@ constexpr int kDebug = kQuit + 1;  // appended after Quit in debug builds only
 
 DungeonMenuState::DungeonMenuState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {
-    menu_.setItems(
-        {{"Resume", true}, {"Settings", true}, {"Retreat to Town", true}, {"Quit", true}});
+    menu_.setItems({{"Resume", true},
+                    {"Party", true},
+                    {"Settings", true},
+                    {"Retreat to Town", true},
+                    {"Quit", true}});
 #ifdef CRYSTAL_DEBUG_OVERLAY
     menu_.addItem("Debug", true);
 #endif
@@ -53,6 +58,9 @@ void DungeonMenuState::handleInput(const Input& input) {
         switch (menu_.cursor()) {
             case kResume:
                 stack().popState();
+                break;
+            case kParty:
+                stack().pushState(std::make_unique<PartyState>(stack(), context_));
                 break;
             case kSettings:
                 stack().pushState(std::make_unique<SettingsState>(stack(), context_));
@@ -87,7 +95,7 @@ void DungeonMenuState::render() {
     ui::drawModalDim(w, h);
 
     const int boxW = 190;
-    int boxH = 130;  // fits the 4 pause entries (M47 added Quit)
+    int boxH = 148;  // fits the 5 pause entries (M47 added Quit; M64 Party)
 #ifdef CRYSTAL_DEBUG_OVERLAY
     boxH += 18;  // M53: the extra "Debug" row
 #endif

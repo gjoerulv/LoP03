@@ -11,6 +11,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "states/MilestoneChoiceState.hpp"  // M63
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -110,6 +111,7 @@ void TrainingHallState::trainSelected() {
         context_.audio.play(Sfx::Heal);
         message_ = c.name + " trained to Lv." + std::to_string(c.level) + "!";
         messageIsError_ = false;
+        maybePushMilestoneChoice(stack(), context_);  // M63: the level-up moment
     } else {
         context_.audio.play(Sfx::Error);
         message_ = "Not enough gold to train " + c.name;

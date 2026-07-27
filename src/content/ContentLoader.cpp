@@ -442,6 +442,38 @@ void parseStory(const Json& root, const std::string& source, ContentDatabase& db
     });
 }
 
+void parseMilestones(const Json& root, const std::string& source, ContentDatabase& db,
+                     LoadReport& rep) {
+    // M63: class level-milestone bonuses. Tier and option are validated here;
+    // classId references and a/b pair completeness are cross-entry rules and
+    // live in validateReferences.
+    forEachEntry(root, source, "milestones", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        MilestoneDef d;
+        d.id = r.reqString("id");
+        d.classId = r.reqString("classId");
+        d.level = r.reqIntMin("level", 1);
+        d.option = r.reqString("option");
+        d.name = r.reqString("name");
+        d.description = r.reqString("description");
+        d.effect = r.reqEnum<MilestoneEffect>("effect", parseMilestoneEffect, "milestone effect");
+        d.magnitude = r.optIntMin("magnitude", 0, 0);
+        if (d.level != 10 && d.level != 20 && d.level != 30) {
+            rep.add(source, ctx, "'level' must be 10, 20 or 30");
+        }
+        if (d.option != "a" && d.option != "b") {
+            rep.add(source, ctx, "'option' must be 'a' or 'b'");
+        }
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addMilestone(d)) {
+            rep.add(source, ctx, "duplicate milestone id '" + d.id + "'");
+        }
+    });
+}
+
 void parsePassives(const Json& root, const std::string& source, ContentDatabase& db,
                    LoadReport& rep) {
     forEachEntry(root, source, "passives", rep, [&](const Json& el, const std::string& ctx, int) {
@@ -518,6 +550,21 @@ void validateReferences(const ContentDatabase& db, LoadReport& rep) {
                 rep.add(source, "boss '" + id + "'.passives",
                         "references unknown passive '" + passive + "'");
             }
+        }
+    }
+    // M63: milestones reference real classes and come in complete a/b pairs —
+    // a lone option would leave the choice modal with nothing to choose.
+    for (const auto& [id, m] : db.milestones()) {
+        if (db.findClass(m.classId) == nullptr) {
+            rep.add(source, "milestone '" + id + "'",
+                    "references unknown class '" + m.classId + "'");
+            continue;
+        }
+        const auto pair = db.milestonePair(m.classId, m.level);
+        if (pair.first == nullptr || pair.second == nullptr) {
+            rep.add(source, "milestone '" + id + "'",
+                    "class '" + m.classId + "' level " + std::to_string(m.level) +
+                        " needs exactly one 'a' and one 'b' option");
         }
     }
     for (const auto& [id, theme] : db.themes()) {
@@ -626,6 +673,10 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     // Passives before enemies/bosses so their passive-id references validate.
     if (readJsonFile(dataRoot / "passives.json", json, rep)) {
         parsePassives(json, "passives.json", db, rep);
+    }
+    // M63: class level-milestone bonuses (classId refs checked in validateReferences).
+    if (readJsonFile(dataRoot / "milestones.json", json, rep)) {
+        parseMilestones(json, "milestones.json", db, rep);
     }
     if (readJsonFile(dataRoot / "enemies.json", json, rep)) {
         parseEnemies(json, "enemies.json", db, rep);

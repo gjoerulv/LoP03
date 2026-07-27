@@ -159,7 +159,7 @@ std::string canonicalize(const OrderedJson& root, FileStyle style) {
 
 FileStyle styleForFile(const std::string& filename) {
     if (filename == "skills.json" || filename == "enemies.json" || filename == "items.json" ||
-        filename == "passives.json") {
+        filename == "passives.json" || filename == "milestones.json") {
         return FileStyle::InlineEntities;
     }
     return FileStyle::BlockEntities;

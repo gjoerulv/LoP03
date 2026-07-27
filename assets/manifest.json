@@ -36,6 +36,7 @@
     { "id": "music.result", "type": "music", "path": "audio/music/result.wav", "loop": true, "volume": 0.75 },
     { "id": "music.castle", "type": "music", "path": "audio/music/castle.wav", "loop": true, "volume": 0.8 },
     { "id": "music.king", "type": "music", "path": "audio/music/king.wav", "loop": true, "volume": 0.85 },
+    { "id": "music.duck", "type": "music", "path": "audio/music/duck.wav", "loop": true, "volume": 0.85 },
 
     { "id": "ambience.town", "type": "ambience", "path": "audio/ambience/town.wav", "loop": true, "volume": 0.3 },
     { "id": "ambience.keep", "type": "ambience", "path": "audio/ambience/keep.wav", "loop": true, "volume": 0.24 },
@@ -168,11 +169,11 @@
     { "id": "enemy.archon_of_ruin.battle", "type": "texture", "path": "textures/enemies/archon_of_ruin.png" },
     { "id": "enemy.royal_guard_sword.battle", "type": "texture", "path": "textures/enemies/royal_guard_sword.png" },
     { "id": "enemy.royal_guard_staff.battle", "type": "texture", "path": "textures/enemies/royal_guard_staff.png" },
-    { "id": "enemy.evil_goose_vanguard.battle", "type": "texture", "path": "textures/actors/goose_battle.png" },
-    { "id": "enemy.evil_goose_hexwing.battle", "type": "texture", "path": "textures/actors/goose_battle.png" },
-    { "id": "enemy.evil_goose_mender.battle", "type": "texture", "path": "textures/actors/goose_battle.png" },
-    { "id": "enemy.evil_goose_trickster.battle", "type": "texture", "path": "textures/actors/goose_battle.png" },
-    { "id": "enemy.evil_goose_bogfeather.battle", "type": "texture", "path": "textures/actors/goose_battle.png" },
+    { "id": "enemy.evil_goose_vanguard.battle", "type": "texture", "path": "textures/enemies/evil_goose_vanguard.png" },
+    { "id": "enemy.evil_goose_hexwing.battle", "type": "texture", "path": "textures/enemies/evil_goose_hexwing.png" },
+    { "id": "enemy.evil_goose_mender.battle", "type": "texture", "path": "textures/enemies/evil_goose_mender.png" },
+    { "id": "enemy.evil_goose_trickster.battle", "type": "texture", "path": "textures/enemies/evil_goose_trickster.png" },
+    { "id": "enemy.evil_goose_bogfeather.battle", "type": "texture", "path": "textures/enemies/evil_goose_bogfeather.png" },
 
     { "id": "boss.sand_warlord.battle", "type": "texture", "path": "textures/enemies/boss_sand_warlord.png" },
     { "id": "boss.frost_monarch.battle", "type": "texture", "path": "textures/enemies/boss_frost_monarch.png" },
@@ -188,7 +189,7 @@
     { "id": "boss.deep_king.battle", "type": "texture", "path": "textures/enemies/boss_deep_king.png" },
     { "id": "boss.blight_matron.battle", "type": "texture", "path": "textures/enemies/boss_blight_matron.png" },
     { "id": "boss.the_hollow_king.battle", "type": "texture", "path": "textures/enemies/boss_the_hollow_king.png" },
-    { "id": "boss.deadly_duck.battle", "type": "texture", "path": "textures/actors/goose_battle.png" },
+    { "id": "boss.deadly_duck.battle", "type": "texture", "path": "textures/enemies/boss_deadly_duck.png" },
 
     { "id": "prop.chest", "type": "texture", "path": "textures/props/chest.png" },
     { "id": "prop.gate_marker", "type": "texture", "path": "textures/props/gate_marker.png" },

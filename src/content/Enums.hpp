@@ -82,6 +82,52 @@ enum class PassiveHook {
     KeenSenses    // immune to Blind; +magnitude% damage vs a debuffed target
 };
 
+// Class level-milestone bonus behaviour (M63). Keyed by id in
+// data/milestones.json; each entry carries ONE effect and a single
+// `magnitude` (0 where the effect needs none). Stat* effects apply at
+// refreshCharacter (visible in menus); the rest resolve onto the Combatant
+// at buildBattle. None is the inert error default (never a valid data value).
+enum class MilestoneEffect {
+    None,
+    StatMaxHpPct,      // +magnitude% max HP
+    StatSpeedPct,      // +magnitude% SPD
+    StatMaxMpPct,      // +magnitude% max MP
+    StatDefensePct,    // +magnitude% DEF
+    BasicAttackPct,    // basic attacks deal +magnitude%
+    MagicSkillPct,     // magic-category skills deal +magnitude%
+    AoeSpellPct,       // all-enemy skills deal +magnitude%
+    HealCastPct,       // heals this unit casts restore +magnitude%
+    ExecutePct,        // +magnitude% damage vs foes below half HP
+    VsAfflictedPct,    // +magnitude% damage vs foes carrying a negative status
+    WeaknessBonusPct,  // this unit's weakness hits deal magnitude% (replaces 150)
+    StatusTurnsBonus,  // afflictions/debuffs this unit applies last +magnitude turn(s)
+    OpeningGuardPct,   // starts every battle with DEF+ (magnitude%, 2 turns)
+    DoubleStrikePct,   // basic attack strikes twice; second hit at magnitude%
+    SweepAllPct,       // basic attack strikes every foe at magnitude%
+    SweepDebuffPct,    // the sweep's hits also inflict ATK- (magnitude%, 2 turns)
+    TauntDebuffPct,    // Taunt also inflicts ATK- (magnitude%, 2 turns) on every foe
+    GuardBlockPct,     // guarding blocks magnitude% (replaces the default 50)
+    FirstHitImmune,    // the first damaging hit taken each battle deals 0
+    IronWillHealing,   // gains Iron Will; it heals magnitude% max HP when it fires
+    ReviveAtPct,       // revive-capable heals raise at magnitude% max HP (if higher)
+    PurifyHeals,       // this caster's pure cleanses heal again (the pre-M62 magic/2)
+    HolyBasic,         // basic attacks carry Holy (a carried weapon element wins)
+    FireBasic,         // basic attacks carry Fire (a carried weapon element wins)
+    GoldBonusPct,      // battles pay +magnitude% gold while this unit stands
+    ItemPotencyPct,    // items this unit uses are +magnitude% potent
+    NoEnemyBuff,       // its `alsoBuffsEnemies` skills no longer buff the enemies
+    OnKillPartyAtkUp,  // felling a foe grants the party ATK+ (magnitude%, 2 turns)
+    OnDeathFoeDebuff,  // falling inflicts ATK-/DEF- (magnitude%, 2 turns) on every foe
+    GrantCounter,      // gains the Counter Attack hook
+    GrantEvasion,      // gains Evasion (magnitude%)
+    GrantSpellWard,    // gains Spell Ward (magnitude%)
+    GrantThorns,       // gains Thorns (magnitude%)
+    GrantIronWill,     // gains Iron Will
+    GrantFirstStrike,  // gains First Strike (+magnitude% on the first hit)
+    GrantClarity,      // gains Clarity (+magnitude MP/round, Silence-immune)
+    GrantBodyguard     // gains Bodyguard (magnitude%)
+};
+
 // parse* return std::nullopt for unrecognized strings (the caller reports the
 // error with context). toString is the inverse and always returns a stable id.
 std::optional<Element> parseElement(std::string_view s);
@@ -99,6 +145,7 @@ std::optional<StatusType> parseStatusType(std::string_view s);
 std::optional<BattleTarget> parseBattleTarget(std::string_view s);
 std::optional<BossArchetype> parseBossArchetype(std::string_view s);
 std::optional<PassiveHook> parsePassiveHook(std::string_view s);
+std::optional<MilestoneEffect> parseMilestoneEffect(std::string_view s);
 
 const char* toString(Element v);
 
@@ -127,6 +174,7 @@ const char* toString(StatusType v);
 const char* toString(BattleTarget v);
 const char* toString(BossArchetype v);
 const char* toString(PassiveHook v);
+const char* toString(MilestoneEffect v);
 
 // M59 (CrystalForge): every valid data id for an enum, in declaration order,
 // built from the same tables the parse* functions read — one source, so an id
@@ -148,5 +196,6 @@ std::vector<std::string_view> statusTypeIds();
 std::vector<std::string_view> battleTargetIds();
 std::vector<std::string_view> bossArchetypeIds();
 std::vector<std::string_view> passiveHookIds();
+std::vector<std::string_view> milestoneEffectIds();
 
 }  // namespace cd::content

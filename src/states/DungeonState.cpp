@@ -14,6 +14,8 @@
 #include "core/FadeController.hpp"
 #include "game/Achievements.hpp"
 #include "game/BossDrops.hpp"
+#include "game/Curios.hpp"      // M66: buried-treasure curio awards
+#include "game/Milestones.hpp"  // M63: gold bonus + pending-choice prompt
 #include "game/Party.hpp"
 #include "game/Relics.hpp"  // the M44 relic grant (seeded, reload-proof)
 #include "game/WorldLadder.hpp"
@@ -30,6 +32,7 @@
 #include "settings/Settings.hpp"
 #include "render/BattleBackdrop.hpp"
 #include "states/AchievementToast.hpp"
+#include "states/MilestoneChoiceState.hpp"  // M63
 #include "states/BattleState.hpp"
 #include "states/BossIntroState.hpp"
 #include "states/DungeonMenuState.hpp"
@@ -195,6 +198,23 @@ void DungeonState::buildRoom() {
         markers_.push_back({layout.event.x, layout.event.y, MarkerKind::Event, room.teamIndex,
                             dungeon::Dir::North});
     }
+    // M65: a Secret Map Piece lies on this room's walkable center tile —
+    // stand-on like a chest, never blocking.
+    if (currentRoom_ == dungeon_.mapPieceRoom) {
+        markers_.push_back({layout.centerSpawn.x, layout.centerSpawn.y, MarkerKind::MapPiece, -1,
+                            dungeon::Dir::North});
+    }
+    // M66: the single-use dungeon treasure map, and — once it is read — the
+    // buried spot it revealed. Same stand-on center-tile contract (the
+    // generator keeps the three rooms distinct).
+    if (currentRoom_ == dungeon_.chartRoom) {
+        markers_.push_back({layout.centerSpawn.x, layout.centerSpawn.y, MarkerKind::Chart, -1,
+                            dungeon::Dir::North});
+    }
+    if (chartFound_ && currentRoom_ == dungeon_.buriedRoom) {
+        markers_.push_back({layout.centerSpawn.x, layout.centerSpawn.y, MarkerKind::Buried, -1,
+                            dungeon::Dir::North});
+    }
 
     roomMap_ = std::move(map);
     originX_ = (context_.virtualWidth - layout.width * kTile) / 2;
@@ -244,16 +264,28 @@ bool DungeonState::captureFaceEvent(dungeon::RoomEventKind kind) {
 
 void DungeonState::recomputeInteraction(int tx, int ty) {
     onChest_ = false;
+    onMapPiece_ = false;  // M65
     facingMarker_ = nullptr;
     for (const Marker& m : markers_) {
         if (m.kind == MarkerKind::Chest && m.x == tx && m.y == ty) {
             onChest_ = true;
         }
+        if (m.kind == MarkerKind::MapPiece && m.x == tx && m.y == ty) {
+            onMapPiece_ = true;  // M65: stand-on, like a chest
+        }
+        if (m.kind == MarkerKind::Chart && m.x == tx && m.y == ty) {
+            onChart_ = true;  // M66
+        }
+        if (m.kind == MarkerKind::Buried && m.x == tx && m.y == ty) {
+            onBuried_ = true;  // M66
+        }
     }
     const int fx = facing_.x > 0.4f ? 1 : (facing_.x < -0.4f ? -1 : 0);
     const int fy = facing_.y > 0.4f ? 1 : (facing_.y < -0.4f ? -1 : 0);
     for (const Marker& m : markers_) {
-        if (m.kind != MarkerKind::Chest && m.x == tx + fx && m.y == ty + fy) {
+        if (m.kind != MarkerKind::Chest && m.kind != MarkerKind::MapPiece &&
+            m.kind != MarkerKind::Chart && m.kind != MarkerKind::Buried &&
+            m.x == tx + fx && m.y == ty + fy) {
             facingMarker_ = &m;
         }
     }
@@ -302,6 +334,18 @@ void DungeonState::openChest() {
 }
 
 void DungeonState::interact() {
+    if (onMapPiece_) {
+        takeMapPiece();  // M65
+        return;
+    }
+    if (onChart_) {
+        readChart();  // M66
+        return;
+    }
+    if (onBuried_) {
+        digBuried();  // M66
+        return;
+    }
     if (onChest_) {
         openChest();
         return;
@@ -322,9 +366,87 @@ void DungeonState::interact() {
                 resolveEvent();
             }
             return;
-        case MarkerKind::Chest: return;
+        case MarkerKind::Chest:
+        case MarkerKind::MapPiece:
+        case MarkerKind::Chart:
+        case MarkerKind::Buried:
+            return;
     }
     startBattle(facingMarker_->teamIndex, kind, facingMarker_->gateDir);
+}
+
+void DungeonState::readChart() {
+    if (dungeon_.chartRoom != currentRoom_ || dungeon_.buriedRoom < 0) {
+        return;
+    }
+    dungeon_.chartRoom = -1;
+    chartFound_ = true;
+    context_.audio.play(Sfx::Chest);
+    message_ =
+        "A treasure map of THIS dungeon! An X marks a room - it now glows on your minimap.";
+    messageTimer_ = scaledMessageTime(context_, 4.0f);
+    buildRoom();  // the chart marker clears (and the X may be in this room)
+}
+
+void DungeonState::digBuried() {
+    if (!chartFound_ || dungeon_.buriedRoom != currentRoom_) {
+        return;
+    }
+    dungeon_.buriedRoom = -1;
+    chartFound_ = false;
+    context_.audio.play(Sfx::Chest);
+    Party& p = context_.party;
+    const std::string curioId = pickCurio(p.ownedCurios, dungeon_.themeId, dungeon_.seed);
+    if (curioId.empty()) {
+        // The dozen is complete: buried treasures pay a legendary token now.
+        p.legendaryTokens += 1;
+        message_ = "Buried riches! +1 legendary token (your curio collection is complete).";
+    } else {
+        p.ownedCurios.push_back(curioId);
+        const CurioDef* curio = findCurio(curioId);
+        message_ = TextFormat("Buried treasure: %s! (curios: %d of %d - see Maps in town)",
+                              curio != nullptr ? curio->name : curioId.c_str(),
+                              static_cast<int>(p.ownedCurios.size()), kCurioCount);
+        // Curator may fire the moment the dozen completes.
+        pushAchievementToasts(stack(), context_, AchvContext{});
+    }
+    messageTimer_ = scaledMessageTime(context_, 4.0f);
+    buildRoom();
+}
+
+void DungeonState::takeMapPiece() {
+    if (dungeon_.mapPieceRoom != currentRoom_) {
+        return;
+    }
+    dungeon_.mapPieceRoom = -1;
+    context_.audio.play(Sfx::Chest);
+    Party& p = context_.party;
+    ++p.mapPieces;
+    if (p.mapPieces >= kMapPiecesNeeded) {
+        // The FOURTH piece completes the puzzle: the treasure lies in THIS
+        // run's town, guarded at THIS dungeon's own boss scale (owner rule:
+        // "the same level as the town + depth the final piece was found in").
+        p.mapPieces = 0;
+        p.treasure.active = true;
+        p.treasure.town = dungeon_.town;
+        p.treasure.bossId = treasureGuardBossId(context_.content, dungeon_.seed);
+        p.treasure.scalePct = 100;
+        for (const dungeon::EnemyTeam& t : dungeon_.teams) {
+            if (t.isBoss) {
+                p.treasure.scalePct = t.statScalePct;
+                break;
+            }
+        }
+        message_ = TextFormat(
+            "The final map piece! The treasure lies buried in Town %d - and something guards it.",
+            p.treasure.town);
+        messageTimer_ = scaledMessageTime(context_, 4.0f);
+    } else {
+        message_ = TextFormat("A Secret Map Piece! (%d of %d - see Maps in a town's pause menu)",
+                              p.mapPieces, kMapPiecesNeeded);
+        messageTimer_ = scaledMessageTime(context_, 3.5f);
+    }
+    buildRoom();  // the piece marker clears
 }
 
 // Applies a non-battle event exactly as its footer prompt stated it.
@@ -450,6 +572,7 @@ void DungeonState::resolveEvent() {
             grantPartyXp(context_.party, xp, context_.content);
             context_.audio.play(Sfx::Interact);
             message_ = TextFormat("The Elder Root drinks your offering - the party gains %d XP.", xp);
+            maybePushMilestoneChoice(stack(), context_);  // M63: the level-up moment
             break;
         }
         case dungeon::RoomEventKind::EliteChallenge:
@@ -642,11 +765,15 @@ void DungeonState::onResume() {
             xp += boss->xpReward;
             gold += boss->goldReward;
         }
+        // M63 (Cutpurse / Golden Goose): standing members' milestones sweeten
+        // the take. HP was already written back, so "standing" is honest.
+        gold += gold * partyGoldBonusPct(context_.party.members, context_.content) / 100;
         context_.party.gold += gold;
         grantPartyXp(context_.party, xp, context_.content);
         if (xp > 0) {
             reward = TextFormat(" (+%d XP, +%dg)", xp, gold);
         }
+        maybePushMilestoneChoice(stack(), context_);  // M63: the level-up moment
     }
 
     dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(pendingRoom_)];
@@ -964,6 +1091,12 @@ void DungeonState::renderMinimap() const {
             c.a = 110;
         }
         DrawRectangle(cx, cy, cell, cell, c);
+        // M66: once the chart is read, the X it promised burns on the minimap.
+        if (chartFound_ && static_cast<int>(i) == dungeon_.buriedRoom) {
+            DrawRectangle(cx + 1, cy + 1, cell - 2, 1, Color{235, 214, 112, 255});
+            DrawRectangle(cx + 1, cy + cell - 2, cell - 2, 1, Color{235, 214, 112, 255});
+            DrawRectangle(cx + cell / 2, cy + 2, 1, cell - 4, Color{235, 214, 112, 255});
+        }
         if (static_cast<int>(i) == currentRoom_) {
             DrawRectangleLines(cx - 1, cy - 1, cell + 2, cell + 2, RAYWHITE);
         }
@@ -1136,6 +1269,18 @@ void DungeonState::render() {
                 }
                 break;
             }
+            case MarkerKind::MapPiece:  // M65: a golden scrap (glyph marker,
+                c = Color{235, 214, 112, 255};  // the M55-rite precedent)
+                glyph = "?";
+                break;
+            case MarkerKind::Chart:  // M66: a cyan chart scrap
+                c = Color{110, 214, 220, 255};
+                glyph = "M";
+                break;
+            case MarkerKind::Buried:  // M66: the X the chart promised
+                c = Color{224, 96, 84, 255};
+                glyph = "X";
+                break;
         }
         const int mx = originX_ + m.x * kTile;
         const int my = originY_ + m.y * kTile;
@@ -1198,7 +1343,10 @@ void DungeonState::render() {
         cx += ui::drawChip(TextFormat("%s  D%d", dungeon_.themeName.c_str(), dungeon_.depth),
                            cx, 4, themeAccent) + 4;
         cx += ui::drawChip(TextFormat("Gates %d", dungeon_.mandatoryGates), cx, 4, pal.danger) + 4;
-        ui::drawChip(TextFormat("%dg", context_.party.gold), cx, 4, pal.gold);
+        cx += ui::drawChip(TextFormat("%dg", context_.party.gold), cx, 4, pal.gold) + 4;
+        if (chartFound_) {
+            ui::drawChip("Treasure!", cx, 4, pal.gold);  // M66: the X awaits
+        }
     }
 
     renderMinimap();
@@ -1222,6 +1370,15 @@ void DungeonState::render() {
         } else {
             text = input::prompt(map, InputAction::Confirm, device, "Open chest" + rarity);
         }
+    } else if (onMapPiece_) {
+        // M65: the find explains itself before the take.
+        text = input::prompt(map, InputAction::Confirm, device, "Take the Secret Map Piece") +
+               TextFormat("  (%d of %d held)", context_.party.mapPieces, kMapPiecesNeeded);
+    } else if (onChart_) {
+        text = input::prompt(map, InputAction::Confirm, device,
+                             "Read the weathered map - it shows THIS dungeon");
+    } else if (onBuried_) {
+        text = input::prompt(map, InputAction::Confirm, device, "Dig up the buried treasure");
     } else if (facingMarker_ != nullptr && facingMarker_->kind == MarkerKind::Event) {
         text = eventPromptText();
     } else if (facingMarker_ != nullptr && facingMarker_->teamIndex >= 0 &&

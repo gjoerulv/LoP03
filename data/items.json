@@ -74,6 +74,12 @@
     { "id": "sovereigns_regalia", "name": "Sovereign's Regalia", "type": "equipment", "slot": "accessory", "rarity": "legendary", "value": 9000, "statBonus": { "attack": 25, "magic": 25, "defense": 25, "speed": 10, "hp": 40 }, "description": "The regalia of the Hollow King, won only by breaking his throne." },
     { "id": "scroll_fireball", "name": "Scroll: Fireball", "type": "scroll", "rarity": "rare", "value": 180, "grantsSkill": "fireball", "description": "Teaches the Fireball skill." },
     { "id": "scroll_greater_heal", "name": "Scroll: Greater Heal", "type": "scroll", "rarity": "rare", "value": 200, "grantsSkill": "greater_heal", "description": "Teaches the Greater Heal skill." },
-    { "id": "scroll_whirlwind", "name": "Scroll: Whirlwind", "type": "scroll", "rarity": "rare", "value": 190, "grantsSkill": "whirlwind", "description": "Teaches the Whirlwind skill." }
+    { "id": "scroll_whirlwind", "name": "Scroll: Whirlwind", "type": "scroll", "rarity": "rare", "value": 190, "grantsSkill": "whirlwind", "description": "Teaches the Whirlwind skill." },
+    { "id": "treasure_scroll_meteor", "name": "Lost Scroll: Meteor Dive", "type": "scroll", "rarity": "epic", "grantsSkill": "meteor_dive", "description": "Dug from a puzzle-map treasure; found nowhere else. Teaches Meteor Dive." },
+    { "id": "treasure_scroll_chain", "name": "Lost Scroll: Chain Lightning", "type": "scroll", "rarity": "epic", "grantsSkill": "chain_lightning", "description": "Dug from a puzzle-map treasure; found nowhere else. Teaches Chain Lightning." },
+    { "id": "treasure_scroll_mending", "name": "Lost Scroll: Mending Wind", "type": "scroll", "rarity": "epic", "grantsSkill": "mending_wind", "description": "Dug from a puzzle-map treasure; found nowhere else. Teaches Mending Wind." },
+    { "id": "treasure_scroll_wardrums", "name": "Lost Scroll: War Drums", "type": "scroll", "rarity": "epic", "grantsSkill": "war_drums", "description": "Dug from a puzzle-map treasure; found nowhere else. Teaches War Drums." },
+    { "id": "treasure_scroll_doom", "name": "Lost Scroll: Creeping Doom", "type": "scroll", "rarity": "epic", "grantsSkill": "creeping_doom", "description": "Dug from a puzzle-map treasure; found nowhere else. Teaches Creeping Doom." },
+    { "id": "treasure_scroll_vanish", "name": "Lost Scroll: Vanishing Act", "type": "scroll", "rarity": "epic", "grantsSkill": "vanishing_act", "description": "Dug from a puzzle-map treasure; found nowhere else. Teaches Vanishing Act." }
   ]
 }
