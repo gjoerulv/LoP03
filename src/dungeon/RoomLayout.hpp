@@ -43,8 +43,12 @@ namespace cd::dungeon {
 // version 13 (M66) seeds a single-use dungeon treasure map into ~12% of
 // dungeons (a chart room + a distinct buried room, both Normal, never the
 // map-piece room; the same pure-hash contract — only new output, everything
-// else byte-identical; owner-approved).
-inline constexpr int kGenerationVersion = 13;
+// else byte-identical; owner-approved);
+// version 14 (M68) recalibrates the danger tiers to be PARTY-RELATIVE
+// (owner decision). Generated layouts, teams, and events are byte-identical
+// to v13 — the bump tags scoreboard comparability, because the
+// danger-defeated score credit follows the new tiers.
+inline constexpr int kGenerationVersion = 14;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

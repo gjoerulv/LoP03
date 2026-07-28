@@ -132,8 +132,8 @@ SimLabResult runSweep(const SimLabConfig& config, const content::ContentDatabase
     if (!result.error.empty()) {
         return result;
     }
-    result.dangerTier =
-        danger::tierName(danger::assess(team, /*depth=*/std::max(1, config.level / 2), db));
+    result.dangerTier = danger::tierName(
+        danger::assess(team, db, danger::partyThreat(party.members)));  // M68: party-relative
 
     std::vector<int> rounds;
     double hpFractionSum = 0.0;

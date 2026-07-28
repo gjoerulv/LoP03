@@ -8,6 +8,7 @@
 #include "core/Geometry.hpp"
 #include "danger/DangerRating.hpp"
 #include "game/RunStats.hpp"
+#include "game/Spoils.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "dungeon/RoomLayout.hpp"
 #include "states/GameState.hpp"
@@ -113,6 +114,9 @@ private:
     int pendingTeamIndex_ = -1;
     dungeon::Dir pendingGateDir_ = dungeon::Dir::North;
     battle::BattleResult battleResult_;
+    // M68: the pending battle's payout. The battle applies it on Victory and
+    // shows the results panel; must outlive the battle (like battleResult_).
+    BattleSpoils pendingSpoils_;
     // M67: set by completeDungeon. The next resume pops this state, so the
     // return to town survives anything pushed between the dungeon and the
     // result screen (the M63 level-up modal a boss kill can wedge there).

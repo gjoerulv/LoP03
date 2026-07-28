@@ -22,6 +22,7 @@
 namespace cd {
 
 struct AppContext;
+struct BattleSpoils;  // M68: forwarded to the launched BattleState
 class StateStack;
 class Input;
 
@@ -29,7 +30,8 @@ class BossIntroState : public GameState {
 public:
     BossIntroState(StateStack& stack, AppContext& context, battle::Battle battle,
                    battle::BattleResult* resultSlot, MusicTrack music, RunStats* statsSlot,
-                   bool castleChallenge, render::BackdropStage stage, std::uint64_t introSeed);
+                   bool castleChallenge, render::BackdropStage stage, std::uint64_t introSeed,
+                   const BattleSpoils* spoils = nullptr);
 
     void update(float dt) override;
     void handleInput(const Input& input) override;
@@ -55,6 +57,7 @@ private:
     bool castleChallenge_;
     render::BackdropStage stage_;
     std::uint64_t introSeed_;
+    const BattleSpoils* spoils_ = nullptr;  // M68
     BossIntroTimeline timeline_;
     std::vector<IntroShard> shards_;
     bool launched_ = false;   // BattleState pushed; onResume now pops self

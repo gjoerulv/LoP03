@@ -102,15 +102,17 @@ learning + a party panel; the town puzzle map; the dungeon treasure map —
 plan approved with the 54-entry bonus table), followed on 2026-07-28 by
 **M67** (an owner feedback batch from the manual pass: class portraits,
 party-panel descriptions, load-screen fixes, and the boss-victory
-return-to-town bug). M59–M67 ALL sit at `implemented,
-awaiting manual approval`; then M23 → M24, and nothing else stands before
-them.**
-When M59–M67 close, both M23 and M24 must be re-audited against the
-then-current checkout before they begin — the capture set has grown (**82
-scenes** as of M66), the balance batteries have grown (`[economy-report]`,
+return-to-town bug) and **M68** (the victory spoils panel + the
+party-relative threat recalibration, generation 14). M59–M68 ALL sit at
+`implemented, awaiting manual approval`; then M23 → M24, and nothing else
+stands before them.**
+When M59–M68 close, both M23 and M24 must be re-audited against the
+then-current checkout before they begin — the capture set has grown (**83
+scenes** as of M68), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
-and the M61–M66 `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`
-batteries), and the packaging manifest must account for everything the
+and the M61–M68 `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/
+`[spoils]`/`[danger-report]` batteries), and the packaging manifest must
+account for everything the
 expansions added (the relic prop, three class sprites, two Royal Guard
 sprites, the M62 goose/duck sprites and Duck theme, `data/milestones.json`,
 and the `profile.json` user-data file). The M49 castle retune (Boss Rush 580 % /
@@ -2680,3 +2682,26 @@ running scope: the sections below.
   **Closing verification: 593/593 Debug and 589/589 Release tests green;
   `--capture` 82/82 scenes clean.**
 - **Milestone note:** `docs/milestone_notes/M67_ui_polish.md`
+
+## M68 — Battle spoils & party-relative threat (owner feedback, 2026-07-28)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-28. Two owner asks: (1) an FF1-PR-inspired **victory results
+  panel** — XP/gold plus a per-member level-up diff (stat gains, new
+  skills) — riding the battle's existing Done beat, dismissed by the same
+  single Confirm (no new screen, zero added inputs). The payout rule moved
+  into shared `game/Spoils.hpp` and the battle now pays it (write-back
+  first, so the M63 standing-gold bonuses and level-up heals are honest);
+  `DungeonState::onResume` no longer grants. (2) The threat preview was
+  drowning — the depth-only baseline never learned about the town ladder,
+  so by town 3+ nearly everything read Deadly. **Party-relative tiers**
+  (owner decision via Q&A): team threat vs the party's own derived
+  strength, bands <20/<40/<70/<110 % calibrated against simulator clearing
+  levels with town-shelf gear (`[danger-report]` battery), snapshotted at
+  dungeon entry. **Generation 13 → 14** (byte-identical output; the bump
+  tags scoreboard comparability for the recalibrated danger credit).
+  `[spoils]` + rewritten `[danger]` batteries; capture `83_battle_spoils`
+  (the set is **83 scenes**).
+  **Closing verification: 601/601 Debug and 597/597 Release tests green;
+  `--capture` 83/83 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M68_spoils_threat.md`

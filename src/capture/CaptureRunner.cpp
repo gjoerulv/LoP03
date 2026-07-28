@@ -1152,6 +1152,17 @@ int run(const char* outDir) {
                  st->captureSelect(0, 10);
                  s.pushState(std::move(st));
              }},
+            {"83_battle_spoils",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M68: the victory results panel at its fullest — four leveled
+                 // members (12-char names), multi-skill learn lines, max
+                 // XP/gold widths — over a settled battlefield.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureShowSpoils();
+                 s.pushState(std::move(state));
+             }},
         };
 
         for (const Scenario& scenario : scenarios) {

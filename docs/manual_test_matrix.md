@@ -18,6 +18,12 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M68 update:** victory spoils + threat recalibration — rows 161–162
+> (the results panel on the battle's Done beat with level-up diffs; the
+> party-relative danger tiers, generation v14; capture scene
+> `83_battle_spoils`; the capture set is **83 scenes**). Danger-label
+> expectations in older rows now mean "relative to YOUR party".
+>
 > **M67 update:** UI polish + two reported bugs — rows 157–160 (class
 > portraits on four screens; milestone/passive descriptions in the party
 > panel; the Load screen's slab-contained King title and dropped "party 4";
@@ -486,6 +492,8 @@ sound fires.
 | 158 | Class portraits & panel descriptions (M67) | open Party (both pause menus); Training Hall (member list, character menu, passives); level a member to a milestone; Equip Shop → Equip a member | not run | not run | every party-panel row leads with its class battle sprite; the equipped passive and each chosen milestone show a **hint-coloured description** under their name; unchosen reached tiers compress to "Milestone unchosen: Lv.N, …"; the Training Hall portrait follows the member-list cursor and pins on the later screens; the milestone modal carries the chooser's portrait; the Equip Shop portrait follows the cursor then pins through slot/item; Buy phases show none. **Judge whether the 2× portraits and the denser detail column read well** | nothing clips at 426×240 | n/a | 79_party_panel.png | not run |
 | 159 | Load-screen slot rows (M67) | open Load with occupied titled slots (post-King save); move the cursor across all six rows | not run | not run | rows read `Slot N  -  Lv.X  Ng` (no "party 4"); a titled row's King title sits **fully inside** the selection slab (both lines covered); untitled rows keep the shorter slab; nothing overlaps the next row | slab covers both lines | move sfx | 43_slot_menu_load.png | not run |
 | 160 | Chart prompt un-latches (M67) | find an M66 chart; walk ACROSS its tile without pressing Confirm; step off; open a chest and start a battle; step back on and read it; repeat for the buried X | not run | not run | the "Read the weathered map" / "Dig up" footer prompt shows **only while standing on the tile** and vanishes on step-off; Confirm still opens chests and starts battles afterwards (it used to be silently swallowed for the rest of the run); standing back on the tile reads/digs normally | footer prompt swaps correctly | chest sfx on read/dig | — | not run |
+| 161 | Victory spoils panel (M68) | win a gate fight without level-ups; win one that levels 1+ members (a fresh party gains levels fast); win a boss fight; try a castle challenge | not run | not run | a compact panel over the battlefield shows `+N XP each  +N gold` (plus, per leveled member: `Name Lv.a > b`, the non-zero stat gains, `New:` skills in gold); **ONE Confirm continues — the exact press that always ended a battle**; the dungeon HUD message no longer repeats the reward; a level past 10/20/30 prompts the milestone choice right after the battle; castle fights show no spoils panel; a diff cross-checks against the Party panel. **Judge the panel's feel — it must not slow the loop** | panel fits over four leveled 12-char members | victory jingle unchanged | 83_battle_spoils.png | not run |
+| 162 | Party-relative threat labels (M68) | with your strong party, enter a dungeon you find easy and read every team label (Guild preview + in-dungeon); repeat with a fresh/underleveled party on a hard town; level mid-run and re-read a label | not run | not run | the strong party reads mostly **Trivial/Easy/Fair** with Dangerous/Deadly only on genuinely nasty teams (the old build read nearly everything Deadly at towns 3+); the weak party reads the same seeds Dangerous/Deadly; labels do NOT shift mid-run (snapshotted at entry — by design, so the score credit matches the preview); new scoreboard entries tag **v14**. **Judge the calibration bands** | labels readable everywhere they show | n/a | — | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

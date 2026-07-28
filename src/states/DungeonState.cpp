@@ -127,9 +127,13 @@ AmbienceTrack themeAmbience(const std::string& themeId) {
 DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon)
     : GameState(stack), context_(context), dungeon_(std::move(dungeon)),
       layouts_(dungeon::realizeAllRooms(dungeon_)), roomMap_(1, 1) {
+    // M68: tiers are party-relative, snapshotted ONCE at entry so the labels
+    // and the danger-defeated score credit agree for the whole run (mid-run
+    // level-ups do not relabel the dungeon under the player).
     teamTier_.reserve(dungeon_.teams.size());
+    const int partyThreat = danger::partyThreat(context_.party.members);
     for (const dungeon::EnemyTeam& team : dungeon_.teams) {
-        teamTier_.push_back(danger::assess(team, dungeon_.depth, context_.content));
+        teamTier_.push_back(danger::assess(team, context_.content, partyThreat));
     }
     context_.fade.start();
     // Theme music + ambience are applied in onEnter(), not here: entering the
@@ -669,6 +673,9 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     pendingGateDir_ = gateDir;
     battleResult_ = battle::BattleResult{};
     const dungeon::EnemyTeam& team = dungeon_.teams[static_cast<std::size_t>(teamIndex)];
+    // M68: the battle itself pays the team's spoils on Victory and shows the
+    // results panel; onResume no longer grants (it would double-pay).
+    pendingSpoils_ = teamSpoils(team, context_.content);
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
     // M56: every battle wears the theme backdrop; a boss-team fight (bossId set)
     // opens with the Crystal Shatter intro, which then launches the same battle.
@@ -676,12 +683,12 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     if (!team.bossId.empty()) {
         stack().pushState(std::make_unique<BossIntroState>(
             stack(), context_, std::move(b), &battleResult_, MusicTrack::None, &victoryStats_,
-            /*castleChallenge=*/false, stage, dungeon_.seed));
+            /*castleChallenge=*/false, stage, dungeon_.seed, &pendingSpoils_));
     } else {
         stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b),
                                                         &battleResult_, MusicTrack::None,
                                                         &victoryStats_, /*castleChallenge=*/false,
-                                                        stage));
+                                                        stage, &pendingSpoils_));
     }
 }
 
@@ -759,34 +766,13 @@ void DungeonState::onResume() {
         run_.dangerDefeated += danger::tierWeight(teamTier_[static_cast<std::size_t>(pendingTeamIndex_)]);
     }
 
-    // Award XP and gold for the defeated team.
-    std::string reward;
-    if (pendingTeamIndex_ >= 0 && pendingTeamIndex_ < static_cast<int>(dungeon_.teams.size())) {
-        const dungeon::EnemyTeam& team = dungeon_.teams[static_cast<std::size_t>(pendingTeamIndex_)];
-        int xp = 0;
-        int gold = 0;
-        for (const std::string& id : team.enemyIds) {
-            if (const content::EnemyDef* e = context_.content.findEnemy(id)) {
-                xp += e->xpReward;
-                gold += e->goldReward;
-            }
-        }
-        if (const content::BossDef* boss = context_.content.findBoss(team.bossId)) {
-            xp += boss->xpReward;
-            gold += boss->goldReward;
-        }
-        // M63 (Cutpurse / Golden Goose): standing members' milestones sweeten
-        // the take. HP was already written back, so "standing" is honest.
-        gold += gold * partyGoldBonusPct(context_.party.members, context_.content) / 100;
-        context_.party.gold += gold;
-        grantPartyXp(context_.party, xp, context_.content);
-        if (xp > 0) {
-            reward = TextFormat(" (+%d XP, +%dg)", xp, gold);
-        }
-        // M63: the level-up moment. On a boss kill the modal lands under the
-        // result screen and surfaces right after it closes (M67 unwind order).
-        maybePushMilestoneChoice(stack(), context_);
-    }
+    // M68: the battle already paid the team's XP and gold at its Done beat and
+    // showed the results panel (game/Spoils.hpp — the one shared rule), so no
+    // award happens here anymore. Only the level-up moment remains:
+    // M63 choice prompts fire after the battle popped. On a boss kill the
+    // modal lands under the result screen and surfaces right after it closes
+    // (M67 unwind order).
+    maybePushMilestoneChoice(stack(), context_);
 
     dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(pendingRoom_)];
     if (kind == EncounterKind::Gate) {
@@ -798,13 +784,13 @@ void DungeonState::onResume() {
                 .gated = false;
         }
         buildRoom();
-        message_ = "The gate is clear!" + reward;
+        message_ = "The gate is clear!";
         messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Guard) {
         room.teamIndex = -1;
         room.chest.guarded = false;
         buildRoom();
-        message_ = "The guards fall." + reward;
+        message_ = "The guards fall.";
         messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Challenge) {
         // The challenge pays double danger: the base credit was added above,
@@ -817,7 +803,7 @@ void DungeonState::onResume() {
         room.teamIndex = -1;
         room.event.resolved = true;
         buildRoom();
-        message_ = "Challenge won - double danger, +1 legendary token." + reward;
+        message_ = "Challenge won - double danger, +1 legendary token.";
         messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Boss) {
         completeDungeon();

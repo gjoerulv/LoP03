@@ -913,6 +913,9 @@ M67 (2026-07-28) followed as the owner's manual-pass feedback batch: class
 portraits across the menu screens, milestone/passive descriptions in the
 party panel, the load-screen fixes, and the boss-victory return-to-town
 unwind — polish that makes the M62–M66 systems legible before they are
-judged.
+judged. M68 (same day) closed the loop's two oldest presentation debts:
+victories now pay on-screen (the spoils panel with level-up diffs, on the
+battle's own final beat), and the threat labels finally tell the truth —
+party-relative, calibrated against the simulator, tagged generation 14.
 
-M23 → M24 run after M67, re-audited against the then-current checkout.
+M23 → M24 run after M68, re-audited against the then-current checkout.

@@ -26,7 +26,8 @@ float clamp01(float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); }
 BossIntroState::BossIntroState(StateStack& stack, AppContext& context, battle::Battle battle,
                                battle::BattleResult* resultSlot, MusicTrack music,
                                RunStats* statsSlot, bool castleChallenge,
-                               render::BackdropStage stage, std::uint64_t introSeed)
+                               render::BackdropStage stage, std::uint64_t introSeed,
+                               const BattleSpoils* spoils)
     : GameState(stack),
       context_(context),
       battle_(std::move(battle)),
@@ -36,6 +37,7 @@ BossIntroState::BossIntroState(StateStack& stack, AppContext& context, battle::B
       castleChallenge_(castleChallenge),
       stage_(stage),
       introSeed_(introSeed),
+      spoils_(spoils),
       shards_(buildIntroShards(introSeed, kShardCount)) {
     // The boss name + telegraph shown during the intro (copied out now, so
     // render never reaches back into the battle after it is moved into
@@ -67,7 +69,7 @@ void BossIntroState::launchBattle() {
     context_.fade.start();
     stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(battle_),
                                                     resultSlot_, music_, statsSlot_,
-                                                    castleChallenge_, stage_));
+                                                    castleChallenge_, stage_, spoils_));
 }
 
 void BossIntroState::update(float dt) {

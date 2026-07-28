@@ -1974,3 +1974,26 @@ to latch on first touch, sticking the footer prompt and swallowing Confirm
 for the rest of the run. Every stand-on flag must be recomputed from
 scratch each step; never add one without its reset.
 
+## 25. M68 — victory spoils & the party-relative danger rating
+
+**Spoils** (`game/Spoils.hpp`, pure header like Scrolls): `teamSpoils`
+(enemy + boss rewards) and `applySpoils` (gold with the M63 standing
+bonuses, party-wide XP, per-member `LevelUpDiff` incl. newly unlocked
+skill names). `BattleState` takes an optional `const BattleSpoils*`
+(threaded through `BossIntroState`; `DungeonState` owns `pendingSpoils_`
+like `battleResult_`): on Victory the battle writes back party HP/MP
+(a `wroteBack_` latch — `finish()` must not clobber the level-up heals),
+applies the spoils, and draws the results panel on the Done beat; the
+same single Confirm continues. `DungeonState::onResume` no longer grants.
+Fights without spoils (castle, gauntlet, treasure dig) behave exactly as
+before.
+
+**Danger** (`danger/DangerRating`): tiers are party-relative (owner
+decision) — `partyThreat` applies the enemy stat weights to each member's
+derived stats (gear/milestones in, max HP not current), and `tierFor`
+maps teamThreat/partyThreat through bands <20/<40/<70/<110 %. Calibrated
+against simulator clearing levels with town-shelf gear; `[danger-report]`
+prints the matrix. `DungeonState` snapshots the tiers at entry (labels ==
+score credit for the run). Generation **v14** tags the recalibration on
+the scoreboard — generated output is byte-identical to v13.
+

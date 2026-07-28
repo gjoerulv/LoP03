@@ -4,6 +4,7 @@
 
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
+#include "game/Character.hpp"
 
 namespace cd::danger {
 
@@ -17,12 +18,6 @@ constexpr int kWMagic = 15;
 constexpr int kWDefense = 10;
 constexpr int kWSpeed = 8;
 constexpr int kStatDivisor = 10;
-
-// Depth baseline: the threat of a "Fair" encounter at a given depth.
-int baselineFor(int depth) {
-    const int d = depth < 1 ? 1 : depth;
-    return 50 + (d - 1) * 25;
-}
 
 int statThreat(const content::StatBlock& s) {
     return (kWHp * s.maxHp + kWAttack * s.attack + kWMagic * s.magic + kWDefense * s.defense +
@@ -95,21 +90,54 @@ int teamThreat(const dungeon::EnemyTeam& team, const content::ContentDatabase& d
     return sum * synergyPercent / 100 * team.statScalePct / 100;
 }
 
-Tier tierFor(int threat, int depth, bool isBoss) {
+int memberThreat(const Character& c) {
+    // The member's DERIVED stats (gear and milestones already folded in by
+    // refreshCharacter); max HP, not current — the tier rates the matchup.
+    content::StatBlock s;
+    s.maxHp = c.maxHp;
+    s.attack = c.stats.attack;
+    s.magic = c.stats.magic;
+    s.defense = c.stats.defense;
+    s.speed = c.stats.speed;
+    return statThreat(s);
+}
+
+int partyThreat(const std::vector<Character>& members) {
+    int sum = 0;
+    for (const Character& c : members) {
+        sum += memberThreat(c);
+    }
+    return sum;
+}
+
+// M68 party-relative bands, in percent of the party's own threat. Calibrated
+// against the simulator's clearing levels with town-shelf gear (the
+// [danger-report] battery prints the matrix): a party that BARELY clears its
+// dungeon reads the typical team Dangerous-to-Deadly; ~8-16 levels of geared
+// headroom bring the typical read down to Fair, with Dangerous/Deadly left
+// for the genuinely nasty compositions.
+namespace {
+constexpr int kTrivialBelow = 20;
+constexpr int kEasyBelow = 40;
+constexpr int kFairBelow = 70;
+constexpr int kDangerousBelow = 110;
+}  // namespace
+
+Tier tierFor(int threat, int partyThreatValue, bool isBoss) {
     if (isBoss) {
         return Tier::Boss;
     }
-    const int baseline = baselineFor(depth);
-    const int ratio = threat * 100 / std::max(1, baseline);
-    if (ratio < 60) return Tier::Trivial;
-    if (ratio < 90) return Tier::Easy;
-    if (ratio < 130) return Tier::Fair;
-    if (ratio < 180) return Tier::Dangerous;
+    const int ratio = threat * 100 / std::max(1, partyThreatValue);
+    if (ratio < kTrivialBelow) return Tier::Trivial;
+    if (ratio < kEasyBelow) return Tier::Easy;
+    if (ratio < kFairBelow) return Tier::Fair;
+    if (ratio < kDangerousBelow) return Tier::Dangerous;
     return Tier::Deadly;
 }
 
-Tier assess(const dungeon::EnemyTeam& team, int depth, const content::ContentDatabase& db) {
-    return tierFor(teamThreat(team, db), depth, team.isBoss);
+Tier assess(const dungeon::EnemyTeam& team, const content::ContentDatabase& db,
+            int partyThreatValue) {
+    return tierFor(teamThreat(team, db), partyThreatValue, team.isBoss);
 }
 
 }  // namespace cd::danger

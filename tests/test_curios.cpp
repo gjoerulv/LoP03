@@ -33,7 +33,7 @@ content::ContentDatabase loadContent() {
 
 TEST_CASE("curios: the chart and the buried spot seed deterministically",
           "[curio][generation]") {
-    CHECK(dungeon::kGenerationVersion == 13);  // the exact pin rides the newest bump
+    CHECK(dungeon::kGenerationVersion >= 13);  // the exact pin rides the newest bump (M68)
     const content::ContentDatabase db = loadContent();
     int withChart = 0;
     const int samples = 200;

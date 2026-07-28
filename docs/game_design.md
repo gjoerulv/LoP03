@@ -185,9 +185,14 @@ stay comparable.
 ## 7. Danger rating (derived, never hand-authored)
 
 Displayed danger is computed **deterministically from enemy stats and abilities**
-(HP, Attack, Magic, Defense, Speed, skill threat, team synergy), may be compared
-to a dungeon-depth baseline, and maps to tiers: **Trivial, Easy, Fair,
-Dangerous, Deadly, Boss**. Formula is explicit and unit-tested (M6).
+(HP, Attack, Magic, Defense, Speed, skill threat, team synergy) and, since M68
+(owner decision), compared to the **current party's own derived strength** —
+"Deadly" means deadly for THIS party, and the same team reads easier as the
+party grows. Tiers: **Trivial, Easy, Fair, Dangerous, Deadly, Boss**;
+snapshotted once at dungeon entry so the labels and the danger-defeated score
+credit agree for the whole run (generation v14 tags the recalibration on the
+scoreboard). Formula is explicit and unit-tested (M6; recalibrated M68 via the
+`[danger-report]` battery).
 
 ## 8. Combat
 
@@ -196,6 +201,12 @@ enemy team 1–5. Commands: **Attack, Skill/Magic, Item, Guard, Escape**. KO and
 revive exist; game over if all party KO. **Every** encounter (incl. bosses) is
 escapable. Escaping a normal battle forfeits that guarded chest/reward; escaping
 the boss or leaving the dungeon gives **0 dungeon score**.
+
+**Victory spoils (M68).** A won dungeon battle ends on a compact results
+panel over the battlefield — XP and gold received, plus a diff block for
+every member that leveled (stat gains, newly learned skills) — dismissed by
+the same single Confirm that always ended a battle; no extra screen, no
+extra presses. Castle-tier fights keep their own flat rewards.
 
 **Status effects (M35, extends M7).** Beyond poison and the attack/defense
 buffs/debuffs, three afflictions deepen the tactics. **Blind** makes a unit's
