@@ -1997,3 +1997,15 @@ prints the matrix. `DungeonState` snapshots the tiers at entry (labels ==
 score credit for the run). Generation **v14** tags the recalibration on
 the scoreboard — generated output is byte-identical to v13.
 
+## 26. M69 — town exteriors
+
+Presentation-only. `TownState` draws a per-structure exterior sprite
+(`structureSpriteId`: `building.<service>` 48×32 over the 3×2 blocks;
+`prop.scoreboard` 32×32; `prop.save_crystal` 16×16) over the generic
+Building tiles, which remain the fallback; the `Door` interact tile
+renders as the path (a doorstep — the visible door lives in the facade).
+`TownData` shrank the two monuments (Scoreboard 2×2, Save Point 1×1);
+the seven-`Building` contract, door-trigger mechanics, and the `[town]`
+layout invariants are unchanged. Sprites come from the generator's M69
+section (appended + reseeded; prior files byte-identical).
+

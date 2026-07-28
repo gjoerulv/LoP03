@@ -102,11 +102,13 @@ learning + a party panel; the town puzzle map; the dungeon treasure map —
 plan approved with the 54-entry bonus table), followed on 2026-07-28 by
 **M67** (an owner feedback batch from the manual pass: class portraits,
 party-panel descriptions, load-screen fixes, and the boss-victory
-return-to-town bug) and **M68** (the victory spoils panel + the
-party-relative threat recalibration, generation 14). M59–M68 ALL sit at
+return-to-town bug), **M68** (the victory spoils panel + the
+party-relative threat recalibration, generation 14), and **M69** (the
+town exteriors — real facades, the scoreboard stele, the save crystal).
+M59–M69 ALL sit at
 `implemented, awaiting manual approval`; then M23 → M24, and nothing else
 stands before them.**
-When M59–M68 close, both M23 and M24 must be re-audited against the
+When M59–M69 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**83
 scenes** as of M68), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
@@ -115,6 +117,7 @@ and the M61–M68 `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/
 account for everything the
 expansions added (the relic prop, three class sprites, two Royal Guard
 sprites, the M62 goose/duck sprites and Duck theme, `data/milestones.json`,
+the M69 town facades + scoreboard stele + save crystal,
 and the `profile.json` user-data file). The M49 castle retune (Boss Rush 580 % /
 King 500 % / Endless 500 % +10 %pts per wave, level cap 99) is the balance
 baseline M23 playtests should judge; the M54 equipment rebalance is the gear
@@ -2705,3 +2708,20 @@ running scope: the sections below.
   **Closing verification: 601/601 Debug and 597/597 Release tests green;
   `--capture` 83/83 scenes clean.**
 - **Milestone note:** `docs/milestone_notes/M68_spoils_threat.md`
+
+## M69 — Town exteriors (owner feedback, 2026-07-29)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-29. The five service buildings draw real 48×32 **facades**
+  (per-service roofs, lit windows, emblem pennants, the door integrated
+  into the middle tile) over their Building blocks, and the old
+  door-on-the-ground tile renders as the **doorstep path** — nothing
+  sticks out of the houses anymore. The **Scoreboard** became a
+  freestanding engraved stone-sheet stele (2×2) and the **Save Point** a
+  cyan crystal (1×1); interact tiles and all mechanics unchanged, freed
+  tiles walkable, missing textures fall back to the old blocks. Seven new
+  generated sprites (generator appended + reseeded; all prior assets
+  byte-identical). No rules/generation/schema/save changes.
+  **Closing verification: 601/601 Debug and 597/597 Release tests green;
+  `--capture` 83/83 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M69_town_exteriors.md`

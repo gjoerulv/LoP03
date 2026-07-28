@@ -18,6 +18,12 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M69 update:** town exteriors — row 163 (real service facades with
+> integrated doors + doorstep tiles, the scoreboard stele, the save
+> crystal; screenshots `06_town.png` / `25_town_ladder.png`). Older town
+> rows' "building blocks + door tile" descriptions are superseded by the
+> facade look; mechanics unchanged.
+>
 > **M68 update:** victory spoils + threat recalibration — rows 161–162
 > (the results panel on the battle's Done beat with level-up diffs; the
 > party-relative danger tiers, generation v14; capture scene
@@ -494,6 +500,7 @@ sound fires.
 | 160 | Chart prompt un-latches (M67) | find an M66 chart; walk ACROSS its tile without pressing Confirm; step off; open a chest and start a battle; step back on and read it; repeat for the buried X | not run | not run | the "Read the weathered map" / "Dig up" footer prompt shows **only while standing on the tile** and vanishes on step-off; Confirm still opens chests and starts battles afterwards (it used to be silently swallowed for the rest of the run); standing back on the tile reads/digs normally | footer prompt swaps correctly | chest sfx on read/dig | — | not run |
 | 161 | Victory spoils panel (M68) | win a gate fight without level-ups; win one that levels 1+ members (a fresh party gains levels fast); win a boss fight; try a castle challenge | not run | not run | a compact panel over the battlefield shows `+N XP each  +N gold` (plus, per leveled member: `Name Lv.a > b`, the non-zero stat gains, `New:` skills in gold); **ONE Confirm continues — the exact press that always ended a battle**; the dungeon HUD message no longer repeats the reward; a level past 10/20/30 prompts the milestone choice right after the battle; castle fights show no spoils panel; a diff cross-checks against the Party panel. **Judge the panel's feel — it must not slow the loop** | panel fits over four leveled 12-char members | victory jingle unchanged | 83_battle_spoils.png | not run |
 | 162 | Party-relative threat labels (M68) | with your strong party, enter a dungeon you find easy and read every team label (Guild preview + in-dungeon); repeat with a fresh/underleveled party on a hard town; level mid-run and re-read a label | not run | not run | the strong party reads mostly **Trivial/Easy/Fair** with Dangerous/Deadly only on genuinely nasty teams (the old build read nearly everything Deadly at towns 3+); the weak party reads the same seeds Dangerous/Deadly; labels do NOT shift mid-run (snapshotted at entry — by design, so the score credit matches the preview); new scoreboard entries tag **v14**. **Judge the calibration bands** | labels readable everywhere they show | n/a | — | not run |
+| 163 | Town exteriors (M69) | walk every town: enter all five services via their doorsteps; interact with the Scoreboard stele and the Save crystal; check towns 2–7 | not run | not run | the five houses read as real buildings — per-service roof colors, lit windows, an emblem pennant, the **door built into the facade** with a path doorstep below (no door tile sticking out); the Scoreboard is a freestanding engraved stone sheet (2×2) and the Save Point a cyan crystal (1×1), both interacted from the tile in front; every entrance/interaction works exactly as before; the freed ground tiles are walkable; facades sit acceptably on the darker per-town ground. **Art judgment is the owner's — roofs, pennants, stele, crystal** | labels + facades read at 426×240 | door sfx unchanged | 06_town.png | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 

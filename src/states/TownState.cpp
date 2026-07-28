@@ -61,7 +61,8 @@ Color tileColor(town::Tile tile) {
         case town::Tile::Tree: return Color{30, 66, 40, 255};
         case town::Tile::Water: return Color{52, 84, 150, 255};
         case town::Tile::Building: return Color{112, 100, 120, 255};
-        case town::Tile::Door: return Color{156, 112, 70, 255};
+        // M69: the interact tile reads as the doorstep path, not a flat door.
+        case town::Tile::Door: return Color{120, 108, 80, 255};
     }
     return BLACK;
 }
@@ -76,7 +77,7 @@ const char* tileKind(town::Tile tile) {
         case town::Tile::Tree: return "tree";
         case town::Tile::Water: return "water";
         case town::Tile::Building: return "building";
-        case town::Tile::Door: return "door";
+        case town::Tile::Door: return "path";  // M69: doorstep, not a flat door
     }
     return "ground";
 }
@@ -89,9 +90,28 @@ const char* tileTextureId(town::Tile tile) {
         case town::Tile::Tree: return "tiles.town.tree";
         case town::Tile::Water: return "tiles.town.water";
         case town::Tile::Building: return "tiles.town.building";
-        case town::Tile::Door: return "tiles.town.door";
+        // M69: the doors moved INTO the facades (structureSpriteId below); the
+        // trigger tile itself is the doorstep.
+        case town::Tile::Door: return "tiles.town.path";
     }
     return "";
+}
+
+// M69: the structure's exterior, drawn over its Building tiles — the five
+// south-facing facades with integrated doors, the scoreboard stele, and the
+// save crystal. The generic Building tiles beneath remain the fallback for a
+// missing texture.
+const char* structureSpriteId(town::LocationId id) {
+    switch (id) {
+        case town::LocationId::Inn: return "building.inn";
+        case town::LocationId::ItemShop: return "building.item_shop";
+        case town::LocationId::EquipShop: return "building.equip_shop";
+        case town::LocationId::Guild: return "building.guild";
+        case town::LocationId::TrainingHall: return "building.training_hall";
+        case town::LocationId::Scoreboard: return "prop.scoreboard";
+        case town::LocationId::SavePoint: return "prop.save_crystal";
+    }
+    return nullptr;
 }
 
 const char* walkAnimId(render::Facing f) {
@@ -436,6 +456,14 @@ void TownState::render() {
             } else {
                 DrawRectangle(ox + tx * ts, oy + ty * ts, ts, ts, tileColor(tile));
             }
+        }
+    }
+
+    // M69: the structures' real exteriors, over their generic Building tiles.
+    for (const town::Building& b : town_.buildings) {
+        const char* spr = structureSpriteId(b.id);
+        if (spr != nullptr && context_.resources.hasTexture(spr)) {
+            DrawTexture(context_.resources.texture(spr), ox + b.x * ts, oy + b.y * ts, WHITE);
         }
     }
 

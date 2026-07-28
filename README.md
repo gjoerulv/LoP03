@@ -40,9 +40,11 @@ music, or text. Built in **C++20** with **raylib**.
 > collectable curios, the Curator achievement), plus the **M67 polish
 > batch** (class portraits across the menus, milestone/passive
 > descriptions in the party panel, load-screen fixes, and the
-> boss-victory return-to-town fix) and **M68** (a victory spoils panel
+> boss-victory return-to-town fix), **M68** (a victory spoils panel
 > with level-up diffs on the battle's own final beat, and threat labels
-> recalibrated to be relative to YOUR party). After those, only the
+> recalibrated to be relative to YOUR party), and **M69** (real town
+> facades with integrated doors; the Scoreboard as a stone monument and
+> the Save Point as a crystal). After those, only the
 > deferred **validation playtesting (M23)** and **release sign-off (M24)**
 > remain. Current status always lives in `docs/milestones.md`.
 

@@ -205,6 +205,14 @@
     { "id": "marker.enemy.elite", "type": "texture", "path": "textures/props/enemy_elite.png" },
     { "id": "marker.enemy.boss", "type": "texture", "path": "textures/props/enemy_boss.png" },
 
+    { "id": "building.inn", "type": "texture", "path": "textures/environments/town_facade_inn.png" },
+    { "id": "building.item_shop", "type": "texture", "path": "textures/environments/town_facade_item_shop.png" },
+    { "id": "building.equip_shop", "type": "texture", "path": "textures/environments/town_facade_equip_shop.png" },
+    { "id": "building.guild", "type": "texture", "path": "textures/environments/town_facade_guild.png" },
+    { "id": "building.training_hall", "type": "texture", "path": "textures/environments/town_facade_training_hall.png" },
+    { "id": "prop.scoreboard", "type": "texture", "path": "textures/props/scoreboard_stele.png" },
+    { "id": "prop.save_crystal", "type": "texture", "path": "textures/props/save_crystal.png" },
+
     { "id": "bg.inn", "type": "texture", "path": "textures/backgrounds/inn.png" },
     { "id": "bg.item_shop", "type": "texture", "path": "textures/backgrounds/item_shop.png" },
     { "id": "bg.equip_shop", "type": "texture", "path": "textures/backgrounds/equip_shop.png" },
