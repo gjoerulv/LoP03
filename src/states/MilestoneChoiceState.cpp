@@ -99,6 +99,9 @@ void MilestoneChoiceState::render() {
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
+    // M67: who is choosing, at a glance — the class portrait in the header
+    // corner (the centered text keeps well clear of it).
+    ui::drawActorPortrait(context_.resources, c.classId, boxX + 8, boxY + 7, 1);
     ui::drawTextCentered(TextFormat("LEVEL %d MILESTONE", tier_), w / 2, boxY + 10, 14, p.gold);
     ui::drawTextCentered((c.name + " chooses a permanent bonus.").c_str(), w / 2, boxY + 28, 10,
                          p.textDim);

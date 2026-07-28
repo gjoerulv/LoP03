@@ -909,4 +909,10 @@ bars held throughout: every combat rule in shared `battle::` code (rules
 other rolls of a seed byte-identical), every save field optional and
 defensively dropped, and the capture lint as the layout referee.
 
-M23 → M24 run after M66, re-audited against the then-current checkout.
+M67 (2026-07-28) followed as the owner's manual-pass feedback batch: class
+portraits across the menu screens, milestone/passive descriptions in the
+party panel, the load-screen fixes, and the boss-victory return-to-town
+unwind — polish that makes the M62–M66 systems legible before they are
+judged.
+
+M23 → M24 run after M67, re-audited against the then-current checkout.

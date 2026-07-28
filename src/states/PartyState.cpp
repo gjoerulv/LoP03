@@ -1,5 +1,6 @@
 #include "states/PartyState.hpp"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "resource/ResourceManager.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -101,10 +103,12 @@ void PartyState::handleInput(const Input& input) {
                     const content::SkillDef* skill = context_.content.findSkill(item->grantsSkill);
                     message_ = c.name + " learns " +
                                (skill != nullptr ? skill->name : item->grantsSkill) + "!";
+                    messageIsError_ = false;
                     context_.audio.play(Sfx::Heal);
                     phase_ = Phase::Browse;
                 } else {
                     message_ = refusal;
+                    messageIsError_ = true;
                     context_.audio.play(Sfx::Error);
                 }
             }
@@ -128,6 +132,7 @@ void PartyState::handleInput(const Input& input) {
         rebuildScrolls();
         if (scrollIds_.empty()) {
             message_ = "No teaching scrolls in the bag.";
+            messageIsError_ = true;
             context_.audio.play(Sfx::Error);
         } else {
             context_.audio.play(Sfx::Confirm);
@@ -157,12 +162,18 @@ void PartyState::render() {
         if (static_cast<int>(i) == cursor_) {
             ui::drawSelectionSlab(listX - 2, y - 2, 124, 24);
         }
-        ui::drawTextFitted(c.name, listX + 4, y, 112, 11,
+        // M67: each row leads with the class battle sprite — the party menu's
+        // graphical representation of the character.
+        const std::string sprId = "actor." + c.classId + ".battle";
+        if (context_.resources.hasTexture(sprId)) {
+            DrawTexture(context_.resources.texture(sprId), listX + 2, y - 2, WHITE);
+        }
+        ui::drawTextFitted(c.name, listX + 30, y, 86, 11,
                            static_cast<int>(i) == cursor_ ? p.text : p.textDim, "party.name");
         const content::ClassDef* cls = db.findClass(c.classId);
         ui::drawTextFitted(TextFormat("Lv.%d %s", c.level,
                                       cls != nullptr ? cls->name.c_str() : c.classId.c_str()),
-                           listX + 4, y + 12, 112, 8, p.textHint, "party.class");
+                           listX + 30, y + 12, 86, 8, p.textHint, "party.class");
     }
 
     if (members.empty()) {
@@ -170,58 +181,83 @@ void PartyState::render() {
     }
     const Character& c = members[static_cast<std::size_t>(cursor_)];
 
-    // Detail (right).
+    // Detail (right). M67: tighter pitches buy room for the milestone and
+    // passive descriptions (owner ask); the frame grew 2px so the skills block
+    // keeps its line budget.
     const int dx = 150;
     const int dw = w - dx - 10;
-    ui::drawFrame(dx - 6, listY - 6, dw + 8, 182, ui::FrameStyle::Standard);
+    ui::drawFrame(dx - 6, listY - 6, dw + 8, 184, ui::FrameStyle::Standard);
+    const int bottom = listY - 6 + 184 - 6;  // inner floor of the detail frame
     int y = listY + 2;
     const content::StatBlock gear = gearBonus(c, db);
     ui::drawText(TextFormat("HP %d/%d   MP %d/%d", c.hp, c.maxHp, c.mp, c.maxMp), dx, y, 10,
                  p.text);
-    y += 13;
+    y += 12;
     ui::drawText(TextFormat("XP %d  (next Lv: %d)", c.xp,
                             c.level >= kMaxLevel ? 0 : xpToNext(c.level) - c.xp),
                  dx, y, 8, p.textDim);
-    y += 13;
+    y += 11;
     ui::drawTextFitted(statLine("ATK", c.stats.attack, gear.attack), dx, y, dw / 2 - 4, 9, p.text,
                        "party.stat");
     ui::drawTextFitted(statLine("MAG", c.stats.magic, gear.magic), dx + dw / 2, y, dw / 2 - 4, 9,
                        p.text, "party.stat");
-    y += 12;
+    y += 11;
     ui::drawTextFitted(statLine("DEF", c.stats.defense, gear.defense), dx, y, dw / 2 - 4, 9,
                        p.text, "party.stat");
     ui::drawTextFitted(statLine("SPD", c.stats.speed, gear.speed), dx + dw / 2, y, dw / 2 - 4, 9,
                        p.text, "party.stat");
-    y += 14;
+    y += 12;
     ui::drawTextFitted("Weapon: " + itemName(db, c.weapon), dx, y, dw, 8, p.textDim,
                        "party.gear");
-    y += 11;
+    y += 10;
     ui::drawTextFitted("Armor: " + itemName(db, c.armor) + "   Acc: " + itemName(db, c.accessory),
                        dx, y, dw, 8, p.textDim, "party.gear");
-    y += 11;
+    y += 10;
     const content::PassiveDef* passive =
         c.equippedPassive.empty() ? nullptr : db.findPassive(c.equippedPassive);
     ui::drawTextFitted("Passive: " + std::string(passive != nullptr ? passive->name : "-") +
                            TextFormat("  (owned %d)", static_cast<int>(c.ownedPassives.size())),
                        dx, y, dw, 8, p.textDim, "party.passive");
-    y += 13;
+    y += 9;
+    if (passive != nullptr && !passive->description.empty()) {
+        // M67: what the equipped passive does, in the hint colour.
+        ui::drawTextFitted(passive->description, dx + 8, y, dw - 8, 8, p.textHint,
+                           "party.passive.desc");
+        y += 9;
+    }
 
-    // Milestone choices (M63).
-    std::string milestones;
+    // Milestone choices (M63) — M67: each chosen bonus shows its name and, in
+    // the hint colour, what it does; unreached/unchosen tiers stay compact.
+    bool anyTier = false;
+    std::string unchosen;
     for (int tier : kMilestoneTiers) {
         const content::MilestoneDef* m = chosenMilestone(c, tier, db);
         if (m != nullptr) {
-            milestones += (milestones.empty() ? "" : ", ") + m->name;
+            anyTier = true;
+            ui::drawTextFitted(TextFormat("Lv.%d  %s", tier, m->name.c_str()), dx, y, dw, 8,
+                               p.text, "party.milestone");
+            y += 9;
+            ui::drawTextFitted(m->description, dx + 8, y, dw - 8, 8, p.textHint,
+                               "party.milestone.desc");
+            y += 9;
         } else if (c.level >= tier) {
-            milestones += (milestones.empty() ? "" : ", ") + std::string("Lv.") +
-                          std::to_string(tier) + " unchosen";
+            anyTier = true;
+            unchosen += (unchosen.empty() ? "" : ", ") + std::string("Lv.") + std::to_string(tier);
         }
     }
-    ui::drawTextWrapped("Milestones: " + (milestones.empty() ? "none yet" : milestones), dx, y,
-                        dw, 8, p.textDim, "party.milestones", 2);
-    y += 22;
+    if (!unchosen.empty()) {
+        ui::drawTextFitted("Milestone unchosen: " + unchosen, dx, y, dw, 8, p.textHint,
+                           "party.milestone");
+        y += 9;
+    }
+    if (!anyTier) {
+        ui::drawText("Milestones: none yet", dx, y, 8, p.textDim);
+        y += 9;
+    }
+    y += 2;
 
-    // Every known skill; scroll-learned extras are marked.
+    // Every known skill; scroll-learned extras are marked. The line budget is
+    // whatever the descriptions above left inside the frame.
     std::string skills;
     const std::vector<std::string> known = allKnownSkills(c, db);
     for (const std::string& id : known) {
@@ -232,12 +268,16 @@ void PartyState::render() {
         }
         skills += (skills.empty() ? "" : ", ") + name;
     }
+    const int skillLines = std::max(2, (bottom - y) / ui::lineHeight(8));
     ui::drawTextWrapped("Skills: " + (skills.empty() ? "none" : skills) +
                             (c.extraSkills.empty() ? "" : "   (* from a scroll)"),
-                        dx, y, dw, 8, p.text, "party.skills", 4);
+                        dx, y, dw, 8, p.text, "party.skills", skillLines);
 
     if (!message_.empty()) {
-        ui::drawTextCentered(message_.c_str(), w / 2, h - 40, 9, p.gold);
+        // M67: overlay banner (the equip-shop toast idiom) — the old centered
+        // line at the panel floor now collides with the taller detail text.
+        ui::drawBanner(messageIsError_ ? ui::BannerKind::Danger : ui::BannerKind::Success,
+                       message_, 60, 40, w - 120, "party.message");
     }
 
     if (phase_ == Phase::PickScroll) {

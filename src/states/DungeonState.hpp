@@ -113,6 +113,10 @@ private:
     int pendingTeamIndex_ = -1;
     dungeon::Dir pendingGateDir_ = dungeon::Dir::North;
     battle::BattleResult battleResult_;
+    // M67: set by completeDungeon. The next resume pops this state, so the
+    // return to town survives anything pushed between the dungeon and the
+    // result screen (the M63 level-up modal a boss kill can wedge there).
+    bool runComplete_ = false;
 
     std::string message_;
     float messageTimer_ = 0.0f;

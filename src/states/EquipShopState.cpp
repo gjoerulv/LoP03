@@ -378,6 +378,22 @@ void EquipShopState::render() {
                          style::kFontMenu, 300, p.text, p.disabled, p.cursor,
                          "equipshop.list", style::kFontSmall, p.gold);
 
+    // M67: the member being outfitted rides the free column right of the list —
+    // the highlighted row while choosing, then the chosen member through the
+    // slot and item phases.
+    int portraitChar = -1;
+    if (phase_ == Phase::EquipChar) {
+        portraitChar = menu_.cursor();
+    } else if (phase_ == Phase::EquipSlot || phase_ == Phase::EquipItem) {
+        portraitChar = selectedChar_;
+    }
+    if (portraitChar >= 0 && portraitChar < static_cast<int>(context_.party.members.size())) {
+        ui::drawActorPortrait(
+            context_.resources,
+            context_.party.members[static_cast<std::size_t>(portraitChar)].classId,
+            kListX - 24 + 352 + 3, kListY - 8, 2);
+    }
+
     // Detail panel for the selected piece of gear (Buy and EquipItem phases).
     const int infoY = kListY + kVisibleRows * kListItemH + 12;
     if (phase_ == Phase::Buy || phase_ == Phase::EquipItem) {

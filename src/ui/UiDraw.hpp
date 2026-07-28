@@ -43,6 +43,16 @@ void drawSceneBackground(ResourceManager& resources, const std::string& id, Colo
 void drawSceneBackground(ResourceManager& resources, const std::string& id, Color fallback,
                          int w, int h, int town);
 
+// Class portrait (M67): the character's "actor.<classId>.battle" sprite inside
+// a small Inset frame, scaled point-crisp. The framed box is
+// kPortraitSprite * scale + 2 * kPortraitPad square; a missing texture leaves
+// just the empty frame (placeholder discipline — never a crash).
+inline constexpr int kPortraitSprite = 24;
+inline constexpr int kPortraitPad = 3;
+constexpr int portraitBox(int scale) { return kPortraitSprite * scale + 2 * kPortraitPad; }
+void drawActorPortrait(ResourceManager& resources, const std::string& classId, int x, int y,
+                       int scale);
+
 // Installs the active UI fonts (M25): text is rendered with the base font
 // whose native size is nearest the requested size, so pixel glyphs stay crisp
 // (small=8, main=10, title=20). Any pointer may be null and any size with no

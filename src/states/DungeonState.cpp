@@ -265,6 +265,8 @@ bool DungeonState::captureFaceEvent(dungeon::RoomEventKind kind) {
 void DungeonState::recomputeInteraction(int tx, int ty) {
     onChest_ = false;
     onMapPiece_ = false;  // M65
+    onChart_ = false;     // M66 (M67 fix: these latched on forever once
+    onBuried_ = false;    // touched — a stuck prompt that also ate Confirm)
     facingMarker_ = nullptr;
     for (const Marker& m : markers_) {
         if (m.kind == MarkerKind::Chest && m.x == tx && m.y == ty) {
@@ -692,6 +694,14 @@ void DungeonState::onEnter() {
 }
 
 void DungeonState::onResume() {
+    // M67: the run ended behind the result screen. The result pops only itself;
+    // any state wedged between (the M63 milestone modal a boss kill pushes) gets
+    // its turn on top, and once control falls back here the dungeon removes
+    // itself — the player always lands in town.
+    if (runComplete_) {
+        stack().popState();
+        return;
+    }
     // M55: a pushed sub-state (the Armory Ghost picker) may have resolved the
     // event the player is standing at; rebuild so its marker clears. Only touches
     // a resolved event room, so it is harmless after a battle resume.
@@ -773,7 +783,9 @@ void DungeonState::onResume() {
         if (xp > 0) {
             reward = TextFormat(" (+%d XP, +%dg)", xp, gold);
         }
-        maybePushMilestoneChoice(stack(), context_);  // M63: the level-up moment
+        // M63: the level-up moment. On a boss kill the modal lands under the
+        // result screen and surfaces right after it closes (M67 unwind order).
+        maybePushMilestoneChoice(stack(), context_);
     }
 
     dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(pendingRoom_)];
@@ -813,6 +825,7 @@ void DungeonState::onResume() {
 }
 
 void DungeonState::completeDungeon() {
+    runComplete_ = true;  // M67: the next resume of this state pops it (see onResume)
     score::RunSummary summary;
     summary.completed = true;
     summary.battleTurns = run_.battleTurns;

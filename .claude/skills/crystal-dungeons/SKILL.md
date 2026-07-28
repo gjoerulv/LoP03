@@ -162,7 +162,7 @@ Asset generators (deterministic; reruns byte-identical):
 12. **Generation changes need a version bump.** Anything that alters what a
     seed produces (generator code OR composition/data curves — including item
     prices, which the dungeon merchant derives its offer from) bumps
-    `dungeon::kGenerationVersion` (currently 11; battle rules are at 12 —
+    `dungeon::kGenerationVersion` (currently 13; battle rules are at 14 —
     the history comments in `src/dungeon/RoomLayout.hpp` and
     `src/battle/Battle.hpp` are the authorities) — the scoreboard tags it
     for comparability. Owner-gated.
@@ -209,11 +209,13 @@ Milestones: `docs/milestones.md` is the single source for statuses — trust it
 over any restatement, including this one. Everything through **M58** is
 `complete (approved)` (the expansion programs M35–M42, M43–M45, M46, M47–M51,
 M52, M53–M56, M57 and M58 — the last approved 2026-07-24 — are all closed);
-**M59–M61** (the CrystalForge editor and Goose Town & the Deadly Duck) sit at
+**M59–M67** (the CrystalForge editor, Goose Town & the Deadly Duck, the
+M62–M66 program — Duck stagecraft, class milestones, scrolls + party panel,
+the two treasure-map systems — and the M67 polish batch) sit at
 `implemented, awaiting manual approval`. The M46 UI kit
 (`docs/ui_style_guide.md`) binds all UI work; the M49 castle retune (Boss
 Rush 580 % / King 500 % / Endless +10 %pts per wave, level cap 99) plus the
-M54 equipment rebalance are the balance baseline. After M59–M61, only the
+M54 equipment rebalance are the balance baseline. After M59–M67, only the
 deliberately deferred **M23** (validation/playtesting/balance) and **M24**
 (release packaging) remain, in that order: their tooling and packaging are
 built (v0.9.0 RC flow), awaiting owner-run external playtests

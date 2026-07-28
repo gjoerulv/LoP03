@@ -58,7 +58,9 @@ level cap each class commands roughly six to seven skills.
 **Level milestones (M63).** At levels **10, 20 and 30** every character —
 all nine classes, the joke classes included — chooses **one of two
 permanent class bonuses** at the level-up moment (a modal; postponing is
-allowed and it simply re-asks at the next level-up or town visit). The
+allowed and it simply re-asks at the next level-up or town visit; a level
+gained on the boss kill itself asks right after the run's result screen,
+on the way back to town — M67). The
 choices are authored in `data/milestones.json` (owner-approved table:
 stat percents, damage/heal modifiers, granted passive traits, and signature
 effects like the Guardian's first-hit-glances-off, the Ranger's double
@@ -74,7 +76,9 @@ chosen character learn its skill **permanently** — any class, any scroll
 already knows it, so a scroll is never wasted. The Party panel itself is
 the party's ledger: stats with the gear share spelled out, equipment,
 passives, milestone choices, and every known skill (scroll-learned ones
-marked). The M65 treasure maps pay exclusive scrolls into this same system.
+marked); since M67 every member row carries its class sprite and the
+equipped passive and chosen milestones show their descriptions in place.
+The M65 treasure maps pay exclusive scrolls into this same system.
 
 **Passive skills (M36).** Beyond skills, each character can carry a **passive** —
 an always-on battle trait bought at the Training Hall for gold. The economy is

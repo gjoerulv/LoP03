@@ -1950,3 +1950,27 @@ token), deterministic per (owned, theme, seed). `Party.ownedCurios`
 (optional save field, table-validated on load); the 18th achievement
 **Curator**; the Maps screen's masked collection grid.
 
+## 24. M67 — UI polish & the run-complete unwind
+
+Owner feedback batch; no rules/generation/schema/save motion.
+`ui::drawActorPortrait` (UiDraw) frames the existing
+`actor.<classId>.battle` sprites as menu portraits (see
+`docs/ui_style_guide.md` §9) — party panel rows, Training Hall, milestone
+modal, Equip Shop equip phases. The party panel renders milestone/passive
+descriptions in the hint colour with a computed skills wrap budget; the
+slot screens dropped the constant party-size column and contain the King
+title inside a two-line slab. **Run-complete unwind:** `completeDungeon()`
+sets `DungeonState::runComplete_`; `DungeonResultState` pops only itself
+and `DungeonState::onResume` pops itself when the flag is set. Rationale:
+a boss kill grants XP before `completeDungeon()`, so the M63 level-up
+modal can legally sit between the dungeon and the result — blind
+double-popping from the result destroyed that modal and stranded the
+player in the dungeon. Any state wedged between now runs on top after the
+result closes, and the dungeon always unwinds to town. States must NOT
+assume what lies beneath them on the stack; pop only what they own.
+Also fixed here: `recomputeInteraction` now resets the M66
+`onChart_`/`onBuried_` stand-on flags per step like the others — they used
+to latch on first touch, sticking the footer prompt and swallowing Confirm
+for the rest of the run. Every stand-on flag must be recomputed from
+scratch each step; never add one without its reset.
+

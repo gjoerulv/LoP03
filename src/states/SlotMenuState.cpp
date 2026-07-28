@@ -20,7 +20,9 @@ namespace {
 std::string slotLabel(save::SaveSystem& saves, save::SaveSlot slot) {
     std::string label = save::slotDisplayName(slot);
     if (auto s = saves.summary(slot)) {
-        label += TextFormat("  -  Lv.%d  party %d  %dg", s->highestLevel, s->partySize, s->gold);
+        // M67: the party is always four strong, so the old "party 4" column
+        // said nothing — level and gold carry the slot's identity.
+        label += TextFormat("  -  Lv.%d  %dg", s->highestLevel, s->gold);
     } else {
         label += "  -  (empty)";
     }
@@ -159,15 +161,19 @@ void SlotMenuState::render() {
     for (std::size_t i = 0; i < items.size(); ++i) {
         const int y = kRowsY + static_cast<int>(i) * kRowH;
         const bool isCursor = static_cast<int>(i) == menu_.cursor();
+        const bool hasTitle = i < titles_.size() && !titles_[i].empty();
         Color color = items[i].enabled ? p.text : p.disabled;
         if (isCursor && items[i].enabled) {
             color = p.cursor;
-            ui::drawSelectionSlab(kRowX - 14, y - 3, w - kRowX - 26, kRowH - 3);
+            // M67: a titled row's slab covers BOTH lines (the King title used
+            // to hang half outside it); 25 tall still clears the next label.
+            ui::drawSelectionSlab(kRowX - 14, y - 3, w - kRowX - 26,
+                                  hasTitle ? kRowH + 1 : kRowH - 3);
             ui::drawChevron(kRowX - 11, y + 1, p.cursor, ui::motionPhase());
         }
         ui::drawTextFitted(items[i].label, kRowX, y, w - kRowX - 48, 12, color, "slot.label");
-        if (i < titles_.size() && !titles_[i].empty()) {
-            ui::drawTextFitted(titles_[i], kRowX + 12, y + 13, w - kRowX - 60, 10,
+        if (hasTitle) {
+            ui::drawTextFitted(titles_[i], kRowX + 12, y + 12, w - kRowX - 60, 8,
                                p.gold, "slot.title");
         }
     }

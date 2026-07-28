@@ -37,7 +37,10 @@ music, or text. Built in **C++20** with **raylib**.
 > the two treasure-map systems: **M65's town puzzle map** (a HoMM2 homage —
 > four Secret Map Pieces reveal a boss-guarded dig paying exclusive Lost
 > Scrolls) and **M66's single-use dungeon charts** (a minimap X, twelve
-> collectable curios, the Curator achievement). After those, only the
+> collectable curios, the Curator achievement), plus the **M67 polish
+> batch** (class portraits across the menus, milestone/passive
+> descriptions in the party panel, load-screen fixes, and the
+> boss-victory return-to-town fix). After those, only the
 > deferred **validation playtesting (M23)** and **release sign-off (M24)**
 > remain. Current status always lives in `docs/milestones.md`.
 

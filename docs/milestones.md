@@ -99,10 +99,13 @@ editor with validation, a battle-sim lab, and a per-category test runner —
 M61, Goose Town & the Deadly Duck (2026-07-25), and on 2026-07-27 the
 M62–M66 program (fixes & Duck stagecraft; class level milestones; scroll
 learning + a party panel; the town puzzle map; the dungeon treasure map —
-plan approved with the 54-entry bonus table). M59–M66 ALL sit at `implemented,
+plan approved with the 54-entry bonus table), followed on 2026-07-28 by
+**M67** (an owner feedback batch from the manual pass: class portraits,
+party-panel descriptions, load-screen fixes, and the boss-victory
+return-to-town bug). M59–M67 ALL sit at `implemented,
 awaiting manual approval`; then M23 → M24, and nothing else stands before
 them.**
-When M59–M66 close, both M23 and M24 must be re-audited against the
+When M59–M67 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**82
 scenes** as of M66), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
@@ -2651,3 +2654,29 @@ running scope: the sections below.
 
 **Execution order:** M62 → M63 → M64 → M65 → M66, then M23 → M24
 (re-audited against the then-current checkout).
+
+## M67 — UI polish & the boss-return fix (owner feedback, 2026-07-28)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-28. The owner's manual-pass feedback batch: **class portraits**
+  (one `ui::drawActorPortrait` helper reusing the existing
+  `actor.<classId>.battle` sprites — no new assets) in the party panel's
+  member rows, the Training Hall (all three phases), the milestone modal's
+  header, and the Equipment Shop's equip phases; **milestone and passive
+  descriptions** in the party panel, hint-coloured under their names, with
+  the skills block's wrap budget computed from the space left; the Load
+  screen's King title now fully inside a two-line selection slab and the
+  constant "party 4" column removed. Plus the reported **boss-victory
+  bug**: the result screen's two blind pops could be absorbed by the M63
+  level-up modal a boss kill wedges beneath it, stranding the player in
+  the dungeon — the unwind is now `runComplete_`-driven (the result pops
+  itself; the dungeon pops itself on resume), so the boss-kill milestone
+  choice shows after the result and the player always lands in town. And
+  the reported **chart-prompt bug**: the M66 `onChart_`/`onBuried_` flags
+  were never reset per step, so one walk across the tile latched the
+  footer prompt for the rest of the run and silently swallowed Confirm
+  everywhere (`interact()` checks them first) — both now reset with the
+  other stand-on flags. No rules/generation/schema/save changes.
+  **Closing verification: 593/593 Debug and 589/589 Release tests green;
+  `--capture` 82/82 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M67_ui_polish.md`

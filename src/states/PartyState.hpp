@@ -39,6 +39,7 @@ private:
     ui::Menu scrollMenu_;
     std::vector<std::string> scrollIds_;  // parallel to scrollMenu_ rows
     std::string message_;
+    bool messageIsError_ = false;  // M67: banner kind for the feedback toast
 };
 
 }  // namespace cd

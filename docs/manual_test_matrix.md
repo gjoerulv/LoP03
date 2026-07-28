@@ -18,6 +18,15 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M67 update:** UI polish + two reported bugs — rows 157–160 (class
+> portraits on four screens; milestone/passive descriptions in the party
+> panel; the Load screen's slab-contained King title and dropped "party 4";
+> the boss-victory return-to-town unwind, including the milestone modal
+> now showing AFTER the result screen; the M66 chart/buried prompt no
+> longer latches and eats Confirm). Row 151's party-panel expectations
+> are superseded by row 158's added description checks; row 155 gains
+> row 160's step-off check.
+>
 > **M66 update:** the dungeon treasure map + curios — rows 155–156 (the
 > single-use chart, the minimap X, the twelve curios, Curator; capture
 > scene `82_curio_collection`; the capture set is **82 scenes**).
@@ -473,6 +482,10 @@ sound fires.
 | 154 | The dig & the Lost Scrolls (M65) | in the revealed town find the X **Dig Site**; lose once, then win; pick a member for the scroll; repeat cycles | not run | not run | the dig warns before the fight (guard + court at the final dungeon's scale, Crystal Shatter); defeat = 1-HP clamp and the map keeps the spot; victory forces an on-the-spot student pick (a knowing member refuses; another is picked); the skill appears (Party panel `*`, battle menu); six unique scrolls then token+gold; everything persists across save/reload. **Judge the ~10% piece rate and the guard difficulty** | picker + overlay fit | victory sfx | 81_treasure_dig.png | not run |
 | 155 | The dungeon chart (M66) | run dungeons until a cyan **M** scrap appears (~1 in 8); read it; follow the minimap X; dig; also once: leave the dungeon WITHOUT digging | not run | not run | reading reveals the X on the minimap + a gold "Treasure!" HUD chip; the buried room shows a red X; digging names a curio matching the run's theme (until its four are owned); leaving without digging loses the map with the run (single-use) | X visible on visited and unvisited rooms | chest sfx | — | not run |
 | 156 | Curios & Curator (M66) | check **Pause → Maps** in town after a few digs; complete all twelve (debug tools help); dig once more; save/reload | not run | not run | the collection grid names owned curios and masks the rest; **Curator** toasts at 12/12; the next buried treasure pays **+1 legendary token**; curios persist; the Maps screen (parchment + status + grid) stays uncluttered at 426×240. **Judge the ~12% chart rate and the screen density** | grid readable | achievement toast | 82_curio_collection.png | not run |
+| 157 | Boss victory returns to town (M67) | clear a dungeon boss with a member about to cross Lv.10/20/30 (or a postponed milestone pending); separately clear one with nothing pending | not run | not run | with a choice pending: result screen → "Return to Town" → the **milestone modal appears over the dungeon backdrop** → choose or postpone → you land in **town** (never back in the dungeon, no re-fightable boss, no double score); with nothing pending: result → town directly; defeat and Escape flows unchanged | modal + result both readable | result music, then town | 19_result.png | not run |
+| 158 | Class portraits & panel descriptions (M67) | open Party (both pause menus); Training Hall (member list, character menu, passives); level a member to a milestone; Equip Shop → Equip a member | not run | not run | every party-panel row leads with its class battle sprite; the equipped passive and each chosen milestone show a **hint-coloured description** under their name; unchosen reached tiers compress to "Milestone unchosen: Lv.N, …"; the Training Hall portrait follows the member-list cursor and pins on the later screens; the milestone modal carries the chooser's portrait; the Equip Shop portrait follows the cursor then pins through slot/item; Buy phases show none. **Judge whether the 2× portraits and the denser detail column read well** | nothing clips at 426×240 | n/a | 79_party_panel.png | not run |
+| 159 | Load-screen slot rows (M67) | open Load with occupied titled slots (post-King save); move the cursor across all six rows | not run | not run | rows read `Slot N  -  Lv.X  Ng` (no "party 4"); a titled row's King title sits **fully inside** the selection slab (both lines covered); untitled rows keep the shorter slab; nothing overlaps the next row | slab covers both lines | move sfx | 43_slot_menu_load.png | not run |
+| 160 | Chart prompt un-latches (M67) | find an M66 chart; walk ACROSS its tile without pressing Confirm; step off; open a chest and start a battle; step back on and read it; repeat for the buried X | not run | not run | the "Read the weathered map" / "Dig up" footer prompt shows **only while standing on the tile** and vanishes on step-off; Confirm still opens chests and starts battles afterwards (it used to be silently swallowed for the rest of the run); standing back on the tile reads/digs normally | footer prompt swaps correctly | chest sfx on read/dig | — | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 
