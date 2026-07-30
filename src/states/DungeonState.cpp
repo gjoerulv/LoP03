@@ -933,10 +933,11 @@ void DungeonState::completeDungeon() {
     stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total, drops,
                                                            victoryStats_));
 
-    // M71: a CLEAN run — no stakes penalty — earns the celebration, shown above
-    // the reckoning: the score alone, the team jumping to their own beats, the
-    // MVP on the pedestal, the fallen lying where they fell.
-    if (stakesPct == 0) {
+    // M71: a CLEAN run earns the celebration, shown above the reckoning: the
+    // score alone, the team jumping to their own beats, the MVP on the
+    // pedestal, the fallen lying where they fell. Clean means (owner rules):
+    // no stakes penalty, a positive score, and not a single escape.
+    if (stakesPct == 0 && total > 0 && run_.escapes == 0) {
         stack().pushState(std::make_unique<CelebrationState>(
             stack(), context_, TextFormat("Score: %d", total), victoryStats_.mvpMember()));
     }

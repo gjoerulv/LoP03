@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs once M59–M61 close** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs once M59–M71 close** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -828,24 +828,30 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs once M59–M61
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs once M59–M71
   close** (the deferral has been extended by each expansion program the
   owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
   M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
-  and M61). The tooling, diagnostics, lint/mass/report
+  M61, the M62–M66 program, and the M67–M71 owner batches). The tooling,
+  diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
-  Re-audit this note against the post-M61 checkout before starting — the
-  capture scene list has grown (**77 scenes** as of M61) and the balance
+  Re-audit this note against the post-M71 checkout before starting — the
+  capture scene list has grown (**84 scenes** as of M71) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
-  `[king-report]`, `[classes-report]`, `[goose]`); both need extending for
-  everything M25–M61 added (AI, content, art, town ladder, stakes, black
+  `[king-report]`, `[classes-report]`, and the M61–M71
+  `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/`[spoils]`/
+  `[danger-report]` batteries); both need extending for
+  everything M25–M71 added (AI, content, art, town ladder, stakes, black
   market, statuses/passives, castle challenges, relics, the unlockable
   classes, the M46 UI kit, elements, the King's Court, walk-through towns,
-  the M51 options, the M52 comforts/secrets, the M53–M58 adjustments, and
-  M61's Goose Town). **M61 is the last authorized expansion; this is next
+  the M51 options, the M52 comforts/secrets, the M53–M58 adjustments,
+  M61's Goose Town, the M62–M66 program — class milestones, scrolls, the
+  two treasure-map systems — and the M67–M71 batches: portraits, spoils,
+  party-relative danger, town exteriors, the CRT split, the celebration).
+  **M71 is the last authorized expansion; this is next
   in line once the owner schedules it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
@@ -2402,7 +2408,9 @@ version bump** (`kSettingsVersion` stays **1**; the field change is defensive).
   migrates true→0.3 / false→0.0; absent→0.0; malformed→reported + safe default),
   serializing only the new field; `VirtualScreen::setCrt(bool)` →
   `setCrtIntensity(float)` with lazy single compile on first strength > 0, cached
-  uniform locations, and the shader source moved to `render/CrtShaderSource.hpp`;
+  uniform locations, and the shader source moved to `render/CrtShaderSource.hpp`
+  (M70 later split geometry into its own persistent curvature slider and the
+  call became `setCrt(intensity, curvature)` — see the M70 section);
   a 0–10 slider row in Settings → Display using the same step/clamp discipline as
   volume, with pure `crtStrengthStep`/`crtIntensityFromStep` helpers.
 - **Out of scope:** any gameplay/save/determinism/resolution change; new asset
@@ -2759,8 +2767,12 @@ running scope: the sections below.
   and KO'd members lying dimmed where they fell — plus one random **dry
   lore punchline** under the score (the TitlePhrases idiom, a 12-line
   pool in `CelebrationPhrases.hpp`, lint-pinned). Shown above the
-  reckoning after a dungeon clear **with zero stakes penalty** (any
-  penalty → no celebration), and above the challenge overlay after
+  reckoning after a dungeon clear with **zero stakes penalty, a positive
+  score, and zero escapes** (any of the three → no celebration; the
+  score/escape gates tightened by the owner post-audit). A KO'd MVP
+  **keeps the pedestal, chip, and name** and lies in state on it
+  (owner-confirmed comedy). Shown above the
+  challenge overlay after
   beating the **King**, the **Deadly Duck**, and the **Boss Rush**
   ("Cleared in N turns!"; the Endless Rush and all losses excluded).
   Capture `84_celebration` (the set is **84 scenes**; the lint drove the

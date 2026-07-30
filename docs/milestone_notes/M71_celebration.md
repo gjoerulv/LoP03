@@ -26,11 +26,13 @@ clears and the three great challenge victories. Implemented 2026-07-29.
   keeps scene 84 reproducible; presentation-only, never the gameplay Rng.
   A headless lint (test_presentation_options) pins the pool: non-empty,
   genre-word-free, every line fits the screen at the drawn font.
-- **When it shows** (owner rules):
-  - after a dungeon completion **with zero stakes penalty** — pushed above
-    the reckoning, so the order is: celebration (score only) → the
-    detailed result screen → (any milestone choice) → town. A run that
-    carries ANY stakes penalty goes straight to the reckoning.
+- **When it shows** (owner rules; the score/escape gates tightened by the
+  owner after the post-M71 audit):
+  - after a dungeon completion with **zero stakes penalty**, a **positive
+    score**, and **zero escapes** — pushed above the reckoning, so the
+    order is: celebration (score only) → the detailed result screen →
+    (any milestone choice) → town. Any stakes penalty, a 0-or-less score,
+    or a single escape goes straight to the reckoning.
   - after beating **the King**, **the Deadly Duck**, and **the Boss
     Rush** — pushed above the challenge's result overlay, headline
     "Cleared in N turns!". The **Endless Rush is excluded** (it has no
@@ -78,10 +80,13 @@ No save/schema/rules/generation changes; no data changes.
    celebrations), Confirm → the usual detailed reckoning → town. The team
    jumps at visibly different rhythms/heights; the MVP stands centred on
    the pedestal with the chip and their name; confetti falls.
-2. Clear one WITH a stakes penalty: no celebration — straight to the
-   reckoning.
+2. Clear one WITH a stakes penalty, one with an escape, and (if you can
+   manage it) a zero-score completion: none of the three celebrates —
+   straight to the reckoning.
 3. Clear a run where a member ended KO'd: they lie horizontal, dimmed,
-   not jumping (even if they are the MVP — the fallen do not jump).
+   not jumping. If the KO'd member IS the damage MVP, they lie in state
+   ON the pedestal — chip, gold name, and all (deliberate comedy,
+   owner-confirmed).
 4. Beat the King, the Duck gauntlet, and the Boss Rush: the same screen
    with "Cleared in N turns!"; then the challenge's own result overlay.
    The Endless Rush never celebrates; neither does any loss.
@@ -93,8 +98,9 @@ No save/schema/rules/generation changes; no data changes.
 - Only the MVP is named (lint-driven; see §B).
 - The MVP measures damage dealt — a pure-healer carry never takes the
   pedestal (the M42 metric, unchanged; flag if you want a broader rule).
-- A KO'd MVP lies ON the pedestal (the rules compose literally; arguably
-  the funniest outcome, kept deliberately).
+- A KO'd MVP **keeps the pedestal, the chip, and the gold name** and lies
+  in state on it, horizontal and dimmed (owner rule, explicitly
+  confirmed: "It's too funny not to have it like that").
 
 ## G. Final status
 

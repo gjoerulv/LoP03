@@ -41,6 +41,9 @@ CelebrationState::CelebrationState(StateStack& stack, AppContext& context, std::
     if (mvp_ < 0 || mvp_ >= static_cast<int>(context_.party.members.size())) {
         mvp_ = -1;
     }
+    // Owner rule (confirmed twice, the second time with feeling): a KO'd MVP
+    // KEEPS the pedestal, the chip, and the gold name — they earned the crown
+    // and lie in state on it. Too funny not to.
     // One dry line per celebration — the TitlePhrases idiom. GetRandomValue is
     // deterministic under the capture harness's pinned SetRandomSeed, so
     // `84_celebration` stays reproducible; live play draws a fresh one each
