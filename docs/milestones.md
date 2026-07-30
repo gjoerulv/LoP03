@@ -106,10 +106,11 @@ return-to-town bug), **M68** (the victory spoils panel + the
 party-relative threat recalibration, generation 14), **M69** (the
 town exteriors — real facades, the scoreboard stele, the save crystal),
 **M70** (CRT Strength and CRT Curvature as separate persistent
-sliders), and **M71** (the victory celebration screen). M59–M71 ALL sit at
+sliders), **M71** (the victory celebration screen), and **M72** (the
+party panel reflow). M59–M72 ALL sit at
 `implemented, awaiting manual approval`; then M23 → M24, and nothing else
 stands before them.**
-When M59–M71 close, both M23 and M24 must be re-audited against the
+When M59–M72 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**84
 scenes** as of M71), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
@@ -2780,3 +2781,20 @@ running scope: the sections below.
   **Closing verification: 607/607 Debug and 603/603 Release tests green;
   `--capture` 84/84 scenes clean.**
 - **Milestone note:** `docs/milestone_notes/M71_celebration.md`
+
+## M72 — Party panel reflow (owner report, 2026-07-30)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-30. The owner's Lv.99 screenshots showed the M64/M67 detail
+  panel clipping at its true worst case (three chosen milestones — the
+  Martyr description ran off the edge; the skills list truncated
+  mid-legend). Fix is a **reflow, not a smaller font**: HP/MP + the four
+  stats (gear shares intact) moved into the dead 128×66 space **under
+  the member roster**; the right panel's passive/milestone
+  **descriptions wrap to two lines** (actual-advance), and the skills
+  block's line budget grows to 4–5 lines. Capture scene
+  `79_party_panel` upgraded to pin the exact reported worst case.
+  Layout-only; no data/input/save changes.
+  **Closing verification: 607/607 Debug and 603/603 Release tests green;
+  `--capture` 84/84 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M72_party_panel_reflow.md`

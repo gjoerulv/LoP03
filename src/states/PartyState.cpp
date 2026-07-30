@@ -180,33 +180,46 @@ void PartyState::render() {
         return;
     }
     const Character& c = members[static_cast<std::size_t>(cursor_)];
+    const content::StatBlock gear = gearBonus(c, db);
 
-    // Detail (right). M67: tighter pitches buy room for the milestone and
-    // passive descriptions (owner ask); the frame grew 2px so the skills block
-    // keeps its line budget.
+    // M72: the vitals moved into the previously dead space UNDER the roster —
+    // HP/MP and the four derived stats (gear share included) — freeing the
+    // right panel so a maxed member's three milestone descriptions and full
+    // skill list all stay visible (the owner's Lv.99 screenshots clipped).
+    {
+        const int vh = 66;
+        const int vy = listY + static_cast<int>(members.size()) * 26 + 8;
+        ui::drawFrame(listX - 4, vy, 128, vh, ui::FrameStyle::Standard);
+        int yy = vy + 5;
+        ui::drawTextFitted(TextFormat("HP %d/%d", c.hp, c.maxHp), listX + 4, yy, 116, 9, p.text,
+                           "party.vitals");
+        yy += 10;
+        ui::drawTextFitted(TextFormat("MP %d/%d", c.mp, c.maxMp), listX + 4, yy, 116, 9, p.text,
+                           "party.vitals");
+        yy += 10;
+        ui::drawTextFitted(statLine("ATK", c.stats.attack, gear.attack), listX + 4, yy, 116, 8,
+                           p.text, "party.stat");
+        yy += 10;
+        ui::drawTextFitted(statLine("MAG", c.stats.magic, gear.magic), listX + 4, yy, 116, 8,
+                           p.text, "party.stat");
+        yy += 10;
+        ui::drawTextFitted(statLine("DEF", c.stats.defense, gear.defense), listX + 4, yy, 116, 8,
+                           p.text, "party.stat");
+        yy += 10;
+        ui::drawTextFitted(statLine("SPD", c.stats.speed, gear.speed), listX + 4, yy, 116, 8,
+                           p.text, "party.stat");
+    }
+
+    // Detail (right): everything else, with room to breathe.
     const int dx = 150;
     const int dw = w - dx - 10;
     ui::drawFrame(dx - 6, listY - 6, dw + 8, 184, ui::FrameStyle::Standard);
     const int bottom = listY - 6 + 184 - 6;  // inner floor of the detail frame
     int y = listY + 2;
-    const content::StatBlock gear = gearBonus(c, db);
-    ui::drawText(TextFormat("HP %d/%d   MP %d/%d", c.hp, c.maxHp, c.mp, c.maxMp), dx, y, 10,
-                 p.text);
-    y += 12;
     ui::drawText(TextFormat("XP %d  (next Lv: %d)", c.xp,
                             c.level >= kMaxLevel ? 0 : xpToNext(c.level) - c.xp),
                  dx, y, 8, p.textDim);
     y += 11;
-    ui::drawTextFitted(statLine("ATK", c.stats.attack, gear.attack), dx, y, dw / 2 - 4, 9, p.text,
-                       "party.stat");
-    ui::drawTextFitted(statLine("MAG", c.stats.magic, gear.magic), dx + dw / 2, y, dw / 2 - 4, 9,
-                       p.text, "party.stat");
-    y += 11;
-    ui::drawTextFitted(statLine("DEF", c.stats.defense, gear.defense), dx, y, dw / 2 - 4, 9,
-                       p.text, "party.stat");
-    ui::drawTextFitted(statLine("SPD", c.stats.speed, gear.speed), dx + dw / 2, y, dw / 2 - 4, 9,
-                       p.text, "party.stat");
-    y += 12;
     ui::drawTextFitted("Weapon: " + itemName(db, c.weapon), dx, y, dw, 8, p.textDim,
                        "party.gear");
     y += 10;
@@ -220,14 +233,16 @@ void PartyState::render() {
                        dx, y, dw, 8, p.textDim, "party.passive");
     y += 9;
     if (passive != nullptr && !passive->description.empty()) {
-        // M67: what the equipped passive does, in the hint colour.
-        ui::drawTextFitted(passive->description, dx + 8, y, dw - 8, 8, p.textHint,
-                           "party.passive.desc");
-        y += 9;
+        // M67: what the equipped passive does, in the hint colour. M72: long
+        // descriptions wrap to a second line instead of clipping.
+        y = ui::drawTextWrapped(passive->description, dx + 8, y, dw - 8, 8, p.textHint,
+                                "party.passive.desc", 2);
     }
 
     // Milestone choices (M63) — M67: each chosen bonus shows its name and, in
     // the hint colour, what it does; unreached/unchosen tiers stay compact.
+    // M72: descriptions wrap to two lines (the Lv.99 clip fix); y advances by
+    // what was actually drawn.
     bool anyTier = false;
     std::string unchosen;
     for (int tier : kMilestoneTiers) {
@@ -237,9 +252,8 @@ void PartyState::render() {
             ui::drawTextFitted(TextFormat("Lv.%d  %s", tier, m->name.c_str()), dx, y, dw, 8,
                                p.text, "party.milestone");
             y += 9;
-            ui::drawTextFitted(m->description, dx + 8, y, dw - 8, 8, p.textHint,
-                               "party.milestone.desc");
-            y += 9;
+            y = ui::drawTextWrapped(m->description, dx + 8, y, dw - 8, 8, p.textHint,
+                                    "party.milestone.desc", 2);
         } else if (c.level >= tier) {
             anyTier = true;
             unchosen += (unchosen.empty() ? "" : ", ") + std::string("Lv.") + std::to_string(tier);

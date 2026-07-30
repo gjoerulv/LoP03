@@ -48,7 +48,8 @@ music, or text. Built in **C++20** with **raylib**.
 > Curvature as separate 0–10 sliders — the screen only bends as much as
 > you ask), and **M71** (a victory celebration after flawless-stakes
 > clears and the great challenge wins — the team jumping, the MVP on a
-> pedestal). After those, only the
+> pedestal), and **M72** (the party panel reflowed so a maxed member's
+> milestones and skills all stay visible). After those, only the
 > deferred **validation playtesting (M23)** and **release sign-off (M24)**
 > remain. Current status always lives in `docs/milestones.md`.
 

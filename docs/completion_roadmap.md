@@ -924,6 +924,7 @@ filter's geometry from its texture: CRT Strength and CRT Curvature are
 separate persistent sliders, so strength 7 keeps its character without
 the excessive curl. M71 gave flawless runs their moment: the victory
 celebration — score, confetti, the team jumping, the MVP on a pedestal —
-after penalty-free clears and the King/Duck/Boss-Rush victories.
+after penalty-free clears and the King/Duck/Boss-Rush victories. M72
+reflowed the party panel so a maxed member's whole story fits the screen.
 
-M23 → M24 run after M71, re-audited against the then-current checkout.
+M23 → M24 run after M72, re-audited against the then-current checkout.

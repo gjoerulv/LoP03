@@ -2030,9 +2030,22 @@ nothing): the score/turns headline, one random dry punchline beneath it
 rhythm tables, the MVP
 pedestal (M42 `RunStats::mvpMember`; `CastleChallengeState` now owns a
 `RunStats` and feeds it to its battles), KO'd members drawn horizontal
-and dimmed. Pushed by `DungeonState::completeDungeon` only when
-`stakesPenaltyPct == 0`, and by `CastleChallengeState::finish(true)` for
+and dimmed (a KO'd MVP keeps the pedestal, chip, and name —
+owner-confirmed). Pushed by `DungeonState::completeDungeon` only on a
+flawless run (`stakesPenaltyPct == 0 && total > 0 && escapes == 0`), and
+by `CastleChallengeState::finish(true)` for
 King/Duck/BossRush (never Endless, never losses) — always above the
 respective result surface, so the celebration shows first and one
 Confirm falls through to the reckoning.
+
+## 28. M72 — the party panel reflow
+
+Layout-only fix for the owner's Lv.99 clipping report: `PartyState` moved
+HP/MP + the four stats (gear shares intact) into the dead space under the
+member roster (their own frame, tracking the selection); the right panel
+keeps XP/gear/passive/milestones/skills, with descriptions wrapped to two
+lines (actual-advance via `drawTextWrapped`'s return) and the skills
+budget computed from the real remaining space (4–5 lines at the maxed
+case). Capture scene `79_party_panel` pins the exact reported worst case
+(level cap + all three cleric milestones incl. the longest description).
 

@@ -1123,15 +1123,18 @@ int run(const char* outDir) {
              }},
             {"79_party_panel",
              [](StateStack& s, AppContext& c) {
-                 // M64: the party panel at its fullest — a high level with
-                 // unchosen milestone hints, a scroll-learned skill mark, and
-                 // a teaching scroll in the bag for the footer. M67 adds the
-                 // description lines: a chosen milestone and an equipped
-                 // passive (member 0 is the cleric — class ids sort first).
+                 // M64/M67/M72: the party panel at its TRUE worst case — the
+                 // owner's Lv.99 clip report: level cap, all three milestones
+                 // chosen (Martyr carries the longest description), an
+                 // equipped passive with its line, a scroll-learned skill
+                 // mark, and a teaching scroll for the footer (member 0 is
+                 // the cleric — class ids sort first).
                  if (!c.party.members.empty()) {
-                     c.party.members[0].level = 30;
+                     c.party.members[0].level = kMaxLevel;
                      c.party.members[0].extraSkills.push_back("fireball");
                      c.party.members[0].milestone10 = "cleric_10_a";
+                     c.party.members[0].milestone20 = "cleric_20_a";
+                     c.party.members[0].milestone30 = "cleric_30_a";
                      c.party.members[0].equippedPassive = "clarity";
                      c.party.members[0].ownedPassives = {"clarity"};
                      refreshCharacter(c.party.members[0], c.content);
