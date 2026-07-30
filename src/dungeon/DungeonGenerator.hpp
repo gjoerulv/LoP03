@@ -22,7 +22,8 @@ namespace cd::dungeon {
 //
 // `town` (1..kTownCount, M32) multiplies every enemy team's stat scale on top of
 // depth scaling; town 1 is the identity, so town-1 output is byte-identical to
-// pre-M32 and the RNG stream never depends on town (kGenerationVersion stays 6).
+// pre-M32 and the RNG stream never depends on town (the town multiplier did not
+// move kGenerationVersion, which later content bumps carried to 10).
 Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& db,
                  std::string themeId = "", int town = 1);
 

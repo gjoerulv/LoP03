@@ -33,6 +33,14 @@ std::optional<MessageSpeed> messageSpeedFromName(std::string_view name);
 std::string_view effectLevelName(EffectLevel s);
 std::optional<EffectLevel> effectLevelFromName(std::string_view name);
 
+// M57: CRT strength slider conversion (pure, headless-testable). The stored
+// value is a 0..1 intensity; the player sees an integer 0..10.
+int crtStrengthStep(float intensity);       // round(clamp01(intensity) * 10) -> 0..10
+float crtIntensityFromStep(int step);        // clamp(step, 0, 10) / 10 -> 0..1
+// M70: CRT curvature shares the same 0..1 <-> 0..10 conversion discipline.
+int crtCurvatureStep(float curvature);
+float crtCurvatureFromStep(int step);
+
 // Seconds a battle action's resolve pause lasts (Confirm always skips it).
 float resolveSeconds(BattleSpeed s);
 // Multiplier applied to transient on-screen message durations.
@@ -42,6 +50,10 @@ struct Settings {
     float masterVolume = 1.0f;  // 0..1
     float musicVolume = 1.0f;   // 0..1
     float sfxVolume = 1.0f;     // 0..1
+    // M52 (owner-approved): ambience gets its own slider instead of following
+    // SFX (the M27 chaining). Optional field; absent = 0.5 (default 5/10), so
+    // pre-M52 files load quieter-by-design rather than at the old effective 1.0.
+    float ambienceVolume = 0.5f;  // 0..1
     bool borderlessFullscreen = false;
     BattleSpeed battleSpeed = BattleSpeed::Normal;
     MessageSpeed messageSpeed = MessageSpeed::Normal;
@@ -50,12 +62,21 @@ struct Settings {
     // M22 (owner-approved): switchable high-contrast UI palette. Optional
     // field; absent = standard palette, so older files load unchanged.
     bool highContrast = false;
-    // M51 (owner-approved), both optional bools, absent = false so older files
-    // load unchanged:
-    //  - crtEffect: a subtle scanline/mask shader at the window blit (Off default).
-    //  - backgroundAudio: keep audio playing while the window is unfocused
-    //    (Off default = mute when unfocused, a deliberate behaviour change).
-    bool crtEffect = false;
+    // M57 (owner-approved): CRT post-process strength, 0.0..1.0, exposed to the
+    // player as a 0..10 slider (each step = 0.1). 0 = the exact unfiltered blit.
+    // Optional field; absent falls back to the legacy M51 crtEffect bool
+    // (true -> 0.3 preserves the old subtle look, false -> 0.0), else 0.0.
+    float crtIntensity = 0.0f;
+    // M70 (owner-specified): CRT screen curvature, 0.0..1.0, its own 0..10
+    // slider — geometry (barrel warp, inset, rounded corners, curved-edge
+    // masking) now follows THIS value alone, never CRT Strength. Optional
+    // field; absent = 0.3 (mild curved glass — deliberately, so an existing
+    // strength-7 file loses its excessive curl but keeps a gentle curve).
+    // Dormant while strength is 0 (the plain blit runs regardless).
+    float crtCurvature = 0.3f;
+    // M51 (owner-approved), optional bool, absent = false so older files load
+    // unchanged: keep audio playing while the window is unfocused (Off default =
+    // mute when unfocused, a deliberate behaviour change).
     bool backgroundAudio = false;
 };
 

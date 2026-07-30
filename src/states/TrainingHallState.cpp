@@ -11,6 +11,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "states/MilestoneChoiceState.hpp"  // M63
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -110,6 +111,7 @@ void TrainingHallState::trainSelected() {
         context_.audio.play(Sfx::Heal);
         message_ = c.name + " trained to Lv." + std::to_string(c.level) + "!";
         messageIsError_ = false;
+        maybePushMilestoneChoice(stack(), context_);  // M63: the level-up moment
     } else {
         context_.audio.play(Sfx::Error);
         message_ = "Not enough gold to train " + c.name;
@@ -238,8 +240,18 @@ void TrainingHallState::render() {
             ui::drawTextCentered("Choose a character to train or equip a passive.", w / 2, 30,
                                  style::kFontBody, p.textDim);
             const int rows = static_cast<int>(memberMenu_.size());
-            ui::drawFrame(28, 50, w - 56, rows * 16 + 16, ui::FrameStyle::Inset);
+            const int frameH = rows * 16 + 16;
+            ui::drawFrame(28, 50, w - 56, frameH, ui::FrameStyle::Inset);
             ui::drawMenu(memberMenu_, 48, 60, 16, style::kFontMenu, p.text, p.disabled, p.cursor);
+            // M67: the highlighted member's portrait rides the frame's free
+            // right side and follows the cursor.
+            if (!context_.party.members.empty()) {
+                const std::size_t cur = static_cast<std::size_t>(memberMenu_.cursor());
+                const int box = ui::portraitBox(2);
+                ui::drawActorPortrait(context_.resources,
+                                      context_.party.members[cur].classId, w - 28 - box - 6,
+                                      50 + std::max(4, (frameH - box) / 2), 2);
+            }
             break;
         }
         case Phase::CharMenu: {
@@ -249,6 +261,7 @@ void TrainingHallState::render() {
             const int rows = static_cast<int>(charMenu_.size());
             ui::drawFrame(40, 56, 260, rows * 18 + 18, ui::FrameStyle::Inset);
             ui::drawMenu(charMenu_, 62, 66, 18, 12, p.text, p.disabled, p.cursor);
+            ui::drawActorPortrait(context_.resources, c.classId, 330, 56, 2);  // M67
             break;
         }
         case Phase::Passives: {
@@ -258,6 +271,7 @@ void TrainingHallState::render() {
             const int rows = static_cast<int>(passiveMenu_.size());
             ui::drawFrame(16, 44, 320, rows * 13 + 14, ui::FrameStyle::Inset);
             ui::drawMenu(passiveMenu_, 32, 51, 13, style::kFontBody, p.text, p.disabled, p.cursor);
+            ui::drawActorPortrait(context_.resources, c.classId, 352, 44, 2);  // M67
             if (!passiveIds_.empty()) {
                 const std::string& id =
                     passiveIds_[static_cast<std::size_t>(passiveMenu_.cursor())];

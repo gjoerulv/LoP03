@@ -1123,4 +1123,162 @@ FR $b 3 4 3 5 $PAL.danger; FR $b 6 4 3 5 $PAL.cyan              # motley: red le
 FR $b 4 9 2 2 $PAL.night1; FR $b 6 9 2 2 $PAL.night1            # boots
 Outline $b; SaveImg $b 'actors/jester_npc.png'
 
+# ==================== M62 Goose Town battle sprites ====================
+# The five Evil Geese (24x24 elites) + the Deadly Duck (32x32 boss).
+# Appended last and reseeded, so every earlier PNG stays byte-identical.
+# Enemies face right; elites carry the Horns tuft (here it reads as evil
+# feather spikes). The Duck wears NO crown on purpose: "the pond needs none
+# of that" — his menace is bulk, wings, and the water he rises from.
+Write-Output 'Generating M62 Goose Town battle sprites...'
+$script:rng = 62620000
+
+$gooseW = '#F2F2F0'; $gooseS = '#D8D8D4'                          # goose white + shade
+
+# Shared right-facing goose base (24x24): body, neck, head, beak, eye, feet.
+function New-EvilGoose {
+  $b = New-Img 24 24
+  Ell $b 3 11 15 10 $gooseW; Ell $b 4 14 10 6 $gooseS             # body + shade
+  FR $b 14 7 3 6 $gooseW                                          # neck
+  Ell $b 13 3 8 7 $gooseW                                         # head
+  FR $b 20 6 4 2 $PAL.gold                                        # beak (right)
+  P $b 17 5 $PAL.night1                                           # eye
+  FR $b 8 21 2 2 $PAL.gold; FR $b 13 21 2 2 $PAL.gold             # feet
+  return $b
+}
+
+$b = New-EvilGoose                                                # vanguard: iron half-helm + war paint
+FR $b 14 2 6 3 $PAL.stone3; FR $b 14 2 6 1 $PAL.stone4            # helm + rim
+P $b 17 8 $PAL.danger; P $b 18 8 $PAL.danger                      # war paint stripe
+FR $b 6 14 6 3 $PAL.stone2                                        # plated wing
+Horns $b 15 2
+SaveEnemy $b 'evil_goose_vanguard'
+
+$b = New-EvilGoose                                                # hexwing: violet hood + rune wing
+FR $b 14 2 7 3 $PAL.violet; P $b 17 5 $PAL.cyan                   # hood + arcane eye
+FR $b 6 13 7 4 $PAL.violet; P $b 8 14 $PAL.glint; P $b 10 15 $PAL.glint  # rune wing
+Horns $b 15 2
+SaveEnemy $b 'evil_goose_hexwing'
+
+$b = New-EvilGoose                                                # mender: cream mantle + green cross
+FR $b 5 12 12 2 $PAL.clsCleric                                    # mantle
+P $b 9 16 $PAL.heal; P $b 8 15 $PAL.heal; P $b 10 15 $PAL.heal; P $b 9 14 $PAL.heal  # cross
+Horns $b 15 2
+SaveEnemy $b 'evil_goose_mender'
+
+$b = New-EvilGoose                                                # trickster: belled motley points
+P $b 14 1 $PAL.danger; P $b 19 1 $PAL.cyan                        # cap points
+P $b 13 2 $PAL.gold; P $b 20 2 $PAL.gold                          # bells
+FR $b 6 14 6 3 $PAL.violet; P $b 7 15 $PAL.gold                   # motley wing
+Horns $b 15 2
+SaveEnemy $b 'evil_goose_trickster'
+
+$b = New-EvilGoose                                                # bogfeather: swamp-stained attrition
+Speckle $b 4 12 13 8 $PAL.veg1 0.22                               # bog-stained body
+FR $b 6 14 6 3 $PAL.veg2                                          # mossy wing
+P $b 21 8 $PAL.veg3; P $b 21 9 $PAL.veg3                          # venom drip off the beak
+Horns $b 15 2
+SaveEnemy $b 'evil_goose_bogfeather'
+
+$b = New-Img 32 32                                                # deadly_duck: the terror beneath the pond
+FR $b 0 27 32 3 $PAL.wat1; FR $b 4 27 8 1 $PAL.wat3; FR $b 20 28 6 1 $PAL.wat2  # pond + ripples
+Ell $b 2 12 26 17 $PAL.night2; Ell $b 5 15 20 12 $PAL.night3      # massive body
+FR $b 1 6 5 14 $PAL.night1; FR $b 0 9 3 9 $PAL.night2             # raised far wing
+FR $b 7 13 8 4 $PAL.night1                                        # near wing fold
+FR $b 20 8 5 8 $PAL.night2                                        # thick neck
+FR $b 20 10 5 1 $PAL.clsCleric                                    # pale neck ring
+Ell $b 17 1 11 10 $PAL.veg1; Ell $b 19 2 6 5 $PAL.veg2            # green-sheened head
+Eyes $b 22 5 $PAL.danger                                          # burning gaze
+FR $b 27 6 5 3 $PAL.gold; P $b 28 9 $PAL.danger                   # great beak + snarl
+Speckle $b 6 16 18 10 $PAL.violet 0.07                            # dread shimmer
+SaveEnemy $b 'boss_deadly_duck'
+
+# --- M69: town exteriors — five service facades (48x32, opaque, covering
+# --- their 3x2 Building tiles exactly), the scoreboard stele, and the save
+# --- crystal. Appended after every earlier section and reseeded, so all
+# --- prior files stay byte-identical.
+$script:rng = 69690000
+Write-Output 'Generating town exteriors...'
+
+# Shared south-facing facade: pitched shingle roof, plastered wall with timber
+# posts on the tile seams, two warm-lit windows, and the door INTEGRATED into
+# the middle tile — directly above the doorstep trigger tile below it.
+function New-Facade([string]$roofHex, [string]$roofDarkHex, [string]$wallHex, [string]$trimHex) {
+  $b = New-Img 48 32
+  FR $b 0 11 48 21 $wallHex                                       # wall
+  FR $b 0 30 48 2 $PAL.night2                                     # foundation
+  FR $b 0 11 48 1 $PAL.night2                                     # eaves shadow
+  FR $b 0 12 1 19 $trimHex; FR $b 47 12 1 19 $trimHex             # corner posts
+  FR $b 16 12 1 19 $trimHex; FR $b 31 12 1 19 $trimHex            # seam posts
+  FR $b 0 0 48 11 $roofHex                                        # roof
+  FR $b 0 0 48 1 $roofDarkHex                                     # ridge cap
+  FR $b 0 4 48 1 $roofDarkHex; FR $b 0 7 48 1 $roofDarkHex        # shingle rows
+  FR $b 0 10 48 1 $roofDarkHex                                    # eaves edge
+  foreach ($wx in @(5, 38)) {                                     # warm-lit windows
+    FR $b $wx 15 8 8 $PAL.night1
+    FR $b ($wx+1) 16 6 6 '#E8C56A'
+    FR $b ($wx+4) 16 1 6 $PAL.night1; FR $b ($wx+1) 19 6 1 $PAL.night1
+    FR $b $wx 23 8 1 $PAL.night2
+  }
+  FR $b 19 17 10 15 $PAL.night1                                   # door recess
+  FR $b 20 18 8 14 $PAL.earth3                                    # door
+  FR $b 20 18 8 1 $PAL.earth4                                     # lintel
+  FR $b 22 19 1 13 $PAL.earth2; FR $b 25 19 1 13 $PAL.earth2      # planks
+  P $b 26 25 $PAL.gold                                            # handle
+  return $b
+}
+# Colored pennant hung on the right seam post, carrying the service emblem.
+function Pennant($b, [string]$hex) {
+  FR $b 30 11 7 1 $PAL.earth1                                     # rod
+  FR $b 31 12 5 8 $hex
+  P $b 31 20 $hex; P $b 35 20 $hex                                # swallowtail
+}
+
+$b = New-Facade $PAL.maroon $PAL.maroonD $PAL.clsCleric $PAL.earth2   # Inn: cream walls
+Pennant $b $PAL.gold
+P $b 33 14 $PAL.maroonD; P $b 32 15 $PAL.maroonD; P $b 33 16 $PAL.maroonD  # crescent
+SaveImg $b 'environments/town_facade_inn.png'
+
+$b = New-Facade $PAL.veg2 $PAL.veg1 $PAL.earth4 $PAL.earth1           # Item Shop
+Pennant $b $PAL.danger
+P $b 33 14 $PAL.clsCleric; FR $b 32 15 3 2 $PAL.clsCleric             # flask
+SaveImg $b 'environments/town_facade_item_shop.png'
+
+$b = New-Facade $PAL.stone3 $PAL.stone1 $PAL.stone4 $PAL.night3       # Equip Shop
+Pennant $b $PAL.cyan
+FR $b 33 13 1 4 $PAL.night1; FR $b 32 14 3 1 $PAL.night1              # sword
+SaveImg $b 'environments/town_facade_equip_shop.png'
+
+$b = New-Facade $PAL.bossBody $PAL.bossD $PAL.stone3 $PAL.gold        # Guild
+Pennant $b $PAL.violet
+P $b 33 14 $PAL.gold; P $b 32 15 $PAL.gold; P $b 34 15 $PAL.gold; P $b 33 16 $PAL.gold  # star
+SaveImg $b 'environments/town_facade_guild.png'
+
+$b = New-Facade $PAL.earth2 $PAL.earth1 $PAL.stone3 $PAL.clsGuardian  # Training Hall
+Pennant $b $PAL.clsGuardian
+FR $b 32 14 1 2 $PAL.night1; FR $b 34 14 1 2 $PAL.night1; FR $b 32 15 3 1 $PAL.night1  # dumbbell
+SaveImg $b 'environments/town_facade_training_hall.png'
+
+# Scoreboard stele (32x32, transparent, outlined): a great stone sheet on a
+# plinth, its face engraved with score rows and crowned in gold.
+$b = New-Img 32 32
+FR $b 4 27 24 4 $PAL.stone1; FR $b 6 25 20 2 $PAL.stone2          # plinth
+FR $b 8 3 16 23 $PAL.stone3                                       # slab
+FR $b 9 2 14 1 $PAL.stone3                                        # arched top
+FR $b 10 5 12 18 $PAL.stone4                                      # sheet face
+foreach ($ly in @(8, 11, 14, 17, 20)) { FR $b 11 $ly 10 1 $PAL.night2 }  # engraved rows
+FR $b 11 8 4 1 $PAL.gold                                          # the top entry shines
+P $b 15 3 $PAL.gold; P $b 16 3 $PAL.gold; P $b 14 4 $PAL.gold; P $b 17 4 $PAL.gold  # crown
+Outline $b; SaveImg $b 'props/scoreboard_stele.png'
+
+# Save crystal (16x16, transparent, outlined): a cyan crystal on dark rock.
+$b = New-Img 16 16
+FR $b 4 13 8 3 $PAL.stone1; FR $b 5 13 6 1 $PAL.stone2            # rock base
+FR $b 7 1 2 2 $PAL.cyan                                           # tip
+FR $b 6 3 4 3 $PAL.cyan
+FR $b 5 6 6 5 $PAL.cyan
+FR $b 6 11 4 2 $PAL.cyan
+FR $b 5 6 2 5 $PAL.glint; P $b 6 4 $PAL.glint; P $b 7 2 '#FFFFFF' # lit facet
+FR $b 9 6 2 5 $PAL.wat2; P $b 9 11 $PAL.wat2                      # shaded facet
+Outline $b; SaveImg $b 'props/save_crystal.png'
+
 Write-Output 'Texture generation complete.'

@@ -144,6 +144,13 @@ debug build must produce a visible/logged diagnostic (M12-a deliverable).
   `drawFramedPanel` path remains functional and manifest-replaceable but is
   unused by screens.
 - Overlay modals dim the background via `drawModalDim` (`palette().modalDim`).
+- **Class portraits (M67):** `ui::drawActorPortrait` frames the character's
+  existing `actor.<classId>.battle` sprite in an Inset panel, point-crisp at
+  1× (modal headers) or 2× (a screen's free side column). It is the one way
+  a menu screen shows "who": party-panel member rows (raw 24px sprite,
+  no frame — rows are too tight), the Training Hall, the milestone modal,
+  and the Equipment Shop's equip phases. No dedicated portrait art exists;
+  the battle sprite is the character's face everywhere.
 
 ## 10. Formerly unresolved decisions — all settled
 

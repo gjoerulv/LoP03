@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <random>
+#include <set>
 #include <string>
 
 #include "content/ContentDatabase.hpp"
@@ -185,6 +186,54 @@ TEST_CASE("save: slot paths are distinct files under the save dir", "[save]") {
     REQUIRE(saves.slotPath(save::SaveSlot::Auto).parent_path() == dir);
     REQUIRE(saves.slotPath(save::SaveSlot::Auto) != saves.slotPath(save::SaveSlot::Manual1));
     REQUIRE(saves.slotPath(save::SaveSlot::Manual1).extension() == ".json");
+
+    fs::remove_all(dir);
+}
+
+TEST_CASE("save: five manual slots have distinct stems and names (M53)", "[save]") {
+    // M53 grew the manual slots from three to five. Every slot (autosave + five
+    // manual) must have a unique file stem and a non-empty display name, and the
+    // count constant must match.
+    REQUIRE(save::kSaveSlotCount == 6);
+    std::set<std::string> stems;
+    std::set<std::string> names;
+    for (int i = 0; i < save::kSaveSlotCount; ++i) {
+        const auto slot = static_cast<save::SaveSlot>(i);
+        INFO(save::slotFileStem(slot));
+        CHECK(stems.insert(save::slotFileStem(slot)).second);      // unique stem
+        CHECK(names.insert(save::slotDisplayName(slot)).second);   // unique name
+        CHECK(std::string(save::slotDisplayName(slot)).size() > 0);
+    }
+    // The two new slots specifically.
+    CHECK(std::string(save::slotFileStem(save::SaveSlot::Manual4)) == "save_slot4");
+    CHECK(std::string(save::slotFileStem(save::SaveSlot::Manual5)) == "save_slot5");
+    CHECK(std::string(save::slotDisplayName(save::SaveSlot::Manual5)) == "Slot 5");
+}
+
+TEST_CASE("save: the fifth manual slot round-trips and reads empty when unused (M53)",
+          "[save]") {
+    const content::ContentDatabase db = makeDb();
+    const fs::path dir = makeTempDir();
+    const save::SaveSystem saves(db, dir);
+
+    // A brand-new slot is empty: no file, no summary.
+    CHECK_FALSE(saves.exists(save::SaveSlot::Manual5));
+    CHECK_FALSE(saves.summary(save::SaveSlot::Manual5).has_value());
+
+    Party p;
+    p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan"));
+    p.gold = 4242;
+    content::LoadReport rep;
+    REQUIRE(saves.save(save::SaveSlot::Manual5, p, rep));
+    REQUIRE(saves.exists(save::SaveSlot::Manual5));
+
+    Party loaded;
+    content::LoadReport rep2;
+    REQUIRE(saves.load(save::SaveSlot::Manual5, loaded, rep2));
+    REQUIRE(loaded.gold == 4242);
+    const auto summary = saves.summary(save::SaveSlot::Manual5);
+    REQUIRE(summary.has_value());
+    CHECK(summary->gold == 4242);
 
     fs::remove_all(dir);
 }

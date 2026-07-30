@@ -26,6 +26,9 @@ bool ContentDatabase::addItem(const ItemDef& def) { return insertUnique(items_, 
 bool ContentDatabase::addBoss(const BossDef& def) { return insertUnique(bosses_, def); }
 bool ContentDatabase::addTheme(const DungeonThemeDef& def) { return insertUnique(themes_, def); }
 bool ContentDatabase::addPassive(const PassiveDef& def) { return insertUnique(passives_, def); }
+bool ContentDatabase::addMilestone(const MilestoneDef& def) {
+    return insertUnique(milestones_, def);  // M63
+}
 bool ContentDatabase::addStory(const StoryBeat& def) {
     for (const StoryBeat& b : story_) {
         if (b.town == def.town) {
@@ -56,6 +59,20 @@ const DungeonThemeDef* ContentDatabase::findTheme(const std::string& id) const {
 }
 const PassiveDef* ContentDatabase::findPassive(const std::string& id) const {
     return findIn(passives_, id);
+}
+const MilestoneDef* ContentDatabase::findMilestone(const std::string& id) const {
+    return findIn(milestones_, id);  // M63
+}
+std::pair<const MilestoneDef*, const MilestoneDef*> ContentDatabase::milestonePair(
+    const std::string& classId, int level) const {
+    std::pair<const MilestoneDef*, const MilestoneDef*> out{nullptr, nullptr};
+    for (const auto& [id, m] : milestones_) {
+        if (m.classId != classId || m.level != level) {
+            continue;
+        }
+        (m.option == "a" ? out.first : out.second) = &m;
+    }
+    return out;
 }
 const StoryBeat* ContentDatabase::findStoryBeat(int town) const {
     for (const StoryBeat& b : story_) {

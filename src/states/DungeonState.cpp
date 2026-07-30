@@ -14,9 +14,13 @@
 #include "core/FadeController.hpp"
 #include "game/Achievements.hpp"
 #include "game/BossDrops.hpp"
+#include "game/Curios.hpp"      // M66: buried-treasure curio awards
+#include "game/Milestones.hpp"  // M63: gold bonus + pending-choice prompt
 #include "game/Party.hpp"
 #include "game/Relics.hpp"  // the M44 relic grant (seeded, reload-proof)
 #include "game/WorldLadder.hpp"
+#include "dungeon/ThemeEvents.hpp"  // M55 per-theme rites
+#include "states/ArmoryGhostState.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "score/ScoreEntry.hpp"
@@ -26,8 +30,12 @@
 #include "render/SpriteDraw.hpp"
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
+#include "render/BattleBackdrop.hpp"
 #include "states/AchievementToast.hpp"
+#include "states/MilestoneChoiceState.hpp"  // M63
 #include "states/BattleState.hpp"
+#include "states/BossIntroState.hpp"
+#include "states/CelebrationState.hpp"  // M71
 #include "states/DungeonMenuState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonResultState.hpp"
@@ -120,9 +128,13 @@ AmbienceTrack themeAmbience(const std::string& themeId) {
 DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon)
     : GameState(stack), context_(context), dungeon_(std::move(dungeon)),
       layouts_(dungeon::realizeAllRooms(dungeon_)), roomMap_(1, 1) {
+    // M68: tiers are party-relative, snapshotted ONCE at entry so the labels
+    // and the danger-defeated score credit agree for the whole run (mid-run
+    // level-ups do not relabel the dungeon under the player).
     teamTier_.reserve(dungeon_.teams.size());
+    const int partyThreat = danger::partyThreat(context_.party.members);
     for (const dungeon::EnemyTeam& team : dungeon_.teams) {
-        teamTier_.push_back(danger::assess(team, dungeon_.depth, context_.content));
+        teamTier_.push_back(danger::assess(team, context_.content, partyThreat));
     }
     context_.fade.start();
     // Theme music + ambience are applied in onEnter(), not here: entering the
@@ -191,6 +203,23 @@ void DungeonState::buildRoom() {
         markers_.push_back({layout.event.x, layout.event.y, MarkerKind::Event, room.teamIndex,
                             dungeon::Dir::North});
     }
+    // M65: a Secret Map Piece lies on this room's walkable center tile —
+    // stand-on like a chest, never blocking.
+    if (currentRoom_ == dungeon_.mapPieceRoom) {
+        markers_.push_back({layout.centerSpawn.x, layout.centerSpawn.y, MarkerKind::MapPiece, -1,
+                            dungeon::Dir::North});
+    }
+    // M66: the single-use dungeon treasure map, and — once it is read — the
+    // buried spot it revealed. Same stand-on center-tile contract (the
+    // generator keeps the three rooms distinct).
+    if (currentRoom_ == dungeon_.chartRoom) {
+        markers_.push_back({layout.centerSpawn.x, layout.centerSpawn.y, MarkerKind::Chart, -1,
+                            dungeon::Dir::North});
+    }
+    if (chartFound_ && currentRoom_ == dungeon_.buriedRoom) {
+        markers_.push_back({layout.centerSpawn.x, layout.centerSpawn.y, MarkerKind::Buried, -1,
+                            dungeon::Dir::North});
+    }
 
     roomMap_ = std::move(map);
     originX_ = (context_.virtualWidth - layout.width * kTile) / 2;
@@ -240,16 +269,30 @@ bool DungeonState::captureFaceEvent(dungeon::RoomEventKind kind) {
 
 void DungeonState::recomputeInteraction(int tx, int ty) {
     onChest_ = false;
+    onMapPiece_ = false;  // M65
+    onChart_ = false;     // M66 (M67 fix: these latched on forever once
+    onBuried_ = false;    // touched — a stuck prompt that also ate Confirm)
     facingMarker_ = nullptr;
     for (const Marker& m : markers_) {
         if (m.kind == MarkerKind::Chest && m.x == tx && m.y == ty) {
             onChest_ = true;
         }
+        if (m.kind == MarkerKind::MapPiece && m.x == tx && m.y == ty) {
+            onMapPiece_ = true;  // M65: stand-on, like a chest
+        }
+        if (m.kind == MarkerKind::Chart && m.x == tx && m.y == ty) {
+            onChart_ = true;  // M66
+        }
+        if (m.kind == MarkerKind::Buried && m.x == tx && m.y == ty) {
+            onBuried_ = true;  // M66
+        }
     }
     const int fx = facing_.x > 0.4f ? 1 : (facing_.x < -0.4f ? -1 : 0);
     const int fy = facing_.y > 0.4f ? 1 : (facing_.y < -0.4f ? -1 : 0);
     for (const Marker& m : markers_) {
-        if (m.kind != MarkerKind::Chest && m.x == tx + fx && m.y == ty + fy) {
+        if (m.kind != MarkerKind::Chest && m.kind != MarkerKind::MapPiece &&
+            m.kind != MarkerKind::Chart && m.kind != MarkerKind::Buried &&
+            m.x == tx + fx && m.y == ty + fy) {
             facingMarker_ = &m;
         }
     }
@@ -298,6 +341,18 @@ void DungeonState::openChest() {
 }
 
 void DungeonState::interact() {
+    if (onMapPiece_) {
+        takeMapPiece();  // M65
+        return;
+    }
+    if (onChart_) {
+        readChart();  // M66
+        return;
+    }
+    if (onBuried_) {
+        digBuried();  // M66
+        return;
+    }
     if (onChest_) {
         openChest();
         return;
@@ -318,9 +373,87 @@ void DungeonState::interact() {
                 resolveEvent();
             }
             return;
-        case MarkerKind::Chest: return;
+        case MarkerKind::Chest:
+        case MarkerKind::MapPiece:
+        case MarkerKind::Chart:
+        case MarkerKind::Buried:
+            return;
     }
     startBattle(facingMarker_->teamIndex, kind, facingMarker_->gateDir);
+}
+
+void DungeonState::readChart() {
+    if (dungeon_.chartRoom != currentRoom_ || dungeon_.buriedRoom < 0) {
+        return;
+    }
+    dungeon_.chartRoom = -1;
+    chartFound_ = true;
+    context_.audio.play(Sfx::Chest);
+    message_ =
+        "A treasure map of THIS dungeon! An X marks a room - it now glows on your minimap.";
+    messageTimer_ = scaledMessageTime(context_, 4.0f);
+    buildRoom();  // the chart marker clears (and the X may be in this room)
+}
+
+void DungeonState::digBuried() {
+    if (!chartFound_ || dungeon_.buriedRoom != currentRoom_) {
+        return;
+    }
+    dungeon_.buriedRoom = -1;
+    chartFound_ = false;
+    context_.audio.play(Sfx::Chest);
+    Party& p = context_.party;
+    const std::string curioId = pickCurio(p.ownedCurios, dungeon_.themeId, dungeon_.seed);
+    if (curioId.empty()) {
+        // The dozen is complete: buried treasures pay a legendary token now.
+        p.legendaryTokens += 1;
+        message_ = "Buried riches! +1 legendary token (your curio collection is complete).";
+    } else {
+        p.ownedCurios.push_back(curioId);
+        const CurioDef* curio = findCurio(curioId);
+        message_ = TextFormat("Buried treasure: %s! (curios: %d of %d - see Maps in town)",
+                              curio != nullptr ? curio->name : curioId.c_str(),
+                              static_cast<int>(p.ownedCurios.size()), kCurioCount);
+        // Curator may fire the moment the dozen completes.
+        pushAchievementToasts(stack(), context_, AchvContext{});
+    }
+    messageTimer_ = scaledMessageTime(context_, 4.0f);
+    buildRoom();
+}
+
+void DungeonState::takeMapPiece() {
+    if (dungeon_.mapPieceRoom != currentRoom_) {
+        return;
+    }
+    dungeon_.mapPieceRoom = -1;
+    context_.audio.play(Sfx::Chest);
+    Party& p = context_.party;
+    ++p.mapPieces;
+    if (p.mapPieces >= kMapPiecesNeeded) {
+        // The FOURTH piece completes the puzzle: the treasure lies in THIS
+        // run's town, guarded at THIS dungeon's own boss scale (owner rule:
+        // "the same level as the town + depth the final piece was found in").
+        p.mapPieces = 0;
+        p.treasure.active = true;
+        p.treasure.town = dungeon_.town;
+        p.treasure.bossId = treasureGuardBossId(context_.content, dungeon_.seed);
+        p.treasure.scalePct = 100;
+        for (const dungeon::EnemyTeam& t : dungeon_.teams) {
+            if (t.isBoss) {
+                p.treasure.scalePct = t.statScalePct;
+                break;
+            }
+        }
+        message_ = TextFormat(
+            "The final map piece! The treasure lies buried in Town %d - and something guards it.",
+            p.treasure.town);
+        messageTimer_ = scaledMessageTime(context_, 4.0f);
+    } else {
+        message_ = TextFormat("A Secret Map Piece! (%d of %d - see Maps in a town's pause menu)",
+                              p.mapPieces, kMapPiecesNeeded);
+        messageTimer_ = scaledMessageTime(context_, 3.5f);
+    }
+    buildRoom();  // the piece marker clears
 }
 
 // Applies a non-battle event exactly as its footer prompt stated it.
@@ -400,6 +533,55 @@ void DungeonState::resolveEvent() {
                        "! Save it for a foe that deserves it.";
             break;
         }
+        case dungeon::RoomEventKind::ArmoryGhost: {
+            // M55 (Ruined Keep): interactive. The player picks which inventory
+            // piece to offer; the picker applies the seeded upgrade and marks the
+            // event resolved, so we hand off and return (onResume rebuilds the
+            // room when the picker closes a completed trade).
+            stack().pushState(std::make_unique<ArmoryGhostState>(
+                stack(), context_, dungeon_.seed, currentRoom_, &ev));
+            return;
+        }
+        case dungeon::RoomEventKind::MinersCache: {
+            // M55 (Crystal Mine): a one-third max-HP wound to each standing member
+            // (never fatal), for gold above a trapped chest plus a guaranteed item
+            // (baked in at generation).
+            for (Character& c : context_.party.members) {
+                if (c.hp > 0) {
+                    c.hp = std::max(1, c.hp - dungeon::minersCacheWound(c.maxHp));
+                }
+            }
+            const int gold = dungeon::minersCacheGold(dungeon_.depth);
+            context_.party.gold += gold;
+            run_.treasureGold += gold;
+            std::string reward = TextFormat("%d gold", gold);
+            if (!ev.itemId.empty()) {
+                context_.party.inventory.add(ev.itemId, 1);
+                const content::ItemDef* it = context_.content.findItem(ev.itemId);
+                reward += std::string(" + ") + (it != nullptr ? it->name : ev.itemId);
+            }
+            context_.audio.play(Sfx::Chest);
+            message_ = "You clear the rockfall - battered, but richer: " + reward + ".";
+            break;
+        }
+        case dungeon::RoomEventKind::ElderRoot: {
+            // M55 (Hollow Forest): pay town-scaled gold for party XP (the inverse
+            // of fighting for XP - no battle turns spent).
+            if (context_.party.gold < ev.goldCost) {
+                context_.audio.play(Sfx::Error);
+                message_ = "The Elder Root asks " + std::to_string(ev.goldCost) +
+                           "g for its wisdom - you cannot pay.";
+                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                return;
+            }
+            context_.party.gold -= ev.goldCost;
+            const int xp = dungeon::elderRootXp(dungeon_.town, dungeon_.depth);
+            grantPartyXp(context_.party, xp, context_.content);
+            context_.audio.play(Sfx::Interact);
+            message_ = TextFormat("The Elder Root drinks your offering - the party gains %d XP.", xp);
+            maybePushMilestoneChoice(stack(), context_);  // M63: the level-up moment
+            break;
+        }
         case dungeon::RoomEventKind::EliteChallenge:
         case dungeon::RoomEventKind::None:
             return;  // challenges resolve through battle, not here
@@ -460,6 +642,22 @@ std::string DungeonState::eventPromptText() const {
                    "  -  " + danger::tierName(tier) + "  x" + std::to_string(team.count()) +
                    "  -  double danger score, no treasure";
         }
+        case dungeon::RoomEventKind::ArmoryGhost:
+            // M55: no cost, but you give up a piece of gear for a random one a
+            // tier finer, sight unseen.
+            return input::prompt(map, InputAction::Confirm, device, "Armory Ghost") +
+                   " - trade gear for one a rarity finer, unseen";
+        case dungeon::RoomEventKind::MinersCache:
+            return input::prompt(map, InputAction::Confirm, device, "Miner's Cache") +
+                   " - a third of each hero's HP for gold + an item";
+        case dungeon::RoomEventKind::ElderRoot:
+            if (context_.party.gold < ev.goldCost) {
+                return "The Elder Root asks " + std::to_string(ev.goldCost) +
+                       "g for its wisdom - you cannot pay.";
+            }
+            return input::prompt(map, InputAction::Confirm, device,
+                                 "Feed the Elder Root " + std::to_string(ev.goldCost) + "g") +
+                   " - the whole party gains XP (no fight)";
         case dungeon::RoomEventKind::None:
             break;
     }
@@ -475,11 +673,24 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     pendingTeamIndex_ = teamIndex;
     pendingGateDir_ = gateDir;
     battleResult_ = battle::BattleResult{};
-    battle::Battle b =
-        battle::buildBattle(context_.party, dungeon_.teams[static_cast<std::size_t>(teamIndex)],
-                            context_.content);
-    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &battleResult_,
-                                                    MusicTrack::None, &victoryStats_));
+    const dungeon::EnemyTeam& team = dungeon_.teams[static_cast<std::size_t>(teamIndex)];
+    // M68: the battle itself pays the team's spoils on Victory and shows the
+    // results panel; onResume no longer grants (it would double-pay).
+    pendingSpoils_ = teamSpoils(team, context_.content);
+    battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
+    // M56: every battle wears the theme backdrop; a boss-team fight (bossId set)
+    // opens with the Crystal Shatter intro, which then launches the same battle.
+    const render::BackdropStage stage = render::stageForTheme(dungeon_.themeId);
+    if (!team.bossId.empty()) {
+        stack().pushState(std::make_unique<BossIntroState>(
+            stack(), context_, std::move(b), &battleResult_, MusicTrack::None, &victoryStats_,
+            /*castleChallenge=*/false, stage, dungeon_.seed, &pendingSpoils_));
+    } else {
+        stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b),
+                                                        &battleResult_, MusicTrack::None,
+                                                        &victoryStats_, /*castleChallenge=*/false,
+                                                        stage, &pendingSpoils_));
+    }
 }
 
 void DungeonState::onEnter() {
@@ -491,7 +702,30 @@ void DungeonState::onEnter() {
 }
 
 void DungeonState::onResume() {
+    // M67: the run ended behind the result screen. The result pops only itself;
+    // any state wedged between (the M63 milestone modal a boss kill pushes) gets
+    // its turn on top, and once control falls back here the dungeon removes
+    // itself — the player always lands in town.
+    if (runComplete_) {
+        stack().popState();
+        return;
+    }
+    // M55: a pushed sub-state (the Armory Ghost picker) may have resolved the
+    // event the player is standing at; rebuild so its marker clears. Only touches
+    // a resolved event room, so it is harmless after a battle resume.
+    {
+        const dungeon::Room& here = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)];
+        if (here.type == dungeon::RoomType::Event && here.event.resolved) {
+            buildRoom();
+        }
+    }
     if (pendingKind_ == EncounterKind::None) {
+        return;
+    }
+    // M56 belt-and-braces: a boss fight now runs behind BossIntroState, so this
+    // resume only fires once the battle has truly ended. If a result is somehow
+    // still Ongoing (a spurious resume), leave the pending state intact and wait.
+    if (battleResult_.outcome == battle::Outcome::Ongoing) {
         return;
     }
     const EncounterKind kind = pendingKind_;
@@ -533,28 +767,13 @@ void DungeonState::onResume() {
         run_.dangerDefeated += danger::tierWeight(teamTier_[static_cast<std::size_t>(pendingTeamIndex_)]);
     }
 
-    // Award XP and gold for the defeated team.
-    std::string reward;
-    if (pendingTeamIndex_ >= 0 && pendingTeamIndex_ < static_cast<int>(dungeon_.teams.size())) {
-        const dungeon::EnemyTeam& team = dungeon_.teams[static_cast<std::size_t>(pendingTeamIndex_)];
-        int xp = 0;
-        int gold = 0;
-        for (const std::string& id : team.enemyIds) {
-            if (const content::EnemyDef* e = context_.content.findEnemy(id)) {
-                xp += e->xpReward;
-                gold += e->goldReward;
-            }
-        }
-        if (const content::BossDef* boss = context_.content.findBoss(team.bossId)) {
-            xp += boss->xpReward;
-            gold += boss->goldReward;
-        }
-        context_.party.gold += gold;
-        grantPartyXp(context_.party, xp, context_.content);
-        if (xp > 0) {
-            reward = TextFormat(" (+%d XP, +%dg)", xp, gold);
-        }
-    }
+    // M68: the battle already paid the team's XP and gold at its Done beat and
+    // showed the results panel (game/Spoils.hpp — the one shared rule), so no
+    // award happens here anymore. Only the level-up moment remains:
+    // M63 choice prompts fire after the battle popped. On a boss kill the
+    // modal lands under the result screen and surfaces right after it closes
+    // (M67 unwind order).
+    maybePushMilestoneChoice(stack(), context_);
 
     dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(pendingRoom_)];
     if (kind == EncounterKind::Gate) {
@@ -566,13 +785,13 @@ void DungeonState::onResume() {
                 .gated = false;
         }
         buildRoom();
-        message_ = "The gate is clear!" + reward;
+        message_ = "The gate is clear!";
         messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Guard) {
         room.teamIndex = -1;
         room.chest.guarded = false;
         buildRoom();
-        message_ = "The guards fall." + reward;
+        message_ = "The guards fall.";
         messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Challenge) {
         // The challenge pays double danger: the base credit was added above,
@@ -585,7 +804,7 @@ void DungeonState::onResume() {
         room.teamIndex = -1;
         room.event.resolved = true;
         buildRoom();
-        message_ = "Challenge won - double danger, +1 legendary token." + reward;
+        message_ = "Challenge won - double danger, +1 legendary token.";
         messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Boss) {
         completeDungeon();
@@ -593,6 +812,7 @@ void DungeonState::onResume() {
 }
 
 void DungeonState::completeDungeon() {
+    runComplete_ = true;  // M67: the next resume of this state pops it (see onResume)
     score::RunSummary summary;
     summary.completed = true;
     summary.battleTurns = run_.battleTurns;
@@ -635,12 +855,15 @@ void DungeonState::completeDungeon() {
             afterCompletedRun(context_.party.stakes, dungeon_.town, dungeon_.depth);
     }
 
-    // M34: a stakes-raising completed run in town >= 2 may spawn the black
-    // market, seeded from this run so reloading the entry autosave cannot reroll
-    // it. The offer persists in the party save until purchased; a later hit
-    // replaces it. Only reached on a real completion (total > 0).
-    if (blackMarketShouldSpawn(total > 0, raisedStakes, dungeon_.town, dungeon_.seed,
-                               dungeon_.depth)) {
+    // M34/M52: the black market may spawn from a stakes-raising scoring run in
+    // town >= 2 (the 20% path) OR from any beaten boss at town 7 depth >= 20 (the
+    // independent 34% path). completeDungeon is only reached on a real completion,
+    // so `completed` is true here; the score/stakes still gate the 20% path.
+    // Seeded from this run, so reloading the entry autosave cannot reroll it; the
+    // offer persists in the party save until purchased, and a later hit replaces
+    // it.
+    if (blackMarketShouldSpawn(total > 0, /*completed=*/true, raisedStakes, dungeon_.town,
+                               dungeon_.seed, dungeon_.depth)) {
         // Shared legendary pool (M39): the market and boss drops draw the same set.
         const std::vector<std::string> legendaryIds = legendaryDropPool(context_.content);
         if (!legendaryIds.empty()) {
@@ -686,9 +909,18 @@ void DungeonState::completeDungeon() {
     entry.townIndex = dungeon_.town;  // M32
     entry.stakesPenaltyPct = stakesPct;      // M33
     entry.classModPct = summary.classModPct;  // M45 (comparability tag, never ranked)
-    context_.scoreboard.add(entry);
-    content::LoadReport saveReport;
-    context_.scoreboard.save(saveReport);
+    // M53: a run played with god mode on is not a fair score, so keep it off the
+    // board. The guard is compiled in only for debug builds; in Release
+    // submitScore is a constant true and the scoreboard write is unchanged.
+    bool submitScore = true;
+#ifdef CRYSTAL_DEBUG_OVERLAY
+    submitScore = !context_.cheats.godMode;
+#endif
+    if (submitScore) {
+        context_.scoreboard.add(entry);
+        content::LoadReport saveReport;
+        context_.scoreboard.save(saveReport);
+    }
 
     // M42: fold this run's victory tallies into the party's personal records
     // (display-only, never ranked), then show the result with the run stats.
@@ -700,6 +932,15 @@ void DungeonState::completeDungeon() {
     }
     stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total, drops,
                                                            victoryStats_));
+
+    // M71: a CLEAN run earns the celebration, shown above the reckoning: the
+    // score alone, the team jumping to their own beats, the MVP on the
+    // pedestal, the fallen lying where they fell. Clean means (owner rules):
+    // no stakes penalty, a positive score, and not a single escape.
+    if (stakesPct == 0 && total > 0 && run_.escapes == 0) {
+        stack().pushState(std::make_unique<CelebrationState>(
+            stack(), context_, TextFormat("Score: %d", total), victoryStats_.mvpMember()));
+    }
 
     // M42: unlock any achievements this run earned, and toast them (pushed above
     // the result, so they show first, then the reckoning).
@@ -746,13 +987,26 @@ void DungeonState::openDetails() {
         "Trivial, Easy, Fair, Dangerous, Deadly, Boss.\n\nGate teams must be "
         "fought to reach the boss. Guarded chests show their rarity before "
         "the fight; escaping the guard forfeits the chest. Events state "
-        "their full trade-off in the footer before you Confirm. Deeper "
-        "dungeons field bigger, stronger teams - and pay better.";
+        "their full trade-off in the footer before you Confirm. Each theme "
+        "also hides one signature rite - the Keep's Armory Ghost, the Mine's "
+        "Cache, the Forest's Elder Root. Deeper dungeons field bigger, "
+        "stronger teams - and pay better.";
     stack().pushState(
         std::make_unique<DetailsOverlayState>(stack(), context_, "Dungeon Details", body));
 }
 
 void DungeonState::update(float dt) {
+#ifdef CRYSTAL_DEBUG_OVERLAY
+    // M53: the debug "Instant dungeon clear" request is set from the pause menu
+    // and consumed here, once the menus have closed and the dungeon is ticking
+    // again. It runs the real completeDungeon() path — genuine scoring, unlocks,
+    // and market rolls (and, if god mode is on, the same honest scoreboard skip).
+    if (context_.cheats.requestDungeonClear) {
+        context_.cheats.requestDungeonClear = false;
+        completeDungeon();
+        return;
+    }
+#endif
     worldTime_ += dt;
     const float length = std::sqrt(moveX_ * moveX_ + moveY_ * moveY_);
     moving_ = length > 0.0001f;
@@ -846,6 +1100,12 @@ void DungeonState::renderMinimap() const {
             c.a = 110;
         }
         DrawRectangle(cx, cy, cell, cell, c);
+        // M66: once the chart is read, the X it promised burns on the minimap.
+        if (chartFound_ && static_cast<int>(i) == dungeon_.buriedRoom) {
+            DrawRectangle(cx + 1, cy + 1, cell - 2, 1, Color{235, 214, 112, 255});
+            DrawRectangle(cx + 1, cy + cell - 2, cell - 2, 1, Color{235, 214, 112, 255});
+            DrawRectangle(cx + cell / 2, cy + 2, 1, cell - 4, Color{235, 214, 112, 255});
+        }
         if (static_cast<int>(i) == currentRoom_) {
             DrawRectangleLines(cx - 1, cy - 1, cell + 2, cell + 2, RAYWHITE);
         }
@@ -1001,11 +1261,35 @@ void DungeonState::render() {
                         glyph = "*";
                         spriteId = "prop.event.relic";
                         break;
+                    case dungeon::RoomEventKind::ArmoryGhost:  // M55: spectral
+                        c = Color{200, 205, 235, 255};
+                        glyph = "G";
+                        break;
+                    case dungeon::RoomEventKind::MinersCache:  // M55: crystal cache
+                        c = Color{120, 220, 235, 255};
+                        glyph = "$";
+                        break;
+                    case dungeon::RoomEventKind::ElderRoot:  // M55: green root
+                        c = Color{110, 190, 120, 255};
+                        glyph = "T";
+                        break;
                     case dungeon::RoomEventKind::None:
                         break;
                 }
                 break;
             }
+            case MarkerKind::MapPiece:  // M65: a golden scrap (glyph marker,
+                c = Color{235, 214, 112, 255};  // the M55-rite precedent)
+                glyph = "?";
+                break;
+            case MarkerKind::Chart:  // M66: a cyan chart scrap
+                c = Color{110, 214, 220, 255};
+                glyph = "M";
+                break;
+            case MarkerKind::Buried:  // M66: the X the chart promised
+                c = Color{224, 96, 84, 255};
+                glyph = "X";
+                break;
         }
         const int mx = originX_ + m.x * kTile;
         const int my = originY_ + m.y * kTile;
@@ -1068,7 +1352,10 @@ void DungeonState::render() {
         cx += ui::drawChip(TextFormat("%s  D%d", dungeon_.themeName.c_str(), dungeon_.depth),
                            cx, 4, themeAccent) + 4;
         cx += ui::drawChip(TextFormat("Gates %d", dungeon_.mandatoryGates), cx, 4, pal.danger) + 4;
-        ui::drawChip(TextFormat("%dg", context_.party.gold), cx, 4, pal.gold);
+        cx += ui::drawChip(TextFormat("%dg", context_.party.gold), cx, 4, pal.gold) + 4;
+        if (chartFound_) {
+            ui::drawChip("Treasure!", cx, 4, pal.gold);  // M66: the X awaits
+        }
     }
 
     renderMinimap();
@@ -1092,6 +1379,15 @@ void DungeonState::render() {
         } else {
             text = input::prompt(map, InputAction::Confirm, device, "Open chest" + rarity);
         }
+    } else if (onMapPiece_) {
+        // M65: the find explains itself before the take.
+        text = input::prompt(map, InputAction::Confirm, device, "Take the Secret Map Piece") +
+               TextFormat("  (%d of %d held)", context_.party.mapPieces, kMapPiecesNeeded);
+    } else if (onChart_) {
+        text = input::prompt(map, InputAction::Confirm, device,
+                             "Read the weathered map - it shows THIS dungeon");
+    } else if (onBuried_) {
+        text = input::prompt(map, InputAction::Confirm, device, "Dig up the buried treasure");
     } else if (facingMarker_ != nullptr && facingMarker_->kind == MarkerKind::Event) {
         text = eventPromptText();
     } else if (facingMarker_ != nullptr && facingMarker_->teamIndex >= 0 &&

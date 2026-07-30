@@ -16,7 +16,10 @@
 #include "raylib.h"
 #include "game/Achievements.hpp"
 #include "states/AchievementToast.hpp"
+#include "render/BattleBackdrop.hpp"
 #include "states/BattleState.hpp"
+#include "states/BossIntroState.hpp"
+#include "states/CelebrationState.hpp"  // M71
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
@@ -32,6 +35,7 @@ const char* challengeName(CastleChallenge kind) {
         case CastleChallenge::BossRush: return "Boss Rush";
         case CastleChallenge::Endless: return "Endless Rush";
         case CastleChallenge::King: return "The Hollow King";
+        case CastleChallenge::DuckGauntlet: return "The Deadly Duck";  // M61
     }
     return "";
 }
@@ -43,6 +47,11 @@ dungeon::EnemyTeam teamFor(CastleChallenge kind, int wave, const content::Conten
         case CastleChallenge::BossRush: return bossRushTeam(db, wave);
         case CastleChallenge::Endless: return endlessWaveTeam(db, wave);
         case CastleChallenge::King: return wave == 0 ? kingTeam(db) : dungeon::EnemyTeam{};
+        case CastleChallenge::DuckGauntlet:  // M61: the Evil Geese, then the Duck
+            if (wave == 0) {
+                return gooseWaveTeam(db);
+            }
+            return wave == 1 ? duckTeam(db) : dungeon::EnemyTeam{};
     }
     return {};
 }
@@ -70,17 +79,40 @@ void CastleChallengeState::startNextFight() {
         return;
     }
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
+    // M62: the Duck no longer borrows the King's theme — his pond, his own
+    // anthem (MusicTrack::DuckBattle, battle-tier synth fallback).
     const MusicTrack music =
-        kind_ == CastleChallenge::King ? MusicTrack::KingBattle : MusicTrack::None;
-    // M43: the last argument marks this as a castle fight, so a defeat message
-    // never claims the dungeon's gold penalty.
-    stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &result_,
-                                                    music, nullptr, true));
+        kind_ == CastleChallenge::King
+            ? MusicTrack::KingBattle
+            : (kind_ == CastleChallenge::DuckGauntlet && wave_ == 1 ? MusicTrack::DuckBattle
+                                                                    : MusicTrack::None);
+    // M43: the `true` marks this as a castle fight, so a defeat message never
+    // claims the dungeon's gold penalty. M56: castle fights wear the Castle
+    // backdrop; a boss-team fight (a Boss Rush wave or the King) opens with the
+    // Crystal Shatter, which then launches the same battle. Endless waves have no
+    // bossId and stay plain. The intro seed is a stable function of the wave.
+    const std::uint64_t introSeed = 0xB055C0DE0000ull + static_cast<std::uint64_t>(wave_);
+    // M71: the challenge accumulates its own damage tallies so the celebration
+    // can put the true MVP on the pedestal.
+    if (!team.bossId.empty()) {
+        stack().pushState(std::make_unique<BossIntroState>(
+            stack(), context_, std::move(b), &result_, music, &stats_, /*castleChallenge=*/true,
+            render::BackdropStage::Castle, introSeed));
+    } else {
+        stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &result_,
+                                                        music, &stats_, /*castleChallenge=*/true,
+                                                        render::BackdropStage::Castle));
+    }
 }
 
 void CastleChallengeState::onResume() {
     if (done_) {
         return;  // the overlay is up; input pops us
+    }
+    // M56: the fight now runs behind BossIntroState for boss waves; only act once
+    // the battle has truly ended (a still-Ongoing result means a spurious resume).
+    if (result_.outcome == battle::Outcome::Ongoing) {
+        return;
     }
     context_.fade.start();
     totalRounds_ += result_.rounds;
@@ -170,8 +202,37 @@ void CastleChallengeState::finish(bool cleared) {
                            std::to_string(kKingRewardGold) + " gold, +" +
                            std::to_string(kKingRewardTokens) + " tokens.";
                 }
+                // M61: fell the King with a Goose in the party and something
+                // stirs by the pond. Party membership is the rule (fallen geese
+                // honked their part too); the marker is the documented class-id
+                // constant the M58 scare rule reads.
+                if (!context_.party.gooseTownUnlocked) {
+                    for (const Character& member : context_.party.members) {
+                        if (member.classId == kGooseClassId) {
+                            context_.party.gooseTownUnlocked = true;
+                            msg += " Your geese honk in triumph - and something answers "
+                                   "from a pond beyond the castle. Goose Town has opened.";
+                            break;
+                        }
+                    }
+                }
             } else {
                 msg = "The King proves too mighty. Return stronger.";
+            }
+            break;
+        case CastleChallenge::DuckGauntlet:  // M61
+            if (cleared) {
+                if (duckImproved(rec, totalRounds_)) {
+                    rec.duckBestTurns = totalRounds_;
+                }
+                msg = "The Deadly Duck sinks beneath the pond in " +
+                      std::to_string(totalRounds_) +
+                      " turns! The geese fall silent. Nothing in the realm out-fights "
+                      "you now.";
+            } else {
+                msg = wavesWon_ == 0
+                          ? "The Evil Geese overwhelm you. The Duck never even surfaced."
+                          : "The Deadly Duck proves deadlier. Return stronger.";
             }
             break;
     }
@@ -180,8 +241,16 @@ void CastleChallengeState::finish(bool cleared) {
                "but nothing is healed - find an inn.";
     }
     resultText_ = msg;
+    // M71: beating the King, the Deadly Duck, or the Boss Rush earns the
+    // celebration (the Endless Rush has no "beating"): shown above this
+    // state's result overlay, headline = the challenge's turns.
+    if (cleared && kind_ != CastleChallenge::Endless) {
+        stack().pushState(std::make_unique<CelebrationState>(
+            stack(), context_,
+            "Cleared in " + std::to_string(totalRounds_) + " turns!", stats_.mvpMember()));
+    }
     // M42: a challenge win may unlock castle achievements; toast them above the
-    // result overlay this state renders.
+    // result overlay this state renders (and above the celebration).
     pushAchievementToasts(stack(), context_, AchvContext{});
 }
 
@@ -199,7 +268,7 @@ void CastleChallengeState::captureKingReward() {
 
 void CastleChallengeState::handleInput(const Input& input) {
     if (done_ && (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel))) {
-        stack().popState();  // back to the castle hub
+        stack().popState();  // back to whichever hub pushed us (castle or Goose Town)
     }
 }
 
@@ -220,8 +289,13 @@ void CastleChallengeState::render() {
     ui::drawDivider(boxX + 14, boxY + 34, boxW - 28);
     ui::drawTextWrapped(resultText_, boxX + 16, boxY + 42, boxW - 32, 10, p.text,
                         "castle.challenge.result", 6);
+    // M62: the Duck gauntlet pops back to Goose Town, not the castle — the
+    // prompt says where you actually go.
+    const char* returnLabel = kind_ == CastleChallenge::DuckGauntlet
+                                  ? "Return to Goose Town"
+                                  : "Return to the Castle";
     ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,
-                                       context_.input.activeDevice(), "Return to the Castle")
+                                       context_.input.activeDevice(), returnLabel)
                              .c_str(),
                          w / 2, boxY + boxH - 16, 10, p.gold);
 }

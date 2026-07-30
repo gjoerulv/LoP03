@@ -55,6 +55,31 @@ from the class and the character's level (not stored), so leveling mid-run
 immediately unlocks the new options and no save is ever invalidated. By the
 level cap each class commands roughly six to seven skills.
 
+**Level milestones (M63).** At levels **10, 20 and 30** every character —
+all nine classes, the joke classes included — chooses **one of two
+permanent class bonuses** at the level-up moment (a modal; postponing is
+allowed and it simply re-asks at the next level-up or town visit; a level
+gained on the boss kill itself asks right after the run's result screen,
+on the way back to town — M67). The
+choices are authored in `data/milestones.json` (owner-approved table:
+stat percents, damage/heal modifiers, granted passive traits, and signature
+effects like the Guardian's first-hit-glances-off, the Ranger's double
+shot, the Cleric's *Purifying Light* — which deliberately buys back
+Purify's pre-M62 healing — and the Jester's on-kill/on-death theatrics).
+Choices are permanent, persist in the save, and old saves simply get asked
+on arrival. Battle-side effects are part of battle rules **v14**.
+
+**Scroll learning and the Party panel (M64).** Skill **scrolls** finally
+teach: using one (from the new **Party** panel on either pause menu) has a
+chosen character learn its skill **permanently** — any class, any scroll
+(class-agnostic by owner decision), refused with a reason if the character
+already knows it, so a scroll is never wasted. The Party panel itself is
+the party's ledger: stats with the gear share spelled out, equipment,
+passives, milestone choices, and every known skill (scroll-learned ones
+marked); since M67 every member row carries its class sprite and the
+equipped passive and chosen milestones show their descriptions in place.
+The M65 treasure maps pay exclusive scrolls into this same system.
+
 **Passive skills (M36).** Beyond skills, each character can carry a **passive** —
 an always-on battle trait bought at the Training Hall for gold. The economy is
 **own many, equip one**: purchased passives stay owned, and the single equipped
@@ -160,9 +185,14 @@ stay comparable.
 ## 7. Danger rating (derived, never hand-authored)
 
 Displayed danger is computed **deterministically from enemy stats and abilities**
-(HP, Attack, Magic, Defense, Speed, skill threat, team synergy), may be compared
-to a dungeon-depth baseline, and maps to tiers: **Trivial, Easy, Fair,
-Dangerous, Deadly, Boss**. Formula is explicit and unit-tested (M6).
+(HP, Attack, Magic, Defense, Speed, skill threat, team synergy) and, since M68
+(owner decision), compared to the **current party's own derived strength** —
+"Deadly" means deadly for THIS party, and the same team reads easier as the
+party grows. Tiers: **Trivial, Easy, Fair, Dangerous, Deadly, Boss**;
+snapshotted once at dungeon entry so the labels and the danger-defeated score
+credit agree for the whole run (generation v14 tags the recalibration on the
+scoreboard). Formula is explicit and unit-tested (M6; recalibrated M68 via the
+`[danger-report]` battery).
 
 ## 8. Combat
 
@@ -171,6 +201,26 @@ enemy team 1–5. Commands: **Attack, Skill/Magic, Item, Guard, Escape**. KO and
 revive exist; game over if all party KO. **Every** encounter (incl. bosses) is
 escapable. Escaping a normal battle forfeits that guarded chest/reward; escaping
 the boss or leaving the dungeon gives **0 dungeon score**.
+
+**Victory spoils (M68).** A won dungeon battle ends on a compact results
+panel over the battlefield — XP and gold received, plus a diff block for
+every member that leveled (stat gains, newly learned skills) — dismissed by
+the same single Confirm that always ended a battle; no extra screen, no
+extra presses. Castle-tier fights keep their own flat rewards.
+
+**The victory celebration (M71).** A dungeon cleared **flawlessly** —
+zero stakes penalty, a positive score, and not a single escape — opens on
+a celebration before the detailed reckoning: the score
+alone in gold with one random dry punchline beneath it (a twelve-line
+in-world pool, the title-phrase idiom), confetti, the party jumping each
+to their own rhythm and
+height, the run's MVP (most damage dealt) named on a centre pedestal, and
+any KO'd member lying where they fell — the fallen do not jump, but a
+KO'd MVP still lies in state ON the pedestal, chip and name intact
+(deliberate). Beating
+the King, the Deadly Duck, or the Boss Rush earns the same screen with
+the clear's turn count; the Endless Rush, penalized or escaped-through or
+zero-score runs, and losses never celebrate.
 
 **Status effects (M35, extends M7).** Beyond poison and the attack/defense
 buffs/debuffs, three afflictions deepen the tactics. **Blind** makes a unit's
@@ -275,6 +325,14 @@ offer waits until bought; a later stakes-raising hit replaces it. Legendaries ar
 aspirational endgame gear (sim-validated not to trivialize the top town), the
 prize for climbing and taking optional risks.
 
+**High-stakes market path (M52).** On top of that 20 % rule, **any** beaten
+dungeon boss at **town 7, depth 20 or deeper** rolls a **second, independent
+34 % chance** of the same dealer appearing — regardless of score, stakes, or a
+penalty that floors the run's score to 0 (retreats and defeats never count). It
+rides its own fresh seeded stream (a run can win one roll and lose the other),
+so it is reload-proof the same way, and it simply gives the deepest top-end runs
+a reliably better shot at a legendary. The 20 % rule is unchanged.
+
 **Boss legendary & token drops (M39).** Beating a dungeon boss in **town 3 or
 higher** and at **depth 4 or deeper** rolls two independent rewards, seeded from
 the run (so a reload can't reroll them): a chance of **legendary tokens** and a
@@ -310,6 +368,58 @@ Castle records live **entirely apart from the dungeon scoreboard** (score
 comparability is preserved); challenges never touch your dungeon score, stakes, or
 the scoreboard. Travel back to town is free.
 
+**Goose Town & the Deadly Duck (M61).** Fell the King with **at least one
+Goose in the party** and the north road out of town 7 forks: beside the
+castle now sits **Goose Town**, the pond beyond it. It works like the castle
+(inn, save point, its own Pond Record) with a single challenge — the game's
+true final fight, a **no-heal gauntlet**:
+
+1. **The Evil Geese** — five of them, a diverse cast (bruiser, magic sniper,
+   healer, disruptor, poison attrition), each with **one elemental weakness
+   and two passive skills**, each at ~500 effective HP — and each with a
+   **10% chance per turn to simply "Quack."** and do nothing.
+2. **The Deadly Duck** — the mightiest foe in the realm, above the King in
+   every effective stat, at **5000 effective HP**. His basic attack strikes
+   the **whole party** and inflicts statuses (ATK-down + poison); he is
+   **immune to every affliction** — poison, blind, silence, confusion,
+   terror, stun, all of it bounces off — yet **stat debuffs still land**, so
+   the Deadly Spoon (and honest healing) is the obtainable counterplay, the
+   King's own design philosophy one step up. He carries **Counter Attack,
+   Thorns and Spell Ward**, and he enrages.
+
+The **Goofy Jester** by the pond tells the legendary "Ballad of the Deadly
+Duck" (pure flavor, all original). Clearing the gauntlet earns the
+**Quackbane** achievement and a repeatable fewest-turns Pond Record — the
+prize is the deed. Like every castle-tier fight, defeat costs no gold but
+carries you out at 1 HP. Since **M62** the fight wears its own face: bespoke
+sprites for the five geese and the crownless Duck, and the Duck fights to his
+own anthem — a lumbering, waddling minor-key march — instead of borrowing the
+King's theme.
+
+**The town puzzle map (M65, a Heroes of Might and Magic 2 homage).** About
+one dungeon in ten hides a **Secret Map Piece** in a plain room (seeded —
+a reload cannot move it). Four pieces complete a parchment sketch (the new
+**Maps** screen on the town pause menu, filling in quadrant by quadrant)
+and reveal a **buried treasure in the town where the fourth piece was
+found**, marked by an X-scored dig spot on the plaza. Digging wakes its
+guardian — a boss from the dungeon roster with its court, at exactly the
+boss scale of the dungeon that yielded the final piece — fought at castle
+stakes (no score, no gold penalty, carried out at 1 HP; the map keeps the
+spot for retries). The prize: one of **six Lost Scrolls found nowhere
+else**, its skill **learned on the spot** by a chosen member (the M64
+scroll system); once all six are dug up, further treasures pay a legendary
+token and gold. The map then resets — the cycle repeats forever.
+
+**The dungeon treasure map + curios (M66).** Rarer still (~1 dungeon in 8),
+a weathered **chart of the current dungeon** waits in a plain room: reading
+it instantly marks a buried treasure elsewhere in that same run — a gold X
+on the minimap — but the map is **single-use**: leave without digging and
+it is lost with the run. The dig pays one of **twelve original curios**
+(four per dungeon theme, drawn unowned-first from the run's own theme),
+collected on the Maps screen. Gathering the full dozen earns the
+**Curator** achievement, after which buried treasures pay a legendary
+token. Curios are pure collection joy — no stats, no score.
+
 **Story & lore (M41).** A light-hearted running serial threads the climb: a
 **wandering storyteller** stands in every town and, town by town, spins the
 increasingly absurd "Ballad of the Hollow King" — one verse per town, growing
@@ -326,11 +436,21 @@ menu) is a codex of the whole roster: a foe you have fought shows its sprite,
 stats, behaviour profile (role/tier or boss archetype), tags, passives (one per
 line), and — for bosses — its flavor text; a foe you have not met yet reads as an
 unknown, so the roster's size and your progress through it are always visible.
+Each known foe also shows a `max` line beneath its base stats (M52): its stats
+**at their strongest real fight context**, so a codex entry conveys not just what
+a foe is worth on paper but how dangerous it becomes at the top of the game. The
+context is the hardest place the foe is actually fought — regular enemies (and
+elites) at the town-7 dungeon ceiling (×5.70), an own-arena boss (the King's
+throne room; since M61 also the Deadly Duck's pond) and its bossOnly court (the
+Royal Guards, the Evil Geese) at the bespoke ×5.00 arena scale, and every other
+boss at the Boss Rush (×5.80). The
+**Endless Rush is deliberately excluded**: its scale climbs without bound, so no
+single "strongest" number would be honest.
 **Victory stats** appear on the clear screen's Run-stats view: this run's
 total damage, biggest single hit, statuses inflicted, and the party MVP, plus your
 personal records (biggest hit ever, most damage in a run) — display-only, never
-ranked. **Achievements** (also from the pause menu) are ~16 original cross-game
-goals — clearing dungeons, climbing the ladder, beating the King's challenges,
+ranked. **Achievements** (also from the pause menu) are 18 original cross-game
+goals (16 at M42; M61 added Quackbane, M66 the Curator) — clearing dungeons, climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
 
@@ -344,7 +464,9 @@ decision and healing a real choice, at one battle-rules bump (v4).
   gold buys a handful of Remedies or a single Tear, so the shopping list is a
   decision rather than a formality.
 - **Purify** lifts the party's afflictions and **heals nothing** (M47 narrowed
-  its scope further — see below); **Renew** becomes the emergency button — a weak
+  its scope further — see below; a heal-formula leak quietly let it heal
+  magic/2 anyway until **M62** closed it, battle rules v13); **Renew** becomes
+  the emergency button — a weak
   heal that can also **raise a fallen ally at 20 % HP**, the first skill in the
   game that can.
 - **Battle items now respect the state of their target:** potions, ethers, and
@@ -377,9 +499,20 @@ you out-level and becomes a fight you answer with absurd objects.
   - **Evil Goose** — "A terrifying goose." The target can only **Guard** next turn.
   - **Tax Sheets** — "Busy your enemies with taxes." The target **loses** its next turn.
   - **Dragon Crown** — "The real Dragon Crown." Saps the **Hollow King's** attack
-    and defense. Anyone else shrugs — and you keep the crown.
+    and defense. Anyone else shrugs — and you keep the crown. **Hidden effect
+    (M52):** used on the King, it *also* permanently ends his revive clock — his
+    fallen Royal Guards never return for the rest of the fight. This is a
+    **deliberately hidden** interaction: the game shows no text for it (he simply
+    stops calling them back), so it stays discoverable-but-unexplained. Recorded
+    here because the design docs are the truth; the game keeps the secret. It is
+    schema-driven (an optional `disablesMinionRevive` item flag, no item id is
+    special-cased) and lives in shared battle code, so simulation and live play
+    resolve it identically — the one battle-rules bump this milestone makes
+    (rules 9 → 10).
   - **Deadly Spoon** — "Most deadly thing known to man." **Halves** the target's
-    ATK/MAG/DEF/SPD for the rest of the battle. The rarest, and it shows.
+    ATK/MAG/DEF/SPD for the rest of the battle. The rarest, and it shows. **Once
+    per foe** (M58): a second Spoon on an already-diminished target does nothing
+    (it no longer stacks down to a quarter).
   The King is **not** immune to any of them: that is the whole point.
 - **The King doubles.** 750 HP (was 560) and doubled ATK/MAG/DEF/SPD
   (36 / 44 / 36 / 26). A party carrying no relics and no snacks **loses**, and
@@ -407,6 +540,11 @@ long before it is earned. All three are jokes that are also real classes:
 - **Goose** — dreadful stats, **equips nothing at all**. Its heals and cures work
   — and cheerfully buff **every enemy** at the same time. At level 30 it learns
   one ultimate that lays every debuff on every foe for 30 MP. **+5 % per Goose.**
+  Against the **Hollow King** it has a hidden edge (M58): each of the King's own
+  turns he has a **10 % chance per living Goose** in the party to be scared into
+  doing nothing — *"The geese scare the King…"* flashes above the panel like a
+  Jester quip — while his court fights on. A full four-Goose party unnerves him
+  40 % of his turns.
 
 The class modifiers are **additive across the party** (three Dragons and a Goose
 = −55 %), shown as their own line on the result screen and tagged on the
@@ -574,8 +712,11 @@ gameplay:
 - **Settings are organized into submenus** — Audio / Display / Gameplay /
   Controls, plus Reset — so the option list is no longer one long scroll. Cancel
   steps back one level, then saves and closes.
-- A subtle **CRT effect** (Display → CRT Effect, **Off by default**) adds faint
-  scanlines and a light mask with **no curvature**, so the pixels stay crisp.
+- A scalable **CRT Strength** control (Display → CRT Strength, a **0–10 slider,
+  0 by default**). 0 is the plain crisp image; higher values progressively add a
+  stable ~1985 consumer-CRT look (curved glass, scanlines, a subtle slot mask,
+  gentle glow, curved dark corners) that stays readable — ~3 matches the old
+  subtle effect, 5–6 is a convincing clean CRT, 10 is heavy but still playable.
 - **Losing window focus now mutes the audio by default**; a new **Background
   Audio** toggle (Audio submenu) keeps it playing. (A deliberate change — the
   game used to always play.)
@@ -583,6 +724,89 @@ gameplay:
   sweep) briefly **tints the whole screen** during its impact — heal green,
   damage coral, debuff violet — a single faint pulse, gated by the Battle Flash
   setting, never a strobe.
+
+**Comforts & secrets (M52).** Six small quality-of-life additions and one
+secret, none touching the core loop:
+- **Ambience has its own volume slider** (Audio submenu), no longer chained to
+  the SFX slider as it was since M27. It **defaults to 5/10** — quieter by
+  design — and applies live and at startup. Old settings files (with no ambience
+  field) load at 0.5.
+- An **in-battle battle log**: the **Menu/Pause** action (hinted on the command
+  menu, and openable in **any** phase — including the auto-played turns of a full
+  Jester party) opens a scrollable overlay of the **last 30 action results** (the
+  exact lines the battle showed); the same action, or Cancel, closes it. It is
+  presentation-only — a mid-fight memory aid that never affects how the battle
+  resolves and is gone when the battle ends.
+- The **Equip Shop** now shows the **owned count** beside each buy price, and
+  the equip flow shows the **currently equipped item** in the chosen slot plus
+  the **stat difference** of the highlighted candidate, **coloured per stat**
+  (each raised stat green, each lowered stat coral, unchanged stats normal), so a
+  mixed swap reads truthfully at a glance.
+- Bestiary **max stats** (see §10), the **Dragon Crown's hidden effect** against
+  the King's revive clock (see §10, Royal Relics — a deliberate secret), and the
+  **high-stakes black-market path** (see §10, Black market) round out the
+  milestone.
+
+**Toolbelt & trims (M53).** Four small adjustments, none touching the core loop:
+- The **Save Point** now offers **five manual slots** (was three) plus the
+  autosave slot; every slot is visible on the Load screen and old saves load
+  unchanged.
+- The **Champion** achievement is now an efficiency goal — **"Defeat the Hollow
+  King in 15 turns or fewer"** — read from your best King-fight turn count.
+  (Just *beating* the King is the separate **Kingslayer** achievement.) A save
+  that already beat him that quickly unlocks it retroactively.
+- The **Equip Shop** shows a **weapon's element** (Fire, Holy, …) as a small
+  coloured chip in the Buy list, the Equip list, and the Gear Details overlay, so
+  the five elemental weapons are identifiable before purchase or equip. (The
+  affinity layer itself is unchanged — see Elements in §9.)
+- A **development-only debug menu** (never present in a shipping build) is added
+  for testing; it has no player-facing behaviour and is described in
+  `docs/technical_design.md`.
+
+**Arms of the ladder (M54).** A substantial, owner-approved **equipment
+rebalance** so gear feels like it climbs with the seven-town ladder. It is a
+`data/items.json`-only change (no schema, no version bump): positive
+ATK/MAG/DEF/SPD **and price** scale from ×1.0 at the weakest non-legendary up to
+×2.0 at the strongest town-7 epics, with legendaries at ×2.5. **HP bonuses, stat
+penalties, pure-HP items, and legendary prices are deliberately never scaled**,
+and the ten weakest pieces are unchanged. Enemies were **not** retuned to
+compensate. Consequence for the owner's eye: the far stronger endgame gear lowers
+the counterplay a maxed party needs against the Hollow King (a fully unaided
+party still loses, but a modest snack/relic loadout that used to lose now wins) —
+a balance shift reported for review, with King winnability remaining an owner
+manual item.
+
+**Theme rites (M55).** Each of the three dungeon themes now hides **one signature
+room event, guaranteed exactly once per dungeon** and never appearing in another
+theme (this is the only generation change in the program: **generation version
+10 → 11**). Each states its full trade-off in the footer before you Confirm, like
+every event:
+- **The Armory Ghost** (Ruined Keep) — trade one piece of gear from your bag for
+  a random piece **one rarity finer, same slot, sight unseen**. An epic can even
+  yield a legendary (a third way to find one); the offered piece is consumed and
+  the ghost declines legendaries. No gold, no fight, no score effect. You pick
+  which piece to offer from a list.
+- **Miner's Cache** (Crystal Mine) — clear a rockfall for a rich cache: **a third
+  of each standing hero's max HP** (never fatal) in exchange for gold well above a
+  trapped chest **plus a guaranteed item**. Deliberately a bit harsher than the
+  25 % trapped chest, and more rewarding.
+- **The Elder Root** (Hollow Forest) — **pay town-scaled gold for party XP** worth
+  about one elite battle, spending **zero battle turns** (your score is untouched)
+  — the inverse of grinding fights for XP. Refused if you cannot pay.
+
+**Boss stagecraft (M56).** Pure presentation, no rules change:
+- Every battle now wears a **subdued per-theme backdrop** behind the combatants —
+  a broken-parapet Keep, a crystal-cluster Mine, a trunk-columned Forest, or a
+  bannered Castle throne room — kept deliberately quiet (small silhouettes low and
+  along a top skyline strip, the central action corridor left clear) so it sets
+  the place without competing with the fight. In **high contrast** the backdrops
+  simplify (accents drop, silhouettes stay).
+- Every battle against a **boss team** (a dungeon boss, a Boss Rush wave, or the
+  Hollow King) opens with a dramatic **Crystal Shatter** transition — cracks grow,
+  the screen darkens with a single dim pulse, and the scene shatters into crystal
+  shards before the battle lands. It is **always skippable** with Confirm and obeys
+  the reduced-motion/flash settings (the pulse is gated by Battle Flash, the shake
+  by Battle Shake); Endless Rush waves stay plain.
 
 ## 13. First-complete-version content target
 

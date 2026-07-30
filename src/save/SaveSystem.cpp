@@ -10,6 +10,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/ContentLoader.hpp"
 #include "content/JsonValidation.hpp"
+#include "game/Curios.hpp"  // M66: curio-id validation on load
 #include "game/Party.hpp"
 #include "game/WorldLadder.hpp"
 
@@ -23,6 +24,8 @@ const char* slotFileStem(SaveSlot slot) {
   case SaveSlot::Manual1: return "save_slot1";
   case SaveSlot::Manual2: return "save_slot2";
   case SaveSlot::Manual3: return "save_slot3";
+  case SaveSlot::Manual4: return "save_slot4";
+  case SaveSlot::Manual5: return "save_slot5";
   }
   return "save_slot1";
 }
@@ -33,6 +36,8 @@ const char* slotDisplayName(SaveSlot slot) {
   case SaveSlot::Manual1: return "Slot 1";
   case SaveSlot::Manual2: return "Slot 2";
   case SaveSlot::Manual3: return "Slot 3";
+  case SaveSlot::Manual4: return "Slot 4";
+  case SaveSlot::Manual5: return "Slot 5";
   }
   return "Slot";
 }
@@ -74,6 +79,15 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["castleKingDefeated"] = party.castleRecords.kingDefeated;
   root["castleKingBestTurns"] = party.castleRecords.kingBestTurns;
   root["castleKingTitle"] = party.castleRecords.kingTitle;
+  root["castleDuckBestTurns"] = party.castleRecords.duckBestTurns;  // M61 (optional; old -> 0)
+  root["gooseTownUnlocked"] = party.gooseTownUnlocked;              // M61 (optional; old -> false)
+  root["mapPieces"] = party.mapPieces;                              // M65 (optional; old -> 0)
+  root["treasureActive"] = party.treasure.active;                   // M65
+  root["treasureTown"] = party.treasure.town;
+  root["treasureBossId"] = party.treasure.bossId;
+  root["treasureScalePct"] = party.treasure.scalePct;
+  root["treasureScrollsAwarded"] = party.treasureScrollsAwarded;    // M65
+  root["ownedCurios"] = party.ownedCurios;                          // M66 (optional; old -> none)
   root["storyMet"] = party.storyMet;  // M41 (optional; old -> 0)
   root["encountered"] = party.encountered;             // M42 (optional; old -> empty)
   root["recordBiggestHit"] = party.recordBiggestHit;   // M42 (optional; old -> 0)
@@ -93,6 +107,10 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
     m["accessory"] = c.accessory;
     m["ownedPassives"] = c.ownedPassives;      // M36 (optional; old saves -> empty)
     m["equippedPassive"] = c.equippedPassive;  // M36
+    m["milestone10"] = c.milestone10;          // M63 (optional; old -> unchosen)
+    m["milestone20"] = c.milestone20;          // M63
+    m["milestone30"] = c.milestone30;          // M63
+    m["extraSkills"] = c.extraSkills;          // M64 (optional; old -> empty)
     members.push_back(std::move(m));
   }
   root["party"] = std::move(members);
@@ -192,6 +210,33 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   loaded.castleRecords.kingDefeated = rootReader.optBool("castleKingDefeated", false);
   loaded.castleRecords.kingBestTurns = rootReader.optIntMin("castleKingBestTurns", 0, 0);
   loaded.castleRecords.kingTitle = rootReader.optString("castleKingTitle");
+  loaded.castleRecords.duckBestTurns = rootReader.optIntMin("castleDuckBestTurns", 0, 0);  // M61
+  loaded.gooseTownUnlocked = rootReader.optBool("gooseTownUnlocked", false);               // M61
+  // M65 puzzle map: pieces clamp below the reveal threshold; a reveal whose
+  // guard the content no longer knows deactivates (the pieces were spent — the
+  // player simply starts a new cycle rather than crashing into a ghost).
+  loaded.mapPieces =
+      std::clamp(rootReader.optIntMin("mapPieces", 0, 0), 0, kMapPiecesNeeded - 1);
+  loaded.treasure.active = rootReader.optBool("treasureActive", false);
+  loaded.treasure.town = std::clamp(rootReader.optIntMin("treasureTown", 1, 1), 1, kTownCount);
+  loaded.treasure.bossId = rootReader.optString("treasureBossId");
+  loaded.treasure.scalePct = rootReader.optIntMin("treasureScalePct", 100, 100);
+  if (loaded.treasure.active && db_.findBoss(loaded.treasure.bossId) == nullptr) {
+    loaded.treasure = TreasureReveal{};
+  }
+  for (const std::string& sid : rootReader.optStringArray("treasureScrollsAwarded")) {
+    if (db_.findItem(sid) != nullptr &&
+        std::find(loaded.treasureScrollsAwarded.begin(), loaded.treasureScrollsAwarded.end(),
+                  sid) == loaded.treasureScrollsAwarded.end()) {
+      loaded.treasureScrollsAwarded.push_back(sid);
+    }
+  }
+  // M66 curios: keep only ids the constexpr table knows, de-duplicated.
+  for (const std::string& cid : rootReader.optStringArray("ownedCurios")) {
+    if (findCurio(cid) != nullptr && !ownsCurio(loaded.ownedCurios, cid)) {
+      loaded.ownedCurios.push_back(cid);
+    }
+  }
   loaded.storyMet = rootReader.optIntMin("storyMet", 0, 0);  // M41 (optional; old -> 0)
   loaded.encountered = rootReader.optStringArray("encountered");  // M42 (optional; old -> empty)
   loaded.recordBiggestHit = rootReader.optIntMin("recordBiggestHit", 0, 0);  // M42
@@ -251,6 +296,28 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
         std::find(c.ownedPassives.begin(), c.ownedPassives.end(), equippedPassive) !=
             c.ownedPassives.end()) {
       c.equippedPassive = equippedPassive;
+    }
+    // M63 level milestones: an id the content still knows AND that belongs to
+    // this class+tier is kept; anything else is dropped, so the choice simply
+    // re-asks (never a crash, never a foreign class's bonus).
+    const auto keepMilestone = [&](const char* key, int tier) -> std::string {
+      const std::string id = m.optString(key);
+      const content::MilestoneDef* def = id.empty() ? nullptr : db_.findMilestone(id);
+      if (def != nullptr && def->classId == classId && def->level == tier) {
+        return id;
+      }
+      return "";
+    };
+    c.milestone10 = keepMilestone("milestone10", 10);
+    c.milestone20 = keepMilestone("milestone20", 20);
+    c.milestone30 = keepMilestone("milestone30", 30);
+    // M64 scroll-learned skills: keep only ids the content still knows,
+    // de-duplicated; anything else is dropped (never a crash).
+    for (const std::string& sid : m.optStringArray("extraSkills")) {
+      if (db_.hasSkill(sid) &&
+          std::find(c.extraSkills.begin(), c.extraSkills.end(), sid) == c.extraSkills.end()) {
+        c.extraSkills.push_back(sid);
+      }
     }
     refreshCharacter(c, db_);
     c.hp = std::clamp(hp, 0, c.maxHp);

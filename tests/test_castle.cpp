@@ -123,8 +123,8 @@ TEST_CASE("castle: the castle outclasses the deepest dungeon", "[castle]") {
     // the roster at the ladder ceiling.
     int deepestDungeonHp = 0;
     for (const auto& [id, boss] : db.bosses()) {
-        if (id == std::string(kKingBossId)) {
-            continue;  // castle-only, never generated into a dungeon
+        if (id == std::string(kKingBossId) || id == std::string(kDuckBossId)) {
+            continue;  // castle-only / pond-only (M61), never generated into a dungeon
         }
         deepestDungeonHp = std::max(deepestDungeonHp, boss.stats.maxHp * floorPct / 100);
     }
@@ -134,7 +134,9 @@ TEST_CASE("castle: the castle outclasses the deepest dungeon", "[castle]") {
     // 1. The Boss Rush clears the ceiling on raw multiplier as well.
     CHECK(kBossRushScalePct > floorPct);
 
-    // 2. The King is the largest single fight in the game — measured, not assumed.
+    // 2. The King is the largest single fight in the CASTLE — measured, not
+    // assumed. (Since M61 the Deadly Duck out-stats him in his own arena; the
+    // goose-town battery pins that supremacy separately.)
     const content::BossDef* king = db.findBoss(kKingBossId);
     REQUIRE(king != nullptr);
     const int kingHp = king->stats.maxHp * kKingScalePct / 100;

@@ -19,8 +19,11 @@
 #include "resource/ResourceManager.hpp"
 #include "states/AchievementToast.hpp"
 #include "states/BlackMarketState.hpp"
+#include "states/MilestoneChoiceState.hpp"  // M63
+#include "states/TreasureFightState.hpp"    // M65
 #include "states/CastleState.hpp"
 #include "states/EquipShopState.hpp"
+#include "states/RoadForkState.hpp"
 #include "states/GuildState.hpp"
 #include "states/InnState.hpp"
 #include "states/ItemShopState.hpp"
@@ -58,7 +61,8 @@ Color tileColor(town::Tile tile) {
         case town::Tile::Tree: return Color{30, 66, 40, 255};
         case town::Tile::Water: return Color{52, 84, 150, 255};
         case town::Tile::Building: return Color{112, 100, 120, 255};
-        case town::Tile::Door: return Color{156, 112, 70, 255};
+        // M69: the interact tile reads as the doorstep path, not a flat door.
+        case town::Tile::Door: return Color{120, 108, 80, 255};
     }
     return BLACK;
 }
@@ -73,7 +77,7 @@ const char* tileKind(town::Tile tile) {
         case town::Tile::Tree: return "tree";
         case town::Tile::Water: return "water";
         case town::Tile::Building: return "building";
-        case town::Tile::Door: return "door";
+        case town::Tile::Door: return "path";  // M69: doorstep, not a flat door
     }
     return "ground";
 }
@@ -86,9 +90,28 @@ const char* tileTextureId(town::Tile tile) {
         case town::Tile::Tree: return "tiles.town.tree";
         case town::Tile::Water: return "tiles.town.water";
         case town::Tile::Building: return "tiles.town.building";
-        case town::Tile::Door: return "tiles.town.door";
+        // M69: the doors moved INTO the facades (structureSpriteId below); the
+        // trigger tile itself is the doorstep.
+        case town::Tile::Door: return "tiles.town.path";
     }
     return "";
+}
+
+// M69: the structure's exterior, drawn over its Building tiles — the five
+// south-facing facades with integrated doors, the scoreboard stele, and the
+// save crystal. The generic Building tiles beneath remain the fallback for a
+// missing texture.
+const char* structureSpriteId(town::LocationId id) {
+    switch (id) {
+        case town::LocationId::Inn: return "building.inn";
+        case town::LocationId::ItemShop: return "building.item_shop";
+        case town::LocationId::EquipShop: return "building.equip_shop";
+        case town::LocationId::Guild: return "building.guild";
+        case town::LocationId::TrainingHall: return "building.training_hall";
+        case town::LocationId::Scoreboard: return "prop.scoreboard";
+        case town::LocationId::SavePoint: return "prop.save_crystal";
+    }
+    return nullptr;
 }
 
 const char* walkAnimId(render::Facing f) {
@@ -154,6 +177,10 @@ void TownState::onEnter() {
     context_.fade.start();
     applyTownAudio();
     maybeTutorialPrompt(stack(), context_, tutorial::kTownWelcome);
+    // M63: an old save (or a fresh load) may carry earned-but-unchosen level
+    // milestones — prompt once on arrival. Event-driven sites (battle XP, the
+    // Training Hall, the Elder Root) cover everything after this.
+    maybePushMilestoneChoice(stack(), context_);
 }
 
 void TownState::onResume() {
@@ -236,6 +263,21 @@ bool TownState::onBardTile() const {
     return tx == kBardTileX && ty == kBardTileY;
 }
 
+bool TownState::digHere() const {  // M65
+    return context_.party.treasure.active &&
+           context_.party.treasure.town == clampTown(context_.party.currentTown);
+}
+
+bool TownState::onDigTile() const {  // M65
+    if (!digHere()) {
+        return false;
+    }
+    const int ts = town::Tilemap::kTileSize;
+    const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
+    const int ty = static_cast<int>((player_.y + player_.h * 0.5f) / ts);
+    return tx == kDigTileX && ty == kDigTileY;
+}
+
 const town::Building* TownState::buildingAtPlayerTile() const {
     const int ts = town::Tilemap::kTileSize;
     const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
@@ -288,6 +330,10 @@ void TownState::handleInput(const Input& input) {
         } else if (nearMarket_) {
             context_.audio.play(Sfx::Confirm);
             stack().pushState(std::make_unique<BlackMarketState>(stack(), context_));
+        } else if (nearDig_) {
+            // M65: the puzzle map's dig spot — the guarded treasure fight.
+            context_.audio.play(Sfx::Confirm);
+            stack().pushState(std::make_unique<TreasureFightState>(stack(), context_));
         } else if (nearBard_) {
             // M41: hear the storyteller's installment for this town, and remember it.
             const int town = clampTown(context_.party.currentTown);
@@ -326,7 +372,9 @@ void TownState::update(float dt) {
     nearDoor_ = buildingAtPlayerTile();
     nearExit_ = nearDoor_ == nullptr ? exitAtPlayerTile() : nullptr;
     nearMarket_ = (nearDoor_ == nullptr && nearExit_ == nullptr) && onBlackMarketTile();
-    nearBard_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_) && onBardTile();
+    nearDig_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_) && onDigTile();
+    nearBard_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_ && !nearDig_) &&
+                onBardTile();
 
     // M50: walk-through travel. The latch arms once the player is off every
     // trigger, so arriving beside an edge (or resuming onto the castle road)
@@ -339,7 +387,13 @@ void TownState::update(float dt) {
         travelArmed_ = false;
         if (exit.toCastle) {
             context_.audio.play(Sfx::Door);  // M40: climb to the castle (not a town)
-            stack().pushState(std::make_unique<CastleState>(stack(), context_));
+            if (context_.party.gooseTownUnlocked) {
+                // M61: with Goose Town open, the north road forks — one prompt,
+                // two destinations, Cancel stepping back onto the road.
+                stack().pushState(std::make_unique<RoadForkState>(stack(), context_));
+            } else {
+                stack().pushState(std::make_unique<CastleState>(stack(), context_));
+            }
         } else {
             // Travelling east (toNext) lands you at the destination's WEST road,
             // and vice-versa, so movement reads as continuous.
@@ -405,6 +459,14 @@ void TownState::render() {
         }
     }
 
+    // M69: the structures' real exteriors, over their generic Building tiles.
+    for (const town::Building& b : town_.buildings) {
+        const char* spr = structureSpriteId(b.id);
+        if (spr != nullptr && context_.resources.hasTexture(spr)) {
+            DrawTexture(context_.resources.texture(spr), ox + b.x * ts, oy + b.y * ts, WHITE);
+        }
+    }
+
     // Building name labels above each building.
     for (const town::Building& b : town_.buildings) {
         const int cx = ox + b.x * ts + b.w * ts / 2;
@@ -440,6 +502,18 @@ void TownState::render() {
         }
         ui::drawTextCentered("Black Market", ox + mx * ts + ts / 2, oy + my * ts - 9, 8,
                              ui::lighten(pal.magic, 40));
+    }
+
+    // M65: the treasure dig spot — a bold X on the plaza while the puzzle map
+    // points at THIS town. Primitives (world-space art), no asset needed.
+    if (digHere()) {
+        const int dx = ox + kDigTileX * ts;
+        const int dy = oy + kDigTileY * ts;
+        for (int s = 2; s < ts - 2; ++s) {
+            DrawRectangle(dx + s, dy + s, 2, 2, Color{224, 96, 84, 255});
+            DrawRectangle(dx + ts - s, dy + s, 2, 2, Color{224, 96, 84, 255});
+        }
+        ui::drawTextCentered("Dig Site", dx + ts / 2, dy - 9, 8, pal.danger);
     }
 
     // Wandering storyteller (M41): always present at a fixed plaza tile in every town.
@@ -500,6 +574,14 @@ void TownState::render() {
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
         ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8,
                              ui::lighten(pal.magic, 40));
+    } else if (nearDig_) {
+        // M65: the fight is announced before the shovel bites.
+        ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
+        const std::string text =
+            input::prompt(bindings, InputAction::Confirm, device,
+                          "Dig for the treasure - its guardian will not like it") +
+            "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.danger);
     } else if (nearBard_) {
         ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
         const std::string text =

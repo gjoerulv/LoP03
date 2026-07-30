@@ -88,6 +88,23 @@ struct ClassDef {
 // A passive skill (M36): an always-on trait keyed by `hook`, parameterized by a
 // single `magnitude`, purchased per character for `price` gold at the Training
 // Hall. Also carried by enemies/bosses (an optional list on their defs).
+// A class level-milestone bonus (M63): one of the two permanent choices a
+// character of `classId` makes on reaching `level` (10/20/30). `option` is
+// "a" or "b" (exactly one of each per class+level, validated); the chosen
+// entry's id persists on the Character. One `effect` + one `magnitude`
+// (0 where the effect needs none) — compound behaviours are their own
+// effect values, the PassiveHook precedent.
+struct MilestoneDef {
+    std::string id;
+    std::string classId;
+    int level = 0;            // 10, 20 or 30
+    std::string option;       // "a" | "b"
+    std::string name;
+    std::string description;  // shown on the choice modal and the party panel
+    MilestoneEffect effect = MilestoneEffect::None;
+    int magnitude = 0;
+};
+
 struct PassiveDef {
     std::string id;
     std::string name;
@@ -137,6 +154,12 @@ struct EnemyDef {
     // generator's empty-pool fallback and endlessWaveTeam), so simply leaving it
     // out of every theme would not be enough. Default false = ordinary enemy.
     bool bossOnly = false;
+    // M61 (the Evil Geese): a per-own-turn chance (0-100) this foe simply does
+    // nothing, with the flavour line shown when it happens ("Quack."). Decided
+    // by a pure seeded hash in shared battle code (rules v12); 0 = never, which
+    // is every pre-M61 enemy.
+    int doNothingPct = 0;
+    std::string doNothingText;
     int xpReward = 0;
     int goldReward = 0;
 };
@@ -227,6 +250,11 @@ struct ItemDef {
     std::string requiresBossId;   // non-empty: only this boss is affected at all
     int statScalePct = 0;         // non-zero: scales the target's ATK/MAG/DEF/SPD
                                   // for the rest of the battle (50 = halved)
+    // M52 (the Dragon Crown's hidden effect): used on a boss carrying a revive
+    // clock (the King), this ends it — his fallen court never returns. Schema-
+    // driven so no item id is branched on; valid only with battleTarget: enemy.
+    // Inert (false) for every other item, so pre-M52 battles are unchanged.
+    bool disablesMinionRevive = false;
 
     // Equipment/relic flat stat bonus.
     StatBlock statBonus;
@@ -262,6 +290,14 @@ struct BossDef {
     // `immuneToConfusion` precedent.
     int reviveMinionTurns = 0;
     bool immuneToConfusion = false;     // M40: bespoke status immunity (the King)
+    // M61 (the Deadly Duck), all inert by default so every pre-M61 boss is
+    // untouched: the basic attack sweeps the whole party (the M45 class
+    // machinery, boss-side), applies status riders per connecting hit, and
+    // `immuneToAfflictions` shrugs off every affliction — poison, confusion,
+    // silence, blind, terrified, stunned — while ATK-/DEF- debuffs still land.
+    bool attackHitsAll = false;
+    std::vector<AttackStatus> attackStatuses;
+    bool immuneToAfflictions = false;
     std::string telegraph;              // flavor line shown when the battle begins
     int xpReward = 0;
     int goldReward = 0;

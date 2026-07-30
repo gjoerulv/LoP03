@@ -37,9 +37,12 @@ add_executable(crystal_tests
     test_story.cpp
     test_achievements.cpp
     test_dungeon.cpp
+    test_theme_events.cpp
     test_room_layout.cpp
     test_inventory.cpp
     test_battle.cpp
+    test_battle_backdrop.cpp
+    test_boss_intro.cpp
     test_enmity.cpp
     test_battle_sequencer.cpp
     test_boss_mechanics.cpp
@@ -64,9 +67,22 @@ add_executable(crystal_tests
     test_composition.cpp
     test_events.cpp
     test_leveling.cpp
+    test_comforts.cpp
+    test_editor_canonical.cpp
+    test_editor_descriptors.cpp
+    test_editor_enum_lists.cpp
+    test_battle_observer.cpp
+    test_editor_simlab.cpp
+    test_goose_town.cpp
+    test_milestones.cpp
+    test_scrolls.cpp
+    test_treasure_map.cpp
+    test_curios.cpp
+    test_spoils.cpp
 )
 
-target_link_libraries(crystal_tests PRIVATE crystal_core Catch2::Catch2WithMain)
+target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core
+                                            Catch2::Catch2WithMain)
 set_project_warnings(crystal_tests)
 
 # Absolute paths to the shipped content/assets, so tests validate the real files.

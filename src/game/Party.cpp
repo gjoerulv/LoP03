@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "content/ContentDatabase.hpp"
+#include "game/Milestones.hpp"  // M63
 
 namespace cd {
 
@@ -67,8 +68,33 @@ void refreshCharacter(Character& character, const content::ContentDatabase& db) 
     character.stats.defense += bonus.defense;
     character.stats.speed += bonus.speed;
 
+    // M63: the chosen level-milestone STAT bonuses apply here — after class
+    // and gear, so the percentage covers both and the menus show the truth.
+    // (Battle-behaviour milestones resolve at buildBattle instead.) Max-MP
+    // scales after deriveMaxMp since MP derives from magic.
+    int mpPct = 0;
+    forEachChosenMilestone(character, db, [&](const content::MilestoneDef& m) {
+        switch (m.effect) {
+            case content::MilestoneEffect::StatMaxHpPct:
+                character.stats.maxHp += character.stats.maxHp * m.magnitude / 100;
+                break;
+            case content::MilestoneEffect::StatSpeedPct:
+                character.stats.speed += character.stats.speed * m.magnitude / 100;
+                break;
+            case content::MilestoneEffect::StatDefensePct:
+                character.stats.defense += character.stats.defense * m.magnitude / 100;
+                break;
+            case content::MilestoneEffect::StatMaxMpPct:
+                mpPct += m.magnitude;
+                break;
+            default:
+                break;  // battle-side effects; nothing to derive here
+        }
+    });
+
     character.maxHp = std::max(1, character.stats.maxHp);
     character.maxMp = std::max(0, deriveMaxMp(character.stats.magic));
+    character.maxMp += character.maxMp * mpPct / 100;
     character.hp = std::clamp(character.hp, 0, character.maxHp);
     character.mp = std::clamp(character.mp, 0, character.maxMp);
 }

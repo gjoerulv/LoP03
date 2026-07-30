@@ -5,7 +5,10 @@
 - **Status:** planned — deferred 2026-07-20; runs **last, after M23** (the
   packaging engineering is already built; only final validation and sign-off
   remain). Re-check manifest/package coverage and size expectations against
-  the post-M45 content before sign-off.
+  the **post-M71** content before sign-off — the ledger's narrative lists
+  what packaging must now account for (the M62 goose/duck sprites and Duck
+  theme, `data/milestones.json`, the M69 town facades + stele + crystal,
+  `profile.json`, and every earlier expansion asset).
 - **Last reviewed repository commit:** M22/M23-interim commit HEAD
   (2026-07-20). Re-audit: no `CMakePresets.json`; no version metadata,
   icon, or packaging script; the build defaults to the **DLL runtime**

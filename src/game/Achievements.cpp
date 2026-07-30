@@ -6,6 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "game/Curios.hpp"  // M66: kCurioCount for the Curator predicate
 #include "game/Party.hpp"
 #include "game/Story.hpp"
 #include "platform/AtomicFile.hpp"
@@ -51,8 +52,18 @@ bool achievementMet(const std::string& id, const Party& p, const AchvContext& ct
         }
         return false;
     }
-    if (id == "champion") return !p.castleRecords.kingTitle.empty();
+    // M53: Champion is now an efficiency goal — beating the King in
+    // kChampionKingTurns turns or fewer — read from the persisted best. A save
+    // whose recorded best is already at/under the bar retro-unlocks it (a player
+    // who beat him efficiently before this build should not have to again).
+    if (id == "champion")
+        return p.castleRecords.kingBestTurns > 0 &&
+               p.castleRecords.kingBestTurns <= kChampionKingTurns;
     if (id == "naturalist") return p.encountered.size() >= 30;
+    if (id == "quackbane") return p.castleRecords.duckDefeated();  // M61
+    if (id == "curator") {  // M66
+        return static_cast<int>(p.ownedCurios.size()) >= kCurioCount;
+    }
     return false;
 }
 

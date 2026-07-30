@@ -4,13 +4,29 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include "battle/BattleObserver.hpp"
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "game/Castle.hpp"  // kKingBossId (M43: King-context items)
+#include "game/Milestones.hpp"  // M63: chosen level-milestone resolution
 #include "game/Party.hpp"
+#include "game/Scrolls.hpp"  // M64: allKnownSkills (learnset + scroll extras)
 
 namespace cd::battle {
+
+namespace {
+
+// M60: the single shape of every telemetry emit — one skipped branch when no
+// recorder is attached, so the null path (the game, the Simulator, every
+// pre-M60 test) is byte-identical by construction.
+inline void emitEvent(const Battle& b, const BattleEvent& event) {
+    if (b.observer != nullptr) {
+        b.observer->onEvent(event);
+    }
+}
+
+}  // namespace
 
 // M48 — the element rule. Deliberately the only place the x0 / x1 / x1.5
 // decision is made, so a future affinity source (equipment, a status) has one
@@ -72,27 +88,52 @@ int effectiveDefense(const Combatant& d) { return d.stats.defense * defensePerce
 // must land on 0, and the floor would otherwise turn it into 1. Guarding and
 // affinity therefore compose multiplicatively, which is what a player reading
 // "guarded" and "immune" separately would expect.
+// M63 (Deep Guard): a guard blocks the defender's guardBlockPct when one is
+// set; the default 50 reproduces the historical dmg/2 exactly (dmg*50/100).
+int guardedDamage(const Combatant& d, int dmg) {
+    const int block = d.guardBlockPct > 0 ? d.guardBlockPct : 50;
+    return std::max(1, dmg * (100 - block) / 100);
+}
+
+// M63 (Elemental Attunement): a weak hit deals the attacker's override when it
+// carries one. Immune (0) and neutral (100) are never overridden.
+int attackerElementMod(const Combatant& a, const Combatant& d, content::Element element) {
+    const int mod = elementModifier(d, element);
+    if (mod == kElementWeakPct && a.weaknessBonusPct > 0) {
+        return a.weaknessBonusPct;
+    }
+    return mod;
+}
+
 int physicalDamage(const Combatant& a, const Combatant& d, int power,
                    content::Element element) {
     int dmg = std::max(1, effectiveAttack(a) + power - effectiveDefense(d) / 2);
     if (d.guarding) {
-        dmg = std::max(1, dmg / 2);
+        dmg = guardedDamage(d, dmg);
     }
-    return dmg * elementModifier(d, element) / 100;
+    return dmg * attackerElementMod(a, d, element) / 100;
 }
 
 int magicDamage(const Combatant& a, const Combatant& d, int power, content::Element element) {
     int dmg = std::max(1, a.stats.magic + power - effectiveDefense(d) / 4);
     if (d.guarding) {
-        dmg = std::max(1, dmg / 2);
+        dmg = guardedDamage(d, dmg);
     }
-    return dmg * elementModifier(d, element) / 100;
+    return dmg * attackerElementMod(a, d, element) / 100;
 }
 
 int healValue(const Combatant& a, int power) { return power + a.stats.magic / 2; }
 
-void addStatus(Combatant& c, content::StatusType type, int magnitude, int turns) {
+void addStatus(Combatant& c, content::StatusType type, int magnitude, int turns,
+               int extraTurns = 0) {
     if (type == content::StatusType::None || turns <= 0) {
+        return;
+    }
+    // M61: an affliction-immune unit (the Deadly Duck) shrugs off every
+    // affliction at this single chokepoint — poison, confusion, silence, blind,
+    // terrified, stunned — while stat debuffs (and buffs) still land. Display
+    // sites skip these via isImmuneTo, so a blocked status is also never shown.
+    if (c.afflictionImmune && isAffliction(type)) {
         return;
     }
     // M35: statuses last 2x their authored duration - EXCEPT the M44 turn-control
@@ -102,7 +143,11 @@ void addStatus(Combatant& c, content::StatusType type, int magnitude, int turns)
     // costs it exactly one turn.)
     const bool turnControl = type == content::StatusType::Terrified ||
                              type == content::StatusType::Stunned;
-    const int scaledTurns = turnControl ? turns : turns * kStatusDurationMult;
+    // M63 (Lingering Hex): a caster's bonus turns extend the EFFECTIVE (post-
+    // scale) duration and never a turn-control status — extending a stolen
+    // turn would be a different rule entirely.
+    const int scaledTurns =
+        turnControl ? turns : turns * kStatusDurationMult + std::max(0, extraTurns);
     for (StatusInstance& s : c.statuses) {
         if (s.type == type) {
             s.magnitude = magnitude;
@@ -182,21 +227,9 @@ const char* statusLabel(content::StatusType type) {
     return "";
 }
 
-void applyDamage(Combatant& d, int dmg) {
-    // Iron Will (M36): a lethal blow leaves the holder at 1 HP, once per battle.
-    if (dmg > 0 && d.hp > 0 && d.hp - dmg <= 0 && d.ironWill && !d.ironWillUsed) {
-        d.ironWillUsed = true;
-        d.hp = 1;
-    } else {
-        d.hp = std::max(0, d.hp - dmg);
-    }
-    // Confusion (M35): a hit snaps its bearer out of confusion. Single chokepoint
-    // for all attack/skill damage (poison DoT does not route through here), so the
-    // rule holds identically in live play and the Simulator.
-    if (dmg > 0) {
-        removeStatus(d, content::StatusType::Confusion);
-    }
-}
+// applyDamage is a Battle member (M53) so it can honour the debug god-mode
+// clamp; its definition lives at namespace scope just after this anonymous
+// namespace closes (a member cannot be defined inside an anonymous namespace).
 
 void applyHeal(Combatant& d, int amount) {
     if (d.hp <= 0) {
@@ -229,6 +262,13 @@ constexpr std::uint64_t kSaltJesterAim = 0x1E57E7A10A1D0000ull;   // which targe
 constexpr std::uint64_t kSaltJesterLine = 0x1E57E71114E00D1Eull;  // which quip, if any
 // M45: how often an uncontrolled Jester quips (presentation only).
 constexpr int kJestChancePct = 15;
+// M58: the "geese scare the King" rule. Its own salt keeps its per-turn roll
+// clear of every other pure-hash stream. 10% per living Goose, additive.
+constexpr std::uint64_t kSaltGooseScare = 0x600D6005E5CA1E00ull;  // "goose scare"
+constexpr int kGoosePerScarePct = 10;
+// M61: the authored do-nothing roll (a Quacking goose). Its own salt, same
+// pure-hash contract as the scare above.
+constexpr std::uint64_t kSaltDoNothing = 0x0DAC0DAC0DAC0001ull;
 
 // Small deterministic jitter in [0, range) from the battle seed + round + acting
 // enemy + candidate. Pure, so a given encounter always resolves identically and
@@ -341,6 +381,88 @@ void applyPassives(Combatant& c, const std::vector<std::string>& ids,
     }
 }
 
+// M63: resolve a party member's CHOSEN level milestones onto its Combatant —
+// the applyPassives pattern. Grants of existing hooks reuse the M36 fields
+// and never weaken an equipped passive (percents take the max, booleans OR).
+// Stat* effects are already inside the character's derived stats
+// (refreshCharacter) and resolve to nothing here.
+void applyMilestones(Combatant& u, const Character& c, const content::ContentDatabase& db) {
+    forEachChosenMilestone(c, db, [&](const content::MilestoneDef& m) {
+        using E = content::MilestoneEffect;
+        switch (m.effect) {
+            case E::BasicAttackPct: u.basicAttackPct += m.magnitude; break;
+            case E::MagicSkillPct: u.magicSkillPct += m.magnitude; break;
+            case E::AoeSpellPct: u.aoeSpellPct += m.magnitude; break;
+            case E::HealCastPct: u.healCastPct += m.magnitude; break;
+            case E::ExecutePct: u.executePct += m.magnitude; break;
+            case E::VsAfflictedPct: u.vsAfflictedPct += m.magnitude; break;
+            case E::WeaknessBonusPct:
+                u.weaknessBonusPct = std::max(u.weaknessBonusPct, m.magnitude);
+                break;
+            case E::StatusTurnsBonus: u.statusTurnsBonus += m.magnitude; break;
+            case E::OpeningGuardPct:
+                // Authored 1 turn -> the M35 doubling makes it the described
+                // 2 effective ticks, exactly like a cast DEF+.
+                addStatus(u, content::StatusType::DefenseUp, m.magnitude, 1);
+                break;
+            case E::DoubleStrikePct: u.doubleStrikePct = m.magnitude; break;
+            case E::SweepAllPct:
+                u.attackHitsAll = true;
+                u.sweepScalePct = m.magnitude;
+                break;
+            case E::SweepDebuffPct:
+                u.attackStatuses.push_back({content::StatusType::AttackDown, m.magnitude, 1});
+                break;
+            case E::TauntDebuffPct: u.tauntDebuffPct = m.magnitude; break;
+            case E::GuardBlockPct: u.guardBlockPct = std::max(u.guardBlockPct, m.magnitude); break;
+            case E::FirstHitImmune: u.firstHitImmune = true; break;
+            case E::IronWillHealing:
+                u.ironWill = true;
+                u.ironWillHealPct = m.magnitude;
+                break;
+            case E::ReviveAtPct: u.reviveAtPct = std::max(u.reviveAtPct, m.magnitude); break;
+            case E::PurifyHeals: u.purifyHeals = true; break;
+            case E::HolyBasic:
+                if (u.weaponElement == content::Element::None) {
+                    u.weaponElement = content::Element::Holy;  // a real weapon element wins
+                }
+                break;
+            case E::FireBasic:
+                if (u.weaponElement == content::Element::None) {
+                    u.weaponElement = content::Element::Fire;
+                }
+                break;
+            case E::GoldBonusPct: u.goldBonusPct += m.magnitude; break;
+            case E::ItemPotencyPct: u.itemPotencyPct += m.magnitude; break;
+            case E::NoEnemyBuff: u.noEnemyBuff = true; break;
+            case E::OnKillPartyAtkUp: u.onKillPartyAtkUpPct = m.magnitude; break;
+            case E::OnDeathFoeDebuff: u.onDeathFoeDebuffPct = m.magnitude; break;
+            case E::GrantCounter: u.counterAttack = true; break;
+            case E::GrantEvasion: u.evasionPct = std::max(u.evasionPct, m.magnitude); break;
+            case E::GrantSpellWard: u.spellWardPct = std::max(u.spellWardPct, m.magnitude); break;
+            case E::GrantThorns: u.thornsPct = std::max(u.thornsPct, m.magnitude); break;
+            case E::GrantIronWill: u.ironWill = true; break;
+            case E::GrantFirstStrike:
+                u.firstStrike = true;
+                u.firstStrikeBonusPct = std::max(u.firstStrikeBonusPct, m.magnitude);
+                break;
+            case E::GrantClarity:
+                u.clarityMp = std::max(u.clarityMp, m.magnitude);
+                u.silenceImmune = true;
+                break;
+            case E::GrantBodyguard:
+                u.bodyguardPct = std::max(u.bodyguardPct, m.magnitude);
+                break;
+            case E::StatMaxHpPct:
+            case E::StatSpeedPct:
+            case E::StatMaxMpPct:
+            case E::StatDefensePct:
+            case E::None:
+                break;
+        }
+    });
+}
+
 // True if the unit carries any negative status (for Keen Senses' bonus).
 bool hasAnyDebuff(const Combatant& c) {
     for (const StatusInstance& s : c.statuses) {
@@ -372,6 +494,105 @@ int physicalMissPct(const Combatant& a, const Combatant& d) {
 }
 
 }  // namespace
+
+void Battle::applyDamage(Combatant& d, int dmg, std::string* extra) {
+    // M60 telemetry: effective damage (and a KO) is known only after the
+    // clamps below, so the emits bracket the whole body. `d` always refers
+    // into `units`, so its index is recoverable for the event.
+    const int hpBefore = d.hp;
+    // M63 (Immovable): the first damaging hit simply glances off, once per
+    // battle. Checked before god mode and Iron Will — nothing lands, so
+    // neither fires, and an untouched bearer keeps its confusion.
+    if (dmg > 0 && d.hp > 0 && d.firstHitImmune && !d.firstHitImmuneUsed) {
+        d.firstHitImmuneUsed = true;
+        if (extra != nullptr) {
+            *extra += " The blow glances off " + d.name + "!";
+        }
+        return;
+    }
+#ifndef CRYSTAL_SHIPPING_BUILD
+    // M53 debug god mode: a party unit never drops below 1 HP from a hit routed
+    // through here. Same shape as Iron Will, but repeatable and party-wide; still
+    // snaps the unit out of confusion like any real hit. Compiled out of shipping
+    // builds and off by default, so the normal path below is untouched.
+    if (debugPartyUnkillable && d.side == Side::Party && dmg > 0 && d.hp > 0 &&
+        d.hp - dmg <= 0) {
+        d.hp = 1;
+        removeStatus(d, content::StatusType::Confusion);
+        if (observer != nullptr && hpBefore > d.hp) {
+            emitEvent(*this, {BattleEvent::Type::Damage, -1,
+                              static_cast<int>(&d - units.data()), hpBefore - d.hp, false,
+                              false, {}});
+        }
+        return;
+    }
+#endif
+    // Iron Will (M36): a lethal blow leaves the holder at 1 HP, once per battle.
+    bool ironWillFired = false;
+    if (dmg > 0 && d.hp > 0 && d.hp - dmg <= 0 && d.ironWill && !d.ironWillUsed) {
+        d.ironWillUsed = true;
+        d.hp = 1;
+        ironWillFired = true;
+    } else {
+        d.hp = std::max(0, d.hp - dmg);
+    }
+    // Confusion (M35): a hit snaps its bearer out of confusion. Single chokepoint
+    // for all attack/skill damage (poison DoT does not route through here), so the
+    // rule holds identically in live play and the Simulator.
+    if (dmg > 0) {
+        removeStatus(d, content::StatusType::Confusion);
+    }
+    // M63 (The Last Laugh): a unit felled here curses every living foe of the
+    // fallen. At the chokepoint so every attack/skill/thorns/counter death
+    // triggers it identically in both drivers (the poison tick has its own).
+    if (hpBefore > 0 && d.hp == 0 && d.onDeathFoeDebuffPct > 0) {
+        for (Combatant& u : units) {
+            if (u.side != d.side && u.alive()) {
+                addStatus(u, content::StatusType::AttackDown, d.onDeathFoeDebuffPct, 1);
+                addStatus(u, content::StatusType::DefenseDown, d.onDeathFoeDebuffPct, 1);
+            }
+        }
+        if (extra != nullptr) {
+            *extra += " " + d.name + "'s last laugh saps every foe!";
+        }
+    }
+    if (observer != nullptr && hpBefore > d.hp) {
+        const int index = static_cast<int>(&d - units.data());
+        emitEvent(*this, {BattleEvent::Type::Damage, -1, index, hpBefore - d.hp, false, false,
+                          {}});
+        if (d.hp == 0) {
+            emitEvent(*this, {BattleEvent::Type::KO, -1, index, 0, false, false, {}});
+        }
+    }
+    // M63 (Iron Constitution): the survival, then the surge — its own heal,
+    // after the damage emit, so telemetry reconciles hit-then-heal exactly.
+    if (ironWillFired && d.ironWillHealPct > 0) {
+        const int before = d.hp;
+        d.hp = std::min(d.maxHp, d.hp + std::max(1, d.maxHp * d.ironWillHealPct / 100));
+        if (extra != nullptr && d.hp > before) {
+            *extra += " " + d.name + " holds fast and surges back!";
+        }
+        if (observer != nullptr && d.hp > before) {
+            emitEvent(*this, {BattleEvent::Type::Heal, -1,
+                              static_cast<int>(&d - units.data()), d.hp - before, false, false,
+                              {}});
+        }
+    }
+}
+
+std::string Battle::rallyOnKill(int killer) {
+    // M63 (Standing Ovation): felling a foe rallies the killer's whole side.
+    Combatant& k = units[static_cast<std::size_t>(killer)];
+    if (k.onKillPartyAtkUpPct <= 0) {
+        return "";
+    }
+    for (Combatant& u : units) {
+        if (u.side == k.side && u.alive()) {
+            addStatus(u, content::StatusType::AttackUp, k.onKillPartyAtkUpPct, 1);
+        }
+    }
+    return " " + k.name + " takes a bow - the party rallies!";
+}
 
 bool Battle::sideAlive(Side s) const {
     for (const Combatant& c : units) {
@@ -486,13 +707,24 @@ int Battle::dealPhysical(int actor, int target, int baseDmg, std::string& extra)
     if (a.keenSensesPct > 0 && hasAnyDebuff(units[static_cast<std::size_t>(target)])) {
         dmg = dmg * (100 + a.keenSensesPct) / 100;  // Keen Senses (M36)
     }
+    // M63 (Executioner / Opportunist): composed after the M36 passives so the
+    // multiplier order is fixed and documented.
+    {
+        const Combatant& tgt = units[static_cast<std::size_t>(target)];
+        if (a.executePct > 0 && tgt.alive() && tgt.hp * 2 < tgt.maxHp) {
+            dmg = dmg * (100 + a.executePct) / 100;
+        }
+        if (a.vsAfflictedPct > 0 && hasAnyDebuff(tgt)) {
+            dmg = dmg * (100 + a.vsAfflictedPct) / 100;
+        }
+    }
     int toTarget = dmg;
     const int guard = bodyguardFor(target);
     if (guard >= 0) {  // Bodyguard (M36): the weakest ally's guard soaks a share
         Combatant& g = units[static_cast<std::size_t>(guard)];
         const int share = dmg * g.bodyguardPct / 100;
         if (share > 0) {
-            applyDamage(g, share);
+            applyDamage(g, share, &extra);
             toTarget = dmg - share;
             extra += " " + g.name + " shields " + units[static_cast<std::size_t>(target)].name +
                      " (" + std::to_string(share) + ").";
@@ -501,25 +733,38 @@ int Battle::dealPhysical(int actor, int target, int baseDmg, std::string& extra)
             }
         }
     }
-    applyDamage(units[static_cast<std::size_t>(target)], toTarget);
+    const bool targetStood = units[static_cast<std::size_t>(target)].alive();  // M63
+    applyDamage(units[static_cast<std::size_t>(target)], toTarget, &extra);
     if (a.side == Side::Party) {
         addThreat(actor, dmg);  // total damage draws enmity (M28)
     }
     Combatant& t = units[static_cast<std::size_t>(target)];
+    if (targetStood && !t.alive()) {
+        extra += rallyOnKill(actor);  // M63 (Standing Ovation)
+    }
     if (actor != target && t.thornsPct > 0 && toTarget > 0) {  // Thorns (M36)
         const int reflect = toTarget * t.thornsPct / 100;
         if (reflect > 0) {
-            applyDamage(a, reflect);
+            const bool actorStood = a.alive();  // M63
+            applyDamage(a, reflect, &extra);
             extra += " " + a.name + " takes " + std::to_string(reflect) + " thorns damage.";
             if (!a.alive()) {
                 extra += " " + a.name + " is KO'd!";
+                if (actorStood) {
+                    extra += rallyOnKill(target);  // M63: thorns fell the attacker
+                }
             }
         }
     }
     if (a.lifedrinkPct > 0 && dmg > 0 && a.alive()) {  // Lifedrink (M36)
         const int heal = dmg * a.lifedrinkPct / 100;
         if (heal > 0) {
+            const int hpBefore = a.hp;  // M60 telemetry (effective gain)
             applyHeal(a, heal);
+            if (observer != nullptr && a.hp > hpBefore) {
+                emitEvent(*this, {BattleEvent::Type::Heal, actor, actor, a.hp - hpBefore, false,
+                                  false, {}});
+            }
             extra += " " + a.name + " drains " + std::to_string(heal) + " HP.";
         }
     }
@@ -529,13 +774,17 @@ int Battle::dealPhysical(int actor, int target, int baseDmg, std::string& extra)
         // M48: a counter IS a basic attack, so it swings the counter-attacker's
         // own weapon element.
         const int cdmg = physicalDamage(t, a, 0, t.weaponElement);
-        applyDamage(a, cdmg);
+        const bool actorStood = a.alive();  // M63
+        applyDamage(a, cdmg, &extra);
         if (t.side == Side::Party) {
             addThreat(target, cdmg);
         }
         extra += " " + t.name + " counters " + a.name + " for " + std::to_string(cdmg) + ".";
         if (!a.alive()) {
             extra += " " + a.name + " is KO'd!";
+            if (actorStood) {
+                extra += rallyOnKill(target);  // M63: the counter fells the attacker
+            }
         }
     }
     return toTarget;
@@ -551,13 +800,24 @@ int Battle::dealMagic(int actor, int target, int baseDmg, std::string& extra) {
     if (a.keenSensesPct > 0 && hasAnyDebuff(units[static_cast<std::size_t>(target)])) {
         dmg = dmg * (100 + a.keenSensesPct) / 100;
     }
+    // M63 (Executioner / Opportunist): the same fixed multiplier order as the
+    // physical path.
+    {
+        const Combatant& tgt = units[static_cast<std::size_t>(target)];
+        if (a.executePct > 0 && tgt.alive() && tgt.hp * 2 < tgt.maxHp) {
+            dmg = dmg * (100 + a.executePct) / 100;
+        }
+        if (a.vsAfflictedPct > 0 && hasAnyDebuff(tgt)) {
+            dmg = dmg * (100 + a.vsAfflictedPct) / 100;
+        }
+    }
     int toTarget = dmg;
     const int guard = bodyguardFor(target);
     if (guard >= 0) {  // Bodyguard soaks magic too (any damage aimed at the weakest ally)
         Combatant& g = units[static_cast<std::size_t>(guard)];
         const int share = dmg * g.bodyguardPct / 100;
         if (share > 0) {
-            applyDamage(g, share);
+            applyDamage(g, share, &extra);
             toTarget = dmg - share;
             extra += " " + g.name + " shields " + units[static_cast<std::size_t>(target)].name +
                      " (" + std::to_string(share) + ").";
@@ -566,9 +826,13 @@ int Battle::dealMagic(int actor, int target, int baseDmg, std::string& extra) {
             }
         }
     }
-    applyDamage(units[static_cast<std::size_t>(target)], toTarget);
+    const bool targetStood = units[static_cast<std::size_t>(target)].alive();  // M63
+    applyDamage(units[static_cast<std::size_t>(target)], toTarget, &extra);
     if (a.side == Side::Party) {
         addThreat(actor, dmg);
+    }
+    if (targetStood && !units[static_cast<std::size_t>(target)].alive()) {
+        extra += rallyOnKill(actor);  // M63 (Standing Ovation)
     }
     return toTarget;
 }
@@ -612,8 +876,12 @@ std::string Battle::beginUnitTurn(int actor) {
     a.reviveMinionCounter = 0;  // and it will happen again, and again
     for (int ci : court) {
         Combatant& c = units[static_cast<std::size_t>(ci)];
+        const bool wasDown = !c.alive();
         c.hp = c.maxHp;
         c.statuses.clear();  // raised whole, not raised wounded
+        if (wasDown) {  // M60 telemetry
+            emitEvent(*this, {BattleEvent::Type::Revive, actor, ci, c.maxHp, false, false, {}});
+        }
     }
     return a.name + " strikes the floor: \"RISE.\" The court stands again, unmarked.";
 }
@@ -661,10 +929,41 @@ std::string Battle::tickStatuses(int unit) {
     for (StatusInstance& s : c.statuses) {
         if (s.type == content::StatusType::Poison && c.hp > 0) {
             const int dmg = s.magnitude * kPoisonDamageMult;  // M35: poison deals 2x
-            c.hp = std::max(0, c.hp - dmg);
+            // Poison bypasses applyDamage, so the M53 god-mode clamp is repeated
+            // here (the second and last clamp site). floor stays 0 in every
+            // shipping/sim/test path, so this is byte-identical when off.
+            int floor = 0;
+#ifndef CRYSTAL_SHIPPING_BUILD
+            if (debugPartyUnkillable && c.side == Side::Party) {
+                floor = 1;
+            }
+#endif
+            const int hpBefore = c.hp;  // M60: the tick bypasses applyDamage's emit too
+            c.hp = std::max(floor, c.hp - dmg);
+            if (observer != nullptr && hpBefore > c.hp) {
+                emitEvent(*this, {BattleEvent::Type::Damage, -1, unit, hpBefore - c.hp, true,
+                                  false, {}});
+                if (c.hp == 0) {
+                    emitEvent(*this, {BattleEvent::Type::KO, -1, unit, 0, false, false, {}});
+                }
+            }
             log += c.name + " takes " + std::to_string(dmg) + " poison damage.";
             if (!c.alive()) {
                 log += " " + c.name + " is KO'd!";
+                // M63 (The Last Laugh): the poison tick bypasses applyDamage,
+                // so its death repeats the on-death curse here — the second
+                // and last site, the god-mode-clamp precedent.
+                if (c.onDeathFoeDebuffPct > 0) {
+                    for (Combatant& u : units) {
+                        if (u.side != c.side && u.alive()) {
+                            addStatus(u, content::StatusType::AttackDown,
+                                      c.onDeathFoeDebuffPct, 1);
+                            addStatus(u, content::StatusType::DefenseDown,
+                                      c.onDeathFoeDebuffPct, 1);
+                        }
+                    }
+                    log += " " + c.name + "'s last laugh saps every foe!";
+                }
             }
         }
         --s.turns;
@@ -681,6 +980,8 @@ std::string Battle::tickStatuses(int unit) {
 
 std::string Battle::attack(int actor, int target) {
     clearActionMarks();
+    // M60 telemetry: a basic attack is an Action with an empty id.
+    emitEvent(*this, {BattleEvent::Type::Action, actor, target, 0, false, false, {}});
     // M45: a class whose basic attack hits every foe sweeps instead of striking
     // one — except while confused, when it lashes at a single member of its own
     // side like anyone else.
@@ -688,10 +989,31 @@ std::string Battle::attack(int actor, int target) {
     if (self.attackHitsAll && !isConfused(self)) {
         return attackAll(actor);
     }
+    // M63 (Double Nock): two independent strikes — each with its own to-hit
+    // roll, passives, and riders — the second at the milestone's strength,
+    // and only while both parties still stand. A confused archer lashes out
+    // once like anyone else.
+    if (self.doubleStrikePct > 0 && !isConfused(self)) {
+        std::string log = attackOne(actor, target);
+        if (units[static_cast<std::size_t>(actor)].alive() &&
+            units[static_cast<std::size_t>(target)].alive()) {
+            std::vector<int> missed = lastMissed;
+            std::vector<int> weak = lastWeak;
+            std::vector<int> immune = lastImmune;
+            log += " " + attackOne(actor, target, self.doubleStrikePct);
+            missed.insert(missed.end(), lastMissed.begin(), lastMissed.end());
+            weak.insert(weak.end(), lastWeak.begin(), lastWeak.end());
+            immune.insert(immune.end(), lastImmune.begin(), lastImmune.end());
+            lastMissed = std::move(missed);
+            lastWeak = std::move(weak);
+            lastImmune = std::move(immune);
+        }
+        return log;
+    }
     return attackOne(actor, target);
 }
 
-std::string Battle::attackOne(int actor, int target) {
+std::string Battle::attackOne(int actor, int target, int scalePct) {
     clearActionMarks();
     // Confusion (M35): a confused unit swings at a seeded random member of its own
     // side instead. (Draws from the shared roll stream, so live play and the
@@ -725,8 +1047,14 @@ std::string Battle::attackOne(int actor, int target) {
     const content::Element element = a.weaponElement;
     const int mod = elementModifier(t, element);
     int base = physicalDamage(a, t, 0, element);
+    if (a.basicAttackPct > 0) {
+        base = base * (100 + a.basicAttackPct) / 100;  // M63 (Heavy Swing family)
+    }
     if (opener) {
         base *= 2;  // Rush: opening fury
+    }
+    if (scalePct != 100 && base > 0) {
+        base = std::max(1, base * scalePct / 100);  // M63 (second arrow / sweep)
     }
     std::string extra;
     const int dealt = dealPhysical(actor, target, base, extra);  // M36 passive effects
@@ -771,7 +1099,7 @@ std::string Battle::applyAttackStatuses(int actor, int target) {
         if (s.type == content::StatusType::None || isImmuneTo(t, s.type)) {
             continue;
         }
-        addStatus(t, s.type, s.magnitude, s.turns);
+        addStatus(t, s.type, s.magnitude, s.turns, a.statusTurnsBonus);  // M63 rider bonus
         log += " " + t.name + ": " + statusLabel(s.type) + ".";
     }
     return log;
@@ -796,7 +1124,10 @@ std::string Battle::attackAll(int actor) {
         if (!units[static_cast<std::size_t>(ti)].alive()) {
             continue;  // felled by an earlier strike in this same sweep
         }
-        log += " " + attackOne(actor, ti);
+        // M63 (Rain of Arrows): a milestone sweep strikes at reduced strength;
+        // a class-authored sweep (the Dragon, the Duck) stays full.
+        const int scale = units[static_cast<std::size_t>(actor)].sweepScalePct;
+        log += " " + attackOne(actor, ti, scale > 0 ? scale : 100);
         // attackOne clears the marks per strike, so the sweep accumulates them.
         missed.insert(missed.end(), lastMissed.begin(), lastMissed.end());
         weak.insert(weak.end(), lastWeak.begin(), lastWeak.end());
@@ -836,6 +1167,9 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                skill.name + "!";
     }
     primaryTarget = redirectTarget(units, actor, primaryTarget);  // M28 intercept
+    // M60 telemetry: the cast is real from here on (silence already returned).
+    emitEvent(*this, {BattleEvent::Type::Action, actor, primaryTarget, 0, false, false,
+                      skill.id});
     Combatant& a = units[static_cast<std::size_t>(actor)];
     a.mp = std::max(0, a.mp - skill.mpCost);
     const bool opener = a.rushOpener && !a.actedOnce;
@@ -867,6 +1201,21 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                 threat[static_cast<std::size_t>(actor)] = maxParty + 150;
             }
             log += " Foes are goaded into targeting " + a.name + "!";
+            // M63 (Intimidating Taunt): the goading also saps every foe.
+            if (a.tauntDebuffPct > 0) {
+                const Side foeSide = a.side == Side::Party ? Side::Enemy : Side::Party;
+                bool any = false;
+                for (Combatant& u : units) {
+                    if (u.side == foeSide && u.alive()) {
+                        addStatus(u, content::StatusType::AttackDown, a.tauntDebuffPct, 1,
+                                  a.statusTurnsBonus);
+                        any = true;
+                    }
+                }
+                if (any) {
+                    log += " The foes falter: ATK-.";
+                }
+            }
             break;
         }
         case content::SkillEffect::Fade:
@@ -928,6 +1277,12 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             case content::SkillCategory::Magic: {
                 int base = magicDamage(a, t, skill.power, skill.element);
                 base = base * (100 + empowerPct) / 100;
+                if (a.magicSkillPct > 0) {
+                    base = base * (100 + a.magicSkillPct) / 100;  // M63 (Arcane Edge)
+                }
+                if (a.aoeSpellPct > 0 && skill.target == content::SkillTarget::AllEnemies) {
+                    base = base * (100 + a.aoeSpellPct) / 100;  // M63 (Devastation)
+                }
                 if (opener) {
                     base *= 2;  // Rush: opening fury
                 }
@@ -942,18 +1297,45 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             }
             case content::SkillCategory::Heal: {
                 if (t.alive()) {
-                    const int amt = healValue(a, skill.power);
-                    applyHeal(t, amt);
-                    if (a.side == Side::Party) {
-                        addThreat(actor, amt);  // healing draws enmity too (M28)
+                    // M62 (rules v13): a pure cleanse authored as a heal —
+                    // power 0 + the cleanse control (Purify) — heals nothing.
+                    // The description always said so, but the heal formula's
+                    // magic/2 term leaked through. A cleanse with real power
+                    // (Generous Mending) still heals; the cleanse itself runs
+                    // below either way.
+                    // M63 (Purifying Light): the chosen milestone deliberately
+                    // restores the pre-M62 behaviour for this caster alone.
+                    const bool pureCleanse =
+                        skill.power == 0 &&
+                        skill.controlEffect == content::SkillEffect::Cleanse &&
+                        !a.purifyHeals;
+                    if (!pureCleanse) {
+                        int amt = healValue(a, skill.power);
+                        if (a.healCastPct > 0) {
+                            amt = amt * (100 + a.healCastPct) / 100;  // M63 (Devotion)
+                        }
+                        const int hpBefore = t.hp;  // M60: record the EFFECTIVE gain
+                        applyHeal(t, amt);
+                        if (observer != nullptr && t.hp > hpBefore) {
+                            emitEvent(*this, {BattleEvent::Type::Heal, actor, ti,
+                                              t.hp - hpBefore, false, false, {}});
+                        }
+                        if (a.side == Side::Party) {
+                            addThreat(actor, amt);  // healing draws enmity too (M28)
+                        }
+                        log += " " + t.name + " recovers " + std::to_string(amt) + " HP.";
                     }
-                    log += " " + t.name + " recovers " + std::to_string(amt) + " HP.";
                 } else if (skill.reviveHpPct > 0) {
                     // M43: a revive-capable heal (Renew) raises a KO'd ally at a
                     // fixed share of its max HP - the skill's own power never
                     // enters, so reviving is an emergency, not a heal.
-                    const int amt = std::max(1, t.maxHp * skill.reviveHpPct / 100);
+                    // M63 (Blessed Renew): the caster's milestone share wins when
+                    // higher; it never turns a non-revive heal into one.
+                    const int pct = std::max(skill.reviveHpPct, a.reviveAtPct);
+                    const int amt = std::max(1, t.maxHp * pct / 100);
                     t.hp = amt;
+                    emitEvent(*this,
+                              {BattleEvent::Type::Revive, actor, ti, amt, false, false, {}});
                     if (a.side == Side::Party) {
                         addThreat(actor, amt);
                     }
@@ -1001,16 +1383,20 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
             log += " " + t.name + " is cleansed.";
         }
 
-        // Apply the skill's status to living targets.
+        // Apply the skill's status to living targets. M63 (Lingering Hex): the
+        // caster's bonus turns ride along.
         if (skill.statusEffect != content::StatusType::None && t.alive()) {
-            addStatus(t, skill.statusEffect, skill.statusMagnitude, skill.statusDuration);
+            addStatus(t, skill.statusEffect, skill.statusMagnitude, skill.statusDuration,
+                      a.statusTurnsBonus);
             log += " " + t.name + ": " + statusLabel(skill.statusEffect) + ".";
         }
     }
     // M45 (the Goose's tradeoff): a skill authored `alsoBuffsEnemies` applies its
     // status to every living FOE as well — the price of a goose's kindness. Inert
-    // for every other skill, so nothing else changes.
-    if (skill.alsoBuffsEnemies && skill.statusEffect != content::StatusType::None) {
+    // for every other skill. M63 (Selective Generosity): the caster's milestone
+    // suppresses the tradeoff outright.
+    if (skill.alsoBuffsEnemies && !a.noEnemyBuff &&
+        skill.statusEffect != content::StatusType::None) {
         const Side foe = a.side == Side::Party ? Side::Enemy : Side::Party;
         for (int fi : aliveIndices(foe)) {
             Combatant& f = units[static_cast<std::size_t>(fi)];
@@ -1038,16 +1424,40 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
     if (!item.requiresBossId.empty() && t.sourceId != item.requiresBossId) {
         return log + " Nothing happens.";
     }
+    // M60 telemetry: the item takes effect from here (a kept relic is no use).
+    emitEvent(*this, {BattleEvent::Type::Action, actor, target, 0, false, true, item.id});
+    // M52 (the Dragon Crown's hidden effect): used on a boss carrying a revive
+    // clock (the King), it ends the clock so his fallen court never returns.
+    // Schema-driven (no item id is branched on), in this shared path so the
+    // Simulator and live play agree by construction. Deliberately silent — no
+    // line is appended, so the King simply stops calling his guards back. The
+    // design docs record it; the game hides it.
+    if (item.disablesMinionRevive) {
+        t.reviveMinionTurns = 0;
+        t.reviveMinionCounter = 0;
+    }
     // M43: an item may carry King-specific amounts (Royal Snacks). kingBattle is
     // set at buildBattle from the team's boss id, so this branch is content-
     // derived and identical in live play and the Simulator.
-    const int healAmount =
+    int healAmount =
         kingBattle && item.kingEffectAmount > 0 ? item.kingEffectAmount : item.effectAmount;
-    const int mpAmount = kingBattle ? item.kingMpAmount : 0;
+    int mpAmount = kingBattle ? item.kingMpAmount : 0;
+    // M63 (Field Medic): items this USER wields restore more — the heal / MP
+    // amounts only; a revive's share, cures, and relic effects are untouched.
+    const int potency = units[static_cast<std::size_t>(actor)].itemPotencyPct;
+    if (potency > 0) {
+        healAmount += healAmount * potency / 100;
+        mpAmount += mpAmount * potency / 100;
+    }
     switch (item.effect) {
         case content::ConsumableEffect::Heal:
             if (t.alive()) {
+                const int hpBefore = t.hp;  // M60 telemetry (effective gain)
                 applyHeal(t, healAmount);
+                if (observer != nullptr && t.hp > hpBefore) {
+                    emitEvent(*this, {BattleEvent::Type::Heal, actor, target, t.hp - hpBefore,
+                                      false, false, {}});
+                }
                 log += " HP +" + std::to_string(healAmount) + ".";
                 if (mpAmount > 0) {
                     t.mp = std::min(t.maxMp, t.mp + mpAmount);
@@ -1065,6 +1475,8 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
             if (!t.alive()) {
                 const int amt = item.effectAmount;
                 t.hp = amt <= 100 ? std::max(1, t.maxHp * amt / 100) : amt;
+                emitEvent(*this,
+                          {BattleEvent::Type::Revive, actor, target, t.hp, false, false, {}});
                 log += " " + t.name + " is revived!";
             } else {
                 log += " No effect.";
@@ -1097,14 +1509,22 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
             // Enemy stats never persist past a battle, so "for the rest of the
             // fight" is simply a direct scale of the combatant's own stats. HP/MP
             // are untouched: this weakens a foe, it does not wound it.
-            const auto scale = [pct = item.statScalePct](int v) {
-                return v > 0 ? std::max(1, v * pct / 100) : v;
-            };
-            t.stats.attack = scale(t.stats.attack);
-            t.stats.magic = scale(t.stats.magic);
-            t.stats.defense = scale(t.stats.defense);
-            t.stats.speed = scale(t.stats.speed);
-            log += " " + t.name + " is diminished for the rest of the battle!";
+            // M58: applied at most ONCE per foe — a second Deadly Spoon no longer
+            // re-halves an already-diminished target (which used to stack to a
+            // quarter, an eighth, ...).
+            if (t.statDiminished) {
+                log += " " + t.name + " is already diminished.";
+            } else {
+                const auto scale = [pct = item.statScalePct](int v) {
+                    return v > 0 ? std::max(1, v * pct / 100) : v;
+                };
+                t.stats.attack = scale(t.stats.attack);
+                t.stats.magic = scale(t.stats.magic);
+                t.stats.defense = scale(t.stats.defense);
+                t.stats.speed = scale(t.stats.speed);
+                t.statDiminished = true;
+                log += " " + t.name + " is diminished for the rest of the battle!";
+            }
         }
     }
     return log;
@@ -1137,7 +1557,9 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             // M29: usable skills are the class learnset resolved at the
             // character's level (startingSkills + level-gated grants), derived
             // identically here for live play and the headless simulator.
-            u.skillIds = content::knownSkillsFor(*cls, c.level);
+            // M64: plus the character's scroll-learned extras (deduped) —
+            // allKnownSkills is the one rule the party panel shows too.
+            u.skillIds = allKnownSkills(c, db);
             // M45: class battle traits are resolved once, here, so the pure model
             // never needs the content database to know how a unit fights.
             u.attackHitsAll = cls->attackHitsAll;
@@ -1158,19 +1580,18 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         if (!c.equippedPassive.empty()) {
             applyPassives(u, {c.equippedPassive}, db);
         }
+        // M63: the chosen level milestones layer on AFTER the passive so a
+        // grant can only ever match-or-raise what is equipped.
+        applyMilestones(u, c, db);
         b.units.push_back(std::move(u));
     }
 
     // Depth stat scaling (M20 composition): applied identically here and in
-    // the danger assessment, so labels never lie about what spawns.
+    // the danger assessment, so labels never lie about what spawns. M52: the
+    // per-field multiply lives in content::scaledStats so the bestiary's
+    // max-stats readout uses the exact same rule.
     const auto scaled = [&team](const content::StatBlock& base) {
-        content::StatBlock s = base;
-        s.maxHp = s.maxHp * team.statScalePct / 100;
-        s.attack = s.attack * team.statScalePct / 100;
-        s.magic = s.magic * team.statScalePct / 100;
-        s.defense = s.defense * team.statScalePct / 100;
-        s.speed = s.speed * team.statScalePct / 100;
-        return s;
+        return content::scaledStats(base, team.statScalePct);
     };
 
     // M43: is this the King's fight? Read once, from content, so item behavior
@@ -1198,6 +1619,20 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             u.weaknesses = boss->affinity.weaknesses;     // M48
             u.immunities = boss->affinity.immunities;
             u.reviveMinionTurns = boss->reviveMinionTurns;  // M49 (0 = never)
+            // M61 (the Deadly Duck): a boss may swing the M45 class machinery —
+            // an all-party basic attack with status riders — and shrug off every
+            // affliction (the three legacy flags follow so the status queries
+            // and display chips agree with the blanket immunity).
+            u.attackHitsAll = boss->attackHitsAll;
+            for (const content::AttackStatus& s : boss->attackStatuses) {
+                u.attackStatuses.push_back({s.type, s.magnitude, s.duration});
+            }
+            u.afflictionImmune = boss->immuneToAfflictions;
+            if (boss->immuneToAfflictions) {
+                u.confusionImmune = true;
+                u.silenceImmune = true;
+                u.blindImmune = true;
+            }
             applyPassives(u, boss->passives, db);  // M36 (bosses may carry several)
             b.units.push_back(std::move(u));
         }
@@ -1225,6 +1660,8 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         u.name = def->name;
         u.weaknesses = def->affinity.weaknesses;  // M48
         u.immunities = def->affinity.immunities;
+        u.doNothingPct = def->doNothingPct;    // M61 (a Quacking goose)
+        u.doNothingText = def->doNothingText;
         if (totals[id] > 1) {
             const int n = seen[id]++;
             u.name += ' ';
@@ -1354,6 +1791,52 @@ bool jestThisTurn(const Battle& b, int actor, int lineCount, int& index) {
     return true;
 }
 
+int geeseScaringKing(const Battle& b) {
+    if (!b.kingBattle) {
+        return 0;
+    }
+    int geese = 0;
+    for (const Combatant& u : b.units) {
+        if (u.side == Side::Party && u.alive() && u.sourceId == kGooseClassId) {
+            ++geese;
+        }
+    }
+    return geese;
+}
+
+bool kingScaredThisTurn(const Battle& b, int actor) {
+    if (actor < 0 || actor >= static_cast<int>(b.units.size())) {
+        return false;
+    }
+    const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    if (!self.isBoss || !b.kingBattle) {
+        return false;
+    }
+    const int geese = geeseScaringKing(b);
+    if (geese <= 0) {
+        return false;
+    }
+    const int chance = std::min(geese * kGoosePerScarePct, 100);
+    // Pure hash under its own salt (never advances rollCursor), so the Simulator
+    // and BattleState derive the same answer for the same (seed, turn, actor).
+    const long roll = targetJitter(b.rngSeed ^ kSaltGooseScare, b.turnsTaken, actor, 3, 10000);
+    return (roll % 100) < chance;
+}
+
+bool doesNothingThisTurn(const Battle& b, int actor) {
+    if (actor < 0 || actor >= static_cast<int>(b.units.size())) {
+        return false;
+    }
+    const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+    if (self.doNothingPct <= 0) {
+        return false;  // every pre-M61 foe
+    }
+    // Pure hash under its own salt, exactly the King-scare shape: the Simulator
+    // and BattleState derive the same answer, and rollCursor never moves.
+    const long roll = targetJitter(b.rngSeed ^ kSaltDoNothing, b.turnsTaken, actor, 4, 10000);
+    return (roll % 100) < std::min(self.doNothingPct, 100);
+}
+
 ForcedAction forcedActionFor(const Combatant& c) {
     // Order matters only in that a unit can carry more than one: a skipped turn
     // beats a forced guard, which beats a confused swing, because each is stricter
@@ -1423,6 +1906,21 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
     // caster can no longer heal or curse through it the way it could before v4.
     if (const ForcedAction forced = forcedActionFor(self); forced != ForcedAction::None) {
         return forcedChoice(b, actor, forced);
+    }
+    // M58: with no status already taking his turn, the Hollow King can be scared
+    // into doing nothing by Geese in the party (10% per living Goose). Same shared
+    // rule the Simulator obeys, so sim == live.
+    if (kingScaredThisTurn(b, actor)) {
+        EnemyChoice scared;
+        scared.forced = ForcedAction::Skip;
+        return scared;
+    }
+    // M61: an authored do-nothing foe (a Quacking goose) may spend the turn on
+    // nothing at all. Same shared rule, same skip shape, rules v12.
+    if (doesNothingThisTurn(b, actor)) {
+        EnemyChoice idle;
+        idle.forced = ForcedAction::Skip;
+        return idle;
     }
     // Silence (M35): a silenced enemy cannot use MP-cost skills, so it falls back
     // to any 0-MP skill or a basic attack. canCast enforces exactly that in each

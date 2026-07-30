@@ -68,10 +68,11 @@ TEST_CASE("achievements: predicates read party + run state", "[achievement]") {
     CHECK(achievementMet("the_climb", p, none));
     p.castleRecords.kingDefeated = true;
     p.castleRecords.kingTitle = "Champion Title";
+    p.castleRecords.kingBestTurns = 12;  // M53: Champion reads this, not the title
     p.castleRecords.bossRushBestTurns = 40;
     p.castleRecords.endlessBestWave = 12;
     CHECK(achievementMet("kingslayer", p, none));
-    CHECK(achievementMet("champion", p, none));
+    CHECK(achievementMet("champion", p, none));  // 12 <= kChampionKingTurns
     CHECK(achievementMet("gauntlet", p, none));
     CHECK(achievementMet("the_long_night", p, none));
     p.storyMet = 0x7F;
@@ -80,6 +81,27 @@ TEST_CASE("achievements: predicates read party + run state", "[achievement]") {
         p.encountered.push_back("foe_" + std::to_string(i));
     }
     CHECK(achievementMet("naturalist", p, none));
+}
+
+TEST_CASE("achievements: Champion is an efficiency bar, not a King kill", "[achievement]") {
+    // M53: Champion = "beat the King in kChampionKingTurns turns or fewer",
+    // read from castleRecords.kingBestTurns; the earned title no longer gates it.
+    Party p;
+    AchvContext none;
+    // Never fought the King (best 0) -> not met, even with a title present (an
+    // old save could carry a title; the predicate ignores it now).
+    p.castleRecords.kingTitle = "Some Old Title";
+    CHECK_FALSE(achievementMet("champion", p, none));
+    // Exactly at the bar -> met (retro-unlock for a save already this efficient).
+    p.castleRecords.kingBestTurns = kChampionKingTurns;
+    CHECK(achievementMet("champion", p, none));
+    // Comfortably under the bar -> met.
+    p.castleRecords.kingBestTurns = 1;
+    CHECK(achievementMet("champion", p, none));
+    // One turn over the bar -> not met (a slow King kill is Kingslayer, not
+    // Champion).
+    p.castleRecords.kingBestTurns = kChampionKingTurns + 1;
+    CHECK_FALSE(achievementMet("champion", p, none));
 }
 
 TEST_CASE("achievements: the global store round-trips and reports new unlocks",

@@ -7,7 +7,10 @@
 
 #include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
+#include "content/Enums.hpp"  // Element, elementDisplayName
 #include "states/DetailsOverlayState.hpp"
+#include "states/ElementChip.hpp"  // ui::elementAccent
+#include "states/EquipDiff.hpp"
 #include "states/EquipShopFilter.hpp"
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
@@ -33,22 +36,6 @@ constexpr int kListY = 60;
 constexpr int kListItemH = 14;
 constexpr int kVisibleRows = 8;
 
-std::string statBonusSummary(const content::StatBlock& b) {
-    std::string out;
-    auto add = [&out](const char* tag, int v) {
-        if (v != 0) {
-            out += (out.empty() ? "" : " ") + std::string(tag) + (v > 0 ? "+" : "") +
-                   std::to_string(v);
-        }
-    };
-    add("HP", b.maxHp);
-    add("ATK", b.attack);
-    add("MAG", b.magic);
-    add("DEF", b.defense);
-    add("SPD", b.speed);
-    return out;
-}
-
 // One-line summary of a piece of gear: slot, stat bonus, description.
 std::string equipDetail(const content::ItemDef& it) {
     std::string out;
@@ -58,7 +45,7 @@ std::string equipDetail(const content::ItemDef& it) {
         case content::EquipSlot::Accessory: out = "Accessory"; break;
         case content::EquipSlot::None: break;
     }
-    const std::string stats = statBonusSummary(it.statBonus);
+    const std::string stats = equip::statBonusSummary(it.statBonus);
     if (!stats.empty()) {
         out += (out.empty() ? "" : "  ") + stats;
     }
@@ -124,9 +111,26 @@ void EquipShopState::captureEnterBuyList(content::EquipSlot slot) {
     phase_ = Phase::Buy;
     rebuild();
 }
+void EquipShopState::captureEnterEquipItem(int charIndex, content::EquipSlot slot) {
+    selectedChar_ = charIndex;
+    selectedSlot_ = slot == content::EquipSlot::Weapon ? 0
+                    : (slot == content::EquipSlot::Armor ? 1 : 2);
+    phase_ = Phase::EquipItem;
+    rebuild();
+    menu_.setCursor(1);  // highlight a real candidate (row 0 is Unequip)
+    scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
+}
 #endif
 
 void EquipShopState::rebuild() {
+    // M58: transient feedback ("Bought ...", "Not enough gold", "... cannot equip
+    // ...") belongs to the screen it was raised on. rebuild() runs on every phase
+    // change (Confirm forward, Cancel back, a completed equip), so clearing here
+    // makes the message fade the moment you leave that character's / list's menu
+    // instead of lingering forever. It never wipes a just-set message: every path
+    // that sets message_ breaks WITHOUT calling rebuild in the same step.
+    message_.clear();
+    messageIsError_ = false;
     rowIds_.clear();
     std::vector<ui::MenuItem> items;
 
@@ -145,8 +149,10 @@ void EquipShopState::rebuild() {
             for (const std::string& id : ids) {
                 const content::ItemDef* it = context_.content.findItem(id);
                 rowIds_.push_back(id);
-                // Price column right-aligned via the suffix (M46).
-                items.push_back({it->name, true, TextFormat("%5dg", it->value)});
+                // M52: owned count + price, the item-shop column idiom (M46).
+                items.push_back({it->name, true,
+                                 TextFormat("x%-3d%5dg", context_.party.inventory.count(id),
+                                            it->value)});
             }
             break;
         }
@@ -279,30 +285,6 @@ void EquipShopState::confirm() {
     }
 }
 
-namespace {
-
-// "ATK +2  DEF -1" style delta between two equip bonuses; empty = no change.
-std::string bonusDelta(const content::StatBlock& next, const content::StatBlock& cur) {
-    std::string out;
-    const auto add = [&out](const char* tag, int d) {
-        if (d == 0) {
-            return;
-        }
-        if (!out.empty()) {
-            out += "  ";
-        }
-        out += std::string(tag) + (d > 0 ? " +" : " ") + std::to_string(d);
-    };
-    add("HP", next.maxHp - cur.maxHp);
-    add("ATK", next.attack - cur.attack);
-    add("MAG", next.magic - cur.magic);
-    add("DEF", next.defense - cur.defense);
-    add("SPD", next.speed - cur.speed);
-    return out;
-}
-
-}  // namespace
-
 void EquipShopState::openItemDetails() {
     if (rowIds_.empty() || menu_.cursor() >= static_cast<int>(rowIds_.size())) {
         return;
@@ -314,7 +296,10 @@ void EquipShopState::openItemDetails() {
     }
     std::string body = it->name + " - " + slotLabel(it->slot) + ", " +
                        std::to_string(it->value) + "g.";
-    const std::string own = bonusDelta(it->statBonus, content::StatBlock{});
+    if (it->element != content::Element::None) {  // M53: weapons carry an element
+        body += std::string("\nElement: ") + content::elementDisplayName(it->element);
+    }
+    const std::string own = equip::bonusDelta(it->statBonus, content::StatBlock{});
     if (!own.empty()) {
         body += "\nBonus: " + own;
     }
@@ -330,7 +315,7 @@ void EquipShopState::openItemDetails() {
         if (const content::ItemDef* curItem = context_.content.findItem(curId)) {
             cur = curItem->statBonus;
         }
-        const std::string delta = bonusDelta(it->statBonus, cur);
+        const std::string delta = equip::bonusDelta(it->statBonus, cur);
         body += "\n" + m.name + ": " + (delta.empty() ? "no change" : delta);
     }
     stack().pushState(
@@ -393,27 +378,98 @@ void EquipShopState::render() {
                          style::kFontMenu, 300, p.text, p.disabled, p.cursor,
                          "equipshop.list", style::kFontSmall, p.gold);
 
+    // M67: the member being outfitted rides the free column right of the list —
+    // the highlighted row while choosing, then the chosen member through the
+    // slot and item phases.
+    int portraitChar = -1;
+    if (phase_ == Phase::EquipChar) {
+        portraitChar = menu_.cursor();
+    } else if (phase_ == Phase::EquipSlot || phase_ == Phase::EquipItem) {
+        portraitChar = selectedChar_;
+    }
+    if (portraitChar >= 0 && portraitChar < static_cast<int>(context_.party.members.size())) {
+        ui::drawActorPortrait(
+            context_.resources,
+            context_.party.members[static_cast<std::size_t>(portraitChar)].classId,
+            kListX - 24 + 352 + 3, kListY - 8, 2);
+    }
+
     // Detail panel for the selected piece of gear (Buy and EquipItem phases).
     const int infoY = kListY + kVisibleRows * kListItemH + 12;
     if (phase_ == Phase::Buy || phase_ == Phase::EquipItem) {
         ui::drawFrame(kListX - 24, infoY, 352, h - style::kFooterHeight - infoY - 4,
                       ui::FrameStyle::Standard);
     }
-    const content::ItemDef* detail = nullptr;
     if (phase_ == Phase::Buy && !rowIds_.empty()) {
-        detail = context_.content.findItem(rowIds_[static_cast<std::size_t>(menu_.cursor())]);
-    } else if (phase_ == Phase::EquipItem) {
-        if (menu_.cursor() == 0) {
-            ui::drawTextWrapped("Remove the current equipment.", kListX - 14, infoY + 6,
-                                332, style::kFontBody, p.textDim, "equipshop.detail", 2);
-        } else if (!rowIds_.empty()) {
-            detail = context_.content.findItem(
-                rowIds_[static_cast<std::size_t>(menu_.cursor() - 1)]);
+        // Buy keeps the slot/bonus/description line — the shopping decision.
+        if (const content::ItemDef* detail =
+                context_.content.findItem(rowIds_[static_cast<std::size_t>(menu_.cursor())])) {
+            // M53: a weapon's element rides a right-aligned chip on the panel's
+            // top line; the description wraps in whatever room is left of it, so
+            // the two never collide.
+            int textW = 332;
+            if (detail->element != content::Element::None) {
+                const int chipLeft =
+                    ui::drawChipRight(content::elementDisplayName(detail->element),
+                                      kListX - 24 + 352 - 8, infoY + 5,
+                                      ui::elementAccent(detail->element, p));
+                textW = chipLeft - (kListX - 14) - 6;
+            }
+            ui::drawTextWrapped(equipDetail(*detail), kListX - 14, infoY + 6, textW,
+                                style::kFontBody, p.textDim, "equipshop.detail", 2);
         }
-    }
-    if (detail != nullptr) {
-        ui::drawTextWrapped(equipDetail(*detail), kListX - 14, infoY + 6, 332, style::kFontBody,
-                            p.textDim, "equipshop.detail", 2);
+    } else if (phase_ == Phase::EquipItem) {
+        // M52: the slot's current item + the stat diff for the highlighted
+        // candidate, so the equip decision is legible without opening Details.
+        const Character& c = context_.party.members[static_cast<std::size_t>(selectedChar_)];
+        const std::string& curId =
+            selectedSlot_ == 0 ? c.weapon : (selectedSlot_ == 1 ? c.armor : c.accessory);
+        content::StatBlock curBonus{};
+        std::string curName = "(none)";
+        if (const content::ItemDef* curItem = context_.content.findItem(curId)) {
+            curBonus = curItem->statBonus;
+            curName = curItem->name;
+        }
+        std::string curLine = "Current: " + curName;
+        const std::string cs = equip::statBonusSummary(curBonus);
+        if (!cs.empty()) {
+            curLine += "  " + cs;
+        }
+        ui::drawTextFitted(curLine, kListX - 14, infoY + 6, 332, style::kFontBody, p.textDim,
+                           "equipshop.current");
+
+        // Unequip (cursor 0) diffs an empty bonus; a candidate diffs its own.
+        content::StatBlock cand{};
+        const content::ItemDef* candItem = nullptr;
+        if (menu_.cursor() >= 1 && !rowIds_.empty()) {
+            candItem = context_.content.findItem(
+                rowIds_[static_cast<std::size_t>(menu_.cursor() - 1)]);
+            if (candItem != nullptr) {
+                cand = candItem->statBonus;
+            }
+        }
+        // M52: each stat coloured by its own change — a gain green, a loss coral,
+        // no change in normal text — so a mixed swap (ATK up, SPD down) reads
+        // truthfully instead of the whole line taking one colour.
+        const int dy = infoY + 6 + ui::lineHeight(style::kFontBody);
+        int dx = kListX - 14;
+        ui::drawText("Diff:", dx, dy, style::kFontBody, p.textDim);
+        dx += ui::measureText("Diff:", style::kFontBody) + 6;
+        for (const equip::StatDelta& sd : equip::statDeltas(cand, curBonus)) {
+            const Color segColor =
+                sd.value > 0 ? p.success : (sd.value < 0 ? p.dangerText : p.text);
+            const std::string seg =
+                std::string(sd.tag) + " " + (sd.value > 0 ? "+" : "") + std::to_string(sd.value);
+            ui::drawText(seg, dx, dy, style::kFontBody, segColor);
+            dx += ui::measureText(seg, style::kFontBody) + 8;
+        }
+        // M53: a weapon candidate's element rides a right-aligned chip on the
+        // diff row, where the short stat segments leave the right side free.
+        if (candItem != nullptr && candItem->element != content::Element::None) {
+            ui::drawChipRight(content::elementDisplayName(candItem->element),
+                              kListX - 24 + 352 - 8, dy - 1,
+                              ui::elementAccent(candItem->element, p));
+        }
     }
 
     // Transient feedback rides an overlay banner (drawn last, like a toast).

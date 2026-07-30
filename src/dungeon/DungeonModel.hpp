@@ -18,8 +18,12 @@ enum class RoomType { Start, Normal, Treasure, Boss, Event };
 // confirmation.
 // M44 adds RoyalRelic: a rare event that REPLACES one of the rolled events (it is
 // never part of the shuffled kind list), granting one of the four Royal Relics.
+// M55 adds the three per-theme rites (ArmoryGhost / MinersCache / ElderRoot): each
+// is GUARANTEED exactly once per dungeon of its theme (forced onto the first event
+// slot) and never appears outside that theme. See dungeon/ThemeEvents.hpp.
 enum class RoomEventKind {
-    None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken, RoyalRelic
+    None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken, RoyalRelic,
+    ArmoryGhost, MinersCache, ElderRoot
 };
 
 struct RoomEvent {
@@ -96,6 +100,18 @@ struct Dungeon {
     int startRoom = 0;
     int bossRoom = 0;
     int mandatoryGates = 0;  // gated doors on the path to the boss
+    // M65: the room holding a Secret Map Piece, or -1 (the common case). At
+    // most one per dungeon, seeded by a PURE hash of the dungeon seed (no
+    // generator-Rng draw, so every other roll of a seed is untouched);
+    // cleared live when the piece is taken.
+    int mapPieceRoom = -1;
+    // M66: the single-use dungeon treasure map — the room holding the CHART
+    // and the room where the treasure lies BURIED (both -1 usually; ~12% of
+    // dungeons carry the pair, same pure-hash contract, always two distinct
+    // Normal rooms and never the map-piece room). The chart clears live when
+    // read; the buried spot is claimable only once the chart was found.
+    int chartRoom = -1;
+    int buriedRoom = -1;
 
     int chestCount() const;
     int guardedChestCount() const;

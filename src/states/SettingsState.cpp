@@ -33,6 +33,19 @@ std::string volumeLabel(const char* name, float v) {
 std::string toggleLabel(const char* name, bool on) {
     return std::string(name) + ":  < " + (on ? "On" : "Off") + " >";
 }
+
+// M57: the CRT strength row reads as a 0..10 slider, mirroring the volume rows.
+std::string crtStrengthLabel(float intensity) {
+    return std::string("CRT Strength:  < ") +
+           std::to_string(settings::crtStrengthStep(intensity)) + " >";
+}
+
+// M70: curvature is its own 0..10 slider. Always shown and adjustable — even
+// at strength 0 (where it is dormant) hidden coupling would only confuse.
+std::string crtCurvatureLabel(float curvature) {
+    return std::string("CRT Curvature:  < ") +
+           std::to_string(settings::crtCurvatureStep(curvature)) + " >";
+}
 }  // namespace
 
 SettingsState::SettingsState(StateStack& stack, AppContext& context)
@@ -44,6 +57,11 @@ void SettingsState::onResume() { rebuild(); }
 #ifdef CRYSTAL_CAPTURE
 void SettingsState::captureShowDisplay() {
     mode_ = Mode::Display;
+    menu_.setCursor(0);
+    rebuild();
+}
+void SettingsState::captureShowAudio() {
+    mode_ = Mode::Audio;
     menu_.setCursor(0);
     rebuild();
 }
@@ -79,6 +97,7 @@ void SettingsState::rebuild() {
             add(volumeLabel("Master Volume", v.masterVolume), Row::MasterVolume);
             add(volumeLabel("Music Volume", v.musicVolume), Row::MusicVolume);
             add(volumeLabel("SFX Volume", v.sfxVolume), Row::SfxVolume);
+            add(volumeLabel("Ambience Volume", v.ambienceVolume), Row::AmbienceVolume);
             add(toggleLabel("Background Audio", v.backgroundAudio), Row::BackgroundAudio);
             add("Back", Row::Back);
             break;
@@ -86,7 +105,8 @@ void SettingsState::rebuild() {
             add(std::string("Window:  < ") + (v.borderlessFullscreen ? "Borderless" : "Windowed") +
                     " >",
                 Row::Window);
-            add(toggleLabel("CRT Effect", v.crtEffect), Row::CrtEffect);
+            add(crtStrengthLabel(v.crtIntensity), Row::CrtStrength);
+            add(crtCurvatureLabel(v.crtCurvature), Row::CrtCurvature);
             add(std::string("Battle Flash:  < ") +
                     std::string(settings::effectLevelName(v.effectFlash)) + " >",
                 Row::BattleFlash);
@@ -121,7 +141,7 @@ void SettingsState::rebuild() {
 
 void SettingsState::applyAudio() {
     const settings::Settings& v = context_.settings.values;
-    context_.audio.setVolumes(v.masterVolume, v.musicVolume, v.sfxVolume);
+    context_.audio.setVolumes(v.masterVolume, v.musicVolume, v.sfxVolume, v.ambienceVolume);
 }
 
 void SettingsState::saveSettings() {
@@ -146,9 +166,19 @@ void SettingsState::adjust(Row row, int direction) {
         case Row::MasterVolume: v.masterVolume = stepVolume(v.masterVolume); applyAudio(); break;
         case Row::MusicVolume: v.musicVolume = stepVolume(v.musicVolume); applyAudio(); break;
         case Row::SfxVolume: v.sfxVolume = stepVolume(v.sfxVolume); applyAudio(); break;
+        case Row::AmbienceVolume:
+            v.ambienceVolume = stepVolume(v.ambienceVolume);
+            applyAudio();
+            break;
         case Row::BackgroundAudio: v.backgroundAudio = !v.backgroundAudio; break;
         case Row::Window: v.borderlessFullscreen = !v.borderlessFullscreen; break;
-        case Row::CrtEffect: v.crtEffect = !v.crtEffect; break;  // Application reads it each frame
+        case Row::CrtStrength:
+            // Same safe step/clamp discipline as volume; Application reads it each frame.
+            v.crtIntensity = stepVolume(v.crtIntensity);
+            break;
+        case Row::CrtCurvature:
+            v.crtCurvature = stepVolume(v.crtCurvature);
+            break;
         case Row::BattleFlash:
             v.effectFlash = static_cast<settings::EffectLevel>(cycle3(static_cast<int>(v.effectFlash)));
             break;

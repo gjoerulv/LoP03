@@ -154,6 +154,48 @@ constexpr std::array<std::pair<std::string_view, PassiveHook>, 10> kPassiveHooks
     {"keen_senses", PassiveHook::KeenSenses},
 }};
 
+// The valid milestone effects (M63); "none" is intentionally absent so it is
+// rejected in data and only ever the inert error fallback.
+constexpr std::array<std::pair<std::string_view, MilestoneEffect>, 37> kMilestoneEffects{{
+    {"stat_max_hp_pct", MilestoneEffect::StatMaxHpPct},
+    {"stat_speed_pct", MilestoneEffect::StatSpeedPct},
+    {"stat_max_mp_pct", MilestoneEffect::StatMaxMpPct},
+    {"stat_defense_pct", MilestoneEffect::StatDefensePct},
+    {"basic_attack_pct", MilestoneEffect::BasicAttackPct},
+    {"magic_skill_pct", MilestoneEffect::MagicSkillPct},
+    {"aoe_spell_pct", MilestoneEffect::AoeSpellPct},
+    {"heal_cast_pct", MilestoneEffect::HealCastPct},
+    {"execute_pct", MilestoneEffect::ExecutePct},
+    {"vs_afflicted_pct", MilestoneEffect::VsAfflictedPct},
+    {"weakness_bonus_pct", MilestoneEffect::WeaknessBonusPct},
+    {"status_turns_bonus", MilestoneEffect::StatusTurnsBonus},
+    {"opening_guard_pct", MilestoneEffect::OpeningGuardPct},
+    {"double_strike_pct", MilestoneEffect::DoubleStrikePct},
+    {"sweep_all_pct", MilestoneEffect::SweepAllPct},
+    {"sweep_debuff_pct", MilestoneEffect::SweepDebuffPct},
+    {"taunt_debuff_pct", MilestoneEffect::TauntDebuffPct},
+    {"guard_block_pct", MilestoneEffect::GuardBlockPct},
+    {"first_hit_immune", MilestoneEffect::FirstHitImmune},
+    {"iron_will_healing", MilestoneEffect::IronWillHealing},
+    {"revive_at_pct", MilestoneEffect::ReviveAtPct},
+    {"purify_heals", MilestoneEffect::PurifyHeals},
+    {"holy_basic", MilestoneEffect::HolyBasic},
+    {"fire_basic", MilestoneEffect::FireBasic},
+    {"gold_bonus_pct", MilestoneEffect::GoldBonusPct},
+    {"item_potency_pct", MilestoneEffect::ItemPotencyPct},
+    {"no_enemy_buff", MilestoneEffect::NoEnemyBuff},
+    {"on_kill_party_atk_up", MilestoneEffect::OnKillPartyAtkUp},
+    {"on_death_foe_debuff", MilestoneEffect::OnDeathFoeDebuff},
+    {"grant_counter", MilestoneEffect::GrantCounter},
+    {"grant_evasion", MilestoneEffect::GrantEvasion},
+    {"grant_spell_ward", MilestoneEffect::GrantSpellWard},
+    {"grant_thorns", MilestoneEffect::GrantThorns},
+    {"grant_iron_will", MilestoneEffect::GrantIronWill},
+    {"grant_first_strike", MilestoneEffect::GrantFirstStrike},
+    {"grant_clarity", MilestoneEffect::GrantClarity},
+    {"grant_bodyguard", MilestoneEffect::GrantBodyguard},
+}};
+
 }  // namespace
 
 std::optional<Element> parseElement(std::string_view s) { return parseFrom(kElements, s); }
@@ -185,6 +227,9 @@ std::optional<BossArchetype> parseBossArchetype(std::string_view s) {
 std::optional<PassiveHook> parsePassiveHook(std::string_view s) {
     return parseFrom(kPassiveHooks, s);
 }
+std::optional<MilestoneEffect> parseMilestoneEffect(std::string_view s) {
+    return parseFrom(kMilestoneEffects, s);
+}
 
 const char* toString(Element v) { return nameFrom(kElements, v); }
 
@@ -215,5 +260,38 @@ const char* toString(StatusType v) { return nameFrom(kStatusTypes, v); }
 const char* toString(BattleTarget v) { return nameFrom(kBattleTargets, v); }
 const char* toString(BossArchetype v) { return nameFrom(kBossArchetypes, v); }
 const char* toString(PassiveHook v) { return nameFrom(kPassiveHooks, v); }
+const char* toString(MilestoneEffect v) { return nameFrom(kMilestoneEffects, v); }
+
+namespace {
+
+// M59: the id column of a parse table, in declaration order.
+template <typename E, std::size_t N>
+std::vector<std::string_view> idsFrom(const std::array<std::pair<std::string_view, E>, N>& table) {
+    std::vector<std::string_view> ids;
+    ids.reserve(N);
+    for (const auto& [key, value] : table) {
+        ids.push_back(key);
+    }
+    return ids;
+}
+
+}  // namespace
+
+std::vector<std::string_view> elementIds() { return idsFrom(kElements); }
+std::vector<std::string_view> skillCategoryIds() { return idsFrom(kSkillCategories); }
+std::vector<std::string_view> skillEffectIds() { return idsFrom(kSkillEffects); }
+std::vector<std::string_view> skillTargetIds() { return idsFrom(kSkillTargets); }
+std::vector<std::string_view> enemyTagIds() { return idsFrom(kEnemyTags); }
+std::vector<std::string_view> enemyTierIds() { return idsFrom(kEnemyTiers); }
+std::vector<std::string_view> enemyRoleIds() { return idsFrom(kEnemyRoles); }
+std::vector<std::string_view> itemTypeIds() { return idsFrom(kItemTypes); }
+std::vector<std::string_view> equipSlotIds() { return idsFrom(kEquipSlots); }
+std::vector<std::string_view> rarityIds() { return idsFrom(kRarities); }
+std::vector<std::string_view> consumableEffectIds() { return idsFrom(kConsumableEffects); }
+std::vector<std::string_view> statusTypeIds() { return idsFrom(kStatusTypes); }
+std::vector<std::string_view> battleTargetIds() { return idsFrom(kBattleTargets); }
+std::vector<std::string_view> bossArchetypeIds() { return idsFrom(kBossArchetypes); }
+std::vector<std::string_view> passiveHookIds() { return idsFrom(kPassiveHooks); }
+std::vector<std::string_view> milestoneEffectIds() { return idsFrom(kMilestoneEffects); }
 
 }  // namespace cd::content

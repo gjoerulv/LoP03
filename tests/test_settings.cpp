@@ -75,9 +75,9 @@ TEST_CASE("settings: effect levels round-trip and default to full when absent") 
     CHECK(bad.effectFlash == EffectLevel::Full);
 }
 
-TEST_CASE("settings: M51 crtEffect/backgroundAudio round-trip and default off when absent") {
+TEST_CASE("settings: M57 crtIntensity round-trips and defaults to 0 when absent") {
     Settings values;
-    values.crtEffect = true;
+    values.crtIntensity = 0.6f;
     values.backgroundAudio = true;
     InputMap map;
     const std::string text = serializeSettings(values, map);
@@ -87,27 +87,172 @@ TEST_CASE("settings: M51 crtEffect/backgroundAudio round-trip and default off wh
     LoadReport report;
     REQUIRE(parseSettingsText(text, loaded, loadedMap, report));
     CHECK(report.errorCount() == 0);
-    CHECK(loaded.crtEffect);
+    CHECK(loaded.crtIntensity == 0.6f);
     CHECK(loaded.backgroundAudio);
 
-    // A pre-M51 file lacking both fields loads with both OFF (the defaults), so
-    // older settings.json is unaffected.
-    Settings old;
-    LoadReport report2;
+    // A file lacking crtIntensity (and any legacy crtEffect) loads at 0.0.
+    Settings absent;
+    LoadReport reportAbsent;
     REQUIRE(parseSettingsText(
-        R"({"version":1,"gameplay":{"battleSpeed":"fast","messageSpeed":"normal"}})", old,
-        loadedMap, report2));
-    CHECK(report2.errorCount() == 0);
-    CHECK_FALSE(old.crtEffect);
-    CHECK_FALSE(old.backgroundAudio);
+        R"({"version":1,"gameplay":{"battleSpeed":"fast","messageSpeed":"normal"}})", absent,
+        loadedMap, reportAbsent));
+    CHECK(reportAbsent.errorCount() == 0);
+    CHECK(absent.crtIntensity == 0.0f);
+    CHECK_FALSE(absent.backgroundAudio);
+}
 
-    // A non-boolean value is reported but survivable (keeps the default).
-    Settings bad;
-    LoadReport report3;
+TEST_CASE("settings: M57 crtIntensity clamps out-of-range values") {
+    InputMap map;
+    Settings low;
+    LoadReport rlow;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtIntensity":-0.5}})", low, map, rlow));
+    CHECK(low.crtIntensity == 0.0f);
+
+    Settings high;
+    LoadReport rhigh;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtIntensity":1.7}})", high, map, rhigh));
+    CHECK(high.crtIntensity == 1.0f);
+}
+
+TEST_CASE("settings: M57 legacy crtEffect bool migrates defensively") {
+    InputMap map;
+
+    // Legacy false -> 0.0.
+    Settings off;
+    LoadReport roff;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtEffect":false}})", off, map, roff));
+    CHECK(roff.errorCount() == 0);
+    CHECK(off.crtIntensity == 0.0f);
+
+    // Legacy true -> 0.3 (approximately preserves the old subtle effect).
+    Settings on;
+    LoadReport ron;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtEffect":true}})", on, map, ron));
+    CHECK(ron.errorCount() == 0);
+    CHECK(on.crtIntensity == 0.3f);
+
+    // A new numeric crtIntensity takes precedence over a legacy bool when both
+    // are present.
+    Settings both;
+    LoadReport rboth;
     REQUIRE(parseSettingsText(
-        R"({"version":1,"gameplay":{"crtEffect":"yes"}})", bad, loadedMap, report3));
-    CHECK(report3.errorCount() > 0);
-    CHECK_FALSE(bad.crtEffect);
+        R"({"version":1,"gameplay":{"crtIntensity":0.7,"crtEffect":true}})", both, map, rboth));
+    CHECK(rboth.errorCount() == 0);
+    CHECK(both.crtIntensity == 0.7f);
+}
+
+TEST_CASE("settings: M57 malformed crtIntensity is reported and falls back safely") {
+    InputMap map;
+    Settings bad;
+    LoadReport report;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtIntensity":"loud"}})", bad, map,
+                              report));
+    CHECK(report.errorCount() > 0);
+    CHECK(bad.crtIntensity == 0.0f);  // safe default
+}
+
+TEST_CASE("settings: M57 crt strength <-> intensity step conversion") {
+    CHECK(crtStrengthStep(0.0f) == 0);
+    CHECK(crtStrengthStep(0.3f) == 3);
+    CHECK(crtStrengthStep(1.0f) == 10);
+    CHECK(crtStrengthStep(1.5f) == 10);   // clamped
+    CHECK(crtStrengthStep(-1.0f) == 0);   // clamped
+
+    CHECK(crtIntensityFromStep(0) == 0.0f);
+    CHECK(crtIntensityFromStep(3) == 0.3f);
+    CHECK(crtIntensityFromStep(10) == 1.0f);
+    CHECK(crtIntensityFromStep(15) == 1.0f);  // clamped
+    CHECK(crtIntensityFromStep(-2) == 0.0f);  // clamped
+
+    // A default (reset) Settings has strength 0.
+    CHECK(crtStrengthStep(Settings{}.crtIntensity) == 0);
+}
+
+TEST_CASE("settings: M70 crtCurvature round-trips and defaults to 0.3 when absent") {
+    Settings values;
+    values.crtCurvature = 0.6f;
+    InputMap map;
+    const std::string text = serializeSettings(values, map);
+    CHECK(text.find("\"crtCurvature\"") != std::string::npos);
+    // The obsolete crtEffect bool is never serialized.
+    CHECK(text.find("\"crtEffect\"") == std::string::npos);
+
+    Settings loaded;
+    InputMap loadedMap;
+    LoadReport report;
+    REQUIRE(parseSettingsText(text, loaded, loadedMap, report));
+    CHECK(loaded.crtCurvature == 0.6f);
+
+    // Absent field (a pre-M70 file, e.g. with only crtIntensity) loads at the
+    // 0.3 default — the deliberate migration: strength 7 keeps its texture
+    // while the geometry relaxes to mild curved glass.
+    Settings absent;
+    LoadReport rAbsent;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtIntensity":0.7}})", absent,
+                              loadedMap, rAbsent));
+    CHECK(absent.crtIntensity == 0.7f);
+    CHECK(absent.crtCurvature == 0.3f);
+}
+
+TEST_CASE("settings: M70 crtCurvature clamps out-of-range values") {
+    InputMap map;
+    Settings low;
+    LoadReport rlow;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtCurvature":-0.5}})", low, map, rlow));
+    CHECK(low.crtCurvature == 0.0f);
+
+    Settings high;
+    LoadReport rhigh;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtCurvature":1.7}})", high, map, rhigh));
+    CHECK(high.crtCurvature == 1.0f);
+}
+
+TEST_CASE("settings: M70 malformed crtCurvature is reported and falls back to 0.3") {
+    InputMap map;
+    Settings bad;
+    LoadReport report;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtCurvature":"round"}})", bad, map,
+                              report));
+    CHECK(report.errorCount() > 0);
+    CHECK(bad.crtCurvature == 0.3f);  // the safe default survives
+}
+
+TEST_CASE("settings: M70 intensity and curvature persist independently") {
+    Settings values;
+    values.crtIntensity = 0.7f;
+    values.crtCurvature = 0.2f;
+    InputMap map;
+    Settings loaded;
+    LoadReport report;
+    REQUIRE(parseSettingsText(serializeSettings(values, map), loaded, map, report));
+    CHECK(loaded.crtIntensity == 0.7f);
+    CHECK(loaded.crtCurvature == 0.2f);
+
+    // The legacy crtEffect migration still only touches intensity.
+    Settings legacy;
+    LoadReport rLegacy;
+    REQUIRE(parseSettingsText(R"({"version":1,"gameplay":{"crtEffect":true}})", legacy, map,
+                              rLegacy));
+    CHECK(legacy.crtIntensity == 0.3f);
+    CHECK(legacy.crtCurvature == 0.3f);  // absent -> default, untouched by the bool
+}
+
+TEST_CASE("settings: M70 curvature step conversion and reset defaults") {
+    CHECK(crtCurvatureStep(0.0f) == 0);
+    CHECK(crtCurvatureStep(0.3f) == 3);
+    CHECK(crtCurvatureStep(1.0f) == 10);
+    CHECK(crtCurvatureStep(1.5f) == 10);   // clamped
+    CHECK(crtCurvatureStep(-1.0f) == 0);   // clamped
+
+    CHECK(crtCurvatureFromStep(0) == 0.0f);
+    CHECK(crtCurvatureFromStep(3) == 0.3f);
+    CHECK(crtCurvatureFromStep(10) == 1.0f);
+    CHECK(crtCurvatureFromStep(15) == 1.0f);  // clamped
+    CHECK(crtCurvatureFromStep(-2) == 0.0f);  // clamped
+
+    // Reset/default Settings{}: strength 0, curvature 3/10.
+    CHECK(crtStrengthStep(Settings{}.crtIntensity) == 0);
+    CHECK(crtCurvatureStep(Settings{}.crtCurvature) == 3);
 }
 
 TEST_CASE("settings: malformed JSON yields defaults and a report") {

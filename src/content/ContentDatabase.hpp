@@ -22,6 +22,7 @@ public:
     bool addBoss(const BossDef& def);
     bool addTheme(const DungeonThemeDef& def);
     bool addPassive(const PassiveDef& def);
+    bool addMilestone(const MilestoneDef& def);  // M63
     bool addStory(const StoryBeat& def);  // M41; false on a duplicate town
 
     const SkillDef* findSkill(const std::string& id) const;
@@ -31,6 +32,12 @@ public:
     const BossDef* findBoss(const std::string& id) const;
     const DungeonThemeDef* findTheme(const std::string& id) const;
     const PassiveDef* findPassive(const std::string& id) const;
+    const MilestoneDef* findMilestone(const std::string& id) const;  // M63
+    // M63: the a/b pair for a class at a tier ({nullptr, nullptr} when the
+    // class has none). Deterministic regardless of map order — matched by the
+    // validated `option` field, never by iteration.
+    std::pair<const MilestoneDef*, const MilestoneDef*> milestonePair(const std::string& classId,
+                                                                      int level) const;
     const StoryBeat* findStoryBeat(int town) const;  // M41
 
     bool hasSkill(const std::string& id) const { return findSkill(id) != nullptr; }
@@ -43,6 +50,7 @@ public:
     const std::unordered_map<std::string, BossDef>& bosses() const { return bosses_; }
     const std::unordered_map<std::string, DungeonThemeDef>& themes() const { return themes_; }
     const std::unordered_map<std::string, PassiveDef>& passives() const { return passives_; }
+    const std::unordered_map<std::string, MilestoneDef>& milestones() const { return milestones_; }
     const std::vector<StoryBeat>& story() const { return story_; }  // M41
 
     // Team-composition constraints (M20). Defaults apply until
@@ -57,6 +65,7 @@ public:
     std::size_t bossCount() const { return bosses_.size(); }
     std::size_t themeCount() const { return themes_.size(); }
     std::size_t passiveCount() const { return passives_.size(); }
+    std::size_t milestoneCount() const { return milestones_.size(); }  // M63
     std::size_t storyCount() const { return story_.size(); }
 
     bool empty() const;
@@ -70,6 +79,7 @@ private:
     std::unordered_map<std::string, BossDef> bosses_;
     std::unordered_map<std::string, DungeonThemeDef> themes_;
     std::unordered_map<std::string, PassiveDef> passives_;
+    std::unordered_map<std::string, MilestoneDef> milestones_;  // M63
     std::vector<StoryBeat> story_;
     CompositionDef composition_;
 };

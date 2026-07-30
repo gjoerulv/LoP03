@@ -67,6 +67,21 @@ std::optional<EffectLevel> effectLevelFromName(std::string_view name) {
   return std::nullopt;
 }
 
+int crtStrengthStep(float intensity) {
+  const float clamped = std::clamp(intensity, 0.0f, 1.0f);
+  return static_cast<int>(clamped * 10.0f + 0.5f);
+}
+
+float crtIntensityFromStep(int step) {
+  return static_cast<float>(std::clamp(step, 0, 10)) / 10.0f;
+}
+
+// M70: curvature uses the identical 0..1 <-> 0..10 mapping; shared thin
+// wrappers keep one rounding/clamping rule for both sliders.
+int crtCurvatureStep(float curvature) { return crtStrengthStep(curvature); }
+
+float crtCurvatureFromStep(int step) { return crtIntensityFromStep(step); }
+
 float resolveSeconds(BattleSpeed s) {
   switch (s) {
   case BattleSpeed::Normal: return 0.9f;
@@ -155,6 +170,8 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
     values.masterVolume = clamp01(audio.optFloat("master", 1.0f));
     values.musicVolume = clamp01(audio.optFloat("music", 1.0f));
     values.sfxVolume = clamp01(audio.optFloat("sfx", 1.0f));
+    // M52: optional; absent keeps the 0.5 default so pre-M52 files load unchanged.
+    values.ambienceVolume = clamp01(audio.optFloat("ambience", 0.5f));
   }
 
   if (const auto it = root.find("display"); it != root.end() && it->is_object()) {
@@ -212,18 +229,50 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
         report.add(kSource, "gameplay.highContrast", "expected a boolean");
       }
     }
-    // M51: optional bools; absent = false so older files load unchanged.
-    const auto optBool = [&](const char* key, bool& out) {
-      if (const auto f = it->find(key); f != it->end()) {
-        if (f->is_boolean()) {
-          out = f->get<bool>();
+    // M57: CRT strength is a 0..1 intensity. Precedence: a valid numeric
+    // crtIntensity wins; otherwise migrate the legacy M51 crtEffect bool
+    // (true -> 0.3 preserves the old subtle look, false -> 0.0); absent both
+    // keeps the 0.0 default. A malformed crtIntensity is reported and falls
+    // through to the legacy/default path.
+    bool crtResolved = false;
+    if (const auto ci = it->find("crtIntensity"); ci != it->end()) {
+      if (ci->is_number()) {
+        values.crtIntensity = clamp01(ci->get<float>());
+        crtResolved = true;
+      } else {
+        report.add(kSource, "gameplay.crtIntensity", "expected a number");
+      }
+    }
+    if (!crtResolved) {
+      if (const auto ce = it->find("crtEffect"); ce != it->end()) {
+        if (ce->is_boolean()) {
+          values.crtIntensity = ce->get<bool>() ? 0.3f : 0.0f;
         } else {
-          report.add(kSource, std::string("gameplay.") + key, "expected a boolean");
+          report.add(kSource, "gameplay.crtEffect", "expected a boolean");
         }
       }
-    };
-    optBool("crtEffect", values.crtEffect);
-    optBool("backgroundAudio", values.backgroundAudio);
+    }
+    // M70: CRT curvature is its own optional 0..1 field. Absent = the 0.3
+    // default (a deliberate migration: an old strength-7 file loads with mild
+    // curvature instead of the excessive strength-driven geometry). Malformed
+    // values are reported and keep the default. crtIntensity is never
+    // reinterpreted.
+    if (const auto cc = it->find("crtCurvature"); cc != it->end()) {
+      if (cc->is_number()) {
+        values.crtCurvature = clamp01(cc->get<float>());
+      } else {
+        report.add(kSource, "gameplay.crtCurvature", "expected a number");
+      }
+    }
+
+    // M51: optional bool; absent = false so older files load unchanged.
+    if (const auto f = it->find("backgroundAudio"); f != it->end()) {
+      if (f->is_boolean()) {
+        values.backgroundAudio = f->get<bool>();
+      } else {
+        report.add(kSource, "gameplay.backgroundAudio", "expected a boolean");
+      }
+    }
   }
 
   if (const auto it = root.find("bindings"); it != root.end() && it->is_object()) {
@@ -273,14 +322,16 @@ std::string serializeSettings(const Settings& values, const InputMap& map) {
   root["version"] = kSettingsVersion;
   root["audio"] = {{"master", values.masterVolume},
                    {"music", values.musicVolume},
-                   {"sfx", values.sfxVolume}};
+                   {"sfx", values.sfxVolume},
+                   {"ambience", values.ambienceVolume}};
   root["display"] = {{"borderless", values.borderlessFullscreen}};
   root["gameplay"] = {{"battleSpeed", std::string(battleSpeedName(values.battleSpeed))},
                       {"messageSpeed", std::string(messageSpeedName(values.messageSpeed))},
                       {"effectFlash", std::string(effectLevelName(values.effectFlash))},
                       {"effectShake", std::string(effectLevelName(values.effectShake))},
                       {"highContrast", values.highContrast},
-                      {"crtEffect", values.crtEffect},
+                      {"crtIntensity", values.crtIntensity},
+                      {"crtCurvature", values.crtCurvature},
                       {"backgroundAudio", values.backgroundAudio}};
 
   Json keyboard = Json::object();

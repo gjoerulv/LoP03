@@ -2,6 +2,8 @@
 
 // Shared, long-lived services handed to states. Kept small; grows per milestone.
 
+#include "core/DebugCheats.hpp"
+
 namespace cd {
 
 class ResourceManager;
@@ -49,6 +51,11 @@ struct AppContext {
     ProfileStore& profile;
     int virtualWidth;
     int virtualHeight;
+    // M53: development-only cheat state. A value member (owned by the single
+    // Application::context_) with a default, so the positional aggregate
+    // initializer that stops at virtualHeight leaves it default-constructed. All
+    // access is #ifdef CRYSTAL_DEBUG_OVERLAY; absent from Release behaviour.
+    DebugCheats cheats{};
 };
 
 }  // namespace cd

@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs after M51** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs once M59–M71 close** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -59,30 +59,71 @@
 | 49 | The King's Court | ☑ complete (approved) |
 | 50 | Town travel rework | ☑ complete (approved) |
 | 51 | Presentation & options | ☑ complete (approved) |
+| 52 | Comforts & secrets | ☑ complete (approved) |
+| 53 | Toolbelt & trims (debug menu, 5 save slots, Champion, element chips) | ☑ complete (approved) |
+| 54 | Arms of the ladder (equipment rebalance) | ☑ complete (approved) |
+| 55 | Theme rites (per-theme dungeon events) | ☑ complete (approved) |
+| 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ☑ complete (approved) |
+| 57 | Advanced CRT post-process (0–10 CRT Strength) | ☑ complete (approved) |
+| 58 | Fixes: equip message, Deadly Spoon once, geese scare the King | ☑ complete (approved) |
+| 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ◑ implemented, awaiting manual approval |
+| 60 | CrystalForge sim lab, battle observer, test runner | ◑ implemented, awaiting manual approval |
+| 61 | Goose Town & the Deadly Duck (rules v12) | ◑ implemented, awaiting manual approval |
+| 62 | Fixes & Duck stagecraft (Purify no-heal rules v13, goose/duck art, Duck theme) | ◑ implemented, awaiting manual approval |
+| 63 | Class level milestones (pick 1 of 2 at Lv 10/20/30; rules v14) | ◑ implemented, awaiting manual approval |
+| 64 | Scroll learning + Party panel | ◑ implemented, awaiting manual approval |
+| 65 | Town puzzle map (HoMM2 homage; generation v12) | ◑ implemented, awaiting manual approval |
+| 66 | Dungeon treasure map + curios (generation v13) | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
 (M35 → M36 → M37 → M38 → M39 → M40 → M41 → M42), then the **M43–M45 King's
 Gambit program** (M43 → M44 → M45, authorized 2026-07-22), then **M46** (the
 owner-directed presentation facelift), then the **M47–M51 Court & Comfort
-program** (M47 → M48 → M49 → M50 → M51, authorized 2026-07-23), **then**
-M23 → M24. M23/M24 were deferred by the owner on 2026-07-20: the game is not
+program** (M47 → M48 → M49 → M50 → M51, authorized 2026-07-23), then **M52**
+(comforts & secrets, authorized 2026-07-23), then the **M53–M56 adjustment
+program** (M53 → M54 → M55 → M56, authorized 2026-07-24), then **M57** (the
+owner-directed advanced CRT post-process, authorized 2026-07-24), then **M58**
+(three owner-directed fixes, authorized 2026-07-24), **then**
+M23 → M24.
+M23/M24 were deferred by the owner on 2026-07-20: the game is not
 release-ready, so validating and packaging it would have measured the wrong
 build. Their existing tooling and packaging work is retained, not discarded —
 only their position in the sequence changed. Each expansion program was
 authorized as content/systems work the game needs before M23/M24 are worth
 running. See the program sections below.
 
-**With M51 the Court & Comfort program is finished, and with it the expansion
-work: M23 → M24 are next.** Both must be re-audited against the post-M51
-checkout before they begin — the capture set has grown (61 scenes as of M51),
-the balance batteries have grown (`[economy-report]`, `[castle-report]` with
-its rush sweep, `[king-report]`, `[classes-report]`), and the packaging
-manifest must account for everything the expansions added (the relic prop,
-three class sprites, two Royal Guard sprites, and the `profile.json`
-user-data file). The M49 castle retune (Boss Rush 580 % / King 500 % /
-Endless 500 % +10 %pts per wave, level cap 99) is the balance baseline M23
-playtests should judge.
+**M53–M58 are all complete (approved 2026-07-24). The owner then authorized
+the M59–M60 CrystalForge program (2026-07-24) — a designer-facing content
+editor with validation, a battle-sim lab, and a per-category test runner —
+M61, Goose Town & the Deadly Duck (2026-07-25), and on 2026-07-27 the
+M62–M66 program (fixes & Duck stagecraft; class level milestones; scroll
+learning + a party panel; the town puzzle map; the dungeon treasure map —
+plan approved with the 54-entry bonus table), followed on 2026-07-28 by
+**M67** (an owner feedback batch from the manual pass: class portraits,
+party-panel descriptions, load-screen fixes, and the boss-victory
+return-to-town bug), **M68** (the victory spoils panel + the
+party-relative threat recalibration, generation 14), **M69** (the
+town exteriors — real facades, the scoreboard stele, the save crystal),
+**M70** (CRT Strength and CRT Curvature as separate persistent
+sliders), **M71** (the victory celebration screen), and **M72** (the
+party panel reflow). M59–M72 ALL sit at
+`implemented, awaiting manual approval`; then M23 → M24, and nothing else
+stands before them.**
+When M59–M72 close, both M23 and M24 must be re-audited against the
+then-current checkout before they begin — the capture set has grown (**84
+scenes** as of M71), the balance batteries have grown (`[economy-report]`,
+`[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
+and the M61–M68 `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/
+`[spoils]`/`[danger-report]` batteries), and the packaging manifest must
+account for everything the
+expansions added (the relic prop, three class sprites, two Royal Guard
+sprites, the M62 goose/duck sprites and Duck theme, `data/milestones.json`,
+the M69 town facades + scoreboard stele + save crystal,
+and the `profile.json` user-data file). The M49 castle retune (Boss Rush 580 % /
+King 500 % / Endless 500 % +10 %pts per wave, level cap 99) is the balance
+baseline M23 playtests should judge; the M54 equipment rebalance is the gear
+baseline they should judge alongside it.
 
 ## M1 — Project foundation
 
@@ -788,22 +829,31 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M51** (the
-  deferral has been extended by each expansion program the owner authorized:
-  M31–M34, M35–M42, M43–M45, the M46 facelift, and M47–M51). The tooling, diagnostics, lint/mass/report
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs once M59–M71
+  close** (the deferral has been extended by each expansion program the
+  owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
+  M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
+  M61, the M62–M66 program, and the M67–M71 owner batches). The tooling,
+  diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
-  Re-audit this note against the post-M51 checkout before starting — the
-  capture scene list has grown (**61 scenes** as of M51) and the balance
+  Re-audit this note against the post-M71 checkout before starting — the
+  capture scene list has grown (**84 scenes** as of M71) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
-  `[king-report]`, `[classes-report]`); both need extending for everything
-  M25–M51 added (AI, content, art, town ladder, stakes, black market,
-  statuses/passives, castle challenges, relics, the unlockable classes, the
-  M46 UI kit, elements, the King's Court, walk-through towns, and the M51
-  options). **The Court & Comfort program is complete: this is next in line
-  once the owner schedules it.**
+  `[king-report]`, `[classes-report]`, and the M61–M71
+  `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/`[spoils]`/
+  `[danger-report]` batteries); both need extending for
+  everything M25–M71 added (AI, content, art, town ladder, stakes, black
+  market, statuses/passives, castle challenges, relics, the unlockable
+  classes, the M46 UI kit, elements, the King's Court, walk-through towns,
+  the M51 options, the M52 comforts/secrets, the M53–M58 adjustments,
+  M61's Goose Town, the M62–M66 program — class milestones, scrolls, the
+  two treasure-map systems — and the M67–M71 batches: portraits, spoils,
+  party-relative danger, town exteriors, the CRT split, the celebration).
+  **M71 is the last authorized expansion; this is next
+  in line once the owner schedules it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -2089,3 +2139,662 @@ Owner decisions taken at planning time (2026-07-23, via Q&A):
   capture determinism holds (pinned seed picks the phrase; capture exports
   the pre-shader virtual target); tint respects Off/Reduced; full suite +
   capture green.
+
+## M52 — Comforts & secrets
+
+Authorized by the owner on 2026-07-23 as one quality-of-life milestone before
+M23/M24, bundling six independent comforts and secrets. It is the last
+authorized expansion; M23 → M24 follow.
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing ("M52 is done"), committed as `b547779` + `7444406`; the
+  audit that accompanied the approval re-verified **497/497 tests in Debug
+  and Release** and `--capture` **64/64** at `7444406`. Authorized
+  2026-07-23; implemented 2026-07-24 on base checkout `f387588`
+  (was 485 tests; +12 M52 cases; capture was 61); one battle-rules bump
+  (9 → 10), no other version change. See
+  `docs/milestone_notes/M52_comforts_secrets.md` §J.
+- **Goal:** six focused improvements, none of which changes the core loop:
+  (1) an **ambience volume slider** independent of SFX (default 5/10);
+  (2) an **in-battle battle log** — Menu opens/closes a scrollable list of the
+  last 30 action results; (3) an **equip-shop QoL lift** — buy rows show owned
+  count, the equip flow shows the current slot item and the stat diff of the
+  highlighted candidate; (4) **bestiary max stats** — each known foe's
+  strongest real-context stats beside its base stats; (5) the **Dragon
+  Crown's hidden effect** — used on the King it silently ends his revive
+  clock; (6) a **high-stakes black-market spawn** — an independent 34 % path at
+  town 7, depth ≥ 20.
+- **Player-facing outcome:** quieter, separately-tunable ambience; a readable
+  action history mid-fight; clearer equip decisions; a fuller bestiary; a
+  discoverable-but-unexplained relic interaction against the King; and a second
+  reason for the market to appear on top-end runs.
+- **Engineering outcome:** one battle-rules bump (**9 → 10**) for the Crown's
+  hidden effect, living entirely in shared `battle::` code (`Battle::useItem`)
+  and driven by an optional `ItemDef.disablesMinionRevive` schema field (no id
+  is branched on), so sim == live and no player-facing text is produced. A new
+  optional `ambienceVolume` settings field (absent = 0.5) and a second,
+  fresh-salt black-market roll add behaviour without a settings, save, or
+  generation version bump. The battle log is presentation-only: a 30-entry ring
+  buffer owned by `BattleState`, never touching the battle model or
+  `rollCursor`. New pure helpers (`content::scaledStats`, an `EquipDiff` header,
+  a bestiary `foeMaxScalePct`) are headless-tested; existing helpers are
+  promoted rather than duplicated.
+- **Primary deliverables:** the six features above; `tests/test_comforts.cpp`
+  plus targeted extensions; new capture scenes (61 → 64) for the battle-log
+  overlay, the equip diff panel, and the bestiary max-stats block; all affected
+  design/architecture/manual-test/README docs updated.
+- **Out of scope:** M23/M24; any change to the core loop, scoring, generation,
+  or save/settings schemas beyond the two additive optional fields; the endless
+  rush's (unbounded) max-stats display.
+- **Dependencies:** M51 complete (satisfied 2026-07-23); the M46 UI kit for all
+  UI work; the M49 revive clock (`Combatant.reviveMinionTurns`) for the Crown.
+- **Acceptance criteria:** ambience independent + default 5, applied live and at
+  startup, old files load at 0.5; Menu opens a scrollable log of the last 30
+  exact shown lines that dies with the battle and never touches the battle
+  stream; equip buy rows show count + price and the equip flow shows current +
+  diff; bestiary shows base and strongest-context stats per the four-context
+  rule (regular ×5.70, guards/King ×5.00, bosses ×5.80; endless excluded); the
+  Crown silently ends the King's revive clock (rules 10, sim == live,
+  schema-driven, no text); a town-7 depth-20 boss kill rolls the independent
+  34 % spawn regardless of stakes/penalty/score with the 20 % rule unchanged;
+  full suite green from 485 in Debug AND Release, capture clean with the new
+  scenes, no generation/save/settings version change.
+- **Automated validation:** the full Catch2 suite (Debug and Release) plus the
+  `--capture` overflow check, all green; new tests for each feature.
+- **Owner manual validation:** the ambience feel; the log's usefulness
+  mid-fight; the equip-diff readability; whether the Crown's secret stays
+  discoverable-but-hidden; and a town-7 depth-20 penalized run spawning the
+  market.
+- **Milestone note:** `docs/milestone_notes/M52_comforts_secrets.md`
+
+**Execution order:** M52 (one milestone), **then** the M53–M56 adjustment
+program, **then** M23 → M24 (re-audited against the then-current checkout). The
+Crown's rules bump is the only M52 version change; ambience and the high-stakes
+market are additive and unversioned.
+
+## Adjustment program (M53–M56)
+
+Authorized by the owner on 2026-07-24 as one more program before the M23/M24
+release track — an adjustment pass, not new genre scope. Four milestones
+implemented in order, each stopping at `implemented, awaiting manual approval`.
+Owner decisions were taken via Q&A at planning time (2026-07-24) and are
+recorded per milestone. The core loop is unchanged. Version discipline: the
+**only** planned version bump in the whole program is generation **10 → 11** in
+M55 (the theme events change the event roll for a seed). Battle rules stay at
+**10**, save at **1**, settings at **1**, achievements at **1**: new save slots
+are new filenames (not a schema change), equipment values are content inputs
+(not battle rules), god mode is compiled out of shipping builds and defaults
+off, and the Champion condition change touches neither the achievements-file
+schema nor already-earned unlocks.
+
+**Determinism law for the program.** Boss-intro presentation and battle
+backdrops never touch `Battle.rngSeed`/`rollCursor` (their shard/glint
+randomness is a pure hash of the dungeon seed); theme-event resolution rolls
+ride the existing seeded event machinery (the RoyalRelic precedent); god mode
+adds zero rolls and is never set by the Simulator.
+
+### M53 — Toolbelt & trims
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (M53–M58 batch approval during M59/M60 planning); implemented
+  2026-07-24 on base checkout `07a13bb`. **505/505 Debug** and **501/501 Release** tests green
+  (the 4 god-mode cases are debug-only, so Release has 4 fewer by design);
+  `--capture` **65/65** clean (added `65_debug_menu`). No version bumps. Champion
+  N kept at 15, confirmed against the `[king-report]` battery (best sim win = 12
+  turns; adequate wins land at 20–21, so 15 separates optimal from adequate). See
+  `docs/milestone_notes/M53_toolbelt_trims.md` §J.
+- **Goal:** four independent quality/comfort items. (1) A **debug menu**
+  reachable from both pause menus in development builds only (gated on
+  `CRYSTAL_DEBUG_OVERLAY`, structurally absent from Release), offering
+  level/gold/token/town/inventory/black-market cheats, a **god mode**
+  (party-unkillable), an instant dungeon clear through the real completion path,
+  reward-class unlock, and bestiary fill. (2) **Five manual save slots** (was
+  three) plus the autosave slot, all visible and loadable at 426×240 with old
+  saves intact. (3) The **Champion** achievement becomes *"Defeat the Hollow
+  King in N turns or fewer"* (N tuned via the simulator and reported), reading
+  the persisted `castleRecords.kingBestTurns`. (4) **Weapon element** shown in
+  the equip shop (Buy/Equip/Details) via the existing element data + chip
+  primitives.
+- **Engineering outcome:** a new `DebugMenuState` whose body is entirely under
+  `#ifdef CRYSTAL_DEBUG_OVERLAY` (file compiled unconditionally, the
+  BattleState-capture-block precedent); an unconditional `DebugCheats` struct on
+  AppContext (macro-independent layout) with ifdef'd readers/writers; a single
+  `battle::Battle::debugPartyUnkillable` flag inside `#ifndef
+  CRYSTAL_SHIPPING_BUILD` clamped at exactly the two lethal-party-damage sites
+  (`applyDamage` chokepoint + the poison tick that bypasses it), never set by
+  the Simulator so streams stay byte-identical and **no battle-rules bump**;
+  scoreboard submission skipped when god mode is on. `SaveSlot` gains
+  `Manual4/Manual5` (`kSaveSlotCount = 6`, no save-version bump). The Champion
+  predicate reads `kingBestTurns` against a constant `kChampionKingTurns`
+  (retro-unlock for saves already at/under N is acceptable and documented).
+- **Out of scope:** anything shipping in a Release binary changing behaviour;
+  M54–M56 work.
+- **Owner decisions (2026-07-24):** Champion = King in ≤ N turns (N reported);
+  all four debug-menu extras included (legendary-token stepper, instant dungeon
+  clear, unlock reward classes, fill bestiary) on top of the core cheat set.
+- **Milestone note:** `docs/milestone_notes/M53_toolbelt_trims.md`
+
+### M54 — Arms of the ladder (equipment rebalance)
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (M53–M58 batch approval); implemented 2026-07-24.
+  `data/items.json` matches the approved spreadsheet exactly (48 pieces changed;
+  HP bonuses, penalties, pure-HP items, legendary prices, and the ten weakest
+  untouched); **no version bumps**. **505/505 Debug** and **501/501 Release**
+  tests green; `--capture` **65/65** clean with the widened prices. **Owner-review
+  balance shift:** the doubled endgame gear makes the Hollow King beatable with a
+  modest counterplay that previously lost (a fully unaided maxed party still
+  loses); reported with before/after `[king-report]` tables, not compensated by
+  retuning enemies (one `[balance]` test's now-invalid premise was corrected, not
+  an enemy value). No degenerate turn-order dominance, so the half-rate-SPD
+  fallback did not fire. See `docs/milestone_notes/M54_arms_of_the_ladder.md` §J.
+- **Goal:** a substantial, owner-approved buff to non-trivial equipment so the
+  gear on the ladder feels like it climbs with the towns. `data/items.json`
+  only: positive ATK/MAG/DEF/SPD and price scaled by an owner-approved factor
+  (weakest unchanged → strongest non-legendary ×2, legendary ×2.5); HP bonuses,
+  stat penalties, pure-HP items, and legendary prices are never scaled.
+- **Engineering outcome:** content-only change; no schema, no version bumps.
+  The balance/economy batteries are re-run and the before/after reported;
+  enemies are **not** silently retuned to compensate (shifts are reported and
+  escalated if a case breaks). An SPD-scaling caveat is flagged to the owner
+  (SPD scales with the same factor; the fallback if turn-order dominance appears
+  is half-rate SPD scaling, escalated with data).
+- **Out of scope:** enemy/boss rebalancing; any code change; M53/M55/M56 work.
+- **Owner decisions (2026-07-24):** the M54 spreadsheet is approved — implement
+  it exactly.
+- **Milestone note:** `docs/milestone_notes/M54_arms_of_the_ladder.md`
+
+### M55 — Theme rites (per-theme dungeon events)
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (M53–M58 batch approval); implemented 2026-07-24.
+  Each theme guarantees its rite exactly once (Ruined Keep = Armory Ghost, Crystal
+  Mine = Miner's Cache, Hollow Forest = Elder Root), never cross-theme;
+  **`kGenerationVersion` 10 → 11** (the program's only version bump); determinism
+  preserved and empty-theme generation byte-identical. **515/515 Debug** and
+  **511/511 Release** tests green (+10 `test_theme_events.cpp` cases; one
+  `test_events.cpp` count updated for the new guaranteed kind, not a generation
+  change); `--capture` **68/68** clean (+3 event-prompt scenes). See
+  `docs/milestone_notes/M55_theme_rites.md` §J.
+- **Goal:** one unique room event per theme, each guaranteed exactly once per
+  dungeon and never appearing outside its theme: **The Armory Ghost** (Ruined
+  Keep — trade one inventory equipment piece for a seeded random piece one
+  rarity tier up, same slot, sight unseen), **Miner's Cache** (Crystal Mine — a
+  one-third max-HP wound to each standing member, never fatal, for gold strictly
+  above a trapped chest plus a guaranteed item roll), and **The Elder Root**
+  (Hollow Forest — pay town-scaled gold for party XP comparable to one elite
+  battle at that town/depth).
+- **Engineering outcome:** `RoomEventKind` gains three kinds; the generator
+  guarantees the active theme's event once (replacing the first rolled event
+  slot, the RoyalRelic rare-replacement draw skipping that slot); all rolls
+  seeded (RoyalRelic precedent). **`kGenerationVersion` 10 → 11** (the only
+  version bump in the program). Resolution follows the existing
+  `eventPromptText` / `resolveEvent` pattern with a marker sprite per kind.
+- **Out of scope:** new themes; changing existing events; M53/M54/M56 work.
+- **Owner decisions (2026-07-24):** the three events above; Miner's Cache
+  calibrated more rewarding than a trapped chest but slightly more damaging.
+- **Milestone note:** `docs/milestone_notes/M55_theme_rites.md`
+
+### M56 — Boss stagecraft (battle backdrops + Crystal Shatter)
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (M53–M58 batch approval); implemented 2026-07-24.
+  Pure presentation: per-theme battle backdrops (Keep/Mine/Forest/Castle + Plain)
+  behind the M46 grounding, and a skippable **Crystal Shatter** boss intro for
+  every boss-team battle (dungeon bosses, Boss Rush waves, the King; Endless stays
+  plain). **No version bump.** Both hazards respected (intro is push-on-top, never
+  `replaceState`; `rollCursor` untouched). **526/526 Debug** and **522/522
+  Release** tests green (+11: `test_battle_backdrop` + `test_boss_intro`);
+  `--capture` **75/75** clean (+7 scenes). **Deviation:** the shatter is abstract
+  (seeded crystal shards) rather than a live-scene snapshot — simpler and safe, the
+  same player-facing effect; documented in
+  `docs/milestone_notes/M56_boss_stagecraft.md` §J.
+- **Goal:** per-theme subdued **battle backdrops** (Keep / Mine / Forest /
+  Castle, plus Plain fallback) behind the M46 battle grounding, and a dramatic
+  **Crystal Shatter** boss-intro transition played for **every** battle against
+  a boss team (dungeon bosses, Boss Rush waves, and the King), always skippable
+  with Confirm.
+- **Engineering outcome:** pure `render::BattleBackdrop` (stage mapping +
+  geometry builder with a role enum and a thin raylib mapper) subject to
+  mechanically-tested "subdued" rules (≤ ~25 % band coverage, silhouettes low,
+  ≤ 1 accent role, high-contrast simplifies rather than suppresses); a new
+  `BossIntroState` **pushed on top of** the caller (never `replaceState`, whose
+  queued Pop fires a spurious `onResume` below) carrying a `BattleLaunch`
+  payload; a small RAII virtual-target **snapshot service** on AppContext with
+  one Application hook; a pure header-only `BossIntroTimeline`
+  (Hold→Build→Peak→Handoff, dt-injected). Presentation-only: the pulse follows
+  the M51 AoE-tint photosensitivity contract (single decay, alpha cap 0.12,
+  gated by effectFlash), darkening is an uncapped fade, and `rollCursor` is
+  never touched (shard layout is a pure hash of the dungeon seed).
+- **Out of scope:** any battle-rule/scoring change; audio work; M53/M54/M55
+  work.
+- **Owner decisions (2026-07-24):** Crystal Shatter for every boss-team battle,
+  skippable.
+- **Milestone note:** `docs/milestone_notes/M56_boss_stagecraft.md`
+
+**Execution order:** M53 → M54 → M55 → M56, then **M57**, **then** M23 → M24
+(re-audited against the then-current checkout). Generation **10 → 11** in M55
+is the only version change in that program.
+
+## M57 — Advanced CRT post-process (0–10 CRT Strength)
+
+Owner-directed implementation task, authorized 2026-07-24, run after the
+M53–M56 program and before the M23/M24 release track. **Pure presentation** —
+no gameplay, save, generation, battle-rules, or resolution change, and **no
+version bump** (`kSettingsVersion` stays **1**; the field change is defensive).
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (confirmed during M59/M60 planning); implemented 2026-07-24 on
+  base checkout `3181aa8`. Replaces the M51 Boolean **CRT Effect** with a
+  persistent **0–10 CRT Strength** slider (stored as a 0.0–1.0 `crtIntensity`)
+  driving an advanced single-pass GLSL-330 consumer-CRT shader (barrel curvature,
+  rounded edge + vignette, source-anchored scanlines, a destination-anchored RGB
+  slot mask that fades when the window is too small to resolve it, horizontal
+  beam spread, thresholded bright-pixel glow, chroma convergence, mild tonal
+  response, and restrained high-strength grain), each sub-effect on its own
+  non-linear activation curve. **530/530 Debug** and **526/526 Release** tests
+  green (+4 net: the M51 CRT round-trip case is replaced by five migration/clamp/
+  precedence/step cases); `--capture` **75/75** clean (the Display submenu now
+  reads *CRT Strength*, still overflow-clean). Strength **0 is the exact
+  unfiltered blit** (the shader is never even compiled at 0); capture stays
+  **pre-shader and byte-unaffected** by construction. GLSL confirmed to compile
+  on the owner's GPU via an offline harness, and the look reviewed at strengths
+  0/3/5/6/7/10 across 426×240, 1278×720, and 1920×1080. See
+  `docs/milestone_notes/M57_crt_strength.md` §J. **Window-level visual feel
+  remains an owner sign-off.**
+- **Goal:** a scalable, readable CRT filter that resembles a stable ~1985
+  consumer television at higher strengths and is off at 0 — presentation only.
+- **Engineering outcome:** `settings::Settings::crtEffect` (bool) → `crtIntensity`
+  (float, 0..1); defensive parse (valid `crtIntensity` wins; legacy `crtEffect`
+  migrates true→0.3 / false→0.0; absent→0.0; malformed→reported + safe default),
+  serializing only the new field; `VirtualScreen::setCrt(bool)` →
+  `setCrtIntensity(float)` with lazy single compile on first strength > 0, cached
+  uniform locations, and the shader source moved to `render/CrtShaderSource.hpp`
+  (M70 later split geometry into its own persistent curvature slider and the
+  call became `setCrt(intensity, curvature)` — see the M70 section);
+  a 0–10 slider row in Settings → Display using the same step/clamp discipline as
+  volume, with pure `crtStrengthStep`/`crtIntensityFromStep` helpers.
+- **Out of scope:** any gameplay/save/determinism/resolution change; new asset
+  types; a general post-processing graph; other display filters; changing the
+  capture output; a `kSettingsVersion` bump.
+- **Owner decisions (2026-07-24):** slider 0–10 (each step 0.1); legacy
+  `crtEffect: true` maps to strength 3/10; default 0 on a new install.
+- **Milestone note:** `docs/milestone_notes/M57_crt_strength.md`
+
+## M58 — Fixes: equip message, Deadly Spoon once, geese scare the King
+
+Owner-directed fixes, authorized 2026-07-24, run after M57 and before the
+M23/M24 release track. Three items: one UI bug, one item bug, one new King-fight
+mechanic. **Battle rules `10 → 11`** (the only version change; save, generation,
+settings, achievements untouched).
+
+- **Status:** ☑ complete (approved) — approved by the owner 2026-07-24 after
+  manual testing (confirmed during M59/M60 planning); implemented 2026-07-24 on
+  base `3181aa8` + M57. **532/532 Debug** and **528/528 Release** tests green (+2
+  new: Deadly-Spoon idempotency and the geese-scare rule); `--capture` **75/75**
+  clean. No warnings.
+  The escalation defaults flagged at implementation time (rules bump **10 → 11**,
+  **additive 10% × living Geese**, **only the King's own action is skipped — his
+  court still acts**, re-rolled each King turn) stand approved with this batch
+  approval; the owner raised no objection after playing the fight.
+- **Item 1 — equip message lingered (UI, no rules impact).** In
+  `EquipShopState` the "A <class> cannot equip <slot>." refusal (and the buy
+  feedback) was set but never cleared, so it stayed on screen forever. Fixed by
+  clearing `message_` at the top of `rebuild()`, which runs on every phase change,
+  so the note fades the moment you leave that character's / list's menu.
+- **Item 2 — Deadly Spoon stacked (battle behaviour).** The relic's `statScalePct`
+  re-scaled a foe's ATK/MAG/DEF/SPD on every use (50 % → 25 % → …). Now a
+  per-combatant `statDiminished` guard applies the halving **at most once per
+  foe**; a second spoon reports "already diminished" and changes nothing.
+- **Item 3 — geese scare the King (new combat rule).** Each of the Hollow King's
+  own turns, a **10 % × living-Goose-class party members** chance he is scared into
+  doing nothing (his court still acts). Decided in the shared, seeded battle model
+  (`kingScaredThisTurn` — a pure hash of `rngSeed`/`turnsTaken`/`actor` like the
+  targeting jitter, so the Simulator and live play agree and `rollCursor` is never
+  disturbed) and gated in `chooseEnemyAction`. It **does** change King-fight
+  outcomes for a seed (hence the rules bump). Presented like the Jester's dry
+  quips — a gold line above the panel: *"The geese scare the King…"* — while the
+  resolve line reads that the King loses its turn.
+- **Out of scope:** any save/generation/settings/resolution change; retuning the
+  King or other content to compensate for the new counterplay (an owner call at
+  approval); M23/M24 work.
+- **Owner decisions (2026-07-24, defaults — dismissed questions):** rules bump
+  10→11; additive 10 %/Goose (4-Goose party ⇒ 40 %); living Geese only; King's own
+  action only; per-turn re-roll. Display wording lightly polished from the owner's
+  *"The geese scares the king…"* to *"The geese scare the King…"*.
+- **Milestone note:** `docs/milestone_notes/M58_fixes.md`
+
+## The M59–M60 CrystalForge program (authorized 2026-07-24)
+
+A designer-facing content-editor tool, planned 2026-07-24 (plan approved by the
+owner) and run before the M23/M24 release track. **CrystalForge** is a separate
+executable in this repo linking `crystal_core`, so its validation and its
+battle sims are the game's own code and can never drift. Zero new
+dependencies; the game binary gains no process execution and no behavior
+change (the M60 battle observer is record-only, default-null, and proven
+outcome-neutral by a parity test — no `kBattleRulesVersion` bump; no version
+bumps anywhere in the program).
+
+### M59 — CrystalForge editor core
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-25
+  on base checkout `7c8f32d` (baseline re-verified 532/532 Debug first). The
+  `[editor]` battery is 12 cases / 2913 assertions green; the one-time
+  canonicalization rewrote all 9 data files with a reviewed minimal diff and
+  `0 content error(s) before and after`; the tool smoke-launched clean.
+  Mid-program full-suite: **544/544 Debug** with M59 alone; the program's
+  closing evidence (with M60) is under M60 below. See
+  `docs/milestone_notes/M59_crystalforge_core.md`.
+- **Goal:** browse/edit/save every `data/` category (skills, classes, enemies,
+  bosses, items, passives, themes, composition, story) in a 1280×720 desktop
+  window drawn with the game's own M46 UI kit; edits mutate `ordered_json`
+  documents (unknown keys survive); saves go through an atomic canonical
+  writer; every save re-runs the real loader + `validateReferences` with
+  jump-to-entity errors, plus a small in-process quick-sim sanity battery.
+  Includes a **one-time canonicalization of `data/*.json`** (formatting only,
+  proven value-identical by database comparison).
+- **Owner decisions (2026-07-24):** UI = the game's own kit (no Dear ImGui —
+  no new dependency); quick checks + spawned `crystal_tests.exe` runs; sim
+  reports with observer telemetry; two milestones (M59 core, M60 sim lab).
+- **Milestone note:** `docs/milestone_notes/M59_crystalforge_core.md`
+
+### M60 — CrystalForge sim lab, battle observer, test runner
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-25
+  directly after M59. The observer parity test proves byte-identical
+  outcomes and `rollCursor` with a recorder attached (**no rules bump**;
+  battle rules stay 11) and exact per-unit HP reconciliation; the `[editor]`
+  battery is 19 cases / 3101 assertions green; the per-category filter was
+  exercised live (`[#test_danger]` → exactly its 6 cases). **Closing program
+  verification (M59+M60): 552/552 Debug and 548/548 Release tests green
+  (the 4-case gap is the debug-only god-mode battery; CrystalForge built in
+  BOTH configs), `--capture` 75/75 scenes clean (the game's presentation is
+  untouched), zero project-code warnings on a forced recompile of the new
+  TUs.** See `docs/milestone_notes/M60_crystalforge_simlab.md`.
+- **Goal:** a sim lab (party/opponent builders incl. castle presets, seed
+  sweeps of 10/100/1000 with win rate / turn stats / HP / danger rating,
+  per-skill and per-combatant telemetry via a record-only battle observer,
+  delta vs the previous run, markdown/CSV export to a git-ignored `reports/`
+  dir) and a per-category test runner that spawns `crystal_tests.exe` with
+  tag filters and streams results live (`platform::ProcessRunner`, compiled
+  only into the editor library — the game binary still cannot execute
+  processes, structurally).
+- **Milestone note:** `docs/milestone_notes/M60_crystalforge_simlab.md`
+
+## M61 — Goose Town & the Deadly Duck (authorized 2026-07-25)
+
+Owner brief in two parts: the geese-scare rule (verified **already shipped in
+M58**, approved — no work) and a new ultimate fight. Plan approved 2026-07-25
+("I agree 100%"). **Battle rules `11 → 12`** (the only version change:
+schema-driven do-nothing turns, boss-side all-party attacks with status
+riders, and blanket affliction immunity — no pre-M61 content carries the
+fields, so every earlier battle resolves byte-identically).
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-25 on the tree carrying M59/M60. `[goose]` battery 13 cases / 980
+  assertions green (Duck 5000 effective HP and per-stat supremacy in every
+  authored context; quack determinism with `rollCursor` untouched;
+  affliction immunity vs debuffs; save round-trip; Quackbane); `[editor]`
+  19 cases / 3232 assertions green (descriptors cover the new schema;
+  authored data is byte-canonical); `--capture` **77/77** clean
+  (+`76_goose_town`, `77_duck_battle`). **Balance bar = the King's own
+  (owner philosophy, M49/M54):** the gauntlet falls 5/5 seeds to a maxed
+  party using the obtainable counterplay (one Deadly Spoon — not a status,
+  so it pierces the immunity — plus healing items) and 0/5 to the bare
+  itemless sim, recorded not asserted. **Closing verification: 562/562 Debug
+  and 558/558 Release tests green (the 4-case gap is the debug-only god-mode
+  battery), `--capture` 77/77 clean.** Six stale test premises the new
+  content exposed (sprite-lint rows, the bossOnly count, the castle-outclass
+  sweep, entity-count pins, the story shape, and a 14-line tale vs a 12-line
+  panel) were fixed and are itemized in the note. See
+  `docs/milestone_notes/M61_goose_town.md`.
+- **Goal:** fell the King with at least one Goose in the party and **Goose
+  Town** opens at the castle's own entrance (the north road forks). A
+  castle-style hub with one challenge — a no-heal gauntlet: five **Evil
+  Geese** (diverse roles, one weakness + two passives each, ~500 effective
+  HP, 10% per-turn "Quack." do-nothing), then **the Deadly Duck**: 5000
+  effective HP, the highest effective stats of any foe, an all-party basic
+  attack with ATK-down/poison riders, immunity to every affliction (still
+  debuffable), Counter Attack + Thorns + Spell Ward. The **Goofy Jester**
+  tells the Duck's legendary tale (story beat, town 9). Reward: the
+  **Quackbane** achievement + a repeatable best-turns Pond Record.
+- **Owner decisions (2026-07-25):** reward = achievement + record only;
+  no-heal gauntlet; keep the M58 geese-scare wording; "I agree 100%" covers
+  the Quackbane name and all plan recommendations.
+- **Milestone note:** `docs/milestone_notes/M61_goose_town.md`
+
+## The M62–M66 program (authorized 2026-07-27)
+
+Plan approved by the owner 2026-07-27 after a Q&A (all 9 classes get
+milestones; choice at the level-up moment; repeatable puzzle-map cycles;
+class-agnostic treasure scrolls; the inert shipped scrolls fixed too; 12
+curios) and two bonus-table review rounds (five rows rebalanced at the
+owner's direction; the Goose scare-doubling option cut — the scare stays a
+secret). The approval covers: battle rules 12→13→14, generation 11→12→13,
+the `data/milestones.json` v1 schema, the new optional save fields, the
+54-entry bonus table, the 6 treasure-scroll skills, the Curator achievement,
+and the new music track + sprites. Full plan detail: the approved plan file;
+running scope: the sections below.
+
+### M62 — Fixes & Duck stagecraft
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. **Purify heals nothing** (the heal formula's magic/2 term had
+  leaked through every Purify cast since M43 — invisible to the old
+  full-HP test board; the v13 case uses a wounded one): battle rules
+  **12 → 13**, the guard at the shared `useSkill` chokepoint, powered
+  cleanses still heal. Kind-aware challenge prompt ("Return to Goose
+  Town"). Bespoke generated sprites for the five Evil Geese + the crownless
+  Deadly Duck (appended + reseeded; **every pre-existing PNG byte-identical**,
+  proven by git after regeneration) and a new `MusicTrack::DuckBattle`
+  waddle-march for the Duck wave. One honest count pin updated (39 shipped
+  WAVs). **Closing verification: 563/563 Debug and 559/559 Release tests
+  green; `--capture` 77/77 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M62_duck_polish.md`
+
+### M63 — Class level milestones
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. Every class picks 1 of 2 permanent bonuses at levels 10/20/30:
+  `data/milestones.json` v1 (the 54 owner-approved entries, verbatim) with a
+  37-value `MilestoneEffect` enum, loader semantics (tier/option), and
+  cross-checks (classId + complete a/b pairs); an editor Milestones
+  category; `Character.milestone10/20/30` optional save fields with
+  class/tier-mismatch drops; a postponable `MilestoneChoiceState` modal
+  prompted at the level-up moments (battle XP, Elder Root, Training Hall,
+  town arrival for old saves) that drains every pending choice in one
+  visit; stat effects in `refreshCharacter`, battle effects resolved at
+  `buildBattle` into shared-code rules (sim == live). **Battle rules
+  13 → 14** — a milestone-free party resolves byte-identically. `[milestone]`
+  battery 16 cases / 289 assertions green; capture `78_milestone_choice`.
+  **Closing verification: 579/579 Debug and 575/575 Release tests green;
+  `--capture` 78/78 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M63_class_milestones.md`
+
+### M64 — Scroll learning + Party panel
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. `grantsSkill` finally works (the three shipped scrolls were
+  inert since M2 — no code consumed the field): `Character.extraSkills`
+  (optional save field, defensive drops), `game/Scrolls.hpp`
+  (`allKnownSkills` = learnset ∪ extras, the one rule buildBattle and the
+  panel share; refusal rules so a scroll is never wasted), and a
+  Bestiary-style **PartyState** from BOTH pause menus — stats with the gear
+  share, equipment, passives, M63 milestone choices, every known skill with
+  scroll marks — hosting the Use-Scroll picker. Class-agnostic (owner
+  decision). No version bumps. `[scroll]` battery 4 cases / 27 assertions
+  green; capture `79_party_panel`.
+  **Closing verification: 583/583 Debug and 579/579 Release tests green;
+  `--capture` 79/79 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M64_scrolls_party_panel.md`
+
+### M65 — Town puzzle map
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. Secret Map Pieces (≤1 per dungeon, ~10% seeded by a PURE
+  seed hash — every other roll of a seed byte-identical; **generation
+  11 → 12**) fill a four-quadrant HoMM2-style parchment on the new town
+  pause-menu **Maps** screen; the FOURTH piece reveals a dig spot
+  (walkability-pinned plaza tile) in that run's town, guarded by a seeded
+  dungeon-roster boss + court at that dungeon's own boss scale (castle
+  defeat semantics, retries keep the map). The dig teaches one of **six
+  exclusive Lost Scrolls immediately** (fixed no-repeat order; six new
+  class-agnostic skills; value-0 items so no pool ever leaks them), then
+  pays token+gold; cycles repeat. Optional save fields with ghost-guard
+  deactivation. `[treasure]` battery 5 cases / 301 assertions green;
+  capture `80_puzzle_map` + `81_treasure_dig`. Two stale premises fixed
+  honestly (the M55 exact gen-version pin relaxed; the Lost Scrolls moved
+  to epic so the legendary-gear invariant stays meaningful).
+  **Closing verification: 588/588 Debug and 584/584 Release tests green;
+  `--capture` 81/81 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M65_town_puzzle_map.md`
+
+### M66 — Dungeon treasure map + curios
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-27. ~12% of dungeons hide a cyan CHART whose reading immediately
+  reveals a buried treasure elsewhere in the SAME dungeon (a gold X on the
+  minimap + a HUD chip; single-use, live-run only; **generation 12 → 13**,
+  the same pure-hash discipline — everything else in a seed byte-identical).
+  Digging pays 1 of **12 original curios** (4 per theme, a constexpr table;
+  seeded theme-first no-repeat draw) shown in the Maps screen's collection
+  grid; the 18th achievement **Curator** fires at the dozen, after which
+  treasures pay a legendary token. `Party.ownedCurios` optional save field.
+  `[curio]` battery 5 cases / 774 assertions green; capture
+  `82_curio_collection` (the overflow lint caught the first curio names and
+  a scene-state leak — both fixed, itemized in the note).
+  **Closing verification: 593/593 Debug and 589/589 Release tests green;
+  `--capture` 82/82 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M66_dungeon_treasure_curios.md`
+
+**Execution order:** M62 → M63 → M64 → M65 → M66, then M23 → M24
+(re-audited against the then-current checkout).
+
+## M67 — UI polish & the boss-return fix (owner feedback, 2026-07-28)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-28. The owner's manual-pass feedback batch: **class portraits**
+  (one `ui::drawActorPortrait` helper reusing the existing
+  `actor.<classId>.battle` sprites — no new assets) in the party panel's
+  member rows, the Training Hall (all three phases), the milestone modal's
+  header, and the Equipment Shop's equip phases; **milestone and passive
+  descriptions** in the party panel, hint-coloured under their names, with
+  the skills block's wrap budget computed from the space left; the Load
+  screen's King title now fully inside a two-line selection slab and the
+  constant "party 4" column removed. Plus the reported **boss-victory
+  bug**: the result screen's two blind pops could be absorbed by the M63
+  level-up modal a boss kill wedges beneath it, stranding the player in
+  the dungeon — the unwind is now `runComplete_`-driven (the result pops
+  itself; the dungeon pops itself on resume), so the boss-kill milestone
+  choice shows after the result and the player always lands in town. And
+  the reported **chart-prompt bug**: the M66 `onChart_`/`onBuried_` flags
+  were never reset per step, so one walk across the tile latched the
+  footer prompt for the rest of the run and silently swallowed Confirm
+  everywhere (`interact()` checks them first) — both now reset with the
+  other stand-on flags. No rules/generation/schema/save changes.
+  **Closing verification: 593/593 Debug and 589/589 Release tests green;
+  `--capture` 82/82 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M67_ui_polish.md`
+
+## M68 — Battle spoils & party-relative threat (owner feedback, 2026-07-28)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-28. Two owner asks: (1) an FF1-PR-inspired **victory results
+  panel** — XP/gold plus a per-member level-up diff (stat gains, new
+  skills) — riding the battle's existing Done beat, dismissed by the same
+  single Confirm (no new screen, zero added inputs). The payout rule moved
+  into shared `game/Spoils.hpp` and the battle now pays it (write-back
+  first, so the M63 standing-gold bonuses and level-up heals are honest);
+  `DungeonState::onResume` no longer grants. (2) The threat preview was
+  drowning — the depth-only baseline never learned about the town ladder,
+  so by town 3+ nearly everything read Deadly. **Party-relative tiers**
+  (owner decision via Q&A): team threat vs the party's own derived
+  strength, bands <20/<40/<70/<110 % calibrated against simulator clearing
+  levels with town-shelf gear (`[danger-report]` battery), snapshotted at
+  dungeon entry. **Generation 13 → 14** (byte-identical output; the bump
+  tags scoreboard comparability for the recalibrated danger credit).
+  `[spoils]` + rewritten `[danger]` batteries; capture `83_battle_spoils`
+  (the set is **83 scenes**).
+  **Closing verification: 601/601 Debug and 597/597 Release tests green;
+  `--capture` 83/83 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M68_spoils_threat.md`
+
+## M69 — Town exteriors (owner feedback, 2026-07-29)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-29. The five service buildings draw real 48×32 **facades**
+  (per-service roofs, lit windows, emblem pennants, the door integrated
+  into the middle tile) over their Building blocks, and the old
+  door-on-the-ground tile renders as the **doorstep path** — nothing
+  sticks out of the houses anymore. The **Scoreboard** became a
+  freestanding engraved stone-sheet stele (2×2) and the **Save Point** a
+  cyan crystal (1×1); interact tiles and all mechanics unchanged, freed
+  tiles walkable, missing textures fall back to the old blocks. Seven new
+  generated sprites (generator appended + reseeded; all prior assets
+  byte-identical). No rules/generation/schema/save changes.
+  **Closing verification: 601/601 Debug and 597/597 Release tests green;
+  `--capture` 83/83 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M69_town_exteriors.md`
+
+## M70 — Separate CRT Strength and CRT Curvature (owner brief, 2026-07-29)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-29 to the owner's detailed spec. `settings.crtCurvature`
+  (optional field, default **0.3**, no version bump — a pre-M70
+  strength-7 file loads as Strength 7 / Curvature 3, keeping the texture
+  while relaxing the excessive curl), its own `CRT Curvature: < 0..10 >`
+  Display row, `VirtualScreen::setCrt(intensity, curvature)` (one call,
+  both clamped, lazy compile + plain-blit fallback retained), and the
+  shader decoupled: strength keeps scan/mask/beam/glow/chroma/tone/grain
+  plus a restrained flat vignette; geometry (inset, barrel warp, rounded
+  corners, curved-edge mask, extra edge darkening) follows ONLY
+  `curveAct = pow(C, 1.35)` — **curvature 0 is an exact rectangle** (the
+  edge mask is forced fully open). Still one pass, 11 samples, pre-shader
+  capture, unfiltered overlay. Live sandboxed smoke test proved the
+  reworked shader compiles on real hardware. Window-level visual review
+  (the brief's §11 matrix) is owner work.
+  **Closing verification: 606/606 Debug and 602/602 Release tests green;
+  `--capture` 83/83 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M70_crt_curvature.md`
+
+## M71 — The victory celebration (owner feature, 2026-07-29)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-29. A new presentation-only **CelebrationState**: the
+  "Victory!" plaque, the score alone in large gold (no breakdown),
+  falling confetti, the party jumping each to their own rhythm and
+  height, the **MVP on a pedestal** (M42 damage rule; the castle
+  challenges now track their own `RunStats` so their pedestal is honest),
+  and KO'd members lying dimmed where they fell — plus one random **dry
+  lore punchline** under the score (the TitlePhrases idiom, a 12-line
+  pool in `CelebrationPhrases.hpp`, lint-pinned). Shown above the
+  reckoning after a dungeon clear with **zero stakes penalty, a positive
+  score, and zero escapes** (any of the three → no celebration; the
+  score/escape gates tightened by the owner post-audit). A KO'd MVP
+  **keeps the pedestal, chip, and name** and lies in state on it
+  (owner-confirmed comedy). Shown above the
+  challenge overlay after
+  beating the **King**, the **Deadly Duck**, and the **Boss Rush**
+  ("Cleared in N turns!"; the Endless Rush and all losses excluded).
+  Capture `84_celebration` (the set is **84 scenes**; the lint drove the
+  MVP-only naming). No rules/generation/schema/save changes.
+  **Closing verification: 607/607 Debug and 603/603 Release tests green;
+  `--capture` 84/84 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M71_celebration.md`
+
+## M72 — Party panel reflow (owner report, 2026-07-30)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-30. The owner's Lv.99 screenshots showed the M64/M67 detail
+  panel clipping at its true worst case (three chosen milestones — the
+  Martyr description ran off the edge; the skills list truncated
+  mid-legend). Fix is a **reflow, not a smaller font**: HP/MP + the four
+  stats (gear shares intact) moved into the dead 128×66 space **under
+  the member roster**; the right panel's passive/milestone
+  **descriptions wrap to two lines** (actual-advance), and the skills
+  block's line budget grows to 4–5 lines. Capture scene
+  `79_party_panel` upgraded to pin the exact reported worst case.
+  Layout-only; no data/input/save changes.
+  **Closing verification: 607/607 Debug and 603/603 Release tests green;
+  `--capture` 84/84 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M72_party_panel_reflow.md`

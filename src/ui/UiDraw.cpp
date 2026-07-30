@@ -135,6 +135,22 @@ void drawSceneBackground(ResourceManager& resources, const std::string& id, Colo
     drawSceneBackground(resources, id, fallback, w, h);
 }
 
+void drawActorPortrait(ResourceManager& resources, const std::string& classId, int x, int y,
+                       int scale) {
+    const int box = portraitBox(scale);
+    drawFrame(x, y, box, box, FrameStyle::Inset);
+    const std::string id = "actor." + classId + ".battle";
+    if (!resources.hasTexture(id)) {
+        return;
+    }
+    const Texture2D& tex = resources.texture(id);
+    // Center inside the frame so a sprite smaller than 24px still sits square.
+    const int sx = x + kPortraitPad + (kPortraitSprite * scale - tex.width * scale) / 2;
+    const int sy = y + kPortraitPad + (kPortraitSprite * scale - tex.height * scale) / 2;
+    DrawTextureEx(tex, Vector2{static_cast<float>(sx), static_cast<float>(sy)}, 0.0f,
+                  static_cast<float>(scale), WHITE);
+}
+
 int measureText(const std::string& text, int fontSize) {
     return measureWidth(text.c_str(), fontSize);
 }

@@ -98,8 +98,11 @@ std::string takeKingTurns(Battle& b, int n) {
 
 }  // namespace
 
-TEST_CASE("court: the battle-rules version is 9", "[court][battle]") {
-    CHECK(kBattleRulesVersion == 9);
+TEST_CASE("court: the battle-rules version is at least 9", "[court][battle]") {
+    // The revive clock was introduced at rules 9; later bumps (M52's Crown) keep
+    // it, so pin the floor rather than the exact value (the M48/rules-v7
+    // precedent).
+    CHECK(kBattleRulesVersion >= 9);
 }
 
 TEST_CASE("court: the clock fires on the King's 5th turn with both guards down",
@@ -281,7 +284,22 @@ TEST_CASE("court: a bossOnly enemy is never generated into a dungeon", "[court][
             bossOnly.push_back(id);
         }
     }
-    REQUIRE(bossOnly.size() == 2);  // the two Royal Guards
+    // The two Royal Guards + the five Evil Geese (M61). Every bossOnly foe must
+    // belong to some boss's authored court — a flag with no boss would be a foe
+    // that exists nowhere.
+    REQUIRE(bossOnly.size() == 7);
+    for (const std::string& id : bossOnly) {
+        bool courted = false;
+        for (const auto& [bossId, boss] : db.bosses()) {
+            if (std::find(boss.minions.begin(), boss.minions.end(), id) !=
+                boss.minions.end()) {
+                courted = true;
+                break;
+            }
+        }
+        INFO(id);
+        CHECK(courted);
+    }
 
     const char* themes[] = {"ruined_keep", "crystal_mine", "hollow_forest"};
     for (const char* theme : themes) {

@@ -50,8 +50,8 @@ public:
 
     // Volume controls (0..1 each), persisted via settings (M13). Applied to
     // the master output, the current music and ambience streams, and each SFX
-    // at play time. Ambience follows the SFX slider (M27).
-    void setVolumes(float master, float music, float sfx);
+    // at play time. M52: ambience has its own slider (it followed SFX in M27).
+    void setVolumes(float master, float music, float sfx, float ambience);
 
     // Resolves every audio role against the manifest (M14): file-backed
     // sounds/streams replace the synthesized tier where present and loadable.
@@ -119,6 +119,7 @@ private:
     float masterVolume_ = 1.0f;
     float musicVolume_ = 1.0f;
     float sfxVolume_ = 1.0f;
+    float ambienceVolume_ = 0.5f;  // M52: own slider, default 5/10
 };
 
 }  // namespace cd

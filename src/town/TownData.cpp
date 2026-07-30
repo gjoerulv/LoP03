@@ -56,9 +56,12 @@ TownLayout buildTown(int town, bool hasPrev, bool hasNext, bool nextUnlocked, bo
     place(LocationId::Guild, "Guild", 14, 1, 3, 2, true, 1);
     place(LocationId::TrainingHall, "Training Hall", 18, 1, 3, 2, true, 1);
 
-    // Bottom row (bodies y8-9, doors face up at y7).
-    place(LocationId::Scoreboard, "Scoreboard", 6, 8, 3, 2, false, 1);
-    place(LocationId::SavePoint, "Save Point", 15, 8, 3, 2, false, 1);
+    // Bottom row (bodies from y8, interact tiles face up at y7). M69: these two
+    // are freestanding monuments, not buildings — the Scoreboard a stone sheet
+    // (2x2), the Save Point a crystal (1x1); their footprints shrank and the
+    // freed tiles are plain walkable ground.
+    place(LocationId::Scoreboard, "Scoreboard", 6, 8, 2, 2, false, 0);
+    place(LocationId::SavePoint, "Save Point", 16, 8, 1, 1, false, 0);
 
     // Walk-through edge triggers (M50). Each carves a road gap in the border at a
     // mid row (sides) or a top gap (castle) plus one road tile inside, so the gap

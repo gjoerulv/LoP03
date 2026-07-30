@@ -63,8 +63,12 @@ void DungeonResultState::handleInput(const Input& input) {
         return;
     }
     if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel)) {
-        stack().popState();  // close the result
-        stack().popState();  // leave the dungeon -> back to town
+        // Close only the result. DungeonState pops itself on its next resume
+        // (runComplete_, M67), so the return to town survives a state wedged
+        // between the two — a boss kill's M63 milestone modal shows here,
+        // after the reckoning, instead of being silently destroyed by a
+        // second blind pop that left the player stranded in the dungeon.
+        stack().popState();
     }
 }
 

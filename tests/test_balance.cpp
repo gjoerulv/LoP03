@@ -170,7 +170,8 @@ TEST_CASE("balance: a simulated full clear produces a sane score", "[balance]") 
             break;
         }
         run.battleTurns += r.rounds;
-        run.dangerDefeated += danger::tierWeight(danger::assess(d.teams[i], d.depth, db));
+        run.dangerDefeated += danger::tierWeight(
+            danger::assess(d.teams[i], db, danger::partyThreat(basis.members)));  // M68
     }
     REQUIRE(clearedAll);
 

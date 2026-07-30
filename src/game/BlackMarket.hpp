@@ -18,6 +18,19 @@ inline constexpr int kBlackMarketPricePerTown = 750;  // + per town above the fl
 inline constexpr int kBlackMarketTokenPrice = 3;      // legendary tokens
 inline constexpr int kBlackMarketMinTown = 2;         // never spawns in town 1
 
+// M52: a second, independent spawn path for top-end runs. Any beaten boss at
+// town 7, depth >= 20 gets a 34 % roll — regardless of score, stakes, or a
+// penalty that floors the score to 0. It rides a FRESH salt so it is a separate
+// seeded stream from the 20 % stakes roll (a seed can win one and lose the
+// other), and it is reload-proof the same way. The existing 20 % rule is
+// unchanged and still applies alongside.
+inline constexpr int kBlackMarketHighStakesChancePct = 34;
+inline constexpr int kBlackMarketHighStakesTown = 7;
+inline constexpr int kBlackMarketHighStakesDepth = 20;
+// XOR salt constant that makes the high-stakes stream independent of the 20 %
+// one (blackMarketHash mixes the salt, so a different salt is a different hash).
+inline constexpr std::uint64_t kBlackMarketHighStakesSalt = 0xC0D4B7A552ull;
+
 // The market's current offer, held on Party and saved as optional fields.
 struct BlackMarketOffer {
     bool present = false;
@@ -62,14 +75,35 @@ inline bool blackMarketRolls(std::uint64_t seed, int town, int depth) {
     return static_cast<int>(blackMarketHash(seed, salt) % 100) < kBlackMarketChancePct;
 }
 
-// All the M34 spawn conditions in one testable place: the market appears after a
-// completed, scoring run (`completedWithScore`) that raised the stakes
-// (`raisedStakes`), in town >= 2, that also wins the seeded 20% roll. This is the
-// exact predicate DungeonState::completeDungeon uses to spawn the offer.
-inline bool blackMarketShouldSpawn(bool completedWithScore, bool raisedStakes, int town,
-                                   std::uint64_t seed, int depth) {
-    return completedWithScore && raisedStakes && town >= kBlackMarketMinTown &&
-           blackMarketRolls(seed, town, depth);
+// M52: the independent high-stakes roll (34%), on a fresh salt so it is a
+// separate stream from the 20% one. Deterministic from the run seed, so it is
+// reload-proof too.
+inline bool blackMarketHighStakesRolls(std::uint64_t seed, int town, int depth) {
+    const std::uint64_t salt =
+        (static_cast<std::uint64_t>(town) * 1000u + static_cast<std::uint64_t>(depth)) ^
+        kBlackMarketHighStakesSalt;
+    return static_cast<int>(blackMarketHash(seed, salt) % 100) < kBlackMarketHighStakesChancePct;
+}
+
+// All the black-market spawn conditions in one testable place. The market
+// appears after EITHER:
+//   - M34: a completed, scoring run (`completedWithScore`) that raised the
+//     stakes (`raisedStakes`), in town >= 2, that wins the seeded 20% roll; or
+//   - M52: any completed run (`completed`, i.e. a beaten boss) at town 7,
+//     depth >= 20 that wins the independent 34% roll — regardless of score,
+//     stakes, or penalty.
+// This is the exact predicate DungeonState::completeDungeon uses.
+inline bool blackMarketShouldSpawn(bool completedWithScore, bool completed, bool raisedStakes,
+                                   int town, std::uint64_t seed, int depth) {
+    if (completedWithScore && raisedStakes && town >= kBlackMarketMinTown &&
+        blackMarketRolls(seed, town, depth)) {
+        return true;
+    }
+    if (completed && town >= kBlackMarketHighStakesTown && depth >= kBlackMarketHighStakesDepth &&
+        blackMarketHighStakesRolls(seed, town, depth)) {
+        return true;
+    }
+    return false;
 }
 
 // Gold price for a market in `town`: 5000 floor + modest per-town scaling.

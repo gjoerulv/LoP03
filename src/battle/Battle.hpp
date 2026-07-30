@@ -24,6 +24,8 @@ struct EnemyTeam;
 
 namespace cd::battle {
 
+struct BattleObserver;  // M60 record-only telemetry hook (battle/BattleObserver.hpp)
+
 // Battle-resolution rules version. Bumped when the outcome of a battle for
 // identical inputs can change, so the scoreboard can flag runs played under
 // different rules. 0 = pre-M28; 1 = M28 (enmity/targeting/control skills);
@@ -41,8 +43,41 @@ namespace cd::battle {
 // attack deals x1.5 to a weak foe and nothing at all — riders included — to an
 // immune one); 9 = M49 (the revive clock: a boss carrying `reviveMinionTurns`
 // raises its whole fallen court on the Nth of its own turns with all of them
-// down, repeatably).
-inline constexpr int kBattleRulesVersion = 9;
+// down, repeatably); 10 = M52 (an enemy-targeted item flagged
+// `disablesMinionRevive` ends that revive clock on the boss it is used on — the
+// Dragon Crown against the King — so identical inputs now resolve to a court
+// that stays down; deliberately produces no log line, so the effect is hidden
+// in play and recorded only in the design docs);
+// 11 = M58 (two King-fight behaviour changes: a Deadly Spoon's stat halving now
+// applies at most once per foe — a second spoon no longer re-halves — and the
+// Hollow King has a 10%-per-living-Goose chance, each of his own turns, to be
+// scared into doing nothing; the scare is a pure hash of the battle seed like the
+// targeting jitter, so the Simulator and live play agree, but it changes how a
+// King fight resolves for a given seed);
+// 12 = M61 (the Goose Town rules, all schema-driven and inert for every prior
+// foe: an enemy authored `doNothingPct` may simply do nothing on its own turn
+// — a pure seeded hash like the King's scare, its flavour line authored as
+// `doNothingText` ("Quack.") — a boss authored `attackHitsAll` /
+// `attackStatuses` swings the M45 class machinery from the enemy side, and a
+// boss authored `immuneToAfflictions` shrugs off every affliction — poison,
+// confusion, silence, blind, terrified, stunned — while ATK-/DEF- debuffs
+// still land. No shipped pre-M61 content carries any of the fields, so every
+// earlier battle resolves byte-identically);
+// 13 = M62 (Purify heals nothing, at last: a pure cleanse — a heal-category
+// skill with power 0 and the cleanse control — no longer applies the heal
+// formula's magic/2 term. The skill's description promised this since M43;
+// the code now keeps the promise. Cleanses with real power — Generous
+// Mending — still heal. Changes how any battle containing a Purify cast
+// resolves, hence the bump);
+// 14 = M63 (class level milestones: at levels 10/20/30 a party member's
+// chosen data/milestones.json bonus resolves onto its Combatant at
+// buildBattle — damage/heal/status modifiers, guard-block and weakness
+// overrides, double strikes and reduced-strength sweeps, first-hit
+// immunity, Iron Will healing, on-kill/on-death triggers, and grants of
+// the existing passive hooks. A party with no chosen milestones resolves
+// byte-identically; any chosen battle-side milestone changes outcomes,
+// hence the bump).
+inline constexpr int kBattleRulesVersion = 14;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -88,6 +123,10 @@ struct Combatant {
     // guard.
     bool intercepting = false;
     bool isBoss = false;
+    // M58 (Deadly Spoon): set once a battle-long stat-scale relic has diminished
+    // this unit, so a second such relic cannot halve its stats again. Battle-only
+    // state, never persisted.
+    bool statDiminished = false;
     // Boss archetype mechanics (M20, owner-approved; all deterministic).
     bool enrages = false;             // Brute: deals more damage below half HP
     bool enrageAnnounced = false;     // Brute: the rage line is shown once
@@ -122,13 +161,51 @@ struct Combatant {
     bool firstStrikeUsed = false;         // once per battle
 
     // Class battle traits (M45), resolved from the ClassDef at buildBattle so the
-    // pure model never looks a class up. All inert by default.
+    // pure model never looks a class up. All inert by default. M61: bosses may
+    // carry the same two (the Deadly Duck) — buildBattle resolves either source
+    // into these fields, so the pure model never knows which side authored them.
     bool attackHitsAll = false;                 // basic attack sweeps every foe
     // Applied per connecting basic hit. Stored as StatusInstances (the same
     // {type, magnitude, turns} triple) so the pure model needs no content type
     // here; buildBattle converts the class's authored list once.
     std::vector<StatusInstance> attackStatuses;
     bool uncontrolled = false;                  // acts on its own, seeded
+
+    // M61 (the Goose Town): a foe authored `doNothingPct` may spend its own turn
+    // doing nothing — a pure seeded roll (see doesNothingThisTurn), flavour text
+    // authored alongside it. A boss authored `immuneToAfflictions` blocks EVERY
+    // affliction at the addStatus chokepoint (poison/confusion/silence/blind/
+    // terrified/stunned) while stat debuffs still land. Both default inert.
+    int doNothingPct = 0;
+    std::string doNothingText;
+    bool afflictionImmune = false;
+
+    // M63 level-milestone battle effects, resolved from the character's chosen
+    // milestones at buildBattle (party members only; every field default-inert
+    // so a milestone-free battle is byte-identical). Grants of existing passive
+    // hooks reuse the M36 fields above.
+    int basicAttackPct = 0;       // basic attacks deal +N%
+    int magicSkillPct = 0;        // magic-category skills deal +N%
+    int aoeSpellPct = 0;          // all-enemy skills deal +N%
+    int healCastPct = 0;          // heals this unit casts restore +N%
+    int executePct = 0;           // +N% damage vs foes below half HP
+    int vsAfflictedPct = 0;       // +N% damage vs foes carrying any negative status
+    int weaknessBonusPct = 0;     // this attacker's weak hits deal N% (0 = the 150 default)
+    int statusTurnsBonus = 0;     // statuses this unit applies last +N effective turns
+    int doubleStrikePct = 0;      // basic attack strikes twice; the second at N%
+    int sweepScalePct = 0;        // its attackHitsAll sweep strikes at N% (0 = full)
+    int tauntDebuffPct = 0;       // its Taunt also inflicts ATK- (N%) on every foe
+    int guardBlockPct = 0;        // guarding blocks N% (0 = the 50 default)
+    bool firstHitImmune = false;  // the first damaging hit taken deals 0, once
+    bool firstHitImmuneUsed = false;
+    int ironWillHealPct = 0;      // Iron Will restores N% max HP when it fires
+    int reviveAtPct = 0;          // revive-capable heals raise at N% when higher
+    bool purifyHeals = false;     // its pure cleanses heal again (undoes M62 for it)
+    int goldBonusPct = 0;         // battle gold +N% while it stands (partyGoldBonusPct)
+    int itemPotencyPct = 0;       // items this unit uses are +N% potent
+    bool noEnemyBuff = false;     // suppresses `alsoBuffsEnemies` on its casts
+    int onKillPartyAtkUpPct = 0;  // felling a foe: its side gains ATK+ (N%)
+    int onDeathFoeDebuffPct = 0;  // falling: the other side suffers ATK-/DEF- (N%)
 
     // Elements (M48), resolved at buildBattle so the pure model never reads
     // content. `weaponElement` is the element this unit's BASIC attacks carry —
@@ -186,6 +263,24 @@ public:
     // amounts (Royal Snacks).
     bool kingBattle = false;
 
+#ifndef CRYSTAL_SHIPPING_BUILD
+    // M53 debug god mode: while set, no PARTY unit can be reduced below 1 HP by
+    // any damage source (the applyDamage chokepoint and the poison tick that
+    // bypasses it both clamp it). Set once in the BattleState ctor from the debug
+    // cheat flag; NEVER set by the Simulator or the tests, so the flag-off path
+    // (default) is byte-identical and there is no kBattleRulesVersion bump. The
+    // whole member is compiled out of shipping builds, so it cannot exist there.
+    bool debugPartyUnkillable = false;
+#endif
+
+    // M60: record-only telemetry hook (see battle/BattleObserver.hpp for the
+    // full contract). Non-owning, default null — the game and the Simulator
+    // never set it; the editor's sim lab and the parity test do. Null means
+    // every emit site is a single skipped branch: outcomes and rollCursor are
+    // byte-identical either way, so there is no rules-version bump. A raw
+    // pointer keeps Battle trivially copyable (copies share the recorder).
+    BattleObserver* observer = nullptr;
+
     bool sideAlive(Side s) const;
     Outcome outcome() const;  // Victory / Defeat / Ongoing (Escaped is set by the caller)
     std::vector<int> aliveIndices(Side s) const;
@@ -219,7 +314,20 @@ public:
     std::string guard(int actor);
 
 private:
-    std::string attackOne(int actor, int target);   // one strike (the pre-M45 attack)
+    // M53: promoted from a file-local free function to a member so it can honour
+    // the debug god-mode clamp without threading a flag through its six callers
+    // (all of which are already Battle methods). Applies `dmg` to `d`, honouring
+    // Iron Will and (debug builds only) party god mode; snaps the bearer out of
+    // confusion on any real hit.
+    // M63: `extra` (when the caller has a log to grow) receives the
+    // first-hit-glance and on-death lines; nullptr callers stay silent.
+    void applyDamage(Combatant& d, int dmg, std::string* extra = nullptr);
+    // M63 (Standing Ovation): called where an explicit killer is known.
+    std::string rallyOnKill(int killer);
+
+    // M63: `scalePct` scales the strike (a Double Nock second arrow, a Rain
+    // of Arrows sweep); 100 = the ordinary full-strength attack.
+    std::string attackOne(int actor, int target, int scalePct = 100);
     std::string attackAll(int actor);               // M45: one strike per living foe
     std::string applyAttackStatuses(int actor, int target);  // M45: the Dragon's bite
     std::vector<int> resolveTargets(const content::SkillDef& skill, int actor,
@@ -263,11 +371,24 @@ inline bool isSilenced(const Combatant& c) {
 inline bool isBlinded(const Combatant& c) {
     return hasStatus(c, content::StatusType::Blind) && !c.blindImmune;
 }
+// M61: is this status an AFFLICTION — a "bad status" in the owner's sense?
+// Poison, the M35 control trio, and the M44 turn-takers. Deliberately broader
+// than a cleanse's reach (a cleanse cannot refund a turn-control status, but
+// immunity stops one from ever landing). The ATK-/DEF- stat debuffs are NOT
+// afflictions: an affliction-immune boss can still be debuffed by design.
+inline bool isAffliction(content::StatusType t) {
+    return t == content::StatusType::Poison || t == content::StatusType::Confusion ||
+           t == content::StatusType::Silence || t == content::StatusType::Blind ||
+           t == content::StatusType::Terrified || t == content::StatusType::Stunned;
+}
+
 // M40: whether this unit is immune to a status type. A stored status the unit is
 // immune to has no effect (the queries above ignore it), so it must never be shown
 // as afflicted either — display sites skip statuses for which this is true.
+// M61: `afflictionImmune` (the Deadly Duck) covers every affliction at once.
 inline bool isImmuneTo(const Combatant& c, content::StatusType t) {
-    return (t == content::StatusType::Blind && c.blindImmune) ||
+    return (c.afflictionImmune && isAffliction(t)) ||
+           (t == content::StatusType::Blind && c.blindImmune) ||
            (t == content::StatusType::Silence && c.silenceImmune) ||
            (t == content::StatusType::Confusion && c.confusionImmune);
 }
@@ -346,6 +467,28 @@ EnemyChoice uncontrolledChoice(const Battle& b, int actor, const content::Conten
 // never touches `rollCursor`, so showing (or hiding) a jest cannot change how a
 // battle resolves.
 bool jestThisTurn(const Battle& b, int actor, int lineCount, int& index);
+
+// M58: how many living Goose-class party members are present in a King fight
+// (0 outside a King fight). Read by the scare rule below.
+int geeseScaringKing(const Battle& b);
+
+// M58: is the Hollow King scared into doing nothing on `actor`'s turn? True only
+// when `actor` is the boss of a King fight and a per-turn roll lands under
+// 10% × living Geese. Like `jestThisTurn`/`uncontrolledChoice` this is a PURE hash
+// of (rngSeed, turnsTaken, actor) under its own salt, so it never advances
+// `rollCursor` yet resolves identically in the Simulator and live play — but
+// UNLIKE a quip it feeds `chooseEnemyAction` and so DOES change how a King fight
+// resolves (hence the kBattleRulesVersion bump). BattleState also calls it to
+// choose the "geese scare" flavour over the ordinary skip line.
+bool kingScaredThisTurn(const Battle& b, int actor);
+
+// M61: does an authored do-nothing foe (a Quacking goose) spend `actor`'s own
+// turn doing nothing? True when the unit carries `doNothingPct` and a per-turn
+// roll lands under it — the same pure-hash shape as the King's scare (its own
+// salt, never advances `rollCursor`, identical in the Simulator and live play).
+// Feeds `chooseEnemyAction` (part of rules v12); BattleState also calls it to
+// show the authored `doNothingText` over the ordinary skip line.
+bool doesNothingThisTurn(const Battle& b, int actor);
 
 // M43: the forced action of a confused unit — a basic attack, never a skill.
 // `attack()` then performs the seeded same-side redirect, so the returned target

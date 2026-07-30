@@ -128,15 +128,17 @@ TEST_CASE("black market: the spawn predicate captures every trigger condition",
 
     // All conditions must hold together: a scoring completion, a stakes raise,
     // town >= 2, and the roll.
-    CHECK(blackMarketShouldSpawn(true, true, 3, hitSeed, 5));
-    CHECK_FALSE(blackMarketShouldSpawn(false, true, 3, hitSeed, 5));  // not completed
-    CHECK_FALSE(blackMarketShouldSpawn(true, false, 3, hitSeed, 5));  // did not raise stakes
-    CHECK_FALSE(blackMarketShouldSpawn(true, true, 1, hitSeed, 5));   // town 1 never spawns
+    // M52: signature gained a `completed` flag (2nd arg) for the high-stakes
+    // path; these town-3/depth-5 cases stay below it, so they test only the 20%.
+    CHECK(blackMarketShouldSpawn(true, true, true, 3, hitSeed, 5));
+    CHECK_FALSE(blackMarketShouldSpawn(false, false, true, 3, hitSeed, 5));  // not completed
+    CHECK_FALSE(blackMarketShouldSpawn(true, true, false, 3, hitSeed, 5));  // did not raise stakes
+    CHECK_FALSE(blackMarketShouldSpawn(true, true, true, 1, hitSeed, 5));   // town 1 never spawns
 
     // A qualifying run still needs the roll: about 20% of seeds spawn.
     int hits = 0;
     for (std::uint64_t s = 1; s <= 3000; ++s) {
-        if (blackMarketShouldSpawn(true, true, 3, s * 2654435761u, 5)) {
+        if (blackMarketShouldSpawn(true, true, true, 3, s * 2654435761u, 5)) {
             ++hits;
         }
     }

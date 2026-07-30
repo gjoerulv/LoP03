@@ -29,6 +29,14 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
 void parseThemes(const Json& root, const std::string& source, ContentDatabase& db, LoadReport& rep);
 void parsePassives(const Json& root, const std::string& source, ContentDatabase& db,
                    LoadReport& rep);
+void parseMilestones(const Json& root, const std::string& source, ContentDatabase& db,
+                     LoadReport& rep);  // M63
+// M59 (CrystalForge): exported so the editor can validate in-memory documents
+// through the exact loader path. Both existed with external linkage since M41 /
+// M20 (loadAll calls them); this only declares them.
+void parseStory(const Json& root, const std::string& source, ContentDatabase& db, LoadReport& rep);
+void parseComposition(const Json& root, const std::string& source, ContentDatabase& db,
+                      LoadReport& rep);
 
 // Cross-reference checks: skill ids referenced by classes, enemies, and scrolls
 // must exist in `db`.

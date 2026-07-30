@@ -162,7 +162,9 @@ Asset generators (deterministic; reruns byte-identical):
 12. **Generation changes need a version bump.** Anything that alters what a
     seed produces (generator code OR composition/data curves — including item
     prices, which the dungeon merchant derives its offer from) bumps
-    `dungeon::kGenerationVersion` (currently 10; battle rules are at 6) — the scoreboard tags it
+    `dungeon::kGenerationVersion` (currently 14; battle rules are at 14 —
+    the history comments in `src/dungeon/RoomLayout.hpp` and
+    `src/battle/Battle.hpp` are the authorities) — the scoreboard tags it
     for comparability. Owner-gated.
 13. **A forced/automatic action rule lives in shared `battle::` code**, called by
     `BattleState`, the `Simulator`, AND `chooseEnemyAction` (see
@@ -204,18 +206,24 @@ authorization to start the next.
 inspection only. The owner handles all commits and pushes.
 
 Milestones: `docs/milestones.md` is the single source for statuses — trust it
-over any restatement, including this one. Everything through **M51** is
-`complete (approved)`: the expansion programs (M35–M42 endgame, M43–M45
-King's Gambit, M46 facelift, M47–M51 Court & Comfort — the last approved
-2026-07-23) are all closed. The M46 UI kit
+over any restatement, including this one. Everything through **M58** is
+`complete (approved)` (the expansion programs M35–M42, M43–M45, M46, M47–M51,
+M52, M53–M56, M57 and M58 — the last approved 2026-07-24 — are all closed);
+**M59–M72** (the CrystalForge editor, Goose Town & the Deadly Duck, the
+M62–M66 program — Duck stagecraft, class milestones, scrolls + party panel,
+the two treasure-map systems — the M67 polish batch, M68's victory
+spoils + party-relative threat rating, M69's town exteriors, M70's
+CRT strength/curvature split, M71's victory celebration, and M72's party
+panel reflow) sit at
+`implemented, awaiting manual approval`. The M46 UI kit
 (`docs/ui_style_guide.md`) binds all UI work; the M49 castle retune (Boss
-Rush 580 % / King 500 % / Endless +10 %pts per wave, level cap 99) is the
-balance baseline. Only the
+Rush 580 % / King 500 % / Endless +10 %pts per wave, level cap 99) plus the
+M54 equipment rebalance are the balance baseline. After M59–M72, only the
 deliberately deferred **M23** (validation/playtesting/balance) and **M24**
 (release packaging) remain, in that order: their tooling and packaging are
 built (v0.9.0 RC flow), awaiting owner-run external playtests
 (`docs/playtest_protocol.md`) and a clean-machine sign-off; version bumps to
-1.0.0 after playtests pass. Both must be re-audited against the post-M51
+1.0.0 after playtests pass. Both must be re-audited against the then-current
 checkout first. Details: `docs/milestones.md` + one note per
 milestone under `docs/milestone_notes/`.
 

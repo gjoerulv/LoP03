@@ -8,22 +8,50 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M51
+> **Status: feature-complete, polished playable build** (milestones M1–M58
 > delivered and owner-approved). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
-> dungeons with room events including the rare Royal Relics, deterministic
-> turn-based combat (statuses, passives, forced-action turn-control, sparse
-> elemental weaknesses/immunities, an enmity/threat model with control
-> skills), a stakes-escalation score rule with an honest tagged scoreboard, a
-> black market and legendary tokens/drops, per-town enemies/bosses/equipment
-> with original generated art and music, a light-hearted story serial, three
-> unlockable reward classes (Dragon / Jester / Goose), learnsets, shops, a
-> paid inn, compact walk-through towns, onboarding, accessibility options,
-> categorized settings (optional CRT effect, background audio), a bestiary,
-> victory records, achievements, and a fully procedural "8-bit-plus" UI.
-> Only the deferred **validation playtesting (M23)** and **release sign-off
-> (M24)** remain. Current status always lives in `docs/milestones.md`.
+> dungeons with room events including the rare Royal Relics and per-theme
+> rites, deterministic turn-based combat (statuses, passives, forced-action
+> turn-control, sparse elemental weaknesses/immunities, an enmity/threat
+> model with control skills), a stakes-escalation score rule with an honest
+> tagged scoreboard, a black market and legendary tokens/drops, per-town
+> enemies/bosses/equipment with original generated art and music, a
+> light-hearted story serial, three unlockable reward classes (Dragon /
+> Jester / Goose), learnsets, shops, a paid inn, compact walk-through towns,
+> five save slots + autosave, a debug toolbelt in dev builds, onboarding,
+> accessibility options, categorized settings (a 0–10 CRT Strength filter,
+> background audio, an independent ambience slider), an in-battle action
+> log, a bestiary (with each foe's strongest-context stats), victory
+> records, achievements, boss battle backdrops with a Crystal Shatter
+> intro, and a fully procedural "8-bit-plus" UI.
+> Awaiting the owner's manual approval: the **CrystalForge content editor**
+> (M59–M60, see *Development tools*), **Goose Town & the Deadly Duck**
+> (M61 — fell the King with a Goose in the party and the ultimate gauntlet
+> opens), the **M62 polish** (Purify truly heals nothing, bespoke
+> goose/duck art, the Duck's own battle theme), and the **M63 class level
+> milestones** (pick 1 of 2 permanent class bonuses at levels 10/20/30 —
+> all nine classes), **M64 scroll learning + the Party panel** (skill
+> scrolls finally teach; a detailed party ledger on both pause menus), and
+> the two treasure-map systems: **M65's town puzzle map** (a HoMM2 homage —
+> four Secret Map Pieces reveal a boss-guarded dig paying exclusive Lost
+> Scrolls) and **M66's single-use dungeon charts** (a minimap X, twelve
+> collectable curios, the Curator achievement), plus the **M67 polish
+> batch** (class portraits across the menus, milestone/passive
+> descriptions in the party panel, load-screen fixes, and the
+> boss-victory return-to-town fix), **M68** (a victory spoils panel
+> with level-up diffs on the battle's own final beat, and threat labels
+> recalibrated to be relative to YOUR party), and **M69** (real town
+> facades with integrated doors; the Scoreboard as a stone monument and
+> the Save Point as a crystal), **M70** (CRT Strength and CRT
+> Curvature as separate 0–10 sliders — the screen only bends as much as
+> you ask), and **M71** (a victory celebration after flawless-stakes
+> clears and the great challenge wins — the team jumping, the MVP on a
+> pedestal), and **M72** (the party panel reflowed so a maxed member's
+> milestones and skills all stay visible). After those, only the
+> deferred **validation playtesting (M23)** and **release sign-off (M24)**
+> remain. Current status always lives in `docs/milestones.md`.
 
 ## Requirements
 
@@ -87,6 +115,12 @@ cmake --preset msvc-release    # shipping: static CRT, no capture CLI
 cmake --build --preset release
 ```
 
+The **development** build also carries a **debug menu** (M53), opened from the
+**Debug** row on either pause menu (town or dungeon): set levels/gold/tokens/town,
+grant items, toggle a party **god mode**, instantly clear a dungeon, unlock the
+reward classes, and fill the bestiary. It is gated on the debug overlay and is
+structurally absent from the Release preset — no shipping build can reach it.
+
 The release preset links the **static MSVC runtime**, so the packaged exe
 runs on a Windows machine without Visual Studio or the VC++ redistributable.
 To build the full distribution zip (stage + validate + archive):
@@ -124,9 +158,10 @@ cmake --build build-msvc --config Release
 Default bindings — everything except text-delete and the debug toggle is
 **remappable in-game** under **Main Menu → Settings** (also reachable from the
 pause menus). Settings are organized into **Audio / Display / Gameplay /
-Controls** submenus (M51): volumes and a **Background Audio** toggle; window
-mode, a subtle **CRT effect** (off by default), battle flash/shake, and
-high-contrast; battle/message speed and tutorial prompts; and per-device
+Controls** submenus (M51): master/music/SFX volumes, a separate **Ambience
+Volume** slider (M52, default 5) and a **Background Audio** toggle; window
+mode, a **CRT Strength** slider (M57, 0–10, 0 by default), battle flash/shake,
+and high-contrast; battle/message speed and tutorial prompts; and per-device
 remapping. All of it persists in `settings.json` in the user data folder;
 one-time tutorial-prompt progress persists in `tutorial.json` beside it. By
 default the game **mutes when its window loses focus** (turn on Background Audio
@@ -155,7 +190,7 @@ letterbox/pillarbox bars.
    free with a rest token), **Item Shop** (buy consumables), **Equip Shop**
    (buy by category + equip gear — each town unlocks stronger gear as you climb),
    **Training Hall** (level up, and buy passive skills — own many, equip one),
-   **Scoreboard**, **Save Point** (3 slots), and the **Guild**. **Walk out the
+   **Scoreboard**, **Save Point** (5 slots), and the **Guild**. **Walk out the
    west/east roads** to move between the **seven towns** (no button — just walk
    into the road); each later town raises enemy stats (up to +200 %) and score
    bonus (up to +100 %); clearing a dungeon in a town unlocks the road onward.
@@ -177,7 +212,10 @@ letterbox/pillarbox bars.
    town with half your gold. Upgrade, then dive deeper — runs scale with depth,
    town, and seed, endlessly. A stakes-raising clear in town 2+ can (20 %,
    seeded) spawn a **black market** selling one legendary piece for gold or
-   **legendary tokens** won in optional elite challenges.
+   **legendary tokens** won in optional elite challenges — and any boss kill at
+   **town 7, depth 20+** rolls a second, independent **34 %** chance of the
+   dealer, regardless of score or stakes (M52). During any battle, **Menu/Pause**
+   opens a scrollable **battle log** of the last actions.
 7. Clear any **town-7 dungeon** to open the northern road to the **castle** — a
    place above the ladder with the **King's three challenges**: the **Boss Rush**
    (all 12 bosses back-to-back **with their minions**, no free healing), the
@@ -188,6 +226,10 @@ letterbox/pillarbox bars.
    Failing (or fleeing) a challenge costs **no gold** — but nobody is healed:
    survivors are carried to the gates at **1 HP**, the fallen stay fallen, and a
    full wipe leaves exactly one member standing so an inn is always reachable.
+8. One secret remains beyond the castle: defeat the King with **at least one
+   Goose in the party** and the north road forks to **Goose Town** — a pond-side
+   hub with the game's true final fight, a two-stage no-heal gauntlet (five Evil
+   Geese, then the **Deadly Duck**) with its own best-turns Pond Record.
 
 ## Project layout
 
@@ -209,10 +251,36 @@ src/
   battle/    deterministic turn-based combat + headless simulator
   ui/        Menu, TextInput (pure) + UiDraw helpers
   states/    game states (menu, town, dungeon, battle, shops, ...)
+  editor/    CrystalForge content editor (separate dev tool; never shipped)
 data/        JSON content (classes, enemies, items, skills, bosses, themes)
 tests/       Catch2 unit/integration tests (headless)
 docs/        design + technical + milestone docs
 ```
+
+## Development tools
+
+**CrystalForge** (M59) is a designer-facing content editor built alongside the
+game (`CRYSTAL_ENABLE_EDITOR`, on by default; `tools/package.ps1` never stages
+it). It links the game's own loader, validator, and battle simulator, so what
+it accepts and what it simulates can never drift from the game:
+
+```powershell
+cmake --build --preset debug --target CrystalForge
+.\build-msvc\CrystalForge.exe
+```
+
+It edits the **source-tree `data/`** (pass `--data <dir>` to point elsewhere)
+in a 1280x720 window: pick a category, pick an entry, edit fields; `Ctrl+S`
+saves through an atomic canonical writer and re-validates everything (errors
+jump to the offending entity); `F5` re-validates on demand and runs a
+three-battle quick-sim sanity battery. `N`/`D`/`Del` add, duplicate, and
+delete entries (deletes warn about dangling references). The game reads its
+content at startup — restart it (or rebuild, which recopies `data/`) to see
+edits in play. `CrystalForge --canonicalize` reformats every data file through
+the canonical writer headlessly (used once at M59; safe to re-run — it proves
+values unchanged by re-validating through the real loader).
+
+See `docs/editor_guide.md` for the full designer workflow.
 
 ## Testing / smoke test
 

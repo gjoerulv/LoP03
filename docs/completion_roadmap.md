@@ -767,4 +767,164 @@ pause comforts are independent quick wins. Elements next (M48): the guards'
 kits and any boss affinities build on them. The King's Court third (M49):
 it is balanced against the M47 stakes with M48 tools. The town rework (M50)
 and the presentation/options pass (M51) are self-contained and land last so
-the balance-critical work is never blocked on UI. M23 → M24 run after M51.
+the balance-critical work is never blocked on UI. M23 → M24 run after M51,
+unless a later expansion is authorized (M52 was).
+
+## 17. Comforts & secrets (M52) — direction
+
+Authorized 2026-07-23 as one quality-of-life milestone before M23/M24, and the
+last authorized expansion. Scope and owner decisions live in
+`docs/milestones.md` and `docs/milestone_notes/M52_comforts_secrets.md`; this
+section records only why and in what order.
+
+### Why this phase exists
+
+M47–M51 closed the endgame's stakes and manners. Six small comforts and one
+secret remained worth doing before the game is validated and packaged: ambience
+was chained to the SFX slider and always full-blast; a battle offered no way to
+review what just happened; the equip shop hid owned counts and stat diffs; the
+bestiary stopped at base stats; the Dragon Crown had no special interaction
+with the King it names; and the black market never rewarded the deepest,
+highest-stakes runs. None of these touches the core loop.
+
+### Quality bars for this phase
+
+All prior bars still apply. Additionally:
+
+1. **Secrets stay determined and shared.** The Crown's hidden effect lives in
+   shared `battle::` code and is schema-driven (an optional field, no id
+   branched on), so simulation and live play agree by construction and design
+   docs — not the game — are where the secret is written down.
+2. **Comforts stay additive.** Ambience and the high-stakes market add a field
+   and a fresh-salt roll with no settings/save/generation version bump; the
+   battle log is presentation-only and never reads or writes the battle model.
+3. **The densest panels stay overflow-clean.** New readouts (the equip diff,
+   the bestiary max stats) are fitted and verified against the worst-case
+   capture scenes (the King's bestiary entry, the town-7 buy list).
+
+### Ordering rationale
+
+One milestone, six independent slices; the only cross-cutting change is the
+Crown's rules bump (9 → 10), so it and its schema field are implemented and
+tested as a unit. M23 → M24 run after M52, re-audited against the post-M52
+checkout.
+
+## 18. Adjustment program (M53–M56) — direction
+
+Authorized 2026-07-24 as one more program before M23/M24 — a focused adjustment
+pass (a debug toolbelt, more save slots, a meaningful Champion, an equipment
+buff, per-theme dungeon events and battle backdrops, and a dramatic boss
+transition). Not new genre scope; the core loop is unchanged. Scope and owner
+decisions live in `docs/milestones.md` (the program section) and the
+per-milestone notes; this section records only why and in what order.
+
+### Why this phase exists
+
+M52 closed the last comforts, but a handful of adjustments still stand between
+the game and a release-worthy build: manual testing is slow without a cheat
+menu, three save slots is stingy, the Champion achievement asks nothing of the
+player, the mid-ladder equipment tiers feel flat, dungeon themes lack a signature
+event, and every boss battle opens the same way against the same flat band. This
+program spends one pass on all of it before M23/M24 measure the build.
+
+### Quality bars for this phase
+
+All prior bars (§4, §5, §9, §10, §12–§17) still apply. Additionally:
+
+1. **Development-only means development-only.** The debug menu and god mode must
+   be structurally absent from Release binaries (compiled out, not merely hidden)
+   and must add zero rolls to the deterministic battle/generation streams; the
+   Simulator never touches them.
+2. **Content buffs stay content.** The equipment rebalance is a `data/` change
+   with no schema or version motion; balance is re-proven with the batteries and
+   reported, never silently compensated for by retuning enemies.
+3. **New chance rides the seed.** The theme events roll on the existing seeded
+   event machinery (the RoyalRelic precedent) and bump `generationVersion` once
+   (10 → 11); the boss transition and backdrops are pure presentation whose only
+   randomness is a hash of the dungeon seed, never `rollCursor`.
+4. **Stagecraft never punishes score play or photosensitive players.** The boss
+   intro is always skippable with Confirm and obeys the M51 AoE-tint
+   photosensitivity contract (single decay, alpha cap, gated by the flash
+   setting); backdrops stay subdued and readable in high contrast.
+
+### Ordering rationale
+
+The debug toolbelt (M53) ships first because it accelerates manual testing of
+everything after it. The equipment rebalance (M54) precedes the content that
+grants gear and gold (M55's events are tuned against the final prices). The
+theme events (M55) are the one gameplay/generation change and carry the only
+version bump. Boss stagecraft (M56) is pure presentation and closes the program.
+
+## 19. Advanced CRT post-process (M57) — direction
+
+An owner-directed, presentation-only implementation task (authorized 2026-07-24)
+that runs after M53–M56 and before M23/M24. It replaces the M51 Boolean CRT
+Effect with a persistent **0–10 CRT Strength** slider driving a single-pass
+consumer-CRT shader (curvature, scanlines, a destination-space slot mask, beam
+spread, glow, chroma bleed, vignette, restrained grain), each sub-effect on its
+own non-linear activation so the slider reads as one continuum. Strength 0 is the
+exact unfiltered blit; capture stays pre-filter; no gameplay, save, generation,
+battle-rules, resolution, or settings-version change. Window-level visual feel is
+an owner sign-off; the deterministic parts (setting migration, clamping, step
+conversion) are unit-tested.
+
+## 20. CrystalForge content editor (M59–M60) — direction
+
+An owner-authorized tooling program (planned and approved 2026-07-24) that runs
+after M58 and before M23/M24: **CrystalForge**, a designer-facing content
+editor shipped as a separate executable in this repo. It links `crystal_core`
+directly, so content validation (the real loader + `validateReferences`) and
+battle simulation (the real `battle::simulate`) can never drift from the game.
+M59 delivers the editor core — browse/edit/save every `data/` category with a
+canonical `ordered_json` writer, jump-to-entity validation, and a quick-sim
+sanity battery. M60 adds the sim lab (seed-sweep reports with per-skill /
+per-combatant telemetry via a record-only battle observer, delta comparison,
+report export) and a per-category test runner that spawns `crystal_tests.exe`.
+Zero new dependencies; no version bumps; the game binary gains no process
+execution and no behavior change. Scope lives in the ledger (`docs/milestones.md`).
+
+## 21. Goose Town & the Deadly Duck (M61) — direction
+
+An owner-directed content capstone (authorized 2026-07-25): a hidden ultimate
+challenge that rewards the game's own joke classes. Felling the King with a
+Goose in the party opens **Goose Town**, a castle-style hub whose single
+challenge is a two-stage no-heal gauntlet — five Evil Geese, then the Deadly
+Duck, the game's statistical apex. All mechanics are schema-driven (rules
+v11 → 12, inert for every pre-M61 battle), the gauntlet reuses the castle
+challenge machinery wholesale, and the balance bar deliberately mirrors the
+King's: beyond the itemless simulator, beatable with obtainable counterplay,
+finally judged by the owner's own hands.
+
+## 22. The M62–M66 program — direction
+
+Owner-authorized 2026-07-27 (one plan, one approval, two bonus-table review
+rounds): close the audit findings and the Purify heal leak while giving the
+Duck his own face and anthem (M62); give every class a permanent identity
+choice at levels 10/20/30 (M63); make the inert-since-M2 scroll system real
+and give the party a proper ledger (M64); and pay the exploration itch twice
+over with the two treasure-map systems — the town puzzle map's exclusive
+Lost Scrolls (M65) and the dungeon charts' curio collection (M66). Quality
+bars held throughout: every combat rule in shared `battle::` code (rules
+12→13→14), every generation change a pure-hash addition (11→12→13, all
+other rolls of a seed byte-identical), every save field optional and
+defensively dropped, and the capture lint as the layout referee.
+
+M67 (2026-07-28) followed as the owner's manual-pass feedback batch: class
+portraits across the menu screens, milestone/passive descriptions in the
+party panel, the load-screen fixes, and the boss-victory return-to-town
+unwind — polish that makes the M62–M66 systems legible before they are
+judged. M68 (same day) closed the loop's two oldest presentation debts:
+victories now pay on-screen (the spoils panel with level-up diffs, on the
+battle's own final beat), and the threat labels finally tell the truth —
+party-relative, calibrated against the simulator, tagged generation 14.
+M69 (2026-07-29) gave the town its face: real service facades with
+integrated doors, the scoreboard as a monument, the save point as a
+crystal. M70 (same day, to the owner's detailed spec) split the CRT
+filter's geometry from its texture: CRT Strength and CRT Curvature are
+separate persistent sliders, so strength 7 keeps its character without
+the excessive curl. M71 gave flawless runs their moment: the victory
+celebration — score, confetti, the team jumping, the MVP on a pedestal —
+after penalty-free clears and the King/Duck/Boss-Rush victories. M72
+reflowed the party panel so a maxed member's whole story fits the screen.
+
+M23 → M24 run after M72, re-audited against the then-current checkout.

@@ -15,6 +15,7 @@
 #include "input/PromptLabels.hpp"
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
+#include "states/BattleLogState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
@@ -147,14 +148,24 @@ std::vector<std::string> statusLines(const battle::Combatant& c, int maxWidth, i
 
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                          battle::BattleResult* resultSlot, MusicTrack musicOverride,
-                         RunStats* statsSlot, bool castleChallenge)
+                         RunStats* statsSlot, bool castleChallenge, render::BackdropStage stage,
+                         const BattleSpoils* spoils)
     : GameState(stack),
       context_(context),
       battle_(std::move(battle)),
       resultSlot_(resultSlot),
       musicOverride_(musicOverride),
       stats_(statsSlot),
-      castleChallenge_(castleChallenge) {
+      castleChallenge_(castleChallenge),
+      stage_(stage),
+      spoils_(spoils) {
+#ifndef CRYSTAL_SHIPPING_BUILD
+    // M53 debug god mode: seed the battle's party-unkillable flag from the debug
+    // cheat. Off in every normal/shipping/sim path (the cheat can only be set by
+    // the debug menu, itself compiled out of Release), so the battle stream is
+    // untouched.
+    battle_.debugPartyUnkillable = context_.cheats.godMode;
+#endif
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Enemy && c.isBoss) {
             bossBattle_ = true;
@@ -256,6 +267,37 @@ void BattleState::captureAoeImpact(const std::string& skillId) {
     for (FloatNumber& f : floats_) {
         f.timer = 999.0f;
     }
+}
+
+void BattleState::captureShowSpoils() {
+    // M68: the victory panel at its fullest — max XP/gold widths and four
+    // leveled members, two of them with multi-skill learn lines.
+    phase_ = Phase::Done;
+    result_ = battle::Outcome::Victory;
+    message_ = outcomeMessage();
+    spoilsResult_ = SpoilsResult{};
+    spoilsResult_.xp = 999;
+    spoilsResult_.gold = 88888;
+    const char* names[4] = {"WWWWWWWWWWWW", "MMMMMMMMMMMM", "Christabelle", "Wolfgangheim"};
+    for (int i = 0; i < 4; ++i) {
+        LevelUpDiff d;
+        d.name = names[i];
+        d.fromLevel = 9 + i;
+        d.toLevel = 11 + i;
+        d.hpDelta = 24;
+        d.mpDelta = 8;
+        d.atkDelta = 5;
+        d.magDelta = 4;
+        d.defDelta = 3;
+        d.spdDelta = 2;
+        if (i == 0) {
+            d.newSkillNames = {"Radiant Ward", "Greater Heal"};
+        } else if (i == 3) {
+            d.newSkillNames = {"Chain Lightning"};
+        }
+        spoilsResult_.levelUps.push_back(std::move(d));
+    }
+    spoilsPanel_ = true;
 }
 
 void BattleState::captureCourtRevival() {
@@ -508,6 +550,8 @@ void BattleState::advanceTurn() {
     result_ = battle_.outcome();
     phase_ = Phase::Done;
     message_ = outcomeMessage();
+    log_.push(message_);  // M52
+    maybeApplySpoils();   // M68
 }
 
 std::vector<std::string> BattleState::consumableIds() const {
@@ -617,6 +661,7 @@ void BattleState::onCommand() {
         case 4:  // Escape
             result_ = battle::Outcome::Escaped;
             message_ = "The party flees the battle!";
+            log_.push(message_);  // M52: fleeing bypasses afterAction
             phase_ = Phase::Done;
             break;
         default:
@@ -772,8 +817,28 @@ void BattleState::executeEnemy(int actor) {
         message_ = self.name + " is terrified and can only cower behind its guard!";
         battle_.guard(actor);
     } else if (choice.forced == battle::ForcedAction::Skip) {
-        // M44 (Tax Sheets): the foe spends its turn on the paperwork.
-        message_ = self.name + " is buried in paperwork and loses its turn!";
+        // M58: the geese scare the King into doing nothing. Detected with the same
+        // condition chooseEnemyAction used (no status took the turn AND the scare
+        // roll landed), so the flavour is right even when he is also stunned. The
+        // line rides the Jester-quip channel — a gold line above the panel — so it
+        // reads like the Jester's dry quips, as requested.
+        if (battle::forcedActionFor(self) == battle::ForcedAction::None &&
+            battle::kingScaredThisTurn(battle_, actor)) {
+            message_ = self.name + " loses its turn!";
+            jestLine_ = "The geese scare the King...";
+            jestTimer_ =
+                2.0f * settings::messageDurationScale(context_.settings.values.messageSpeed);
+        } else if (battle::forcedActionFor(self) == battle::ForcedAction::None &&
+                   battle::doesNothingThisTurn(battle_, actor)) {
+            // M61: an authored do-nothing foe (a Quacking goose). The authored
+            // line is the whole show; a foe authored without one keeps the
+            // generic skip below via the empty check.
+            message_ = self.name + ": " +
+                       (self.doNothingText.empty() ? std::string("...") : self.doNothingText);
+        } else {
+            // M44 (Tax Sheets): the foe spends its turn on the paperwork.
+            message_ = self.name + " is buried in paperwork and loses its turn!";
+        }
     } else if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);
@@ -871,6 +936,10 @@ void BattleState::executeUncontrolled(int actor) {
 }
 
 void BattleState::afterAction() {
+    // M52: every resolved action reaches this one choke point with message_
+    // already final (the turnOpenLine_ prepend and the item "(kept)" suffix both
+    // happen upstream), so the log records exactly what the screen shows.
+    log_.push(message_);
     for (const battle::Combatant& c : battle_.units) {
         if (c.side == battle::Side::Party && c.hp <= 0) {
             koOccurred_ = true;
@@ -888,7 +957,14 @@ void BattleState::afterAction() {
     seq_.start(!pendingFloats_.empty(), settings::resolveSeconds(params.speed), params);
 }
 
-void BattleState::finish() {
+void BattleState::writeBackParty() {
+    // Once only (M68): a victory with spoils writes back at the Done beat, and
+    // the level-up heals grantXp applies must not be clobbered by a second
+    // write of the stale combatant HP at finish().
+    if (wroteBack_) {
+        return;
+    }
+    wroteBack_ = true;
     for (const battle::Combatant& c : battle_.units) {
         if (c.partyIndex >= 0 && c.partyIndex < static_cast<int>(context_.party.members.size())) {
             Character& m = context_.party.members[static_cast<std::size_t>(c.partyIndex)];
@@ -896,6 +972,21 @@ void BattleState::finish() {
             m.mp = c.mp;
         }
     }
+}
+
+void BattleState::maybeApplySpoils() {
+    if (result_ != battle::Outcome::Victory || spoils_ == nullptr || spoilsPanel_) {
+        return;
+    }
+    // Write back FIRST so the M63 standing-member gold bonuses judge the real
+    // post-battle feet; the level-up heals land on top of that.
+    writeBackParty();
+    spoilsResult_ = applySpoils(context_.party, *spoils_, context_.content);
+    spoilsPanel_ = true;
+}
+
+void BattleState::finish() {
+    writeBackParty();
     if (resultSlot_ != nullptr) {
         resultSlot_->outcome = result_;
         resultSlot_->rounds = battle_.turnsTaken;
@@ -1000,6 +1091,17 @@ void BattleState::handleInput(const Input& input) {
     if (phase_ != Phase::Resolve && phase_ != Phase::Done &&
         input.pressed(InputAction::Details)) {
         openDetails();
+        return;
+    }
+
+    // M52: the Menu/Pause action opens the scrollable battle log. Available in
+    // EVERY phase — including Resolve and Done — so a party the player never gets
+    // to command (a full Jester party, which only ever sees Intro/Resolve/Done)
+    // can still review the fight. The overlay closes on the same Menu action, or
+    // Cancel.
+    if (input.pressed(InputAction::Menu)) {
+        context_.audio.play(Sfx::Confirm);
+        stack().pushState(std::make_unique<BattleLogState>(stack(), context_, log_));
         return;
     }
 
@@ -1116,6 +1218,8 @@ void BattleState::update(float dt) {
         result_ = o;
         phase_ = Phase::Done;
         message_ = outcomeMessage();
+        log_.push(message_);  // M52: the final outcome line, the last log entry
+        maybeApplySpoils();   // M68: pay the team's spoils; the panel shows them
         // One-shot jingle on the music channel (M21); if its file is missing
         // the AudioManager falls back to the matching stinger SFX.
         context_.audio.setMusic(o == battle::Outcome::Victory ? MusicTrack::Victory
@@ -1244,6 +1348,12 @@ void BattleState::render() {
         const int bandY = 24;
         const int bandH = h - kPanelH - 34 - bandY;
         DrawRectangle(0, bandY, w, bandH, pal.panel);
+        // M56: the subdued per-theme backdrop sits on the flat band fill, under
+        // the ink keylines/brackets/pips below (so the M46 grounding stays crisp).
+        // Accents are dropped in high contrast; a static 2-frame glint uses the
+        // shared UI motion phase.
+        render::drawBattleBackdrop(stage_, {0, bandY, w, bandH}, ui::motionPhase(),
+                                   !context_.settings.values.highContrast);
         DrawRectangle(0, bandY, w, 1, pal.ink);
         DrawRectangle(0, bandY + bandH - 1, w, 1, pal.ink);
         DrawRectangle(0, bandY + 1, w, 1, pal.borderDark);
@@ -1358,6 +1468,9 @@ void BattleState::render() {
     const std::string backHint = input::prompt(map, InputAction::Cancel, device, "Back") +
                                  "  " +
                                  input::prompt(map, InputAction::Details, device, "Details");
+    // M52: how to open the battle log — shown during action selection and, for a
+    // Jester party, during the auto-resolved turns (it is openable in every phase).
+    const std::string logHint = input::prompt(map, InputAction::Menu, device, "Log");
 
     switch (phase_) {
         case Phase::Intro:
@@ -1388,6 +1501,11 @@ void BattleState::render() {
                 ui::drawTextFitted(why, kInfoX, panelY + 20, infoW, style::kFontBody,
                                    style::palette().textDim, "battle.why");
             }
+            // M52: Details + Log hints in the info column's free bottom row.
+            ui::drawTextFitted(input::prompt(map, InputAction::Details, device, "Details") + "  " +
+                                   logHint,
+                               kInfoX, panelY + 48, infoW, style::kFontSmall,
+                               style::palette().textHint, "battle.cmdhint");
             break;
         case Phase::ChooseSkill: {
             ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,
@@ -1516,6 +1634,10 @@ void BattleState::render() {
             break;
         }
         case Phase::Resolve:
+            // M52: a Jester party only ever sees this phase, so the log hint rides
+            // the top-right corner above the resolve message.
+            ui::drawTextRight(logHint, w - 10, panelY + 5, style::kFontSmall,
+                              style::palette().textHint);
             ui::drawTextWrapped(message_, 16, panelY + 14, w - 32, style::kFontBody,
                                 style::palette().text, "battle.message", 3);
             break;
@@ -1525,7 +1647,65 @@ void BattleState::render() {
             ui::drawTextCentered(
                 input::prompt(map, InputAction::Confirm, device, "Continue").c_str(), w / 2,
                 panelY + 44, style::kFontBody, pal.gold);
+            if (spoilsPanel_) {
+                drawSpoilsPanel();  // M68: the spoils over the settled battlefield
+            }
             break;
+    }
+}
+
+// M68: the FF-style victory results — XP and gold always, then one compact
+// block per leveled member (level motion, stat deltas, new skills). Rides the
+// Done beat the battle always had, dismissed by the same single Confirm.
+void BattleState::drawSpoilsPanel() const {
+    namespace style = ui::style;
+    const style::Palette& pal = style::palette();
+    const int w = context_.virtualWidth;
+    const int panelTop = context_.virtualHeight - kPanelH - 4;  // the command panel
+    const int lineH = 10;
+    int lines = 0;
+    for (const LevelUpDiff& d : spoilsResult_.levelUps) {
+        lines += 2 + (d.newSkillNames.empty() ? 0 : 1);
+    }
+    const int headerH = 22;
+    const int boxW = 268;
+    const int boxH = headerH + lines * lineH + (lines > 0 ? 8 : 2);
+    const int boxX = w / 2 - boxW / 2;
+    const int boxY = std::max(6, (panelTop - boxH) / 2);
+    ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
+    ui::drawTextCentered(
+        TextFormat("+%d XP each    +%d gold", spoilsResult_.xp, spoilsResult_.gold), w / 2,
+        boxY + 7, 10, pal.gold);
+    int y = boxY + headerH;
+    for (const LevelUpDiff& d : spoilsResult_.levelUps) {
+        ui::drawTextFitted(TextFormat("%s   Lv.%d > %d", d.name.c_str(), d.fromLevel, d.toLevel),
+                           boxX + 12, y, boxW - 24, 9, pal.text, "battle.spoils.name");
+        y += lineH;
+        std::string statLine;
+        const auto piece = [&statLine](const char* tag, int v) {
+            if (v != 0) {
+                statLine += (statLine.empty() ? "" : "  ") + std::string(tag) +
+                            (v > 0 ? "+" : "") + std::to_string(v);
+            }
+        };
+        piece("HP", d.hpDelta);
+        piece("MP", d.mpDelta);
+        piece("ATK", d.atkDelta);
+        piece("MAG", d.magDelta);
+        piece("DEF", d.defDelta);
+        piece("SPD", d.spdDelta);
+        ui::drawTextFitted(statLine.empty() ? "-" : statLine, boxX + 22, y, boxW - 34, 8,
+                           pal.textDim, "battle.spoils.stats");
+        y += lineH;
+        if (!d.newSkillNames.empty()) {
+            std::string learned = "New: ";
+            for (std::size_t i = 0; i < d.newSkillNames.size(); ++i) {
+                learned += (i == 0 ? "" : ", ") + d.newSkillNames[i];
+            }
+            ui::drawTextFitted(learned, boxX + 22, y, boxW - 34, 8, pal.gold,
+                               "battle.spoils.skills");
+            y += lineH;
+        }
     }
 }
 

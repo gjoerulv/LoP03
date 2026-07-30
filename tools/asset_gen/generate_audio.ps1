@@ -447,4 +447,25 @@ foreach ($t in 2, 3, 4, 5, 6, 7) {
   WriteWav "town_$t.wav" @($tlead, $tbass) $ttotal
 }
 
+# ============================ M62 Duck battle music ============================
+# The Deadly Duck's own anthem: a lumbering, comedic-ominous F-minor march at
+# 132 BPM — an oom-pah "waddle" bass under a heavy staccato lead, deliberately
+# slower and weightier than the King's driving chromatics. Appended last: only
+# ADDS duck.wav; every earlier file stays byte-identical.
+Write-Output 'Generating M62 Duck battle music...'
+$bpm = 132.0; $total = [int]($rate * 60.0 / $bpm * 16)
+$lead = Render @(
+  @('F4',0.75),@('F4',0.25),@('G#4',0.5),@('F4',0.5), @('C5',0.75),@('C5',0.25),@('B4',0.5),@('C5',0.5),
+  @('C#5',0.5),@('C5',0.5),@('G#4',0.5),@('F4',0.5), @('G4',0.75),@('G4',0.25),@('C4',1.0),
+  @('F4',0.5),@('G#4',0.5),@('C5',0.5),@('C#5',0.5), @('D#5',0.5),@('C#5',0.5),@('C5',0.5),@('G#4',0.5),
+  @('F5',0.75),@('E5',0.25),@('F5',0.5),@('C5',0.5), @('F4',2.0)
+) $bpm 'square' 0.28 $total
+$bass = Render @(
+  @('F2',0.5),@('C2',0.5),@('F2',0.5),@('C2',0.5), @('F2',0.5),@('C2',0.5),@('G#1',0.5),@('C2',0.5),
+  @('F2',0.5),@('C2',0.5),@('F2',0.5),@('C2',0.5), @('G1',0.5),@('G1',0.5),@('C2',1.0),
+  @('F2',0.5),@('C2',0.5),@('F2',0.5),@('C2',0.5), @('C#2',0.5),@('G#1',0.5),@('C2',0.5),@('C2',0.5),
+  @('F2',0.5),@('C2',0.5),@('F2',0.5),@('C2',0.5), @('F2',2.0)
+) $bpm 'tri' 0.32 $total
+WriteWav 'duck.wav' @($lead, $bass) $total
+
 Write-Output 'Audio generation complete.'

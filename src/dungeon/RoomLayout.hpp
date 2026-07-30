@@ -31,8 +31,24 @@ namespace cd::dungeon {
 // consumables a dungeon merchant offers and adds a town-1-only item to the town-1
 // chest/merchant pools; version 10 (M44) draws the Royal Relic replacement roll
 // from the event stream at town >= 2 / depth >= 2, so a seed's events shift —
-// each changes generated output for a seed (owner-approved).
-inline constexpr int kGenerationVersion = 10;
+// each changes generated output for a seed (owner-approved);
+// version 11 (M55) guarantees one per-theme rite (Armory Ghost / Miner's Cache /
+// Elder Root) on the first event slot of every themed dungeon and skips the relic
+// draw on that slot, so a themed seed's events shift (owner-approved). Empty-theme
+// generation is unchanged;
+// version 12 (M65) seeds a Secret Map Piece into ~10% of dungeons (one Normal
+// room, a pure hash of the dungeon seed — no Rng draw, so every OTHER roll of a
+// seed is byte-identical; the piece itself is new output, hence the bump,
+// owner-approved);
+// version 13 (M66) seeds a single-use dungeon treasure map into ~12% of
+// dungeons (a chart room + a distinct buried room, both Normal, never the
+// map-piece room; the same pure-hash contract — only new output, everything
+// else byte-identical; owner-approved);
+// version 14 (M68) recalibrates the danger tiers to be PARTY-RELATIVE
+// (owner decision). Generated layouts, teams, and events are byte-identical
+// to v13 — the bump tags scoreboard comparability, because the
+// danger-defeated score credit follows the new tiers.
+inline constexpr int kGenerationVersion = 14;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

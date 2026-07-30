@@ -9,6 +9,7 @@
 #include "game/Character.hpp"
 #include "game/Inventory.hpp"
 #include "game/StakesLadder.hpp"
+#include "game/TreasureMap.hpp"  // M65: TreasureReveal + the puzzle-map rules
 
 namespace cd {
 
@@ -42,6 +43,20 @@ struct Party {
     // kept entirely separate from the dungeon scoreboard. See game/Castle.hpp.
     bool castleUnlocked = false;
     CastleRecords castleRecords;
+    // M61: the Goose Town — opened by felling the King with at least one Goose
+    // in the party. Optional save field (old saves -> locked).
+    bool gooseTownUnlocked = false;
+    // M65: the town puzzle map — pieces held this cycle (0..3; the fourth
+    // converts into the reveal and resets), the revealed treasure, and the
+    // exclusive scrolls already dug up (drawn without repetition). All
+    // optional save fields (old saves -> nothing found yet).
+    int mapPieces = 0;
+    TreasureReveal treasure;
+    std::vector<std::string> treasureScrollsAwarded;
+    // M66: dungeon curios dug up via the single-use treasure maps (see
+    // game/Curios.hpp). Optional save field; the Curator achievement fires at
+    // the full dozen.
+    std::vector<std::string> ownedCurios;
     // Story serial (M41): a 7-bit mask of which town installments have been heard
     // (see game/Story.hpp). Optional save field; old saves -> 0 (nothing heard).
     int storyMet = 0;

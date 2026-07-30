@@ -19,6 +19,12 @@ struct Party;
 
 inline constexpr int kAchievementVersion = 1;
 
+// M53 (owner decision 2026-07-24): Champion is no longer "beat the King at all"
+// (that is Kingslayer) but "beat him efficiently". A party clears this when its
+// persisted best King-fight turn count is at or under this bar. Tuned against the
+// simulator (see the M53 note §J) and reported; changing it is a balance call.
+inline constexpr int kChampionKingTurns = 15;
+
 struct AchievementDef {
     const char* id;
     const char* name;
@@ -40,8 +46,10 @@ inline constexpr AchievementDef kAchievements[] = {
     {"the_long_night", "The Long Night", "Reach wave 10 of the Endless Rush."},
     {"loremaster", "Loremaster", "Hear the whole Ballad of the Hollow King."},
     {"peerless", "Peerless", "Raise a hero to level 99."},
-    {"champion", "Champion", "Earn the King's title."},
+    {"champion", "Champion", "Defeat the Hollow King in 15 turns or fewer."},
     {"naturalist", "Naturalist", "Record 30 different foes in the bestiary."},
+    {"quackbane", "Quackbane", "Fell the Deadly Duck."},  // M61 (locked shows ???)
+    {"curator", "Curator", "Gather all twelve dungeon curios."},  // M66
 };
 inline constexpr int kAchievementCount =
     static_cast<int>(sizeof(kAchievements) / sizeof(kAchievements[0]));

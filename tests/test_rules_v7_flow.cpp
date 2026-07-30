@@ -121,7 +121,9 @@ TEST_CASE("rules v7: Purify lifts afflictions and leaves the stat debuffs",
     const content::SkillDef* purify = db.findSkill("purify");
     REQUIRE(purify != nullptr);
     REQUIRE(purify->controlEffect == content::SkillEffect::Cleanse);
-    REQUIRE(purify->power == 0);  // M43: it already healed nothing
+    // Power 0 since M43. (The magic/2 heal-formula term it STILL leaked on a
+    // wounded target was closed in M62 — the rules-v13 case below.)
+    REQUIRE(purify->power == 0);
 
     Battle b = loadedBoard();
     b.useSkill(0, 1, *purify);
@@ -138,6 +140,37 @@ TEST_CASE("rules v7: Purify lifts afflictions and leaves the stat debuffs",
     CHECK(has(ally, content::StatusType::AttackUp));
     // Purify heals nothing, and a cleanse costs no HP either way.
     CHECK(ally.hp == ally.maxHp);
+}
+
+TEST_CASE("rules v13: Purify heals nothing even on a wounded ally", "[battle][rules][status]") {
+    // The v7 case above proves "no heal" on a FULL-HP board — where the heal
+    // formula's magic/2 term clamped invisibly, which is exactly how the leak
+    // survived until M62. A wounded board is the honest witness: a pure
+    // cleanse (power 0 + the cleanse control) must move no HP and accrue no
+    // heal-threat, while a cleanse with real power keeps healing.
+    CHECK(kBattleRulesVersion >= 13);
+    const content::ContentDatabase db = loadContent();
+    const content::SkillDef* purify = db.findSkill("purify");
+    REQUIRE(purify != nullptr);
+
+    Battle b = loadedBoard();
+    b.units[0].hp = 40;  // all_allies reaches the caster too
+    b.units[1].hp = 50;
+    const int threatBefore = b.threat[0];
+    b.useSkill(0, 1, *purify);
+
+    CHECK(b.units[1].hp == 50);  // cleansed, not healed
+    CHECK(b.units[0].hp == 40);
+    CHECK_FALSE(has(b.units[1], content::StatusType::Poison));  // the cleanse still ran
+    CHECK(b.threat[0] == threatBefore);  // no phantom heal-enmity either
+
+    const content::SkillDef* mending = db.findSkill("generous_mending");
+    REQUIRE(mending != nullptr);
+    REQUIRE(mending->power > 0);
+    Battle m = loadedBoard();
+    m.units[1].hp = 50;
+    m.useSkill(0, 1, *mending);
+    CHECK(m.units[1].hp > 50);  // a powered cleanse still heals
 }
 
 TEST_CASE("rules v7: Purify reaches the whole party (all_allies)", "[battle][rules][status]") {

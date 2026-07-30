@@ -6,8 +6,11 @@
 #include "audio/AudioRoles.hpp"
 #include "battle/Battle.hpp"
 #include "game/RunStats.hpp"
+#include "game/Spoils.hpp"
+#include "render/BattleBackdrop.hpp"
 #include "render/BattleSequencer.hpp"
 #include "states/AoeTint.hpp"
+#include "states/BattleLog.hpp"
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
 #include "ui/ScrollWindow.hpp"
@@ -30,9 +33,18 @@ public:
     // given, accumulates this battle's victory tallies into a run's RunStats.
     // `castleChallenge` (M43) marks a fight fought at the castle, where losing
     // costs no gold and forfeits no run — so the defeat message tells the truth.
+    // `stage` (M56) selects the per-theme battle backdrop; Plain is the neutral
+    // default so every existing call site keeps compiling unchanged.
+    // `spoils` (M68), when given, is the defeated team's payout: on Victory the
+    // battle itself applies it (gold with standing bonuses, party-wide XP) and
+    // the Done beat shows the FF-style results panel — XP, gold, and each
+    // member's level-up diff — on the same single Confirm that always ended a
+    // battle. Must outlive the state (DungeonState owns it, like resultSlot).
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                 battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None,
-                RunStats* statsSlot = nullptr, bool castleChallenge = false);
+                RunStats* statsSlot = nullptr, bool castleChallenge = false,
+                render::BackdropStage stage = render::BackdropStage::Plain,
+                const BattleSpoils* spoils = nullptr);
 
     void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
@@ -63,6 +75,10 @@ public:
     // Capture-only (M51): resolve an all-enemies skill and freeze the impact beat
     // so the AoE screen tint is captured as produced.
     void captureAoeImpact(const std::string& skillId);
+    // Capture-only (M68): force the Done phase with a fabricated spoils result
+    // (two level-ups incl. new skills), so the victory panel's fullest layout is
+    // overflow-checked.
+    void captureShowSpoils();
 #endif
 
 private:
@@ -87,6 +103,9 @@ private:
     void executeEnemy(int actor);
     void executeConfused(int actor);  // M35: a confused party member auto-attacks an ally
     void executeUncontrolled(int actor);  // M45: the Jester picks its own turn
+    void writeBackParty();  // hp/mp write-back, once (level-up heals must survive)
+    void maybeApplySpoils();  // M68: on Victory, pay the team's spoils in-battle
+    void drawSpoilsPanel() const;  // M68: the Done-beat victory results
     // M42: fold a party action's enemy damage into the run's victory tallies.
     void accumulateStats(const std::vector<int>& hpBefore, int actor, bool offensiveStatus);
     void afterAction();
@@ -128,6 +147,11 @@ private:
     RunStats* stats_ = nullptr;  // M42: run victory-stat accumulation (optional)
     battle::Outcome result_ = battle::Outcome::Ongoing;
     bool castleChallenge_ = false;  // M43: castle defeats cost no gold
+    render::BackdropStage stage_ = render::BackdropStage::Plain;  // M56: theme backdrop
+    const BattleSpoils* spoils_ = nullptr;  // M68: the team's payout (optional)
+    SpoilsResult spoilsResult_;             // M68: what a victory actually paid
+    bool spoilsPanel_ = false;              // M68: show the results panel in Done
+    bool wroteBack_ = false;                // hp/mp write-back happened
     bool bossBattle_ = false;
     bool koOccurred_ = false;
     std::string bossTelegraph_;
@@ -159,6 +183,10 @@ private:
     bool captureFreezeSeq_ = false;
 
     std::string message_;
+    // M52: presentation-only ring buffer of the exact lines shown after each
+    // resolved action, opened as a scrollable overlay by the Menu action. Owned
+    // here, so it is freed with the battle; it never touches the battle model.
+    BattleLog log_;
     // M49: what a per-turn boss rule announced at the top of this turn (the
     // King's revive clock). Prepended to the acting unit's own message so the
     // court's return is explained in the same beat, then cleared.

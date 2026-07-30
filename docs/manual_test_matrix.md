@@ -18,12 +18,105 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M72 update:** the party panel reflow — row 166 (vitals under the
+> roster, two-line descriptions, the full skills list; fixes the owner's
+> Lv.99 clipping report). Row 158's party-panel layout expectations are
+> superseded by row 166.
+>
+> **M71 update:** the victory celebration — row 165 (the score-only
+> screen with the jumping party, the MVP pedestal, and the fallen lying
+> down; shown only on stakes-penalty-free clears and King/Duck/Boss-Rush
+> wins; capture scene `84_celebration`; the capture set is **84 scenes**).
+>
+> **M70 update:** CRT Strength and CRT Curvature are now SEPARATE 0–10
+> sliders — row 164, and rows 138–140's strength sweeps now read geometry
+> from the curvature slider instead (strength no longer bends the screen;
+> an old file with strength 7 loads as curvature 3). The key visual
+> target: Strength 7 / Curvature 2–3.
+>
+> **M69 update:** town exteriors — row 163 (real service facades with
+> integrated doors + doorstep tiles, the scoreboard stele, the save
+> crystal; screenshots `06_town.png` / `25_town_ladder.png`). Older town
+> rows' "building blocks + door tile" descriptions are superseded by the
+> facade look; mechanics unchanged.
+>
+> **M68 update:** victory spoils + threat recalibration — rows 161–162
+> (the results panel on the battle's Done beat with level-up diffs; the
+> party-relative danger tiers, generation v14; capture scene
+> `83_battle_spoils`; the capture set is **83 scenes**). Danger-label
+> expectations in older rows now mean "relative to YOUR party".
+>
+> **M67 update:** UI polish + two reported bugs — rows 157–160 (class
+> portraits on four screens; milestone/passive descriptions in the party
+> panel; the Load screen's slab-contained King title and dropped "party 4";
+> the boss-victory return-to-town unwind, including the milestone modal
+> now showing AFTER the result screen; the M66 chart/buried prompt no
+> longer latches and eats Confirm). Row 151's party-panel expectations
+> are superseded by row 158's added description checks; row 155 gains
+> row 160's step-off check.
+>
+> **M66 update:** the dungeon treasure map + curios — rows 155–156 (the
+> single-use chart, the minimap X, the twelve curios, Curator; capture
+> scene `82_curio_collection`; the capture set is **82 scenes**).
+>
+> **M65 update:** the town puzzle map — rows 153–154 (Secret Map Pieces,
+> the Maps screen, the guarded dig, the Lost Scrolls; capture scenes
+> `80_puzzle_map` + `81_treasure_dig`). Checklist detail:
+> `docs/milestone_notes/M65_town_puzzle_map.md` §F.
+>
+> **M64 update:** scroll learning + the Party panel — rows 151–152 (a
+> "Party" row on both pause menus; the three shipped scrolls finally teach;
+> capture scene `79_party_panel`).
+>
+> **M63 update:** class level milestones — rows 149–150 (the choice modal at
+> levels 10/20/30, all nine classes, battle rules v14; capture scene
+> `78_milestone_choice`). The owner checklist detail is
+> `docs/milestone_notes/M63_class_milestones.md` §G.
+>
+> **M62 update:** fixes & Duck stagecraft — rows 147–148 (Purify heals
+> nothing, battle rules v13; bespoke goose/duck sprites + the Duck's own
+> theme + the corrected "Return to Goose Town" prompt).
+>
+> **M61 update:** Goose Town & the Deadly Duck (the capture set is **77
+> scenes** — 64 as of M52, +11 across M53–M58, +2 in M61). Rows 144–146 below;
+> the full step-by-step owner checklist is
+> `docs/milestone_notes/M61_goose_town.md` §G, which those rows summarize.
+>
+> **M52 update:** comforts & secrets (the capture set is **64 scenes**). Checks:
+> **(1) Ambience volume** — Settings → Audio now lists **Ambience Volume**
+> between SFX and Background Audio (default **5**); lower it in a dungeon and the
+> theme bed gets quieter while music and SFX are unaffected; it persists across a
+> restart; a `settings.json` with no `audio.ambience` field loads at 5. **(2)
+> Battle log** — in any battle, the **Menu/Pause** key opens a scrollable overlay
+> of the last actions (exactly the lines the battle showed, newest at the
+> bottom, Up/Down scroll); the same key or Cancel closes it; it never changes the
+> fight and is gone in the next battle. Confirm it opens even for a **full Jester
+> party** (which auto-plays every turn — the hint rides the resolve line, and the
+> command menu shows a `[Menu] Log` hint for controlled parties). **(3) Equip
+> shop** — Buy rows show an owned-count column beside the price; the equip flow
+> (char → slot → item) shows the **current** item in that slot and the
+> **per-stat** diff of the highlighted candidate — **each raised stat green, each
+> lowered stat coral, unchanged white** (a mixed swap like ATK up / SPD down shows
+> two colours on one line), including Unequip. **(4)
+> Bestiary max stats** — every known foe shows a `max` line under its base stats;
+> spot-check the **King** (base HP 750, max 3750) and confirm the panel is not
+> clipped; unknown foes still read `?`. **(5) The Crown's secret** — in the King
+> fight, let his court fall and use the **Dragon Crown** on the King; his Royal
+> Guards must **never come back** for the rest of the fight, and the game shows
+> **no message** saying so (it should be discoverable-but-unexplained). Used on
+> anyone but the King it does nothing and is kept. **(6) High-stakes market** —
+> beat a boss at **town 7, depth 20+** on a **penalized/score-0** run
+> (accept a wager you can't out-turn, or a stakes penalty); over a few such runs
+> the black-market dealer should appear noticeably more often than the old 20 %
+> would explain, and reloading the entry autosave cannot reroll a given run's
+> result.
+>
 > **M46 update:** every screen was restyled by the procedural UI kit
 > (selection slabs + chevrons, keycap footers, framed meters, header bands,
 > shape-iconed banners; see `docs/ui_style_guide.md`). Rows below describe
 > **content and behavior**, which are unchanged — read visual phrasing
 > ("yellow cursor", "footer string") as the M46 equivalents. Capture scene
-> filenames remain valid (the set is 51 scenes as of M46).
+> filenames remain valid (the set is 51 scenes as of M46, 64 as of M52).
 >
 > **M27 update:** environment & ambience identity. Each of the six town
 > services (Inn, Item Shop, Equip Shop, Training Hall, Scoreboard, Guild) now
@@ -38,9 +131,9 @@ The older rows below are retained as historical baseline evidence and are **not*
 > enter Ruined Keep / Crystal Mine / Hollow Forest dungeons from the Guild and
 > confirm the ambience changes to that theme's bed (this was broken — the town
 > bed used to play in every dungeon), and returning to town switches back.
-> **Slider reroute (supersedes the M21-update note):** the
-> **SFX** slider now moves ambience volume and the **Music** slider no longer
-> does (music still follows Music) — check both in a dungeon. Missing-background
+> **Slider history (see the M52 update — this is now superseded):** M27 moved
+> ambience off the Music slider and onto the **SFX** slider; **M52 gives ambience
+> its own slider entirely** (see the M52 update below). Missing-background
 > drill: delete a `assets/textures/backgrounds/*.png` from the build → that
 > service falls back to its old flat fill, no crash.
 >
@@ -103,9 +196,10 @@ The older rows below are retained as historical baseline evidence and are **not*
 > footsteps cadence while walking (town + dungeon) without spamming; doors,
 > chests, merchant/omen interactions, and "cannot pay/afford" refusals each
 > have a distinct sound (refusals buzz, not the cancel blip); physical vs
-> magic hits vs status casts sound different in battle; volume sliders
-> (master/music/SFX) behave, persist, and ambience follows the music
-> slider; nothing clips at maximum volumes; rapid menu scrolling sounds
+> magic hits vs status casts sound different in battle; the volume sliders
+> (master/music/SFX/ambience since M52 — ambience originally followed music,
+> then SFX) behave and persist; nothing clips at maximum volumes; rapid menu
+> scrolling sounds
 > clean; delete any WAV from the build's `assets/audio/` → silence or
 > synth fallback + a log line, never a crash (drill scripted: title.wav);
 > a full run muted loses no essential information. Final soundscape
@@ -389,9 +483,43 @@ sound fires.
 | 122 | Elements do not break old fights (M48) | fight several untagged teams across themes | not run | not run | nothing about untagged encounters looks or feels different; no stray Weak!/Immune floats; damage numbers match expectations | n/a | n/a | 17_battle_five_enemies.png | not run |
 | 128 | Title phrase (M51) | open the title screen several times (New Game → back to title) | not run | not run | a different dry-comedy line appears (incl. "Geese and Dragons; Spoons and Snacks!"); **none describes the genre**; it pulses gently without moving layout; readable on any frame. **Tone check on the twelve lines** | n/a | title music | 01_title.png | not run |
 | 129 | Settings submenus (M51) | open Settings; enter each of Audio / Display / Gameplay / Controls; Cancel out of a submenu, then Cancel from the top | not run | not run | the top level lists the four categories + Reset + Back; each submenu holds its own rows; Cancel steps back one level, then (at top) saves and closes | cursor lands sensibly per level | move/confirm/cancel sfx | 03_settings.png, 60_settings_display.png | not run |
-| 130 | CRT effect (M51) | Display → CRT Effect → On; look at gameplay; toggle Off | not run | not run | subtle scanlines + faint mask appear, **no curvature** (pixels stay crisp and aligned); Off restores the plain image; no crash on any machine. **Judge whether it's tasteful or distracting** — default is Off | n/a | n/a | — (window-only; not in the capture set) | not run |
+| 130 | CRT Strength — off & basics (M57) | Display → CRT Strength; leave at **0**, then step to **1**; back to 0 | not run | not run | **0 is pixel-for-pixel the plain image** (toggle 0↔1 and confirm 0 is identical to no filter); 1 is barely visible (faint scanlines, no obvious curve); adjusting is immediate; default on a fresh install is **0**; no crash | n/a | move sfx on adjust | — (window-only; not in the capture set) | not run |
 | 131 | Background audio / focus (M51) | with Background Audio **Off** (default), click away from the window; then set it **On** and click away again | not run | not run | Off: music/ambience fall silent when the window loses focus and resume on return; On: audio keeps playing unfocused. **This is a deliberate behaviour change from always-on** | n/a | audio mutes/resumes | — | not run |
 | 132 | AoE screen tint (M51) | cast a mass spell (Inferno/Blizzard/Radiance), the Goose's ultimate, and a Dragon's sweep; then set Battle Flash to Reduced, then Off | not run | not run | a faint full-screen tint pulses once on impact — coral for damage, green for a party heal/buff, violet for a mass debuff; **Reduced halves it, Off removes it**; never a strobe, never over the message panel | n/a | n/a | 61_aoe_tint.png | not run |
+| 133 | Debug menu presence (M53, dev build) | in a **debug** build, open both pause menus (town Tab, dungeon Tab) and pick the **Debug** row; confirm it is NOT in a Release build | not run | not run | a scrolling cheat list appears from both pause menus; every row reads cleanly at 426×240 (longest label + widest value); a Release build has no Debug row at all | cursor visible, list scrolls | move/confirm/cancel sfx | 65_debug_menu.png | not run |
+| 134 | God mode (M53, dev build) | Debug → God mode ON; take a lethal hit and a poison tick in a fight; then clear a dungeon | not run | not run | no party member is ever KO'd (survivors clamp to 1 HP through hits AND poison); enemies still die normally; a run finished with god mode on does **not** post to the scoreboard | n/a | hit/KO sfx | — | not run |
+| 135 | Five save slots (M53) | Save Point → save into Slots 1–5; reload each via Continue/Load; open the Load screen with all six rows (autosave + 5) occupied | not run | not run | all five manual slots + autosave are visible and loadable at 426×240 with no clipping (even the King-title second line on the deepest row); a pre-M53 save with 3 slots still loads | cursor visible | save/load sfx | 43_slot_menu_load.png | not run |
+| 136 | Champion achievement (M53) | beat the Hollow King in **≤ 15** turns, then in **> 15** turns on another save | not run | not run | Champion unlocks only on a ≤15-turn King kill and its description reads "Defeat the Hollow King in 15 turns or fewer"; a slow King kill unlocks Kingslayer but not Champion; a save that already beat him fast enough shows Champion unlocked. **Judge whether N=15 is the right bar** | n/a | achievement toast | 39_achievements.png | not run |
+| 137 | Weapon element chips (M53) | Equip Shop → Buy → Weapons, highlight an elemental weapon (dragonfang/holy_mace/etc.); Equip → a member → Weapon and highlight one; open its Gear Details | not run | not run | a small coloured element chip (Fire/Holy/…) shows on the Buy info panel, beside the equip diff, and as an "Element:" line in Gear Details; non-elemental gear shows no chip; nothing overlaps the description | n/a | n/a | 62_equipshop_diff.png | not run |
+| 138 | CRT Strength — readability sweep (M57) | at each of **0 / 1 / 3 / 5 / 7 / 10** view: title, Settings→Display, a text-dense shop, Crystal Mine, a dungeon pause modal, an ordinary battle, and the Hollow King intro | not run | not run | the slider is one coherent continuum (**3** ≈ the old subtle CRT; **5–6** a convincing clean CRT; **8** a strong 1985 set; **10** heavy but usable); **no required text/HUD is cropped**, footer prompts stay readable, **8px text stays usable at sensible strengths**; deep dungeon detail isn't crushed; curvature is centred and symmetric; corners curve to black; letterbox bars stay clean. **Judge overall taste and where the default sweet spot sits** | n/a | n/a | — | not run |
+| 139 | CRT Strength — resolution & resize (M57) | with strength ~5–6, view at **1278×720**, **1920×1080** borderless/fullscreen, the **426×240 minimum**, and while **freely resizing** (drag between integer & fractional scales) | not run | not run | the slot mask is visible under inspection at ≥3× but does not dominate; it **fades out at 426×240** (no rainbow triads); no severe shimmer/moiré as the window resizes; changing size does **not** recreate GPU resources each frame; small windows + high strength are heavy but not broken | n/a | n/a | — | not run |
+| 140 | CRT Strength — safety & isolation (M57) | with a strength set: toggle **High Contrast**; open the **debug overlay** (F1, dev build); force a **shader compile failure** if possible (bad GPU/driver); run **--capture** | not run | not run | high-contrast still functions under the filter; the **debug overlay is drawn unfiltered** on top; a compile failure logs once and falls back to a clean plain blit (never a crash); **no screen-wide flicker/tearing/rolling/VHS**; `--capture` output is unchanged and byte-identical (pre-filter) | n/a | n/a | — | not run |
+| 141 | Equip refusal message clears (M58) | Equipment Shop → Equip → a class barred from a slot (e.g. a **Dragon** into **Armor**); read the *"A Dragon cannot equip Armor."* note; then Cancel back to the character/slot list, or pick another character | not run | not run | the refusal shows while you are on that slot, then **disappears** the moment you leave that character's / list's menu (it used to linger forever); buy feedback ("Bought…", "Not enough gold") clears the same way when you leave the buy list | n/a | error sfx on refusal | 09_equip_shop.png | not run |
+| 142 | Deadly Spoon applies once (M58) | in a battle, use a **Deadly Spoon** on a foe, then use a **second** Deadly Spoon on the **same** foe | not run | not run | the first halves its ATK/MAG/DEF/SPD ("…is diminished for the rest of the battle!"); the second reports the foe **is already diminished** and does **not** halve again (no quarter/eighth stacking) | n/a | item sfx | — | not run |
+| 143 | Geese scare the King (M58) | fight the **Hollow King** with **1+ Goose** in the party (more Geese = more often); watch several of the King's turns | not run | not run | roughly **10 % per living Goose** of the King's own turns he does nothing — *"The geese scare the King…"* flashes above the panel like a Jester quip and the resolve line says he loses his turn; **his court still acts**; a downed Goose stops counting; with **no** Goose it never happens. **Judge whether 10 %/Goose feels right, and whether the King needs rebalancing against a Goose party** | n/a | n/a | — | not run |
+| 144 | Goose Town unlock & road fork (M61) | fell the King with **≥ 1 Goose** in the party; walk town 7's north road; try both fork answers and Cancel; save in Goose Town, reload | not run | not run | the King-victory text announces Goose Town; the north road now shows a **Castle / Goose Town** prompt (Cancel steps back); without the unlock the road still leads straight to the castle; the unlock survives a save/reload; the Goofy Jester's tale fits its panel | cursor visible in the fork prompt | door/confirm sfx | 76_goose_town.png | not run |
+| 145 | The Duck gauntlet (M61) | fight the gauntlet; lose once, win once (bring the **Deadly Spoon** + healing — the itemless sim loses by design) | not run | not run | five Evil Geese first (each ~500 HP; occasional *"Quack."* turns, ~1 in 10 per goose), then the **Deadly Duck alone** (5000 HP, Crystal Shatter + his own waddling M62 theme): his basic attack hits the **whole party** and applies ATK-down + poison; your afflictions (poison/blind/Evil Goose/Tax Sheets…) **bounce off him** while the Spoon lands; Counter/Thorns/Spell Ward chips visible; no healing between the two fights; defeat pays the castle's 1-HP price. **Judge the difficulty bar** | HP bars/status tags fit six enemies and the big fight | King battle music on the Duck | 77_duck_battle.png | not run |
+| 146 | Pond records & exclusions (M61) | win the gauntlet; check the result, Goose Town records, achievements, bestiary; then run a Boss Rush and a dungeon | not run | not run | the result shows total gauntlet turns; **Quackbane** toasts; the Pond Records panel shows the best turns (a faster rerun improves it); the bestiary lists the Duck (max = ×5.00) and the Evil Geese; the Duck **never** appears in the Boss Rush or any dungeon and the geese never in endless waves; an ordinary dungeon battle and a King fight play exactly as before (rules v12 changes nothing pre-M61) | records panel not clipped | achievement toast | 76_goose_town.png | not run |
+| 147 | Purify heals nothing (M62) | with a **wounded, poisoned** party member, have the Cleric cast **Purify**; then cast **Generous Mending** (a Goose) on a wounded member | not run | not run | Purify lifts the afflictions and restores **zero HP** (no "recovers HP" line — until M62 it quietly healed magic/2); Generous Mending still heals; a Remedy item is unchanged | n/a | status sfx, no heal sfx on Purify | — | not run |
+| 148 | The Duck's own face & anthem (M62) | fight the Goose Town gauntlet; look and listen | not run | not run | the five Evil Geese each have a distinct bespoke sprite (helmed / hooded / mantled / belled / bog-stained goose — no longer the class-actor placeholder); the Duck is a big crownless dark duck rising from pond water; his fight plays a **lumbering waddle-march of its own**, not the King's theme; the result overlay's prompt reads **"Return to Goose Town"**. **Art & theme feel are the owner's call** | sprites read at 426×240 | the new duck theme | 77_duck_battle.png | not run |
+| 149 | Milestone choice flow (M63) | train a member to Lv.10 at the Training Hall; postpone (Cancel), leave, come back; then choose; load an OLD save with members past 10/20/30 | not run | not run | the two-option modal appears at the level-up moment; Cancel postpones and it returns at the next level-up / town arrival; Confirm is permanent (nowhere to change it); an old save prompts on town arrival — oldest tier first, every member in one visit; both option descriptions fit their boxes | cursor slab visible on either option | move/confirm/cancel sfx | 78_milestone_choice.png | not run |
+| 150 | Milestone effects in play (M63) | pick a stat bonus and check the menus; then verify battle picks: Guardian **Immovable** (first hit = 0), Ranger **Double Nock**, Cleric **Purifying Light** (Purify heals again for HER only), Goose **Selective Generosity** (heals stop bracing foes), a KO'd **Cutpurse** (no gold bonus) | not run | not run | stat picks change the visible stats immediately; each battle pick behaves as its description says; a member WITHOUT the pick behaves as before (the Purify nerf stays for everyone else). **Judge the table's balance — flag any dominant or dud row** | n/a | n/a | — | not run |
+| 151 | Party panel (M64) | pause in town AND in a dungeon → **Party**; browse all four members with 12-char names | not run | not run | both pause menus list Party; the detail shows HP/MP, XP-to-next, the four stats each with its "(+N gear)" share (cross-check one against the Equip Shop), gear names, the equipped passive + owned count, milestone choices (or "Lv.N unchosen"), and every known skill; nothing clips | list cursor + slab visible | move/cancel sfx | 79_party_panel.png | not run |
+| 152 | Scrolls teach (M64) | obtain a **Scroll of Fireball** (chest/shop); Party → Confirm → pick it → teach a Knight; try teaching the same scroll again; teach a Mage who knows Fireball; save + reload | not run | not run | the Knight learns Fireball permanently (battle Skill menu; `*` on the panel; survives reload); the scroll is consumed on success only; repeat-teaching and the knowing Mage refuse with a reason and KEEP the scroll | picker readable | heal sfx on learn, error on refusal | — | not run |
+| 153 | Map pieces & the puzzle (M65) | run dungeons until a gold **?** scrap appears in a plain room; take pieces 1–3 and watch **Pause → Maps** fill; take the FOURTH in a different town | not run | not run | ~1 dungeon in 10 hides a piece (never in event/boss/treasure rooms; a reload cannot move it); each pickup states the count; the Maps sketch fills TL→TR→BL→BR; the fourth announces the treasure IN THAT RUN'S TOWN and the Maps screen names the guardian | quadrants readable | chest sfx on pickup | 80_puzzle_map.png | not run |
+| 154 | The dig & the Lost Scrolls (M65) | in the revealed town find the X **Dig Site**; lose once, then win; pick a member for the scroll; repeat cycles | not run | not run | the dig warns before the fight (guard + court at the final dungeon's scale, Crystal Shatter); defeat = 1-HP clamp and the map keeps the spot; victory forces an on-the-spot student pick (a knowing member refuses; another is picked); the skill appears (Party panel `*`, battle menu); six unique scrolls then token+gold; everything persists across save/reload. **Judge the ~10% piece rate and the guard difficulty** | picker + overlay fit | victory sfx | 81_treasure_dig.png | not run |
+| 155 | The dungeon chart (M66) | run dungeons until a cyan **M** scrap appears (~1 in 8); read it; follow the minimap X; dig; also once: leave the dungeon WITHOUT digging | not run | not run | reading reveals the X on the minimap + a gold "Treasure!" HUD chip; the buried room shows a red X; digging names a curio matching the run's theme (until its four are owned); leaving without digging loses the map with the run (single-use) | X visible on visited and unvisited rooms | chest sfx | — | not run |
+| 156 | Curios & Curator (M66) | check **Pause → Maps** in town after a few digs; complete all twelve (debug tools help); dig once more; save/reload | not run | not run | the collection grid names owned curios and masks the rest; **Curator** toasts at 12/12; the next buried treasure pays **+1 legendary token**; curios persist; the Maps screen (parchment + status + grid) stays uncluttered at 426×240. **Judge the ~12% chart rate and the screen density** | grid readable | achievement toast | 82_curio_collection.png | not run |
+| 157 | Boss victory returns to town (M67) | clear a dungeon boss with a member about to cross Lv.10/20/30 (or a postponed milestone pending); separately clear one with nothing pending | not run | not run | with a choice pending: result screen → "Return to Town" → the **milestone modal appears over the dungeon backdrop** → choose or postpone → you land in **town** (never back in the dungeon, no re-fightable boss, no double score); with nothing pending: result → town directly; defeat and Escape flows unchanged | modal + result both readable | result music, then town | 19_result.png | not run |
+| 158 | Class portraits & panel descriptions (M67) | open Party (both pause menus); Training Hall (member list, character menu, passives); level a member to a milestone; Equip Shop → Equip a member | not run | not run | every party-panel row leads with its class battle sprite; the equipped passive and each chosen milestone show a **hint-coloured description** under their name; unchosen reached tiers compress to "Milestone unchosen: Lv.N, …"; the Training Hall portrait follows the member-list cursor and pins on the later screens; the milestone modal carries the chooser's portrait; the Equip Shop portrait follows the cursor then pins through slot/item; Buy phases show none. **Judge whether the 2× portraits and the denser detail column read well** | nothing clips at 426×240 | n/a | 79_party_panel.png | not run |
+| 159 | Load-screen slot rows (M67) | open Load with occupied titled slots (post-King save); move the cursor across all six rows | not run | not run | rows read `Slot N  -  Lv.X  Ng` (no "party 4"); a titled row's King title sits **fully inside** the selection slab (both lines covered); untitled rows keep the shorter slab; nothing overlaps the next row | slab covers both lines | move sfx | 43_slot_menu_load.png | not run |
+| 160 | Chart prompt un-latches (M67) | find an M66 chart; walk ACROSS its tile without pressing Confirm; step off; open a chest and start a battle; step back on and read it; repeat for the buried X | not run | not run | the "Read the weathered map" / "Dig up" footer prompt shows **only while standing on the tile** and vanishes on step-off; Confirm still opens chests and starts battles afterwards (it used to be silently swallowed for the rest of the run); standing back on the tile reads/digs normally | footer prompt swaps correctly | chest sfx on read/dig | — | not run |
+| 161 | Victory spoils panel (M68) | win a gate fight without level-ups; win one that levels 1+ members (a fresh party gains levels fast); win a boss fight; try a castle challenge | not run | not run | a compact panel over the battlefield shows `+N XP each  +N gold` (plus, per leveled member: `Name Lv.a > b`, the non-zero stat gains, `New:` skills in gold); **ONE Confirm continues — the exact press that always ended a battle**; the dungeon HUD message no longer repeats the reward; a level past 10/20/30 prompts the milestone choice right after the battle; castle fights show no spoils panel; a diff cross-checks against the Party panel. **Judge the panel's feel — it must not slow the loop** | panel fits over four leveled 12-char members | victory jingle unchanged | 83_battle_spoils.png | not run |
+| 162 | Party-relative threat labels (M68) | with your strong party, enter a dungeon you find easy and read every team label (Guild preview + in-dungeon); repeat with a fresh/underleveled party on a hard town; level mid-run and re-read a label | not run | not run | the strong party reads mostly **Trivial/Easy/Fair** with Dangerous/Deadly only on genuinely nasty teams (the old build read nearly everything Deadly at towns 3+); the weak party reads the same seeds Dangerous/Deadly; labels do NOT shift mid-run (snapshotted at entry — by design, so the score credit matches the preview); new scoreboard entries tag **v14**. **Judge the calibration bands** | labels readable everywhere they show | n/a | — | not run |
+| 163 | Town exteriors (M69) | walk every town: enter all five services via their doorsteps; interact with the Scoreboard stele and the Save crystal; check towns 2–7 | not run | not run | the five houses read as real buildings — per-service roof colors, lit windows, an emblem pennant, the **door built into the facade** with a path doorstep below (no door tile sticking out); the Scoreboard is a freestanding engraved stone sheet (2×2) and the Save Point a cyan crystal (1×1), both interacted from the tile in front; every entrance/interaction works exactly as before; the freed ground tiles are walkable; facades sit acceptably on the darker per-town ground. **Art judgment is the owner's — roofs, pennants, stele, crystal** | labels + facades read at 426×240 | door sfx unchanged | 06_town.png | not run |
+| 164 | CRT Curvature separated (M70) | Settings → Display: sweep both sliders; view the §11 combos (0/0, 7/0, **7/2–3**, 7/5, 7/10, 3/3, 10/3) at 1278×720, 1080p/borderless, 426×240, and one freely resized window, across title / Display / a shop / Crystal Mine / pause modal / battle / a boss / High Contrast; load a pre-M70 settings file with strength 7 | not run | not run | Strength 0 = exact unfiltered image regardless of curvature; **Curvature 0 = perfect rectangle** (no bend, no rounded corners, no edge mask) while strength effects stay fully present; 7/2–3 = the strong CRT texture with only mild glass; changing curvature does not visibly weaken scanlines/mask/glow/chroma/tone/grain; nothing essential crops at 10; centred + symmetric; both sliders apply instantly with no hitch; the old strength-7 file loads as Strength 7 / Curvature 3; capture stays pre-shader; the debug overlay stays unfiltered. **Judge the pow(C,1.35) feel and the 7/2–3 target** | Display list fits at 7 rows | move sfx per step | 60_settings_display.png | not run |
+| 165 | Victory celebration (M71) | clear a dungeon that is fully clean (no stakes penalty, positive score, zero escapes); clear one WITH a penalty, one with an escape, and a zero-score one; clear one where a member ended KO'd (incl. the damage MVP); beat the King, the Duck gauntlet, and the Boss Rush; run the Endless Rush; lose a challenge; celebrate several times | not run | not run | ONLY the fully clean clear shows the celebration FIRST (Victory! plaque, the score alone in gold, a **random dry punchline** beneath — varying across celebrations — and confetti), then Confirm → the usual detailed reckoning; a stakes penalty, an escape, or a 0-score all skip straight to the reckoning; every standing member jumps at a visibly different rhythm/height, the **MVP stands named on the centre pedestal** with the gold chip (jumping higher); a KO'd member lies horizontal, dimmed, not jumping — and a **KO'd MVP lies in state ON the pedestal, chip and name intact** (owner-confirmed comedy); the King/Duck/Boss-Rush wins show the same screen with "Cleared in N turns!" before their result overlay; the Endless Rush and all losses never celebrate. **Judge the jump feel, pedestal, confetti density, and the punchline pool's voice** | headline + punchline + MVP name fit | fanfare (Result) music during the celebration | 84_celebration.png | not run |
+| 166 | Party panel reflow (M72) | open Party with a maxed member (Lv.99, three chosen milestones incl. a long description like Martyr's, a full skill list); also with a fresh low-level member | not run | not run | HP/MP and the four stats (with their "(+N gear)" shares) sit in their own frame **under the member roster** and track the selection; every milestone/passive description is fully visible (long ones wrap to a second line — nothing runs off the edge); the skills list is complete and ends with its "(* from a scroll)" legend; a low-level member's panel still reads cleanly. **Judge whether stats-under-roster reads naturally** | nothing clips at 426×240 | move/cancel sfx | 79_party_panel.png | not run |
 
 ## Session-verified summary (2026-07-19, automated keyboard driving)
 
