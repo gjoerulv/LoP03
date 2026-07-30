@@ -208,6 +208,17 @@ every member that leveled (stat gains, newly learned skills) — dismissed by
 the same single Confirm that always ended a battle; no extra screen, no
 extra presses. Castle-tier fights keep their own flat rewards.
 
+**The victory celebration (M71).** A dungeon cleared with **zero stakes
+penalty** opens on a celebration before the detailed reckoning: the score
+alone in gold with one random dry punchline beneath it (a twelve-line
+in-world pool, the title-phrase idiom), confetti, the party jumping each
+to their own rhythm and
+height, the run's MVP (most damage dealt) named on a centre pedestal, and
+any KO'd member lying where they fell — the fallen do not jump. Beating
+the King, the Deadly Duck, or the Boss Rush earns the same screen with
+the clear's turn count; the Endless Rush, penalized runs, and losses
+never celebrate.
+
 **Status effects (M35, extends M7).** Beyond poison and the attack/defense
 buffs/debuffs, three afflictions deepen the tactics. **Blind** makes a unit's
 physical attacks usually miss (the game's first to-hit roll — magic and items are

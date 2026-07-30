@@ -5,11 +5,18 @@
 // is applied ONLY around the final window blit in VirtualScreen::blitToWindow
 // (never to the capture path, which exports the pre-shader virtual target).
 //
-// Design contract (see docs/milestone_notes/M57_crt_strength.md):
+// Design contract (see docs/milestone_notes/M57_crt_strength.md and the M70
+// strength/curvature split in docs/milestone_notes/M70_crt_curvature.md):
 //   * intensity 0 never runs this shader at all (VirtualScreen uses the plain
 //     DrawTexturePro path), so 0 == the exact unfiltered image;
-//   * every sub-effect is driven by its OWN non-linear activation curve of the
-//     0..1 intensity, so the slider reads as one coherent continuum;
+//   * every NON-GEOMETRIC sub-effect is driven by its OWN non-linear
+//     activation curve of the 0..1 intensity, so that slider reads as one
+//     coherent continuum;
+//   * ALL geometry — barrel warp, pre-warp inset, rounded corners, the
+//     curved-screen edge mask, and the curvature share of the vignette — is
+//     driven ONLY by the 0..1 crtCurvature uniform (M70). Curvature 0 is an
+//     exact identity mapping: no inset, no warp, no corner rounding, no edge
+//     mask, a perfectly rectangular image (a hard acceptance criterion);
 //   * a fixed, restrained texture-sample count (11) — no loops, no dynamic
 //     bounds, no intermediate render target;
 //   * the scan structure is anchored to the 240-line virtual source; the RGB
@@ -17,7 +24,8 @@
 //     when the window is too small to resolve a triad.
 //
 // Uniforms supplied by VirtualScreen (locations cached once):
-//   crtIntensity   float  0..1
+//   crtIntensity   float  0..1  (strength: every non-geometric effect)
+//   crtCurvature   float  0..1  (geometry only, M70)
 //   crtSourceRes   vec2   virtual resolution (426 x 240)
 //   crtOutputRes   vec2   viewport size in framebuffer pixels
 //   crtSourceTexel vec2   1/sourceRes (source texel size)
@@ -32,7 +40,8 @@ in vec4 fragColor;
 uniform sampler2D texture0;
 uniform vec4 colDiffuse;
 
-uniform float crtIntensity;    // 0..1
+uniform float crtIntensity;    // 0..1 (strength: non-geometric effects)
+uniform float crtCurvature;    // 0..1 (geometry only, M70)
 uniform vec2  crtSourceRes;    // 426 x 240
 uniform vec2  crtOutputRes;    // viewport size in framebuffer pixels
 uniform vec2  crtSourceTexel;  // 1 / sourceRes
@@ -54,35 +63,49 @@ float hash21(vec2 p) {
 
 void main() {
     float I = clamp(crtIntensity, 0.0, 1.0);
+    float C = clamp(crtCurvature, 0.0, 1.0);
 
-    // Per-component non-linear activation curves (see section 6 of the spec):
+    // Per-component non-linear activation curves (M57 section 6). All of these
+    // derive from STRENGTH only:
     float scanAct   = 0.55 * pow(I, 0.8);         // scanlines: immediate, moderate
     float maskAct   = smoothstep(0.20, 1.00, I);  // slot mask: from ~0.2
     float beamAct   = smoothstep(0.25, 1.00, I);  // beam spread: from ~0.25
     float glowAct   = smoothstep(0.30, 1.00, I);  // glow: from ~0.3
-    float curveAct  = smoothstep(0.20, 0.75, I);  // curvature/vignette: obvious ~0.5
     float chromaAct = smoothstep(0.40, 1.00, I);  // chroma bleed: from ~0.4
     float grainAct  = smoothstep(0.70, 1.00, I);  // grain: from ~0.7
     float toneAct   = smoothstep(0.15, 1.00, I);  // tonal response
+
+    // M70: geometry derives from CURVATURE alone. pow gives low-end precision:
+    // 2-3/10 mild curved glass, 5 clearly curved, 10 ~ the old authored max.
+    float curveAct  = pow(C, 1.35);
 
     // Screen-space coord: the mask and vignette live on the physical glass, so
     // they are anchored to the flat screen, not the warped image.
     vec2 screenUv = fragTexCoord;
 
-    // --- A. barrel curvature (identity when curveAct == 0, so no crop at 0) ---
+    // --- A. barrel curvature (exact identity when curveAct == 0: no inset,
+    // --- no warp, no crop) ---
     vec2 cc = screenUv * 2.0 - 1.0;
     cc *= 1.0 + 0.045 * curveAct;                 // slight inset before curving
     vec2 warp = (cc.yx * cc.yx) * (0.22 * curveAct);
     cc += cc * warp;
     vec2 uv = cc * 0.5 + 0.5;
 
-    // --- B. rounded screen edge + gentle vignette ---
+    // --- B. curved screen edge (curvature only) + the M70 split vignette ---
     float b = mix(0.0006, 0.006, curveAct);       // near-zero AA when flat
     vec2 edge = smoothstep(vec2(0.0), vec2(b), uv) *
                 smoothstep(vec2(0.0), vec2(b), 1.0 - uv);
-    float screenMask = edge.x * edge.y;           // 0 outside the curved glass
+    // At curvature 0 the mask is forced fully open: a perfect rectangle, no
+    // rounded corners, not even the sub-pixel AA sliver.
+    float screenMask = mix(1.0, edge.x * edge.y, step(0.0001, curveAct));
     vec2  vc  = uv * 2.0 - 1.0;
-    float vig = clamp(1.0 - dot(vc, vc) * 0.20 * curveAct, 0.0, 1.0);
+    // Vignette split (M70): a restrained STRENGTH-driven optical falloff that
+    // never imitates curved corners, plus extra CURVATURE-driven darkening
+    // that arrives with the glass.
+    float flatVignetteAct   = smoothstep(0.35, 1.0, I);
+    float curvedVignetteAct = curveAct;
+    float vig = clamp(1.0 - dot(vc, vc) * 0.06 * flatVignetteAct, 0.0, 1.0) *
+                clamp(1.0 - dot(vc, vc) * 0.16 * curvedVignetteAct, 0.0, 1.0);
 
     // --- E/G. horizontal beam spread + chroma convergence ---
     float edgeDist = clamp(dot(vc, vc), 0.0, 1.0);        // 0 centre -> 1 corner

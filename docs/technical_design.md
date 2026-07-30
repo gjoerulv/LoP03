@@ -1467,29 +1467,40 @@ optional bools with defensive parse, so old `settings.json` loads unchanged.
 - **CRT post-process (M57).** `VirtualScreen` owns an advanced single-pass
   GLSL-330 fragment shader whose source lives in `render/CrtShaderSource.hpp`
   (`cd::kCrtFragmentSource`, `LoadShaderFromMemory` — no asset, no dependency).
-  It is driven by a **0.0–1.0 strength** (`settings.crtIntensity`, exposed as a
-  0–10 slider); at each rising strength more of a stable ~1985 consumer CRT
-  appears — barrel curvature, a rounded black edge + vignette, source-anchored
-  scanlines (dark gaps, never dead rows), a **destination-pixel** RGB slot mask
-  that fades below ~2× scale, horizontal beam spread, luminance-thresholded
-  bright-pixel glow, chroma convergence, a mild tonal response, and restrained
-  high-strength grain — each on its own non-linear activation curve.
-  `setCrtIntensity(float)` clamps, compiles the shader **lazily on the first
-  strength > 0** (at most once) and caches five uniform locations
-  (`crtIntensity`, `crtSourceRes`, `crtOutputRes`, `crtSourceTexel`, `crtTime`),
-  then `blitToWindow` sets them and wraps the `DrawTexturePro` in
-  `BeginShaderMode`/`EndShaderMode`. **Strength 0 uses the plain blit and never
-  compiles the shader**, so 0 is the exact unfiltered image at only a float's
-  cost. A compile failure degrades to raylib's default passthrough shader
-  (detected via the missing `crtIntensity` uniform), logged once → plain blit.
+  It is driven by TWO persistent 0.0–1.0 settings, each a 0–10 slider (M70
+  split): **strength** (`settings.crtIntensity`) drives every non-geometric
+  effect — source-anchored scanlines (dark gaps, never dead rows), a
+  **destination-pixel** RGB slot mask that fades below ~2× scale, horizontal
+  beam spread, luminance-thresholded bright-pixel glow, chroma convergence,
+  a mild tonal response, restrained high-strength grain, and a restrained
+  flat optical vignette (`0.06 · smoothstep(0.35,1,I)`, radial, never
+  corner-cutting) — each on its own non-linear activation curve; and
+  **curvature** (`settings.crtCurvature`, default 0.3) drives ALL geometry —
+  pre-warp inset, barrel warp, the rounded curved-screen edge mask, and an
+  extra edge darkening (`0.16 · curveAct`) — via
+  `curveAct = pow(C, 1.35)`. **Curvature 0 is an exact identity**: no inset,
+  no warp, and the edge mask is forced fully open, a perfect rectangle.
+  `setCrt(float intensity, float curvature)` clamps both, compiles the
+  shader **lazily on the first strength > 0** (at most once; curvature never
+  triggers it) and caches six uniform locations (`crtIntensity`,
+  `crtCurvature`, `crtSourceRes`, `crtOutputRes`, `crtSourceTexel`,
+  `crtTime`), then `blitToWindow` sets them and wraps the `DrawTexturePro`
+  in `BeginShaderMode`/`EndShaderMode`. **Strength 0 uses the plain blit and
+  never compiles the shader** — whatever curvature says — so 0 is the exact
+  unfiltered image at only two floats' cost. A compile failure degrades to
+  raylib's default passthrough shader (detected via the missing uniforms),
+  logged once → plain blit.
   The pass is a fixed 11 texture samples (no loops, no intermediate target).
   **Capture is unaffected by construction**: `exportImage` reads the pre-shader
   render target, not the window. `Application` calls
-  `setCrtIntensity(settings.crtIntensity)` each frame (a cheap float).
-  The setting is defensive: a valid numeric `crtIntensity` wins; else the legacy
-  M51 `crtEffect` bool migrates (`true→0.3`, `false→0.0`); absent → 0.0; malformed
-  → reported + safe default. Only `crtIntensity` is serialized; **no
-  `kSettingsVersion` bump**.
+  `setCrt(settings.crtIntensity, settings.crtCurvature)` each frame (one
+  pair, so no frame sees mismatched halves).
+  Both settings are defensive: a valid numeric `crtIntensity` wins; else the
+  legacy M51 `crtEffect` bool migrates (`true→0.3`, `false→0.0`); absent →
+  0.0; malformed → reported + safe default. `crtCurvature` is optional:
+  absent → **0.3** (so a pre-M70 strength-7 file keeps its texture but
+  relaxes to mild glass), malformed → reported + 0.3, out-of-range clamped.
+  Both are serialized; `crtEffect` never is; **no `kSettingsVersion` bump**.
 - **Focus audio.** `Application::processFrame` calls
   `audio_.setEnabled(IsWindowFocused() || settings_.values.backgroundAudio)` once
   per frame (`setEnabled` early-returns when unchanged). Default mutes on blur.
@@ -2008,4 +2019,19 @@ renders as the path (a doorstep — the visible door lives in the facade).
 the seven-`Building` contract, door-trigger mechanics, and the `[town]`
 layout invariants are unchanged. Sprites come from the generator's M69
 section (appended + reseeded; prior files byte-identical).
+
+## 27. M71 — the victory celebration
+
+`states/CelebrationState` — presentation-only (reads the party, writes
+nothing): the score/turns headline, one random dry punchline beneath it
+(`states/CelebrationPhrases.hpp`, the TitlePhrases idiom —
+`GetRandomValue`, capture-deterministic, lint-pinned pool), per-slot jump
+rhythm tables, the MVP
+pedestal (M42 `RunStats::mvpMember`; `CastleChallengeState` now owns a
+`RunStats` and feeds it to its battles), KO'd members drawn horizontal
+and dimmed. Pushed by `DungeonState::completeDungeon` only when
+`stakesPenaltyPct == 0`, and by `CastleChallengeState::finish(true)` for
+King/Duck/BossRush (never Endless, never losses) — always above the
+respective result surface, so the celebration shows first and one
+Confirm falls through to the reckoning.
 

@@ -25,11 +25,13 @@ void VirtualScreen::beginDraw(Color clear) const {
 
 void VirtualScreen::endDraw() const { EndTextureMode(); }
 
-void VirtualScreen::setCrtIntensity(float intensity) {
+void VirtualScreen::setCrt(float intensity, float curvature) {
     crtIntensity_ = std::clamp(intensity, 0.0f, 1.0f);
-    // Compile lazily the first time strength becomes > 0 (at most once). While
-    // strength stays 0 the shader is never compiled, so 0 costs only this float
-    // comparison beyond the plain blit.
+    crtCurvature_ = std::clamp(curvature, 0.0f, 1.0f);  // M70: geometry only
+    // Compile lazily the first time strength becomes > 0 (at most once); the
+    // curvature value never triggers a compile on its own. While strength
+    // stays 0 the shader is never compiled, so 0 costs only these float
+    // comparisons beyond the plain blit.
     if (crtIntensity_ > 0.0f && !crtTried_) {
         crtTried_ = true;  // compile at most once, whatever the outcome
         // On a compile failure raylib logs the GLSL error and returns the DEFAULT
@@ -40,13 +42,14 @@ void VirtualScreen::setCrtIntensity(float intensity) {
         if (s.id > 0) {
             crtShader_ = ShaderHandle(s);
             crtLocIntensity_ = GetShaderLocation(crtShader_.get(), "crtIntensity");
+            crtLocCurvature_ = GetShaderLocation(crtShader_.get(), "crtCurvature");
             crtLocSourceRes_ = GetShaderLocation(crtShader_.get(), "crtSourceRes");
             crtLocOutputRes_ = GetShaderLocation(crtShader_.get(), "crtOutputRes");
             crtLocSourceTexel_ = GetShaderLocation(crtShader_.get(), "crtSourceTexel");
             crtLocTime_ = GetShaderLocation(crtShader_.get(), "crtTime");
             // Our uniforms resolve only when the shader really compiled; the
             // default fallback lacks them (loc < 0), which the blit guards against.
-            crtReady_ = crtLocIntensity_ >= 0;
+            crtReady_ = crtLocIntensity_ >= 0 && crtLocCurvature_ >= 0;
             if (!crtReady_) {
                 log::warn("CRT shader unavailable; using a plain blit.");
             }
@@ -73,6 +76,7 @@ void VirtualScreen::blitToWindow(int windowWidth, int windowHeight, Color bars) 
         const float time = static_cast<float>(GetTime());
         const Shader& sh = crtShader_.get();
         SetShaderValue(sh, crtLocIntensity_, &crtIntensity_, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(sh, crtLocCurvature_, &crtCurvature_, SHADER_UNIFORM_FLOAT);
         SetShaderValue(sh, crtLocSourceRes_, sourceRes.data(), SHADER_UNIFORM_VEC2);
         SetShaderValue(sh, crtLocOutputRes_, outputRes.data(), SHADER_UNIFORM_VEC2);
         SetShaderValue(sh, crtLocSourceTexel_, sourceTexel.data(), SHADER_UNIFORM_VEC2);

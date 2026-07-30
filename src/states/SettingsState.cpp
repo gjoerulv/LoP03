@@ -39,6 +39,13 @@ std::string crtStrengthLabel(float intensity) {
     return std::string("CRT Strength:  < ") +
            std::to_string(settings::crtStrengthStep(intensity)) + " >";
 }
+
+// M70: curvature is its own 0..10 slider. Always shown and adjustable — even
+// at strength 0 (where it is dormant) hidden coupling would only confuse.
+std::string crtCurvatureLabel(float curvature) {
+    return std::string("CRT Curvature:  < ") +
+           std::to_string(settings::crtCurvatureStep(curvature)) + " >";
+}
 }  // namespace
 
 SettingsState::SettingsState(StateStack& stack, AppContext& context)
@@ -99,6 +106,7 @@ void SettingsState::rebuild() {
                     " >",
                 Row::Window);
             add(crtStrengthLabel(v.crtIntensity), Row::CrtStrength);
+            add(crtCurvatureLabel(v.crtCurvature), Row::CrtCurvature);
             add(std::string("Battle Flash:  < ") +
                     std::string(settings::effectLevelName(v.effectFlash)) + " >",
                 Row::BattleFlash);
@@ -167,6 +175,9 @@ void SettingsState::adjust(Row row, int direction) {
         case Row::CrtStrength:
             // Same safe step/clamp discipline as volume; Application reads it each frame.
             v.crtIntensity = stepVolume(v.crtIntensity);
+            break;
+        case Row::CrtCurvature:
+            v.crtCurvature = stepVolume(v.crtCurvature);
             break;
         case Row::BattleFlash:
             v.effectFlash = static_cast<settings::EffectLevel>(cycle3(static_cast<int>(v.effectFlash)));

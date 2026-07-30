@@ -12,6 +12,7 @@
 #include "content/LoadReport.hpp"
 #include "settings/Settings.hpp"
 #include "states/AoeTint.hpp"
+#include "states/CelebrationPhrases.hpp"  // M71
 #include "states/TitlePhrases.hpp"
 #include "ui/TextLayout.hpp"
 
@@ -67,6 +68,30 @@ TEST_CASE("title phrases: every phrase fits the title width", "[options][title]"
     for (const char* phrase : kTitlePhrases) {
         INFO(phrase);
         CHECK(measure(phrase, 8) <= kMaxWidth);
+    }
+}
+
+TEST_CASE("celebration phrases: non-empty, genre-free, and fit the screen (M71)",
+          "[options][celebration]") {
+    // Same conservative 7px/char over-estimate as the title lint; the line
+    // draws centred at font 10 with an edge margin.
+    const auto measure = [](const std::string& text, int fontSize) {
+        return static_cast<int>(text.size()) * (fontSize * 7) / 10;
+    };
+    constexpr int kMaxWidth = 426 - 32;
+    for (const char* phrase : kCelebrationPhrases) {
+        const std::string s = phrase;
+        INFO(phrase);
+        REQUIRE_FALSE(s.empty());
+        CHECK(measure(s, 10) <= kMaxWidth);
+        // The same genre-word ban the title pool obeys.
+        std::string lower = s;
+        std::transform(lower.begin(), lower.end(), lower.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        for (const char* banned : {"roguelite", "roguelike", "rpg", "jrpg", "dungeon-score",
+                                   "turn-based"}) {
+            CHECK(lower.find(banned) == std::string::npos);
+        }
     }
 }
 

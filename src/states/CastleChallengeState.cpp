@@ -19,6 +19,7 @@
 #include "render/BattleBackdrop.hpp"
 #include "states/BattleState.hpp"
 #include "states/BossIntroState.hpp"
+#include "states/CelebrationState.hpp"  // M71
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
@@ -91,13 +92,15 @@ void CastleChallengeState::startNextFight() {
     // Crystal Shatter, which then launches the same battle. Endless waves have no
     // bossId and stay plain. The intro seed is a stable function of the wave.
     const std::uint64_t introSeed = 0xB055C0DE0000ull + static_cast<std::uint64_t>(wave_);
+    // M71: the challenge accumulates its own damage tallies so the celebration
+    // can put the true MVP on the pedestal.
     if (!team.bossId.empty()) {
         stack().pushState(std::make_unique<BossIntroState>(
-            stack(), context_, std::move(b), &result_, music, nullptr, /*castleChallenge=*/true,
+            stack(), context_, std::move(b), &result_, music, &stats_, /*castleChallenge=*/true,
             render::BackdropStage::Castle, introSeed));
     } else {
         stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &result_,
-                                                        music, nullptr, /*castleChallenge=*/true,
+                                                        music, &stats_, /*castleChallenge=*/true,
                                                         render::BackdropStage::Castle));
     }
 }
@@ -238,8 +241,16 @@ void CastleChallengeState::finish(bool cleared) {
                "but nothing is healed - find an inn.";
     }
     resultText_ = msg;
+    // M71: beating the King, the Deadly Duck, or the Boss Rush earns the
+    // celebration (the Endless Rush has no "beating"): shown above this
+    // state's result overlay, headline = the challenge's turns.
+    if (cleared && kind_ != CastleChallenge::Endless) {
+        stack().pushState(std::make_unique<CelebrationState>(
+            stack(), context_,
+            "Cleared in " + std::to_string(totalRounds_) + " turns!", stats_.mvpMember()));
+    }
     // M42: a challenge win may unlock castle achievements; toast them above the
-    // result overlay this state renders.
+    // result overlay this state renders (and above the celebration).
     pushAchievementToasts(stack(), context_, AchvContext{});
 }
 

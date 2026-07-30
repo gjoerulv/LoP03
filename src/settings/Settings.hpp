@@ -37,6 +37,9 @@ std::optional<EffectLevel> effectLevelFromName(std::string_view name);
 // value is a 0..1 intensity; the player sees an integer 0..10.
 int crtStrengthStep(float intensity);       // round(clamp01(intensity) * 10) -> 0..10
 float crtIntensityFromStep(int step);        // clamp(step, 0, 10) / 10 -> 0..1
+// M70: CRT curvature shares the same 0..1 <-> 0..10 conversion discipline.
+int crtCurvatureStep(float curvature);
+float crtCurvatureFromStep(int step);
 
 // Seconds a battle action's resolve pause lasts (Confirm always skips it).
 float resolveSeconds(BattleSpeed s);
@@ -64,6 +67,13 @@ struct Settings {
     // Optional field; absent falls back to the legacy M51 crtEffect bool
     // (true -> 0.3 preserves the old subtle look, false -> 0.0), else 0.0.
     float crtIntensity = 0.0f;
+    // M70 (owner-specified): CRT screen curvature, 0.0..1.0, its own 0..10
+    // slider — geometry (barrel warp, inset, rounded corners, curved-edge
+    // masking) now follows THIS value alone, never CRT Strength. Optional
+    // field; absent = 0.3 (mild curved glass — deliberately, so an existing
+    // strength-7 file loses its excessive curl but keeps a gentle curve).
+    // Dormant while strength is 0 (the plain blit runs regardless).
+    float crtCurvature = 0.3f;
     // M51 (owner-approved), optional bool, absent = false so older files load
     // unchanged: keep audio playing while the window is unfocused (Off default =
     // mute when unfocused, a deliberate behaviour change).

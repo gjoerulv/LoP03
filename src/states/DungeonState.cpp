@@ -35,6 +35,7 @@
 #include "states/MilestoneChoiceState.hpp"  // M63
 #include "states/BattleState.hpp"
 #include "states/BossIntroState.hpp"
+#include "states/CelebrationState.hpp"  // M71
 #include "states/DungeonMenuState.hpp"
 #include "states/DetailsOverlayState.hpp"
 #include "states/DungeonResultState.hpp"
@@ -931,6 +932,14 @@ void DungeonState::completeDungeon() {
     }
     stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total, drops,
                                                            victoryStats_));
+
+    // M71: a CLEAN run — no stakes penalty — earns the celebration, shown above
+    // the reckoning: the score alone, the team jumping to their own beats, the
+    // MVP on the pedestal, the fallen lying where they fell.
+    if (stakesPct == 0) {
+        stack().pushState(std::make_unique<CelebrationState>(
+            stack(), context_, TextFormat("Score: %d", total), victoryStats_.mvpMember()));
+    }
 
     // M42: unlock any achievements this run earned, and toast them (pushed above
     // the result, so they show first, then the reckoning).

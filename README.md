@@ -44,7 +44,11 @@ music, or text. Built in **C++20** with **raylib**.
 > with level-up diffs on the battle's own final beat, and threat labels
 > recalibrated to be relative to YOUR party), and **M69** (real town
 > facades with integrated doors; the Scoreboard as a stone monument and
-> the Save Point as a crystal). After those, only the
+> the Save Point as a crystal), **M70** (CRT Strength and CRT
+> Curvature as separate 0–10 sliders — the screen only bends as much as
+> you ask), and **M71** (a victory celebration after flawless-stakes
+> clears and the great challenge wins — the team jumping, the MVP on a
+> pedestal). After those, only the
 > deferred **validation playtesting (M23)** and **release sign-off (M24)**
 > remain. Current status always lives in `docs/milestones.md`.
 

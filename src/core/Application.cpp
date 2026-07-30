@@ -207,9 +207,10 @@ void Application::processFrame() {
   // (Capture runs its own loop, not this one, and forces audio off — unaffected.)
   audio_.setEnabled(IsWindowFocused() || settings_.values.backgroundAudio);
 
-  // M57: the CRT post-process follows its 0..1 strength setting (a cheap float;
-  // the shader stays uncompiled while strength is 0).
-  screen_.setCrtIntensity(settings_.values.crtIntensity);
+  // M57/M70: the CRT post-process follows its 0..1 strength AND curvature
+  // settings, passed as one pair so a frame never sees a mismatched half (a
+  // cheap pair of floats; the shader stays uncompiled while strength is 0).
+  screen_.setCrt(settings_.values.crtIntensity, settings_.values.crtCurvature);
 
   GameState* const topBefore = stack_.top();
   stack_.handleInput(input_);

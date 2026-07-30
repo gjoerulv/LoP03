@@ -1,5 +1,12 @@
 # M57 — Advanced CRT post-process (0–10 CRT Strength)
 
+> **M70 addendum (2026-07-29):** geometry (barrel warp, pre-warp inset,
+> rounded corners, the curved-edge mask) no longer follows strength — it
+> moved to its own persistent **CRT Curvature** slider, and the render API
+> became `VirtualScreen::setCrt(intensity, curvature)`. See
+> `docs/milestone_notes/M70_crt_curvature.md`; this note remains the
+> authority for everything strength still drives.
+
 > Owner-directed implementation task, authorized 2026-07-24. Runs after the
 > M53–M56 adjustment program and before the M23/M24 release track. **Pure
 > presentation** — no gameplay, save, generation, battle-rules, or virtual-

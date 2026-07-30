@@ -118,6 +118,7 @@ add_library(crystal_core STATIC
     src/states/GooseTownState.cpp
     src/states/RoadForkState.cpp
     src/states/MilestoneChoiceState.cpp
+    src/states/CelebrationState.cpp
     src/states/PartyState.cpp
     src/states/MapsState.cpp
     src/states/TreasureFightState.cpp

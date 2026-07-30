@@ -919,6 +919,11 @@ battle's own final beat), and the threat labels finally tell the truth —
 party-relative, calibrated against the simulator, tagged generation 14.
 M69 (2026-07-29) gave the town its face: real service facades with
 integrated doors, the scoreboard as a monument, the save point as a
-crystal.
+crystal. M70 (same day, to the owner's detailed spec) split the CRT
+filter's geometry from its texture: CRT Strength and CRT Curvature are
+separate persistent sliders, so strength 7 keeps its character without
+the excessive curl. M71 gave flawless runs their moment: the victory
+celebration — score, confetti, the team jumping, the MVP on a pedestal —
+after penalty-free clears and the King/Duck/Boss-Rush victories.
 
-M23 → M24 run after M69, re-audited against the then-current checkout.
+M23 → M24 run after M71, re-audited against the then-current checkout.

@@ -76,6 +76,12 @@ float crtIntensityFromStep(int step) {
   return static_cast<float>(std::clamp(step, 0, 10)) / 10.0f;
 }
 
+// M70: curvature uses the identical 0..1 <-> 0..10 mapping; shared thin
+// wrappers keep one rounding/clamping rule for both sliders.
+int crtCurvatureStep(float curvature) { return crtStrengthStep(curvature); }
+
+float crtCurvatureFromStep(int step) { return crtIntensityFromStep(step); }
+
 float resolveSeconds(BattleSpeed s) {
   switch (s) {
   case BattleSpeed::Normal: return 0.9f;
@@ -246,6 +252,18 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
         }
       }
     }
+    // M70: CRT curvature is its own optional 0..1 field. Absent = the 0.3
+    // default (a deliberate migration: an old strength-7 file loads with mild
+    // curvature instead of the excessive strength-driven geometry). Malformed
+    // values are reported and keep the default. crtIntensity is never
+    // reinterpreted.
+    if (const auto cc = it->find("crtCurvature"); cc != it->end()) {
+      if (cc->is_number()) {
+        values.crtCurvature = clamp01(cc->get<float>());
+      } else {
+        report.add(kSource, "gameplay.crtCurvature", "expected a number");
+      }
+    }
 
     // M51: optional bool; absent = false so older files load unchanged.
     if (const auto f = it->find("backgroundAudio"); f != it->end()) {
@@ -313,6 +331,7 @@ std::string serializeSettings(const Settings& values, const InputMap& map) {
                       {"effectShake", std::string(effectLevelName(values.effectShake))},
                       {"highContrast", values.highContrast},
                       {"crtIntensity", values.crtIntensity},
+                      {"crtCurvature", values.crtCurvature},
                       {"backgroundAudio", values.backgroundAudio}};
 
   Json keyboard = Json::object();

@@ -36,6 +36,7 @@
 #include "states/BattleLog.hpp"
 #include "states/BattleLogState.hpp"
 #include "states/BattleState.hpp"
+#include "states/CelebrationState.hpp"  // M71
 #include "states/BossIntroState.hpp"
 #include "states/BlackMarketState.hpp"
 #include "states/AchievementsState.hpp"
@@ -1162,6 +1163,18 @@ int run(const char* outDir) {
                  auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
                  state->captureShowSpoils();
                  s.pushState(std::move(state));
+             }},
+            {"84_celebration",
+             [](StateStack& s, AppContext& c) {
+                 // M71: the victory celebration at its fullest — max score
+                 // width, the MVP (12-char name) on the pedestal, one fallen
+                 // member lying down. Runs LAST: the KO'd member leaks into no
+                 // later scene.
+                 if (c.party.members.size() > 2) {
+                     c.party.members[2].hp = 0;
+                 }
+                 s.pushState(std::make_unique<CelebrationState>(s, c, "Score: 999999",
+                                                                /*mvpIndex=*/0));
              }},
         };
 

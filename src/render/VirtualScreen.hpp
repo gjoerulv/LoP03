@@ -20,13 +20,17 @@ public:
     // Call between BeginDrawing()/EndDrawing(). Fills letterbox bars with `bars`.
     void blitToWindow(int windowWidth, int windowHeight, Color bars) const;
 
-    // M57: set the CRT post-process strength, 0.0..1.0 (clamped). 0 uses the
-    // plain DrawTexturePro path (the exact unfiltered image); any value > 0
-    // applies the advanced consumer-CRT shader around the window blit. The
-    // shader is compiled lazily the first time intensity becomes > 0 (at most
-    // once); a compile failure is logged once and degrades to the plain blit.
-    // Capture is unaffected — exportImage reads the pre-shader target directly.
-    void setCrtIntensity(float intensity);
+    // M57/M70: set both CRT parameters for the frame in ONE call (so no frame
+    // can observe a mismatched pair), each 0.0..1.0 (clamped). Intensity 0
+    // uses the plain DrawTexturePro path (the exact unfiltered image) no
+    // matter what curvature says; any intensity > 0 applies the consumer-CRT
+    // shader around the window blit, with geometry (barrel warp, inset,
+    // rounded corners, curved-edge mask) driven ONLY by curvature — curvature
+    // 0 stays perfectly rectangular. The shader is compiled lazily the first
+    // time intensity becomes > 0 (at most once); a compile failure is logged
+    // once and degrades to the plain blit. Capture is unaffected —
+    // exportImage reads the pre-shader target directly.
+    void setCrt(float intensity, float curvature);
 
     int width() const { return width_; }
     int height() const { return height_; }
@@ -39,14 +43,16 @@ private:
     int width_;
     int height_;
     RenderTextureHandle target_;
-    // M57 CRT shader state. setCrtIntensity is non-const and called before the
+    // M57 CRT shader state. setCrt is non-const and called before the
     // (const) blit each frame, so the lazy compile happens there.
     ShaderHandle crtShader_;
-    float crtIntensity_ = 0.0f;  // the setting, clamped 0..1
+    float crtIntensity_ = 0.0f;  // the strength setting, clamped 0..1
+    float crtCurvature_ = 0.0f;  // M70: the geometry setting, clamped 0..1
     bool crtReady_ = false;      // compiled OK
     bool crtTried_ = false;      // compile attempted (so a failure logs once)
     // Cached uniform locations (resolved once on a successful compile).
     int crtLocIntensity_ = -1;
+    int crtLocCurvature_ = -1;  // M70
     int crtLocSourceRes_ = -1;
     int crtLocOutputRes_ = -1;
     int crtLocSourceTexel_ = -1;

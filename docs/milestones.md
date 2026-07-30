@@ -103,14 +103,15 @@ plan approved with the 54-entry bonus table), followed on 2026-07-28 by
 **M67** (an owner feedback batch from the manual pass: class portraits,
 party-panel descriptions, load-screen fixes, and the boss-victory
 return-to-town bug), **M68** (the victory spoils panel + the
-party-relative threat recalibration, generation 14), and **M69** (the
-town exteriors — real facades, the scoreboard stele, the save crystal).
-M59–M69 ALL sit at
+party-relative threat recalibration, generation 14), **M69** (the
+town exteriors — real facades, the scoreboard stele, the save crystal),
+**M70** (CRT Strength and CRT Curvature as separate persistent
+sliders), and **M71** (the victory celebration screen). M59–M71 ALL sit at
 `implemented, awaiting manual approval`; then M23 → M24, and nothing else
 stands before them.**
-When M59–M69 close, both M23 and M24 must be re-audited against the
-then-current checkout before they begin — the capture set has grown (**83
-scenes** as of M68), the balance batteries have grown (`[economy-report]`,
+When M59–M71 close, both M23 and M24 must be re-audited against the
+then-current checkout before they begin — the capture set has grown (**84
+scenes** as of M71), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
 and the M61–M68 `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/
 `[spoils]`/`[danger-report]` batteries), and the packaging manifest must
@@ -2725,3 +2726,45 @@ running scope: the sections below.
   **Closing verification: 601/601 Debug and 597/597 Release tests green;
   `--capture` 83/83 scenes clean.**
 - **Milestone note:** `docs/milestone_notes/M69_town_exteriors.md`
+
+## M70 — Separate CRT Strength and CRT Curvature (owner brief, 2026-07-29)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-29 to the owner's detailed spec. `settings.crtCurvature`
+  (optional field, default **0.3**, no version bump — a pre-M70
+  strength-7 file loads as Strength 7 / Curvature 3, keeping the texture
+  while relaxing the excessive curl), its own `CRT Curvature: < 0..10 >`
+  Display row, `VirtualScreen::setCrt(intensity, curvature)` (one call,
+  both clamped, lazy compile + plain-blit fallback retained), and the
+  shader decoupled: strength keeps scan/mask/beam/glow/chroma/tone/grain
+  plus a restrained flat vignette; geometry (inset, barrel warp, rounded
+  corners, curved-edge mask, extra edge darkening) follows ONLY
+  `curveAct = pow(C, 1.35)` — **curvature 0 is an exact rectangle** (the
+  edge mask is forced fully open). Still one pass, 11 samples, pre-shader
+  capture, unfiltered overlay. Live sandboxed smoke test proved the
+  reworked shader compiles on real hardware. Window-level visual review
+  (the brief's §11 matrix) is owner work.
+  **Closing verification: 606/606 Debug and 602/602 Release tests green;
+  `--capture` 83/83 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M70_crt_curvature.md`
+
+## M71 — The victory celebration (owner feature, 2026-07-29)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-29. A new presentation-only **CelebrationState**: the
+  "Victory!" plaque, the score alone in large gold (no breakdown),
+  falling confetti, the party jumping each to their own rhythm and
+  height, the **MVP on a pedestal** (M42 damage rule; the castle
+  challenges now track their own `RunStats` so their pedestal is honest),
+  and KO'd members lying dimmed where they fell — plus one random **dry
+  lore punchline** under the score (the TitlePhrases idiom, a 12-line
+  pool in `CelebrationPhrases.hpp`, lint-pinned). Shown above the
+  reckoning after a dungeon clear **with zero stakes penalty** (any
+  penalty → no celebration), and above the challenge overlay after
+  beating the **King**, the **Deadly Duck**, and the **Boss Rush**
+  ("Cleared in N turns!"; the Endless Rush and all losses excluded).
+  Capture `84_celebration` (the set is **84 scenes**; the lint drove the
+  MVP-only naming). No rules/generation/schema/save changes.
+  **Closing verification: 607/607 Debug and 603/603 Release tests green;
+  `--capture` 84/84 scenes clean.**
+- **Milestone note:** `docs/milestone_notes/M71_celebration.md`

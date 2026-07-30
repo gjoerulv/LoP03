@@ -4,6 +4,7 @@
 
 #include "battle/Battle.hpp"
 #include "game/Castle.hpp"
+#include "game/RunStats.hpp"
 #include "states/GameState.hpp"
 
 namespace cd {
@@ -46,6 +47,7 @@ private:
     bool done_ = false;     // the result overlay is showing
     std::string resultText_;
     battle::BattleResult result_;
+    RunStats stats_;  // M71: per-challenge damage tallies, for the MVP pedestal
 };
 
 }  // namespace cd
