@@ -74,6 +74,13 @@
 | 64 | Scroll learning + Party panel | ◑ implemented, awaiting manual approval |
 | 65 | Town puzzle map (HoMM2 homage; generation v12) | ◑ implemented, awaiting manual approval |
 | 66 | Dungeon treasure map + curios (generation v13) | ◑ implemented, awaiting manual approval |
+| 67 | UI polish & the boss-return fix | ◑ implemented, awaiting manual approval |
+| 68 | Battle spoils & party-relative threat (generation v14) | ◑ implemented, awaiting manual approval |
+| 69 | Town exteriors (facades, scoreboard stele, save crystal) | ◑ implemented, awaiting manual approval |
+| 70 | Separate CRT Strength and CRT Curvature | ◑ implemented, awaiting manual approval |
+| 71 | The victory celebration | ◑ implemented, awaiting manual approval |
+| 72 | Party panel reflow | ◑ implemented, awaiting manual approval |
+| 73 | Enemy & boss sprite art pass | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -106,8 +113,9 @@ return-to-town bug), **M68** (the victory spoils panel + the
 party-relative threat recalibration, generation 14), **M69** (the
 town exteriors — real facades, the scoreboard stele, the save crystal),
 **M70** (CRT Strength and CRT Curvature as separate persistent
-sliders), **M71** (the victory celebration screen), and **M72** (the
-party panel reflow). M59–M72 ALL sit at
+sliders), **M71** (the victory celebration screen), **M72** (the
+party panel reflow), and on 2026-07-30 **M73** (the owner-directed enemy
+and boss sprite art pass). M59–M73 ALL sit at
 `implemented, awaiting manual approval`; then M23 → M24, and nothing else
 stands before them.**
 When M59–M72 close, both M23 and M24 must be re-audited against the
@@ -2798,3 +2806,40 @@ running scope: the sections below.
   **Closing verification: 607/607 Debug and 603/603 Release tests green;
   `--capture` 84/84 scenes clean.**
 - **Milestone note:** `docs/milestone_notes/M72_party_panel_reflow.md`
+
+## M73 — Enemy & boss sprite art pass (owner brief, 2026-07-30)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-30. An art pass over **all 67 PNGs** under
+  `assets/textures/enemies/`. The owner's diagnosis was that every sprite was
+  built by calling `Ell`/`FR` primitives blind and never looked at at
+  magnification: soft ellipse blobs sharing one body plan (torso blob + head
+  blob + two eye pixels), and bosses that read as slightly larger normal
+  enemies wearing a gold crown. Delivered in the three phases the brief
+  specified. **Phase 1:** `tools/asset_gen/preview.ps1` — a review harness
+  emitting a magnified labelled contact sheet, a **silhouette sheet** (alpha as
+  solid black on white; the binding artefact), and a 1× strip at the native
+  426-wide canvas. Used after every batch, with the PNGs actually opened before
+  a batch was accepted. **Phase 2:** ellipse-primitive drawing replaced by
+  **explicit ASCII pixel grids** — one block per sprite, one character per
+  pixel, keyed to the art-bible §2 ramps, validated by `Draw-Grid`. The five
+  enemy blocks previously scattered through the generator (M26/M29/M38/M40/M62)
+  are consolidated into one contiguous section that consumes **no RNG at all**,
+  retiring the M49 hazard where a stray `Speckle` re-rolled every sprite after
+  it. **Phase 3:** all 67 redrawn in nine family batches — silhouette-first,
+  angular geometry, oversized equipment, 3-band shading, tier by shape and
+  posture rather than hue.
+  **Bosses are 36×36, not the 36×44 the brief floated:**
+  `BattleState::enemyBaseY()` drops to 20 in 5+ enemy fights (Rush Tyrant,
+  Abyssal Tyrant, the 6-unit Deadly Duck), so 36 rows is the tallest sprite
+  that never clips its crown off the top of the screen; taller needs an
+  `enemyBaseY()` change, which is an owner call. **Two decisions await owner
+  sign-off:** the art-bible §2 palette extension (three ramps completed with
+  six new hex values, all of them the missing ends of ramps already shipped
+  since M26/M62) and whether to pursue taller bosses. No C++, data, manifest,
+  sprite-id or save change — every sprite is a drop-in replacement.
+  **Closing verification: 607/607 Debug tests green; all 129 non-enemy PNGs
+  byte-identical before and after; the generator byte-stable across two
+  consecutive reruns; `assets/textures/enemies/` deleted and regenerated to
+  exactly 67 files.**
+- **Milestone note:** `docs/milestone_notes/M73_enemy_boss_art_pass.md`

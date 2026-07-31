@@ -21,6 +21,15 @@ $PAL = @{
   clsKnight='#C0C6D0'; clsRanger='#4E9A50'; clsMage='#6C7CE8'
   clsCleric='#E8E2C8'; clsRogue='#8A5FB0'; clsGuardian='#C87E3A'
   maroon='#5C3038'; maroonD='#43242B'; bossBody='#3A2C4E'; bossD='#2A2038'
+  # M73 ramp completions (art_bible §2). The flesh and boss-void ramps shipped
+  # from M26 with only two steps each, and the neutral white pair arrived
+  # undocumented with the M62 geese — none of them could carry the bible's
+  # mandated 3-band shading. The darkest/highlight steps below complete them;
+  # `flesh1`/`flesh2` and `void1`/`void2` are the existing maroon/boss values
+  # under ramp names, so nothing already shipped changes hue.
+  flesh0='#2E1820'; flesh1='#43242B'; flesh2='#5C3038'; flesh3='#7A4650'
+  void0='#1E1628';  void1='#2A2038';  void2='#3A2C4E';  void3='#4E3C68'
+  white0='#B8B8BC'; white1='#D8D8D4'; white2='#F2F2F0'
 }
 function C([string]$hex) { [System.Drawing.ColorTranslator]::FromHtml($hex) }
 
@@ -232,39 +241,8 @@ FR $b 12 14 5 3 '#D8D8D4'                                          # wing
 FR $b 7 21 2 2 $PAL.gold; FR $b 12 21 2 2 $PAL.gold                # feet
 Outline $b; SaveImg $b 'actors/goose_battle.png'
 
-# Enemies face right.
-$b = New-Img 24 24                                                # Normal: hunched beast
-$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
-$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroon)), 3, 8, 17, 12)
-$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroonD)), 4, 12, 14, 8)
-$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroon)), 14, 4, 8, 8); $g.Dispose()
-P $b 19 7 $PAL.danger; P $b 17 7 $PAL.danger
-FR $b 6 19 3 2 $PAL.maroonD; FR $b 13 19 3 2 $PAL.maroonD
-P $b 20 10 $PAL.earth4; P $b 21 11 $PAL.earth4
-Outline $b; SaveImg $b 'enemies/normal_battle.png'
-
-$b = New-Img 24 24                                                # Elite: horned, violet
-$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
-$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroon)), 2, 7, 18, 13)
-$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroonD)), 3, 11, 15, 9)
-$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.maroon)), 14, 3, 9, 9); $g.Dispose()
-P $b 19 6 $PAL.danger; P $b 17 6 $PAL.danger
-FR $b 15 1 1 3 $PAL.glint; FR $b 20 1 1 3 $PAL.glint
-FR $b 5 9 6 1 $PAL.violet; FR $b 4 13 7 1 $PAL.violet
-FR $b 5 19 3 2 $PAL.maroonD; FR $b 13 19 3 2 $PAL.maroonD
-Outline $b; SaveImg $b 'enemies/elite_battle.png'
-
-$b = New-Img 32 32                                                # Boss: crowned crystal hulk
-$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
-$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.bossBody)), 3, 8, 26, 22)
-$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.bossD)), 5, 14, 21, 15)
-$g.FillEllipse((New-Object System.Drawing.SolidBrush(C $PAL.bossBody)), 17, 2, 12, 12); $g.Dispose()
-foreach ($x in @(19,22,25)) { P $b $x 1 $PAL.gold; P $b $x 2 $PAL.gold }
-P $b 25 7 $PAL.danger; P $b 22 7 $PAL.danger
-FR $b 6 10 2 5 $PAL.violet; P $b 6 9 $PAL.glint
-FR $b 10 8 2 6 $PAL.cyan; P $b 10 7 $PAL.glint
-FR $b 8 28 5 2 $PAL.bossD; FR $b 19 28 5 2 $PAL.bossD
-Outline $b; SaveImg $b 'enemies/boss_battle.png'
+# Enemy and boss battle sprites (including the three generic tier fallbacks)
+# are authored as explicit pixel grids in the M73 section further down.
 
 Write-Output 'Generating UI...'
 
@@ -483,326 +461,2120 @@ P $b 5 7 $PAL.glint; P $b 6 7 $PAL.glint                           # clasp
 FR $b 1 10 10 1 $PAL.night3                                        # shadow
 Outline $b; SaveImg $b 'props/event_relic.png'
 
-Write-Output 'Generating M26 per-enemy battle sprites...'
+# ===================== M73 enemy & boss battle sprites =====================
+# Every enemy and boss battle sprite is authored here as an explicit pixel
+# grid: one ASCII block per sprite, one character per pixel, keyed to the
+# art_bible §2 ramps by the table below. Rows are directly readable and
+# surgically editable in a diff, and `tools/asset_gen/preview.ps1` renders
+# contact + silhouette sheets so the result is reviewed, never assumed.
+#
+# Conventions (art_bible §3/§4/§5):
+#   * enemies face RIGHT; normal/elite 24x24, bosses 36x36.
+#   * grids leave the outer ring clear so `Outline` can trace a full 1px
+#     #0E0C14 outline; art that deliberately touches an edge loses it there.
+#   * light source top-left: highlight band up-left, shadow band down-right.
+#   * danger tier is carried by shape and size, never by hue alone.
+#
+# BOSS CANVAS (36x36, not the 36x44 first considered). `BattleState::drawUnit`
+# anchors bottom-centre at `sy = enemyBaseY() + 16 - tex.height`, and
+# `enemyBaseY()` drops to 20 once a fight fields 5+ enemies. Three authored
+# boss teams do exactly that — rush_tyrant and abyssal_tyrant (4 minions, 5
+# units) and deadly_duck (5 minions, 6 units) — so the tallest sprite that
+# never clips off the top of the screen is 20 + 16 = 36 rows. Width is bounded
+# by the 40px unit footprint (x 36..76 at native 426x240); 36 wide spans
+# 38..74, clear of the HP meter edge and of the enemy status column at x+44.
+# Going taller than 36 needs an `enemyBaseY()` change — an owner call, not a
+# generator one.
+#
+# DETERMINISM: this section calls NO random helper. Every speckle pixel is
+# placed by hand in its grid, so `$script:rng` is untouched here and adding,
+# removing or reordering a sprite can never shift another file's bytes. That
+# retires the failure mode the M49 note warned about, where one stray `Speckle`
+# re-rolled every sprite generated after it.
+Write-Output 'Generating enemy and boss battle sprites (M73 pixel grids)...'
 
-# Per-id battle sprites (art_bible §3/§5): normal & elite 24x24, boss 32x32,
-# facing right, 1px outline, 3-band shading, danger by shape+size+accent.
-# Appended after all M15/M17/M20 art so the shared speckle RNG state entering
-# this section is unchanged (existing PNGs stay byte-identical); reseeded here
-# so these sprites are stable regardless of earlier generation.
-$script:rng = 26260000
+# Palette key. Lower-case letters walk a ramp dark -> light; upper-case are the
+# accent and signal colours. '.' is transparent.
+$GRIDC = New-Object 'System.Collections.Generic.Dictionary[char,System.Drawing.Color]'
+function GridKey([char]$ch, [string]$hex) { $GRIDC[$ch] = (C $hex) }
+GridKey 'K' $PAL.outline                                    # ink / deep shadow
+GridKey '1' $PAL.night1;  GridKey '2' $PAL.night2;  GridKey '3' $PAL.night3
+GridKey 'q' $PAL.stone1;  GridKey 'w' $PAL.stone2
+GridKey 'e' $PAL.stone3;  GridKey 'r' $PAL.stone4
+GridKey 'a' $PAL.earth1;  GridKey 's' $PAL.earth2
+GridKey 'd' $PAL.earth3;  GridKey 'f' $PAL.earth4
+GridKey 'z' $PAL.veg0;    GridKey 'x' $PAL.veg1
+GridKey 'c' $PAL.veg2;    GridKey 'v' $PAL.veg3
+GridKey 'u' $PAL.wat0;    GridKey 'i' $PAL.wat1
+GridKey 'o' $PAL.wat2;    GridKey 'p' $PAL.wat3
+GridKey 't' $PAL.flesh0;  GridKey 'y' $PAL.flesh1
+GridKey 'g' $PAL.flesh2;  GridKey 'h' $PAL.flesh3
+GridKey 'b' $PAL.void0;   GridKey 'n' $PAL.void1
+GridKey 'm' $PAL.void2;   GridKey 'B' $PAL.void3
+GridKey 'Z' $PAL.white0;  GridKey 'S' $PAL.white1;  GridKey 'W' $PAL.white2
+GridKey 'C' $PAL.cyan;    GridKey 'V' $PAL.violet;  GridKey 'G' $PAL.glint
+GridKey 'D' $PAL.danger;  GridKey 'Y' $PAL.gold;    GridKey 'H' $PAL.heal
+GridKey 'L' $PAL.clsKnight;  GridKey 'M' $PAL.clsMage;   GridKey 'N' $PAL.clsCleric
+GridKey 'R' $PAL.clsRogue;   GridKey 'O' $PAL.clsGuardian; GridKey 'J' $PAL.clsRanger
 
-function Ell($b, [int]$x, [int]$y, [int]$w, [int]$h, [string]$hex) {
-  $g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
-  $g.FillEllipse((New-Object System.Drawing.SolidBrush(C $hex)), $x, $y, $w, $h); $g.Dispose()
+# Turns an ASCII block into a bitmap. Reports EVERY malformed row and unknown
+# key in one throw, so a mis-typed grid is fixed in a single pass.
+function Draw-Grid([string[]]$rows) {
+  $h = $rows.Count
+  $w = $rows[0].Length
+  $errs = @()
+  for ($y = 0; $y -lt $h; $y++) {
+    if ($rows[$y].Length -ne $w) {
+      $errs += "  row $y : $($rows[$y].Length) chars, expected $w"
+    }
+    foreach ($ch in $rows[$y].ToCharArray()) {
+      if ($ch -ne '.' -and -not $GRIDC.ContainsKey($ch)) {
+        $errs += "  row $y : unknown palette key '$ch'"
+        break
+      }
+    }
+  }
+  if ($errs.Count -gt 0) { throw "Draw-Grid rejected a sprite:`n$($errs -join "`n")" }
+  $b = New-Img $w $h
+  for ($y = 0; $y -lt $h; $y++) {
+    $row = $rows[$y]
+    for ($x = 0; $x -lt $w; $x++) {
+      $ch = $row[$x]
+      if ($ch -ne '.') { $b.SetPixel($x, $y, $GRIDC[$ch]) }
+    }
+  }
+  return $b
 }
-# Two glowing eyes at (x,y) facing right.
-function Eyes($b, [int]$x, [int]$y, [string]$hex) { P $b $x $y $hex; P $b ($x + 2) $y $hex }
-# Elite horn pair rising from (x,y).
-function Horns($b, [int]$x, [int]$y) {
-  P $b $x $y $PAL.glint; P $b $x ($y - 1) $PAL.glint; P $b $x ($y - 2) $PAL.glint
-  P $b ($x + 4) $y $PAL.glint; P $b ($x + 4) ($y - 1) $PAL.glint
+function Save-EnemyGrid([string]$name, [string[]]$rows) {
+  $b = Draw-Grid $rows
+  # The boss canvas is load-bearing, not a style choice: 36 rows is the tallest
+  # sprite that never clips off the top of a 5+ enemy fight, and 36 columns is
+  # the widest that stays inside the 40px unit footprint. See the section
+  # header for the arithmetic. Guarded so it cannot drift unnoticed.
+  if ($name.StartsWith('boss_') -and ($b.Width -ne 36 -or $b.Height -ne 36)) {
+    throw "Save-EnemyGrid: boss '$name' is $($b.Width)x$($b.Height); must be 36x36."
+  }
+  Outline $b
+  SaveImg $b "enemies/$name.png"
 }
-# Boss gold crown across (x,y), width 7.
-function Crown($b, [int]$x, [int]$y) {
-  foreach ($i in 0, 3, 6) { P $b ($x + $i) ($y - 1) $PAL.gold }
-  FR $b $x $y 7 1 $PAL.gold
-}
-function SaveEnemy($b, [string]$name) { Outline $b; SaveImg $b "enemies/$name.png" }
 
-$bone = $PAL.clsCleric; $boneD = $PAL.stone4
+# --- Family: goblinoid & raider (bruisers with comically outsized arms) ---
 
-# --- 16 normal enemies (24x24) ---
+Save-EnemyGrid 'goblin_grunt' @(     # tiny goblin, club three times its head
+  '..ddddd.................'
+  '.dfffffd................'
+  '.dfffffdd...............'
+  '.dffffdddd..............'
+  '.ddfffddd...............'
+  '..ddddss................'
+  '...dds..................'
+  '....ds..................'
+  '....ds....v......v......'
+  '.....ds...vv....vv......'
+  '.....ds..vvvvvvvvvc.....'
+  '......ds.vcccccccccx....'
+  '......dscvcKcccKccccx...'
+  '.....cccscccccccccccx...'
+  '.....cccvcNNNNNNccxxx...'
+  '......cccccccccccxx.....'
+  '.......ccccccccxx.......'
+  '.......xcccccccx........'
+  '.......xcccccccx........'
+  '.......xccccccxx........'
+  '.......xxcccxxx.........'
+  '.......xx...xx..........'
+  '......xxx...xxx.........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # goblin_grunt: green imp + club
-Ell $b 5 10 13 10 $PAL.veg2; Ell $b 6 13 10 6 $PAL.veg1
-Ell $b 12 5 9 8 $PAL.veg2; FR $b 20 7 2 2 $PAL.veg1
-Eyes $b 16 8 $PAL.gold; FR $b 4 7 2 10 $PAL.earth2; FR $b 3 6 4 2 $PAL.earth3
-FR $b 7 19 3 3 $PAL.veg1; FR $b 12 19 3 3 $PAL.veg1
-SaveEnemy $b 'goblin_grunt'
+Save-EnemyGrid 'kobold_scout' @(    # all ears and dagger, almost no body
+  '........................'
+  '..f..............f......'
+  '..ff............ff......'
+  '..fff..........fff......'
+  '...fff........ffff......'
+  '...ffffddddddffff.......'
+  '....fffdddddddfff.......'
+  '.....fddddddddddf.......'
+  '.....fddKdddKdddd.......'
+  '......dddddddddddss.....'
+  '......ddddddddddss......'
+  '.....sdddddddddd........'
+  '....ssdddddddds.........'
+  '..sss.sddddddd......L...'
+  '.ss....sdddddd.....LL...'
+  '.......sdddddd....LL....'
+  '.......sddddddd..LL.....'
+  '.......ssddddddYLL......'
+  '.......ssdddddYY........'
+  '.......ssdddds..........'
+  '.......ss...ss..........'
+  '.......ss...ss..........'
+  '......sss...sss.........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # skeleton_archer: bone + bow
-FR $b 11 4 5 5 $bone; FR $b 11 8 5 1 $PAL.night1; Eyes $b 12 6 $PAL.danger
-FR $b 10 9 6 8 $boneD; for ($j = 10; $j -lt 16; $j++) { $rc = if ($j % 2) { $bone } else { $boneD }; FR $b 10 $j 6 1 $rc }
-FR $b 9 17 2 5 $bone; FR $b 14 17 2 5 $bone
-for ($j = 4; $j -le 18; $j++) { $x = 20 - [int][math]::Round(3 * [math]::Sin(($j - 4) / 14.0 * [math]::PI)); P $b $x $j $PAL.earth2 }
-for ($j = 4; $j -le 18; $j++) { P $b 20 $j $bone }
-SaveEnemy $b 'skeleton_archer'
+Save-EnemyGrid 'bandit' @(          # slouch-hat raider, red mask, sabre
+  '........................'
+  '.....................LL.'
+  '....................LL..'
+  '...22222222........LL...'
+  '..2222222222......LL....'
+  '....333333.......LL.....'
+  '....fddddf......LL......'
+  '....fKddKf.....LL.......'
+  '....DDDDDD....YY........'
+  '...aaaaaaaaa............'
+  '..aaassssssa............'
+  '.aaaasssssssa...........'
+  '.aaaasssssssa...........'
+  '.aaassssssssa...........'
+  '..aassssssssa...........'
+  '...assssssssa...........'
+  '....ssssssss............'
+  '....ssssssss............'
+  '....2222.222............'
+  '.....22...22............'
+  '.....22...22............'
+  '.....22...22............'
+  '....222...222...........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # cave_bat: spread wings + fangs
-Ell $b 9 9 6 8 $PAL.night3; Ell $b 10 11 4 4 $PAL.night2
-foreach ($s in @(@(9, -1), @(15, 1))) { $x = $s[0]; $d = $s[1]
-  for ($k = 0; $k -lt 8; $k++) { FR $b ($x + $d * $k) (8 + [int]($k / 2)) 1 (6 - [int]($k / 2)) $PAL.night2 } }
-Eyes $b 11 11 $PAL.danger; P $b 10 16 $bone; P $b 13 16 $bone
-SaveEnemy $b 'cave_bat'
+Save-EnemyGrid 'dune_reaver' @(     # lean raider, scimitar held flat overhead
+  '........................'
+  '........................'
+  '.....LLLLLLLLLLLL.......'
+  '....LLLLLLLLLLLLLL......'
+  '.....LLLLL......YY......'
+  '........................'
+  '.ff.....ffffff..........'
+  '.fff...fdddddff.........'
+  '..fff.fdddddddf.........'
+  '...ffffdKdddKdd.........'
+  '....ffddddddddd.........'
+  '.....fddddddddd.........'
+  '......ssssssss..........'
+  '.....sssssssssss........'
+  '....sssdddddddsss.......'
+  '....ssddddddddds........'
+  '.....sddddddddd.........'
+  '.....sdddddddd..........'
+  '.....addddddda..........'
+  '.....aaa..aaaa..........'
+  '.....aa....aa...........'
+  '.....aa....aa...........'
+  '....aaa....aaa..........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # stone_golem: blocky rock
-FR $b 5 8 14 13 $PAL.stone2; FR $b 6 9 12 11 $PAL.stone1
-FR $b 5 8 14 2 $PAL.stone3; FR $b 9 4 8 6 $PAL.stone2; FR $b 9 4 8 1 $PAL.stone3
-Eyes $b 13 6 $PAL.cyan; Speckle $b 6 10 12 9 $PAL.stone3 0.10
-FR $b 4 10 2 8 $PAL.stone1; FR $b 18 10 3 8 $PAL.stone2
-FR $b 7 21 4 2 $PAL.stone1; FR $b 13 21 4 2 $PAL.stone1
-SaveEnemy $b 'stone_golem'
+Save-EnemyGrid 'ogre_marauder' @(   # elite: slab of a brute, studded log club
+  '..............ddddddd...'
+  '.............dffffffdd..'
+  '....V....V...dffffffffd.'
+  '....VV..VV...dfafafafad.'
+  '....hhhhhh...dffffffffd.'
+  '...hhhhhhhh..dfafafafad.'
+  '...hhDhhDhh..dffffffffd.'
+  '...hhhhhhhh...dddddddd..'
+  '...hNhhhhNh.....ssss....'
+  '..gggggggggg...ssss.....'
+  '.ggggggggggggssss.......'
+  'ggggghhhhhggggg.........'
+  'ggggghhhhhgggggg........'
+  'gggggghhhgggggggg.......'
+  'gggggggggggggggg........'
+  'ygggggggggggggg.........'
+  'yygggggggggggg..........'
+  'yyyggggggggggg..........'
+  'yyyygggggggggg..........'
+  'yyyyyggggggggg..........'
+  '.yyyy.....yyyy..........'
+  '.yyyy.....yyyy..........'
+  '.tttt.....tttt..........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # venom_spider: round body + legs
-Ell $b 7 9 11 9 $PAL.night3; Ell $b 8 11 8 5 $PAL.veg0
-Ell $b 15 8 7 6 $PAL.night3; Eyes $b 18 10 $PAL.violet; P $b 18 12 $PAL.violet
-foreach ($ly in 9, 12, 15) { P $b 6 $ly $PAL.night2; P $b 4 ($ly - 1) $PAL.night2; P $b 3 ($ly - 2) $PAL.night2
-  P $b 17 $ly $PAL.night2; P $b 19 ($ly - 1) $PAL.night2; P $b 21 ($ly - 2) $PAL.night2 }
-P $b 12 17 $PAL.veg3
-SaveEnemy $b 'venom_spider'
+Save-EnemyGrid 'troll_berserker' @( # elite: lanky, knuckle-dragging arms
+  '........................'
+  '........V.....V.........'
+  '........VV...VV.........'
+  '........vvvvvvv.........'
+  '.......vvvvvvvvv........'
+  '.......vvDvvvDvv........'
+  '.......vvvvvvvvv........'
+  '.......vNvvvvvNv........'
+  '.....ccccvvvvvcccc......'
+  '....cvvcccccccccxvc.....'
+  '....cvvcccccccccxvc.....'
+  '....cvvcccccccccxvc.....'
+  '....cvvcccccccccxvc.....'
+  '....cvvcccccccccxvc.....'
+  '....cvvcccccccccxvc.....'
+  '...cvvvccccccccccxvc....'
+  '...cvvvcxcccccccxxvc....'
+  '..cvvvvc.xcccccx.cvvc...'
+  '..cvvvvc.xcccccx.cvvc...'
+  '..cvvvvc.xxcccxx.cvvc...'
+  '..cxxxxc..xcccx..cxxc...'
+  '...cccc...xcccx...cccc..'
+  '..........xxxxx.........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # dark_acolyte: hooded caster
-FR $b 8 4 8 6 $PAL.night2; FR $b 9 8 6 2 $PAL.night1; P $b 11 8 $PAL.violet; P $b 13 8 $PAL.violet
-FR $b 6 10 12 11 $PAL.stone1; FR $b 6 10 12 1 $PAL.stone2; FR $b 10 12 4 9 $PAL.night3
-FR $b 17 6 1 15 $PAL.earth2; Ell $b 15 3 5 5 $PAL.violet; P $b 17 5 $PAL.glint
-SaveEnemy $b 'dark_acolyte'
+Save-EnemyGrid 'ironclad_reaver' @( # elite: plated brute, axe grounded right
+  '........................'
+  '.....V..........V.......'
+  '.....VV........VV.......'
+  '......rrrrrrrrrr........'
+  '.....rreeeeeeeerr.......'
+  '.....reeDeeeeDeer.......'
+  '.....reeeeeeeeeer.......'
+  '......eeeeeeeeee........'
+  '....rrrrrrrrrrrr........'
+  '...rreeeeeeeeeerr.......'
+  '...reeeeeeeeeeeers......'
+  '...reeeVVVVVVeeers......'
+  '...reeeeeeeeeeeers......'
+  '...rreeeeeeeeeerrs......'
+  '....reeeeeeeeeer.s......'
+  '....qreeeeeeeerq.s......'
+  '....qqreeeeeerqq.s......'
+  '....qqqrrrrrrqqq.s...LLL'
+  '....qqq......qqq.sLLLLLL'
+  '....qqq......qqq.sLLLLLL'
+  '....www......www.sLLLLL.'
+  '...wwww......wwww.LLL...'
+  '...qqqq......qqqq.......'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # kobold_scout: small reptile + dagger
-Ell $b 6 11 10 8 $PAL.earth3; Ell $b 7 13 7 5 $PAL.earth2
-Ell $b 13 7 8 7 $PAL.earth3; FR $b 20 9 2 2 $PAL.earth2; Eyes $b 17 9 $PAL.danger
-P $b 15 5 $PAL.clsCleric; P $b 18 5 $PAL.clsCleric
-FR $b 5 12 2 6 $PAL.clsKnight; FR $b 4 17 3 2 $PAL.earth1; FR $b 11 18 3 3 $PAL.earth2
-SaveEnemy $b 'kobold_scout'
+Save-EnemyGrid 'dread_knight' @(    # elite: black plate, greatsword planted
+  '........................'
+  '...V..........V.........'
+  '...VV........VV.........'
+  '....3333333333..........'
+  '...32222222223..........'
+  '...32DD2222DD23.........'
+  '...322222222223...LL....'
+  '....322222222.....LL....'
+  '..3333333333333...LL....'
+  '.33222222222233...LL....'
+  '.32222222222223...LL....'
+  '.3222VVVVVVV223...LL....'
+  '.3222222222223..LLLLLL..'
+  '.33222222222233..LLLL...'
+  '..322222222223....LL....'
+  '..132222222231....LL....'
+  '..11322222231111..LL....'
+  '..1113333331111...LL....'
+  '...111......111...LL....'
+  '...111......111...LL....'
+  '...222......222...LL....'
+  '..2222......2222..rr....'
+  '..1111......1111........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # zombie: slumped, sickly
-FR $b 12 5 6 6 $PAL.veg2; FR $b 12 9 6 1 $PAL.night1; Eyes $b 14 7 $PAL.gold
-FR $b 8 10 9 9 $PAL.veg1; FR $b 8 10 9 1 $PAL.veg2; Speckle $b 8 11 9 8 $PAL.maroonD 0.12
-FR $b 6 11 2 6 $PAL.veg1; FR $b 16 12 2 5 $PAL.veg2
-FR $b 8 19 3 3 $PAL.veg1; FR $b 12 19 3 3 $PAL.night2
-SaveEnemy $b 'zombie'
+# --- Family: undead (bone showing through, negative space in the ribs) ---
 
-$b = New-Img 24 24                                                # wild_boar: quadruped + tusk
-Ell $b 4 9 14 9 $PAL.earth2; Ell $b 5 12 12 5 $PAL.earth1
-Ell $b 15 8 8 8 $PAL.earth2; FR $b 21 11 2 2 $PAL.earth1; Eyes $b 18 10 $PAL.danger
-P $b 20 14 $bone; P $b 21 13 $bone; FR $b 8 6 2 3 $PAL.earth3
-FR $b 5 17 2 5 $PAL.earth1; FR $b 9 17 2 5 $PAL.earth1; FR $b 13 17 2 5 $PAL.earth1
-SaveEnemy $b 'wild_boar'
+Save-EnemyGrid 'skeleton_archer' @( # skeleton, bow taller than the archer
+  '........................'
+  '........................'
+  '.....NNNN....Zss........'
+  '....NNNNNN...Z..ss......'
+  '....NKNNKN...Z....s.....'
+  '....NNNNNN...Z.....s....'
+  '.....NNNN....Z......s...'
+  '......ZZ.....Z......s...'
+  '...NNNNNNN...Z.......s..'
+  '..NNZ.NN.ZNNZZ.......s..'
+  '..NN.NNNN.NN.Z.......s..'
+  '..N.NNZZNN.N.Z.......s..'
+  '....NNNNNN...Z.......s..'
+  '..N.NNZZNN.N.Z.......s..'
+  '..NN.NNNN.NN.Z.......s..'
+  '...NNNNNNN...Z......s...'
+  '.....ZZZZ....Z......s...'
+  '.....NNNN....Z.....s....'
+  '....NN..NN...Z....s.....'
+  '....NN..NN...Z..ss......'
+  '....NN..NN...Zss........'
+  '....NN..NN..............'
+  '...NNN..NNN.............'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # bandit: masked human + blade
-FR $b 11 4 6 6 $PAL.earth3; FR $b 11 6 6 2 $PAL.maroon; Eyes $b 13 6 $PAL.gold
-FR $b 8 10 10 9 $PAL.earth1; FR $b 8 10 10 1 $PAL.earth2; FR $b 11 12 3 7 $PAL.maroonD
-FR $b 5 6 2 12 $PAL.clsKnight; P $b 5 5 $PAL.stone4
-FR $b 9 19 3 3 $PAL.night2; FR $b 14 19 3 3 $PAL.night2
-SaveEnemy $b 'bandit'
+Save-EnemyGrid 'zombie' @(          # shambler: arm out front, torn-open gut
+  '........................'
+  '........................'
+  '..........xxxxx.........'
+  '.........xxxxxxx........'
+  '.........xYxxxYx........'
+  '.........xxxxxxx........'
+  '..........xxxxx.........'
+  '..........xKKKx.........'
+  '.......xxxxxxxx.........'
+  '.....xxxxxxxxxxxxxxxxx..'
+  '....xxxxxxxxxxxxxxxxxxz.'
+  '....xxxxxxxxxxxxxx......'
+  '....xxxxxxxxxxx.........'
+  '..x.xxxxx..xxxx.........'
+  '..xx.xxx....xxx.........'
+  '..xx.xxxx..xxxx.........'
+  '..xx.xxxxxxxxxx.........'
+  '..xx.xxxxxxxxx..........'
+  '..zz.xxxxxxxxx..........'
+  '.....xxxx..xxx..........'
+  '.....xxx...xxx..........'
+  '.....xxx...xxx..........'
+  '....zxxx...xxxz.........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # frost_imp: winged + cyan
-Ell $b 9 10 9 8 $PAL.wat2; Ell $b 10 12 6 4 $PAL.wat1
-Ell $b 14 6 7 7 $PAL.wat2; Eyes $b 17 8 $PAL.cyan
-foreach ($s in @(@(9, -1), @(15, 1))) { $x = $s[0]; $d = $s[1]; for ($k = 0; $k -lt 5; $k++) { P $b ($x + $d * $k) (9 + $k) $PAL.wat3 } }
-P $b 16 4 $PAL.cyan; P $b 19 4 $PAL.cyan; FR $b 10 18 2 3 $PAL.wat1; FR $b 14 18 2 3 $PAL.wat1
-SaveEnemy $b 'frost_imp'
+Save-EnemyGrid 'grave_wight' @(     # gaunt shroud, long reaching claws
+  '........................'
+  '.........22222..........'
+  '........2333332.........'
+  '........3YY33YY3........'
+  '........33333333........'
+  '.........333333.........'
+  '..........3333..........'
+  '.......3333333333.......'
+  '.....q33333333333q......'
+  '....q3333333333333q.....'
+  '...q33333333333333q.....'
+  '...N333333333333333N....'
+  '..NN33333333333333NN....'
+  '.N.N3333333333333N.N....'
+  'N..N33333333333N.N..N...'
+  '....333333333333........'
+  '....333333333333........'
+  '....33322333333.........'
+  '....3332..33333.........'
+  '.....332...3333.........'
+  '.....22.....333.........'
+  '.....22.....222.........'
+  '....222.....222.........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # mud_crawler: low armored slug
-Ell $b 3 12 19 8 $PAL.earth1; Ell $b 4 14 17 5 $PAL.earth2
-FR $b 5 11 3 3 $PAL.stone2; FR $b 9 10 3 3 $PAL.stone2; FR $b 13 11 3 3 $PAL.stone2; FR $b 17 12 3 2 $PAL.stone2
-Ell $b 16 13 7 6 $PAL.earth2; Eyes $b 19 15 $PAL.gold; Speckle $b 4 15 17 4 $PAL.earth3 0.10
-SaveEnemy $b 'mud_crawler'
+Save-EnemyGrid 'corpse_hound' @(    # the ribs are HOLES: gaps carry the read
+  '........................'
+  '........................'
+  '...............zzz......'
+  '..............zcccz.....'
+  '.............zcccccz....'
+  '............zccDccccz...'
+  '...........zccccccccz...'
+  '..zzz.....zcccccccccNN..'
+  '.zcccz...zccccccccNNN...'
+  'zcccccz.zcccccccccc.....'
+  'zcc.cc.zccccccccccc.....'
+  'zc.cc.c.cccccccccc......'
+  'zc.cc.c.cccccccccc......'
+  'zcc.cc.zcccccccccc......'
+  'zcccccczcccccccccc......'
+  '.zcccccccccccccccz......'
+  '..zc..zc...zc..zcz......'
+  '..zc..zc...zc..zc.......'
+  '..zc..zc...zc..zc.......'
+  '..zc..zc...zc..zc.......'
+  '..zc..zc...zc..zc.......'
+  '.zzc..zzc..zzc.zzc......'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # wisp: floating glow orb
-Ell $b 7 7 10 10 $PAL.violet; Ell $b 8 8 8 8 $PAL.cyan; Ell $b 10 9 5 5 $PAL.glint
-P $b 12 11 $PAL.night1
-foreach ($t in @(@(4, 6), @(19, 8), @(6, 18), @(17, 17))) { P $b $t[0] $t[1] $PAL.cyan }
-P $b 3 12 $PAL.glint; P $b 20 13 $PAL.glint
-SaveEnemy $b 'wisp'
+Save-EnemyGrid 'grave_chanter' @(   # elite: skeletal reader, enormous tome
+  '........................'
+  '.....V........V.........'
+  '.....VV......VV.........'
+  '......NNNNNNNN..........'
+  '.....NNKNNNKNNN.........'
+  '.....NNNNNNNNNN.........'
+  '......NZZZZZZN..........'
+  '....33333333333.........'
+  '...3333333333333........'
+  '..333333333333333.......'
+  '..33333333333333LLLLLLL.'
+  '..3333VVVVVV333LNNNNNNNL'
+  '..333333333333.LNZZZZZNL'
+  '..3333333333333LNNNNNNNL'
+  '..3333333333333LNZZZZZNL'
+  '..3333333333333LNNNNNNNL'
+  '...333333333333LLLLLLLL.'
+  '...33333333333..........'
+  '...333333333333.........'
+  '...3333333333333........'
+  '..233333333333332.......'
+  '..222222222222222.......'
+  '...2222222222222........'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # forest_wolf: quadruped canine
-Ell $b 3 9 14 8 $PAL.stone3; Ell $b 4 12 12 5 $PAL.stone2
-Ell $b 14 7 8 7 $PAL.stone3; FR $b 20 9 2 2 $PAL.stone2; Eyes $b 18 9 $PAL.gold
-P $b 15 5 $PAL.stone3; P $b 19 5 $PAL.stone3; FR $b 2 12 3 2 $PAL.stone4
-FR $b 5 16 2 6 $PAL.stone2; FR $b 9 16 2 6 $PAL.stone2; FR $b 13 16 2 6 $PAL.stone2
-SaveEnemy $b 'forest_wolf'
+Save-EnemyGrid 'bone_colossus' @(   # elite: a wall of ribs, arms like pillars
+  '........................'
+  '.......V......V.........'
+  '.......VV....VV.........'
+  '........NNNNNN..........'
+  '.......NNKNNKNN.........'
+  '.......NNNNNNNN.........'
+  '........NZZZZN..........'
+  '.NNNNNNNNNNNNNNNNNNNN...'
+  'NNZZNNNNNNNNNNNNNNZZNN..'
+  'NNZZNN.NNNNNNNN.NNZZNN..'
+  'NNZZN.NNNNNNNNNN.NZZNN..'
+  'NNZZN.N.NNNNNN.N.NZZNN..'
+  'NNZZN.NNNNNNNNNN.NZZNN..'
+  'NNZZN.N.NNNNNN.N.NZZNN..'
+  'NNZZN.NNNNNNNNNN.NZZNN..'
+  'NNZZN.N.NNNNNN.N.NZZNN..'
+  'NNZZNN.NNNNNNNN.NNZZNN..'
+  'NNZZNNNNVVVVVVNNNNZZNN..'
+  '.NNNNNNNNNNNNNNNNNNNN...'
+  '.....NNNNN..NNNNN.......'
+  '.....NNNN....NNNN.......'
+  '.....NNNN....NNNN.......'
+  '....ZNNNN....ZNNNN......'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # bog_shaman: robed healer + totem
-FR $b 9 5 7 5 $PAL.veg2; FR $b 9 8 7 2 $PAL.night1; Eyes $b 11 7 $PAL.heal
-FR $b 6 10 13 11 $PAL.veg1; FR $b 6 10 13 1 $PAL.veg2; FR $b 10 12 5 9 $PAL.veg0
-FR $b 18 4 2 17 $PAL.earth2; Ell $b 16 2 5 5 $PAL.heal; P $b 18 4 $PAL.glint
-SaveEnemy $b 'bog_shaman'
+Save-EnemyGrid 'soul_render' @(     # elite: legless wraith, huge scythe
+  '........................'
+  '...V.......V......LLLLLL'
+  '...VV.....VV.....LLL....'
+  '....2222222.....LL......'
+  '...222222222....L.......'
+  '...22VV2VV22....s.......'
+  '...222222222....s.......'
+  '....2222222.....s.......'
+  '..12222222221...s.......'
+  '.1122222222211..s.......'
+  '.1222222222221..s.......'
+  '.12222VVVV22221.s.......'
+  '.1222222222221..s.......'
+  '..122222222211..s.......'
+  '..1222222222.1..s.......'
+  '...12222222....ss.......'
+  '...1222222.1...s........'
+  '....12222.....s.........'
+  '....1.222..1..s.........'
+  '.....1222....s..........'
+  '.....1.22...s...........'
+  '......122.1.............'
+  '.......1................'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # war_drummer: buffer + drum
-FR $b 12 5 6 6 $PAL.earth3; FR $b 12 8 6 1 $PAL.night1; Eyes $b 14 7 $PAL.danger
-FR $b 11 10 8 9 $PAL.earth2; FR $b 11 10 8 1 $PAL.earth3
-Ell $b 3 11 9 10 $PAL.earth1; Ell $b 4 12 7 8 $PAL.maroon; FR $b 7 12 1 8 $PAL.danger; FR $b 4 15 7 1 $PAL.danger
-FR $b 12 4 1 4 $PAL.earth3; P $b 12 3 $PAL.gold
-FR $b 12 19 3 3 $PAL.earth1; FR $b 16 19 2 3 $PAL.earth1
-SaveEnemy $b 'war_drummer'
+Save-EnemyGrid 'plague_bearer' @(   # elite: bloated gut, tiny head, buboes
+  '........................'
+  '............V...V.......'
+  '...........VV...VV......'
+  '...........cccccc.......'
+  '..........ccVccVcc......'
+  '..........cccccccc......'
+  '...........cccccc.......'
+  '......ccccccccccccc.....'
+  '....cccccccccccccccc....'
+  '...cccccvvvvvvvcccccc...'
+  '..cccvvvvvvvvvvvvcccc...'
+  '.ccccvvvvVvvvvVvvvcccc..'
+  '.cccvvvvvvvvvvvvvvvccc..'
+  '.cccvvvVvvvvvvvVvvvccc..'
+  '.cccvvvvvvvvvvvvvvvccc..'
+  '.cccvvvvvVvvvVvvvvvccc..'
+  '.ccccvvvvvvvvvvvvvccc...'
+  '..xccccvvvvvvvvvcccc....'
+  '..xxccccccccccccccx.....'
+  '...xxxccccccccccxx......'
+  '....xxx........xxx......'
+  '....xxx........xxx......'
+  '...zxxx........xxxz.....'
+  '........................'
+)
 
-# --- 7 elite enemies (24x24; larger, horns, violet accent) ---
+# --- Family: beast (no weapons; the body plan itself is the silhouette) ---
 
-$b = New-Img 24 24                                                # ogre_marauder: huge brute + club
-Ell $b 3 8 17 14 $PAL.maroon; Ell $b 5 11 14 10 $PAL.maroonD
-Ell $b 12 4 10 9 $PAL.maroon; Horns $b 14 3; Eyes $b 17 7 $PAL.danger
-FR $b 9 12 8 1 $PAL.violet; P $b 20 9 $bone
-FR $b 2 5 3 12 $PAL.earth2; FR $b 1 3 5 3 $PAL.earth1
-FR $b 6 21 4 2 $PAL.maroonD; FR $b 13 21 4 2 $PAL.maroonD
-SaveEnemy $b 'ogre_marauder'
+Save-EnemyGrid 'cave_bat' @(        # wing span three times the body
+  '........................'
+  '.......3.......3........'
+  '.......33.....33........'
+  '........3333333.........'
+  '.......333333333........'
+  '.......3D33333D3........'
+  '.......333333333........'
+  '........3NNNNN3.........'
+  '..2222...33333...2222...'
+  '.222222.3333333.222222..'
+  '22222222233333222222222.'
+  '2233222223333322222332..'
+  '223.22222333332222.322..'
+  '22...2222333322222...22.'
+  '.2....222333322222....2.'
+  '.......2233332222.......'
+  '........233332..........'
+  '.........33333..........'
+  '.........33333..........'
+  '..........333...........'
+  '.........N...N..........'
+  '........................'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # troll_berserker: tall lanky brute
-Ell $b 6 8 12 13 $PAL.veg3; Ell $b 7 11 10 9 $PAL.veg2
-Ell $b 11 3 9 8 $PAL.veg3; Horns $b 13 2; Eyes $b 16 6 $PAL.danger
-FR $b 8 11 8 1 $PAL.violet; P $b 19 8 $bone; P $b 20 9 $bone
-FR $b 4 9 2 9 $PAL.veg2; FR $b 3 17 3 2 $PAL.veg1; FR $b 18 10 2 8 $PAL.veg2
-FR $b 8 21 3 2 $PAL.veg1; FR $b 13 21 3 2 $PAL.veg1
-SaveEnemy $b 'troll_berserker'
+Save-EnemyGrid 'venom_spider' @(    # eight legs, all negative space
+  '........................'
+  '.z....................z.'
+  '.zz..................zz.'
+  '..zz................zz..'
+  '..zz.z...........z..zz..'
+  '...zz.zz.......zz..zz...'
+  '...zz..zz.....zz...zz...'
+  '....zz..xxxxxxx...zz....'
+  '.....z.xxxxxxxxx..z.....'
+  '......xxccccccxxx.......'
+  '.....xxcccccccccxx......'
+  '....xxccccVccVcccxx.....'
+  '....xcccccccccccccx.....'
+  '....xccccHHHHHccccx.....'
+  '....xcccccccccccccx.....'
+  '.....xxcccccccccxx......'
+  '...zz..xxcccccxx..zz....'
+  '..zz.zz..xxxxx...zz.zz..'
+  '..zz..zz.......zz...zz..'
+  '.zz....zz.....zz.....zz.'
+  '.zz.....z.....z.......zz'
+  '.z....................z.'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # crystal_guardian: crystalline armored
-FR $b 6 7 12 14 $PAL.stone3; FR $b 7 8 10 12 $PAL.stone2; FR $b 6 7 12 2 $PAL.stone4
-FR $b 9 3 6 6 $PAL.stone3; Eyes $b 11 5 $PAL.cyan
-FR $b 4 9 3 5 $PAL.violet; P $b 4 8 $PAL.glint; FR $b 10 10 4 7 $PAL.cyan; P $b 11 9 $PAL.glint
-Horns $b 12 3; FR $b 17 9 3 8 $PAL.stone3
-FR $b 7 21 3 2 $PAL.stone4; FR $b 13 21 3 2 $PAL.stone4
-SaveEnemy $b 'crystal_guardian'
+Save-EnemyGrid 'wild_boar' @(       # bristle hump forward, tusks up
+  '........................'
+  '........................'
+  '.......ss...............'
+  '......ssss..............'
+  '.....ssdsds.............'
+  '....ssdddddss...........'
+  '...sddddddddss..........'
+  '..sdddddddddddss...NN...'
+  '.sddddddddddddddss.NN...'
+  '.sdddddddddddddddsNNs...'
+  'sddffddddddddddddddds...'
+  'sdffffdddddddDddddds....'
+  'sdffffddddddddddddss....'
+  'saffffdddddddddddss.....'
+  '.saffdddddddddddss......'
+  '..sadddddddddddss.......'
+  '...saaddddddddss........'
+  '....sa.ss.ss.ss.........'
+  '....sa.ss.ss.ss.........'
+  '.......ss.ss.ss.........'
+  '.......ss.ss.ss.........'
+  '......aaa.aa.aaa........'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # shadow_stalker: sleek assassin
-Ell $b 6 8 12 12 $PAL.night3; Ell $b 7 11 10 8 $PAL.night2
-Ell $b 12 4 8 8 $PAL.night3; Horns $b 13 3; Eyes $b 16 7 $PAL.violet
-FR $b 7 9 9 1 $PAL.stone2; FR $b 8 12 8 1 $PAL.violet
-FR $b 3 9 4 2 $PAL.clsKnight; FR $b 17 12 5 2 $PAL.clsKnight
-P $b 20 12 $PAL.glint; FR $b 8 20 3 2 $PAL.night2; FR $b 13 20 3 2 $PAL.night2
-SaveEnemy $b 'shadow_stalker'
+Save-EnemyGrid 'forest_wolf' @(     # lean, long legs, ears and tail up
+  '........................'
+  '........................'
+  '.q..................q...'
+  '.qq...............q.q...'
+  '.qqq..............qq.q..'
+  '..qqq............eqq.q..'
+  '..qqqq..........eeeqq...'
+  '...qqqqqqqqqqqqeeeeee...'
+  '...qeeeeeeeeeeeeeYeeYe..'
+  '..qeeeeeeeeeeeeeeeeeee..'
+  '.qeerrrreeeeeeeeeeeeeNN.'
+  '.qeerrrrrreeeeeeeeeNNN..'
+  '.qeerrrreeeeeeeeeeee....'
+  '..qeeeeeeeeeeeeeeee.....'
+  '...qqeeeeeeeeeeeee......'
+  '....qq.ee..ee..ee.......'
+  '.......ee..ee..ee.......'
+  '.......ee..ee..ee.......'
+  '.......ee..ee..ee.......'
+  '.......ee..ee..ee.......'
+  '......qee.qee.qee.......'
+  '......qqq.qqq.qqq.......'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # plague_bearer: bloated, miasma
-Ell $b 4 9 16 12 $PAL.veg2; Ell $b 6 12 13 8 $PAL.veg1
-Ell $b 13 5 9 8 $PAL.veg2; Horns $b 15 4; Eyes $b 18 8 $PAL.violet
-Speckle $b 6 11 13 9 $PAL.violet 0.10; FR $b 9 12 8 1 $PAL.violet
-P $b 5 7 $PAL.veg3; P $b 3 9 $PAL.veg3; P $b 20 6 $PAL.veg3
-FR $b 7 21 4 2 $PAL.veg0; FR $b 13 21 4 2 $PAL.veg0
-SaveEnemy $b 'plague_bearer'
+Save-EnemyGrid 'sand_lurker' @(     # limbless: one long diagonal serpent
+  '........................'
+  '........................'
+  '........................'
+  '..............ffffff....'
+  '.............ffddddff...'
+  '.............fdddddddf..'
+  '.............fdVddVddf..'
+  '.............fddddddddf.'
+  '.............fddNNdddd..'
+  '............ffddddddf...'
+  '...........ffddddddf....'
+  '..........ffdddddff.....'
+  '.........ffdddddf.......'
+  '........ffdddddf........'
+  '.......ffdddddf.........'
+  '......ffdddddf..........'
+  '.....ffdddddf...........'
+  '....ffdddddf............'
+  '...ffdddddf.............'
+  '..ffdddddf..............'
+  '..fddddddffffff.........'
+  '..fdddddddddddffffff....'
+  '..sffdddddddddddddddff..'
+  '...sssssssssssssssssss..'
+)
 
-$b = New-Img 24 24                                                # iron_sentinel: armored construct + shield
-FR $b 8 6 11 15 $PAL.stone3; FR $b 9 7 9 13 $PAL.stone2; FR $b 8 6 11 2 $PAL.stone4
-FR $b 11 3 6 5 $PAL.stone3; Eyes $b 13 5 $PAL.danger; Horns $b 12 3
-FR $b 3 6 5 14 $PAL.stone4; FR $b 4 7 3 12 $PAL.stone3; FR $b 5 9 1 8 $PAL.violet
-FR $b 18 10 2 8 $PAL.stone3; FR $b 9 21 3 2 $PAL.stone4; FR $b 14 21 3 2 $PAL.stone4
-SaveEnemy $b 'iron_sentinel'
+Save-EnemyGrid 'mud_crawler' @(     # low armoured woodlouse, plate ridges
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '.......ww...ww..........'
+  '......wwww.wwww.........'
+  '.....wwwwwwwwwww........'
+  '....weewweewweewww......'
+  '...weeeweeeweeeewwww....'
+  '..seeeeseeeeseeeeewww...'
+  '.saaaaasaaaaasaaaaawwq..'
+  '.sddddsddddsddddsddwYq..'
+  'sddddsddddsddddsdddwwYq.'
+  'sdddsddddsddddsddddwwwq.'
+  'ssdssddddsddddsdddsswwq.'
+  '.aa.aa..aa..aa..aa.wwq..'
+  '.a...a..a....a..a..qq...'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # grave_chanter: skeletal robed caster
-FR $b 10 4 6 6 $bone; FR $b 10 8 6 1 $PAL.night1; Eyes $b 12 6 $PAL.violet
-FR $b 6 10 13 11 $PAL.night3; FR $b 6 10 13 1 $PAL.stone1; FR $b 10 12 5 9 $PAL.night2
-FR $b 8 12 9 1 $PAL.violet; Horns $b 12 3
-FR $b 18 5 1 16 $PAL.stone4; Ell $b 16 2 5 5 $PAL.violet; P $b 18 4 $PAL.glint
-SaveEnemy $b 'grave_chanter'
+Save-EnemyGrid 'frost_imp' @(       # slender, tall ice horns, sharp wings
+  '........................'
+  '.....C..........C.......'
+  '.....C..........C.......'
+  '....CG..........GC......'
+  '....pC..........Cp......'
+  '.....pooooooooop........'
+  '....poooooooooooop......'
+  '....pooCoooooCooop......'
+  '....pooooooooooooop.....'
+  '.....pooooooooooop......'
+  '.p....poooooooop....p...'
+  '.pp....pooooooop...pp...'
+  '.opp....pooooop...ppo...'
+  '.oopp...pooooop..ppoo...'
+  '.ooopp..pooooop.ppooo...'
+  '.oooopp.pooooop.pooo....'
+  '..ooop..pooooop..poo....'
+  '...op...ppooopp...p.....'
+  '........poooop..........'
+  '........po..op..........'
+  '........po..op..........'
+  '.......ppo..opp.........'
+  '........................'
+  '........................'
+)
 
-# --- 4 bosses (32x32; largest, gold crown, violet/cyan crystal glow) ---
+Save-EnemyGrid 'mire_imp' @(        # squat toad, wide grin, drooping wings
+  '........................'
+  '........................'
+  '........................'
+  '.......cc.....cc........'
+  '......cVVc...cVVc.......'
+  '......ccccccccccc.......'
+  '.....ccccccccccccc......'
+  '....cccVccccccVccc......'
+  '....ccccccccccccccc.....'
+  '....cNNNNNNNNNNNNNc.....'
+  '..zzccccccccccccccczz...'
+  '.zxxccccccccccccccxxxz..'
+  '.zxxxccccccccccccxxxxz..'
+  '.zxxxxcccccccccccxxxxz..'
+  '..zxxxxcccccccccxxxxz...'
+  '...zxxxccccccccxxxxz....'
+  '....zxxccccccccxxxz.....'
+  '.....zcccccccccccz......'
+  '......cccc..cccc........'
+  '......ccc....ccc........'
+  '.....zccz....zccz.......'
+  '.....zzzz....zzzz.......'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 32 32                                                # keep_warden: towering brute + cleaver
-Ell $b 4 10 22 20 $PAL.maroon; Ell $b 7 14 17 15 $PAL.maroonD
-Ell $b 16 4 13 12 $PAL.maroon; Crown $b 18 3; Eyes $b 23 9 $PAL.danger
-FR $b 11 15 12 2 $PAL.violet; FR $b 3 6 3 18 $PAL.stone3; FR $b 1 4 7 4 $PAL.stone4; P $b 2 5 $PAL.glint
-FR $b 9 30 5 2 $PAL.maroonD; FR $b 18 30 5 2 $PAL.maroonD
-SaveEnemy $b 'boss_keep_warden'
+# --- Family: caster (robes are interchangeable, so the HEADGEAR carries the
+# --- silhouette: cone hood / antlers / mitre / plague beak / orb / shard) ---
 
-$b = New-Img 32 32                                                # crystal_sorcerer: mage + crystal staff
-FR $b 9 6 10 7 $PAL.night2; FR $b 10 11 8 2 $PAL.night1; Eyes $b 12 9 $PAL.cyan
-FR $b 6 12 17 18 $PAL.night3; FR $b 6 12 17 2 $PAL.stone1; FR $b 12 15 5 15 $PAL.night2
-Crown $b 11 5; FR $b 22 4 2 26 $PAL.earth2
-$g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
-$g.FillPolygon((New-Object System.Drawing.SolidBrush(C $PAL.cyan)), [System.Drawing.Point[]]@((New-Object System.Drawing.Point(23, 1)), (New-Object System.Drawing.Point(27, 6)), (New-Object System.Drawing.Point(23, 11)), (New-Object System.Drawing.Point(19, 6)))); $g.Dispose()
-P $b 23 5 $PAL.glint; FR $b 8 15 12 1 $PAL.violet
-SaveEnemy $b 'boss_crystal_sorcerer'
+Save-EnemyGrid 'dark_acolyte' @(    # tall cone hood, orb floating at the hand
+  '........................'
+  '.........22.............'
+  '........2222............'
+  '........2222............'
+  '.......222222...........'
+  '.......222222...........'
+  '......22222222..........'
+  '......22111122..........'
+  '......22VKKV22..........'
+  '.....221111122..........'
+  '.....2222222222.........'
+  '....222222222222........'
+  '....2222222222222.......'
+  '...22222222222222.VVVV..'
+  '...222222222222222VGGGV.'
+  '...3222222222222.VGGGGGV'
+  '...3322222222222..VGGGV.'
+  '..333222222222222..VVVV.'
+  '..3332222222222222......'
+  '..33322222222222........'
+  '..333222222222222.......'
+  '.3333222222222222.......'
+  '.3333333222222233.......'
+  '........................'
+)
 
-$b = New-Img 32 32                                                # hollow_commander: armored + banner
-FR $b 10 7 10 7 $PAL.stone3; FR $b 11 12 8 2 $PAL.night1; Eyes $b 13 10 $PAL.danger
-FR $b 7 13 16 17 $PAL.stone2; FR $b 7 13 16 2 $PAL.stone4; FR $b 13 16 5 14 $PAL.stone3
-Crown $b 12 6; FR $b 4 3 2 24 $PAL.earth2; FR $b 6 4 6 8 $PAL.violet; FR $b 6 4 6 1 $PAL.glint
-FR $b 21 10 2 16 $PAL.clsKnight; P $b 22 9 $PAL.stone4; FR $b 9 15 12 1 $PAL.violet
-FR $b 10 30 5 2 $PAL.stone4; FR $b 17 30 5 2 $PAL.stone4
-SaveEnemy $b 'boss_hollow_commander'
+Save-EnemyGrid 'bog_shaman' @(      # antler crown wider than the shaman
+  '........................'
+  '.f...................f..'
+  '.f...f.........f.....f..'
+  '..f..f.........f....f...'
+  '..ff.ff.......ff.ffff...'
+  '...fffff.....fffff......'
+  '.....ffff...ffff........'
+  '......cccccccccc........'
+  '.....cczzzzzzzcc........'
+  '.....ccHzzzzzHcc........'
+  '.....cczzzzzzzcc........'
+  '......cccccccc.......f..'
+  '....cccccccccccc....ff..'
+  '...ccccccccccccc...fHf..'
+  '..cccccxxxxxcccc....ff..'
+  '..ccccxxxxxxxccc.....f..'
+  '..cccxxxxxxxxxcc.....f..'
+  '..cccxxxxxxxxxcc.....f..'
+  '..ccxxxxxxxxxxxcc....f..'
+  '..ccxxxxxxxxxxxcc....f..'
+  '.zccxxxxxxxxxxxccz...f..'
+  '.zzcxxxxxxxxxxxczz...f..'
+  '.zzzzzzzzzzzzzzzzz...f..'
+  '........................'
+)
 
-$b = New-Img 32 32                                                # rush_tyrant: hulking aggressor
-Ell $b 3 9 24 21 $PAL.bossBody; Ell $b 6 13 18 15 $PAL.bossD
-Ell $b 15 3 14 13 $PAL.bossBody; Crown $b 18 2; Eyes $b 23 8 $PAL.danger
-FR $b 10 15 13 2 $PAL.violet; FR $b 6 11 3 6 $PAL.cyan; P $b 6 10 $PAL.glint
-FR $b 11 12 3 7 $PAL.violet; P $b 12 11 $PAL.glint
-FR $b 2 12 3 8 $PAL.bossD; FR $b 27 12 3 8 $PAL.bossD
-FR $b 8 30 5 2 $PAL.bossD; FR $b 19 30 5 2 $PAL.bossD
-SaveEnemy $b 'boss_rush_tyrant'
+Save-EnemyGrid 'gloom_priest' @(    # wide flat mitre, censer on a long chain
+  '........................'
+  '....NNNNNNNNNNNN........'
+  '...NNNNNNNNNNNNNN.......'
+  '....NNNNNNNNNNNN........'
+  '.......NN22NN...........'
+  '......NN2222NN..........'
+  '......N2HKKH2N..........'
+  '......NN2222NN..........'
+  '.......NNNNNN...........'
+  '....NNNNNNNNNNNN........'
+  '...NN2222222222NN.......'
+  '...N222222222222N....Z..'
+  '...N222222222222N....Z..'
+  '...N222HHHH22222N....Z..'
+  '...N222222222222N....Z..'
+  '...NN2222222222NN...ZZ..'
+  '....N2222222222N....HH..'
+  '....N2222222222N...HHHH.'
+  '....N2222222222N...HYYH.'
+  '....N2222222222N...HHHH.'
+  '....N2222222222N....HH..'
+  '...NN2222222222NN.......'
+  '...NNNNNNNNNNNNNN.......'
+  '........................'
+)
 
-Write-Output 'Generating M29 expansion battle sprites...'
+Save-EnemyGrid 'blight_chanter' @(  # elite: plague beak, brim, censer vial
+  '........................'
+  '.....V..........V.......'
+  '.....VV........VV.......'
+  '...zzzzzzzzzzzzzz.......'
+  '..zzzzzzzzzzzzzzzz......'
+  '...zzzcccccccczzz.......'
+  '.....ccccccccccc........'
+  '.....ccHccccHccc........'
+  '.....cccccccccccff......'
+  '.....ccccccccffff.......'
+  '.....cccccccff..........'
+  '....zzcccccz............'
+  '...zzzcccczzz.......H...'
+  '..zzzzccczzzzz.....HHH..'
+  '..zzzzzzzzzzzz.....HHH..'
+  '..zzzzcHHHczzzz.....H...'
+  '..zzzzzHHHzzzzz.....z...'
+  '..zzzzzcHczzzzz.....z...'
+  '..zzzzzzzzzzzzz.....z...'
+  '..zzzzzzzzzzzzz.....z...'
+  '.zzzzzzzzzzzzzzz....z...'
+  '.zzzzzzzzzzzzzzz....z...'
+  '.zzzzzzzzzzzzzzz........'
+  '........................'
+)
 
-# M29 content expansion: 8 new enemies (24x24) + 2 new bosses (32x32), same
-# art_bible conventions and helpers as the M26 set. Reseeded so these are stable
-# and the existing M26 sprites (already written above) stay byte-identical.
-$script:rng = 29290000
+Save-EnemyGrid 'wisp' @(            # bodiless: a core and its corona
+  '........................'
+  '..........C.............'
+  '........................'
+  '.....C.........C........'
+  '..........VV............'
+  '........VVGGVV..........'
+  '.......VGGGGGGV.........'
+  '..C...VGGCCCCGGV.....C..'
+  '......VGCCCCCCGV........'
+  '.....VGGCCWWCCGGV.......'
+  '.....VGCCCWWCCCGV.......'
+  '.....VGCCCWWCCCGV.......'
+  '.....VGGCCWWCCGGV.......'
+  '......VGCCCCCCGV........'
+  '..C...VGGCCCCGGV.....C..'
+  '.......VGGGGGGV.........'
+  '........VVGGVV..........'
+  '..........VV............'
+  '.....C.........C........'
+  '........................'
+  '..........C.............'
+  '........................'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # corpse_hound: undead canine
-Ell $b 3 9 14 8 $PAL.veg1; Ell $b 4 12 12 5 $PAL.veg0
-Ell $b 14 7 8 7 $PAL.veg1; FR $b 20 9 2 2 $PAL.veg0; Eyes $b 18 9 $PAL.danger
-P $b 15 5 $PAL.veg1; P $b 19 5 $PAL.veg1; FR $b 2 12 3 2 $PAL.night2
-FR $b 6 13 1 3 $bone; FR $b 9 13 1 3 $bone
-FR $b 5 16 2 6 $PAL.veg0; FR $b 9 16 2 6 $PAL.veg0; FR $b 13 16 2 6 $PAL.veg0
-SaveEnemy $b 'corpse_hound'
+Save-EnemyGrid 'hex_wisp' @(        # orb trailing a curtain of tendrils
+  '........................'
+  '.........VVVV...........'
+  '.......VVVVVVVV.........'
+  '......VVGGGGGGVV........'
+  '.....VVGGGGGGGGVV.......'
+  '.....VGGGKGGKGGGV.......'
+  '.....VGGGGGGGGGGV.......'
+  '.....VVGGGGGGGGVV.......'
+  '......VVGGGGGGVV........'
+  '.......VVVVVVVV.........'
+  '......V.V.VV.V.V........'
+  '......V.V.VV.V.V........'
+  '.....V..V.VV.V..V.......'
+  '.....V..V.VV.V..V.......'
+  '.....V.V..VV..V.V.......'
+  '....V..V..VV..V..V......'
+  '....V..V..VV..V..V......'
+  '....V.V...VV...V.V......'
+  '...V..V...VV...V..V.....'
+  '...V.V....VV....V.V.....'
+  '...V.V....VV....V.V.....'
+  '..V.V.....VV.....V.V....'
+  '..V.......VV.......V....'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # sand_lurker: coiled poison serpent
-Ell $b 4 12 15 7 $PAL.earth2; Ell $b 5 14 13 4 $PAL.earth1
-Ell $b 14 8 8 7 $PAL.earth2; FR $b 20 10 2 2 $PAL.earth1; Eyes $b 18 10 $PAL.violet
-P $b 15 6 $PAL.violet; P $b 17 6 $PAL.violet; P $b 3 10 $PAL.veg3; FR $b 4 11 2 2 $PAL.veg3
-Speckle $b 5 13 13 5 $PAL.violet 0.10
-SaveEnemy $b 'sand_lurker'
+Save-EnemyGrid 'shardling' @(       # a crystal splinter, no body at all
+  '........................'
+  '..............C.........'
+  '.............CG.........'
+  '............CGGC........'
+  '...........CGGGC........'
+  '..........CGGGGC........'
+  '....C....CGGGGGC........'
+  '...CG...CGGGGGCo........'
+  '..CGGC.CGGKGGCoo........'
+  '..CGGCCGGGGGCooo........'
+  '..CGGGGGGGGCoooo........'
+  '..CGGGGGGGCooooo...C....'
+  '..CGGGGGGCoooooo..CG....'
+  '...CGGGGCooooooo.CGGC...'
+  '...CGGGCoooooooo.CGGC...'
+  '....CGCooooooooo.CGoC...'
+  '....CCoooooooooo.CooC...'
+  '.....Coooooooooo.CooC...'
+  '.....Cooooooooo...CoC...'
+  '......Cooooooo.....CC...'
+  '.......Cooooo...........'
+  '........Cooo............'
+  '.........Co.............'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # gloom_priest: robed healer + cross
-FR $b 9 4 7 6 $PAL.night2; FR $b 9 8 7 2 $PAL.night1; Eyes $b 11 7 $PAL.heal
-FR $b 6 10 13 11 $PAL.night3; FR $b 6 10 13 1 $PAL.stone1; FR $b 10 12 5 9 $PAL.stone1
-FR $b 17 5 2 16 $PAL.earth2; Ell $b 15 2 5 5 $PAL.heal; P $b 17 4 $PAL.glint
-FR $b 11 13 3 1 $PAL.heal; FR $b 12 12 1 3 $PAL.heal
-SaveEnemy $b 'gloom_priest'
+Save-EnemyGrid 'void_weaver' @(     # elite: thread-thin arms, unravelling hem
+  '........................'
+  '.....V..........V.......'
+  '.....VV........VV.......'
+  '.......1111111..........'
+  '......111111111.........'
+  '......11VKKKV11.........'
+  '......111111111.........'
+  '.......1111111..........'
+  'V.......11111.......V...'
+  '.V.....1111111.....V....'
+  '..V...111111111...V.....'
+  '...VV11111111111VV......'
+  '.....11111111111........'
+  '.....11111111111........'
+  '.....1V111111V11........'
+  '.....11111111111........'
+  '.....11111111111........'
+  '.....1.1.1.1.1.1........'
+  '.....1.1.1.1.1.1........'
+  '.....1...1.1...1........'
+  '.....1...1.1...1........'
+  '.....1...1.1............'
+  '.........1..............'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # rune_sentry: armored rune construct
-FR $b 6 6 12 15 $PAL.stone3; FR $b 7 7 10 13 $PAL.stone2; FR $b 6 6 12 2 $PAL.stone4
-FR $b 9 3 6 5 $PAL.stone3; Eyes $b 11 5 $PAL.cyan
-FR $b 10 10 4 7 $PAL.night2; FR $b 11 11 2 5 $PAL.cyan; P $b 12 12 $PAL.glint
-FR $b 3 9 3 8 $PAL.stone3; FR $b 18 9 3 8 $PAL.stone3
-FR $b 7 21 3 2 $PAL.stone4; FR $b 13 21 3 2 $PAL.stone4
-SaveEnemy $b 'rune_sentry'
+# --- Family: construct & armoured protector (hard 90-degree geometry; the
+# --- shield or the growth on the back does the silhouette work) ---
 
-$b = New-Img 24 24                                                # standard_bearer: soldier + banner
-FR $b 10 6 6 6 $PAL.earth3; FR $b 10 8 6 2 $PAL.night1; Eyes $b 12 8 $PAL.gold
-FR $b 8 12 9 9 $PAL.earth1; FR $b 8 12 9 1 $PAL.earth2; FR $b 11 14 3 7 $PAL.maroonD
-FR $b 4 3 2 19 $PAL.earth2; FR $b 6 4 7 8 $PAL.maroon; FR $b 6 4 7 1 $PAL.gold; P $b 12 5 $PAL.gold
-FR $b 8 20 3 2 $PAL.night2; FR $b 13 20 3 2 $PAL.night2
-SaveEnemy $b 'standard_bearer'
+Save-EnemyGrid 'stone_golem' @(     # nothing but slabs; arms hang clear
+  '........................'
+  '........................'
+  '.........qqqqqq.........'
+  '.........rwwwwq.........'
+  '.........rwCwCq.........'
+  '.........rwwwwq.........'
+  '..rrrr...qqqqqq...rrrr..'
+  '..rwwq.rrrrrrrrrr.rwwq..'
+  '..rwwq.rwwwwwwwwq.rwwq..'
+  '..rwwq.rwwwwwwwwq.rwwq..'
+  '..rwwq.rwwqqqqwwq.rwwq..'
+  '..rwwq.rwwqwwqwwq.rwwq..'
+  '..rwwq.rwwqqqqwwq.rwwq..'
+  '..rwwq.rwwwwwwwwq.rwwq..'
+  '..rwwq.rwwwwwwwwq.rwwq..'
+  '..qwwq.rwwwwwwwwq.qwwq..'
+  '..qqqq.qqqqqqqqqq.qqqq..'
+  '.......rwwq.rwwq........'
+  '.......rwwq.rwwq........'
+  '.......rwwq.rwwq........'
+  '.......rwwq.rwwq........'
+  '......rrwwqqrrwwqq......'
+  '......qqqqq.qqqqq.......'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # mire_imp: winged poison imp
-Ell $b 9 10 9 8 $PAL.veg2; Ell $b 10 12 6 4 $PAL.veg1
-Ell $b 14 6 7 7 $PAL.veg2; Eyes $b 17 8 $PAL.violet
-foreach ($s in @(@(9, -1), @(15, 1))) { $x = $s[0]; $d = $s[1]; for ($k = 0; $k -lt 5; $k++) { P $b ($x + $d * $k) (9 + $k) $PAL.veg0 } }
-P $b 16 4 $PAL.violet; P $b 19 4 $PAL.violet; Speckle $b 10 11 6 6 $PAL.violet 0.12
-FR $b 10 18 2 3 $PAL.veg1; FR $b 14 18 2 3 $PAL.veg1
-SaveEnemy $b 'mire_imp'
+Save-EnemyGrid 'rune_sentry' @(     # floating monolith, one great rune eye
+  '........................'
+  '........................'
+  '.......qqqqqqqq.........'
+  '......qwwwwwwwwq........'
+  '.....qwwwwwwwwwwq.......'
+  '.....qwwwwwwwwwwq.......'
+  '.....qwwCCCCCCwwq.......'
+  '.....qwCCGGGGCCwq.......'
+  '.....qwCGGKKGGCwq.......'
+  '.....qwCGGKKGGCwq.......'
+  '.....qwCCGGGGCCwq.......'
+  '.....qwwCCCCCCwwq.......'
+  '.....qwwwwwwwwwwq.......'
+  '.....qwwwCwwCwwwq.......'
+  '.....qwwwwwwwwwwq.......'
+  '.....qwwwwwwwwwwq.......'
+  '.....qqwwwwwwwwqq.......'
+  '......qqwwwwwwqq........'
+  '.......qqwwwwqq.........'
+  '........qqwwqq..........'
+  '.........qqqq...........'
+  '..........C.............'
+  '...........C............'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # bone_colossus: giant skeletal wall
-Ell $b 3 8 18 14 $bone; Ell $b 5 11 14 10 $boneD
-Ell $b 12 3 10 9 $bone; Horns $b 14 3; Eyes $b 17 7 $PAL.violet
-for ($j = 10; $j -lt 20; $j++) { $rc = if ($j % 2) { $bone } else { $boneD }; FR $b 6 $j 12 1 $rc }
-FR $b 9 12 6 1 $PAL.violet; FR $b 2 10 2 9 $bone; FR $b 20 10 2 9 $bone
-FR $b 6 21 4 2 $boneD; FR $b 13 21 4 2 $boneD
-SaveEnemy $b 'bone_colossus'
+Save-EnemyGrid 'crystal_guardian' @( # elite: shards erupting from the back
+  '.C......................'
+  '.CG..V.........V........'
+  '..CG.VV.......VV........'
+  'C..CG..eeeeee...........'
+  'CG..C.eeCeeCee..........'
+  '.CG...eeeeeeee..........'
+  '..C....eeeeee...........'
+  'C....eeeeeeeeee.........'
+  'CG..eeeeeeeeeeee........'
+  '.CG.eerrrrrrreee........'
+  '..C.eerCCCCCreee........'
+  '....eerCGGGCreee........'
+  '....eerCCCCCreee........'
+  '....eerrrrrrreee........'
+  '....eeeeeeeeeeee........'
+  '....weeeeeeeeeew........'
+  '....wweeeeeeeeww........'
+  '....wwweeeeeewww........'
+  '....wwww....wwww........'
+  '....wwww....wwww........'
+  '....qqqq....qqqq........'
+  '...qqqqq....qqqqq.......'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 24 24                                                # void_weaver: dark disruptor mage
-FR $b 9 4 7 6 $PAL.night2; FR $b 9 8 7 2 $PAL.night1; Eyes $b 11 7 $PAL.violet
-FR $b 6 10 13 11 $PAL.night3; FR $b 6 10 13 1 $PAL.violet; FR $b 10 12 5 9 $PAL.night2
-Horns $b 12 3; FR $b 8 12 9 1 $PAL.violet
-FR $b 18 5 2 16 $PAL.night1; Ell $b 15 2 6 6 $PAL.violet; P $b 17 4 $PAL.glint
-Speckle $b 7 11 11 9 $PAL.violet 0.08
-SaveEnemy $b 'void_weaver'
+Save-EnemyGrid 'iron_sentinel' @(   # elite: narrow, tower shield front-on
+  '........................'
+  '........V....V..........'
+  '........VV..VV..........'
+  '.........eeee...........'
+  '........eeeeee..........'
+  '........eDeeDe..........'
+  '........eeeeee..........'
+  '.........eeee...........'
+  '.....rrrrrrrrrrrr.......'
+  '.....rwwwwwwwwwwr.......'
+  '.....rwqqqqqqqqwr.......'
+  '.....rwqrrrrrrqwr.......'
+  '.....rwqrVVVVrqwr.......'
+  '.....rwqrVGGVrqwr.......'
+  '.....rwqrVVVVrqwr.......'
+  '.....rwqrrrrrrqwr.......'
+  '.....rwqqqqqqqqwr.......'
+  '.....rwwwwwwwwwwr.......'
+  '.....rrrrrrrrrrrr.......'
+  '......ww......ww........'
+  '......ww......ww........'
+  '.....qqqq....qqqq.......'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 32 32                                                # deep_king: crowned crystal colossus + axe
-Ell $b 4 9 22 21 $PAL.stone2; Ell $b 7 13 17 16 $PAL.stone1
-Ell $b 15 3 14 13 $PAL.stone2; Crown $b 18 2; Eyes $b 22 8 $PAL.cyan
-FR $b 10 15 13 2 $PAL.cyan; FR $b 6 12 3 7 $PAL.cyan; P $b 6 11 $PAL.glint
-FR $b 12 12 3 8 $PAL.cyan; P $b 13 11 $PAL.glint
-FR $b 3 6 3 16 $PAL.earth2; FR $b 1 3 7 5 $PAL.stone4; P $b 3 5 $PAL.glint
-FR $b 9 30 5 2 $PAL.stone3; FR $b 19 30 5 2 $PAL.stone3
-SaveEnemy $b 'boss_deep_king'
+Save-EnemyGrid 'titan_guard' @(     # elite: squat colossus, slab shield right
+  '........................'
+  '..V.........V...........'
+  '..VV.......VV...........'
+  '....wwwwwwwww...........'
+  '...wwwCwwwCwww..........'
+  '...wwwwwwwwwww..........'
+  '.rrrrrrrrrrrrrrr........'
+  'rrwwwwwwwwwwwwwrr.qqqqqq'
+  'rrwwwwwwwwwwwwwrr.qrrrrq'
+  'rrwwqqqqqqqqqwwrr.qrwwrq'
+  'rrwwqwwwwwwwqwwrr.qrwwrq'
+  'rrwwqwVVVVVwqwwrr.qrwwrq'
+  'rrwwqwwwwwwwqwwrr.qrwwrq'
+  'rrwwqqqqqqqqqwwrr.qrwwrq'
+  'rrwwwwwwwwwwwwwrr.qrwwrq'
+  '.rrwwwwwwwwwwwrr..qrwwrq'
+  '..rrrrrrrrrrrrr...qrrrrq'
+  '...wwww...wwww....qqqqqq'
+  '...wwww...wwww..........'
+  '...wwww...wwww..........'
+  '..qqqqq...qqqqq.........'
+  '..qqqqq...qqqqq.........'
+  '........................'
+  '........................'
+)
 
-$b = New-Img 32 32                                                # blight_matron: plague witch + staff
-FR $b 9 6 10 7 $PAL.veg2; FR $b 10 11 8 2 $PAL.night1; Eyes $b 12 9 $PAL.violet
-FR $b 6 12 17 18 $PAL.veg1; FR $b 6 12 17 2 $PAL.veg2; FR $b 12 15 5 15 $PAL.veg0
-Crown $b 11 5; FR $b 22 4 2 26 $PAL.earth2
-Ell $b 19 1 8 8 $PAL.veg3; Ell $b 21 3 4 4 $PAL.violet; P $b 22 4 $PAL.glint
-Speckle $b 7 14 15 15 $PAL.violet 0.08; FR $b 8 15 12 1 $PAL.violet
-SaveEnemy $b 'boss_blight_matron'
+Save-EnemyGrid 'royal_guard_sword' @( # elite: gold-trimmed, blade upright
+  '........................'
+  '..........Y.............'
+  '.........YYY......L.....'
+  '.........eee.....LLL....'
+  '........YeeeeY...LLL....'
+  '........eVeeVe...LLL....'
+  '........eeeeee...LLL....'
+  '.........eeee....LLL....'
+  '.....YYYYYYYYYY..LLL....'
+  '....reeeeeeeeeer.LLL....'
+  '....reVVVVVVVVer.LLL....'
+  '....reVeeeeeeVerYYYYY...'
+  '....reVeYYYYeVer.LLL....'
+  '....reVeYVVYeVer.LLL....'
+  '....reVeYYYYeVer.LLL....'
+  '....reVeeeeeeVer.LLL....'
+  '....reVVVVVVVVer..L.....'
+  '....reeeeeeeeeer........'
+  '....rYYYYYYYYYYr........'
+  '.....eee....eee.........'
+  '.....eee....eee.........'
+  '....YYYY....YYYY........'
+  '....qqqq....qqqq........'
+  '........................'
+)
 
+Save-EnemyGrid 'royal_guard_staff' @( # elite: matched twin, crowned stave
+  '........................'
+  '..........Y.............'
+  '.........YYY.....CCC....'
+  '.........eee....CGGGC...'
+  '........YeeeeY..CGGGGC..'
+  '........eCeeCe..CGGGGC..'
+  '........eeeeee..CGGGGC..'
+  '.........eeee....CGGGC..'
+  '.....YYYYYYYYYY...CCC...'
+  '....rVVVVVVVVVVr...Y....'
+  '....rVeeeeeeeeVr...s....'
+  '....rVeVVVVVVeVr...s....'
+  '....rVeVCCCCVeVrYYYYY...'
+  '....rVeVCGGCVeVr...s....'
+  '....rVeVCCCCVeVr...s....'
+  '....rVeVVVVVVeVr...s....'
+  '....rVeeeeeeeeVr...s....'
+  '....rVVVVVVVVVVr...s....'
+  '....rYYYYYYYYYYr...s....'
+  '.....VVV....VVV....s....'
+  '.....VVV....VVV....s....'
+  '....YYYY....YYYY........'
+  '....qqqq....qqqq........'
+  '........................'
+)
+
+Save-EnemyGrid 'archon_of_ruin' @(  # elite: broken halo, feet never land
+  '........................'
+  '......VVVVVVVV..........'
+  '.....VV......VV.........'
+  '....VV........VV........'
+  '....V...2222....V.......'
+  '...VV..222222...VV......'
+  '...V..22CKKC22...V......'
+  '...V..22222222...V......'
+  '....V..222222...V.......'
+  '.....VV.2222..VV........'
+  '......V222222V..........'
+  '....2222222222222.......'
+  '...222222222222222......'
+  '...222CCCCCCCCC222......'
+  '...222222222222222......'
+  '....2222222222222.......'
+  '....2222222222222.......'
+  '.....22222222222........'
+  '.....22222222222........'
+  '.....22222222222........'
+  '......2222222222........'
+  '.......11111111.........'
+  '........111111..........'
+  '........................'
+)
+
+# --- Family: buffer & stalker (the buffers ARE their instrument) ---
+
+Save-EnemyGrid 'war_drummer' @(     # a drum wider than the drummer
+  '........................'
+  '..........dddd..........'
+  '.........dsssdd.........'
+  '.........dsDDsd.........'
+  '.........dssssd.........'
+  '..........dddd..........'
+  '.f.....ssssssssss.....f.'
+  '.ff...sssssssssss....ff.'
+  '.ff..ssssssssssss....ff.'
+  '..ff.yyyyyyyyyyyy...ff..'
+  '...ffyggggggggggy..ff...'
+  '..yygggggggggggggyyy....'
+  '.yyggggggggggggggggy....'
+  '.ygDDgggggggggggDDgy....'
+  '.yggggggggggggggggggy...'
+  '.ygDDgggggggggggDDgy....'
+  '.yyggggggggggggggggy....'
+  '..yyggggggggggggggy.....'
+  '...yyyyyyyyyyyyyyy......'
+  '.....ss........ss.......'
+  '.....ss........ss.......'
+  '....sss........sss......'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'standard_bearer' @( # banner twice the soldier's height
+  '.....gggggggggg.........'
+  '.a...gDDDDDDDDg.........'
+  '.a...gDDDDDDDDDg........'
+  '.a...gDDDYYYYDDg........'
+  '.a...gDDYYYYYYDg........'
+  '.a...gDDDYYYYDDg........'
+  '.a...gDDDDDDDDDg........'
+  '.a...gDDDDDDDDg.........'
+  '.a...gDDDDDDDg..........'
+  '.a...gggggggg...........'
+  '.a......................'
+  '.a.....ddddd............'
+  '.a....ddddddd...........'
+  '.a....dLddLdd...........'
+  '.a....ddddddd...........'
+  '.a...sssssssss..........'
+  '.a..sssssssssss.........'
+  '.aa.sssyyyyysss.........'
+  '..s.sssssssssss.........'
+  '....ssssssssss..........'
+  '.....222...222..........'
+  '.....222...222..........'
+  '....2222...2222.........'
+  '........................'
+)
+
+Save-EnemyGrid 'war_caller' @(      # elite: a horn he can barely lift
+  '........................'
+  '.....V.......V..........'
+  '.....VV.....VV.....YYY..'
+  '......ddddddd.....YYYYY.'
+  '.....ddddddddd...YYY.YYY'
+  '.....ddDdddDddd..YY...YY'
+  '.....ddddddddd..YYY..YYY'
+  '......ddddddd..YYYYYYYY.'
+  '....gggggggggYYYYYYYY...'
+  '...ggggggggggYYYYY......'
+  '..gyyyyyyyygggYY........'
+  '..gyOOOOOOyyggg.........'
+  '..gyOOOOOOyyyg..........'
+  '..gyyyyyyyyyyg..........'
+  '..ggyyyyyyyyg...........'
+  '...gyyyyyyyyg...........'
+  '...gyyyyyyyyg...........'
+  '...ggyyyyyyg............'
+  '....gggggggg............'
+  '.....22..22.............'
+  '.....22..22.............'
+  '....222..222............'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'shadow_stalker' @(  # elite: upright, twin daggers wide
+  '........................'
+  '.......V......V.........'
+  '.......VV....VV.........'
+  '........111111..........'
+  '.......11111111.........'
+  '.......1VV11VV1.........'
+  '.......11111111.........'
+  '........111111..........'
+  '.L.......1111.......L...'
+  '.LL....11111111....LL...'
+  'LLL...1111111111...LLL..'
+  '.LL..111111111111..LL...'
+  '.L..1111111111111...L...'
+  'Y...1111VVVVV1111...Y...'
+  '....11111111111.........'
+  '....11111111111.........'
+  '....11111111111.........'
+  '....1111111111..........'
+  '....2211111122..........'
+  '....22.....22...........'
+  '....22.....22...........'
+  '...222.....222..........'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'void_stalker' @(    # elite: four-legged prowler, blade tail
+  '........................'
+  '.V......................'
+  '.VV.....................'
+  '..VV....................'
+  '...VV...................'
+  '....VV..................'
+  '.....VV.................'
+  '.....V11................'
+  '.....111....V.....V.....'
+  '....11111...VV...VV.....'
+  '...1111111111111111.....'
+  '..111111111111111111....'
+  '.11111111111111111111...'
+  '.1111111111111VV1VV11...'
+  '.11111111111111111111...'
+  '.1111111111111111111....'
+  '..11111111111111111.....'
+  '..11..11.....11..11.....'
+  '..11..11.....11..11.....'
+  '..11..11.....11..11.....'
+  '..11..11.....11..11.....'
+  '.222..222...222..222....'
+  '........................'
+  '........................'
+)
+
+# The two generic tier fallbacks. `BattleState::drawUnit` only reaches these
+# when a content id has no bespoke sprite, so they are deliberately anonymous:
+# a shape that says "an enemy" and "a tougher enemy" and nothing more.
+Save-EnemyGrid 'normal_battle' @(   # generic: plain hunched beast
+  '........................'
+  '........................'
+  '........................'
+  '.............gggggg.....'
+  '............ggggggggg...'
+  '............ggDggDgggg..'
+  '............gggggggggg..'
+  '.....ggggg..ggNggNgggg..'
+  '...ggggggggggggggggg....'
+  '..gggggggggggggggggg....'
+  '.ggggggggggggggggggg....'
+  '.ygggggggggggggggggg....'
+  '.yyggggggggggggggggg....'
+  '.yyyggggggggggggggg.....'
+  '.yyyyyggggggggggggg.....'
+  '..yyyyyyygggggggggg.....'
+  '...yyyyyyyyygggggg......'
+  '....yyyyyyyyyyyyy.......'
+  '.....yyy.....yyyy.......'
+  '.....yyy.....yyy........'
+  '.....yyy.....yyy........'
+  '....tyyy.....yyyt.......'
+  '........................'
+  '........................'
+)
+
+# Same beast as `normal_battle`, but REARED UP: the tier difference is posture
+# and height, not a recolour, so it survives the grayscale/colour-blind check.
+Save-EnemyGrid 'elite_battle' @(    # generic: the same beast, rearing, horned
+  '........................'
+  '..........V.....V.......'
+  '..........VV...VV.......'
+  '..........gggggg........'
+  '.........ggggggggg......'
+  '.........ggDggDgggg.....'
+  '.........gggggggggg.....'
+  '.........ggNggNgggg.....'
+  '..........gggggggg......'
+  '.......ggggggggg........'
+  '.....ggggggggggg........'
+  '...gggggggggggg.........'
+  '..ggggggggggggg.........'
+  '..gggVVVVVVVggg.........'
+  '..ggggggggggggg.........'
+  '.yggggggggggggg.........'
+  '.yyggggggggggggg........'
+  '.yyygggggggggggg........'
+  '.yyyyggggggggggg........'
+  '.yyyyygggggggggg........'
+  '.yyyyy.....ggggg........'
+  '.yyyyy.....ggggg........'
+  'tyyyyyt...tggggt........'
+  '........................'
+)
+
+# --- Family: the five Evil Geese (M61/M62). They share one body on purpose —
+# --- they are a gang — so every one of them is told apart above the neck and
+# --- at the wing, never by colour. ---
+
+Save-EnemyGrid 'evil_goose_vanguard' @(   # crested war-helm, shield on the wing
+  '........................'
+  '...............DD.......'
+  '..............DDDD......'
+  '............eeeeeeee....'
+  '............errrrrree...'
+  '............WWWWWWWWW...'
+  '............WWKWWWWWWYYY'
+  '............WWWWWWWWWYYY'
+  '............WWWWWWWWW...'
+  '............WWWWWWS.....'
+  '............WWWWWS......'
+  '...WWWWW....WWWWS.......'
+  '..WWWWWWWWWWWWWWS.......'
+  '.WWWeeeeeWWWWWWWS.......'
+  'WWWerrrrreWWWWWWS.......'
+  'WWWerLLLreWWWWWSS.......'
+  'WWWerrrrreWWWWWS........'
+  'WWWSeeeeeSWWWWSS........'
+  'SWWSSSSSSSSSWWS.........'
+  'SSSSSSSSSSSSSS..........'
+  '.ZZSSSSSSSSSSS..........'
+  '..ZZZZZZZZZZZ...........'
+  '.....YY...YY............'
+  '.....YY...YY............'
+)
+
+Save-EnemyGrid 'evil_goose_hexwing' @(    # tall cone hood, rune orb in escort
+  '..............V.........'
+  '.............VVV........'
+  '.............VVV........'
+  '............VVVVV.......'
+  '............VVVVV.......'
+  '...........VVVVVVV......'
+  '...........VVCWWWWWWYYYY'
+  '...........VVVWWWWWWYYYY'
+  '............WWWWWWWW....'
+  '............WWWWWWS.....'
+  '.......VVV..WWWWWS......'
+  '...WWWVGGGV.WWWWS.......'
+  '..WWWWVGGGVWWWWWS.......'
+  '.WWWWWVGGGVWWWWWS.......'
+  'WWWWWWWVVVWWWWWWS.......'
+  'WWWWWWWWWWWWWWWSS.......'
+  'WWWWSSSSSSWWWWWS........'
+  'WWWSSSSSSSSWWWSS........'
+  'SWWSSSSSSSSSWWS.........'
+  'SSSSSSSSSSSSSS..........'
+  '.ZZSSSSSSSSSSS..........'
+  '..ZZZZZZZZZZZ...........'
+  '.....YY...YY............'
+  '.....YY...YY............'
+)
+
+Save-EnemyGrid 'evil_goose_mender' @(     # broad mantle collar, cross-tipped rod
+  '........................'
+  '........................'
+  '..............WWWW......'
+  '.............WWWWWW.....'
+  '.............WWWWWWW....'
+  '............WWWWWWWW....'
+  '............WWKWWWWWYYYY'
+  '............WWWWWWWWYYYY'
+  '..........HHHHHHHHHH....'
+  '.........HHHHHHHHHHH....'
+  '.........HHHHWWWWH......'
+  '...WWWWWHHHHWWWWH.......'
+  '..WWWWWWWWWWWWWWH....H..'
+  '.WWWWWWWWWWWWWWWH...HHH.'
+  'WWWWWWWWWWWWWWWWH..HHHHH'
+  'WWWWWWWWWWWWWWWSS...HHH.'
+  'WWWWSSSSSSWWWWWS.....H..'
+  'WWWSSSHHHSSSWWSS.....s..'
+  'SWWSSHHHHHSSWWS......s..'
+  'SSSSSSHHHSSSSS.......s..'
+  '.ZZSSSSSSSSSSS.......s..'
+  '..ZZZZZZZZZZZ........s..'
+  '.....YY...YY.........s..'
+  '.....YY...YY............'
+)
+
+Save-EnemyGrid 'evil_goose_trickster' @(  # belled jester cap, motley wing
+  '........................'
+  '..........Y.......Y.....'
+  '..........DD.....CC.....'
+  '...........DD...CC......'
+  '............DDDCC.......'
+  '............WWWWWWWW....'
+  '............WWKWWWWWYYYY'
+  '............WWWWWWWWYYYY'
+  '............WWWWWWWW....'
+  '............WWWWWWS.....'
+  '............WWWWWS......'
+  '...WWWWW....WWWWS.......'
+  '..WWWWWWWWWWWWWWS.......'
+  '.WWWDDDVVVWWWWWWS.......'
+  'WWWDDDVVVYWWWWWWS.......'
+  'WWWDDVVVYYWWWWWSS.......'
+  'WWWDVVVYYYWWWWWS........'
+  'WWWSVVYYYYSWWWSS........'
+  'SWWSSSSSSSSSWWS.........'
+  'SSSSSSSSSSSSSS..........'
+  '.ZZSSSSSSSSSSS..........'
+  '..ZZZZZZZZZZZ...........'
+  '.....YY...YY............'
+  '.....YY...YY............'
+)
+
+Save-EnemyGrid 'evil_goose_bogfeather' @( # draggled, ragged wing, venom drip
+  '........................'
+  '........................'
+  '..............WWSW......'
+  '.............SWWSWW.....'
+  '.............WSWWWSW....'
+  '............SWWSWWWW....'
+  '............WSKWSWWWYYYY'
+  '............WWWSWWWWYYYY'
+  '............WSWWSWWW....'
+  '............WWSWWS......'
+  '............xWWWS.......'
+  '...WSWWS....WSWWS.......'
+  '..WSWWSWWSWWWWWWS.......'
+  '.WxxcxxcxWSWWWWWS.......'
+  'WxcccxcccxWWWWWWS.......'
+  'WxccxcccxcWWWWWSS.......'
+  'WxcccxcccxSWWWWS........'
+  'WSxcxxcxxSSWWWSS........'
+  'SWSSSSSSSSSSWWS.........'
+  'SSSSSSSSSSSSSS..........'
+  '.ZZSSSSSSSSSSS..........'
+  '..ZZZZZZZZZZZ...........'
+  '.....YY...YY..v.........'
+  '.....YY...YY............'
+)
+
+# --- Bosses (36x36). A boss is not a big normal enemy: it gets a structural
+# --- crown or crest that is part of the head, a planted stance wider than any
+# --- 24x24 sprite can reach, and equipment sized to be absurd. ---
+
+Save-EnemyGrid 'boss_battle' @(     # generic boss fallback: a crowned hulk
+  '............Y...Y...Y...............'
+  '...........YYY.YYY.YYY..............'
+  '...........YYYYYYYYYYY..............'
+  '..........YYYYYYYYYYYYY.............'
+  '..........YGYGYGYGYGYGY.............'
+  '...........mmmmmmmmmmm..............'
+  '..........mmmmmmmmmmmmm.............'
+  '..........mmDDmmmmmDDmm.............'
+  '..........mmmmmmmmmmmmm.............'
+  '..........mmmmmmmmmmmmm.............'
+  '...........mmmNNNNNmmm..............'
+  '...........mmmmmmmmmm...............'
+  '........mmmmmmmmmmmmmmmm............'
+  '.....mmmmmmmmmmmmmmmmmmmmm..........'
+  '...mmmmmmmmmmmmmmmmmmmmmmmmm........'
+  '..mmmmmmmmmmmmmmmmmmmmmmmmmmm.......'
+  '.mmmmmmmmBBBBBBBBBBBmmmmmmmmm.......'
+  '.mmmmmmmBBBBBBBBBBBBBmmmmmmmm.......'
+  'nmmmmmmmBBBBVVVVVBBBBmmmmmmmm.......'
+  'nnmmmmmmBBBBBBBBBBBBBmmmmmmmn.......'
+  'nnnmmmmmmBBBBBBBBBBBmmmmmmmnn.......'
+  'nnnnmmmmmmmmmmmmmmmmmmmmmnnn........'
+  'nnnnnmmmmmmmmmmmmmmmmmmmnnnn........'
+  '.nnnnnmmmmmmmmmmmmmmmmmnnnn.........'
+  '..nnnnnmmmmmmmmmmmmmmmnnnn..........'
+  '...nnnnnmmmmmmmmmmmmmnnnn...........'
+  '....nnnnnmmmmmmmmmmmnnnn............'
+  '.....nnnnnmmmmmmmmmnnnn.............'
+  '......nnnnnnnnnnnnnnnn..............'
+  '.......nnnnnn.nnnnnnn...............'
+  '.......nnnnn...nnnnnn...............'
+  '.......nnnnn...nnnnnn...............'
+  '.......nnnnn...nnnnnn...............'
+  '......bnnnnn...nnnnnnb..............'
+  '......bbnnnn...nnnnnbb..............'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_keep_warden' @( # brute: hunched, cleaver like a door
+  '....Y...Y...Y.......................'
+  '...YYY.YYY.YYY......................'
+  '...YYYYYYYYYYY......................'
+  '..YYYYYYYYYYYYY.....................'
+  '..YGYGYGYGYGYGY.....................'
+  '...hhhhhhhhhhh..........LLLLLLLLLL..'
+  '..hhhhhhhhhhhhh.........LLLLLLLLLLL.'
+  '..hhDDhhhhhDDhh.........LLLLLLLLLLL.'
+  '..hhhhhhhhhhhhh.........LLLLLLLLLLL.'
+  '...hhNhhhhhNhh..........LrrrrrrrrrL.'
+  '....hhhhhhhhh...........Lrrrrrrrrrr.'
+  '...ggggggggggggg........Lrrrrrrrrrr.'
+  '..ggggggggggggggggg.....Lrrrrrrrrr..'
+  '.ggggggggggggggggggggg..Lrrrrrrrr...'
+  'gggggggggggggggggggggggg.Lrrrrrr....'
+  'ggggghhhhhhhhhgggggggggg..sss.......'
+  'gggghhhhhhhhhhhggggggggg....sss.....'
+  'ggghhhhhhhhhhhhhgggggggg....sss.....'
+  'ggghhhhhhhhhhhhhgggggggg....sss.....'
+  'ggghhhhhhhhhhhhhggggggg.....sss.....'
+  'gggghhhhhhhhhhhgggggggg.....sss.....'
+  'ggggghhhhhhhhhggggggg.......sss.....'
+  'yggggggggggggggggggg................'
+  'yygggggggggggggggggg................'
+  'yyyggggggggggggggggg................'
+  'yyyygggggggggggggggg................'
+  'yyyyyggggggggggggggg................'
+  'yyyyyygggggggggggggg................'
+  'yyyyyyyyggggggggggg.................'
+  'yyyyyyyy....gggggg..................'
+  'yyyyyyy.....gggggg..................'
+  '.yyyyyy.....gggggg..................'
+  '.yyyyyy.....gggggg..................'
+  'tyyyyyyt...tggggggt.................'
+  'ttyyyytt...ttgggggt.................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_crystal_sorcerer' @( # sorcerer: narrow column, staff shard
+  '..........................CCC.......'
+  '.........................CGGGC......'
+  '........Y...Y...Y.......CGGGGGC.....'
+  '.......YYY.YYY.YYY.....CGGGGGGGC....'
+  '.......YYYYYYYYYYY.....CGGGGGGGC....'
+  '......YYYYYYYYYYYYY....CGGGGGGGC....'
+  '......YGYGYGYGYGYGY.....CGGGGGC.....'
+  '.......ooooooooooo......CCGGGCC.....'
+  '......ooooooooooooo......CCCCC......'
+  '......ooCCooooCCooo.......CCC.......'
+  '......ooooooooooooo........C........'
+  '.......ooooooooooo.........s........'
+  '....oooooooooooooooo.......s........'
+  '...pooooooooooooooooo......s........'
+  '..pooooooooooooooooooo.....s........'
+  '.poooooooooooooooooooop....s........'
+  '.pooooCCCCCCCCCCCoooooo....s........'
+  '.poooCCGGGGGGGGGCCooooo....s........'
+  '.poooCCGGGGGGGGGCCooooo....s........'
+  '.pooooCCCCCCCCCCCoooooo....s........'
+  '.poooooooooooooooooooop....s........'
+  '..iooooooooooooooooooi.....s........'
+  '..iiooooooooooooooooii.....s........'
+  '..iioooooooooooooooiii.....s........'
+  '...iiooooooooooooooii......s........'
+  '...iiiooooooooooooiii......s........'
+  '....iiioooooooooooii.......s........'
+  '....iiiiooooooooiiii.......s........'
+  '.....iiiiooooooiiii........s........'
+  '.....iiiiiooooiiiii........s........'
+  '......uiiiiiiiiiiu..................'
+  '......uuiiiiiiiiuu..................'
+  '.....uuuiiiiiiiiuuu.................'
+  '....uuuuuiiiiiiuuuuu................'
+  '...uuuuuuuuuuuuuuuuuu...............'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_hollow_commander' @( # commander: banner and broadsword
+  'DDDDDDDDDD..........................'
+  'DDDDDDDDDDD.......Y...Y...Y.........'
+  'DDDYYYYYDDD......YYY.YYY.YYY........'
+  'DDYYYYYYYDD......YYYYYYYYYYY........'
+  'DDDYYYYYDDD.....YYYYYYYYYYYYY.......'
+  'DDDDDDDDDDD.....YGYGYGYGYGYGY.......'
+  'DDDDDDDDDD.......eeeeeeeeeee........'
+  'DDDDDDDDD.......eeeeeeeeeeeee.......'
+  'sDDDDDDD........eeDDeeeeeDDee.......'
+  's...............eeeeeeeeeeeee.......'
+  's................eeeeeeeeeee...LLL..'
+  's................eeeeeeeeee....LLL..'
+  's............rrrrrrrrrrrrrrrr..LLL..'
+  's..........rrrrrrrrrrrrrrrrrrr.LLL..'
+  's.........rrrrrrrrrrrrrrrrrrrr.LLL..'
+  's........rrrreeeeeeeeeeeerrrrr.LLL..'
+  's........rrreeeeeeeeeeeeeerrrrLLLLL.'
+  's........rrreeeeVVVVVeeeeerrrr.LLL..'
+  's........rrreeeeeeeeeeeeeerrrr.LLL..'
+  's........rrrreeeeeeeeeeeerrrrr.LLL..'
+  's.........rrrrrrrrrrrrrrrrrrrr.LLL..'
+  's..........rrrrrrrrrrrrrrrrrr..LLL..'
+  's...........wwwwwwwwwwwwwwww...LLL..'
+  's...........wwwwwwwwwwwwwwww...LLL..'
+  's...........wwwwwwwwwwwwwwww...LLL..'
+  's...........wwwwwwwwwwwwwwww....L...'
+  's............wwwwwwwwwwwwww.........'
+  's............wwwwwwwwwwwwww.........'
+  's.............wwwwww.wwwwww.........'
+  's.............wwwww...wwwww.........'
+  's.............wwwww...wwwww.........'
+  '..............wwwww...wwwww.........'
+  '.............qwwwww...wwwwwq........'
+  '.............qqwwww...wwwwqq........'
+  '.............qqqqqq...qqqqqq........'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_rush_tyrant' @( # rush: four arms, nothing but forward
+  '..........Y...Y...Y.................'
+  '.........YYY.YYY.YYY................'
+  '.........YYYYYYYYYYY................'
+  '........YYYYYYYYYYYYY...............'
+  '........YGYGYGYGYGYGY...............'
+  '.........mmmmmmmmmmm................'
+  '........mmmmmmmmmmmmm...............'
+  '........mmDDmmmmmDDmm...............'
+  '........mmmmmmmmmmmmm...............'
+  '.........mNNNNNNNNNm................'
+  '..........mmmmmmmmm.................'
+  'BB.....mmmmmmmmmmmmmmm.......BB.....'
+  'BBB..mmmmmmmmmmmmmmmmmmm....BBB.....'
+  'BBBBmmmmmmmmmmmmmmmmmmmmm.BBBB......'
+  '.BBBBmmmmmmmmmmmmmmmmmmmBBBB........'
+  '..BBBBmmmmmmmmmmmmmmmmmBBBB.........'
+  '...BBBmmmmmmmmmmmmmmmmmBBB..........'
+  'BB....mmmmmVVVVVVVmmmmm.....BB......'
+  'BBB...mmmmmmmmmmmmmmmmm....BBB......'
+  'BBBBmmmmmmmmmmmmmmmmmmmmm.BBBB......'
+  '.BBBBmmmmmmmmmmmmmmmmmmmBBBB........'
+  '..BBBmmmmmmmmmmmmmmmmmmmBBB.........'
+  '....mmmmmmmmmmmmmmmmmmmmm...........'
+  '....nmmmmmmmmmmmmmmmmmmmn...........'
+  '....nnmmmmmmmmmmmmmmmmmnn...........'
+  '.....nnmmmmmmmmmmmmmmmnn............'
+  '......nnmmmmmmmmmmmmmnn.............'
+  '.......nnmmmmmmmmmmmnn..............'
+  '........nnnnnnnnnnnnn...............'
+  '........nnnnnn.nnnnnn...............'
+  '........nnnnn...nnnnn...............'
+  '........nnnnn...nnnnn...............'
+  '.......bnnnnn...nnnnnb..............'
+  '.......bnnnnn...nnnnnb..............'
+  '......bbnnnnn...nnnnnbb.............'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_deep_king' @(  # brute: faceted colossus, bearded axe
+  '.........Y...Y...Y..................'
+  '........YYY.YYY.YYY.................'
+  '........YYYYYYYYYYY.................'
+  '.......YYYYYYYYYYYYY..ssLLLLLLLL....'
+  '.......YGYGYGYGYGYGY..ssLLLLLLLL....'
+  '........wwwwwwwwwww...ssLLLLLLLL....'
+  '.......wwwwwwwwwwwww..ssLLLLLLLL....'
+  '.......wwCCwwwwwCCww..ssLLLLLLLL....'
+  '.......wwwwwwwwwwwww..ssLLLLLLL.....'
+  '........wwwwwwwwwww...ssLLLLLL......'
+  '.........wwwwwwwww....ssLLLLL.......'
+  '....wwwwwwwwwwwwwwwww.ssLLLL........'
+  '..wwwwwwwwwwwwwwwwwwwwss............'
+  '.wwwwwwwwwwwwwwwwwwwwwss............'
+  'wwwwwwwwwwwwwwwwwwwwwwss............'
+  'wwwwwCCCCCCCCCCCCCwwwwss............'
+  'wwwwCCGGGGGGGGGGGCCwwwss............'
+  'wwwwCCGGGGGGGGGGGCCwwwss............'
+  'wwwwwCCCCCCCCCCCCCwwwwss............'
+  'wwwwwwwwwwwwwwwwwwwwwwss............'
+  'qwwwwwwwwwwwwwwwwwwwwwss............'
+  'qqwwwwwwwwwwwwwwwwwwwwss............'
+  'qqqwwwwwwwwwwwwwwwwwwqss............'
+  '.qqqwwwwwwwwwwwwwwwwqqss............'
+  '..qqqwwwwwwwwwwwwwwqq.ss............'
+  '...qqqwwwwwwwwwwwwqq..ss............'
+  '....qqqwwwwwwwwwwqqq................'
+  '.....qqqwwwwwwwwqqq.................'
+  '......qqqqqqqqqqqq..................'
+  '......qqqqq..qqqqq..................'
+  '......qqqqq..qqqqq..................'
+  '......qqqqq..qqqqq..................'
+  '.....qqqqqq..qqqqqq.................'
+  '.....wwwwww..wwwwww.................'
+  '....qqqqqqq..qqqqqqq................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_blight_matron' @( # sorcerer: cauldron staff, spore veil
+  '.........................vvv........'
+  '........................vcccv.......'
+  '........Y...Y...Y......vcHHHcv......'
+  '.......YYY.YYY.YYY.....vcHHHcv......'
+  '.......YYYYYYYYYYY.....vcHHHcv......'
+  '......YYYYYYYYYYYYY.....vcccv.......'
+  '......YGYGYGYGYGYGY......vvv........'
+  '.......ccccccccccc........v.........'
+  '......ccccccccccccc.......s.........'
+  '......ccVVcccccVVcc.......s.........'
+  '......ccccccccccccc.......s.........'
+  '.......cccNNNNNccc........s.........'
+  '....xxxxccccccccxxxx......s.........'
+  '...xxxxxxxxxxxxxxxxxx.....s.........'
+  '..xxxxxxxxxxxxxxxxxxxx....s.........'
+  '.xxxxxxxxxxxxxxxxxxxxxx...s.........'
+  '.xxxxVxxxxVxxxxVxxxxxx....s.........'
+  '.xxxxxxxxxxxxxxxxxxxxx....s.........'
+  '.xxxVxxxxVxxxxVxxxxVxx....s.........'
+  '.xxxxxxxxxxxxxxxxxxxxx....s.........'
+  '.xxxxxVxxxxVxxxxVxxxxx....s.........'
+  '.zxxxxxxxxxxxxxxxxxxxz....s.........'
+  '.zzxxxxVxxxxVxxxxVxxzz....s.........'
+  '.zzzxxxxxxxxxxxxxxxzzz....s.........'
+  '..zzzxxxxVxxxxVxxxzzz...............'
+  '..zzzzxxxxxxxxxxxzzzz...............'
+  '...zzzzxxxxVxxxxxzzz................'
+  '...zzzzzxxxxxxxxzzzz................'
+  '....zzzzzxxxxxxzzzz.................'
+  '....zzzzzzxxxxzzzzz.................'
+  '.....zzzzzzzzzzzzz..................'
+  '.....zzzzzzzzzzzzz..................'
+  '....zzzzzzzzzzzzzzz.................'
+  '...zzzzzzzzzzzzzzzzz................'
+  '..zzzzzzzzzzzzzzzzzzz...............'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_sand_warlord' @( # brute: khopesh curved like a scythe
+  '..........Y...Y...Y.................'
+  '.........YYY.YYY.YYY......OOOOOO....'
+  '.........YYYYYYYYYYY....OOOOOOOOOO..'
+  '........YYYYYYYYYYYYY..OOOOOOOOOOOO.'
+  '........YGYGYGYGYGYGY.OOOOOO...OOOO.'
+  '.........fffffffffff..OOOOO.....OOO.'
+  '........fffffffffffff.OOOO..........'
+  '........ffDDfffffDDff.OOOO..........'
+  '........fffffffffffff.OOOO..........'
+  '.........ffNNNNNNNff..OOOOO.........'
+  '..........fffffffff....OOOOO........'
+  '.....dddddddfffffddddddd.OOOO.......'
+  '...ddddddddddddddddddddd..OOO.......'
+  '..dddddddddddddddddddddddd.OO.......'
+  '.ddddddddddddddddddddddddd.s........'
+  '.dddddffffffffffffffdddddd.s........'
+  '.ddddfffffffffffffffddddd..s........'
+  '.ddddffffffffffffffffdddd..s........'
+  '.ddddfffffffffffffffddddd..s........'
+  '.dddddffffffffffffffdddddd.s........'
+  '.sddddddddddddddddddddddds.s........'
+  '.ssdddddddddddddddddddddss.s........'
+  '.sssddddddddddddddddddsss..s........'
+  '..sssdddddddddddddddsss....s........'
+  '...sssddddddddddddsss......s........'
+  '....sssdddddddddsss.................'
+  '.....sssdddddddsss..................'
+  '......ssdddddddss...................'
+  '.......ssssssssss...................'
+  '.......sssss.sssss..................'
+  '.......ssss...ssss..................'
+  '.......ssss...ssss..................'
+  '......assss...ssssa.................'
+  '......aasss...sssaa.................'
+  '.....aaaaaa...aaaaaa................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_frost_monarch' @( # sorcerer: throne of icicles, no legs
+  '.....C....C....C....C....C..........'
+  '.....CC..CC....CC..CC....CC.........'
+  '......C...C.....C...C.....C.........'
+  '........Y...Y...Y...................'
+  '.......YYY.YYY.YYY..................'
+  '.......YYYYYYYYYYY.....CCCCCCC......'
+  '......YYYYYYYYYYYYY...CGGGGGGGC.....'
+  '......YGYGYGYGYGYGY...CGGGGGGGC.....'
+  '.......ooooooooooo....CGGGGGGGC.....'
+  '......ooooooooooooo....CGGGGGC......'
+  '......ooCCooooCCooo.....CCCCC.......'
+  '......ooooooooooooo.......C.........'
+  '.......ooNNNNNNNoo........C.........'
+  '....ppppoooooooppppp......C.........'
+  '..ppppppppppppppppppp.....C.........'
+  '.pppppppppppppppppppppp...C.........'
+  '.ppppCCCCCCCCCCCCCppppp...C.........'
+  '.pppCCGGGGGGGGGGGCCpppp...C.........'
+  '.pppCCGGGGGGGGGGGCCpppp...C.........'
+  '.ppppCCCCCCCCCCCCCppppp...C.........'
+  '.oppppppppppppppppppppo...C.........'
+  '.ooppppppppppppppppppoo...C.........'
+  '.ooopppppppppppppppooo..............'
+  '..ooopppppppppppppooo...............'
+  '...ooopppppppppppooo................'
+  '....C.ooopppppooo.C.................'
+  '...CC..oooooooooo..CC...............'
+  '...C.C..oooooooo..C.C...............'
+  '..CC..C..oooooo..C..CC..............'
+  '..C....C..oooo..C....C..............'
+  '.CC.....C..oo..C.....CC.............'
+  '.C.......C....C.......C.............'
+  'CC........C..C........CC............'
+  'C..........CC..........C............'
+  'C..........................C........'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_obsidian_colossus' @( # brute: sheer black-glass slab
+  '..........Y...Y...Y.................'
+  '.........YYY.YYY.YYY................'
+  '.........YYYYYYYYYYY................'
+  '........YYYYYYYYYYYYY...............'
+  '........YGYGYGYGYGYGY...............'
+  '.........nnnnnnnnnnn................'
+  '........nnnnnnnnnnnnn...............'
+  '........nnVVnnnnnVVnn...............'
+  '........nnnnnnnnnnnnn...............'
+  '.........nnnnnnnnnnn................'
+  'bbbb......nnnnnnnnn.......bbbb......'
+  'bnnnb...nnnnnnnnnnnnn....bnnnb......'
+  'bnnnb..nnnnnnnnnnnnnnn...bnnnb......'
+  'bnnnb.nnnnnnnnnnnnnnnnn..bnnnb......'
+  'bnnnb.nnnnnnnnnnnnnnnnn..bnnnb......'
+  'bnnnbnnnnBBBBBBBBBnnnnnn.bnnnb......'
+  'bnnnbnnnBBBBBBBBBBBnnnnn.bnnnb......'
+  'bnnnbnnnBBBVVVVVBBBnnnnn.bnnnb......'
+  'bnnnbnnnBBBBBBBBBBBnnnnn.bnnnb......'
+  'bnnnbnnnnBBBBBBBBBnnnnnn.bnnnb......'
+  'bnnnb.nnnnnnnnnnnnnnnnn..bnnnb......'
+  'bnnnb.nnnnnnnnnnnnnnnnn..bnnnb......'
+  'bnnnb.nnnnnnnnnnnnnnnnn..bnnnb......'
+  'bbbbb.nnnnnnnnnnnnnnnnn..bbbbb......'
+  '......nnnnnnnnnnnnnnnnn.............'
+  '......nnnnnnnnnnnnnnnnn.............'
+  '......nnnnnnnnnnnnnnnnn.............'
+  '......bnnnnnnnnnnnnnnnb.............'
+  '......bbnnnnnnnnnnnnnbb.............'
+  '.......bnnnnnn.nnnnnnb..............'
+  '........nnnnn...nnnnn...............'
+  '........nnnnn...nnnnn...............'
+  '.......bnnnnn...nnnnnb..............'
+  '.......bnnnnn...nnnnnb..............'
+  '......bbbnnnn...nnnnbbb.............'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_hollow_sovereign' @( # commander: throne-backed revenant
+  'rrr...........................rrr...'
+  'rrrr.........Y...Y...Y.......rrrr...'
+  'rrrr........YYY.YYY.YYY......rrrr...'
+  'rrrr........YYYYYYYYYYY......rrrr...'
+  'rrrr.......YYYYYYYYYYYYY.....rrrr...'
+  'rrrr.......YGYGYGYGYGYGY.....rrrr...'
+  'rrrr........NNNNNNNNNNN......rrrr...'
+  'rrrr.......NNNNNNNNNNNNN.....rrrr...'
+  'rrrr.......NNDDNNNNNDDNN.....rrrr...'
+  'rrrr.......NNNNNNNNNNNNN.....rrrr...'
+  'rrrr........NZZZZZZZZZN......rrrr...'
+  'rrrr.........NNNNNNNNN.......rrrr...'
+  'rrrr.....eeeeeeeeeeeeeee.....rrrr...'
+  'rrrr...eeeeeeeeeeeeeeeeeee...rrrr...'
+  'rrrreeeeeeeeeeeeeeeeeeeeeeeeerrrr...'
+  'rrrreeeewwwwwwwwwwwwweeeeeeeerrrr...'
+  'rrrreeewwwwwwwwwwwwwwweeeeeeerrrr...'
+  'rrrreeewwwwwVVVVVwwwwwweeeeeerrrr...'
+  'rrrreeewwwwwwwwwwwwwwweeeeeeerrrr...'
+  'rrrreeeewwwwwwwwwwwwweeeeeeeerrrr...'
+  'rrrr.eeeeeeeeeeeeeeeeeeeeeee.rrrr...'
+  'rrrr..eeeeeeeeeeeeeeeeeeeee..rrrr...'
+  'rrrr...eeeeeeeeeeeeeeeeeee...rrrr...'
+  'rrrr....eeeeeeeeeeeeeeeee....rrrr...'
+  'rrrr.....wwwwwwwwwwwwwww.....rrrr...'
+  'rrrr.....wwwwwwwwwwwwwww.....rrrr...'
+  'rrrr.....wwwwwwwwwwwwwww.....rrrr...'
+  'rrrr.....wwwwwwwwwwwwwww.....rrrr...'
+  'rrrr......wwwwww.wwwwww......rrrr...'
+  'rrrr......wwwww...wwwww......rrrr...'
+  'rrrr......wwwww...wwwww......rrrr...'
+  'rrrr.....qwwwww...wwwwwq.....rrrr...'
+  'rrrr.....qwwwww...wwwwwq.....rrrr...'
+  'rrrr....qqqwwww...wwwwqqq....rrrr...'
+  'rrrr..........................rrrr..'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_abyssal_tyrant' @( # rush: maw for a torso, tusked
+  '.........Y...Y...Y..................'
+  '........YYY.YYY.YYY.................'
+  '........YYYYYYYYYYY.................'
+  '.......YYYYYYYYYYYYY................'
+  '.......YGYGYGYGYGYGY................'
+  '........hhhhhhhhhhh.................'
+  '.......hhhhhhhhhhhhh................'
+  '.......hhYYhhhhhYYhh................'
+  '.......hhhhhhhhhhhhh................'
+  '........hhhhhhhhhhh.................'
+  'ttt......hhhhhhhhh.........ttt......'
+  'tggt...gggggggggggggg.....tggt......'
+  'tggt.gggggggggggggggggg...tggt......'
+  'tggtgggggggggggggggggggg..tggt......'
+  'tggggggggggggggggggggggggggggt......'
+  'tgggggttttttttttttttttggggggt.......'
+  'tgggttNtNtNtNtNtNtNtNtttgggt........'
+  'tgggtNtNtNtNtNtNtNtNtNtgggt.........'
+  'tggggtNtNtNtNtNtNtNtNtggggt.........'
+  'tggggttNtNtNtNtNtNtNttggggt.........'
+  'tgggggttttttttttttttggggggt.........'
+  'tggggggggggggggggggggggggt..........'
+  'ytgggggggggggggggggggggty...........'
+  'yytggggggggggggggggggtyy............'
+  'yyytgggggggggggggggtyyy.............'
+  'yyyytgggggggggggggtyyy..............'
+  'yyyyytgggggggggggtyy................'
+  'yyyyyytgggggggggtyy.................'
+  'yyyyyyyttttttttty...................'
+  'yyyyyyy.....yyyy....................'
+  'yyyyyy......yyyy....................'
+  'yyyyyy......yyyy....................'
+  'tyyyyt......tyyyt...................'
+  'tyyyyt......tyyyt...................'
+  'ttyytt......ttyyt...................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_dread_sovereign' @( # sorcerer: winged mantle of afflictions
+  'VV......................VV..........'
+  'VVV....Y...Y...Y.......VVV..........'
+  'VVVV..YYY.YYY.YYY.....VVVV..........'
+  'VVVVV.YYYYYYYYYYY....VVVVV..........'
+  'VVVVVYYYYYYYYYYYYY..VVVVVV..........'
+  'VVVVVYGYGYGYGYGYGY..VVVVVV..........'
+  'VVVVVV.nnnnnnnnn...VVVVVVV..........'
+  'VVVVVVnnnnnnnnnnn..VVVVVVV..........'
+  'VVVVVVnnVVnnnVVnn..VVVVVVV..........'
+  'VVVVVVnnnnnnnnnnn..VVVVVVV..........'
+  'VVVVVVV.nnnnnnn...VVVVVVVV..........'
+  'VVVVVVVVnnnnnnnnnVVVVVVVV...........'
+  '.VVVVVnnnnnnnnnnnnnVVVVV............'
+  '..VVVnnnnnnnnnnnnnnnVVV.............'
+  '...VVnnnnnnnnnnnnnnnVV..............'
+  '....nnnnBBBBBBBBBnnnnn..............'
+  '....nnnBBBBBBBBBBBnnnn..............'
+  '....nnnBBBVVVVVBBBnnnn..............'
+  '....nnnBBBBBBBBBBBnnnn..............'
+  '....nnnnBBBBBBBBBnnnnn..............'
+  '....nnnnnnnnnnnnnnnnnn..............'
+  '....bnnnnnnnnnnnnnnnnb..............'
+  '....bbnnnnnnnnnnnnnnbb..............'
+  '.....bnnnnnnnnnnnnnnb...............'
+  '.....bbnnnnnnnnnnnnbb...............'
+  '......bnnnnnnnnnnnnb................'
+  '......bbnnnnnnnnnnbb................'
+  '.......bnnnnnnnnnnb.................'
+  '.......bbnnnnnnnnbb.................'
+  '........bnnnnnnnnb..................'
+  '........bbnnnnnnbb..................'
+  '.........bnnnnnnb...................'
+  '.........bbnnnnbb...................'
+  '..........bnnnnb....................'
+  '..........bbnnbb....................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_the_hollow_king' @( # the King: widest crown, orb sceptre
+  '...Y....Y...Y...Y....Y..............'
+  '..YYY..YYY.YYY.YYY..YYY.............'
+  '..YYYYYYYYYYYYYYYYYYYYY.............'
+  '.YYYYYYYYYYYYYYYYYYYYYYY............'
+  '.YGYGYGYGYGYGYGYGYGYGYGY............'
+  '.YYYYYYYYYYYYYYYYYYYYYYY............'
+  '.....nnnnnnnnnnnnnnn......YYYY......'
+  '....nnnnnnnnnnnnnnnnn....YYYYYY.....'
+  '....nnnYYnnnnnnnYYnnn...YYDDDDYY....'
+  '....nnnnnnnnnnnnnnnnn...YYDDDDYY....'
+  '.....nnnnnnnnnnnnnnn.....YYYYYY.....'
+  '......nnnnnnnnnnnnn.......YYYY......'
+  '...VVVVVVVVVVVVVVVVVVV.....Y........'
+  '..VVVVVVVVVVVVVVVVVVVVV....Y........'
+  '.VVVVVVVVVVVVVVVVVVVVVVV...Y........'
+  'VVVVnnnnnnnnnnnnnnnnnVVVV..Y........'
+  'VVVnnnnnnnnnnnnnnnnnnnVVV..Y........'
+  'VVVnnnnnYYYYYYYYYnnnnnVVV..Y........'
+  'VVVnnnnYYYYYYYYYYYnnnnVVV..Y........'
+  'VVVnnnnnYYYYYYYYYnnnnnVVV..Y........'
+  'VVVVnnnnnnnnnnnnnnnnnVVVV..Y........'
+  '.VVVnnnnnnnnnnnnnnnnnVVV...Y........'
+  '..VVnnnnnnnnnnnnnnnnnVV....Y........'
+  '...VnnnnnnnnnnnnnnnnnV.....Y........'
+  '....nnnnnnnnnnnnnnnnn......Y........'
+  '....nnnnnYYYYYYYnnnnn...............'
+  '....nnnnnnnnnnnnnnnnn...............'
+  '....nnnnnnnnnnnnnnnnn...............'
+  '....bnnnnnnnnnnnnnnnb...............'
+  '....bbnnnnnn.nnnnnnbb...............'
+  '.....bnnnnn...nnnnnb................'
+  '.....bnnnnn...nnnnnb................'
+  '....YYYYYYY...YYYYYYY...............'
+  '....bnnnnnn...nnnnnnb...............'
+  '...bbbnnnnn...nnnnnbbb..............'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_deadly_duck' @( # the Duck: no crown. Bulk, wings, pond.
+  '....................................'
+  '.......................WWWW.........'
+  '......................WWWWWWW.......'
+  '.....................WWWWWWWWW......'
+  '....................WWWWWWWWWWW.....'
+  '...................WWWWKWWWWWWWW....'
+  '...................WWWWWWWWWWWWWYYYY'
+  '...................WWWWWWWWWWWWWYYYY'
+  '....................WWWWWWWWWWW.YYY.'
+  '.....................WWWWWWWWS......'
+  '......................WWWWWWS.......'
+  '.......................WWWWS........'
+  '.ZZZ....................WWWS........'
+  'ZSSSZ...................WWWS........'
+  'ZSWWSZ.................WWWWS........'
+  'ZSWWWSZ...............WWWWWS........'
+  'ZSWWWWSZ.....WWWWWWWWWWWWWS.........'
+  'ZSWWWWWSZ.WWWWWWWWWWWWWWWWS.........'
+  'ZSWWWWWWSWWWWWWWWWWWWWWWWS..........'
+  'ZSWWWWWWWWWWWWWWWWWWWWWWWS..........'
+  'ZSSWWWWWWWWWWWWWWWWWWWWWS...........'
+  'ZZSSWWWWWWWWWWWWWWWWWWWWS...........'
+  '.ZZSSSWWWWWWWWWWWWWWWWWS............'
+  '..ZZSSSSSSSSSSSSSSSSSSS.............'
+  '...ZZSSSSSSSSSSSSSSSSS..............'
+  '....ZZSSSSSSSSSSSSSSS...............'
+  '.....ZZZSSSSSSSSSSSS................'
+  '.......ZZZZZZZZZZZZ.................'
+  '.........YY....YY...................'
+  '.........YY....YY...................'
+  'iiiiiiiiiYYiiiiYYiiiiiiiiiiiiiiiiiii'
+  'oiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiio'
+  'ioooiiiiiioooiiiiiiiooooiiiiiiioooii'
+  'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii'
+  'uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu'
+  '....................................'
+)
+
+#<<<M73-ENEMY-SPRITES>>>
 Write-Output 'Generating M27 service backgrounds...'
 
 # Full-screen (426x240) service backgrounds. Legibility is the binding
@@ -934,176 +2706,6 @@ P $b 5 5 $PAL.gold; P $b 6 6 $PAL.glint                            # coin glint
 FR $b 4 9 2 2 $PAL.night1; FR $b 6 9 2 2 $PAL.night1              # boots
 Outline $b; SaveImg $b 'actors/market_npc.png'
 
-# ======================= M38 per-town enemies & bosses =======================
-# Appended last so their speckle RNG draws never shift any earlier file's bytes.
-Write-Output 'Generating M38 per-town enemies and bosses...'
-
-# --- 12 per-town standard enemies (24x24) ---
-
-$b = New-Img 24 24                                                # dune_reaver: lean raider + scimitar
-FR $b 10 4 6 5 $PAL.earth3; FR $b 10 6 6 2 $PAL.maroon; Eyes $b 12 6 $PAL.gold
-FR $b 8 9 9 9 $PAL.earth2; FR $b 8 9 9 1 $PAL.earth3; FR $b 11 11 3 7 $PAL.earth1
-FR $b 5 6 2 11 $PAL.clsGuardian; for ($j = 4; $j -le 9; $j++) { P $b (4 + [int](($j - 4) / 2)) $j $PAL.stone4 }
-FR $b 8 18 3 3 $PAL.earth1; FR $b 13 18 3 3 $PAL.earth1
-SaveEnemy $b 'dune_reaver'
-
-$b = New-Img 24 24                                                # hex_wisp: violet orb + tendrils
-Ell $b 7 6 10 10 $PAL.violet; Ell $b 9 8 6 6 $PAL.glint; Eyes $b 10 10 $PAL.night1
-foreach ($tx in 8, 12, 16) { for ($k = 0; $k -lt 5; $k++) { P $b ($tx - [int]($k / 2)) (16 + $k) $PAL.violet } }
-Speckle $b 6 5 12 12 $PAL.glint 0.10
-SaveEnemy $b 'hex_wisp'
-
-$b = New-Img 24 24                                                # grave_wight: sunken undead
-FR $b 11 4 6 6 $PAL.veg2; FR $b 11 8 6 1 $PAL.night1; Eyes $b 13 6 $PAL.gold
-FR $b 8 10 10 10 $PAL.veg1; FR $b 8 10 10 1 $PAL.veg2; Speckle $b 8 11 10 8 $PAL.maroonD 0.14
-FR $b 6 11 2 7 $PAL.veg1; FR $b 16 11 2 6 $PAL.veg2
-FR $b 8 20 3 3 $PAL.night2; FR $b 13 20 3 3 $PAL.veg1
-SaveEnemy $b 'grave_wight'
-
-$b = New-Img 24 24                                                # shardling: crystal shard sprite
-FR $b 11 4 3 8 $PAL.cyan; FR $b 9 8 7 6 $PAL.wat3; FR $b 10 9 5 4 $PAL.cyan
-Eyes $b 11 10 $PAL.night1; P $b 12 5 $PAL.glint
-foreach ($s in @(@(8, 13), @(15, 13))) { FR $b $s[0] $s[1] 2 6 $PAL.wat2 }
-FR $b 10 19 5 3 $PAL.wat3; Speckle $b 9 8 7 6 $PAL.glint 0.12
-SaveEnemy $b 'shardling'
-
-$b = New-Img 24 24                                                # ironclad_reaver: armored brute
-Ell $b 4 8 16 14 $PAL.stone3; Ell $b 6 11 12 10 $PAL.stone2
-FR $b 9 6 6 5 $PAL.stone4; Eyes $b 11 8 $PAL.danger; Horns $b 9 6
-FR $b 3 11 3 8 $PAL.stone2; FR $b 18 11 4 7 $PAL.stone3
-FR $b 6 21 4 2 $PAL.stone1; FR $b 13 21 4 2 $PAL.stone1; Speckle $b 6 11 12 9 $PAL.stone4 0.08
-SaveEnemy $b 'ironclad_reaver'
-
-$b = New-Img 24 24                                                # blight_chanter: hooded plague healer
-FR $b 8 4 8 6 $PAL.veg1; FR $b 9 8 6 2 $PAL.night1; Eyes $b 11 8 $PAL.heal
-FR $b 6 10 12 11 $PAL.veg2; FR $b 6 10 12 1 $PAL.veg3; FR $b 10 12 4 9 $PAL.veg0
-FR $b 17 6 1 15 $PAL.earth2; Ell $b 15 3 5 5 $PAL.heal; Horns $b 10 3
-Speckle $b 7 11 10 9 $PAL.veg3 0.08
-SaveEnemy $b 'blight_chanter'
-
-$b = New-Img 24 24                                                # war_caller: rallying warrior + horn
-FR $b 10 5 6 5 $PAL.earth3; FR $b 10 7 6 2 $PAL.maroon; Eyes $b 12 7 $PAL.gold
-FR $b 8 10 9 9 $PAL.maroonD; FR $b 8 10 9 1 $PAL.clsGuardian; FR $b 11 12 3 7 $PAL.maroon
-FR $b 5 4 2 15 $PAL.earth2; FR $b 3 4 4 5 $PAL.gold; Horns $b 10 4
-FR $b 8 19 3 3 $PAL.night2; FR $b 13 19 3 3 $PAL.night2
-SaveEnemy $b 'war_caller'
-
-$b = New-Img 24 24                                                # void_stalker: shadow assassin
-FR $b 11 4 5 5 $PAL.night3; FR $b 11 6 5 2 $PAL.night1; Eyes $b 13 6 $PAL.violet
-FR $b 8 9 9 10 $PAL.night2; FR $b 8 9 9 1 $PAL.night3; FR $b 11 11 3 8 $PAL.night1
-FR $b 5 8 2 6 $PAL.stone4; P $b 5 7 $PAL.glint; Horns $b 11 4
-FR $b 8 19 3 3 $PAL.night1; FR $b 13 19 3 3 $PAL.night1; Speckle $b 8 9 9 10 $PAL.violet 0.05
-SaveEnemy $b 'void_stalker'
-
-$b = New-Img 24 24                                                # dread_knight: dark-plated warrior
-FR $b 9 4 6 6 $PAL.night3; FR $b 10 6 4 2 $PAL.danger; Eyes $b 10 6 $PAL.danger; Horns $b 9 4
-FR $b 6 10 12 11 $PAL.night2; FR $b 6 10 12 1 $PAL.stone3; FR $b 10 12 4 9 $PAL.night1
-FR $b 4 6 2 14 $PAL.stone4; FR $b 3 5 4 2 $PAL.stone3
-FR $b 7 21 4 2 $PAL.night1; FR $b 13 21 4 2 $PAL.night1
-SaveEnemy $b 'dread_knight'
-
-$b = New-Img 24 24                                                # soul_render: wraith caster
-FR $b 9 4 7 6 $PAL.night2; FR $b 10 8 5 2 $PAL.night1; Eyes $b 11 7 $PAL.violet
-FR $b 7 10 11 11 $PAL.night3; FR $b 7 10 11 1 $PAL.violet; FR $b 11 12 4 9 $PAL.veg0
-foreach ($ty in 12, 16, 20) { P $b 6 $ty $PAL.veg3; P $b 18 $ty $PAL.veg3 }
-Horns $b 10 4; Speckle $b 8 11 9 9 $PAL.violet 0.10
-SaveEnemy $b 'soul_render'
-
-$b = New-Img 24 24                                                # titan_guard: colossal shield-bearer
-FR $b 4 6 16 16 $PAL.stone2; FR $b 5 7 14 14 $PAL.stone1; FR $b 4 6 16 2 $PAL.stone3
-FR $b 8 3 8 5 $PAL.stone3; Eyes $b 11 5 $PAL.cyan; Horns $b 8 3
-FR $b 2 9 3 10 $PAL.stone2; FR $b 18 8 5 12 $PAL.stone3; FR $b 19 9 3 10 $PAL.stone4
-FR $b 7 22 4 2 $PAL.stone1; FR $b 13 22 4 2 $PAL.stone1
-SaveEnemy $b 'titan_guard'
-
-$b = New-Img 24 24                                                # archon_of_ruin: floating dark mage
-FR $b 9 3 7 6 $PAL.night2; FR $b 10 7 5 2 $PAL.night1; Eyes $b 11 6 $PAL.cyan
-FR $b 6 9 12 11 $PAL.night3; FR $b 6 9 12 1 $PAL.violet; FR $b 11 11 3 9 $PAL.violet
-Ell $b 15 2 8 8 $PAL.violet; Ell $b 17 4 4 4 $PAL.cyan; P $b 18 5 $PAL.glint; Horns $b 10 3
-Speckle $b 7 10 10 9 $PAL.cyan 0.06
-SaveEnemy $b 'archon_of_ruin'
-
-# --- 2 Royal Guards (24x24; M49 - the King's court, gold-trimmed matched pair) ---
-
-$b = New-Img 24 24                                                # royal_guard_sword: plated guard + upright blade
-FR $b 9 3 6 6 $PAL.stone3; FR $b 9 5 6 2 $PAL.gold; Eyes $b 10 5 $PAL.violet
-FR $b 6 9 12 12 $PAL.stone2; FR $b 6 9 12 2 $PAL.gold; FR $b 10 11 4 10 $PAL.violet
-FR $b 4 10 2 9 $PAL.stone3; FR $b 18 10 2 9 $PAL.stone3
-FR $b 20 4 2 15 $PAL.stone4; FR $b 19 3 4 2 $PAL.gold; P $b 21 3 $PAL.glint
-FR $b 7 21 4 2 $PAL.night1; FR $b 13 21 4 2 $PAL.night1; Horns $b 9 3
-SaveEnemy $b 'royal_guard_sword'
-
-$b = New-Img 24 24                                                # royal_guard_staff: robed guard + crowned stave
-FR $b 9 3 6 6 $PAL.stone3; FR $b 9 5 6 2 $PAL.gold; Eyes $b 10 5 $PAL.cyan
-FR $b 6 9 12 12 $PAL.violet; FR $b 6 9 12 2 $PAL.gold; FR $b 10 11 4 10 $PAL.stone2
-FR $b 4 11 2 8 $PAL.violet; FR $b 18 11 2 8 $PAL.violet
-FR $b 20 6 2 14 $PAL.earth2; Ell $b 18 2 6 6 $PAL.cyan; P $b 20 4 $PAL.glint
-FR $b 7 21 4 2 $PAL.night1; FR $b 13 21 4 2 $PAL.night1; Horns $b 9 3
-# NB: no Speckle here on purpose. Rnd advances one script-wide stream, so a
-# random call added mid-file silently re-rolls every sprite generated after it
-# (appending these two with a Speckle changed all six per-town boss PNGs).
-# Placed detail instead, so this pair is inert for everything downstream.
-P $b 8 12 $PAL.cyan; P $b 15 14 $PAL.cyan; P $b 9 17 $PAL.cyan; P $b 14 19 $PAL.cyan
-SaveEnemy $b 'royal_guard_staff'
-
-# --- 6 per-town bosses (32x32; gold crown) ---
-
-$b = New-Img 32 32                                                # sand_warlord: desert brute + crown
-Ell $b 4 10 22 20 $PAL.earth3; Ell $b 7 14 17 15 $PAL.earth2
-FR $b 12 4 8 8 $PAL.earth4; Eyes $b 15 8 $PAL.danger; Crown $b 12 4
-FR $b 2 14 4 12 $PAL.earth2; FR $b 26 12 5 14 $PAL.stone4; FR $b 27 8 2 6 $PAL.gold
-FR $b 8 30 5 2 $PAL.earth1; FR $b 19 30 5 2 $PAL.earth1; Speckle $b 7 14 17 14 $PAL.earth4 0.06
-SaveEnemy $b 'boss_sand_warlord'
-
-$b = New-Img 32 32                                                # frost_monarch: ice sorcerer + crown
-FR $b 10 6 12 8 $PAL.wat2; FR $b 11 12 10 2 $PAL.night1; Eyes $b 14 10 $PAL.cyan
-FR $b 7 14 18 16 $PAL.wat1; FR $b 7 14 18 2 $PAL.wat3; FR $b 13 17 6 13 $PAL.wat0
-Crown $b 12 5; FR $b 24 4 2 26 $PAL.stone4; Ell $b 21 1 8 8 $PAL.cyan; Ell $b 23 3 4 4 $PAL.glint
-Speckle $b 8 15 16 14 $PAL.cyan 0.08
-SaveEnemy $b 'boss_frost_monarch'
-
-$b = New-Img 32 32                                                # obsidian_colossus: black-glass giant
-Ell $b 4 9 24 21 $PAL.night3; Ell $b 7 13 18 16 $PAL.night2
-FR $b 12 4 8 7 $PAL.night2; Eyes $b 15 8 $PAL.violet; Crown $b 12 4
-FR $b 2 13 4 14 $PAL.night3; FR $b 26 13 5 14 $PAL.night2
-FR $b 8 30 6 2 $PAL.night1; FR $b 19 30 6 2 $PAL.night1; Speckle $b 7 13 18 15 $PAL.violet 0.07
-SaveEnemy $b 'boss_obsidian_colossus'
-
-$b = New-Img 32 32                                                # hollow_sovereign: crowned revenant + banner
-FR $b 11 6 10 7 $PAL.stone4; FR $b 12 11 8 2 $PAL.night1; Eyes $b 14 9 $PAL.danger
-FR $b 8 13 16 17 $PAL.stone2; FR $b 8 13 16 2 $PAL.stone3; FR $b 13 16 6 14 $PAL.stone1
-Crown $b 13 5; FR $b 25 3 2 27 $PAL.earth2; FR $b 25 3 6 6 $PAL.maroon
-FR $b 10 30 5 2 $PAL.stone4; FR $b 18 30 5 2 $PAL.stone4
-SaveEnemy $b 'boss_hollow_sovereign'
-
-$b = New-Img 32 32                                                # abyssal_tyrant: hulking aggressor + crown
-Ell $b 3 8 26 22 $PAL.maroon; Ell $b 6 12 20 16 $PAL.maroonD
-FR $b 12 3 9 8 $PAL.maroon; Eyes $b 15 7 $PAL.gold; Crown $b 12 3
-FR $b 1 13 4 14 $PAL.maroonD; FR $b 27 13 4 14 $PAL.maroonD
-FR $b 8 30 6 2 $PAL.maroonD; FR $b 19 30 6 2 $PAL.maroonD; Speckle $b 6 12 20 15 $PAL.danger 0.05
-SaveEnemy $b 'boss_abyssal_tyrant'
-
-$b = New-Img 32 32                                                # dread_sovereign: master of afflictions
-FR $b 10 5 12 8 $PAL.bossBody; FR $b 11 11 10 2 $PAL.night1; Eyes $b 14 9 $PAL.violet
-FR $b 6 13 20 17 $PAL.bossD; FR $b 6 13 20 2 $PAL.violet; FR $b 13 16 6 14 $PAL.night1
-Crown $b 12 4; FR $b 25 3 2 27 $PAL.stone3; Ell $b 21 0 9 9 $PAL.violet; Ell $b 23 2 5 5 $PAL.cyan; P $b 25 4 $PAL.glint
-Speckle $b 7 14 18 15 $PAL.violet 0.10
-SaveEnemy $b 'boss_dread_sovereign'
-
-# --- M40 the castle's King (appended last: its speckle RNG never shifts earlier
-#     files' bytes) ---
-$b = New-Img 32 32                                                # the_hollow_king: sovereign of the castle
-Ell $b 3 7 26 23 $PAL.violet; Ell $b 6 11 20 18 $PAL.night2      # dark royal frame
-FR $b 10 4 12 9 $PAL.night1; Eyes $b 14 8 $PAL.gold             # crowned head, gold gaze
-Crown $b 11 2                                                     # a grander crown
-FR $b 8 13 16 17 $PAL.night2; FR $b 8 13 16 2 $PAL.gold          # robe with gold trim
-FR $b 13 16 6 14 $PAL.violet                                     # central sash
-FR $b 1 12 4 16 $PAL.night1; FR $b 27 12 4 16 $PAL.night1        # broad shoulders
-Ell $b 20 0 11 10 $PAL.gold; Ell $b 22 2 7 6 $PAL.danger        # wreathed orb-scepter
-FR $b 8 30 6 2 $PAL.night1; FR $b 18 30 6 2 $PAL.night1          # feet
-Speckle $b 6 11 20 18 $PAL.violet 0.10
-SaveEnemy $b 'boss_the_hollow_king'
-
 # --- M41 story NPCs (12x12 overworld actors; no speckle RNG, so they shift no
 #     other file's bytes) ---
 Write-Output 'Generating M41 story NPCs...'
@@ -1122,75 +2724,6 @@ FR $b 4 2 4 2 $PAL.clsCleric                                       # face
 FR $b 3 4 3 5 $PAL.danger; FR $b 6 4 3 5 $PAL.cyan              # motley: red left, cyan right
 FR $b 4 9 2 2 $PAL.night1; FR $b 6 9 2 2 $PAL.night1            # boots
 Outline $b; SaveImg $b 'actors/jester_npc.png'
-
-# ==================== M62 Goose Town battle sprites ====================
-# The five Evil Geese (24x24 elites) + the Deadly Duck (32x32 boss).
-# Appended last and reseeded, so every earlier PNG stays byte-identical.
-# Enemies face right; elites carry the Horns tuft (here it reads as evil
-# feather spikes). The Duck wears NO crown on purpose: "the pond needs none
-# of that" — his menace is bulk, wings, and the water he rises from.
-Write-Output 'Generating M62 Goose Town battle sprites...'
-$script:rng = 62620000
-
-$gooseW = '#F2F2F0'; $gooseS = '#D8D8D4'                          # goose white + shade
-
-# Shared right-facing goose base (24x24): body, neck, head, beak, eye, feet.
-function New-EvilGoose {
-  $b = New-Img 24 24
-  Ell $b 3 11 15 10 $gooseW; Ell $b 4 14 10 6 $gooseS             # body + shade
-  FR $b 14 7 3 6 $gooseW                                          # neck
-  Ell $b 13 3 8 7 $gooseW                                         # head
-  FR $b 20 6 4 2 $PAL.gold                                        # beak (right)
-  P $b 17 5 $PAL.night1                                           # eye
-  FR $b 8 21 2 2 $PAL.gold; FR $b 13 21 2 2 $PAL.gold             # feet
-  return $b
-}
-
-$b = New-EvilGoose                                                # vanguard: iron half-helm + war paint
-FR $b 14 2 6 3 $PAL.stone3; FR $b 14 2 6 1 $PAL.stone4            # helm + rim
-P $b 17 8 $PAL.danger; P $b 18 8 $PAL.danger                      # war paint stripe
-FR $b 6 14 6 3 $PAL.stone2                                        # plated wing
-Horns $b 15 2
-SaveEnemy $b 'evil_goose_vanguard'
-
-$b = New-EvilGoose                                                # hexwing: violet hood + rune wing
-FR $b 14 2 7 3 $PAL.violet; P $b 17 5 $PAL.cyan                   # hood + arcane eye
-FR $b 6 13 7 4 $PAL.violet; P $b 8 14 $PAL.glint; P $b 10 15 $PAL.glint  # rune wing
-Horns $b 15 2
-SaveEnemy $b 'evil_goose_hexwing'
-
-$b = New-EvilGoose                                                # mender: cream mantle + green cross
-FR $b 5 12 12 2 $PAL.clsCleric                                    # mantle
-P $b 9 16 $PAL.heal; P $b 8 15 $PAL.heal; P $b 10 15 $PAL.heal; P $b 9 14 $PAL.heal  # cross
-Horns $b 15 2
-SaveEnemy $b 'evil_goose_mender'
-
-$b = New-EvilGoose                                                # trickster: belled motley points
-P $b 14 1 $PAL.danger; P $b 19 1 $PAL.cyan                        # cap points
-P $b 13 2 $PAL.gold; P $b 20 2 $PAL.gold                          # bells
-FR $b 6 14 6 3 $PAL.violet; P $b 7 15 $PAL.gold                   # motley wing
-Horns $b 15 2
-SaveEnemy $b 'evil_goose_trickster'
-
-$b = New-EvilGoose                                                # bogfeather: swamp-stained attrition
-Speckle $b 4 12 13 8 $PAL.veg1 0.22                               # bog-stained body
-FR $b 6 14 6 3 $PAL.veg2                                          # mossy wing
-P $b 21 8 $PAL.veg3; P $b 21 9 $PAL.veg3                          # venom drip off the beak
-Horns $b 15 2
-SaveEnemy $b 'evil_goose_bogfeather'
-
-$b = New-Img 32 32                                                # deadly_duck: the terror beneath the pond
-FR $b 0 27 32 3 $PAL.wat1; FR $b 4 27 8 1 $PAL.wat3; FR $b 20 28 6 1 $PAL.wat2  # pond + ripples
-Ell $b 2 12 26 17 $PAL.night2; Ell $b 5 15 20 12 $PAL.night3      # massive body
-FR $b 1 6 5 14 $PAL.night1; FR $b 0 9 3 9 $PAL.night2             # raised far wing
-FR $b 7 13 8 4 $PAL.night1                                        # near wing fold
-FR $b 20 8 5 8 $PAL.night2                                        # thick neck
-FR $b 20 10 5 1 $PAL.clsCleric                                    # pale neck ring
-Ell $b 17 1 11 10 $PAL.veg1; Ell $b 19 2 6 5 $PAL.veg2            # green-sheened head
-Eyes $b 22 5 $PAL.danger                                          # burning gaze
-FR $b 27 6 5 3 $PAL.gold; P $b 28 9 $PAL.danger                   # great beak + snarl
-Speckle $b 6 16 18 10 $PAL.violet 0.07                            # dread shimmer
-SaveEnemy $b 'boss_deadly_duck'
 
 # --- M69: town exteriors — five service facades (48x32, opaque, covering
 # --- their 3x2 Building tiles exactly), the scoreboard stele, and the save
