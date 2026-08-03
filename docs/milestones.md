@@ -81,6 +81,7 @@
 | 71 | The victory celebration | ◑ implemented, awaiting manual approval |
 | 72 | Party panel reflow | ◑ implemented, awaiting manual approval |
 | 73 | Enemy & boss sprite art pass | ◑ implemented, awaiting manual approval |
+| 74 | Crystal Mine ambience: no birds underground | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -114,10 +115,11 @@ party-relative threat recalibration, generation 14), **M69** (the
 town exteriors — real facades, the scoreboard stele, the save crystal),
 **M70** (CRT Strength and CRT Curvature as separate persistent
 sliders), **M71** (the victory celebration screen), **M72** (the
-party panel reflow), and on 2026-07-30 **M73** (the owner-directed enemy
-and boss sprite art pass). M59–M73 ALL sit at
-`implemented, awaiting manual approval`; then M23 → M24, and nothing else
-stands before them.**
+party panel reflow), on 2026-07-30 **M73** (the owner-directed enemy
+and boss sprite art pass), and on 2026-07-31 **M74** (the Crystal Mine
+ambience rework — the "drips" were synthesised as bird whistles). M59–M74
+ALL sit at `implemented, awaiting manual approval`; then M23 → M24, and
+nothing else stands before them.**
 When M59–M72 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**84
 scenes** as of M71), the balance batteries have grown (`[economy-report]`,
@@ -2843,3 +2845,32 @@ running scope: the sections below.
   consecutive reruns; `assets/textures/enemies/` deleted and regenerated to
   exactly 67 files.**
 - **Milestone note:** `docs/milestone_notes/M73_enemy_boss_art_pass.md`
+
+## M74 — Crystal Mine ambience: no birds underground (owner report, 2026-07-31)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-31. The owner reported that the Crystal Mine ambience still sounded
+  like it had birds in it, and asked for echoes of falling rocks and broken
+  crystals instead, non-intrusive. **Not a wiring bug** — the mine bed has no
+  bird code and the right file plays for the right theme. The cause was that
+  the mine's only recurring event, M27's `AmbDrip`, was *synthesised as a bird
+  whistle*: a 2300→1500 Hz downward glide followed 110 ms later by a second
+  glided note — the same frequency band, the same downward contour, the same
+  multi-note spacing and the same added harmonic as the town's `AmbBird`. The
+  variable was named "drip"; the waveform was a chirp. Eight fired per 12 s
+  loop at nearly four times the drone level. `AmbDrip` is deleted and replaced
+  with two synths built so they cannot read as a call: **`AmbRockfall`**
+  (scattered unpitched filtered-noise transients with a duller cavern repeat)
+  and **`AmbShard`** (an **inharmonic** strike — plate partials
+  1 : 2.76 : 5.40 : 8.93, near-instant attack, no glide — with one dimmer
+  echo), over the existing metallic hum plus a new low settling rumble. Four
+  events per twelve seconds instead of eight, and much closer to the bed.
+  Measured: bird-band (1.9 kHz) energy down **2.6×**, now level with the
+  Ruined Keep; low-end weight up 1.6×; event-over-bed dynamic ratio down from
+  2.9× to 1.2×. Same file path, id, loop length and format — a drop-in
+  replacement, no manifest or code change.
+  **Closing verification: 607/607 Debug tests green; all 39 WAVs hash-compared
+  against `git HEAD` by full path with exactly one change (`ambience/mine.wav`);
+  generator byte-stable across two consecutive reruns; loop wrap 4.0× the
+  typical sample step, matching the old bed — no click.**
+- **Milestone note:** `docs/milestone_notes/M74_mine_ambience.md`

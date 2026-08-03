@@ -179,6 +179,32 @@ Composition carries each theme; palettes stay within §2:
   ~140 BPM. Loops are seamless and short (6–10s for the slice); real
   arrangements in M21 follow this language.
 
+### 9b. Ambience identity (M27; mine reworked M74)
+
+Each bed is a noise floor + a distinct drone character + recurring events that
+sit above it. The events are what name the place:
+
+- **Town** — bright breeze, frequent melodic **bird whistles**. Deliberately
+  the most dynamic bed (events ~50× the floor): birds leap out of near-silence.
+- **Ruined Keep** — a loud, hollow, slowly beating low drone with distant
+  moans. Identity: weight.
+- **Crystal Mine** — a steady metallic hum and a low settling rumble, with
+  sparse **rock falls and breaking crystal**, each answered by a cavern echo.
+  Identity: an enclosed, dead excavation. Events sit close to the bed (~1.2×
+  the floor) — you should have to notice them.
+- **Hollow Forest** — busy fluttering leaf rustle, low **owl hoots**, the odd
+  insect tick. Identity: something alive nearby.
+
+> **Rule learned the hard way (M74).** An event's *synthesis* must match its
+> label, not just its variable name. The mine's "water drip" was a
+> 2300 → 1500 Hz downward glide with a second glided note 110 ms later —
+> the same band, contour and note spacing as the town's bird whistle — so the
+> Crystal Mine audibly had birds in it for six milestones. **A short pitched
+> glide in the 1.5–3 kHz band reads as birdcall wherever it appears.** For
+> mineral, stone and impact events use unpitched filtered-noise transients or
+> **inharmonic** partial stacks (plate/bar ratios such as 1 : 2.76 : 5.40)
+> with no glide at all.
+
 ## 10. Prohibitions
 
 - No copyrighted or imitative material: no Final Fantasy or other JRPG
