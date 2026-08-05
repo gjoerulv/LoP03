@@ -21,9 +21,14 @@ enum class RoomType { Start, Normal, Treasure, Boss, Event };
 // M55 adds the three per-theme rites (ArmoryGhost / MinersCache / ElderRoot): each
 // is GUARANTEED exactly once per dungeon of its theme (forced onto the first event
 // slot) and never appears outside that theme. See dungeon/ThemeEvents.hpp.
+// M76 adds DuckPeddler: a rare replacement of one plain rolled event, decided by
+// a PURE hash of the seed (never an rng draw — every other roll of a seed is
+// byte-identical, so generation stays v14; see dungeon/ThemeEvents.hpp). The
+// peddler sells the Evil Duckling for flat gold and will not deal while the
+// party already owns one.
 enum class RoomEventKind {
     None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken, RoyalRelic,
-    ArmoryGhost, MinersCache, ElderRoot
+    ArmoryGhost, MinersCache, ElderRoot, DuckPeddler
 };
 
 struct RoomEvent {

@@ -109,12 +109,14 @@ TEST_CASE("events: generated event rooms are well-formed dead ends", "[events]")
     // Events appear regularly and every kind shows up somewhere in the sample.
     // M55: a ruined_keep dungeon guarantees the Armory Ghost rite on its first
     // event slot, so the 6 pre-M55 kinds (RestToken since M30) plus ArmoryGhost
-    // all appear across the sample — 7 kinds. (Town defaults to 1 here, so no
-    // Royal Relic leaks in.)
+    // all appear across the sample. (Town defaults to 1 here, so no Royal
+    // Relic leaks in.) M76: the Duckling Peddler's pure-hash replacement
+    // (~10% of seeds) joins them — 8 kinds.
     REQUIRE(eventRooms > 100);
-    REQUIRE(kindsSeen.size() == 7);
+    REQUIRE(kindsSeen.size() == 8);
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::RestToken) == 1);
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::ArmoryGhost) == 1);  // the guaranteed rite
+    REQUIRE(kindsSeen.count(dungeon::RoomEventKind::DuckPeddler) == 1);  // M76: rare, real
     REQUIRE(trappedChests > 20);
 }
 

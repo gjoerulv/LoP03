@@ -558,11 +558,44 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                 case RoomEventKind::RestToken:
                 case RoomEventKind::ArmoryGhost:  // M55: the upgrade is picked at trade time
                 case RoomEventKind::RoyalRelic:  // the relic is picked at resolution (M44)
+                case RoomEventKind::DuckPeddler:  // M76: placed by the post-pass, never rolled here
                 case RoomEventKind::None:
                     break;
             }
             d.rooms[static_cast<std::size_t>(sideIndex)].event = ev;
             ++made;
+        }
+    }
+
+    // --- The Duckling Peddler (M76): a rare replacement of ONE plain rolled
+    // event, decided by a PURE hash of the seed — no rng draw is consumed, so
+    // every other roll of this seed is byte-identical and generation stays
+    // v14 (the M52 additive precedent; the program's one generation bump is
+    // reserved for M82). Never a theme rite, the relic, or an elite challenge
+    // (whose team would be orphaned). Whether the peddler DEALS is a separate,
+    // interaction-time question (one per customer — see DungeonState), so the
+    // dungeon a seed generates never depends on the party's bag.
+    {
+        std::vector<int> plainEventRooms;
+        for (std::size_t ri = 0; ri < d.rooms.size(); ++ri) {
+            const RoomEventKind k = d.rooms[ri].event.kind;
+            if (d.rooms[ri].type != RoomType::Event) {
+                continue;
+            }
+            if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
+                k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
+                k == RoomEventKind::RestToken) {
+                plainEventRooms.push_back(static_cast<int>(ri));
+            }
+        }
+        const int slot = duckPeddlerSlot(seed, static_cast<int>(plainEventRooms.size()));
+        if (slot >= 0) {
+            RoomEvent& ev =
+                d.rooms[static_cast<std::size_t>(plainEventRooms[static_cast<std::size_t>(slot)])]
+                    .event;
+            ev.kind = RoomEventKind::DuckPeddler;
+            ev.goldCost = kDuckPeddlerPriceGold;
+            ev.itemId = kEvilDucklingItemId;
         }
     }
 

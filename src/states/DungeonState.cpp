@@ -582,6 +582,33 @@ void DungeonState::resolveEvent() {
             maybePushMilestoneChoice(stack(), context_);  // M63: the level-up moment
             break;
         }
+        case dungeon::RoomEventKind::DuckPeddler: {
+            // M76: one per customer (the owner's rule) — while the party owns a
+            // duckling the peddler will not deal, and the offer stays
+            // unresolved for a duckless return. Checked here, at interaction,
+            // so what a seed GENERATES never depends on the party's bag.
+            if (context_.party.inventory.count(dungeon::kEvilDucklingItemId) >= 1) {
+                context_.audio.play(Sfx::Error);
+                message_ = "\"One per customer. Duck rules.\" The peddler will not budge.";
+                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                return;
+            }
+            if (context_.party.gold < ev.goldCost) {
+                context_.audio.play(Sfx::Error);
+                message_ = "The peddler wants " + std::to_string(ev.goldCost) +
+                           "g - you cannot pay.";
+                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                return;
+            }
+            context_.party.gold -= ev.goldCost;
+            context_.party.inventory.add(dungeon::kEvilDucklingItemId, 1);
+            const content::ItemDef* it = context_.content.findItem(ev.itemId);
+            context_.audio.play(Sfx::Interact);
+            message_ = "The peddler hands over the " +
+                       (it != nullptr ? it->name : std::string("Evil Duckling")) +
+                       ". It looks... pleased.";
+            break;
+        }
         case dungeon::RoomEventKind::EliteChallenge:
         case dungeon::RoomEventKind::None:
             return;  // challenges resolve through battle, not here
@@ -658,6 +685,19 @@ std::string DungeonState::eventPromptText() const {
             return input::prompt(map, InputAction::Confirm, device,
                                  "Feed the Elder Root " + std::to_string(ev.goldCost) + "g") +
                    " - the whole party gains XP (no fight)";
+        case dungeon::RoomEventKind::DuckPeddler:
+            // M76: the decline is stated up front — the trade-off bar (M20)
+            // covers refusals too.
+            if (context_.party.inventory.count(dungeon::kEvilDucklingItemId) >= 1) {
+                return "The peddler eyes your pack. \"One per customer. Duck rules.\"";
+            }
+            if (context_.party.gold < ev.goldCost) {
+                return "The peddler sells an Evil Duckling for " +
+                       std::to_string(ev.goldCost) + "g - you cannot pay.";
+            }
+            return input::prompt(map, InputAction::Confirm, device, "Buy the Evil Duckling") +
+                   " for " + std::to_string(ev.goldCost) +
+                   "g - a single-use curse for one foe";
         case dungeon::RoomEventKind::None:
             break;
     }
@@ -1268,6 +1308,10 @@ void DungeonState::render() {
                     case dungeon::RoomEventKind::MinersCache:  // M55: crystal cache
                         c = Color{120, 220, 235, 255};
                         glyph = "$";
+                        break;
+                    case dungeon::RoomEventKind::DuckPeddler:  // M76: a sickly waddle
+                        c = Color{170, 210, 100, 255};
+                        glyph = "D";
                         break;
                     case dungeon::RoomEventKind::ElderRoot:  // M55: green root
                         c = Color{110, 190, 120, 255};

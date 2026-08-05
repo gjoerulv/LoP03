@@ -361,6 +361,26 @@ void BattleState::captureElementHit(const content::SkillDef& skill) {
     }
     phase_ = Phase::Resolve;
 }
+
+void BattleState::captureOpenDetails() {
+    // Stages the fullest unit body the panel's line budget admits: guard line
+    // plus a four-chip status row. KNOWN GAP: a Passive line on a unit this
+    // decorated is 1-2 wrapped lines over budget (so its tail would clip) —
+    // true since the M75 legend growth, before TRF/STN joined. Fitting that
+    // case needs an owner decision (shorter legend, or a contextual one), so
+    // this scene pins the budget at the passing envelope until then.
+    captureEnterTargeting();  // reuse: puts a living party member on turn
+    phase_ = Phase::Command;  // details must show the ACTOR (MP row), not a target
+    battle::Combatant& self = battle_.units[static_cast<std::size_t>(currentActor())];
+    self.statuses.clear();
+    self.passiveIds.clear();
+    self.guarding = true;
+    self.statuses.push_back({content::StatusType::Poison, 5, 3});
+    self.statuses.push_back({content::StatusType::AttackDown, 25, 2});
+    self.statuses.push_back({content::StatusType::DefenseDown, 25, 2});
+    self.statuses.push_back({content::StatusType::Curse, 0, 2});
+    openDetails();
+}
 #endif
 
 int BattleState::enemyBaseY() const {
@@ -772,6 +792,14 @@ void BattleState::executePending(int targetUnit) {
                     statusAction && it->battleTarget == content::BattleTarget::Enemy;
                 if (spends) {
                     context_.party.inventory.remove(pendingItemId_, 1);
+                    // M76: an item with an authored use line delivers it on the
+                    // quip channel (the Evil Duckling's Hilarious Punchline).
+                    // Presentation only, and only when the item actually acts.
+                    if (!it->useLine.empty()) {
+                        jestLine_ = it->useLine;
+                        jestTimer_ = 2.5f * settings::messageDurationScale(
+                                                context_.settings.values.messageSpeed);
+                    }
                 } else {
                     message_ += " (kept)";
                 }
@@ -1081,14 +1109,15 @@ void BattleState::openDetails() {
         }
     }
     body +=
-        "\n\nPSN: poison, damage at the start of each turn. ATK+/ATK-: attack "
-        "raised/lowered. DEF+/DEF-: defense raised/lowered. CNF: confused, "
+        "\n\nPSN: poison, damage at turn start. ATK+/ATK-, DEF+/DEF-: "
+        "attack/defense raised or lowered. CNF: confused, "
         "attacks its own side. SIL: silenced, cannot use MP skills. BLD: blinded, "
-        "physical attacks usually miss. RFL: reflects magic back at its caster. "
+        "physical attacks usually miss. TRF: terrified, forced to Guard next turn. "
+        "STN: stunned, loses its next turn. RFL: reflects magic back at its caster. "
         "SLP: asleep, skips turns - damage (not poison) wakes it. CRS: cursed, "
         "deals half damage and pays double MP.\nTurn order follows Speed. Guard "
-        "halves damage. Escape forfeits the guarded reward - and every battle "
-        "turn counts against your score.";
+        "halves damage. Escape forfeits the reward - and every turn counts "
+        "against your score.";
     stack().pushState(
         std::make_unique<DetailsOverlayState>(stack(), context_, "Battle Details", body));
 }

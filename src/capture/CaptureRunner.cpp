@@ -1167,6 +1167,20 @@ int run(const char* outDir) {
                  state->captureShowSpoils();
                  s.pushState(std::move(state));
              }},
+            {"85_battle_details",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // The unit Details overlay at the fullest layout the panel's
+                 // line budget admits (guard line + four status chips — see
+                 // captureOpenDetails for the known Passive-line gap), so the
+                 // wrapped status legend (TRF/STN joined it after M75) is
+                 // overflow-checked.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 BattleState* raw = state.get();
+                 s.pushState(std::move(state));
+                 raw->captureOpenDetails();  // queues the overlay push after the battle's
+             }},
             {"84_celebration",
              [](StateStack& s, AppContext& c) {
                  // M71: the victory celebration at its fullest — max score

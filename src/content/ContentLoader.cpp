@@ -456,6 +456,7 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
                 d.resistElements.push_back(*parsed);
             }
         }
+        d.useLine = r.optString("useLine");  // M76 (the duckling's punchline)
         d.grantsSkill = r.optString("grantsSkill");
         d.description = r.optString("description");
         // M44: enemy-targetable battle items, applied statuses, a boss

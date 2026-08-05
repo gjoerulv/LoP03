@@ -604,7 +604,11 @@ one hard rule: **no weapon element is ever an immunity anywhere in the game.** A
 skill can be swapped for another, but a basic attack cannot, and one class (the
 Dragon) has nothing else — so a wielded element that could be nullified would be
 a trap rather than a decision. Immunities use ice, earth and lightning; weapons
-use fire and holy. Dark stays reserved for later content.
+use fire and holy. Dark weapons stay reserved — but since **M76** the element
+itself has one player-side exception: the Rogue's **Shadow Strike** carries
+Dark (owner decision 2026-08-05), and no foe anywhere is immune to Dark, so
+the Rogue's signature opener can never become a trap. A few Dark weaknesses
+arrive with the M77 enemy pass.
 
 **The King's Court (M49).** The Hollow King stops fighting alone. Two **Royal
 Guards** — the **Throne Blade** and the **Throne Stave** — stand with him:
@@ -708,6 +712,31 @@ is the machine that runs it. A battle whose content carries none of the new
 fields and no poison or ATK±/DEF± resolves exactly as it did under v14 — any
 fight where those statuses appear resolves differently, which is the point,
 hence the bump.
+
+**Counterplay (M76).** Before the enemy pass turns the v15 statuses loose
+(M77), the party gets its answers — the "counterplay ships with the threat"
+bar, honoured in order:
+
+- **Mirrorbreak** — a physical strike that **shatters a foe's Reflect** (a
+  breaker is never magic; it would bounce off the very mirror it came to
+  break). Learned by the **Rogue at 11** and the **Ranger at 12**.
+- **Absolve** — the Cleric's level-12 answer to a **Curse**, and **Holy
+  Taxes** — sanctified paperwork stocked by item shops **from town 3**
+  (200g) and found in chests from there. These two are the ONLY things that
+  ever lift a Curse; Purify and the Remedy provably skip it.
+- The **Knight learns Smite at 13** (the owner's Holy access), and the
+  Rogue's **Shadow Strike turns Dark** — the element's one player-side
+  exception (see the M48 section above).
+- **The Evil Duckling** — a small, deeply unpleasant consumable that
+  **curses one foe** (half damage out, double MP costs). It cannot be
+  bought, found or dropped; it is sold by exactly one merchant: the
+  **Duckling Peddler**, a rare dungeon event (~10% of dungeons, decided by
+  a pure hash of the seed so a reload changes nothing) asking a flat
+  **300 gold**. Strictly **one per customer** — while the party owns a
+  duckling the peddler refuses to deal, and the offer stands unresolved
+  until the duck is spent. Using it delivers a **Hilarious Punchline** on
+  the battle's quip channel. ("What do you call a duck that steals? A
+  robber ducky.")
 
 ## 11. Bosses
 

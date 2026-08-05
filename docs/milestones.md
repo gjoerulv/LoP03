@@ -83,7 +83,7 @@
 | 73 | Enemy & boss sprite art pass | ☑ complete (approved) |
 | 74 | Crystal Mine ambience: no birds underground | ☑ complete (approved) |
 | 75 | Battle rules v15: Reflect, Sleep, Curse & triggers | ◑ implemented, awaiting manual approval |
-| 76 | Counterplay: breaker skills, Holy Taxes, Evil Duckling | ☐ planned |
+| 76 | Counterplay: breaker skills, Holy Taxes, Evil Duckling | ◑ implemented, awaiting manual approval |
 | 77 | Enemy & boss offensive pass | ☐ planned |
 | 78 | Inventory caps & shop UX | ☐ planned |
 | 79 | Input & QoL: party cycling, three-slot remap | ☐ planned |
@@ -140,7 +140,7 @@ with town-milestone perks, the Dragon, and the CrystalForge catch-up with
 the deliberate 0.6.0 renumber — see the program section below. **Execution:
 M75 → M86 in order, then M23 → M24.**
 When M75–M86 close, both M23 and M24 must be re-audited against the
-then-current checkout before they begin — the capture set has grown (**84
+then-current checkout before they begin — the capture set has grown (**85
 scenes** since M71), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
 and the M61–M68 `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/
@@ -870,7 +870,7 @@ milestone is not automatic authorization to start the next.
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
   Re-audit this note against the post-M86 checkout before starting — the
-  capture scene list has grown (**84 scenes** since M71) and the balance
+  capture scene list has grown (**85 scenes** since M71) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
   `[king-report]`, `[classes-report]`, and the M61–M68
   `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/`[spoils]`/
@@ -2953,7 +2953,19 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M76 — Counterplay: breaker skills, Holy Taxes & the Evil Duckling
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-05. Content on the v15 engine, **no version motion**:
+  Mirrorbreak (Rogue 11 / Ranger 12, physical `break_reflect`), Absolve
+  (Cleric 12, `uncurse`), Smite on the Knight (13), Shadow Strike gone
+  Dark (no foe is Dark-immune — tested); Holy Taxes (town 3+, 200g,
+  `curesCurse`) and the Evil Duckling (value 0, enemy-targeted Curse,
+  the `useLine` punchline on the quip channel), sold only by the
+  **Duckling Peddler** — a pure-hash replacement of one plain event in
+  ~10% of dungeons at 300g flat, one per customer, generation kept at
+  v14 (no rng draw consumed; the bump-free reasoning is recorded in the
+  note §E for the owner's veto). **640/640 Debug tests green; capture
+  85/85 scenes clean** (the set grew by the owner's TRF/STN chip-task
+  scene). Count pins 63→65 skills / 80→82 items updated honestly.
 - **Goal:** Ranger/Rogue Reflect-breaker skill, the Cleric's Curse
   remover, Knight learns Smite, `shadow_strike` goes Dark; the Holy Taxes
   item (the only other Curse cure) and the Evil Duckling (max 1, curses a

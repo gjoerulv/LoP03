@@ -312,6 +312,11 @@ struct ItemDef {
     std::vector<Element> resistElements;
     int resistPct = 0;
 
+    // M76: a one-liner shown on the quip channel when this item is used in
+    // battle (the Evil Duckling's Hilarious Punchline). Presentation only —
+    // nothing in the battle model reads it. Empty for every other item.
+    std::string useLine;
+
     // Scroll: the skill id it teaches (empty for non-scrolls).
     std::string grantsSkill;
 

@@ -243,7 +243,8 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; 84 scenes as of M74) — all
+list lives in `src/capture/CaptureRunner.cpp`; 85 scenes as of the
+post-M75 details-legend fix, which added `85_battle_details`) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
@@ -2140,4 +2141,48 @@ new content field is optional with an inert default.
   shrug, element resist, `initialStatuses` + clone via `buildBattle`,
   and the loader's semantic rules. Two stale v14 poison pins updated to
   the scaled values; the editor enum-list pins extended.
+
+## 30. M76 — counterplay content
+
+Content on the v15 engine — **no version motion of any kind**
+(rules 15, generation 14, save/settings v1 untouched).
+
+- **Skills** (`data/skills.json` / `data/classes.json`): `mirrorbreak`
+  (physical, `control: break_reflect` — the loader forbids a magic
+  breaker) in the Rogue (11) and Ranger (12) learnsets; `absolve`
+  (support single-ally, `control: uncurse`) in the Cleric's (12);
+  `smite` added to the Knight's (13); `shadow_strike` gains
+  `element: dark` (the one player-side Dark, owner decision 2026-08-05 —
+  a `[counterplay]` test proves no foe is Dark-immune, honouring the M48
+  never-a-trap rule for the Rogue's only always-known opener).
+- **Items** (`data/items.json`): `holy_taxes` (consumable, 200g,
+  `minTown: 3`, heal 10 + `curesCurse` — stocked by the existing
+  town-window machinery, zero shop code) and `evil_duckling`
+  (consumable, **value 0** so the M44 value-gate keeps it out of every
+  shop, chest pool and merchant roll; `battleTarget: enemy`, a
+  2-authored-turn Curse rider, and the new `ItemDef.useLine`).
+- **`ItemDef.useLine`** — a one-liner delivered on the Jester-quip
+  channel when the item is actually spent (`BattleState::executePending`,
+  `spends` only). Presentation-only; the battle model never reads it.
+- **The Duckling Peddler** (`RoomEventKind::DuckPeddler`): a post-pass in
+  `dungeon::generate` replaces ONE plain rolled event
+  (Shrine/Spring/Merchant/Wager/Rest — never a rite, the relic, or an
+  elite challenge) via `duckPeddlerSlot(seed, eligibleCount)` in
+  `dungeon/ThemeEvents` — a pure `themeEventHash` under two fresh salts,
+  **no rng draw consumed**, so every other roll of a seed is
+  byte-identical and **generation stays v14** (the M52 additive
+  precedent; the program's one generation bump is reserved for M82's
+  floors — recorded for the owner's veto in the M76 note). Constants:
+  `kDuckPeddlerChancePct` 10, `kDuckPeddlerPriceGold` 300,
+  `kEvilDucklingItemId`. The one-per-customer rule is enforced at
+  INTERACTION time in `DungeonState` (prompt + resolution both decline
+  while the party owns one, leaving the event unresolved for a duckless
+  return), so what a seed generates never depends on the party's bag.
+- **Tests** (`tests/test_counterplay.cpp`, `[counterplay]`): shipped
+  shapes and learnset levels, the two-removers exclusivity against the
+  real Purify/Remedy defs, the duckling's curse + doubled costs through
+  real content, mirrorbreak vs a real Reflect, the Holy Taxes town
+  window, peddler purity/determinism/rarity/shape, and the
+  rite-never-displaced sweep. Count pins updated (skills 63 → 65,
+  items 80 → 82).
 

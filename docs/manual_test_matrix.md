@@ -18,6 +18,27 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **Details-legend fix (post-M75, 2026-08-05):** the battle Details legend
+> now also explains the M44 turn-control statuses (TRF: forced to Guard
+> next turn; STN: loses its next turn), which it had omitted since M44.
+> To keep the wrapped block inside the overlay's 14-line budget, four
+> entries were tightened (PSN timing, the merged ATK±/DEF± pair, the
+> Escape tip) — same content, terser wording. New capture scene
+> `85_battle_details` pins the fullest fitting body (guard line + four
+> status chips; the capture set is **85 scenes**). KNOWN GAP for the
+> owner: a unit that is guarding, multi-statused, AND shows a Passive
+> line runs 1–2 wrapped lines over budget (the tail of the score tip
+> clips) — true since the M75 legend growth, before this fix. Fitting it
+> needs a product call: a contextual legend (only active statuses
+> explained), a shorter legend, or a scrollable overlay.
+>
+> **M76 update:** counterplay content — the first v15 statuses reachable in
+> play: Mirrorbreak (Rogue 11 / Ranger 12), Absolve (Cleric 12), the
+> Knight's Smite (13), the Dark Shadow Strike, Holy Taxes in town-3+ item
+> shops, and the Duckling Peddler (~10% of dungeons, "D" marker, 300g, one
+> per customer — the punchline rides the quip channel). Older rows'
+> learnset/shop-stock expectations gain these entries.
+>
 > **M75 update:** battle rules v15 — no new rows yet: the engine revision
 > (Reflect/Sleep/Curse, scaled poison, the strengthened ATK±/DEF±, MP
 > damage, triggers, resists) ships **no content**, so ordinary play should
