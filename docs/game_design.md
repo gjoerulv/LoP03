@@ -657,6 +657,58 @@ the **same minions it brings in a dungeon**, so the rush finally tests the fight
 the game actually taught — and, under the castle floor above, each of them is
 scaled beyond the deepest dungeon boss as well.
 
+**Battle rules v15 (M75).** The M75–M86 program's one engine revision, batched
+deliberately so the scoreboard tags a single rules change. Three new statuses
+join the vocabulary, worn by enemies unless a later milestone says otherwise:
+
+- **Reflect (RFL)** — hostile *magic* aimed at the bearer **bounces back onto
+  its caster**, damage, MP drain and status rider alike, with no roll taken.
+  It wears off naturally; the only other answer is a **mirror-breaker** skill
+  (`break_reflect`, arriving on the Ranger and Rogue in M76) — and a breaker is
+  never magic, because it would bounce off the very mirror it came to break.
+- **Sleep (SLP)** — the bearer **skips its turns**. Any damage wakes it — but a
+  **poison tick does not** (the owner's rule: the dot burns through the nap).
+  Cleanses, cure items and its natural expiry all end it. Sleep-heavy foes can
+  carry **manners**: one authored flag makes single-target attacks spare
+  sleepers while anyone else stands (multi-hit sweeps are exempt — they hit
+  everyone by nature), another shelves stun-rider skills while the whole
+  opposing side sleeps.
+- **Curse (CRS)** — everything the bearer deals is **halved** and every skill
+  costs **double MP** (the menu shows the real doubled cost). It wears off
+  naturally but lasts **half again as long** as any other status, and exactly
+  **two things lift it early**: an `uncurse` skill and a `curesCurse` item
+  (both arriving in M76) — no cleanse, no Remedy, no Purify touches it.
+
+Two old numbers finally matter again. **Poison scales**: the applied magnitude
+gains the *applier's* Magic ÷ 4, snapshotted at application, so a flat authored
+tick stays a threat against endgame HP pools. **ATK± / DEF± got teeth**: the
+attack percent now scales the whole offensive term (a buffed skill hits like a
+buffed skill), and the defense percent scales the **final damage taken** —
+DEF+30 shaves about a quarter off every hit, DEF−30 adds about forty percent —
+instead of nudging a stat the formula then halved and quartered away.
+
+The rest of the revision is inert schema until content uses it (the M61
+precedent): damaging skills may drain **MP** alongside HP (about a quarter of
+the HP damage — `mpDamagePct`); foes may **start the battle with statuses**
+(`initialStatuses` — a mirror already up as the curtain rises); bosses may
+shrug off the Deadly Spoon (`immuneToStatScale`) or carry a bespoke per-status
+immunity list; worn equipment may **resist elements** (`resistPct` /
+`resistElements`, halving what remains — the accessories arrive in M81); and
+the battle log now **names an attack's element** outright.
+
+And bosses, elites and minions gain **triggers** — deterministic WHEN → DO
+rules evaluated in shared code with no new randomness: *every Nth hit taken*,
+*first time below an HP percent*, *every Nth own turn*, or *first ally felled*
+can apply a status (to the bearer, the attacker, every foe, or the bearer's own
+boss — a minion mirroring its king), scale the bearer's stats (a rage that is
+data, not code), **drain the party's MP**, or **raise the bearer's clone** — a
+copy prebuilt dead at battle start so the roster never grows mid-fight. The
+authoring arrives with the M77 enemy pass and carries the M84/M85 bosses; v15
+is the machine that runs it. A battle whose content carries none of the new
+fields and no poison or ATK±/DEF± resolves exactly as it did under v14 — any
+fight where those statuses appear resolves differently, which is the point,
+hence the bump.
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1

@@ -92,22 +92,23 @@ ElementAffinity readAffinity(ObjectReader& r, const std::string& source, const s
     return a;
 }
 
-// M45/M61: reads the optional `attackStatuses[]` rider list ({type, magnitude,
-// duration} per connecting basic hit) — authored on classes since M45 and on
-// bosses since M61 (the Deadly Duck), one reader so the two can never drift.
-void readAttackStatuses(const Json& el, const std::string& source, const std::string& ctx,
-                        LoadReport& rep, std::vector<AttackStatus>& out) {
-    const auto it = el.find("attackStatuses");
+// M45/M61: reads an optional status-rider list ({type, magnitude, duration}
+// per entry) — `attackStatuses` on classes since M45 and bosses since M61 (the
+// Deadly Duck), and since M75 also `initialStatuses` (battle-start statuses)
+// on enemies and bosses. One reader so none of them can drift.
+void readStatusList(const Json& el, const std::string& source, const std::string& ctx,
+                    LoadReport& rep, const char* key, std::vector<AttackStatus>& out) {
+    const auto it = el.find(key);
     if (it == el.end()) {
         return;
     }
     if (!it->is_array()) {
-        rep.add(source, ctx + ".attackStatuses", "expected array");
+        rep.add(source, ctx + "." + key, "expected array");
         return;
     }
     int ai = 0;
     for (const auto& ae : *it) {
-        const std::string actx = ctx + ".attackStatuses[" + std::to_string(ai) + "]";
+        const std::string actx = ctx + "." + key + "[" + std::to_string(ai) + "]";
         if (!ae.is_object()) {
             rep.add(source, actx, "expected object");
         } else {
@@ -119,6 +120,124 @@ void readAttackStatuses(const Json& el, const std::string& source, const std::st
             out.push_back(st);
         }
         ++ai;
+    }
+}
+
+void readAttackStatuses(const Json& el, const std::string& source, const std::string& ctx,
+                        LoadReport& rep, std::vector<AttackStatus>& out) {
+    readStatusList(el, source, ctx, rep, "attackStatuses", out);
+}
+
+// M75: the optional `statusImmunities[]` list — statuses that can never land
+// on this foe (the Dragon's bespoke matrix). `none` is rejected like the
+// affinity reader's.
+std::vector<StatusType> readStatusImmunities(ObjectReader& r, const std::string& source,
+                                             const std::string& ctx, LoadReport& rep) {
+    std::vector<StatusType> out;
+    for (const std::string& name : r.optStringArray("statusImmunities")) {
+        const std::optional<StatusType> parsed = parseStatusType(name);
+        if (!parsed) {
+            rep.add(source, ctx, "unknown status '" + name + "' in 'statusImmunities'");
+        } else if (*parsed == StatusType::None) {
+            rep.add(source, ctx, "'none' is not a valid entry in 'statusImmunities'");
+        } else {
+            out.push_back(*parsed);
+        }
+    }
+    return out;
+}
+
+// M75: the optional `triggers[]` list (deterministic WHEN -> DO rules; see
+// Definitions.hpp). One reader for enemies and bosses; `allowClone` is
+// boss-only because the clone slot is prebuilt from the BossDef path.
+void readTriggers(const Json& el, const std::string& source, const std::string& ctx,
+                  LoadReport& rep, std::vector<TriggerDef>& out, bool allowClone) {
+    const auto it = el.find("triggers");
+    if (it == el.end()) {
+        return;
+    }
+    if (!it->is_array()) {
+        rep.add(source, ctx + ".triggers", "expected array");
+        return;
+    }
+    int ti = 0;
+    for (const auto& te : *it) {
+        const std::string tctx = ctx + ".triggers[" + std::to_string(ti) + "]";
+        ++ti;
+        if (!te.is_object()) {
+            rep.add(source, tctx, "expected object");
+            continue;
+        }
+        ObjectReader tr(te, tctx, source, rep);
+        TriggerDef t;
+        t.when = tr.reqEnum<TriggerWhen>("when", parseTriggerWhen, "trigger condition");
+        t.threshold = tr.optIntMin("threshold", 0, 0);
+        t.action = tr.reqEnum<TriggerDo>("do", parseTriggerDo, "trigger action");
+        t.status = tr.optEnum<StatusType>("status", parseStatusType, StatusType::None,
+                                          "status type");
+        t.magnitude = tr.optIntMin("magnitude", 0, 0);
+        t.duration = tr.optIntMin("duration", 0, 0);
+        t.scaleAttackPct = tr.optIntMin("scaleAttackPct", 100, 1);
+        t.scaleMagicPct = tr.optIntMin("scaleMagicPct", 100, 1);
+        t.scaleDefensePct = tr.optIntMin("scaleDefensePct", 100, 1);
+        t.scaleSpeedPct = tr.optIntMin("scaleSpeedPct", 100, 1);
+        t.cloneHpPct = tr.optIntMin("cloneHpPct", 0, 0);
+        t.mpDrainPct = tr.optIntMin("mpDrainPct", 0, 0);
+        t.text = tr.optString("text");
+
+        // Semantic rules tying condition and action to their parameters.
+        switch (t.when) {
+            case TriggerWhen::EveryNthHitTaken:
+            case TriggerWhen::EveryNthOwnTurn:
+                if (t.threshold < 1) {
+                    rep.add(source, tctx, "'threshold' must be >= 1 for this condition");
+                }
+                break;
+            case TriggerWhen::FirstTimeHpBelowPct:
+                if (t.threshold < 1 || t.threshold > 100) {
+                    rep.add(source, tctx, "'threshold' must be 1..100 for this condition");
+                }
+                break;
+            case TriggerWhen::FirstTimeAllyFelled:
+            case TriggerWhen::None:
+                break;
+        }
+        const bool statusAction = t.action == TriggerDo::StatusSelf ||
+                                  t.action == TriggerDo::StatusAttacker ||
+                                  t.action == TriggerDo::StatusAllFoes ||
+                                  t.action == TriggerDo::StatusBoss;
+        if (statusAction && (t.status == StatusType::None || t.duration < 1)) {
+            rep.add(source, tctx,
+                    "a status action requires a non-'none' 'status' and 'duration' >= 1");
+        }
+        if (t.action == TriggerDo::StatusAttacker && t.when != TriggerWhen::EveryNthHitTaken) {
+            rep.add(source, tctx,
+                    "'status_attacker' is only valid with 'every_nth_hit_taken'");
+        }
+        if (t.action == TriggerDo::ScaleStatsSelf) {
+            const bool anyScale = t.scaleAttackPct != 100 || t.scaleMagicPct != 100 ||
+                                  t.scaleDefensePct != 100 || t.scaleSpeedPct != 100;
+            if (!anyScale) {
+                rep.add(source, tctx, "'scale_stats_self' requires at least one scale percent");
+            }
+            const auto badScale = [](int v) { return v > 400; };
+            if (badScale(t.scaleAttackPct) || badScale(t.scaleMagicPct) ||
+                badScale(t.scaleDefensePct) || badScale(t.scaleSpeedPct)) {
+                rep.add(source, tctx, "scale percents must be 1..400");
+            }
+        }
+        if (t.action == TriggerDo::SummonCloneSelf) {
+            if (!allowClone) {
+                rep.add(source, tctx, "'summon_clone' is only valid on a boss");
+            }
+            if (t.cloneHpPct < 1 || t.cloneHpPct > 100) {
+                rep.add(source, tctx, "'summon_clone' requires 'cloneHpPct' 1..100");
+            }
+        }
+        if (t.action == TriggerDo::DrainFoeMp && (t.mpDrainPct < 1 || t.mpDrainPct > 100)) {
+            rep.add(source, tctx, "'drain_foe_mp' requires 'mpDrainPct' 1..100");
+        }
+        out.push_back(std::move(t));
     }
 }
 
@@ -145,6 +264,7 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
             r.optEnum<SkillEffect>("control", parseSkillEffect, SkillEffect::None, "control effect");
         d.reviveHpPct = r.optIntMin("reviveHpPct", 0, 0);  // M43 (default 0 = cannot revive)
         d.alsoBuffsEnemies = r.optBool("alsoBuffsEnemies", false);  // M45 (Goose tradeoff)
+        d.mpDamagePct = r.optIntMin("mpDamagePct", 0, 0);  // M75 (MP damage rider)
         d.description = r.optString("description");
 
         // Semantic rules tying fields together (M43): a revive-capable skill is a
@@ -156,6 +276,28 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
             (d.category != SkillCategory::Heal || d.target != SkillTarget::SingleAlly)) {
             rep.add(source, ctx,
                     "'reviveHpPct' is only valid on a 'heal' skill targeting 'single_ally'");
+        }
+        // M75 semantic rules: MP damage rides a damaging skill; a Reflect
+        // breaker must not be magic (it would bounce off the very mirror it
+        // came to break) and aims at foes; an Uncurse aims at allies.
+        if (d.mpDamagePct > 100) {
+            rep.add(source, ctx, "'mpDamagePct' must be 0..100");
+        }
+        if (d.mpDamagePct > 0 && d.category != SkillCategory::Physical &&
+            d.category != SkillCategory::Magic) {
+            rep.add(source, ctx, "'mpDamagePct' is only valid on a physical or magic skill");
+        }
+        if (d.controlEffect == SkillEffect::BreakReflect) {
+            if (d.category == SkillCategory::Magic) {
+                rep.add(source, ctx, "'break_reflect' is not valid on a magic skill");
+            }
+            if (d.target != SkillTarget::SingleEnemy && d.target != SkillTarget::AllEnemies) {
+                rep.add(source, ctx, "'break_reflect' must target enemies");
+            }
+        }
+        if (d.controlEffect == SkillEffect::Uncurse && d.target != SkillTarget::SingleAlly &&
+            d.target != SkillTarget::AllAllies && d.target != SkillTarget::Self) {
+            rep.add(source, ctx, "'uncurse' must target allies or self");
         }
         if (rep.errorCount() != before) {
             return;  // invalid entry; skip
@@ -252,6 +394,13 @@ void parseEnemies(const Json& root, const std::string& source, ContentDatabase& 
         d.bossOnly = r.optBool("bossOnly", false);       // M49 (optional)
         d.doNothingPct = r.optIntMin("doNothingPct", 0, 0);  // M61 (the geese)
         d.doNothingText = r.optString("doNothingText");
+        // M75: battle-start statuses, triggers, per-status immunities and the
+        // sleep-aware AI manners — all optional, all inert by default.
+        readStatusList(el, source, ctx, rep, "initialStatuses", d.initialStatuses);
+        readTriggers(el, source, ctx, rep, d.triggers, /*allowClone=*/false);
+        d.statusImmunities = readStatusImmunities(r, source, ctx, rep);
+        d.avoidSleepingTargets = r.optBool("avoidSleepingTargets", false);
+        d.noStunWhileAllFoesSleep = r.optBool("noStunWhileAllFoesSleep", false);
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
         // M61 semantic rules: the chance is a percentage, and the flavour line
@@ -290,9 +439,23 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
                                                ConsumableEffect::None, "consumable effect");
         d.effectAmount = r.optIntMin("effectAmount", 0, 0);
         d.curesDebuffs = r.optBool("curesDebuffs", false);           // M43
+        d.curesCurse = r.optBool("curesCurse", false);               // M75 (Holy Taxes)
         d.kingEffectAmount = r.optIntMin("kingEffectAmount", 0, 0);  // M43
         d.kingMpAmount = r.optIntMin("kingMpAmount", 0, 0);          // M43
         d.statBonus = r.optStatBlock("statBonus");
+        // M75 (engine hook; content in M81): element resistance worn equipment
+        // grants. `none` and unknown ids are rejected like the affinity lists.
+        d.resistPct = r.optIntMin("resistPct", 0, 0);
+        for (const std::string& name : r.optStringArray("resistElements")) {
+            const std::optional<Element> parsed = parseElement(name);
+            if (!parsed) {
+                rep.add(source, ctx, "unknown element '" + name + "' in 'resistElements'");
+            } else if (*parsed == Element::None) {
+                rep.add(source, ctx, "'none' is not a valid entry in 'resistElements'");
+            } else {
+                d.resistElements.push_back(*parsed);
+            }
+        }
         d.grantsSkill = r.optString("grantsSkill");
         d.description = r.optString("description");
         // M44: enemy-targetable battle items, applied statuses, a boss
@@ -350,6 +513,18 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
             rep.add(source, ctx,
                     "'disablesMinionRevive' is only valid with battleTarget 'enemy'");
         }
+        // M75: element resistance is worn, so it belongs to equipment/relics,
+        // and the percent and the element list only mean anything together.
+        if (d.resistPct > 100) {
+            rep.add(source, ctx, "'resistPct' must be 0..100");
+        }
+        if ((d.resistPct > 0) != !d.resistElements.empty()) {
+            rep.add(source, ctx,
+                    "'resistPct' and 'resistElements' must be authored together");
+        }
+        if (d.resistPct > 0 && d.type != ItemType::Equipment && d.type != ItemType::Relic) {
+            rep.add(source, ctx, "'resistPct' is only valid on equipment or a relic");
+        }
 
         if (rep.errorCount() != before) {
             return;
@@ -381,6 +556,14 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.attackHitsAll = r.optBool("attackHitsAll", false);          // M61 (the Duck)
         readAttackStatuses(el, source, ctx, rep, d.attackStatuses);   // M61 (the Duck)
         d.immuneToAfflictions = r.optBool("immuneToAfflictions", false);  // M61 (the Duck)
+        // M75: battle-start statuses, triggers (clone allowed — boss-only),
+        // per-status immunities, the sleep manners and the Deadly-Spoon shrug.
+        readStatusList(el, source, ctx, rep, "initialStatuses", d.initialStatuses);
+        readTriggers(el, source, ctx, rep, d.triggers, /*allowClone=*/true);
+        d.statusImmunities = readStatusImmunities(r, source, ctx, rep);
+        d.avoidSleepingTargets = r.optBool("avoidSleepingTargets", false);
+        d.noStunWhileAllFoesSleep = r.optBool("noStunWhileAllFoesSleep", false);
+        d.immuneToStatScale = r.optBool("immuneToStatScale", false);
         d.telegraph = r.optString("telegraph");
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);

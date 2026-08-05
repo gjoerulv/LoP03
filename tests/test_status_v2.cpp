@@ -142,7 +142,9 @@ TEST_CASE("status v2: applied durations are doubled; poison ticks at double magn
     REQUIRE(found);
     const int hp = b.units[2].hp;
     b.tickStatuses(2);
-    CHECK(b.units[2].hp == hp - 10);  // magnitude 5 doubled to 10 per tick
+    // M75 (rules v15): the applied magnitude gains the caster's Magic/4
+    // (5 + 4/4 = 6), and each tick still deals double that (12).
+    CHECK(b.units[2].hp == hp - 12);
 }
 
 TEST_CASE("status v2: silence blocks MP-cost skills but not free ones", "[status]") {

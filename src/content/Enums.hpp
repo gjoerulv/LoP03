@@ -16,9 +16,12 @@ enum class SkillCategory { Physical, Magic, Heal, Support };
 // Enmity-control / utility effect a skill carries, independent of its category.
 // None = ordinary skill. Taunt spikes the caster's threat, Fade sheds it,
 // Intercept makes the caster take hits aimed at allies until its next turn (M28).
-// Cleanse strips every negative status from the skill's ally targets (M35), so a
-// heal skill can double as a cure.
-enum class SkillEffect { None, Taunt, Fade, Intercept, Cleanse };
+// Cleanse strips the afflictions from the skill's ally targets (M35, narrowed
+// M47), so a heal skill can double as a cure. M75 adds BreakReflect (strips
+// Reflect from the skill's enemy targets — the Ranger/Rogue mirror-breakers)
+// and Uncurse (lifts Curse from the skill's ally targets — with the Holy Taxes
+// item, the ONLY things that ever remove a Curse).
+enum class SkillEffect { None, Taunt, Fade, Intercept, Cleanse, BreakReflect, Uncurse };
 
 enum class SkillTarget { SingleEnemy, AllEnemies, SingleAlly, AllAllies, Self };
 
@@ -46,6 +49,13 @@ enum class ConsumableEffect { None, Heal, Revive, RestoreMp, Cure };
 // (the bearer is forced to Guard on its next turn) and Stunned (it does nothing
 // on its next turn). Unlike the others these take the turn itself, so their
 // authored duration is applied exactly (never scaled) — see addStatus.
+// M75 (rules v15) adds three more: Reflect (hostile magic-category skills aimed
+// at the bearer bounce back onto their caster; a BENEFICIAL status, worn by
+// enemies and stripped only by a BreakReflect skill or its natural expiry),
+// Sleep (the bearer skips its turns; any damage except a poison tick wakes it),
+// and Curse (outgoing damage halved, skill MP costs doubled; wears off
+// naturally but lasts 1.5x as long as other statuses — see addStatus — and is
+// lifted ONLY by an Uncurse skill or an item flagged curesCurse).
 enum class StatusType {
     None,
     Poison,
@@ -57,7 +67,10 @@ enum class StatusType {
     Silence,
     Blind,
     Terrified,
-    Stunned
+    Stunned,
+    Reflect,
+    Sleep,
+    Curse
 };
 
 // Which side a battle item is aimed at (M44). Ally is every pre-M44 item.
@@ -128,6 +141,38 @@ enum class MilestoneEffect {
     GrantBodyguard     // gains Bodyguard (magnitude%)
 };
 
+// Boss/elite trigger vocabulary (M75, rules v15). A trigger is a deterministic
+// WHEN → DO pair authored on an enemy or boss (`triggers[]`). WHEN conditions
+// are evaluated in shared battle code — the state conditions at the start of
+// the bearer's own turn (the revive-clock seam), EveryNthHitTaken at the
+// moment a deliberate hit lands — so the Simulator and live play agree by
+// construction, and no condition ever consumes a random roll. None is the
+// inert error default (never a valid data value).
+enum class TriggerWhen {
+    None,
+    EveryNthHitTaken,      // every Nth deliberate hit this unit takes
+    FirstTimeHpBelowPct,   // once, at its first own turn at/below N% HP
+    EveryNthOwnTurn,       // every Nth of its own turns
+    FirstTimeAllyFelled    // once, at its first own turn with an ally down
+};
+
+// What a fired trigger does. Status* apply {status, magnitude, duration};
+// ScaleStatsSelf multiplies the bearer's own ATK/MAG/DEF/SPD by authored
+// percents (the Deadly-Spoon shape, upward); SummonCloneSelf raises the
+// bearer's prebuilt clone slot (built dead at buildBattle, cloneHpPct of the
+// bearer's max HP); DrainFoeMp drains mpDrainPct of every living foe's MP.
+// StatusAttacker is only meaningful with EveryNthHitTaken (validated).
+enum class TriggerDo {
+    None,
+    StatusSelf,
+    StatusAttacker,
+    StatusAllFoes,
+    StatusBoss,        // the boss on the bearer's own side (a minion aiding its king)
+    ScaleStatsSelf,
+    SummonCloneSelf,
+    DrainFoeMp
+};
+
 // parse* return std::nullopt for unrecognized strings (the caller reports the
 // error with context). toString is the inverse and always returns a stable id.
 std::optional<Element> parseElement(std::string_view s);
@@ -146,6 +191,8 @@ std::optional<BattleTarget> parseBattleTarget(std::string_view s);
 std::optional<BossArchetype> parseBossArchetype(std::string_view s);
 std::optional<PassiveHook> parsePassiveHook(std::string_view s);
 std::optional<MilestoneEffect> parseMilestoneEffect(std::string_view s);
+std::optional<TriggerWhen> parseTriggerWhen(std::string_view s);
+std::optional<TriggerDo> parseTriggerDo(std::string_view s);
 
 const char* toString(Element v);
 
@@ -175,6 +222,8 @@ const char* toString(BattleTarget v);
 const char* toString(BossArchetype v);
 const char* toString(PassiveHook v);
 const char* toString(MilestoneEffect v);
+const char* toString(TriggerWhen v);
+const char* toString(TriggerDo v);
 
 // M59 (CrystalForge): every valid data id for an enum, in declaration order,
 // built from the same tables the parse* functions read — one source, so an id
@@ -197,5 +246,7 @@ std::vector<std::string_view> battleTargetIds();
 std::vector<std::string_view> bossArchetypeIds();
 std::vector<std::string_view> passiveHookIds();
 std::vector<std::string_view> milestoneEffectIds();
+std::vector<std::string_view> triggerWhenIds();
+std::vector<std::string_view> triggerDoIds();
 
 }  // namespace cd::content

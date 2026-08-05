@@ -18,6 +18,15 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M75 update:** battle rules v15 — no new rows yet: the engine revision
+> (Reflect/Sleep/Curse, scaled poison, the strengthened ATK±/DEF±, MP
+> damage, triggers, resists) ships **no content**, so ordinary play should
+> feel identical apart from poison biting harder and DEF±/ATK± visibly
+> mattering, the "(Fire)"-style element tags in the battle log, and the
+> extended Details legend (RFL/SLP/CRS). The status-specific rows arrive
+> with the M76/M77 content that makes them reachable. Older rows' poison
+> and buff damage numbers are superseded by the v15 scaling.
+>
 > **M72 update:** the party panel reflow — row 166 (vitals under the
 > roster, two-line descriptions, the full skills list; fixes the owner's
 > Lv.99 clipping report). Row 158's party-panel layout expectations are

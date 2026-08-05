@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **next in line: M59–M74 closed 2026-08-05** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the M75–M86 program** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -82,6 +82,18 @@
 | 72 | Party panel reflow | ☑ complete (approved) |
 | 73 | Enemy & boss sprite art pass | ☑ complete (approved) |
 | 74 | Crystal Mine ambience: no birds underground | ☑ complete (approved) |
+| 75 | Battle rules v15: Reflect, Sleep, Curse & triggers | ◑ implemented, awaiting manual approval |
+| 76 | Counterplay: breaker skills, Holy Taxes, Evil Duckling | ☐ planned |
+| 77 | Enemy & boss offensive pass | ☐ planned |
+| 78 | Inventory caps & shop UX | ☐ planned |
+| 79 | Input & QoL: party cycling, three-slot remap | ☐ planned |
+| 80 | Event flavor text | ☐ planned |
+| 81 | Arms, elements & icons | ☐ planned |
+| 82 | Floors: 1-or-4-floor dungeons | ☐ planned |
+| 83 | Map economy: 4-floor map-piece drops | ☐ planned |
+| 84 | Guild Masters & town milestones | ☐ planned |
+| 85 | The Dragon & curio lore | ☐ planned |
+| 86 | CrystalForge catch-up & version 0.6.0 | ☐ planned |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -118,9 +130,16 @@ sliders), **M71** (the victory celebration screen), **M72** (the
 party panel reflow), on 2026-07-30 **M73** (the owner-directed enemy
 and boss sprite art pass), and on 2026-07-31 **M74** (the Crystal Mine
 ambience rework — the "drips" were synthesised as bird whistles). M59–M74
-are ALL `complete (approved)` — batch-approved by the owner 2026-08-05;
-then M23 → M24, and nothing else stands before them.**
-When M59–M74 close, both M23 and M24 must be re-audited against the
+are ALL `complete (approved)` — batch-approved by the owner 2026-08-05.
+On 2026-08-05 the owner then authorized the **M75–M86 expansion program**
+(one plan, one approval): battle rules v15 with Reflect/Sleep/Curse and the
+trigger engine, player counterplay, the enemy offensive pass, inventory
+caps, input QoL, event flavor text, elemental gear + equipment icons, the
+1-or-4-floor dungeon system, the map-piece economy, the seven Guild Masters
+with town-milestone perks, the Dragon, and the CrystalForge catch-up with
+the deliberate 0.6.0 renumber — see the program section below. **Execution:
+M75 → M86 in order, then M23 → M24.**
+When M75–M86 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**84
 scenes** since M71), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
@@ -839,17 +858,18 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; M59–M74 closed
-  2026-08-05, so this is now next in line** (the deferral was extended by each expansion program the
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs after the M75–M86
+  expansion program (authorized 2026-08-05)** (the deferral was extended by each expansion program the
   owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
   M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
-  M61, the M62–M66 program, and the M67–M74 owner batches). The tooling,
+  M61, the M62–M66 program, the M67–M74 owner batches, and the M75–M86
+  expansion program). The tooling,
   diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
-  Re-audit this note against the post-M74 checkout before starting — the
+  Re-audit this note against the post-M86 checkout before starting — the
   capture scene list has grown (**84 scenes** since M71) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
   `[king-report]`, `[classes-report]`, and the M61–M68
@@ -863,9 +883,10 @@ milestone is not automatic authorization to start the next.
   two treasure-map systems — and the M67–M74 batches: portraits, spoils,
   party-relative danger, town exteriors, the CRT split, the celebration,
   the party-panel reflow, the M73 enemy/boss art pass, and the M74 mine
-  ambience rework).
-  **M74 is the last authorized expansion; this is next
-  in line once the owner schedules it.**
+  ambience rework) — plus everything M75–M86 adds (the v15 statuses and
+  triggers, floors, Guild Masters, the Dragon, the new gear and icons).
+  **M75–M86 is the newest authorized expansion program; this runs after
+  it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
   external playtesting evidence.
@@ -2877,3 +2898,172 @@ running scope: the sections below.
   generator byte-stable across two consecutive reruns; loop wrap 4.0× the
   typical sample step, matching the old bed — no click.**
 - **Milestone note:** `docs/milestone_notes/M74_mine_ambience.md`
+
+## The M75–M86 expansion program (authorized 2026-08-05)
+
+Plan approved by the owner 2026-08-05 (one plan, one approval) after a
+two-round Q&A. The owner's locked decisions, which no milestone may
+reopen without escalation:
+
+1. **Curse** wears off naturally but lasts **50% longer** than other
+   statuses.
+2. The town-milestone "+1 Max Items" perk raises **every consumable cap by
+   1 with a hard ceiling of 9** (Potion stays 9).
+3. The version renumbers **0.9.0 → 0.6.0** at program end (a deliberate
+   downgrade — the label overstated completeness); README follows.
+4. 4-floor dungeons are **flat**: all floors at the chosen depth.
+5. Map-piece flow: 4-floor completions in town ≥2 roll 15%→75% (linear by
+   town); while all 4 pieces are held, successful rolls bank as **owed
+   (max 3)**, paid after the Map-boss victory; in-dungeon finds unchanged.
+6. Guild Masters are **refightable** (best-turns record); the
+   town-milestone perk is granted once, on first victory.
+7. Elixir/Hi-Ether are **not sold in town shops**; the in-dungeon merchant
+   may sell them **at full value** (exempt from its usual pricing).
+8. **Dark stays enemy-only for weapons**, but Rogue's `shadow_strike`
+   becomes Dark-elemental; a few enemies and one boss gain Dark weakness;
+   the battle log shows an attack's element.
+
+Version discipline for the whole program: battle rules bump **once**
+(M75, 14 → 15), generation bumps **once** (M82, 14 → 15), save schema
+stays v1 with optional defensive fields, and every new source of chance
+derives from committed seeds or pure hashes — no new RNG streams.
+
+### M75 — Battle rules v15: Reflect, Sleep, Curse & triggers
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-05. `battle::kBattleRulesVersion` **14 → 15** (the program's one
+  bump): the three new statuses with their exclusive removers, stat-scaled
+  poison (magnitude + applier MAG/4), ATK± on the whole offensive term and
+  DEF± on the final hit, `mpDamagePct`, `initialStatuses`, the
+  `TriggerWhen`×`TriggerDo` framework (incl. the prebuilt-dead clone slot),
+  sleep-aware AI manners, the Deadly-Spoon shrug, the equipment
+  element-resist hook, the battle-log element line, and full loader +
+  editor-descriptor coverage. **631/631 Debug tests green** (24 new
+  `[v15]` cases; two stale poison pins and the enum-list pin updated
+  honestly); **capture 84/84 scenes clean**; zero project-code warnings.
+  No content ships — every new field is inert until M76+ authors it.
+- **Goal:** one atomic rules revision landing every engine change: the
+  three new statuses (Reflect bounces magic to the caster; Sleep skips
+  turns, woken by any damage except poison ticks; Curse halves outgoing
+  damage and doubles MP costs), stat-scaled poison, meaningful ATK±/DEF±,
+  `mpDamagePct` (¼-of-HP-damage MP loss), `initialStatuses`, the generic
+  deterministic trigger framework, sleep-aware targeting, the equipment
+  element-resist hook, and the battle-log element line.
+- **Milestone note:** `docs/milestone_notes/M75_battle_rules_v15.md`
+
+### M76 — Counterplay: breaker skills, Holy Taxes & the Evil Duckling
+
+- **Status:** ☐ planned
+- **Goal:** Ranger/Rogue Reflect-breaker skill, the Cleric's Curse
+  remover, Knight learns Smite, `shadow_strike` goes Dark; the Holy Taxes
+  item (the only other Curse cure) and the Evil Duckling (max 1, curses a
+  foe, Hilarious Punchline on use) sold by a new rare 300g dungeon event
+  that never triggers while one is owned.
+- **Milestone note:** `docs/milestone_notes/M76_counterplay.md`
+
+### M77 — Enemy & boss offensive pass
+
+- **Status:** ☐ planned
+- **Goal:** the roster uses v15 — MP-damaging attacks, Reflect starters,
+  cursers, party-wide sleepers; the King's rework (sleep-all,
+  damage+stun, sleep+damage, spare-the-sleeping targeting, a minion that
+  reflects him at low HP, a cursing minion); the Deadly Duck's rework
+  (Reflect, all-stun+damage, all-sleep, Deadly Spoon immunity, cursing
+  and Reflect-starting geese); triggers across lackluster bosses/elites;
+  Dark weaknesses; telegraphs rewritten flavor-only.
+- **Milestone note:** `docs/milestone_notes/M77_enemy_offensive.md`
+
+### M78 — Inventory caps & shop UX
+
+- **Status:** ☐ planned
+- **Goal:** purchase-time caps (Potion 9, Hi-Potion 6, other consumables
+  2; `>=` checks; overages never clamped; perk hook +1/rank, ceiling 9);
+  Elixir/Hi-Ether off the town shelves (dungeon merchant sells them at
+  full value); the item shop's owned-count column aligned.
+- **Milestone note:** `docs/milestone_notes/M78_inventory_caps.md`
+
+### M79 — Input & QoL: party cycling, three-slot remap
+
+- **Status:** ☐ planned
+- **Goal:** `CyclePrev`/`CycleNext` (Q/E, Ctrl/Alt, shoulder buttons)
+  cycling members in the Equip Shop and Training Hall; keyboard remap with
+  Primary/Alt1/Alt2 each directly mappable and an in-use warning; Confirm
+  alt2 = Z, Cancel alt2 = X; default volumes music 7/10 and ambience
+  3/10; the Decisive achievement tightens to ≤15 turns.
+- **Milestone note:** `docs/milestone_notes/M79_input_qol.md`
+
+### M80 — Event flavor text
+
+- **Status:** ☐ planned
+- **Goal:** every dungeon event presents centered, dry-humor,
+  JSON-authored flavor text (`data/event_flavor.json`) with the trade-off
+  and confirmation, replacing the footer-only prompt; defensive fallback;
+  CrystalForge editing follows in M86.
+- **Milestone note:** `docs/milestone_notes/M80_event_flavor.md`
+
+### M81 — Arms, elements & icons
+
+- **Status:** ☐ planned
+- **Goal:** `elementResist` and `iconCategory` equipment fields; six
+  per-element 50%-resist accessories plus legendary +200 SPD and
+  all-element −50% accessories; new Fire/Ice/Lightning/Earth/Holy weapons
+  on the M54 curve (no Dark weapons); enemy elemental-coverage audit;
+  categorized pixel-grid equipment icons rendered wherever gear is listed.
+- **Milestone note:** `docs/milestone_notes/M81_arms_elements_icons.md`
+
+### M82 — Floors: 1-or-4-floor dungeons
+
+- **Status:** ☐ planned
+- **Goal:** the Guild picker offers 1 or 4 floors; each floor a full level
+  from a derived sub-seed; floors 1–3 end in an elite stair-gate, the boss
+  on floor 4, all at the chosen depth; `ScoreEntry.floors` splits the
+  scoreboard into cycleable 1F/4F boards. Generation **14 → 15**.
+- **Milestone note:** `docs/milestone_notes/M82_floors.md`
+
+### M83 — Map economy: 4-floor map-piece drops
+
+- **Status:** ☐ planned
+- **Goal:** completing a 4-floor dungeon in town ≥2 rolls a seeded,
+  reload-proof map-piece drop (15%→75% by town); with all 4 pieces held,
+  drops bank as owed (max 3, `mapPiecesOwed`) and pay out after the
+  Map-boss falls.
+- **Milestone note:** `docs/milestone_notes/M83_map_economy.md`
+
+### M84 — Guild Masters & town milestones
+
+- **Status:** ☐ planned
+- **Goal:** each town's 4-floor clear unlocks its Guild Boss — a
+  depth-20-grade gauntlet (five seeded town enemies, then a unique new
+  Master with 1–3 unique minions; refightable, recorded); first victory
+  grants a pick-1-of-2 permanent town perk (max items, EXP, gold, map
+  chance, black market, traps, chest gold, the cryptic Spoon-event line,
+  the 3→1 token price); a defeat-a-Guild-Master achievement; and every
+  10th Endless Rush wave becomes a seeded-random boss with minions.
+- **Milestone note:** `docs/milestone_notes/M84_guild_masters.md`
+
+### M85 — The Dragon & curio lore
+
+- **Status:** ☐ planned
+- **Goal:** the 12 curios become inspectable with Duck-mythology lore
+  (`data/curio_lore.json`); collecting all 12 opens the castle's
+  visible-but-disabled "Fight the Dragon" (new jester, dry lore): three
+  elite waves then the King's nemesis — highest HP in the game, immune to
+  all statuses but ATK−/DEF−/Curse/Poison and to Fire, all-party
+  elemental breaths, a one-shot MP-depleting attack below 50%, doubled
+  ATK/SPD below 10%, a 5%-HP clone, First Strike + Lifedrink + Spell
+  Ward — plus a new achievement.
+- **Milestone note:** `docs/milestone_notes/M85_dragon_curios.md`
+
+### M86 — CrystalForge catch-up & version 0.6.0
+
+- **Status:** ☐ planned
+- **Goal:** editor FieldDescriptor coverage for every new field and the
+  two new content files; canonicalize round-trip proven; the deliberate
+  version renumber to 0.6.0 with the README claim fixed; the final docs
+  consistency sweep.
+- **Milestone note:** `docs/milestone_notes/M86_crystalforge_060.md`
+
+**Execution order:** M75 → M76 → M77 → M78 → M79 → M80 → M81 → M82 →
+M83 → M84 → M85 → M86, then M23 → M24 (re-audited against the
+then-current checkout). Approval of one milestone is not authorization to
+start the next.

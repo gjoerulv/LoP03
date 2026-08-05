@@ -39,6 +39,12 @@ struct SkillDef {
     // a buff, so healing the party cheers the enemy up too.
     bool alsoBuffsEnemies = false;
 
+    // M75 (rules v15): a damaging skill may also drain MP — the target loses
+    // this percent of the HP damage it just took as MP (the owner's rule:
+    // MP damage is about a quarter of the HP damage, so the authored value is
+    // 25). 0 for every pre-M75 skill; valid on physical/magic only.
+    int mpDamagePct = 0;
+
     std::string description;
 };
 
@@ -50,10 +56,33 @@ struct LearnEntry {
 };
 
 // One status a basic attack applies on a connecting hit (M45, the Dragon).
+// M75 reuses the same {type, magnitude, duration} triple for `initialStatuses`
+// (statuses a foe starts the battle already carrying).
 struct AttackStatus {
     StatusType type = StatusType::None;
     int magnitude = 0;
     int duration = 0;
+};
+
+// One deterministic boss/elite trigger (M75, rules v15): WHEN a condition
+// holds, DO an action. Authored on enemies and bosses (`triggers[]`); resolved
+// onto the Combatant at buildBattle and evaluated in shared battle code, so
+// the Simulator and live play agree by construction. Only the fields the
+// chosen action reads are meaningful (validated by the loader).
+struct TriggerDef {
+    TriggerWhen when = TriggerWhen::None;
+    int threshold = 0;         // every Nth hit/turn, or the HP percent bound
+    TriggerDo action = TriggerDo::None;
+    StatusType status = StatusType::None;  // Status* actions
+    int magnitude = 0;
+    int duration = 0;
+    int scaleAttackPct = 100;  // ScaleStatsSelf (100 = unchanged; 200 = doubled)
+    int scaleMagicPct = 100;
+    int scaleDefensePct = 100;
+    int scaleSpeedPct = 100;
+    int cloneHpPct = 0;        // SummonCloneSelf: clone max HP as % of the bearer's
+    int mpDrainPct = 0;        // DrainFoeMp: % of every living foe's current MP
+    std::string text;          // authored announcement line (optional)
 };
 
 struct ClassDef {
@@ -160,6 +189,17 @@ struct EnemyDef {
     // is every pre-M61 enemy.
     int doNothingPct = 0;
     std::string doNothingText;
+    // M75 (rules v15), all optional and inert by default so every pre-M75
+    // enemy is untouched: statuses the foe starts the battle carrying, its
+    // deterministic triggers, statuses that can never land on it, and the
+    // sleep-aware AI manners (single-target attacks spare sleeping targets
+    // while another stands; stun-rider skills are shelved while every foe
+    // sleeps).
+    std::vector<AttackStatus> initialStatuses;
+    std::vector<TriggerDef> triggers;
+    std::vector<StatusType> statusImmunities;
+    bool avoidSleepingTargets = false;
+    bool noStunWhileAllFoesSleep = false;
     int xpReward = 0;
     int goldReward = 0;
 };
@@ -236,6 +276,11 @@ struct ItemDef {
     // M43: the item also lifts ATK-/DEF- (stat debuffs only - full affliction
     // cleansing remains the Cure effect's job).
     bool curesDebuffs = false;
+    // M75: the item lifts Curse (Holy Taxes). Deliberately its own flag —
+    // neither the Cure effect nor a cleanse ever touches a Curse, so the two
+    // removers (this and an `uncurse` skill) are exactly the ones the owner
+    // named. Inert (false) for every other item.
+    bool curesCurse = false;
     // M43 (Royal Snacks): amounts used INSTEAD of the normal ones when the fight
     // is the King's (battle::Battle::kingBattle). 0 = no King-specific behavior,
     // which is every other item. Bespoke King fields follow the M40 precedent
@@ -258,6 +303,14 @@ struct ItemDef {
 
     // Equipment/relic flat stat bonus.
     StatBlock statBonus;
+
+    // M75 (engine hook; content arrives in M81): worn equipment may halve (or
+    // otherwise reduce) incoming damage of the listed elements. `resistPct`
+    // applies to every element in `resistElements` (the all-element legendary
+    // simply lists all six). Both-or-neither, equipment/relic only (validated);
+    // empty for every pre-M81 item, so the hook is inert until authored.
+    std::vector<Element> resistElements;
+    int resistPct = 0;
 
     // Scroll: the skill id it teaches (empty for non-scrolls).
     std::string grantsSkill;
@@ -298,6 +351,17 @@ struct BossDef {
     bool attackHitsAll = false;
     std::vector<AttackStatus> attackStatuses;
     bool immuneToAfflictions = false;
+    // M75 (rules v15), all optional and inert by default (see EnemyDef): the
+    // battle-start statuses, the deterministic triggers, the per-status
+    // immunity list (the Dragon's bespoke matrix), the sleep-aware AI manners,
+    // and `immuneToStatScale` — the boss shrugs off a battle-long stat-scale
+    // relic (the Deadly Spoon) entirely.
+    std::vector<AttackStatus> initialStatuses;
+    std::vector<TriggerDef> triggers;
+    std::vector<StatusType> statusImmunities;
+    bool avoidSleepingTargets = false;
+    bool noStunWhileAllFoesSleep = false;
+    bool immuneToStatScale = false;
     std::string telegraph;              // flavor line shown when the battle begins
     int xpReward = 0;
     int goldReward = 0;

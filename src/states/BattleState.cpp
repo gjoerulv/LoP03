@@ -75,6 +75,9 @@ const char* statusShort(content::StatusType t) {
         case content::StatusType::Blind: return "BLD";
         case content::StatusType::Terrified: return "TRF";  // M44: forced to Guard
         case content::StatusType::Stunned: return "STN";    // M44: skips its turn
+        case content::StatusType::Reflect: return "RFL";    // M75: bounces magic
+        case content::StatusType::Sleep: return "SLP";      // M75: skips turns
+        case content::StatusType::Curse: return "CRS";      // M75: half out, 2x MP
         case content::StatusType::None: return "";
     }
     return "";
@@ -188,6 +191,14 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
     }
     hitFlags_.assign(battle_.units.size(), 0);
     koFade_.assign(battle_.units.size(), 1.0f);
+    // M75: a prebuilt summon slot (a boss's clone) starts the battle already
+    // down — it must never ghost on screen for its first fade-out frames. The
+    // revive path in commitPresentation raises the fade when it is summoned.
+    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        if (battle_.units[i].side == battle::Side::Enemy && battle_.units[i].hp <= 0) {
+            koFade_[i] = 0.0f;
+        }
+    }
     context_.fade.start();
     context_.audio.setMusic(musicOverride_ != MusicTrack::None
                                 ? musicOverride_
@@ -589,14 +600,17 @@ void BattleState::buildSkillMenu() {
         // Silence (M35): MP-cost skills are blocked and labelled so the player
         // sees *why* they are greyed (non-color-alone, M22).
         const bool silencedBlocked = !battle::canCast(a, *s);
-        const bool enabled = a.mp >= s->mpCost && !silencedBlocked;
+        // M75: a cursed caster pays double — the shown cost IS the real cost,
+        // through the same shared rule useSkill deducts by.
+        const int cost = battle::mpCostFor(a, *s);
+        const bool enabled = a.mp >= cost && !silencedBlocked;
         // The cost lives in its own right-aligned column so a long skill name can
         // never push it out of view; a blocked skill shows the reason instead.
         std::string suffix;
         if (silencedBlocked) {
             suffix = "SIL";
-        } else if (s->mpCost > 0) {
-            suffix = "MP " + std::to_string(s->mpCost);
+        } else if (cost > 0) {
+            suffix = "MP " + std::to_string(cost);
         }
         items.push_back({s->name, enabled, std::move(suffix)});
     }
@@ -835,6 +849,10 @@ void BattleState::executeEnemy(int actor) {
             // generic skip below via the empty check.
             message_ = self.name + ": " +
                        (self.doNothingText.empty() ? std::string("...") : self.doNothingText);
+        } else if (!battle::hasStatus(self, content::StatusType::Stunned) &&
+                   battle::isAsleep(self)) {
+            // M75: the sleeper's turn passes it by (a stun outranks the nap).
+            message_ = self.name + " is fast asleep.";
         } else {
             // M44 (Tax Sheets): the foe spends its turn on the paperwork.
             message_ = self.name + " is buried in paperwork and loses its turn!";
@@ -882,7 +900,12 @@ void BattleState::executeConfused(int actor) {
             battle_.guard(actor);
             break;
         case battle::ForcedAction::Skip:
-            message_ = a.name + " is buried in paperwork and loses its turn!";
+            // M75: sleep and stun both skip — name the right cause.
+            if (!battle::hasStatus(a, content::StatusType::Stunned) && battle::isAsleep(a)) {
+                message_ = a.name + " is fast asleep.";
+            } else {
+                message_ = a.name + " is buried in paperwork and loses its turn!";
+            }
             break;
         case battle::ForcedAction::BasicAttack:
         case battle::ForcedAction::None:
@@ -1061,9 +1084,11 @@ void BattleState::openDetails() {
         "\n\nPSN: poison, damage at the start of each turn. ATK+/ATK-: attack "
         "raised/lowered. DEF+/DEF-: defense raised/lowered. CNF: confused, "
         "attacks its own side. SIL: silenced, cannot use MP skills. BLD: blinded, "
-        "physical attacks usually miss.\nTurn order follows Speed. Guard halves "
-        "damage. Escape forfeits the guarded reward - and every battle turn "
-        "counts against your score.";
+        "physical attacks usually miss. RFL: reflects magic back at its caster. "
+        "SLP: asleep, skips turns - damage (not poison) wakes it. CRS: cursed, "
+        "deals half damage and pays double MP.\nTurn order follows Speed. Guard "
+        "halves damage. Escape forfeits the guarded reward - and every battle "
+        "turn counts against your score.";
     stack().pushState(
         std::make_unique<DetailsOverlayState>(stack(), context_, "Battle Details", body));
 }

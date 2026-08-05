@@ -38,6 +38,8 @@ TEST_CASE("editor: every listed enum id parses", "[editor]") {
     requireAllParse(battleTargetIds(), parseBattleTarget);
     requireAllParse(bossArchetypeIds(), parseBossArchetype);
     requireAllParse(passiveHookIds(), parsePassiveHook);
+    requireAllParse(triggerWhenIds(), parseTriggerWhen);  // M75
+    requireAllParse(triggerDoIds(), parseTriggerDo);      // M75
 }
 
 TEST_CASE("editor: enum lists are complete", "[editor]") {
@@ -45,7 +47,7 @@ TEST_CASE("editor: enum lists are complete", "[editor]") {
     // table already breaks parsing, so the lists stay complete by sharing it.
     REQUIRE(elementIds().size() == 7);        // none + 6 elements
     REQUIRE(skillCategoryIds().size() == 4);
-    REQUIRE(skillEffectIds().size() == 5);    // none + 4
+    REQUIRE(skillEffectIds().size() == 7);    // none + 6 (M75: break_reflect, uncurse)
     REQUIRE(skillTargetIds().size() == 5);
     REQUIRE(enemyTagIds().size() == 4);
     REQUIRE(enemyTierIds().size() == 2);
@@ -54,10 +56,12 @@ TEST_CASE("editor: enum lists are complete", "[editor]") {
     REQUIRE(equipSlotIds().size() == 4);      // none + 3
     REQUIRE(rarityIds().size() == 5);
     REQUIRE(consumableEffectIds().size() == 5);  // none + 4
-    REQUIRE(statusTypeIds().size() == 11);       // none + 10
+    REQUIRE(statusTypeIds().size() == 14);       // none + 13 (M75: reflect/sleep/curse)
     REQUIRE(battleTargetIds().size() == 2);
     REQUIRE(bossArchetypeIds().size() == 4);
     REQUIRE(passiveHookIds().size() == 10);      // "none" deliberately absent
+    REQUIRE(triggerWhenIds().size() == 4);       // M75; "none" deliberately absent
+    REQUIRE(triggerDoIds().size() == 7);         // M75; "none" deliberately absent
     // toString round-trips through the same table for a spot value.
     REQUIRE(parseElement(toString(Element::Fire)).value() == Element::Fire);
 }

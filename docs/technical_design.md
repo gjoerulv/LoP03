@@ -2060,3 +2060,84 @@ budget computed from the real remaining space (4–5 lines at the maxed
 case). Capture scene `79_party_panel` pins the exact reported worst case
 (level cap + all three cleric milestones incl. the longest description).
 
+## 29. M75 — battle rules v15
+
+The M75–M86 program's single engine revision:
+`battle::kBattleRulesVersion` **14 → 15** (its header comment is the
+authoritative change list). No generation/save/settings motion; every
+new content field is optional with an inert default.
+
+- **Statuses.** `StatusType` gains `Reflect`/`Sleep`/`Curse` (tables in
+  `Enums.cpp`; `statusTypeIds()` feeds the editor automatically).
+  Reflect resolves inside `useSkill`'s target loop *before* the ward
+  roll — a pure branch, `rollCursor` untouched — bouncing damage, the
+  `mpDamagePct` drain and the status rider onto the caster via
+  `dealMagic(actor, actor, …)`. Sleep is a `ForcedAction::Skip` in
+  `forcedActionFor` (between Stunned and Terrified); the wake rule
+  lives at the `applyDamage` chokepoint beside the confusion snap, so
+  the poison tick (which bypasses it) deliberately does not wake.
+  Curse halves outgoing damage as the last attacker-side modifier in
+  `dealPhysical`/`dealMagic` (and the counter-attack site), and doubles
+  MP costs through `battle::mpCostFor` — the one rule shared by
+  `useSkill`'s deduction, both AIs and the skill menu. Duration ×1.5
+  (`kCurseDurationPct`) at the `addStatus` chokepoint. Removal is
+  exclusive: `SkillEffect::Uncurse` + `ItemDef::curesCurse`;
+  `clearAfflictions` gained Sleep, `clearNegativeStatuses` now keeps
+  Reflect and Curse. `isAffliction` covers Sleep/Curse (so the Duck's
+  blanket holds); `isImmuneTo` consults the new per-combatant
+  `statusImmunities` list, which `addStatus` also blocks on (the legacy
+  immunity FLAGS keep their historical store-but-ignore behaviour — a
+  stored inert status still feeds Keen Senses, and changing that would
+  have altered v14 battles).
+- **Rebalances.** Poison magnitude = authored + applier MAG /
+  `kPoisonMagicDiv` (4), snapshotted at application via
+  `statusMagnitudeFor` (skills, attack riders, triggers; item statuses
+  keep authored numbers). `physicalDamage` scales the whole
+  `(attack + power)` term by `attackPercent`; both damage paths scale
+  the **final** hit by `100 / defensePercent`. With no statuses every
+  formula reduces exactly to its v14 shape.
+- **New schema** (loader + validators in `ContentLoader.cpp`, editor
+  descriptors in `CategoryDescriptors.cpp`): `SkillDef.mpDamagePct`
+  (0–100, damaging categories only; drains that share of dealt HP
+  damage as MP), `initialStatuses[]` on enemies/bosses (applied at
+  `buildBattle` through `addStatus`), `statusImmunities[]`,
+  `avoidSleepingTargets` / `noStunWhileAllFoesSleep` (read by
+  `chooseEnemyAction`: sleepers are skipped in target scoring while a
+  waking candidate stands; stun-rider skills are shelved while every
+  foe sleeps), `BossDef.immuneToStatScale` (guarded at `useItem`'s
+  stat-scale branch; `itemAffects` returns false for a scale-only relic
+  so the caller keeps it), and `ItemDef.resistElements`/`resistPct`
+  (equipment/relic only, both-or-neither; resolved per party member at
+  `buildBattle` into `Combatant.elementResist`, applied inside
+  `elementModifier` as `mod × (100 − resist) / 100` after the
+  weak/immune decision — immunity's 0 stays 0).
+- **Triggers.** `TriggerWhen`/`TriggerDo` enums + `TriggerDef`
+  (content) mirrored into pure `battle::TriggerRule`s at `buildBattle`.
+  State conditions (`first_time_hp_below_pct`, `every_nth_own_turn`,
+  `first_time_ally_felled`) evaluate in `beginUnitTurn` — the M49
+  revive-clock seam both drivers already call (the clock body moved to
+  `reviveCourtRule`; `fireTurnTriggers` composes with it) — and
+  `every_nth_hit_taken` fires in `dealPhysical`/`dealMagic` after a
+  deliberate connecting hit (`fireHitTriggers`; thorns/counters/poison
+  never count). Actions in `applyTriggerAction`: status to
+  self/attacker/all-foes/own-boss, `scale_stats_self` (the Spoon shape,
+  upward), `drain_foe_mp`, and `summon_clone` — the clone is **prebuilt
+  dead** at `buildBattle` (`Combatant.summonSlot`, boss identity minus
+  triggers/clock/statuses, maxHp = cloneHpPct of the bearer's) so the
+  unit roster never grows mid-battle; the trigger simply raises it.
+  BattleState zeroes `koFade_` for units that start dead, and the
+  existing revive path fades a summoned clone in. No condition or
+  action ever consumes a roll: sim == live by construction.
+- **Presentation.** The battle log names an attack's element
+  (`elementDisplayName` on the attack/skill line), chips gained
+  RFL/SLP/CRS (`statusShort`), the Details legend explains all three,
+  the skill menu shows the cursed doubled cost, and the Skip beat says
+  "fast asleep" when Sleep (not a stun) took the turn.
+- **Tests.** `tests/test_rules_v15.cpp` (`[v15]`): formulas, curse
+  math/duration/exclusive removal, sleep skip/wake/poison-no-wake,
+  reflect bounce + breaker (rollCursor pinned), poison scaling, MP
+  damage, every trigger condition/action, sleep manners, the Spoon
+  shrug, element resist, `initialStatuses` + clone via `buildBattle`,
+  and the loader's semantic rules. Two stale v14 poison pins updated to
+  the scaled values; the editor enum-list pins extended.
+

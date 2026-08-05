@@ -102,13 +102,14 @@ TEST_CASE("status: poison ticks each turn and then expires", "[status]") {
     const content::SkillDef* venom = db.findSkill("venom");
     b.useSkill(0, 1, *venom);  // venom: authored 6/turn x3, but M35 doubles both
 
-    // M35 balance: statuses last 2x their authored duration (3 -> 6) and poison
-    // deals 2x its authored magnitude per tick (6 -> 12).
+    // M35 balance: statuses last 2x their authored duration (3 -> 6). M75
+    // (rules v15): the applied poison magnitude gains the caster's Magic/4
+    // (the knight's MAG is 4, so 6 + 1 = 7), and each tick deals double (14).
     REQUIRE(b.units[1].statuses.size() == 1);
     CHECK(b.units[1].statuses[0].turns == 6);
     const int hp0 = b.units[1].hp;
     b.tickStatuses(1);
-    CHECK(b.units[1].hp == hp0 - 12);
+    CHECK(b.units[1].hp == hp0 - 14);
     for (int i = 0; i < 5; ++i) {
         b.tickStatuses(1);  // ticks 2..6; poison expires after the 6th
     }

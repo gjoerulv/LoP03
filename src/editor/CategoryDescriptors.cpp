@@ -164,6 +164,25 @@ std::vector<FieldDesc> statusRiderChildren() {
     };
 }
 
+// M75: one deterministic WHEN -> DO trigger row (enemies and bosses).
+std::vector<FieldDesc> triggerChildren() {
+    return {
+        en("when", "When", ids(content::triggerWhenIds()), "first_time_hp_below_pct", true),
+        num("threshold", "Threshold (N / HP %)", 0, 100),
+        en("do", "Do", ids(content::triggerDoIds()), "status_self", true),
+        en("status", "Status", ids(content::statusTypeIds())),
+        num("magnitude", "Magnitude", 0, 300),
+        num("duration", "Duration", 0, 99),
+        num("scaleAttackPct", "Scale ATK %", 1, 400, 5, 100),
+        num("scaleMagicPct", "Scale MAG %", 1, 400, 5, 100),
+        num("scaleDefensePct", "Scale DEF %", 1, 400, 5, 100),
+        num("scaleSpeedPct", "Scale SPD %", 1, 400, 5, 100),
+        num("cloneHpPct", "Clone HP %", 0, 100),
+        num("mpDrainPct", "MP Drain %", 0, 100),
+        str("text", "Announcement"),
+    };
+}
+
 // --- per-category tables ----------------------------------------------------
 
 std::vector<FieldDesc> skillDescs() {
@@ -182,6 +201,7 @@ std::vector<FieldDesc> skillDescs() {
         en("control", "Control Effect", ids(content::skillEffectIds())),
         num("reviveHpPct", "Revive HP %", 0, 100),
         bl("alsoBuffsEnemies", "Also Buffs Enemies"),
+        num("mpDamagePct", "MP Damage % (M75)", 0, 100),
         txt("description", "Description"),
     };
 }
@@ -224,6 +244,11 @@ std::vector<FieldDesc> enemyDescs() {
         bl("bossOnly", "Boss Only"),
         num("doNothingPct", "Do-Nothing % (M61)", 0, 100),
         str("doNothingText", "Do-Nothing Line"),
+        objArr("initialStatuses", "Initial Statuses (M75)", statusRiderChildren()),
+        objArr("triggers", "Triggers (M75)", triggerChildren()),
+        enList("statusImmunities", "Status Immunities", ids(content::statusTypeIds())),
+        bl("avoidSleepingTargets", "Avoid Sleeping Targets"),
+        bl("noStunWhileAllFoesSleep", "No Stun While All Sleep"),
         num("xpReward", "XP Reward", 0, 99999),
         num("goldReward", "Gold Reward", 0, 99999),
     };
@@ -247,6 +272,12 @@ std::vector<FieldDesc> bossDescs() {
         bl("attackHitsAll", "Attack Hits All (M61)"),
         objArr("attackStatuses", "Attack Statuses", statusRiderChildren()),
         bl("immuneToAfflictions", "Immune To Afflictions"),
+        objArr("initialStatuses", "Initial Statuses (M75)", statusRiderChildren()),
+        objArr("triggers", "Triggers (M75)", triggerChildren()),
+        enList("statusImmunities", "Status Immunities", ids(content::statusTypeIds())),
+        bl("avoidSleepingTargets", "Avoid Sleeping Targets"),
+        bl("noStunWhileAllFoesSleep", "No Stun While All Sleep"),
+        bl("immuneToStatScale", "Immune To Stat Scale (Spoon)"),
         txt("telegraph", "Telegraph"),
         num("xpReward", "XP Reward", 0, 99999),
         num("goldReward", "Gold Reward", 0, 99999),
@@ -269,6 +300,7 @@ std::vector<FieldDesc> itemDescs() {
         en("effect", "Effect", ids(content::consumableEffectIds())),
         num("effectAmount", "Effect Amount", 0, 9999),
         bl("curesDebuffs", "Cures Debuffs"),
+        bl("curesCurse", "Cures Curse (M75)"),
         num("kingEffectAmount", "King Effect Amount", 0, 9999),
         num("kingMpAmount", "King MP Amount", 0, 9999),
         en("battleTarget", "Battle Target", ids(content::battleTargetIds()), "ally"),
@@ -277,6 +309,8 @@ std::vector<FieldDesc> itemDescs() {
         num("statScalePct", "Stat Scale %", 0, 200),
         bl("disablesMinionRevive", "Disables Minion Revive"),
         obj("statBonus", "Stat Bonus", statChildren(-99, -99)),
+        enList("resistElements", "Resist Elements (M75)", ids(content::elementIds())),
+        num("resistPct", "Resist %", 0, 100),
         ref("grantsSkill", "Grants Skill (scroll)", Category::Skills),
         txt("description", "Description"),
     };
