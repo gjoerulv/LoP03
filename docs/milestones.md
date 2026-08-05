@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs once M59–M71 close** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs once M59–M74 close** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -74,6 +74,14 @@
 | 64 | Scroll learning + Party panel | ◑ implemented, awaiting manual approval |
 | 65 | Town puzzle map (HoMM2 homage; generation v12) | ◑ implemented, awaiting manual approval |
 | 66 | Dungeon treasure map + curios (generation v13) | ◑ implemented, awaiting manual approval |
+| 67 | UI polish & the boss-return fix | ◑ implemented, awaiting manual approval |
+| 68 | Battle spoils & party-relative threat (generation v14) | ◑ implemented, awaiting manual approval |
+| 69 | Town exteriors (facades, scoreboard stele, save crystal) | ◑ implemented, awaiting manual approval |
+| 70 | Separate CRT Strength and CRT Curvature | ◑ implemented, awaiting manual approval |
+| 71 | The victory celebration | ◑ implemented, awaiting manual approval |
+| 72 | Party panel reflow | ◑ implemented, awaiting manual approval |
+| 73 | Enemy & boss sprite art pass | ◑ implemented, awaiting manual approval |
+| 74 | Crystal Mine ambience: no birds underground | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -106,13 +114,15 @@ return-to-town bug), **M68** (the victory spoils panel + the
 party-relative threat recalibration, generation 14), **M69** (the
 town exteriors — real facades, the scoreboard stele, the save crystal),
 **M70** (CRT Strength and CRT Curvature as separate persistent
-sliders), **M71** (the victory celebration screen), and **M72** (the
-party panel reflow). M59–M72 ALL sit at
-`implemented, awaiting manual approval`; then M23 → M24, and nothing else
-stands before them.**
-When M59–M72 close, both M23 and M24 must be re-audited against the
+sliders), **M71** (the victory celebration screen), **M72** (the
+party panel reflow), on 2026-07-30 **M73** (the owner-directed enemy
+and boss sprite art pass), and on 2026-07-31 **M74** (the Crystal Mine
+ambience rework — the "drips" were synthesised as bird whistles). M59–M74
+ALL sit at `implemented, awaiting manual approval`; then M23 → M24, and
+nothing else stands before them.**
+When M59–M74 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**84
-scenes** as of M71), the balance batteries have grown (`[economy-report]`,
+scenes** since M71), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
 and the M61–M68 `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/
 `[spoils]`/`[danger-report]` batteries), and the packaging manifest must
@@ -829,30 +839,32 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs once M59–M71
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs once M59–M74
   close** (the deferral has been extended by each expansion program the
   owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
   M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
-  M61, the M62–M66 program, and the M67–M71 owner batches). The tooling,
+  M61, the M62–M66 program, and the M67–M74 owner batches). The tooling,
   diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
-  Re-audit this note against the post-M71 checkout before starting — the
-  capture scene list has grown (**84 scenes** as of M71) and the balance
+  Re-audit this note against the post-M74 checkout before starting — the
+  capture scene list has grown (**84 scenes** since M71) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
-  `[king-report]`, `[classes-report]`, and the M61–M71
+  `[king-report]`, `[classes-report]`, and the M61–M68
   `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/`[spoils]`/
   `[danger-report]` batteries); both need extending for
-  everything M25–M71 added (AI, content, art, town ladder, stakes, black
+  everything M25–M74 added (AI, content, art, town ladder, stakes, black
   market, statuses/passives, castle challenges, relics, the unlockable
   classes, the M46 UI kit, elements, the King's Court, walk-through towns,
   the M51 options, the M52 comforts/secrets, the M53–M58 adjustments,
   M61's Goose Town, the M62–M66 program — class milestones, scrolls, the
-  two treasure-map systems — and the M67–M71 batches: portraits, spoils,
-  party-relative danger, town exteriors, the CRT split, the celebration).
-  **M71 is the last authorized expansion; this is next
+  two treasure-map systems — and the M67–M74 batches: portraits, spoils,
+  party-relative danger, town exteriors, the CRT split, the celebration,
+  the party-panel reflow, the M73 enemy/boss art pass, and the M74 mine
+  ambience rework).
+  **M74 is the last authorized expansion; this is next
   in line once the owner schedules it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
@@ -889,9 +901,10 @@ milestone is not automatic authorization to start the next.
   VERSIONINFO, one-command stage/validate/zip via tools/package.ps1;
   package smoke-tested, capture-inert; owner decisions 2026-07-20: v0.9.0
   until playtests pass, plain zip, emblem-generated icon). Only the final
-  validation and sign-off are deferred. Note that M25–M30 add assets and
-  content, so the packaging manifest coverage and package-size expectations
-  must be re-checked before sign-off.
+  validation and sign-off are deferred. Note that M25–M74 added assets and
+  content (see the header narrative's packaging list), so the packaging
+  manifest coverage and package-size expectations must be re-checked before
+  sign-off.
 - **Goal:** produce and validate a reproducible, clean, polished Windows
   release candidate.
 - **Player-facing outcome:** the final packaged game.
@@ -2798,3 +2811,69 @@ running scope: the sections below.
   **Closing verification: 607/607 Debug and 603/603 Release tests green;
   `--capture` 84/84 scenes clean.**
 - **Milestone note:** `docs/milestone_notes/M72_party_panel_reflow.md`
+
+## M73 — Enemy & boss sprite art pass (owner brief, 2026-07-30)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-30. An art pass over **all 67 PNGs** under
+  `assets/textures/enemies/`. The owner's diagnosis was that every sprite was
+  built by calling `Ell`/`FR` primitives blind and never looked at at
+  magnification: soft ellipse blobs sharing one body plan (torso blob + head
+  blob + two eye pixels), and bosses that read as slightly larger normal
+  enemies wearing a gold crown. Delivered in the three phases the brief
+  specified. **Phase 1:** `tools/asset_gen/preview.ps1` — a review harness
+  emitting a magnified labelled contact sheet, a **silhouette sheet** (alpha as
+  solid black on white; the binding artefact), and a 1× strip at the native
+  426-wide canvas. Used after every batch, with the PNGs actually opened before
+  a batch was accepted. **Phase 2:** ellipse-primitive drawing replaced by
+  **explicit ASCII pixel grids** — one block per sprite, one character per
+  pixel, keyed to the art-bible §2 ramps, validated by `Draw-Grid`. The five
+  enemy blocks previously scattered through the generator (M26/M29/M38/M40/M62)
+  are consolidated into one contiguous section that consumes **no RNG at all**,
+  retiring the M49 hazard where a stray `Speckle` re-rolled every sprite after
+  it. **Phase 3:** all 67 redrawn in nine family batches — silhouette-first,
+  angular geometry, oversized equipment, 3-band shading, tier by shape and
+  posture rather than hue.
+  **Bosses are 36×36, not the 36×44 the brief floated:**
+  `BattleState::enemyBaseY()` drops to 20 in 5+ enemy fights (Rush Tyrant,
+  Abyssal Tyrant, the 6-unit Deadly Duck), so 36 rows is the tallest sprite
+  that never clips its crown off the top of the screen; taller needs an
+  `enemyBaseY()` change, which is an owner call. **Two decisions await owner
+  sign-off:** the art-bible §2 palette extension (three ramps completed with
+  six new hex values, all of them the missing ends of ramps already shipped
+  since M26/M62) and whether to pursue taller bosses. No C++, data, manifest,
+  sprite-id or save change — every sprite is a drop-in replacement.
+  **Closing verification: 607/607 Debug tests green; all 129 non-enemy PNGs
+  byte-identical before and after; the generator byte-stable across two
+  consecutive reruns; `assets/textures/enemies/` deleted and regenerated to
+  exactly 67 files.**
+- **Milestone note:** `docs/milestone_notes/M73_enemy_boss_art_pass.md`
+
+## M74 — Crystal Mine ambience: no birds underground (owner report, 2026-07-31)
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-07-31. The owner reported that the Crystal Mine ambience still sounded
+  like it had birds in it, and asked for echoes of falling rocks and broken
+  crystals instead, non-intrusive. **Not a wiring bug** — the mine bed has no
+  bird code and the right file plays for the right theme. The cause was that
+  the mine's only recurring event, M27's `AmbDrip`, was *synthesised as a bird
+  whistle*: a 2300→1500 Hz downward glide followed 110 ms later by a second
+  glided note — the same frequency band, the same downward contour, the same
+  multi-note spacing and the same added harmonic as the town's `AmbBird`. The
+  variable was named "drip"; the waveform was a chirp. Eight fired per 12 s
+  loop at nearly four times the drone level. `AmbDrip` is deleted and replaced
+  with two synths built so they cannot read as a call: **`AmbRockfall`**
+  (scattered unpitched filtered-noise transients with a duller cavern repeat)
+  and **`AmbShard`** (an **inharmonic** strike — plate partials
+  1 : 2.76 : 5.40 : 8.93, near-instant attack, no glide — with one dimmer
+  echo), over the existing metallic hum plus a new low settling rumble. Four
+  events per twelve seconds instead of eight, and much closer to the bed.
+  Measured: bird-band (1.9 kHz) energy down **2.6×**, now level with the
+  Ruined Keep; low-end weight up 1.6×; event-over-bed dynamic ratio down from
+  2.9× to 1.2×. Same file path, id, loop length and format — a drop-in
+  replacement, no manifest or code change.
+  **Closing verification: 607/607 Debug tests green; all 39 WAVs hash-compared
+  against `git HEAD` by full path with exactly one change (`ambience/mine.wav`);
+  generator byte-stable across two consecutive reruns; loop wrap 4.0× the
+  typical sample step, matching the old bed — no click.**
+- **Milestone note:** `docs/milestone_notes/M74_mine_ambience.md`

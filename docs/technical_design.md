@@ -34,11 +34,14 @@ src/
   main.cpp
   core/                   # Application, AppContext, GameConfig, Log, Geometry, FadeController
   audio/                  # AudioManager + AudioRoles: manifest-driven audio, synth fallback
-  render/                 # VirtualScreen, Viewport (pure), RaylibRAII
+  render/                 # VirtualScreen (+ CRT shader), Viewport (pure), RaylibRAII, Animation
   states/                 # GameState, StateStack, concrete states (menu/town/...)
   input/                  # InputAction, InputMap (+ raylib query factory)
   resource/               # ResourceManager (texture/font/sound cache, RAII)
-  platform/            # Paths + AtomicFile (user-data dir, safe persistence)
+  platform/               # Paths, AtomicFile, FatalDialog, Process (editor-only)
+  assets/                 # AssetManifest: raylib-free manifest loader/validator
+  settings/               # SettingsStore: versioned defensive persistence
+  tutorial/               # one-time onboarding beats + persistent progress
   content/                # JSON content model: defs, enums, loaders, validators
   game/                   # runtime model: Character, Party, Inventory, derivation
   save/                   # SaveSystem: versioned JSON slots + autosave (defensive)
@@ -48,6 +51,9 @@ src/
   danger/                 # DangerRating: stat-derived danger tiers (pure)
   score/                  # Scoring + persistent Scoreboard
   ui/                     # Menu, TextInput (pure) + UiDraw (raylib helpers)
+  capture/                # CaptureRunner: deterministic scene screenshots (dev only)
+  editor/                 # CrystalForge content editor (separate executable)
+tools/                    # package.ps1 + asset_gen/ deterministic generators
 tests/                    # Catch2 unit tests (headless: pure logic + filesystem)
 .claude/skills/crystal-dungeons/SKILL.md
 ```
@@ -183,14 +189,16 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` = **11** (M29 enlarged the theme enemy/boss pools; M30 added
-  the RestToken event; M37 gave the merchant a 75 % bargain and gated chest gear by
-  town; **M38 gates the per-town enemy/boss pools by `minTown`**; **M43 reprices
-  the consumables a merchant offers and windows item pools by
-  `availableAtTown`**; **M44 draws the Royal Relic replacement roll from the event
-  stream**; **M55 guarantees each theme's rite event once per dungeon** — each
-  changes a seed's roster/events/rewards; owner-approved bumps. The
-  version-history comment in `src/dungeon/RoomLayout.hpp` is the authority).
+  `kGenerationVersion` is currently **14** (bump history: M29 enlarged the theme
+  enemy/boss pools; M30 added the RestToken event; M37 gave the merchant a 75 %
+  bargain and gated chest gear by town; **M38 gates the per-town enemy/boss pools
+  by `minTown`**; **M43 reprices the consumables a merchant offers and windows
+  item pools by `availableAtTown`**; **M44 draws the Royal Relic replacement roll
+  from the event stream**; **M55 guarantees each theme's rite event once per
+  dungeon** (v11); **M65/M66 add the seed-hashed treasure maps** (v12/v13);
+  **M68 tags the party-relative danger recalibration** (v14, generated output
+  byte-identical) — each owner-approved. The version-history comment in
+  `src/dungeon/RoomLayout.hpp` is the authority).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager/rest-token) realized as an
@@ -235,7 +243,7 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; 84 scenes as of M71) — all
+list lives in `src/capture/CaptureRunner.cpp`; 84 scenes as of M74) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
@@ -281,10 +289,11 @@ settings round-trip, Details action schema + defaults).
 
 ### Audio architecture (M21)
 
-The full soundscape ships through the M14 catalog — 30 original WAVs (11
-music, 4 ambience, 15 SFX) produced by the deterministic
-`tools/asset_gen/generate_audio.ps1` (byte-identical reruns; provenance in
-`assets/credits.md`). The stable contract is `src/audio/AudioRoles.hpp`
+The full soundscape ships through the M14 catalog — 30 original WAVs at M21,
+grown to **39 as of M74** (20 music, 4 ambience, 15 SFX — per-town, castle,
+King and Duck tracks joined later; M74 rebuilt the mine bed) — produced by the
+deterministic `tools/asset_gen/generate_audio.ps1` (byte-identical reruns;
+provenance in `assets/credits.md`). The stable contract is `src/audio/AudioRoles.hpp`
 (raylib-free): `Sfx`/`MusicTrack`/`AmbienceTrack` enums, role-id tables,
 the synth-fallback map, per-role SFX rate-limit intervals, and the fade
 curve — all headless-tested against the shipped manifest
@@ -369,6 +378,8 @@ drive letters, and `..` traversal; all data/save file access goes through it.
 | `CRYSTAL_BUILD_TESTS`           | ON             | Build Catch2 tests + register CTest |
 | `CRYSTAL_WARNINGS_AS_ERRORS`    | OFF            | Treat project warnings as errors    |
 | `CRYSTAL_ENABLE_DEBUG_OVERLAY`  | ON (Debug)     | Compile the runtime debug overlay + the M53 debug menu (`CRYSTAL_DEBUG_OVERLAY`); never in Release |
+| `CRYSTAL_ENABLE_CAPTURE`        | ON (Debug)     | Compile the `--capture` scene CLI (`CRYSTAL_CAPTURE`); never in Release |
+| `CRYSTAL_ENABLE_EDITOR`         | ON             | Build the CrystalForge editor executable (never staged by `tools/package.ps1`) |
 
 ## 6. Testing strategy
 

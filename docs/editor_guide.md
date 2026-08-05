@@ -3,7 +3,7 @@
 CrystalForge is Crystal Dungeons' content editor: a separate desktop tool for
 balancing and authoring the JSON content in `data/` — skills, classes,
 enemies, bosses, items and equipment, passives, dungeon themes, the team
-composition rules, and the story beats. It is built from the same code the
+composition rules, the class level milestones (M63), and the story beats. It is built from the same code the
 game runs: the **real content loader** validates your edits and (M60) the
 **real battle simulator** plays them out, so the editor can never accept
 something the game rejects, and its sims can never behave differently from
@@ -32,7 +32,7 @@ save, and `git diff` shows every change it made. Save deliberately.
 
 Four panes, left to right:
 
-1. **Categories** — the nine content files. A `*` marks unsaved changes.
+1. **Categories** — the ten content files. A `*` marks unsaved changes.
 2. **Entries** — the entities of the selected category (id + display name).
 3. **Fields** — the selected entity's fields, one row each, driven by the
    game's own schema. Unrecognized keys (future schema) are shown dimmed and

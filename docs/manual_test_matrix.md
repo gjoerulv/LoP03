@@ -185,11 +185,13 @@ The older rows below are retained as historical baseline evidence and are **not*
 > movement/Cancel disarms them. Settings and Controls remain reachable
 > from the title screen before New Game.
 >
-> **M21 update:** the full original soundscape ships (11 music tracks, 4
-> ambience beds, 15 SFX — all generated, all manifest-driven). Listening
+> **M21 update:** the full original soundscape ships (11 music tracks at
+> M21 — 20 as of M74, plus 4 ambience beds and 15 SFX — all generated, all
+> manifest-driven). Listening
 > pass, every scene and transition: title → town (music + light ambience) →
 > guild (preparation track) → each dungeon theme (distinct track + bed:
-> keep wind / mine drips / forest rustle) → normal battle → boss battle
+> keep wind / mine rockfall-and-shard echoes (M74; drips until then) /
+> forest rustle) → normal battle → boss battle
 > (heavier track) → victory fanfare / defeat dirge (one-shot jingles) →
 > result (calm track) → back to town. Checks: no two music tracks ever
 > stack (0.25 s crossfade on every switch); loop seams free of clicks;

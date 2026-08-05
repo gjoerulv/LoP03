@@ -772,8 +772,9 @@ unless a later expansion is authorized (M52 was).
 
 ## 17. Comforts & secrets (M52) — direction
 
-Authorized 2026-07-23 as one quality-of-life milestone before M23/M24, and the
-last authorized expansion. Scope and owner decisions live in
+Authorized 2026-07-23 as one quality-of-life milestone before M23/M24 —
+believed at the time to be the last expansion (§18–§22 were authorized
+after). Scope and owner decisions live in
 `docs/milestones.md` and `docs/milestone_notes/M52_comforts_secrets.md`; this
 section records only why and in what order.
 
@@ -926,5 +927,12 @@ the excessive curl. M71 gave flawless runs their moment: the victory
 celebration — score, confetti, the team jumping, the MVP on a pedestal —
 after penalty-free clears and the King/Duck/Boss-Rush victories. M72
 reflowed the party panel so a maxed member's whole story fits the screen.
+M73 (2026-07-30) redrew every enemy and boss sprite as hand-authored,
+RNG-free pixel grids — bosses on a 36×36 canvas, tier carried by shape
+and posture — with a review harness (`tools/asset_gen/preview.ps1`) so
+art is looked at before it is accepted. M74 (2026-07-31) rebuilt the
+Crystal Mine ambience: the "water drips" were synthesised as bird
+whistles, and the bed now uses unpitched rockfall and inharmonic
+crystal-shard echoes instead.
 
-M23 → M24 run after M72, re-audited against the then-current checkout.
+M23 → M24 run after M74, re-audited against the then-current checkout.

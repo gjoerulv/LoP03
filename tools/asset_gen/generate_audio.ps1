@@ -325,10 +325,56 @@ function AmbBird([double[]]$mix, [double]$sec, [double]$amp, [double]$b) {
   AmbTone $mix ($sec + 0.22)  ($b * 0.86) ($b * 0.98) 0.10 ($amp * 0.8) 0.12 0.25
 }
 
-# Water drip: a quick high plink and a fainter, lower echo tap (mine).
-function AmbDrip([double[]]$mix, [double]$sec, [double]$amp) {
-  AmbTone $mix  $sec          2300 1500 0.06  $amp         0.02 0.4
-  AmbTone $mix ($sec + 0.11)  1900 1250 0.05 ($amp * 0.35) 0.02 0.3
+# --- Mine events (M74) ---------------------------------------------------
+# The mine's old `AmbDrip` was a 2300->1500 Hz glide with a second glided note
+# 110 ms later. That is the same band, the same downward glide and the same
+# note spacing as `AmbBird` above, so the owner correctly heard birds in the
+# Crystal Mine. The replacements below are unpitched or inharmonic and never
+# glide, which is exactly what separates "stone and mineral" from "call".
+
+# One short filtered-noise transient - the physical basis of stone on stone.
+# Broadband and unpitched by construction, so it cannot read as a whistle.
+# Small $lp = darker/heavier; the decay is steep.
+function AmbClack([double[]]$mix, [double]$sec, [double]$dur, [double]$amp,
+                  [double]$lp, [uint32]$seed) {
+  $total = $mix.Length; $start = [int]($rate * $sec); $len = [int]($rate * $dur)
+  $state = $seed; if ($state -eq 0) { $state = 1 }
+  $y = 0.0
+  for ($i = 0; $i -lt $len -and ($start + $i) -lt $total -and ($start + $i) -ge 0; $i++) {
+    $state = $state -bxor ($state -shl 13); $state = $state -band 0xFFFFFFFF
+    $state = $state -bxor ($state -shr 17)
+    $state = $state -bxor ($state -shl 5);  $state = $state -band 0xFFFFFFFF
+    $x = (($state -band 0xFFFF) / 32768.0) - 1.0
+    $y += $lp * ($x - $y)
+    $mix[$start + $i] += $amp * [math]::Exp(-14.0 * $i / [double]$len) * $y
+  }
+}
+
+# A fall of loose rock: a scatter of dark stone clacks at irregular spacing (a
+# tumble, never a rhythm), answered a third of a second later by the cavern at
+# a third of the level and duller, since the walls eat the highs.
+function AmbRockfall([double[]]$mix, [double]$sec, [double]$amp, [uint32]$seed) {
+  $taps = @(0.000, 0.055, 0.088, 0.151, 0.178, 0.262)
+  $lvls = @(1.00,  0.62,  0.78,  0.45,  0.30,  0.22)
+  for ($k = 0; $k -lt $taps.Count; $k++) {
+    AmbClack $mix ($sec + $taps[$k]) 0.075 ($amp * $lvls[$k]) 0.30 `
+             ([uint32](($seed + 7919 * ($k + 1)) -band 0xFFFFFFFF))
+    AmbClack $mix ($sec + 0.335 + $taps[$k] * 1.2) 0.085 ($amp * $lvls[$k] * 0.30) 0.17 `
+             ([uint32](($seed + 104729 * ($k + 1)) -band 0xFFFFFFFF))
+  }
+}
+
+# A crystal facet giving way: an INHARMONIC strike - plate/bar partials at
+# 1 : 2.76 : 5.40 : 8.93, not a harmonic series - struck with a near-instant
+# attack, no glide at all, and one dimmer echo. Inharmonic + glide-free is what
+# makes this read as struck brittle mineral rather than as a voice.
+function AmbShard([double[]]$mix, [double]$sec, [double]$amp, [double]$f) {
+  foreach ($p in @(@(1.00, 1.00), @(2.76, 0.55), @(5.40, 0.26), @(8.93, 0.11))) {
+    AmbTone $mix $sec ($f * $p[0]) ($f * $p[0]) 0.070 ($amp * $p[1]) 0.004 0.0
+  }
+  foreach ($p in @(@(1.00, 1.00), @(2.76, 0.45), @(5.40, 0.18))) {
+    AmbTone $mix ($sec + 0.213) ($f * $p[0]) ($f * $p[0]) 0.055 ($amp * 0.26 * $p[1]) 0.004 0.0
+  }
 }
 
 # Low two-note owl hoot (forest).
@@ -357,14 +403,24 @@ AmbTone  $keep 4.5 150 70 2.6 0.26 0.3 0.15
 AmbTone  $keep 9.2 135 62 2.4 0.22 0.3 0.15
 SaveWav (Join-Path $ambDir 'keep.wav') $keep 0.5
 
-# CRYSTAL MINE - enclosed crystal cavern: a steady metallic hum (fundamental +
-# octave + bright partial) under regular, clearly audible echoing water drips.
+# CRYSTAL MINE (M74) - a dead, enclosed excavation: the steady metallic hum
+# (fundamental + octave + bright partial) carries the bed, with a low settling
+# rumble underneath and only four events across twelve seconds - two falls of
+# loose rock and two crystal facets giving way, each answered by the cavern.
+# Deliberately sparse and low against the drone so it reads as a place rather
+# than as a sound effect; the ear should have to notice it.
+# Every event finishes its decay by ~10.9 s, so the 12 s loop seam is silent.
 $mt = [int]($rate * 12.0)
-$mine = AmbNoise $mt 0x0DDBA11 0.05 0.0 2 0.2 0 0 0.045
+$mine = AmbNoise $mt 0x0DDBA11 0.05 0.0 2 0.2 0 0 0.050
 AmbDrone $mine 146.8 0.11 'sine'
 AmbDrone $mine 293.7 0.06 'sine'
 AmbDrone $mine 440.0 0.03 'tri'
-foreach ($s in 1.2, 2.7, 4.1, 5.6, 7.0, 8.4, 9.9, 11.3) { AmbDrip $mine $s 0.75 }
+AmbTone  $mine 0.8 58 44 3.2 0.100 0.35 0.10      # distant settling rumble
+AmbTone  $mine 6.9 52 40 3.0 0.085 0.35 0.10
+AmbRockfall $mine 2.6  0.40 0x51A7E1
+AmbShard    $mine 5.1  0.30 1180
+AmbRockfall $mine 7.9  0.32 0xC4A5711
+AmbShard    $mine 10.2 0.24 970
 SaveWav (Join-Path $ambDir 'mine.wav') $mine 0.5
 
 # HOLLOW FOREST - living woods: a busy, bright, fluttering leaf rustle with low
