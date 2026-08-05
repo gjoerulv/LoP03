@@ -201,6 +201,20 @@ TurnHook counterplayHook(const content::ContentDatabase& db, Counterplay plan) {
         if (king < 0 || !b.units[static_cast<std::size_t>(king)].alive()) {
             return false;
         }
+        // M77: the Stave mirrors the King at low health — a reflected nuke is
+        // the sim mage felling itself. Any member that knows the M76
+        // Mirrorbreak (the L50 ranger and rogue do) shatters it first.
+        if (hasStatus(b.units[static_cast<std::size_t>(king)], content::StatusType::Reflect)) {
+            const Combatant& self = b.units[static_cast<std::size_t>(actor)];
+            const content::SkillDef* mb = db.findSkill("mirrorbreak");
+            if (mb != nullptr &&
+                std::find(self.skillIds.begin(), self.skillIds.end(), "mirrorbreak") !=
+                    self.skillIds.end() &&
+                mpCostFor(self, *mb) <= self.mp && canCast(self, *mb)) {
+                b.useSkill(actor, king, *mb);
+                return true;
+            }
+        }
         // Heal first when someone is about to fall — a dead ally deals no damage.
         const int hurt = weakestLivingAlly(b);
         if (state->snacks > 0 && hurt >= 0 &&

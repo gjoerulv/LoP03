@@ -6,8 +6,8 @@ post-M75 checkout (base commit `2538a92`, M75 approved the same day).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-05.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-05; approved and
+committed by the owner 2026-08-05 (`e73fed6`). Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -171,4 +171,4 @@ stay 15, generation stays 14, save/settings schemas untouched).
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-05.

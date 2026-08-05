@@ -2186,3 +2186,44 @@ Content on the v15 engine — **no version motion of any kind**
   rite-never-displaced sweep. Count pins updated (skills 63 → 65,
   items 80 → 82).
 
+## 31. M77 — the enemy offensive pass
+
+Content on the v15 engine (7 new enemy-side skills, 20 roster entries
+touched, all 14 telegraphs rewritten) plus **two scoped v15 amendments**
+in `battle/Battle.cpp` that the new content is the first to reach — the
+rules version deliberately holds at 15 because both are provably
+unreachable by pre-M77 content (a `[offense]` test pins the exact carrier
+sets; see the M77 note §E for the veto offer):
+
+- **The support-loop AoE gate** (`chooseEnemyAction`): an enemy-side
+  support skill targeting `all_enemies` is presence-gated on the PROFILED
+  party target instead of the caster. The old actor-side check meant a
+  party-wide status skill re-cast every single turn (its caster never
+  carries the status) — measured in the battery as a zero-agency
+  lockdown. No pre-M77 foe carries such a skill.
+- **Trigger-borne stun manners** (`applyTriggerAction`): a
+  `noStunWhileAllFoesSleep` owner lets a Stunned trigger action pass
+  while every living foe sleeps (the every-Nth beat is missed, not
+  banked). No pre-M77 foe carries a trigger.
+
+Design law learned by battery and recorded for M84/M85 authoring: **an
+AI-chosen AoE status skill whose status is short-lived is a lockdown**
+(the gate reopens before the boss's next action). Party-wide boss beats
+belong on TRIGGERS with authored cadence (the King's 5th-turn cradle-song,
+the Duck's 4th-turn Final Notice and 12th-hit Duck Down); AI-chosen AoE
+support is safe only when the status is long (Hexwing's 6-turn curse) or
+the caster is MP-starved (Veil of Slumber carriers).
+
+A second law, load-bearing for every high-Magic boss authored from here
+on: **v15's poison scaling (magnitude + applier Magic/4) turns any poison
+rider on a big-Magic boss into a silent nuke** — the Duck's old authored
+8 became ~65 magnitude ≈ 520 damage a round for free, which is why his
+rider is now ATK-down only (M77 note §E.3, with the tuning ladder).
+
+Battery architecture: the goose gauntlet (`tests/test_goose_town.cpp`)
+now scripts BOTH fights with the obtainable M76 counterplay (Mirrorbreak
+casts, Absolve, Holy Taxes, debuff upkeep, elixirs/tears in one shared
+bag) since the Deadly Spoon is closed; the King hook
+(`tests/test_royal_relics.cpp`) learned Mirrorbreak for the Stave's
+mirror. Skill pin 65 → 72.
+

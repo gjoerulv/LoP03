@@ -98,6 +98,12 @@ struct BattleObserver;  // M60 record-only telemetry hook (battle/BattleObserver
 // M81). A battle whose content carries none of the new fields AND no
 // poison/ATK+-/DEF+- status changes nothing; any battle where those statuses
 // appear resolves differently — that rebalance is the point, hence the bump).
+// M77 amended v15 in two places its shipped content is the first to reach —
+// the enemy AI's support-loop gate for all_enemies support skills reads the
+// profiled party target instead of the caster, and trigger-borne stuns honour
+// `noStunWhileAllFoesSleep` — both provably unreachable by pre-M77 content
+// (no such skill in any earlier kit; no earlier foe carries a trigger), so no
+// recorded battle changes and the version holds at 15 (see the M77 note §E).
 inline constexpr int kBattleRulesVersion = 15;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.

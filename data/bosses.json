@@ -8,7 +8,7 @@
       "stats": { "hp": 320, "attack": 26, "magic": 0, "defense": 16, "speed": 8 },
       "skills": ["power_smash", "whirlwind"],
       "minions": ["skeleton_archer"],
-      "telegraph": "The Warden hefts its cleaver. Below half health its fury doubles - end it fast or guard the rage.",
+      "telegraph": "The Warden's cleaver has kept this hall for a hundred years. It does not intend to stop tonight.",
       "xpReward": 220,
       "goldReward": 140,
       "description": "A towering brute that guards the ruined keep."
@@ -21,7 +21,11 @@
       "skills": ["blizzard", "venom_mist", "sunder", "silence"],
       "passives": ["spell_ward"],
       "minions": ["frost_imp", "wisp"],
-      "telegraph": "Frost gathers round the Sorcerer. Each fallen servant feeds its magic - strike the master first.",
+      "weaknesses": ["dark"],
+      "initialStatuses": [
+        { "type": "reflect", "duration": 2 }
+      ],
+      "telegraph": "The Sorcerer bows, courteous as glass. Every facet of the chamber bows back.",
       "xpReward": 210,
       "goldReward": 150,
       "description": "A mage who weaves ice and venom in the crystal depths."
@@ -34,7 +38,7 @@
       "skills": ["battle_cry", "weaken", "strike", "bewilder"],
       "passives": ["iron_will"],
       "minions": ["forest_wolf", "bandit", "wild_boar"],
-      "telegraph": "The Commander signals the pack. Below half health it rallies its fallen once - silence it first.",
+      "telegraph": "The Commander raises one hand, and the whole wood holds its breath.",
       "xpReward": 210,
       "goldReward": 150,
       "description": "A cunning leader who fights amid a loyal warband."
@@ -46,7 +50,7 @@
       "stats": { "hp": 280, "attack": 22, "magic": 0, "defense": 12, "speed": 10 },
       "skills": ["whirlwind", "power_smash"],
       "minions": ["goblin_grunt", "kobold_scout", "cave_bat", "zombie"],
-      "telegraph": "The Tyrant surges forward. Its opening blow lands doubled - guard the first strike, then answer.",
+      "telegraph": "The Tyrant does not walk into battle. The Tyrant arrives.",
       "xpReward": 240,
       "goldReward": 160,
       "description": "A tyrant who throws wave upon wave of minions."
@@ -59,7 +63,10 @@
       "skills": ["power_smash", "sunder", "smoke_screen"],
       "passives": ["thorns"],
       "minions": ["stone_golem", "crystal_guardian"],
-      "telegraph": "The Deep King hefts its greataxe. Below half health its blows redouble - break it quickly.",
+      "triggers": [
+        { "when": "first_time_hp_below_pct", "threshold": 25, "do": "scale_stats_self", "scaleDefensePct": 150, "text": "The Deep King plants its crown and digs in." }
+      ],
+      "telegraph": "The Deep King wears a crown nobody gave it, in a hall nobody leaves.",
       "xpReward": 230,
       "goldReward": 150,
       "description": "A crowned colossus that rules the deepest crystal seams."
@@ -69,11 +76,11 @@
       "name": "The Blight Matron",
       "archetype": "sorcerer",
       "stats": { "hp": 240, "attack": 10, "magic": 26, "defense": 12, "speed": 11 },
-      "skills": ["venom_mist", "blizzard", "weaken", "bewilder"],
+      "skills": ["venom_mist", "blizzard", "leaden_hex", "weaken", "bewilder"],
       "passives": ["keen_senses"],
       "minions": ["venom_spider", "plague_bearer"],
       "weaknesses": ["holy"],
-      "telegraph": "Spores swirl about the Matron. Each fallen servant feeds her blight - fell the mistress first.",
+      "telegraph": "The Matron smiles like something long out of practice. Spores drift wherever she looks.",
       "xpReward": 215,
       "goldReward": 150,
       "description": "A plague-witch who festers in the hollow wood."
@@ -87,7 +94,10 @@
       "minions": ["bandit", "wild_boar"],
       "passives": ["thorns"],
       "minTown": 2,
-      "telegraph": "The Warlord kicks up a blinding storm. Its rage doubles below half - and its hide bites back.",
+      "triggers": [
+        { "when": "every_nth_own_turn", "threshold": 4, "do": "status_all_foes", "status": "blind", "duration": 1, "text": "The Warlord whips the storm into every eye!" }
+      ],
+      "telegraph": "The Warlord travels inside its own private sandstorm. Today the weather is for war.",
       "xpReward": 220,
       "goldReward": 140,
       "description": "A brute chieftain who rules the second town's approaches."
@@ -103,7 +113,10 @@
       "minTown": 3,
       "weaknesses": ["fire"],
       "immunities": ["ice"],
-      "telegraph": "The Monarch seals your tongues in ice. Each fallen servant feeds its magic - and spells slide off its ward.",
+      "triggers": [
+        { "when": "first_time_hp_below_pct", "threshold": 50, "do": "status_self", "status": "reflect", "duration": 3, "text": "The cracks across the Monarch freeze into a perfect mirror." }
+      ],
+      "telegraph": "The Monarch has sat frozen on this throne for an age. It finds your arrival refreshing.",
       "xpReward": 220,
       "goldReward": 150,
       "description": "A frozen sovereign who silences all who trespass."
@@ -119,7 +132,10 @@
       "minTown": 4,
       "weaknesses": ["ice"],
       "immunities": ["earth"],
-      "telegraph": "The Colossus will not fall easily - it endures a killing blow. Its fury doubles below half.",
+      "triggers": [
+        { "when": "every_nth_hit_taken", "threshold": 4, "do": "status_attacker", "status": "stunned", "duration": 2, "text": "The blow rings back up the attacker's arms." }
+      ],
+      "telegraph": "The Colossus stood here before the town had a name. It intends to outlast the visit.",
       "xpReward": 240,
       "goldReward": 160,
       "description": "A living mountain of black glass."
@@ -129,11 +145,11 @@
       "name": "The Hollow Sovereign",
       "archetype": "commander",
       "stats": { "hp": 320, "attack": 22, "magic": 8, "defense": 16, "speed": 12 },
-      "skills": ["battle_cry", "weaken", "bewilder"],
+      "skills": ["veil_of_slumber", "battle_cry", "weaken", "bewilder"],
       "minions": ["corpse_hound", "bandit", "forest_wolf"],
       "passives": ["iron_will"],
       "minTown": 5,
-      "telegraph": "The Sovereign sows confusion and rallies its fallen once below half - endure, and it endures too.",
+      "telegraph": "The Sovereign's crown is older than its bones. Its host kneels without being asked.",
       "xpReward": 240,
       "goldReward": 160,
       "description": "A crowned revenant leading a loyal host."
@@ -147,7 +163,10 @@
       "minions": ["corpse_hound", "kobold_scout", "cave_bat", "zombie"],
       "passives": ["counter_attack"],
       "minTown": 6,
-      "telegraph": "The Tyrant surges with doubled fury and answers every blow - guard the opening, then strike.",
+      "triggers": [
+        { "when": "first_time_ally_felled", "do": "scale_stats_self", "scaleAttackPct": 125, "scaleSpeedPct": 120, "text": "The Tyrant howls over its fallen and comes on faster." }
+      ],
+      "telegraph": "The Tyrant counts its followers fondly, the way a miser counts coin.",
       "xpReward": 260,
       "goldReward": 170,
       "description": "A relentless warlord who throws wave upon wave."
@@ -157,11 +176,11 @@
       "name": "The Dread Sovereign",
       "archetype": "sorcerer",
       "stats": { "hp": 400, "attack": 14, "magic": 30, "defense": 18, "speed": 12 },
-      "skills": ["blizzard", "venom_mist", "silence", "bewilder"],
+      "skills": ["blizzard", "venom_mist", "leaden_hex", "silence", "bewilder"],
       "minions": ["void_weaver", "plague_bearer"],
       "passives": ["spell_ward", "keen_senses"],
       "minTown": 7,
-      "telegraph": "The Sovereign silences, blinds, and addles - and strikes your afflicted twice as hard. Spells fizzle on its ward.",
+      "telegraph": "The Dread Sovereign has already decided how this evening ends. It is seldom wrong.",
       "xpReward": 280,
       "goldReward": 190,
       "description": "The seventh town's dread ruler, master of every affliction."
@@ -171,12 +190,16 @@
       "name": "The Hollow King",
       "archetype": "brute",
       "stats": { "hp": 750, "attack": 36, "magic": 44, "defense": 36, "speed": 26 },
-      "skills": ["blinding_curse", "silencing_word", "maddening_gaze", "withering_touch", "sovereigns_cataclysm", "sovereign_smite"],
+      "skills": ["blinding_curse", "silencing_word", "maddening_gaze", "withering_touch", "drowsing_verdict", "royal_decree", "sovereigns_cataclysm", "sovereign_smite"],
       "minions": ["royal_guard_sword", "royal_guard_staff"],
       "passives": ["keen_senses", "clarity", "counter_attack"],
       "immuneToConfusion": true,
       "reviveMinionTurns": 5,
-      "telegraph": "The Hollow King rises - blind, silence and confusion break upon him, and his court will not stay down.",
+      "triggers": [
+        { "when": "every_nth_own_turn", "threshold": 5, "do": "status_all_foes", "status": "sleep", "duration": 1, "text": "The King hums an old cradle-song, and the whole hall grows heavy-lidded." }
+      ],
+      "avoidSleepingTargets": true,
+      "telegraph": "The Hollow King rises. The court holds its breath, and the candles lean away from him.",
       "xpReward": 500,
       "goldReward": 300,
       "description": "The sovereign of the castle above the seven towns - the hardest foe in the realm. Fought only in his throne room; his regalia is won nowhere else."
@@ -191,11 +214,19 @@
       "passives": ["counter_attack", "thorns", "spell_ward"],
       "attackHitsAll": true,
       "attackStatuses": [
-        { "type": "attack_down", "magnitude": 15, "duration": 2 },
-        { "type": "poison", "magnitude": 8, "duration": 2 }
+        { "type": "attack_down", "magnitude": 15, "duration": 2 }
       ],
       "immuneToAfflictions": true,
-      "telegraph": "The Deadly Duck surfaces. Every wingbeat scours the whole party, and no affliction sticks to those feathers.",
+      "initialStatuses": [
+        { "type": "reflect", "duration": 3 }
+      ],
+      "triggers": [
+        { "when": "every_nth_own_turn", "threshold": 4, "do": "status_all_foes", "status": "stunned", "duration": 2, "text": "The Duck serves the whole party their final notice. Everything stops." },
+        { "when": "every_nth_hit_taken", "threshold": 12, "do": "status_all_foes", "status": "sleep", "duration": 1, "text": "A blizzard of impossibly soft down bursts loose. The whole party drifts off." }
+      ],
+      "noStunWhileAllFoesSleep": true,
+      "immuneToStatScale": true,
+      "telegraph": "The Deadly Duck surfaces without a single ripple. The pond pretends not to notice.",
       "xpReward": 800,
       "goldReward": 500,
       "description": "The terror beneath the pond, mightier than the Hollow King himself. The geese speak of him only in whispers. Fought nowhere but Goose Town."

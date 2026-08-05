@@ -82,9 +82,9 @@
 | 72 | Party panel reflow | ☑ complete (approved) |
 | 73 | Enemy & boss sprite art pass | ☑ complete (approved) |
 | 74 | Crystal Mine ambience: no birds underground | ☑ complete (approved) |
-| 75 | Battle rules v15: Reflect, Sleep, Curse & triggers | ◑ implemented, awaiting manual approval |
-| 76 | Counterplay: breaker skills, Holy Taxes, Evil Duckling | ◑ implemented, awaiting manual approval |
-| 77 | Enemy & boss offensive pass | ☐ planned |
+| 75 | Battle rules v15: Reflect, Sleep, Curse & triggers | ☑ complete (approved) |
+| 76 | Counterplay: breaker skills, Holy Taxes, Evil Duckling | ☑ complete (approved) |
+| 77 | Enemy & boss offensive pass | ◑ implemented, awaiting manual approval |
 | 78 | Inventory caps & shop UX | ☐ planned |
 | 79 | Input & QoL: party cycling, three-slot remap | ☐ planned |
 | 80 | Event flavor text | ☐ planned |
@@ -2930,8 +2930,9 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M75 — Battle rules v15: Reflect, Sleep, Curse & triggers
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-05. `battle::kBattleRulesVersion` **14 → 15** (the program's one
+- **Status:** ☑ complete (approved) — implemented 2026-08-05; approved
+  and committed by the owner 2026-08-05 (`2538a92`).
+  `battle::kBattleRulesVersion` **14 → 15** (the program's one
   bump): the three new statuses with their exclusive removers, stat-scaled
   poison (magnitude + applier MAG/4), ATK± on the whole offensive term and
   DEF± on the final hit, `mpDamagePct`, `initialStatuses`, the
@@ -2953,8 +2954,9 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M76 — Counterplay: breaker skills, Holy Taxes & the Evil Duckling
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-05. Content on the v15 engine, **no version motion**:
+- **Status:** ☑ complete (approved) — implemented 2026-08-05; approved
+  and committed by the owner 2026-08-05 (`e73fed6`).
+  Content on the v15 engine, **no version motion**:
   Mirrorbreak (Rogue 11 / Ranger 12, physical `break_reflect`), Absolve
   (Cleric 12, `uncurse`), Smite on the Knight (13), Shadow Strike gone
   Dark (no foe is Dark-immune — tested); Holy Taxes (town 3+, 200g,
@@ -2975,7 +2977,23 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M77 — Enemy & boss offensive pass
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-05 on the post-M76 checkout (`e73fed6`). Seven new enemy-side
+  skills, 20 roster entries, all 14 telegraphs rewritten flavor-only
+  (linted); the King's rework (5th-turn cradle-song trigger, Royal
+  Decree / Drowsing Verdict, spares sleepers, the Stave mirrors him, the
+  Blade curses) and the Duck's (opens mirrored, 4th-turn Final Notice,
+  12th-hit Duck Down, Spoon-immune, mannered — and his poison sweep-rider
+  retired: v15 poison scaling had silently turned it into ~520 damage a
+  round, the load-bearing balance deviation, note §E.3). Two scoped v15
+  amendments (the AI's all-enemies support gate; trigger-stun manners),
+  both provably unreachable by pre-M77 content — no version bump, offered
+  for veto in note §E.1. **Goose gauntlet re-proved WITHOUT the Spoon:
+  3/5 seeds fall** to the obtainable M76 counterplay (losses die at
+  26–30%); King bars re-proved (unaided still loses, relics still win).
+  Offered for owner decision, not shipped: one chink — Curse — in the
+  Duck's immunity (3/5 → softer; the Evil Duckling would finally matter
+  against him), note §E.4. Full evidence in the note §F.
 - **Goal:** the roster uses v15 — MP-damaging attacks, Reflect starters,
   cursers, party-wide sleepers; the King's rework (sleep-all,
   damage+stun, sleep+damage, spare-the-sleeping targeting, a minion that

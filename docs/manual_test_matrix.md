@@ -32,6 +32,21 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M77 update:** the enemy offensive — the v15 statuses in enemy hands.
+> New expectations: MP-draining foes (Hex Wisp / Void Weaver / Soul
+> Render), opening mirrors (Rune Sentry, Goose Trickster, Crystal
+> Sorcerer, the Duck), cursers (Blight Matron, Dread Sovereign, Throne
+> Blade, Goose Hexwing party-wide), party-wide sleep (Blight Chanter,
+> Hollow Sovereign), announced boss triggers (Troll, Colossus, Frost
+> Monarch, Deep King, Sand Warlord, Abyssal Tyrant), the King's rework
+> (5th-turn cradle-song, Decree/Verdict, spares sleepers, the Stave's
+> mirror), the Duck's rework (opens mirrored, 4th-turn Final Notice,
+> 12th-hit Duck Down, Spoon refused, poison rider retired), Dark
+> weaknesses (Wisp / Crystal Guardian / Throne Blade / Crystal Sorcerer),
+> and every telegraph rewritten flavor-only. Older rows' King/Duck kit
+> and telegraph expectations are superseded; the M77 note §G is the
+> checklist.
+>
 > **M76 update:** counterplay content — the first v15 statuses reachable in
 > play: Mirrorbreak (Rogue 11 / Ranger 12), Absolve (Cleric 12), the
 > Knight's Smite (13), the Dark Shadow Strike, Holy Taxes in town-3+ item

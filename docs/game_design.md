@@ -360,7 +360,12 @@ reward**:
 - **The Hollow King** — the hardest fight in the game. A bespoke boss above every
   town-7 foe, immune to Blind, Silence, **and** Confusion, striking your afflicted
   party harder as the fight wears on, with a kit that inflicts every status —
-  and, since M49, **two Royal Guards he keeps calling back**. Beating
+  and, since M49, **two Royal Guards he keeps calling back**. Since **M77** he
+  also hums a **cradle-song every 5th of his own turns** (the whole party
+  sleeps), wounds-and-stuns with **Royal Decree**, wounds-and-sleeps with
+  **Drowsing Verdict**, and **spares sleeping party members** while anyone
+  else stands; the Stave mirrors him at low health and the Blade curses (see
+  §10, "Enemy offensive"). Beating
   him the first time grants a **unique legendary** (the Sovereign's Regalia, won
   nowhere else), a **visible title**, gold, and tokens.
 
@@ -380,12 +385,19 @@ true final fight, a **no-heal gauntlet**:
    **10% chance per turn to simply "Quack."** and do nothing.
 2. **The Deadly Duck** — the mightiest foe in the realm, above the King in
    every effective stat, at **5000 effective HP**. His basic attack strikes
-   the **whole party** and inflicts statuses (ATK-down + poison); he is
-   **immune to every affliction** — poison, blind, silence, confusion,
-   terror, stun, all of it bounces off — yet **stat debuffs still land**, so
-   the Deadly Spoon (and honest healing) is the obtainable counterplay, the
-   King's own design philosophy one step up. He carries **Counter Attack,
-   Thorns and Spell Ward**, and he enrages.
+   the **whole party** and saps it (ATK-down; the old poison rider retired
+   in M77 — under v15 poison scaling his Magic made it a silent
+   ~520-a-round death sentence). He is **immune to every affliction** and,
+   since **M77**, to the **Deadly Spoon** — his one former counterplay
+   closes. Instead he opens **behind a mirror** (Mirrorbreak's marquee
+   target), serves the whole party a stunning **Final Notice** every 4th of
+   his own turns (his sweep the same turn supplies the damage — the
+   Tax-Sheet effect returned to sender), and every **12th blow the party
+   lands** shakes loose a blizzard of **sleeping down**. Manners: he never
+   serves the Notice while the whole party sleeps. **Stat debuffs still
+   land**, so Weaken/Sunder upkeep, the M76 kit and honest healing are the
+   obtainable counterplay. He carries **Counter Attack, Thorns and Spell
+   Ward**, and he enrages.
 
 The **Goofy Jester** by the pond tells the legendary "Ballad of the Deadly
 Duck" (pure flavor, all original). Clearing the gauntlet earns the
@@ -607,8 +619,10 @@ a trap rather than a decision. Immunities use ice, earth and lightning; weapons
 use fire and holy. Dark weapons stay reserved — but since **M76** the element
 itself has one player-side exception: the Rogue's **Shadow Strike** carries
 Dark (owner decision 2026-08-05), and no foe anywhere is immune to Dark, so
-the Rogue's signature opener can never become a trap. A few Dark weaknesses
-arrive with the M77 enemy pass.
+the Rogue's signature opener can never become a trap. Since **M77** the Dark
+weaknesses are real: the **Wisp**, the **Crystal Guardian** and the **Throne
+Blade** — and exactly one boss, the **Crystal Sorcerer** (whose opening
+mirror bounces magic, making the physical Dark opener the town-1 story).
 
 **The King's Court (M49).** The Hollow King stops fighting alone. Two **Royal
 Guards** — the **Throne Blade** and the **Throne Stave** — stand with him:
@@ -642,11 +656,12 @@ uses, so it moves if they do.
   the largest single fight in the game: his base stats are so far above any
   dungeon boss that ×5.00 makes him a **3750 HP** opponent where the deepest
   dungeon boss the ladder can produce is 2280. Against a **level-99** party (the
-  cap, raised from 50 so the endgame has an answer) the simulation beats him with
-  three Tax Sheets, three Evil Geese and a bag of Royal Snacks — three survivors
-  at a third health — and comfortably with the Dragon Crown and Deadly Spoon on
-  top. He rewards a full relic haul without demanding the absolute maximum, and a
-  party carrying nothing still loses.
+  cap, raised from 50 so the endgame has an answer) the post-M77 simulation
+  still loses with nothing (17 rounds) and still wins with the modest plan —
+  one Tax Sheets, one Evil Goose, a bag of Royal Snacks, and a Mirrorbreak
+  for the Stave's mirror — now down to **a single survivor** (21 rounds,
+  M77's rework at work). He rewards a relic haul without demanding the
+  absolute maximum, and a party carrying nothing still loses.
 
 Because a multiplier alone is misleading once base stats differ this much, the
 "castle outranks the ladder" rule is enforced in **effective stats**, not in
@@ -737,6 +752,31 @@ bar, honoured in order:
   until the duck is spent. Using it delivers a **Hilarious Punchline** on
   the battle's quip channel. ("What do you call a duck that steals? A
   robber ducky.")
+
+**Enemy offensive (M77).** The roster picks the v15 weapons up — every
+threat below is deterministic and announces itself with an authored line:
+
+- **MP drains**: the Hex Wisp's and Void Weaver's **Thought Thief** and the
+  Soul Render's **Soul Tithe** also take ~¼ of the damage dealt as MP.
+- **Mirrors**: the Rune Sentry, the Goose Trickster, the Crystal Sorcerer
+  and the Deadly Duck open behind Reflect; the Frost Monarch freezes into
+  one at half health, and the Throne Stave casts one **on the King** when
+  the Stave itself is nearly down.
+- **Curses**: the Blight Matron, the Dread Sovereign and the Throne Blade
+  wound-and-curse with **Leaden Hex**; the Goose Hexwing curses the whole
+  party at once. Absolve and Holy Taxes are the answers, exactly as M76
+  promised.
+- **Sleep**: the Blight Chanter and the Hollow Sovereign drop a party-wide
+  **Veil of Slumber** (their thin MP is the cadence); the King and the Duck
+  deliver theirs on authored beats (above).
+- **Tempers**: the Troll's fury feeds on its wounds (+25% ATK below half);
+  the Obsidian Colossus **rings back every 4th blow** (the attacker is
+  stunned); the Deep King digs in at the last quarter (+50% DEF); the Sand
+  Warlord whips its storm into every eye (party-wide Blind, every 4th
+  turn); the Abyssal Tyrant surges over its first fallen follower.
+- **Telegraphs are atmosphere now** — every boss intro was rewritten
+  flavor-only (no thresholds, no "silence it first"); the fight teaches
+  itself, and a lint test keeps the coaching out.
 
 ## 11. Bosses
 

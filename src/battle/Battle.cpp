@@ -1090,6 +1090,24 @@ std::string Battle::fireHitTriggers(int target, int attacker) {
 
 std::string Battle::applyTriggerAction(int owner, TriggerRule& tr, int attacker) {
     Combatant& o = units[static_cast<std::size_t>(owner)];
+    // M77: the sleep manners cover TRIGGER-borne stuns too — a `noStunWhile-
+    // AllFoesSleep` owner (the Deadly Duck) lets the moment pass while the
+    // whole opposing side sleeps (an every-Nth counter simply misses that
+    // beat). No pre-M77 content carries any trigger, so every earlier battle
+    // resolves byte-identically (recorded in the M77 note).
+    if (tr.status == content::StatusType::Stunned && o.noStunWhileAllFoesSleep) {
+        const Side foe = o.side == Side::Party ? Side::Enemy : Side::Party;
+        bool anyAwake = false;
+        for (int fi : aliveIndices(foe)) {
+            if (!isAsleep(units[static_cast<std::size_t>(fi)])) {
+                anyAwake = true;
+                break;
+            }
+        }
+        if (!anyAwake) {
+            return "";
+        }
+    }
     std::string log = tr.text.empty() ? std::string() : " " + tr.text;
     switch (tr.action) {
         case content::TriggerDo::StatusSelf:
@@ -2481,7 +2499,14 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
             skill->statusEffect == content::StatusType::None || stunShelved(*skill)) {
             continue;
         }
-        const bool onEnemy = skill->target == content::SkillTarget::SingleEnemy;
+        // M77: an ALL-enemy support skill (the King's lullaby, the Duck's
+        // notice, the Hexwing's grudge) is gated on the PROFILED party target,
+        // not the actor — an actor-side check would re-cast a party-wide
+        // status every single turn (the caster never carries it). No pre-M77
+        // foe carries a support skill targeting all_enemies, so every earlier
+        // battle resolves byte-identically (recorded in the M77 note).
+        const bool onEnemy = skill->target == content::SkillTarget::SingleEnemy ||
+                             skill->target == content::SkillTarget::AllEnemies;
         const int ti = onEnemy ? targetParty : actor;
         if (ti < 0) {
             continue;

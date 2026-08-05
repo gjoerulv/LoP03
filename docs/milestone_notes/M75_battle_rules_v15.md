@@ -7,8 +7,8 @@ program (one plan, one approval — see the program section in
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-05.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-05; approved and
+committed by the owner 2026-08-05 (`2538a92`). Evidence in §F.
 
 ## B. Goal (owner brief)
 

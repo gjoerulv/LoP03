@@ -81,6 +81,7 @@ add_executable(crystal_tests
     test_spoils.cpp
     test_rules_v15.cpp
     test_counterplay.cpp
+    test_enemy_offensive.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core
