@@ -10,7 +10,8 @@
   manual testing ("M52 is done"); the accompanying audit re-verified 497/497
   tests (Debug and Release) and `--capture` 64/64 at `7444406`.
 - **Authorized:** 2026-07-23 (owner), as one quality-of-life milestone before
-  M23/M24; the last authorized expansion.
+  M23/M24; believed at the time to be the last expansion (M53+ were
+  authorized after — the ledger is the authority).
 - **Base checkout:** `f387588` ("Merge pull request #16 … claude05" = M51
   `64d220e` + `30b1166` "docs update"), working tree clean.
 

@@ -49,7 +49,11 @@ music, or text. Built in **C++20** with **raylib**.
 > you ask), and **M71** (a victory celebration after flawless-stakes
 > clears and the great challenge wins — the team jumping, the MVP on a
 > pedestal), and **M72** (the party panel reflowed so a maxed member's
-> milestones and skills all stay visible). After those, only the
+> milestones and skills all stay visible), **M73** (every enemy and boss
+> sprite redrawn as hand-authored pixel grids — bosses on a larger 36×36
+> canvas with real silhouettes), and **M74** (the Crystal Mine ambience
+> rebuilt around rockfall and crystal-shard echoes — the old "drips" were
+> synthesised as bird whistles). After those, only the
 > deferred **validation playtesting (M23)** and **release sign-off (M24)**
 > remain. Current status always lives in `docs/milestones.md`.
 
@@ -236,11 +240,14 @@ letterbox/pillarbox bars.
 ```
 src/
   core/      Application loop, AppContext, config, FadeController (transitions)
-  render/    VirtualScreen (426x240 scaling), Viewport, raylib RAII wrappers
+  render/    VirtualScreen (426x240 scaling + CRT shader), Viewport, RAII wrappers
   audio/     AudioManager (manifest-driven music/ambience/SFX, synth fallback)
+  assets/    AssetManifest loader/validator (logical asset IDs)
   input/     action mapping (keyboard + gamepad)
   resource/  cached textures/fonts with graceful fallback
-  platform/  user-data paths, path sanitizing
+  platform/  user-data paths, path sanitizing, atomic file writes
+  settings/  versioned settings persistence
+  tutorial/  one-time contextual onboarding prompts
   content/   JSON content model: defs, enums, loaders, validators
   game/      Character, Party, Inventory, stat derivation, XP/leveling
   save/      versioned JSON saves (slots + autosave)
@@ -251,8 +258,11 @@ src/
   battle/    deterministic turn-based combat + headless simulator
   ui/        Menu, TextInput (pure) + UiDraw helpers
   states/    game states (menu, town, dungeon, battle, shops, ...)
+  capture/   deterministic screenshot scenes (dev builds only)
   editor/    CrystalForge content editor (separate dev tool; never shipped)
 data/        JSON content (classes, enemies, items, skills, bosses, themes)
+assets/      manifest.json + generated textures/audio/font + credits.md
+tools/       package.ps1 + deterministic asset generators (asset_gen/)
 tests/       Catch2 unit/integration tests (headless)
 docs/        design + technical + milestone docs
 ```
@@ -307,7 +317,7 @@ save round-trips via the Save Point + Continue.
 
 - **Generated assets.** All art (16-bit-style pixel tiles/sprites), the UI
   **bitmap font** (an original pixel typeface + BMFont descriptors), and all
-  audio (17 chiptune music tracks, 4 ambience beds, 15 SFX) are original and
+  audio (20 chiptune music tracks, 4 ambience beds, 15 SFX) are original and
   produced by deterministic in-repo generators (`tools/asset_gen/`). Every
   sound and visual role is replaceable without code via
   `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload

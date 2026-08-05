@@ -410,7 +410,7 @@ else**, its skill **learned on the spot** by a chosen member (the M64
 scroll system); once all six are dug up, further treasures pay a legendary
 token and gold. The map then resets — the cycle repeats forever.
 
-**The dungeon treasure map + curios (M66).** Rarer still (~1 dungeon in 8),
+**The dungeon treasure map + curios (M66).** Similarly rare (~1 dungeon in 8),
 a weathered **chart of the current dungeon** waits in a plain room: reading
 it instantly marks a buried treasure elsewhere in that same run — a gold X
 on the minimap — but the map is **single-use**: leave without digging and

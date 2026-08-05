@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs once M59–M71 close** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs once M59–M74 close** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -120,9 +120,9 @@ and boss sprite art pass), and on 2026-07-31 **M74** (the Crystal Mine
 ambience rework — the "drips" were synthesised as bird whistles). M59–M74
 ALL sit at `implemented, awaiting manual approval`; then M23 → M24, and
 nothing else stands before them.**
-When M59–M72 close, both M23 and M24 must be re-audited against the
+When M59–M74 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**84
-scenes** as of M71), the balance batteries have grown (`[economy-report]`,
+scenes** since M71), the balance batteries have grown (`[economy-report]`,
 `[castle-report]` with its rush sweep, `[king-report]`, `[classes-report]`,
 and the M61–M68 `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/
 `[spoils]`/`[danger-report]` batteries), and the packaging manifest must
@@ -839,30 +839,32 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs once M59–M71
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs once M59–M74
   close** (the deferral has been extended by each expansion program the
   owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
   M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
-  M61, the M62–M66 program, and the M67–M71 owner batches). The tooling,
+  M61, the M62–M66 program, and the M67–M74 owner batches). The tooling,
   diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
-  Re-audit this note against the post-M71 checkout before starting — the
-  capture scene list has grown (**84 scenes** as of M71) and the balance
+  Re-audit this note against the post-M74 checkout before starting — the
+  capture scene list has grown (**84 scenes** since M71) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
-  `[king-report]`, `[classes-report]`, and the M61–M71
+  `[king-report]`, `[classes-report]`, and the M61–M68
   `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/`[spoils]`/
   `[danger-report]` batteries); both need extending for
-  everything M25–M71 added (AI, content, art, town ladder, stakes, black
+  everything M25–M74 added (AI, content, art, town ladder, stakes, black
   market, statuses/passives, castle challenges, relics, the unlockable
   classes, the M46 UI kit, elements, the King's Court, walk-through towns,
   the M51 options, the M52 comforts/secrets, the M53–M58 adjustments,
   M61's Goose Town, the M62–M66 program — class milestones, scrolls, the
-  two treasure-map systems — and the M67–M71 batches: portraits, spoils,
-  party-relative danger, town exteriors, the CRT split, the celebration).
-  **M71 is the last authorized expansion; this is next
+  two treasure-map systems — and the M67–M74 batches: portraits, spoils,
+  party-relative danger, town exteriors, the CRT split, the celebration,
+  the party-panel reflow, the M73 enemy/boss art pass, and the M74 mine
+  ambience rework).
+  **M74 is the last authorized expansion; this is next
   in line once the owner schedules it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
@@ -899,9 +901,10 @@ milestone is not automatic authorization to start the next.
   VERSIONINFO, one-command stage/validate/zip via tools/package.ps1;
   package smoke-tested, capture-inert; owner decisions 2026-07-20: v0.9.0
   until playtests pass, plain zip, emblem-generated icon). Only the final
-  validation and sign-off are deferred. Note that M25–M30 add assets and
-  content, so the packaging manifest coverage and package-size expectations
-  must be re-checked before sign-off.
+  validation and sign-off are deferred. Note that M25–M74 added assets and
+  content (see the header narrative's packaging list), so the packaging
+  manifest coverage and package-size expectations must be re-checked before
+  sign-off.
 - **Goal:** produce and validate a reproducible, clean, polished Windows
   release candidate.
 - **Player-facing outcome:** the final packaged game.

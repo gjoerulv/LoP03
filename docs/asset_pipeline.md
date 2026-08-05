@@ -70,9 +70,11 @@ pass 0 to show the first (stand) frame.
 ## 3. Audio roles (M21: full soundscape shipped)
 
 The stable role tables live in `src/audio/AudioRoles.hpp` (raylib-free;
-tests validate the shipped manifest against them). All 30 shipped files are
-original, produced by `tools/asset_gen/generate_audio.ps1` (deterministic —
-reruns are byte-identical).
+tests validate the shipped manifest against them). All **39** shipped WAVs
+(20 music, 4 ambience, 15 SFX — 30 at M21, grown by the per-town, castle,
+King and Duck tracks; the mine bed rebuilt in M74) are original, produced by
+`tools/asset_gen/generate_audio.ps1` (deterministic — reruns are
+byte-identical).
 
 | Role id | Used for |
 |---|---|
@@ -81,10 +83,12 @@ reruns are byte-identical).
 | `sfx.world.{chest,step,door,interact}` | exploration (steps are rate-limit cadenced) |
 | `music.title` / `music.town` / `music.guild` | scene music (streamed loops) |
 | `music.dungeon.{keep,mine,forest}` | per-theme dungeon music (owner decision) |
+| `music.town.<2..7>` | per-town variants of the town track (M32/M50; `AudioManager::setTown`) |
 | `music.battle` / `music.boss` | normal vs boss battles |
+| `music.castle` / `music.king` / `music.duck` | castle hub, King fight (M40), Duck wave (M62) |
 | `music.victory` / `music.defeat` | one-shot jingles (`loop: false`) at battle end |
 | `music.result` | dungeon result screen |
-| `ambience.{town,keep,mine,forest}` | looping beds layered under music |
+| `ambience.{town,keep,mine,forest}` | looping beds layered under music (mine bed reworked M74) |
 
 **Fallback order (owner-approved):** manifest file → synthesized placeholder
 tone → silence; every miss logs a warning, nothing crashes. New M21 music
@@ -93,9 +97,9 @@ victory/defeat jingle falls back to the matching stinger SFX; ambience has no
 synth tier (silence). File-backed music uses raylib music streams with the
 manifest `loop` flag; track changes crossfade over 0.25 s; rapid SFX are
 rate-limited per role (`kSfxMinInterval`). Volumes combine group settings
-(M13 Settings screen) × per-asset `volume`; ambience follows the **SFX**
-slider (M27 owner decision — the two ambience gain sites in `AudioManager`
-multiply by `sfxVolume_`, not `musicVolume_`; no new Settings field).
+(M13 Settings screen) × per-asset `volume`; since **M52** ambience has its
+**own volume slider** (`ambienceVolume`, default 5/10 — it followed the SFX
+slider from M27 to M52, and the music slider before that).
 
 Texture/font roles follow the same pattern (placeholder checker / default
 font as fallback); visual role names are assigned in M15/M17 as art lands.

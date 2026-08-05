@@ -15,7 +15,7 @@ exceptions since M13 — text entry flows through the input layer):
 | MoveUp/Down/Right/Left | Arrows + WASD | D-pad **and left stick** (hysteresis 0.5 enter / 0.35 release) | movement, menu nav, value adjust |
 | Confirm | Enter, Space | A | select, interact, advance |
 | Cancel | Esc, Backspace | B | back, close, (opens pause in town/dungeon) |
-| Menu | Tab | Start | opens pause in town/dungeon |
+| Menu | Tab | Start | opens **and closes** (M47) pause in town/dungeon; opens/closes the battle log in battle (M52) |
 | Details | C | Y | M22: contextual help panels (battle stats/statuses, dungeon danger, score components, gear comparison) |
 | TextBackspace | Backspace (fixed) | X (fixed) | delete-one-char in text editing |
 | ToggleDebug | F1 (fixed) | — | debug overlay |
@@ -43,10 +43,12 @@ characters still require a keyboard (labeled in-game).
 - **Details** (M22) opens a read-only overlay wherever the footer offers it;
   Confirm, Cancel, or Details again closes it. It is remappable and never
   required to progress — everything it explains is also learnable by play.
-- **Destructive actions need a second Confirm** (M22): overwriting an
-  existing save slot and quitting to title from the pause menu both arm on
-  the first Confirm (with an explicit warning) and execute on the second;
-  moving the cursor or Cancel disarms. One-time tutorial prompts freeze the
+- **Destructive actions need an explicit second step** (M22): overwriting an
+  existing save slot arms on the first Confirm (with a visible warning) and
+  executes on the second; moving the cursor or Cancel disarms. Quitting
+  (M47) opens an explicit prompt — Quit to Title / Quit Game / Keep
+  Playing — with the cursor on the safe answer and Cancel resolving to it.
+  One-time tutorial prompts freeze the
   scene below and dismiss with a single Confirm/Cancel.
 
 ## 3. Navigation rules
@@ -96,8 +98,9 @@ characters still require a keyboard (labeled in-game).
   rebind; `[Esc]` always cancels listening and can never be bound (reserved).
 - Conflict policy: **swap** — the input's previous owner takes the action's
   old primary binding; a swap with nothing to donate is **blocked** (map
-  unchanged). Invariants (tested in `test_remap.cpp`): only the 7 remappable
-  actions participate; no remappable action ever ends up unbound;
+  unchanged). Invariants (tested in `test_remap.cpp`): only the 8 remappable
+  actions participate (`kRemappableActions` — movement, Confirm, Cancel,
+  Menu, Details); no remappable action ever ends up unbound;
   TextBackspace/ToggleDebug are fixed.
 - Reset to defaults exists in both the remap screen and Settings; every
   successful change saves immediately.
@@ -107,14 +110,14 @@ characters still require a keyboard (labeled in-game).
   report; a binding set that would strand the keyboard restores that
   action's defaults (tested in `test_settings.cpp`).
 - Text entry works through the input layer; gamepad can delete/finish but
-  typing needs a keyboard (labeled in-game). An on-screen keyboard is a
-  future owner call (revisit by M22).
+  typing needs a keyboard (labeled in-game). An on-screen keyboard remains
+  an open owner call.
 
 ## 7. Still-unresolved actions
 
-- `Details` — will be added when M22's contextual help needs it.
 - `PageLeft`/`PageRight` — only if a screen adopts pagination.
-- Explicit `Quit` — reserved, still unbound; global quit affordance remains
-  an open owner decision.
+- Explicit `Quit` — the action stays reserved and unbound; the quit
+  *affordance* was resolved in M47 (both pause menus offer Quit → Quit to
+  Title / Quit Game / Keep Playing).
 - Seed text entry at the Guild (DATA-023) — can now reuse the text-entry
   path; owner decision on wanting it.

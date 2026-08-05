@@ -22,9 +22,9 @@
   for control hints / transient messages (current town/dungeon convention).
   Screens using a bottom panel (battle: 64px) treat the panel as the
   reservation.
-- Top-left corner (x<160, y<16) is currently contested by HUDs and the debug
-  overlay (defect UI-LAYOUT-009); M12 must assign it to exactly one occupant
-  per screen.
+- Top-left corner (x<160, y<16): one occupant per screen (defect
+  UI-LAYOUT-009, resolved in M12 — the debug overlay now starts hidden and
+  F1-toggles, so it never contests a HUD by default).
 
 ## 2. Text roles found in the current game
 
