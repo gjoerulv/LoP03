@@ -94,7 +94,7 @@
 bible palette was **extended**, per the brief's instruction to "propose the
 bible update in the same PR rather than sneaking the colour in". Details in §4.
 
-## 4. Palette extension (needs owner sign-off)
+## 4. Palette extension (RESOLVED — accepted with the 2026-08-05 boss-art repair, §11)
 
 The generator has, since M26, used four colours that were never in art bible
 §2 — `maroon`/`maroonD` (brute flesh) and `bossBody`/`bossD` (boss violet-black)
@@ -239,3 +239,43 @@ Automated tests cannot judge art. These are the checks that matter:
 ## 10. Final status
 
 `complete (approved 2026-08-05)`
+
+## 11. Corrective addendum — boss-art repair (2026-08-05)
+
+The owner reviewed the M73 art after approval and directed a corrective
+pass over the **bosses only**. This addendum records it; the sections above
+are preserved as the honest record of what M73 shipped.
+
+- **What was wrong.** The M73 boss language did not meet the intended tone.
+  Applying the enemy rules at a larger size plus the "structural five-point
+  crown" rule produced fourteen variants of one design: the same gold crown
+  on every boss, broad symmetrical crowned hulks, repeated pot-bodied
+  casters, oversized equipment as the only idea, and filled masses with no
+  negative space. The result read as childish/toy-like rather than as
+  threatening storybook grotesques. (The Deadly Duck and its geese were the
+  exception — coherent body plan, directional read, integrated staging —
+  and were used as the model for the repair.)
+- **What was done.** `docs/art_bible.md` gained a binding boss-design
+  section (**§5b**: lore before ornament; no universal crown; controlled
+  seriousness; 2–3-mass construction; asymmetry and directional intent;
+  face treatment; material logic; archetype silhouettes; humor hierarchy;
+  review gate), and all 14 non-Duck boss grids in
+  `tools/asset_gen/generate_textures.ps1` were redrawn from their
+  `data/bosses.json` definitions under those rules. Every other sprite —
+  the Duck, the five geese, all 52 normal/elite enemies, and every
+  non-enemy asset — is verified byte-identical. The authoring model is
+  unchanged: explicit 36×36 ASCII grids, RNG-free, `Draw-Grid`/
+  `Save-EnemyGrid` validated.
+- **Palette extension (§4): ACCEPTED.** The three completed ramps
+  (flesh/brute, boss void, neutral white) are production palette; the
+  pending-sign-off language in the art bible was removed.
+- **Boss height (§3/§7.7): RESOLVED — retain 36×36.** No `enemyBaseY()`
+  change, no battle-layout change, no C++ change. The repair demonstrated
+  the problem was design quality, not canvas size.
+- **Review artefacts.** `docs/sprite_review/sprites_*.png` regenerated for
+  the full 67-sprite set, plus focused boss-only sheets
+  (`bosses_contact/silhouette/strip1x/strip4x.png`) via
+  `preview.ps1 -Only boss_… -OutName bosses`. The M73 `baseline_*` sheets
+  are kept unchanged as the pre-M73 baseline; the §7.2 silhouette clusters
+  named at M73 (the three crowned hulks; the three pot-bodied casters) no
+  longer exist.

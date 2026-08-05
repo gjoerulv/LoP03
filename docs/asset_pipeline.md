@@ -130,7 +130,10 @@ generic tier sprite only for ids without bespoke art.
 `enemy.<id>.battle` / `boss.<id>.battle` row **fails** `[lint]`, so new content
 cannot ship without art. Every addition is recorded in `assets/credits.md`.
 
-Three M73 rules govern this family:
+Boss *design* rules (masses, crowns, asymmetry, tone) live in
+`docs/art_bible.md` **§5b** — the 2026-08-05 boss-art repair redrew all 14
+non-Duck boss grids under them. Three M73 mechanical rules govern the whole
+family:
 
 - **Authoring is an explicit ASCII pixel grid**, one block per sprite with a
   single-character palette key bound to the art-bible §2 ramps. `Draw-Grid`
