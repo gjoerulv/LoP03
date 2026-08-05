@@ -7,7 +7,7 @@ sections); architecture: `docs/technical_design.md` §17.
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — set 2026-07-25. Evidence in §F.
+**☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-25. Evidence in §F.
 
 ## B. Goal
 
@@ -170,6 +170,6 @@ sim lab / process runner), this note. `README.md` checked — its
 
 ## J. Final status
 
-`implemented, awaiting manual approval` — with M59, this completes the
+`complete (approved 2026-08-05)` — with M59, this completes the
 authorized M59–M60 program. M23 → M24 are next, after their re-audit against
 this checkout.

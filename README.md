@@ -8,7 +8,7 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M58
+> **Status: feature-complete, polished playable build** (milestones M1–M74
 > delivered and owner-approved). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
@@ -26,7 +26,7 @@ music, or text. Built in **C++20** with **raylib**.
 > log, a bestiary (with each foe's strongest-context stats), victory
 > records, achievements, boss battle backdrops with a Crystal Shatter
 > intro, and a fully procedural "8-bit-plus" UI.
-> Awaiting the owner's manual approval: the **CrystalForge content editor**
+> The newest additions (M59–M74, approved 2026-08-05): the **CrystalForge content editor**
 > (M59–M60, see *Development tools*), **Goose Town & the Deadly Duck**
 > (M61 — fell the King with a Goose in the party and the ultimate gauntlet
 > opens), the **M62 polish** (Purify truly heals nothing, bespoke
@@ -53,7 +53,7 @@ music, or text. Built in **C++20** with **raylib**.
 > sprite redrawn as hand-authored pixel grids — bosses on a larger 36×36
 > canvas with real silhouettes), and **M74** (the Crystal Mine ambience
 > rebuilt around rockfall and crystal-shard echoes — the old "drips" were
-> synthesised as bird whistles). After those, only the
+> synthesised as bird whistles). Only the
 > deferred **validation playtesting (M23)** and **release sign-off (M24)**
 > remain. Current status always lives in `docs/milestones.md`.
 

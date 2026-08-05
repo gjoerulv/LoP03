@@ -7,7 +7,7 @@ like a big sheet, and a crystal). Implemented 2026-07-29.
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — set 2026-07-29. Evidence in §E.
+**☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-29. Evidence in §E.
 
 ## B. As implemented
 
@@ -80,4 +80,4 @@ docs. No save/schema/rules/generation changes; no test changes needed
 
 ## G. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-05)`

@@ -1,6 +1,6 @@
 # M74 — Crystal Mine ambience: no birds underground (owner report, 2026-07-31)
 
-> Status: **implemented, awaiting manual approval.**
+> Status: **complete (approved by the owner 2026-08-05).**
 > Scope: `assets/audio/ambience/mine.wav` and the mine section of
 > `tools/asset_gen/generate_audio.ps1`. The other 38 WAVs are verified
 > byte-identical.
@@ -171,4 +171,4 @@ a real drip is, and nothing like the old glide.
 
 ## 9. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-05)`

@@ -5,7 +5,7 @@ boss-victory bug the owner reported the same day. Implemented 2026-07-28.
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — set 2026-07-28. Evidence in §E.
+**☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-28. Evidence in §E.
 
 ## B. Scope (owner brief, verbatim intents)
 
@@ -132,4 +132,4 @@ docs. No data, schema, save-format, battle-rules, or generation changes.
 
 ## H. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-05)`

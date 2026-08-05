@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **deferred, runs once M59–M74 close** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **next in line: M59–M74 closed 2026-08-05** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -66,22 +66,22 @@
 | 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ☑ complete (approved) |
 | 57 | Advanced CRT post-process (0–10 CRT Strength) | ☑ complete (approved) |
 | 58 | Fixes: equip message, Deadly Spoon once, geese scare the King | ☑ complete (approved) |
-| 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ◑ implemented, awaiting manual approval |
-| 60 | CrystalForge sim lab, battle observer, test runner | ◑ implemented, awaiting manual approval |
-| 61 | Goose Town & the Deadly Duck (rules v12) | ◑ implemented, awaiting manual approval |
-| 62 | Fixes & Duck stagecraft (Purify no-heal rules v13, goose/duck art, Duck theme) | ◑ implemented, awaiting manual approval |
-| 63 | Class level milestones (pick 1 of 2 at Lv 10/20/30; rules v14) | ◑ implemented, awaiting manual approval |
-| 64 | Scroll learning + Party panel | ◑ implemented, awaiting manual approval |
-| 65 | Town puzzle map (HoMM2 homage; generation v12) | ◑ implemented, awaiting manual approval |
-| 66 | Dungeon treasure map + curios (generation v13) | ◑ implemented, awaiting manual approval |
-| 67 | UI polish & the boss-return fix | ◑ implemented, awaiting manual approval |
-| 68 | Battle spoils & party-relative threat (generation v14) | ◑ implemented, awaiting manual approval |
-| 69 | Town exteriors (facades, scoreboard stele, save crystal) | ◑ implemented, awaiting manual approval |
-| 70 | Separate CRT Strength and CRT Curvature | ◑ implemented, awaiting manual approval |
-| 71 | The victory celebration | ◑ implemented, awaiting manual approval |
-| 72 | Party panel reflow | ◑ implemented, awaiting manual approval |
-| 73 | Enemy & boss sprite art pass | ◑ implemented, awaiting manual approval |
-| 74 | Crystal Mine ambience: no birds underground | ◑ implemented, awaiting manual approval |
+| 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ☑ complete (approved) |
+| 60 | CrystalForge sim lab, battle observer, test runner | ☑ complete (approved) |
+| 61 | Goose Town & the Deadly Duck (rules v12) | ☑ complete (approved) |
+| 62 | Fixes & Duck stagecraft (Purify no-heal rules v13, goose/duck art, Duck theme) | ☑ complete (approved) |
+| 63 | Class level milestones (pick 1 of 2 at Lv 10/20/30; rules v14) | ☑ complete (approved) |
+| 64 | Scroll learning + Party panel | ☑ complete (approved) |
+| 65 | Town puzzle map (HoMM2 homage; generation v12) | ☑ complete (approved) |
+| 66 | Dungeon treasure map + curios (generation v13) | ☑ complete (approved) |
+| 67 | UI polish & the boss-return fix | ☑ complete (approved) |
+| 68 | Battle spoils & party-relative threat (generation v14) | ☑ complete (approved) |
+| 69 | Town exteriors (facades, scoreboard stele, save crystal) | ☑ complete (approved) |
+| 70 | Separate CRT Strength and CRT Curvature | ☑ complete (approved) |
+| 71 | The victory celebration | ☑ complete (approved) |
+| 72 | Party panel reflow | ☑ complete (approved) |
+| 73 | Enemy & boss sprite art pass | ☑ complete (approved) |
+| 74 | Crystal Mine ambience: no birds underground | ☑ complete (approved) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -118,8 +118,8 @@ sliders), **M71** (the victory celebration screen), **M72** (the
 party panel reflow), on 2026-07-30 **M73** (the owner-directed enemy
 and boss sprite art pass), and on 2026-07-31 **M74** (the Crystal Mine
 ambience rework — the "drips" were synthesised as bird whistles). M59–M74
-ALL sit at `implemented, awaiting manual approval`; then M23 → M24, and
-nothing else stands before them.**
+are ALL `complete (approved)` — batch-approved by the owner 2026-08-05;
+then M23 → M24, and nothing else stands before them.**
 When M59–M74 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**84
 scenes** since M71), the balance batteries have grown (`[economy-report]`,
@@ -839,8 +839,8 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs once M59–M74
-  close** (the deferral has been extended by each expansion program the
+- **Status:** ☐ planned — **deferred on 2026-07-20; M59–M74 closed
+  2026-08-05, so this is now next in line** (the deferral was extended by each expansion program the
   owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
   M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
   M61, the M62–M66 program, and the M67–M74 owner batches). The tooling,
@@ -2490,7 +2490,7 @@ bumps anywhere in the program).
 
 ### M59 — CrystalForge editor core
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-25
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented 2026-07-25
   on base checkout `7c8f32d` (baseline re-verified 532/532 Debug first). The
   `[editor]` battery is 12 cases / 2913 assertions green; the one-time
   canonicalization rewrote all 9 data files with a reviewed minimal diff and
@@ -2513,7 +2513,7 @@ bumps anywhere in the program).
 
 ### M60 — CrystalForge sim lab, battle observer, test runner
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented 2026-07-25
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented 2026-07-25
   directly after M59. The observer parity test proves byte-identical
   outcomes and `rollCursor` with a recorder attached (**no rules bump**;
   battle rules stay 11) and exact per-unit HP reconciliation; the `[editor]`
@@ -2543,7 +2543,7 @@ schema-driven do-nothing turns, boss-side all-party attacks with status
 riders, and blanket affliction immunity — no pre-M61 content carries the
 fields, so every earlier battle resolves byte-identically).
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-25 on the tree carrying M59/M60. `[goose]` battery 13 cases / 980
   assertions green (Duck 5000 effective HP and per-stat supremacy in every
   authored context; quack determinism with `rollCursor` untouched;
@@ -2591,7 +2591,7 @@ running scope: the sections below.
 
 ### M62 — Fixes & Duck stagecraft
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-27. **Purify heals nothing** (the heal formula's magic/2 term had
   leaked through every Purify cast since M43 — invisible to the old
   full-HP test board; the v13 case uses a wounded one): battle rules
@@ -2607,7 +2607,7 @@ running scope: the sections below.
 
 ### M63 — Class level milestones
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-27. Every class picks 1 of 2 permanent bonuses at levels 10/20/30:
   `data/milestones.json` v1 (the 54 owner-approved entries, verbatim) with a
   37-value `MilestoneEffect` enum, loader semantics (tier/option), and
@@ -2626,7 +2626,7 @@ running scope: the sections below.
 
 ### M64 — Scroll learning + Party panel
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-27. `grantsSkill` finally works (the three shipped scrolls were
   inert since M2 — no code consumed the field): `Character.extraSkills`
   (optional save field, defensive drops), `game/Scrolls.hpp`
@@ -2643,7 +2643,7 @@ running scope: the sections below.
 
 ### M65 — Town puzzle map
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-27. Secret Map Pieces (≤1 per dungeon, ~10% seeded by a PURE
   seed hash — every other roll of a seed byte-identical; **generation
   11 → 12**) fill a four-quadrant HoMM2-style parchment on the new town
@@ -2664,7 +2664,7 @@ running scope: the sections below.
 
 ### M66 — Dungeon treasure map + curios
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-27. ~12% of dungeons hide a cyan CHART whose reading immediately
   reveals a buried treasure elsewhere in the SAME dungeon (a gold X on the
   minimap + a HUD chip; single-use, live-run only; **generation 12 → 13**,
@@ -2685,7 +2685,7 @@ running scope: the sections below.
 
 ## M67 — UI polish & the boss-return fix (owner feedback, 2026-07-28)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-28. The owner's manual-pass feedback batch: **class portraits**
   (one `ui::drawActorPortrait` helper reusing the existing
   `actor.<classId>.battle` sprites — no new assets) in the party panel's
@@ -2711,7 +2711,7 @@ running scope: the sections below.
 
 ## M68 — Battle spoils & party-relative threat (owner feedback, 2026-07-28)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-28. Two owner asks: (1) an FF1-PR-inspired **victory results
   panel** — XP/gold plus a per-member level-up diff (stat gains, new
   skills) — riding the battle's existing Done beat, dismissed by the same
@@ -2734,7 +2734,7 @@ running scope: the sections below.
 
 ## M69 — Town exteriors (owner feedback, 2026-07-29)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-29. The five service buildings draw real 48×32 **facades**
   (per-service roofs, lit windows, emblem pennants, the door integrated
   into the middle tile) over their Building blocks, and the old
@@ -2751,7 +2751,7 @@ running scope: the sections below.
 
 ## M70 — Separate CRT Strength and CRT Curvature (owner brief, 2026-07-29)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-29 to the owner's detailed spec. `settings.crtCurvature`
   (optional field, default **0.3**, no version bump — a pre-M70
   strength-7 file loads as Strength 7 / Curvature 3, keeping the texture
@@ -2772,7 +2772,7 @@ running scope: the sections below.
 
 ## M71 — The victory celebration (owner feature, 2026-07-29)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-29. A new presentation-only **CelebrationState**: the
   "Victory!" plaque, the score alone in large gold (no breakdown),
   falling confetti, the party jumping each to their own rhythm and
@@ -2797,7 +2797,7 @@ running scope: the sections below.
 
 ## M72 — Party panel reflow (owner report, 2026-07-30)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-30. The owner's Lv.99 screenshots showed the M64/M67 detail
   panel clipping at its true worst case (three chosen milestones — the
   Martyr description ran off the edge; the skills list truncated
@@ -2814,7 +2814,7 @@ running scope: the sections below.
 
 ## M73 — Enemy & boss sprite art pass (owner brief, 2026-07-30)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-30. An art pass over **all 67 PNGs** under
   `assets/textures/enemies/`. The owner's diagnosis was that every sprite was
   built by calling `Ell`/`FR` primitives blind and never looked at at
@@ -2851,7 +2851,7 @@ running scope: the sections below.
 
 ## M74 — Crystal Mine ambience: no birds underground (owner report, 2026-07-31)
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved by the owner 2026-08-05) — implemented
   2026-07-31. The owner reported that the Crystal Mine ambience still sounded
   like it had birds in it, and asked for echoes of falling rocks and broken
   crystals instead, non-intrusive. **Not a wiring bug** — the mine bed has no

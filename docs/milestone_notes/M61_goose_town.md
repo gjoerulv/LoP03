@@ -8,7 +8,7 @@ concept — the geese scaring the King — was verified already shipped in M58
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — set 2026-07-25. Evidence in §F.
+**☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-25. Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -205,4 +205,4 @@ best-turns record; the two fights are a no-heal gauntlet.
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-05)`

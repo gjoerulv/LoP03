@@ -5,7 +5,7 @@ Implemented 2026-07-27.
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — set 2026-07-27. Evidence in §E.
+**☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-27. Evidence in §E.
 
 ## B. Goal (owner brief + audit finding)
 
@@ -76,4 +76,4 @@ treasure scrolls will use.
 
 ## H. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-05)`

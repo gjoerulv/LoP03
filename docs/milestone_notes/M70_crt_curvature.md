@@ -7,7 +7,7 @@ Implemented 2026-07-29.
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — set 2026-07-29. Evidence in §E;
+**☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-29. Evidence in §E;
 the required window-level visual review (§F) is owner work.
 
 ## B. As implemented
@@ -111,4 +111,4 @@ review matrix is owner work:
 
 ## G. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-05)`

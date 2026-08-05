@@ -9,7 +9,7 @@ is `docs/technical_design.md` §17.
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — set 2026-07-25. Evidence in §F.
+**☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-25. Evidence in §F.
 Only the owner may set `complete (approved)` after manually driving the tool.
 
 ## B. Goal
@@ -198,5 +198,5 @@ zero game-behavior change, and no version bumps.
 
 ## J. Final status
 
-`implemented, awaiting manual approval` — M60 (sim lab, battle observer,
+`complete (approved 2026-08-05)` — M60 (sim lab, battle observer,
 test runner) continues next under the same approved plan.

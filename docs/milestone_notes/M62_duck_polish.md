@@ -7,7 +7,7 @@ M59–M61 (base checkout `6a39693` + the uncommitted M61 delta).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — set 2026-07-27. Evidence in §E.
+**☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-27. Evidence in §E.
 
 ## B. Scope (owner brief)
 
@@ -117,4 +117,4 @@ addressed limitations).
 
 ## H. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-05)`

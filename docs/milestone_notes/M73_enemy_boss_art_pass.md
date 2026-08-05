@@ -1,6 +1,6 @@
 # M73 — Enemy & boss sprite art pass (owner brief, 2026-07-30)
 
-> Status: **implemented, awaiting manual approval.**
+> Status: **complete (approved by the owner 2026-08-05).**
 > Scope: every PNG under `assets/textures/enemies/` (67 sprites) plus the
 > authoring mechanism that produces them. Party sprites, environments, props
 > and UI are explicitly out of scope and are verified byte-identical.
@@ -238,4 +238,4 @@ Automated tests cannot judge art. These are the checks that matter:
 
 ## 10. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-05)`

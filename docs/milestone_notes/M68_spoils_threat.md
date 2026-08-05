@@ -8,7 +8,7 @@ in-session Q&A.
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — set 2026-07-28. Evidence in §E.
+**☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-28. Evidence in §E.
 
 ## B. Scope (owner brief)
 
@@ -126,4 +126,4 @@ changes; no data-file changes.
 
 ## H. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-05)`
