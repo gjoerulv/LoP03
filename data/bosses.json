@@ -216,7 +216,6 @@
       "attackStatuses": [
         { "type": "attack_down", "magnitude": 15, "duration": 2 }
       ],
-      "immuneToAfflictions": true,
       "initialStatuses": [
         { "type": "reflect", "duration": 3 }
       ],
@@ -224,6 +223,7 @@
         { "when": "every_nth_own_turn", "threshold": 4, "do": "status_all_foes", "status": "stunned", "duration": 2, "text": "The Duck serves the whole party their final notice. Everything stops." },
         { "when": "every_nth_hit_taken", "threshold": 12, "do": "status_all_foes", "status": "sleep", "duration": 1, "text": "A blizzard of impossibly soft down bursts loose. The whole party drifts off." }
       ],
+      "statusImmunities": ["poison", "confusion", "silence", "blind", "terrified", "stunned", "sleep"],
       "noStunWhileAllFoesSleep": true,
       "immuneToStatScale": true,
       "telegraph": "The Deadly Duck surfaces without a single ripple. The pond pretends not to notice.",

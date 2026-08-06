@@ -387,9 +387,11 @@ true final fight, a **no-heal gauntlet**:
    every effective stat, at **5000 effective HP**. His basic attack strikes
    the **whole party** and saps it (ATK-down; the old poison rider retired
    in M77 — under v15 poison scaling his Magic made it a silent
-   ~520-a-round death sentence). He is **immune to every affliction** and,
-   since **M77**, to the **Deadly Spoon** — his one former counterplay
-   closes. Instead he opens **behind a mirror** (Mirrorbreak's marquee
+   ~520-a-round death sentence). He is **immune to every affliction but
+   one** — since **M77** (owner decision) a **Curse slips through the
+   feathers**, so the Evil Duckling finally has its worthy target — and
+   immune to the **Deadly Spoon**, his one former counterplay
+   closed. Instead he opens **behind a mirror** (Mirrorbreak's marquee
    target), serves the whole party a stunning **Final Notice** every 4th of
    his own turns (his sweep the same turn supplies the damage — the
    Tax-Sheet effect returned to sender), and every **12th blow the party

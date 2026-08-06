@@ -359,6 +359,10 @@ TEST_CASE("offense: the Duck shrugs the Spoon, starts mirrored, minds his manner
     const content::ItemDef* spoon = db().findItem("deadly_spoon");
     REQUIRE(spoon != nullptr);
     CHECK_FALSE(battle::itemAffects(b, duck, *spoon));  // the caller keeps it
+    // The owner's 2026-08-06 decision: exactly one affliction slips through
+    // the feathers — a Curse — so the Evil Duckling has its worthy target.
+    CHECK_FALSE(battle::isImmuneTo(d, content::StatusType::Curse));
+    CHECK(battle::isImmuneTo(d, content::StatusType::Poison));
 
     // Manners: while the whole party sleeps, his fourth-turn Final Notice
     // passes politely (the every-Nth beat is missed, not banked)...

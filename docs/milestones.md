@@ -2989,11 +2989,12 @@ derives from committed seeds or pure hashes — no new RNG streams.
   amendments (the AI's all-enemies support gate; trigger-stun manners),
   both provably unreachable by pre-M77 content — no version bump, offered
   for veto in note §E.1. **Goose gauntlet re-proved WITHOUT the Spoon:
-  3/5 seeds fall** to the obtainable M76 counterplay (losses die at
-  26–30%); King bars re-proved (unaided still loses, relics still win).
-  Offered for owner decision, not shipped: one chink — Curse — in the
-  Duck's immunity (3/5 → softer; the Evil Duckling would finally matter
-  against him), note §E.4. Full evidence in the note §F.
+  3/5 seeds fall** to the obtainable M76 counterplay; King bars re-proved
+  (unaided still loses, relics still win). **Owner-approved 2026-08-06:
+  the Duck is cursable** — one chink in his affliction immunity
+  (`statusImmunities` minus Curse), so the Evil Duckling finally matters
+  against him and the battery's losses soften to 5–12% remaining, note
+  §E.4. Full evidence in the note §F.
 - **Goal:** the roster uses v15 — MP-damaging attacks, Reflect starters,
   cursers, party-wide sleepers; the King's rework (sleep-all,
   damage+stun, sleep+damage, spare-the-sleeping targeting, a minion that

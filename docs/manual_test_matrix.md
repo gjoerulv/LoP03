@@ -41,7 +41,8 @@ The older rows below are retained as historical baseline evidence and are **not*
 > Monarch, Deep King, Sand Warlord, Abyssal Tyrant), the King's rework
 > (5th-turn cradle-song, Decree/Verdict, spares sleepers, the Stave's
 > mirror), the Duck's rework (opens mirrored, 4th-turn Final Notice,
-> 12th-hit Duck Down, Spoon refused, poison rider retired), Dark
+> 12th-hit Duck Down, Spoon refused, poison rider retired, and — owner
+> decision 2026-08-06 — **cursable**, the one affliction that lands), Dark
 > weaknesses (Wisp / Crystal Guardian / Throne Blade / Crystal Sorcerer),
 > and every telegraph rewritten flavor-only. Older rows' King/Duck kit
 > and telegraph expectations are superseded; the M77 note §G is the

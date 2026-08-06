@@ -77,7 +77,10 @@ TEST_CASE("goose town: the gauntlet teams land the owner-specified numbers", "[g
     REQUIRE(theDuck.maxHp == 5000);
     REQUIRE(theDuck.attackHitsAll);
     REQUIRE_FALSE(theDuck.attackStatuses.empty());
-    REQUIRE(theDuck.afflictionImmune);
+    // M77 (owner decision 2026-08-06): the blanket flag became a bespoke list
+    // with exactly one chink — a Curse lands, everything else still bounces.
+    REQUIRE_FALSE(theDuck.afflictionImmune);
+    REQUIRE(theDuck.statusImmunities.size() == 7);
     REQUIRE(theDuck.counterAttack);
     REQUIRE(theDuck.thornsPct > 0);
     REQUIRE(theDuck.spellWardPct > 0);
@@ -172,15 +175,17 @@ TEST_CASE("goose town: the quack roll is deterministic and only for authored foe
     REQUIRE(wave.rollCursor == 0);  // the roll never touches the seeded stream
 }
 
-TEST_CASE("goose town: afflictions bounce off the Duck, debuffs land", "[goose]") {
+TEST_CASE("goose town: afflictions bounce off the Duck, a Curse does not", "[goose]") {
     Party party = maxedParty();
     battle::Battle b = battle::buildBattle(party, duckTeam(db()), db());
     const int duckIndex = static_cast<int>(b.units.size()) - 1;
     battle::Combatant& duck = b.units[static_cast<std::size_t>(duckIndex)];
-    REQUIRE(duck.afflictionImmune);
 
     // Statuses applied through the shared chokepoint: afflictions are refused,
-    // stat debuffs stick ("immune to every bad status but can be debuffed").
+    // stat debuffs stick ("immune to every bad status but can be debuffed") —
+    // and since M77 (owner decision 2026-08-06) exactly ONE affliction slips
+    // through the feathers: a Curse. The Evil Duckling finally has a worthy
+    // target.
     const content::SkillDef* venom = db().findSkill("venom_mist");
     const content::SkillDef* weaken = db().findSkill("weaken");
     REQUIRE(venom != nullptr);
@@ -191,10 +196,16 @@ TEST_CASE("goose town: afflictions bounce off the Duck, debuffs land", "[goose]"
         b.useSkill(1, duckIndex, *weaken);
         CHECK(battle::hasStatus(duck, weaken->statusEffect));
     }
+    const content::ItemDef* duckling = db().findItem("evil_duckling");
+    REQUIRE(duckling != nullptr);
+    b.useItem(0, duckIndex, *duckling);  // an item never bounces off his mirror
+    CHECK(battle::isCursed(duck));
     // The immunity queries agree (display sites skip what cannot land).
     CHECK(battle::isImmuneTo(duck, content::StatusType::Stunned));
     CHECK(battle::isImmuneTo(duck, content::StatusType::Terrified));
     CHECK(battle::isImmuneTo(duck, content::StatusType::Confusion));
+    CHECK(battle::isImmuneTo(duck, content::StatusType::Sleep));
+    CHECK_FALSE(battle::isImmuneTo(duck, content::StatusType::Curse));
     CHECK_FALSE(battle::isImmuneTo(duck, content::StatusType::AttackDown));
 }
 
@@ -238,7 +249,8 @@ namespace {
 struct GooseKit {
     int elixirs = 6;
     int tears = 2;
-    int taxes = 2;  // Holy Taxes (M76): the item-side curse remover
+    int taxes = 2;      // Holy Taxes (M76): the item-side curse remover
+    int ducklings = 1;  // the Evil Duckling (M76): one per customer, duck rules
 };
 
 bool knowsSkill(const battle::Combatant& c, const char* id) {
@@ -255,6 +267,7 @@ battle::Outcome runGooseFight(battle::Battle& b, GooseKit& kit, int* roundsOut =
     const content::ItemDef* elixir = db().findItem("elixir");
     const content::ItemDef* tear = db().findItem("phoenix_tear");
     const content::ItemDef* holyTaxes = db().findItem("holy_taxes");
+    const content::ItemDef* duckling = db().findItem("evil_duckling");
     const content::SkillDef* mirrorbreak = db().findSkill("mirrorbreak");
     const content::SkillDef* absolve = db().findSkill("absolve");
     REQUIRE(elixir != nullptr);
@@ -326,6 +339,13 @@ battle::Outcome runGooseFight(battle::Battle& b, GooseKit& kit, int* roundsOut =
                            battle::mpCostFor(self, *mirrorbreak) <= self.mp &&
                            battle::canCast(self, *mirrorbreak)) {
                     b.useSkill(actor, mirrored, *mirrorbreak);
+                    spent = true;
+                } else if (boss >= 0 && kit.ducklings > 0 && duckling != nullptr &&
+                           !battle::isCursed(b.units[static_cast<std::size_t>(boss)])) {
+                    // The owner's 2026-08-06 chink: the Duck is cursable, so
+                    // the one held duckling goes straight at him.
+                    --kit.ducklings;
+                    b.useItem(actor, boss, *duckling);
                     spent = true;
                 } else if (kit.elixirs > 0 && weakest >= 0 && hpPct(weakest) < 35) {
                     --kit.elixirs;

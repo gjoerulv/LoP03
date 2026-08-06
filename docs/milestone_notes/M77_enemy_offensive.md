@@ -82,6 +82,11 @@ schemas untouched.
   (§E) — while the whole party sleeps, the Notice's beat passes politely.
 - His sweep rider is now **ATK-down only** — the old poison rider is
   retired (§E, the load-bearing balance deviation).
+- **One chink in the feathers (owner decision 2026-08-06): a Curse
+  lands.** His M61 blanket `immuneToAfflictions` became a bespoke
+  `statusImmunities` list covering everything EXCEPT Curse, so the Evil
+  Duckling finally has its worthy target — fight duck with duck. Every
+  other affliction still bounces; stat debuffs still land.
 - One goose curses the whole party (**Hexwing's Grudge**); the Trickster
   starts mirrored.
 
@@ -145,14 +150,14 @@ lexicon ("below half", "silence it first", "guard the first strike"…).
    content to v15 rules; if the owner wants poison back in some form, it
    needs a different vehicle (say, a goose) — the Duck's own Magic makes
    any poison of his lethal.
-4. **Offered for owner decision, NOT shipped: one chink — Curse — in the
-   Duck's affliction immunity.** Measured: with the Duck cursable, the
-   Evil Duckling finally matters against its archnemesis (comedy included)
-   and the battery improves to 3/5 with softer losses (5–12% remaining).
-   Shipped as-is his blanket immunity is intact per the M61 rule and the
-   duckling stays useless against him specifically. One word approves the
-   chink; it is a one-line schema-driven change (`statusImmunities` minus
-   curse) plus battery/test updates.
+4. **The Curse chink — offered 2026-08-05, owner-approved and shipped
+   2026-08-06** ("Curse (Evil Duckling) should work on the Deadly Duck.
+   Everything else stays as-is."). The Duck's blanket
+   `immuneToAfflictions` became a `statusImmunities` list covering
+   everything except Curse — schema-driven, no engine motion. The battery
+   confirms the measured profile: 3/5 seeds win and the losses die at
+   5–12% Duck HP (vs 26–30% without the chink); the gauntlet script
+   spends its one held duckling on him the moment the fight opens.
 5. The Duck-gauntlet battery's "obtainable kit" is now: Mirrorbreak and
    Absolve casts, Holy Taxes ×2, elixirs ×6, phoenix tears ×2, plus
    shield-bash/hamstring debuff upkeep — all currently obtainable; the
@@ -167,7 +172,8 @@ lexicon ("below half", "silence it first", "guard the first strike"…).
 - **Full Debug suite: 654/654 tests green** (13 new `[offense]` cases).
 - **Capture lint: 85/85 scenes clean.**
 - **Goose gauntlet battery: 3/5 seeds clear the full gauntlet** (wave
-  5/5); the two losses die at 26–30% Duck HP. Seeds recorded in the test.
+  5/5); with the 2026-08-06 curse chink the two losses die at **5–12%**
+  Duck HP (26–30% before it). Seeds recorded in the test.
 - **King bars re-proved** (L99 maxed party): unaided **loses in 17
   rounds**; the modest relic plan (1 Tax Sheets + 1 Evil Goose + snacks
   + a Mirrorbreak for the Stave's mirror) **wins in 21 rounds with one
@@ -204,9 +210,10 @@ lexicon ("below half", "silence it first", "guard the first strike"…).
 2. **The Duck.** He opens mirrored; Final Notice on his 4th/8th/… turns
    (all stunned + swept); the down-blizzard when your 12th blow lands;
    the Deadly Spoon is refused ("utterly unmoved" / kept in the bag); no
-   Notice while the whole party sleeps. Judge whether the fight is a
-   knife's-edge or a wall — and whether the Duck should be cursable
-   (§E.4, recommended).
+   Notice while the whole party sleeps. **Use the Evil Duckling on him**:
+   the CRS chip lands (your approved chink — his sweeps halve while it
+   holds) and the punchline rides the quip line; every other affliction
+   still bounces. Judge whether the fight is a knife's-edge or a wall.
 3. **Town bosses, spot-checks:** Crystal Sorcerer (town 1: opens mirrored,
    weak to Shadow Strike's Dark); Frost Monarch (mirror at half); Obsidian
    Colossus (your 4th hit rings back — attacker stunned); Sand Warlord

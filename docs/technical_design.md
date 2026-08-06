@@ -2222,8 +2222,13 @@ rider is now ATK-down only (M77 note §E.3, with the tuning ladder).
 
 Battery architecture: the goose gauntlet (`tests/test_goose_town.cpp`)
 now scripts BOTH fights with the obtainable M76 counterplay (Mirrorbreak
-casts, Absolve, Holy Taxes, debuff upkeep, elixirs/tears in one shared
-bag) since the Deadly Spoon is closed; the King hook
-(`tests/test_royal_relics.cpp`) learned Mirrorbreak for the Stave's
-mirror. Skill pin 65 → 72.
+casts, Absolve, Holy Taxes, the one held Evil Duckling straight at the
+boss, debuff upkeep, elixirs/tears in one shared bag) since the Deadly
+Spoon is closed; the King hook (`tests/test_royal_relics.cpp`) learned
+Mirrorbreak for the Stave's mirror. Skill pin 65 → 72.
+
+The Duck's blanket `immuneToAfflictions` became a bespoke
+`statusImmunities` list (owner decision 2026-08-06): every affliction
+except **Curse** — the first shipped use of the M75 per-status list, the
+Dragon's (M85) precedent.
 
