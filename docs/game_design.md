@@ -780,6 +780,25 @@ threat below is deterministic and announces itself with an authored line:
   flavor-only (no thresholds, no "silence it first"); the fight teaches
   itself, and a lint test keeps the coaching out.
 
+**Inventory caps & the premium shelf (M78).** Consumables stop being a
+stockpile: shops sell a party only so many of each.
+
+- **Every consumable caps at 2 held** — with two authored exceptions,
+  **Potion 9** and **Hi-Potion 6**. Equipment, relics and scrolls are
+  uncapped. The check is **at the till only**: chests, events and rewards
+  still grant freely, and a save already holding more than a cap keeps
+  every one of them — it is simply refused further purchases. At-cap shop
+  rows read `x2 MAX` and refuse with the reason.
+- A later town-milestone perk (M84) may raise every cap by 1 per rank,
+  against a **hard ceiling of 9** — Potion simply stays 9.
+- **Elixir and Hi-Ether left the town shelves for good.** The in-dungeon
+  merchant is now their only seller — and asks **exactly full value**
+  (400g / 500g) where its other wares keep the usual street discount; its
+  prompt says "(full price)" so nobody mistakes the deal. Chest finds are
+  unchanged.
+- The shop lists' owned-count and price columns finally sit in clean
+  vertical lines (both shops, one shared fix).
+
 ## 11. Bosses
 
 One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1

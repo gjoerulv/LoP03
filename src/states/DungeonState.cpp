@@ -16,6 +16,7 @@
 #include "game/BossDrops.hpp"
 #include "game/Curios.hpp"      // M66: buried-treasure curio awards
 #include "game/Milestones.hpp"  // M63: gold bonus + pending-choice prompt
+#include "game/ItemCaps.hpp"
 #include "game/Party.hpp"
 #include "game/Relics.hpp"  // the M44 relic grant (seeded, reload-proof)
 #include "game/WorldLadder.hpp"
@@ -490,16 +491,28 @@ void DungeonState::resolveEvent() {
             message_ = "The spring's water restores the party. It runs dry.";
             break;
         case dungeon::RoomEventKind::Merchant: {
-            if (context_.party.gold < ev.goldCost) {
+            const content::ItemDef* it = context_.content.findItem(ev.itemId);
+            // M78: a premium tonic costs full value (the generated street
+            // price is untouched — interaction-time pricing, the peddler
+            // precedent), and a full bag refuses the sale WITHOUT spending
+            // the merchant, so the party may use an item and come back.
+            const int price = it != nullptr ? merchantPriceFor(*it, ev.goldCost) : ev.goldCost;
+            if (it != nullptr && !canBuyMore(context_.party.inventory, *it)) {
                 context_.audio.play(Sfx::Error);
-                message_ = "The merchant wants " + std::to_string(ev.goldCost) +
+                message_ = "You cannot carry more of " + it->name +
+                           " (max " + std::to_string(capFor(*it)) + "). The merchant waits.";
+                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                return;
+            }
+            if (context_.party.gold < price) {
+                context_.audio.play(Sfx::Error);
+                message_ = "The merchant wants " + std::to_string(price) +
                            "g - you cannot pay.";
                 messageTimer_ = scaledMessageTime(context_, 2.5f);
                 return;
             }
-            context_.party.gold -= ev.goldCost;
+            context_.party.gold -= price;
             context_.party.inventory.add(ev.itemId, 1);
-            const content::ItemDef* it = context_.content.findItem(ev.itemId);
             context_.audio.play(Sfx::Interact);
             message_ = "Bought " + (it != nullptr ? it->name : ev.itemId) +
                        ". The merchant moves on.";
@@ -639,12 +652,20 @@ std::string DungeonState::eventPromptText() const {
         case dungeon::RoomEventKind::Merchant: {
             const content::ItemDef* it = context_.content.findItem(ev.itemId);
             const std::string name = it != nullptr ? it->name : ev.itemId;
-            if (context_.party.gold < ev.goldCost) {
-                return "Merchant sells " + name + " for " + std::to_string(ev.goldCost) +
+            // M78: the prompt quotes what the till will actually charge — a
+            // premium tonic at full value, everything else at street price.
+            const int price = it != nullptr ? merchantPriceFor(*it, ev.goldCost) : ev.goldCost;
+            const bool premium = it != nullptr && it->notSoldInTown;
+            if (it != nullptr && !canBuyMore(context_.party.inventory, *it)) {
+                return "Merchant sells " + name + " - you cannot carry more (max " +
+                       std::to_string(capFor(*it)) + ").";
+            }
+            if (context_.party.gold < price) {
+                return "Merchant sells " + name + " for " + std::to_string(price) +
                        "g - you cannot pay.";
             }
             return input::prompt(map, InputAction::Confirm, device, "Buy " + name) + " for " +
-                   std::to_string(ev.goldCost) + "g (dungeon prices)";
+                   std::to_string(price) + (premium ? "g (full price)" : "g (dungeon prices)");
         }
         case dungeon::RoomEventKind::ScoreWager:
             return input::prompt(map, InputAction::Confirm, device, "Accept the omen's wager") +

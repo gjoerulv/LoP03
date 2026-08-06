@@ -601,6 +601,25 @@ void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleR
     const int count = window.visibleCount(total, visibleRows);
     const int suffixFont = suffixFontSize > 0 ? suffixFontSize : fontSize;
 
+    // M78: a suffix containing '\t' is drawn as TWO right-aligned columns
+    // (owned count | price), each sized to the MENU's widest entry, so the
+    // columns line up vertically across every row — the old single-string
+    // space padding never did in a proportional font. Widths are taken over
+    // the whole menu, not the visible window, so scrolling cannot shift them.
+    int leftColW = 0;
+    int rightColW = 0;
+    for (const MenuItem& it : items) {
+        const std::size_t tab = it.suffix.find('\t');
+        if (tab == std::string::npos) {
+            continue;
+        }
+        leftColW = std::max(leftColW,
+                            measureWidth(it.suffix.substr(0, tab).c_str(), suffixFont));
+        rightColW = std::max(rightColW,
+                             measureWidth(it.suffix.substr(tab + 1).c_str(), suffixFont));
+    }
+    constexpr int kColGap = 8;
+
     for (int row = 0; row < count; ++row) {
         const MenuItem& item = items[static_cast<std::size_t>(first + row)];
         const int rowY = y + row * itemHeight;
@@ -614,7 +633,24 @@ void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleR
         }
         // The suffix column is reserved first; the label takes what is left.
         int labelWidth = maxLabelWidth;
-        if (!item.suffix.empty()) {
+        const std::size_t tab = item.suffix.find('\t');
+        if (tab != std::string::npos) {
+            const std::string left = item.suffix.substr(0, tab);
+            const std::string right = item.suffix.substr(tab + 1);
+            const Color sc = item.enabled ? suffixColor : disabled;
+            const int sy = rowY + (fontSize - suffixFont);
+            drawTextRaw(right.c_str(),
+                        x + maxLabelWidth - measureWidth(right.c_str(), suffixFont), sy,
+                        suffixFont, sc);
+            drawTextRaw(left.c_str(),
+                        x + maxLabelWidth - rightColW - kColGap -
+                            measureWidth(left.c_str(), suffixFont),
+                        sy, suffixFont, sc);
+            labelWidth = maxLabelWidth - leftColW - rightColW - kColGap - 6;
+            if (labelWidth < 8) {
+                labelWidth = 8;
+            }
+        } else if (!item.suffix.empty()) {
             const int suffixWidth = measureWidth(item.suffix.c_str(), suffixFont);
             labelWidth = maxLabelWidth - suffixWidth - 6;
             if (labelWidth < 8) {

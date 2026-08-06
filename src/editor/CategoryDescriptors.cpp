@@ -297,6 +297,8 @@ std::vector<FieldDesc> itemDescs() {
         num("value", "Value (gold)", 0, 99999, 10),
         num("minTown", "Min Town", 1, 7, 1, 1),
         num("maxTown", "Max Town", 0, 7),
+        num("maxHeld", "Max Held (M78)", 0, 9),
+        bl("notSoldInTown", "Not Sold In Town (M78)"),
         en("effect", "Effect", ids(content::consumableEffectIds())),
         num("effectAmount", "Effect Amount", 0, 9999),
         bl("curesDebuffs", "Cures Debuffs"),

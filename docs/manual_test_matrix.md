@@ -32,6 +32,14 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M78 update:** inventory caps & shop UX — consumables cap at 2 held
+> (Potion 9, Hi-Potion 6), enforced at purchase only (`x2 MAX` rows, no
+> clamping of old saves); Elixir/Hi-Ether gone from town item shops and
+> sold by the dungeon merchant at full value "(full price)"; the shops'
+> owned-count/price columns aligned. Older rows' shop-stock expectations
+> (elixir on town shelves) are superseded; the M78 note §G is the
+> checklist.
+>
 > **M77 update:** the enemy offensive — the v15 statuses in enemy hands.
 > New expectations: MP-draining foes (Hex Wisp / Void Weaver / Soul
 > Render), opening mirrors (Rune Sentry, Goose Trickster, Crystal

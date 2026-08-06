@@ -2232,3 +2232,38 @@ The Duck's blanket `immuneToAfflictions` became a bespoke
 except **Curse** — the first shipped use of the M75 per-status list, the
 Dragon's (M85) precedent.
 
+## 32. M78 — inventory caps & shop UX
+
+No version motion of any kind. Two optional validated `ItemDef` fields —
+`maxHeld` (1..9, consumables only; 0 = the type default) and
+`notSoldInTown` (consumables only) — and one pure helper header,
+`game/ItemCaps.hpp` (the ItemShopFilter shape): `capFor(def, capBonus)` /
+`canBuyMore(inventory, def, capBonus)` / `merchantPriceFor(def,
+generatedGoldCost)`.
+
+- **Cap policy**: default consumable cap 2 (`kDefaultConsumableCap`),
+  authored exceptions via `maxHeld` (Potion 9, Hi-Potion 6), gear
+  uncapped, `>=` at purchase only, never a clamp. The `capBonus`
+  parameter is M84's town-perk hook against `kConsumableCapCeiling` (9);
+  nothing passes it yet. The Evil Duckling carries no `maxHeld` — the
+  Duckling Peddler's one-per-customer rule (M76) is its cap and would
+  fight a bonus-eligible number.
+- **Gates**: `ItemShopState` (cap refusal outranks the gold refusal; an
+  at-cap row shows `x2 MAX` but stays selectable so its description
+  renders) and the `DungeonState` merchant (a refusal does NOT resolve
+  the event). Audit: no other consumable till exists — the black market
+  and equip shop sell gear, everything else is a grant.
+- **Merchant pricing is interaction-time**: the generated `goldCost`
+  (M37's 75% street price) is untouched — `merchantPriceFor` answers at
+  the till, full value for a `notSoldInTown` tonic, so generation stays
+  byte-identical and `kGenerationVersion` holds at 14 (the M76 peddler
+  precedent; the program's one generation bump stays reserved for M82).
+- **UI**: `drawMenuScrolled` renders a `\t`-split suffix as two fixed
+  right-aligned columns sized over the WHOLE menu (scrolling cannot shift
+  them); tab-free suffixes keep the old path bit-for-bit. Both shops'
+  buy lists moved to the tab shape.
+- **Tests** (`tests/test_item_caps.cpp`, `[caps]`): the cap math, the
+  purchase semantics (overage tolerated, untouched), the pricing rule,
+  the loader validation, and the shipped data (exactly two
+  `notSoldInTown` items; the town shelves clean of them at every town).
+

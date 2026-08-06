@@ -84,8 +84,8 @@
 | 74 | Crystal Mine ambience: no birds underground | ☑ complete (approved) |
 | 75 | Battle rules v15: Reflect, Sleep, Curse & triggers | ☑ complete (approved) |
 | 76 | Counterplay: breaker skills, Holy Taxes, Evil Duckling | ☑ complete (approved) |
-| 77 | Enemy & boss offensive pass | ◑ implemented, awaiting manual approval |
-| 78 | Inventory caps & shop UX | ☐ planned |
+| 77 | Enemy & boss offensive pass | ☑ complete (approved) |
+| 78 | Inventory caps & shop UX | ◑ implemented, awaiting manual approval |
 | 79 | Input & QoL: party cycling, three-slot remap | ☐ planned |
 | 80 | Event flavor text | ☐ planned |
 | 81 | Arms, elements & icons | ☐ planned |
@@ -2977,8 +2977,9 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M77 — Enemy & boss offensive pass
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-05 on the post-M76 checkout (`e73fed6`). Seven new enemy-side
+- **Status:** ☑ complete (approved) — implemented 2026-08-05/06 on the
+  post-M76 checkout (`e73fed6`); approved and committed by the owner
+  2026-08-06 (incl. the Duck-cursable chink, decided 2026-08-06). Seven new enemy-side
   skills, 20 roster entries, all 14 telegraphs rewritten flavor-only
   (linted); the King's rework (5th-turn cradle-song trigger, Royal
   Decree / Drowsing Verdict, spares sleepers, the Stave mirrors him, the
@@ -3006,7 +3007,17 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M78 — Inventory caps & shop UX
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-06 on the post-M77 checkout (`3b6d816`). Data-driven caps
+  (`maxHeld`: Potion 9, Hi-Potion 6; every other consumable 2; gear
+  uncapped) enforced `>=` at purchase only through the pure
+  `game/ItemCaps.hpp` helper — old saves' overages never clamped; the
+  M84 `capBonus` hook lands inert (ceiling 9). Elixir/Hi-Ether
+  (`notSoldInTown`) off every town shelf; the dungeon merchant sells
+  them at exactly full value, priced at interaction time so generation
+  stays byte-identical (note §E). Both shops' count/price columns
+  aligned via `drawMenuScrolled`'s new tab-split fixed columns. Full
+  evidence in the note §F.
 - **Goal:** purchase-time caps (Potion 9, Hi-Potion 6, other consumables
   2; `>=` checks; overages never clamped; perk hook +1/rank, ceiling 9);
   Elixir/Hi-Ether off the town shelves (dungeon merchant sells them at

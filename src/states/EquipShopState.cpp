@@ -149,9 +149,10 @@ void EquipShopState::rebuild() {
             for (const std::string& id : ids) {
                 const content::ItemDef* it = context_.content.findItem(id);
                 rowIds_.push_back(id);
-                // M52: owned count + price, the item-shop column idiom (M46).
+                // M52: owned count + price, the item-shop column idiom (M46);
+                // M78: tab-split so drawMenuScrolled aligns both columns.
                 items.push_back({it->name, true,
-                                 TextFormat("x%-3d%5dg", context_.party.inventory.count(id),
+                                 TextFormat("x%d\t%dg", context_.party.inventory.count(id),
                                             it->value)});
             }
             break;

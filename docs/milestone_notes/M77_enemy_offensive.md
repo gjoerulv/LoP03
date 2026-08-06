@@ -6,7 +6,8 @@ post-M76 checkout (base commit `e73fed6`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-05.
+**☑ complete (approved)** — implemented 2026-08-05/06; approved and
+committed by the owner 2026-08-06 (including the Duck-cursable chink).
 Evidence in §F; the balance-tuning ladder that produced the shipped numbers
 is recorded in §E.
 
@@ -239,4 +240,4 @@ lexicon ("below half", "silence it first", "guard the first strike"…).
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-06.

@@ -435,6 +435,8 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         d.value = r.optIntMin("value", 0, 0);
         d.minTown = r.optIntMin("minTown", 1, 1);  // M37 (default 1)
         d.maxTown = r.optIntMin("maxTown", 0, 0);  // M43 (default 0 = unbounded)
+        d.maxHeld = r.optIntMin("maxHeld", 0, 0);           // M78 (0 = type default)
+        d.notSoldInTown = r.optBool("notSoldInTown", false);  // M78 (premium tonics)
         d.effect = r.optEnum<ConsumableEffect>("effect", parseConsumableEffect,
                                                ConsumableEffect::None, "consumable effect");
         d.effectAmount = r.optIntMin("effectAmount", 0, 0);
@@ -525,6 +527,17 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         }
         if (d.resistPct > 0 && d.type != ItemType::Equipment && d.type != ItemType::Relic) {
             rep.add(source, ctx, "'resistPct' is only valid on equipment or a relic");
+        }
+        // M78: held-quantity caps and the town-shop delisting are consumable
+        // policies; the cap ceiling is the owner's hard 9.
+        if (d.maxHeld > 0 && d.type != ItemType::Consumable) {
+            rep.add(source, ctx, "'maxHeld' is only valid on a consumable");
+        }
+        if (d.maxHeld > 9) {
+            rep.add(source, ctx, "'maxHeld' must be 1..9 (the cap ceiling is 9)");
+        }
+        if (d.notSoldInTown && d.type != ItemType::Consumable) {
+            rep.add(source, ctx, "'notSoldInTown' is only valid on a consumable");
         }
 
         if (rep.errorCount() != before) {

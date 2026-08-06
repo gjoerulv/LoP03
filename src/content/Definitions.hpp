@@ -269,6 +269,16 @@ struct ItemDef {
     int value = 0;      // gold value (>= 0)
     int minTown = 1;    // per-town gating (M37): stocked/dropped only at town >= minTown
     int maxTown = 0;    // M43: upper end of the town window (0 = unbounded)
+    // M78: how many of this consumable the party may HOLD before shops refuse
+    // to sell another (0 = the type default, kDefaultConsumableCap; see
+    // game/ItemCaps.hpp). Enforced at PURCHASE time only — nothing ever clamps
+    // an existing overage. Validated 1..9, consumables only.
+    int maxHeld = 0;
+    // M78 (owner decision 2026-08-05): a premium tonic town item shops never
+    // stock — but the in-dungeon merchant may still offer it, at FULL value
+    // instead of its usual street discount. Consumables only; chest and
+    // merchant pools (availableAtTown) are untouched.
+    bool notSoldInTown = false;
 
     // Consumable behavior.
     ConsumableEffect effect = ConsumableEffect::None;
