@@ -32,6 +32,14 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M83 update:** map economy — completing a **4-floor** run in town 2+
+> rolls a committed map-piece drop (15%→75% by town; reload-proof); the
+> result screen announces it in gold. With a treasure revealed, drops
+> bank as guild IOUs (max 3, shown on the Maps screen) and pay out after
+> the dig guardian falls. 1-floor runs and town 1 never roll. Capture
+> set is now **91 scenes** (`91_result_map`; `80_puzzle_map` carries the
+> debt line). The M83 note §G is the checklist.
+>
 > **M82 update:** floors — the Guild picker gains **Floors: 1 / 4**; a
 > 4-floor run descends four flat levels (elite "Stairway Wardens" guard
 > the stairs on floors 1–3, the boss waits on 4), one continuous run

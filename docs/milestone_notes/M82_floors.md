@@ -6,8 +6,10 @@ post-M81 checkout (`f2e32c8`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-06.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-06; approved and
+committed by the owner 2026-08-06 (`53ab02f`), including the §E
+decisions (runSeed identity, per-floor map-piece/chart rolls, single
+danger credit for stair gates). Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -155,4 +157,4 @@ separates the two run shapes.
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-06, committed as `53ab02f`.

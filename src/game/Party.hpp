@@ -53,6 +53,10 @@ struct Party {
     int mapPieces = 0;
     TreasureReveal treasure;
     std::vector<std::string> treasureScrollsAwarded;
+    // M83: map pieces EARNED while a treasure already stood revealed (the
+    // 4-floor completion drops) — banked IOUs, cap 3, paid out right after
+    // the treasure-dig guardian falls. Optional save field (old saves -> 0).
+    int mapPiecesOwed = 0;
     // M66: dungeon curios dug up via the single-use treasure maps (see
     // game/Curios.hpp). Optional save field; the Curator achievement fires at
     // the full dozen.

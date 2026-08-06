@@ -2412,3 +2412,28 @@ The program's single generation bump. A run is now a
 - The exact generation pin (test_danger) moved to 15; capture grew to
   **90 scenes** (`89_scoreboard_4f`, `90_dungeon_stairs`).
 
+## 37. M83 — the map economy
+
+No version motion (new logic on the M82 completion event, not a change
+to what a seed generates). All rules are pure functions in
+`game/TreasureMap.hpp`, beside the M65 machinery they extend:
+
+- `mapDropChancePct(town, bonusPct = 0)` — 0 below town 2, else
+  15 + 12·(town−2) capped at 75 (+bonus, total ≤ 100). `bonusPct` is the
+  M84 town-perk hook, inert until authored.
+- `mapDropRolls(runSeed, town, bonus)` — `blackMarketHash` on a fresh
+  salt: committed at entry, reload-proof, statistically pinned (±4 pts /
+  4000 fixed seeds).
+- `grantMapPiece(...)` — the M65 grant rule EXTRACTED (the fourth piece
+  fires the reveal and resets the pouch); `takeMapPiece` and the M83
+  completion drop share it so the paths cannot drift.
+- `bankMapDebt` / `payMapDebt` + `Party::mapPiecesOwed` (optional save
+  field, 0–3, clamped on load): bank caps at 3 (overflow lost, stated);
+  payout after the dig pays what fits (pouch ceiling 3 — a reveal needs
+  a run's town/guard context) and keeps the remainder banked.
+- Wiring: `completeDungeon` (floorCount ≥ 4, town ≥ 2) → the gold
+  `mapLine` on `DungeonResultState` (new optional ctor param, wrapped ≤2
+  lines, counted in the panel height math);
+  `TreasureFightState::finish` appends the payout sentence; MapsState
+  states the debt. Scene `91_result_map` referees the fullest panel.
+

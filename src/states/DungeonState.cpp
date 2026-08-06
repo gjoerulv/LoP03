@@ -523,22 +523,20 @@ void DungeonState::takeMapPiece() {
     dungeon_.mapPieceRoom = -1;
     context_.audio.play(Sfx::Chest);
     Party& p = context_.party;
-    ++p.mapPieces;
-    if (p.mapPieces >= kMapPiecesNeeded) {
-        // The FOURTH piece completes the puzzle: the treasure lies in THIS
-        // run's town, guarded at THIS dungeon's own boss scale (owner rule:
-        // "the same level as the town + depth the final piece was found in").
-        p.mapPieces = 0;
-        p.treasure.active = true;
-        p.treasure.town = dungeon_.town;
-        p.treasure.bossId = treasureGuardBossId(context_.content, dungeon_.seed);
-        p.treasure.scalePct = 100;
-        for (const dungeon::EnemyTeam& t : dungeon_.teams) {
-            if (t.isBoss) {
-                p.treasure.scalePct = t.statScalePct;
-                break;
-            }
+    // The FOURTH piece completes the puzzle: the treasure lies in THIS run's
+    // town, guarded at THIS dungeon's own boss scale (owner rule: "the same
+    // level as the town + depth the final piece was found in"). M83: the
+    // grant rule is shared with the 4-floor completion drop (grantMapPiece),
+    // so the two paths cannot drift apart.
+    int bossScale = 100;
+    for (const dungeon::EnemyTeam& t : dungeon_.teams) {
+        if (t.isBoss) {
+            bossScale = t.statScalePct;
+            break;
         }
+    }
+    if (grantMapPiece(p.mapPieces, p.treasure, dungeon_.town, context_.content, dungeon_.seed,
+                      bossScale)) {
         message_ = TextFormat(
             "The final map piece! The treasure lies buried in Town %d - and something guards it.",
             p.treasure.town);
@@ -1165,6 +1163,42 @@ void DungeonState::completeDungeon() {
         context_.party.inventory.add(drops.legendaryId, 1);
     }
 
+    // M83: a completed 4-FLOOR run in town >= 2 may pay a map piece. The roll
+    // is a pure hash of the RUN seed (committed at entry — reloading the
+    // entry autosave replays the same outcome). While a treasure already
+    // stands revealed, the piece banks as an IOU (cap 3, overflow lost) and
+    // pays out after the dig guardian falls. The line rides the result screen.
+    std::string mapLine;
+    if (dungeon_.floorCount >= 4 && mapDropRolls(dungeon_.runSeed, dungeon_.town)) {
+        Party& p = context_.party;
+        if (p.treasure.active) {
+            if (bankMapDebt(p.mapPiecesOwed)) {
+                mapLine = TextFormat(
+                    "The guild owes you a map piece - dig up the treasure to collect (%d banked).",
+                    p.mapPiecesOwed);
+            } else {
+                mapLine = "The guild would owe you a map piece, but the ledger is full.";
+            }
+        } else {
+            int bossScale = 100;
+            for (const dungeon::EnemyTeam& t : dungeon_.teams) {
+                if (t.isBoss) {
+                    bossScale = t.statScalePct;
+                    break;
+                }
+            }
+            if (grantMapPiece(p.mapPieces, p.treasure, dungeon_.town, context_.content,
+                              dungeon_.runSeed, bossScale)) {
+                mapLine = TextFormat(
+                    "The final map piece! The treasure lies buried in Town %d.",
+                    p.treasure.town);
+            } else {
+                mapLine = TextFormat("The descent pays a Secret Map Piece (%d of %d held).",
+                                     p.mapPieces, kMapPiecesNeeded);
+            }
+        }
+    }
+
     score::ScoreEntry entry;
     entry.score = total;
     entry.battleTurns = summary.battleTurns;
@@ -1203,7 +1237,7 @@ void DungeonState::completeDungeon() {
         context_.party.recordRunDamage = victoryStats_.totalDamage;
     }
     stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total, drops,
-                                                           victoryStats_));
+                                                           victoryStats_, mapLine));  // M83
 
     // M71: a CLEAN run earns the celebration, shown above the reckoning: the
     // score alone, the team jumping to their own beats, the MVP on the

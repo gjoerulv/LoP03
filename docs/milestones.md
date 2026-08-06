@@ -89,8 +89,8 @@
 | 79 | Input & QoL: party cycling, three-slot remap | ☑ complete (approved) |
 | 80 | Event flavor text | ☑ complete (approved) |
 | 81 | Arms, elements & icons | ☑ complete (approved) |
-| 82 | Floors: 1-or-4-floor dungeons | ◑ implemented, awaiting manual approval |
-| 83 | Map economy: 4-floor map-piece drops | ☐ planned |
+| 82 | Floors: 1-or-4-floor dungeons | ☑ complete (approved) |
+| 83 | Map economy: 4-floor map-piece drops | ◑ implemented, awaiting manual approval |
 | 84 | Guild Masters & town milestones | ☐ planned |
 | 85 | The Dragon & curio lore | ☐ planned |
 | 86 | CrystalForge catch-up & version 0.6.0 | ☐ planned |
@@ -3102,8 +3102,9 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M82 — Floors: 1-or-4-floor dungeons
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-06 on the post-M81 checkout (`f2e32c8`). **Generation 14 → 15**
+- **Status:** ☑ complete (approved) — implemented 2026-08-06 on the
+  post-M81 checkout (`f2e32c8`); approved and committed by the owner
+  2026-08-06 (`53ab02f`). **Generation 14 → 15**
   (the program's single bump): the Guild picker gains **Floors: 1 / 4**;
   each floor of a 4-floor run is a standard level from
   `floorSeed(runSeed, i)` (floor 0 IS the run seed — 1-floor output
@@ -3125,7 +3126,20 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M83 — Map economy: 4-floor map-piece drops
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-06 on the post-M82 checkout (`53ab02f`). Completing a
+  **4-floor** run in town ≥ 2 rolls a committed map-piece drop
+  (**15/27/39/51/63/75 %** towns 2–7; a pure hash of the run seed —
+  reload-proof), announced in gold on the result screen. The M65 grant
+  rule was extracted into the shared `grantMapPiece` so the in-dungeon
+  pickup and the completion drop cannot drift. With a treasure revealed,
+  drops bank as guild IOUs (`Party::mapPiecesOwed`, cap 3, new optional
+  save field with a tamper clamp; the Maps screen states the debt) and
+  pay out after the dig guardian falls — clamped so the pouch never
+  overfills, with the remainder staying banked (note §E.1). The +5%
+  M84 perk hook exists as an inert argument. No version motion. Debug
+  **698/698**, Release **694/694**, capture **91/91**
+  (`91_result_map`). Full evidence in the note §F.
 - **Goal:** completing a 4-floor dungeon in town ≥2 rolls a seeded,
   reload-proof map-piece drop (15%→75% by town); with all 4 pieces held,
   drops bank as owed (max 3, `mapPiecesOwed`) and pay out after the

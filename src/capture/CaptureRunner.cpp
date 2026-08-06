@@ -615,6 +615,21 @@ int run(const char* outDir) {
                  s.pushState(std::make_unique<DungeonResultState>(
                      s, c, run, score::computeScore(run), drops));
              }},
+            {"91_result_map",
+             [](StateStack& s, AppContext& c) {
+                 // M83: the fullest breakdown + drops PLUS the longest map-drop
+                 // line (the banked IOU wording at 3), so the panel's tightened
+                 // pitch and the wrapped gold line are overflow-checked.
+                 const score::RunSummary run = maximalRunSummary();
+                 BossDropResult drops;
+                 drops.tokens = 2;
+                 drops.legendary = true;
+                 drops.legendaryId = "titanforged_heart";
+                 s.pushState(std::make_unique<DungeonResultState>(
+                     s, c, run, score::computeScore(run), drops, RunStats{},
+                     "The guild owes you a map piece - dig up the treasure to collect "
+                     "(3 banked)."));
+             }},
             {"33_castle_hub",
              [](StateStack& s, AppContext& c) {
                  // M40: the castle throne hall with a full records panel (earned
@@ -1189,8 +1204,10 @@ int run(const char* outDir) {
              [](StateStack& s, AppContext& c) {
                  // M65: the half-solved puzzle map (two quadrants + status).
                  // Self-contained: scene 82 runs earlier on the same party,
-                 // so its reveal/curios are cleared here.
+                 // so its reveal/curios are cleared here. M83: the guild's IOU
+                 // line rides the status (the longest combined form).
                  c.party.mapPieces = 2;
+                 c.party.mapPiecesOwed = 2;
                  c.party.treasure = TreasureReveal{};
                  c.party.ownedCurios.clear();
                  c.party.treasureScrollsAwarded.clear();

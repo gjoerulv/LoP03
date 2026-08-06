@@ -456,6 +456,20 @@ else**, its skill **learned on the spot** by a chosen member (the M64
 scroll system); once all six are dug up, further treasures pay a legendary
 token and gold. The map then resets — the cycle repeats forever.
 
+**The map economy (M83).** The 4-floor descent feeds the puzzle:
+completing a **4-floor** run in **town 2 or later** rolls a map-piece drop
+whose chance climbs the ladder — **15 % at town 2, +12 points per town, 75
+% at town 7**. The roll is committed the moment the run is entered (a pure
+function of the run seed, like the black market), so reloading the entry
+autosave cannot reroll it; the result screen announces a hit in gold.
+1-floor runs and town 1 never roll; in-dungeon piece finds are unchanged
+and coexist. While a treasure already stands revealed, earned drops
+**bank as IOUs** — the guild owes up to **three**; rolls beyond a full
+ledger are lost, and the line says so — and the debt **pays out the
+moment the dig guardian falls**, jump-starting the next cycle (the payout
+never overfills the pouch; what does not fit stays banked for the next
+dig). The Maps screen states any standing debt.
+
 **The dungeon treasure map + curios (M66).** Similarly rare (~1 dungeon in 8),
 a weathered **chart of the current dungeon** waits in a plain room: reading
 it instantly marks a buried treasure elsewhere in that same run — a gold X

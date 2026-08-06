@@ -1,5 +1,6 @@
 #include "states/TreasureFightState.hpp"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 
@@ -88,13 +89,29 @@ void TreasureFightState::finish(bool won) {
         return;
     }
     p.treasure = TreasureReveal{};  // dug up; a new cycle may begin
+    // M83: the guild's IOUs pay out the moment the dig resolves, jump-starting
+    // the next map cycle. The pouch never exceeds 3 (a fourth piece must come
+    // with a run's town/guard context to fire a reveal), so a payout that
+    // would overfill it pays what fits and KEEPS the rest banked for the next
+    // dig — an IOU is never silently lost.
+    std::string owedNote;
+    if (p.mapPiecesOwed > 0) {
+        const int pay = payMapDebt(p.mapPieces, p.mapPiecesOwed);
+        if (pay > 0) {
+            owedNote =
+                TextFormat(" The guild pays its debt: %d banked map piece%s join the pouch.",
+                           pay, pay == 1 ? "" : "s");
+        } else {
+            owedNote = " The pouch is full; the guild's map-piece debt stands.";
+        }
+    }
     const std::string scrollId = nextTreasureScroll(p.treasureScrollsAwarded);
     if (scrollId.empty()) {
         p.legendaryTokens += kTreasureTokenFallback;
         p.gold += kTreasureGoldFallback;
         resultText_ = TextFormat(
             "The guardian falls! The chest holds riches: +%d gold and +%d legendary token.",
-            kTreasureGoldFallback, kTreasureTokenFallback);
+            kTreasureGoldFallback, kTreasureTokenFallback) + owedNote;
         return;
     }
     pendingScrollId_ = scrollId;
@@ -102,7 +119,7 @@ void TreasureFightState::finish(bool won) {
     const content::ItemDef* item = context_.content.findItem(scrollId);
     resultText_ = "The guardian falls! Buried beneath: " +
                   (item != nullptr ? item->name : scrollId) +
-                  ". Its words fade fast - someone must learn it NOW.";
+                  ". Its words fade fast - someone must learn it NOW." + owedNote;
 }
 
 void TreasureFightState::awardTreasure(int memberIndex) {

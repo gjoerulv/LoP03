@@ -130,6 +130,12 @@ void MapsState::render() {
         line = TextFormat("%d of %d pieces gathered. The sketch takes shape...", shown,
                           kMapPiecesNeeded);
     }
+    // M83: the guild's IOU bank — pieces earned from 4-floor descents while
+    // the treasure stood revealed, paid out after the dig.
+    if (party.mapPiecesOwed > 0) {
+        line += TextFormat("  The guild owes %d piece%s, payable after the dig.",
+                           party.mapPiecesOwed, party.mapPiecesOwed == 1 ? "" : "s");
+    }
     ui::drawTextWrapped(line, 40, mapY + mapH + 10, w - 80, 8, revealed ? p.gold : p.textDim,
                         "maps.status", 2);
 

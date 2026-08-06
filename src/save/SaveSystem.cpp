@@ -87,6 +87,7 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["treasureBossId"] = party.treasure.bossId;
   root["treasureScalePct"] = party.treasure.scalePct;
   root["treasureScrollsAwarded"] = party.treasureScrollsAwarded;    // M65
+  root["mapPiecesOwed"] = party.mapPiecesOwed;                      // M83 (optional; old -> 0)
   root["ownedCurios"] = party.ownedCurios;                          // M66 (optional; old -> none)
   root["storyMet"] = party.storyMet;  // M41 (optional; old -> 0)
   root["encountered"] = party.encountered;             // M42 (optional; old -> empty)
@@ -224,6 +225,10 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   if (loaded.treasure.active && db_.findBoss(loaded.treasure.bossId) == nullptr) {
     loaded.treasure = TreasureReveal{};
   }
+  // M83: the IOU bank clamps to its hard cap (a tampered value degrades, never
+  // crashes — and never overpays).
+  loaded.mapPiecesOwed =
+      std::clamp(rootReader.optIntMin("mapPiecesOwed", 0, 0), 0, kMapPiecesOwedMax);
   for (const std::string& sid : rootReader.optStringArray("treasureScrollsAwarded")) {
     if (db_.findItem(sid) != nullptr &&
         std::find(loaded.treasureScrollsAwarded.begin(), loaded.treasureScrollsAwarded.end(),
