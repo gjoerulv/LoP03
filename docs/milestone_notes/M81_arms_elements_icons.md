@@ -170,9 +170,15 @@ itemId.
   JSONs; second run rewrites **0 files**, 0 content errors.
 - Generator determinism: SHA-256 sweep over all generated PNGs — 196
   pre-existing byte-identical, exactly 11 new icon files.
-- Debug suite / Release build / Release suite / capture sweep: results
-  recorded in the completion report (run after this note was drafted —
-  see §I and the report for the honest totals).
+- Debug suite: **688/688 passed** (VS2022 dev shell, `ctest --preset
+  debug`, after the rebuild that picked up the narrowed elements lint —
+  the pre-rebuild pass honestly failed exactly that one stale case).
+- Release build + suite: **684/684 passed** (`msvc-release`/`release`
+  presets; the smaller count is the usual Debug-only set).
+- Capture sweep: **88/88 scenes clean**, zero overflow — including the
+  new `88_ward_charms` (icons + the "Resists Earth 50%" detail line)
+  and the icon-bearing scenes 09/24/30/63 (equip shop), 27 (black
+  market, relic icon at 2×), 66 (Armory Ghost), 79 (party panel).
 
 ## G. Owner manual validation
 

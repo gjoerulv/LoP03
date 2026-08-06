@@ -88,7 +88,7 @@
 | 78 | Inventory caps & shop UX | ☑ complete (approved) |
 | 79 | Input & QoL: party cycling, three-slot remap | ☑ complete (approved) |
 | 80 | Event flavor text | ☑ complete (approved) |
-| 81 | Arms, elements & icons | ◔ in progress |
+| 81 | Arms, elements & icons | ◑ implemented, awaiting manual approval |
 | 82 | Floors: 1-or-4-floor dungeons | ☐ planned |
 | 83 | Map economy: 4-floor map-piece drops | ☐ planned |
 | 84 | Guild Masters & town milestones | ☐ planned |
@@ -3072,7 +3072,25 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M81 — Arms, elements & icons
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-06 on the post-M80 checkout (`ccb4d2a`). The M75 resist hook
+  gets its content: six 50%-resist **ward charms** (one per element,
+  t2–t4, pure resist — no stat bonus), the **Overwound Pocketwatch**
+  (+200 SPD) and **Motley Aegis** (all-element −50%) legendaries, and
+  five elemental weapons filling t2–t5 (Winterbrand / Stormstring /
+  Quakemaul / Emberfangs / Vigil Lance). Coverage: stone golems and
+  titan guards cast Stone Edge (earth had ZERO dealers), the t6 soul
+  render opens with Inferno, the standard bearer smites. Every gear row
+  leads with a hand-drawn 10×10 category icon (`iconCategory`, 11
+  categories, RNG-free generator section, 196 pre-existing PNGs proven
+  byte-identical) in the equip shop, party panel, black market (2×) and
+  Armory Ghost. **Owner attention: the M48 "no weapon element is ever
+  an immunity" rule was NARROWED** (the plan's Ice/Lightning/Earth
+  weapons meet existing immunities; intrinsic fire/holy basics stay
+  absolute; note §E has the reasoning and the veto path). No version
+  motion (rules v15, generation v14). Debug **688/688**, Release
+  **684/684**, capture **88/88** (`88_ward_charms` new). Full evidence
+  in the note §F.
 - **Goal:** `elementResist` and `iconCategory` equipment fields; six
   per-element 50%-resist accessories plus legendary +200 SPD and
   all-element −50% accessories; new Fire/Ice/Lightning/Earth/Holy weapons
