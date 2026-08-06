@@ -47,6 +47,7 @@
 #include "states/GuildPerkChoiceState.hpp"
 #include "states/MilestoneChoiceState.hpp"
 #include "game/Curios.hpp"
+#include "game/Story.hpp"  // M85: kDragonJesterBeat
 #include "states/MapsState.hpp"
 #include "states/PartyState.hpp"
 #include "states/TreasureFightState.hpp"
@@ -669,14 +670,38 @@ int run(const char* outDir) {
             {"33_castle_hub",
              [](StateStack& s, AppContext& c) {
                  // M40: the castle throne hall with a full records panel (earned
-                 // title) to overflow-check the hub layout.
+                 // title) to overflow-check the hub layout. M85: the panel grew
+                 // the Dragon row and the menu the Dragon option — fullest here.
                  c.party.castleUnlocked = true;
                  c.party.castleRecords.bossRushBestTurns = 44;
                  c.party.castleRecords.endlessBestWave = 17;
                  c.party.castleRecords.kingDefeated = true;
                  c.party.castleRecords.kingBestTurns = 18;
                  c.party.castleRecords.kingTitle = kKingTitle;
+                 c.party.castleRecords.dragonBestTurns = 41;  // M85
                  s.pushState(std::make_unique<CastleState>(s, c));
+             }},
+            {"96_curio_lore",
+             [](StateStack& s, AppContext& c) {
+                 // M85: the Maps screen's inspect panel on the longest lore
+                 // entry, with the whole collection owned so the grid shows
+                 // every name under the cursor styling.
+                 for (const CurioDef& cd : kCurios) {
+                     c.party.ownedCurios.push_back(cd.id);
+                 }
+                 auto st = std::make_unique<MapsState>(s, c);
+                 st->captureInspect(0);  // Crown Shard: the longest body
+                 s.pushState(std::move(st));
+             }},
+            {"97_dragon_jester",
+             [](StateStack& s, AppContext& c) {
+                 // M85: the Pale Jester's introduction — the longest new dialog
+                 // body, refereed in the story panel it actually uses.
+                 if (const content::StoryBeat* beat =
+                         c.content.findStoryBeat(kDragonJesterBeat)) {
+                     s.pushState(std::make_unique<StoryDialogState>(
+                         s, c, beat->speaker, beat->title, beat->body));
+                 }
              }},
             {"34_king_battle",
              [&battleSlot](StateStack& s, AppContext& c) {

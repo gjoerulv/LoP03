@@ -123,6 +123,13 @@ TEST_CASE("goose town: the Duck's effective stats top every authored context", "
         if (id == kDuckBossId) {
             continue;
         }
+        if (id == std::string(kDragonBossId)) {
+            // M85: the HP crown passes to the Last Dragon by owner brief —
+            // "the highest HP in the game". His authored context is the
+            // curio gauntlet at kDragonScalePct; the supremacy inversion is
+            // asserted below, outside the Duck's sweep.
+            continue;
+        }
         const int pct = foeMaxScalePct(true, false, id == kKingBossId, floor);
         const content::StatBlock eff = content::scaledStats(def.stats, pct);
         INFO(id);
@@ -131,6 +138,13 @@ TEST_CASE("goose town: the Duck's effective stats top every authored context", "
         CHECK(duckEff.magic > eff.magic);
         CHECK(duckEff.defense > eff.defense);
         CHECK(duckEff.speed > eff.speed);
+    }
+    // M85: the one supremacy the Duck cedes — the Dragon's effective HP is
+    // the game's highest, in HIS authored context.
+    if (const content::BossDef* dragon = db().findBoss(kDragonBossId)) {
+        const content::StatBlock dragonEff =
+            content::scaledStats(dragon->stats, kDragonScalePct);
+        CHECK(dragonEff.maxHp > duckEff.maxHp);
     }
     for (const auto& [id, def] : db().enemies()) {
         const int pct = foeMaxScalePct(false, def.bossOnly, false, floor);

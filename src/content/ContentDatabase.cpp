@@ -91,6 +91,14 @@ const EventFlavorDef* ContentDatabase::findEventFlavor(const std::string& id) co
     return findIn(eventFlavors_, id);
 }
 
+bool ContentDatabase::addCurioLore(const CurioLoreDef& def) {  // M85
+    return curioLores_.emplace(def.id, def).second;
+}
+
+const CurioLoreDef* ContentDatabase::findCurioLore(const std::string& id) const {  // M85
+    return findIn(curioLores_, id);
+}
+
 bool ContentDatabase::empty() const {
     return skills_.empty() && classes_.empty() && enemies_.empty() && items_.empty() &&
            bosses_.empty() && themes_.empty() && passives_.empty();
@@ -106,6 +114,7 @@ void ContentDatabase::clear() {
     passives_.clear();
     story_.clear();
     eventFlavors_.clear();  // M80
+    curioLores_.clear();  // M85
 }
 
 std::vector<std::string> knownSkillsFor(const ClassDef& cls, int level) {

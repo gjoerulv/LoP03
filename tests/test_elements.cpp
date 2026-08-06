@@ -11,6 +11,7 @@
 #include "content/Definitions.hpp"
 #include "content/Enums.hpp"
 #include "content/LoadReport.hpp"
+#include "game/Castle.hpp"  // M85: kDragonBossId (the one authored fire immunity)
 #include "dungeon/DungeonModel.hpp"
 #include "game/Party.hpp"
 
@@ -173,6 +174,37 @@ TEST_CASE("elements: an immune basic attack applies no attack-status", "[battle]
     b.attack(0, 2);
     CHECK(b.units[2].hp < 500);
     CHECK_FALSE(b.units[2].statuses.empty());
+}
+
+TEST_CASE("elements: an intrinsic element is never nullified", "[battle][elements]") {
+    // M85: the engine half of the M81-narrowed M48 absolute. A milestone-
+    // granted INTRINSIC element (the Fire bite / Holy basic) resolves at the
+    // neutral 100% against an immune foe — plain damage, no immune mark, and
+    // the attack-status rider lands. A WIELDED element still meets the
+    // immunity as the informed trade it is (the case above).
+    Battle plain = board();
+    plain.attack(0, 1);
+    const int unelemented = 500 - plain.units[1].hp;
+    REQUIRE(unelemented > 0);
+
+    Battle b = board();
+    b.units[0].weaponElement = Element::Fire;
+    b.units[0].elementIntrinsic = true;
+    b.units[0].attackStatuses.push_back({content::StatusType::Poison, 5, 3});
+    b.units[1].immunities = {Element::Fire};
+    const std::string log = b.attack(0, 1);
+    CHECK(500 - b.units[1].hp == unelemented);  // neutral damage, not 0, not x150
+    CHECK(b.lastImmune.empty());                // no float, no "is immune!" line
+    CHECK(log.find("immune") == std::string::npos);
+    CHECK_FALSE(b.units[1].statuses.empty());   // the rider lands with the hit
+
+    // The same intrinsic attacker still enjoys a weakness elsewhere.
+    Battle weak = board();
+    weak.units[0].weaponElement = Element::Fire;
+    weak.units[0].elementIntrinsic = true;
+    weak.units[1].weaknesses = {Element::Fire};
+    weak.attack(0, 1);
+    CHECK(500 - weak.units[1].hp == unelemented * 150 / 100);
 }
 
 TEST_CASE("elements: a basic attack carries the wielder's weapon element",
@@ -418,6 +450,11 @@ TEST_CASE("elements: intrinsic attack elements can never be nullified",
     // may never meet an immunity anywhere. A WIELDED element meeting one is
     // now an informed trade: the shop chip (M53), the bestiary and the
     // "Immune" float all say so before and during the fight.
+    // M85 narrowed the CONTENT half of the absolute once more: the Dragon is
+    // the one authored fire immunity in the game — and the engine now carries
+    // the absolute instead, resolving an INTRINSIC element at neutral damage
+    // against any immunity (see "an intrinsic element is never nullified"
+    // below). Everything else still may not author one.
     const content::ContentDatabase db = loadContent();
     for (Element e : {Element::Fire, Element::Holy}) {
         INFO("intrinsic element " << content::toString(e));
@@ -427,6 +464,11 @@ TEST_CASE("elements: intrinsic attack elements can never be nullified",
         }
         for (const auto& [id, def] : db.bosses()) {
             INFO("boss " << id);
+            if (id == std::string(kDragonBossId)) {
+                CHECK(def.affinity.immuneTo(Element::Fire));  // the one exception
+                CHECK_FALSE(def.affinity.immuneTo(Element::Holy));
+                continue;
+            }
             CHECK_FALSE(def.affinity.immuneTo(e));
         }
     }

@@ -3298,6 +3298,51 @@ Save-EnemyGrid 'guild_final_clause' @( # the contract that collects itself: a
   '........................'
 )
 
+# --- M85: the Last Dragon (36x36). Not a rearing wyvern — a HILL that turned
+# --- out to be a dragon: one coiled void mass with stone belly-bands, a spiked
+# --- wing ridge, gold horns and claws, a wrapped tail, and exactly ONE open
+# --- red eye (the telegraph). Smoke drifts from the nostril. RNG-free like
+# --- every grid above.
+
+Save-EnemyGrid 'boss_the_dragon' @(
+  '....................................'
+  '..................................1.'
+  '.................................1..'
+  '.........................mmmmmmmm...'
+  '.......................YYmmmmmmmmm..'
+  '.......................mmmmmmDDmmmm.'
+  '.......................mmmmmmmmmmmm.'
+  '........................mmmmmmmmYmm.'
+  '.........................mmmmmmmmm..'
+  '........................mmmmmmmm....'
+  '........m...m...m.......mmmmmmm.....'
+  '.......mm..mmm..mm......mmmmmmm.....'
+  '......mmmmmmmmmmmmmm....mmmmmm......'
+  '.....nmmmmmmmmmmmmmmmm..mmmmmm......'
+  '....nmmmmmmmmmmmmmmmmmmmmmmmm.......'
+  '...nBmmmmmmmmmmmmmmmmmmmmmmmmm......'
+  '...nmmmmmmmmmmmmmmmmmmmmmmmmmmm.....'
+  '..nmmmmmmmmmmmmmmmmmmmmmmmmmmmm.....'
+  '..nmmmmmmmmmmmmmmmmmmmmmmmmmmmmm....'
+  '..nmmqqqqqqqqqqqqqqqqqqqqqmmmmmm....'
+  '..nmmqwwwwwwwwwwwwwwwwwwwqmmmmmm....'
+  '..nmmqwwwwwwwwwwwwwwwwwwwqmmmmmm....'
+  '..nmmqqqqqqqqqqqqqqqqqqqqqmmmmmm....'
+  '..nmmmmmmmmmmmmmmmmmmmmmmmmmmmm.....'
+  '..nnmmmmmmmmmmmmmmmmmmmmmmmmmm......'
+  '...nnmmmmmmmmmmmmmmmmmmmmmmmm.......'
+  '..mm..nnmmmmmmmmmmmmmmmmmmmm........'
+  '.mmmm...nnnmmmmmmmmmmmmmmm..........'
+  '.mmmmm..nnmmmmmmmmmmmmmmmmm.........'
+  '..mmm....nnnmmmmmmmmmmmmm...........'
+  '...K.......nnnnnnnnnnn..............'
+  '............YY....YY....YY..........'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
 #<<<M73-ENEMY-SPRITES>>>
 Write-Output 'Generating M27 service backgrounds...'
 

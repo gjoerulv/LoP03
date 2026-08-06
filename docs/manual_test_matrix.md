@@ -32,6 +32,20 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M85 update:** the Last Dragon & curio lore — every owned curio is
+> inspectable on the Maps screen (cursor + Confirm opens the lore
+> panel; Duck-mythology register). The castle menu gains **"Fight the
+> Dragon"** (always visible; under 12/12 curios the Pale Jester counts
+> and refuses). The gauntlet: three seeded elite vigils, then the
+> Dragon at 500% (7,000 effective HP — the game's largest fight),
+> castle rules throughout; his tale precedes the fight until the first
+> victory; best turns on the castle records panel; **Wyrmbane** on the
+> first fall. Engine note: an intrinsic (milestone) Fire/Holy attack
+> element now lands at neutral damage against ANY immunity — only the
+> Dragon carries one. Capture set is now **97 scenes** (`96_curio_lore`,
+> `97_dragon_jester`; `33_castle_hub` re-referees the grown hub). The
+> M85 note §G is the checklist.
+>
 > **M84 update:** Guild Masters & town milestones — the Guild screen
 > gains **"Fight the Guild Boss"** (visible always; the banner explains
 > the lock until a 4-floor clear in that town, then the trial, then the

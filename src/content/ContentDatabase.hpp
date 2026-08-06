@@ -25,6 +25,7 @@ public:
     bool addMilestone(const MilestoneDef& def);  // M63
     bool addStory(const StoryBeat& def);  // M41; false on a duplicate town
     bool addEventFlavor(const EventFlavorDef& def);  // M80
+    bool addCurioLore(const CurioLoreDef& def);  // M85
 
     const SkillDef* findSkill(const std::string& id) const;
     const ClassDef* findClass(const std::string& id) const;
@@ -43,6 +44,9 @@ public:
     // M80: nullptr when unauthored — the caller falls back to the footer
     // prompt, so flavor can never block an event.
     const EventFlavorDef* findEventFlavor(const std::string& id) const;
+    // M85: nullptr when unauthored — the Maps screen falls back to the
+    // curio's own name + description, so lore can never block the panel.
+    const CurioLoreDef* findCurioLore(const std::string& id) const;
 
     bool hasSkill(const std::string& id) const { return findSkill(id) != nullptr; }
     bool hasPassive(const std::string& id) const { return findPassive(id) != nullptr; }
@@ -58,6 +62,9 @@ public:
     const std::vector<StoryBeat>& story() const { return story_; }  // M41
     const std::unordered_map<std::string, EventFlavorDef>& eventFlavors() const {
         return eventFlavors_;  // M80
+    }
+    const std::unordered_map<std::string, CurioLoreDef>& curioLores() const {
+        return curioLores_;  // M85
     }
 
     // Team-composition constraints (M20). Defaults apply until
@@ -75,6 +82,7 @@ public:
     std::size_t milestoneCount() const { return milestones_.size(); }  // M63
     std::size_t storyCount() const { return story_.size(); }
     std::size_t eventFlavorCount() const { return eventFlavors_.size(); }  // M80
+    std::size_t curioLoreCount() const { return curioLores_.size(); }  // M85
 
     bool empty() const;
     void clear();
@@ -90,6 +98,7 @@ private:
     std::unordered_map<std::string, MilestoneDef> milestones_;  // M63
     std::vector<StoryBeat> story_;
     std::unordered_map<std::string, EventFlavorDef> eventFlavors_;  // M80
+    std::unordered_map<std::string, CurioLoreDef> curioLores_;  // M85
     CompositionDef composition_;
 };
 

@@ -75,8 +75,53 @@ void drawQuadrant(int q, int qx, int qy, const ui::style::Palette& p) {
 MapsState::MapsState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {}
 
+#ifdef CRYSTAL_CAPTURE
+void MapsState::captureInspect(int index) {
+    cursor_ = index < 0 ? 0 : (index >= kCurioCount ? kCurioCount - 1 : index);
+    loreOpen_ = true;
+}
+#endif
+
 void MapsState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Confirm)) {
+    // M85: the lore panel is a modal — any confirm/cancel closes it.
+    if (loreOpen_) {
+        if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Confirm)) {
+            context_.audio.play(Sfx::Cancel);
+            loreOpen_ = false;
+        }
+        return;
+    }
+    // M85: the curio grid is navigable (4 columns x 3 rows, clamped edges).
+    const int col = cursor_ % 4;
+    const int row = cursor_ / 4;
+    if (input.navPressed(InputAction::MoveLeft) && col > 0) {
+        --cursor_;
+        context_.audio.play(Sfx::Move);
+    }
+    if (input.navPressed(InputAction::MoveRight) && col < 3) {
+        ++cursor_;
+        context_.audio.play(Sfx::Move);
+    }
+    if (input.navPressed(InputAction::MoveUp) && row > 0) {
+        cursor_ -= 4;
+        context_.audio.play(Sfx::Move);
+    }
+    if (input.navPressed(InputAction::MoveDown) && row < 2) {
+        cursor_ += 4;
+        context_.audio.play(Sfx::Move);
+    }
+    if (input.pressed(InputAction::Confirm)) {
+        // Inspect an OWNED curio; an unfound one keeps its secret.
+        if (ownsCurio(context_.party.ownedCurios,
+                      kCurios[static_cast<std::size_t>(cursor_)].id)) {
+            context_.audio.play(Sfx::Confirm);
+            loreOpen_ = true;
+        } else {
+            context_.audio.play(Sfx::Error);
+        }
+        return;
+    }
+    if (input.pressed(InputAction::Cancel)) {
         context_.audio.play(Sfx::Cancel);
         stack().popState();
     }
@@ -151,11 +196,43 @@ void MapsState::render() {
         const bool owned = ownsCurio(party.ownedCurios, cd.id);
         const int cxp = 30 + (i % 4) * colW;
         const int cyp = curioY + 12 + (i / 4) * 10;
+        // M85: the grid cursor — a slab under the focused name, gold when it
+        // can be inspected.
+        if (i == cursor_ && !loreOpen_) {
+            ui::drawSelectionSlab(cxp - 3, cyp - 1, colW - 2, 11);
+        }
         ui::drawTextFitted(owned ? cd.name : "? ? ?", cxp, cyp, colW - 6, 8,
-                           owned ? p.text : p.textHint, "maps.curio");
+                           i == cursor_ ? (owned ? p.gold : p.textDim)
+                                        : (owned ? p.text : p.textHint),
+                           "maps.curio");
     }
 
-    ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
+    // M85: the lore panel — the curio speaks (curio_lore.json), or falls back
+    // to its own M66 description when the optional file is absent.
+    if (loreOpen_) {
+        const CurioDef& cd = kCurios[static_cast<std::size_t>(cursor_)];
+        const content::CurioLoreDef* lore = context_.content.findCurioLore(cd.id);
+        const std::string body = lore != nullptr ? lore->body : std::string(cd.description);
+        ui::drawModalDim(w, h);
+        const int boxW = 340;
+        const int boxH = 130;
+        const int boxX = w / 2 - boxW / 2;
+        const int boxY = h / 2 - boxH / 2;
+        ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
+        ui::drawTextCentered(cd.name, w / 2, boxY + 10, 14, p.gold);
+        ui::drawDivider(boxX + 14, boxY + 28, boxW - 28);
+        ui::drawTextWrapped(body, boxX + 16, boxY + 36, boxW - 32, 9, p.text,
+                            "maps.lore", 7);
+        ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,
+                                           context_.input.activeDevice(), "Close")
+                                 .c_str(),
+                             w / 2, boxY + boxH - 14, 9, p.textDim);
+    }
+
+    ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Confirm,
+                                              context_.input.activeDevice()),
+                          "Inspect"},
+                         {input::primaryLabel(context_.input.map(), InputAction::Cancel,
                                               context_.input.activeDevice()),
                           "Back"}},
                         w, h, "maps.footer");

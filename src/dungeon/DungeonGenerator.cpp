@@ -11,6 +11,7 @@
 #include "dungeon/Rng.hpp"
 #include "dungeon/ThemeEvents.hpp"  // M55 per-theme rites (themeEventKind, prices)
 #include "game/BlackMarket.hpp"  // blackMarketHash — the shared SplitMix64 (M82 floors)
+#include "game/Castle.hpp"  // kDragonBossId (M85: the fallback-sweep exclusion)
 #include "game/Relics.hpp"  // relicEventChancePct (M44)
 #include "game/WorldLadder.hpp"
 
@@ -113,8 +114,9 @@ const content::BossDef* pickBoss(Rng& rng, const content::DungeonThemeDef* theme
         for (const auto& [id, def] : db.bosses()) {
             // M84: a Guild Master presides over its town's gauntlet, never a
             // dungeon — the fallback sweep must skip it or adding one would
-            // change what existing seeds generate.
-            if (def.minTown <= town && def.guildTown == 0) {
+            // change what existing seeds generate. M85: the Dragon's arena is
+            // behind the twelve curios, same rule.
+            if (def.minTown <= town && def.guildTown == 0 && id != kDragonBossId) {
                 ids.push_back(id);
             }
         }

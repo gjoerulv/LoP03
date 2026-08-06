@@ -51,6 +51,7 @@ inline constexpr AchievementDef kAchievements[] = {
     {"quackbane", "Quackbane", "Fell the Deadly Duck."},  // M61 (locked shows ???)
     {"curator", "Curator", "Gather all twelve dungeon curios."},  // M66
     {"guildbane", "Guildbane", "Defeat a Guild Master."},  // M84
+    {"wyrmbane", "Wyrmbane", "Fell the Last Dragon."},  // M85 (locked shows ???)
 };
 inline constexpr int kAchievementCount =
     static_cast<int>(sizeof(kAchievements) / sizeof(kAchievements[0]));

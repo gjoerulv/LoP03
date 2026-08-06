@@ -211,6 +211,8 @@
     { "id": "enemy.guild_null_notary.battle", "type": "texture", "path": "textures/enemies/guild_null_notary.png" },
     { "id": "enemy.guild_final_clause.battle", "type": "texture", "path": "textures/enemies/guild_final_clause.png" },
 
+    { "id": "boss.the_dragon.battle", "type": "texture", "path": "textures/enemies/boss_the_dragon.png" },
+
     { "id": "prop.chest", "type": "texture", "path": "textures/props/chest.png" },
     { "id": "prop.gate_marker", "type": "texture", "path": "textures/props/gate_marker.png" },
     { "id": "prop.boss_marker", "type": "texture", "path": "textures/props/boss_marker.png" },

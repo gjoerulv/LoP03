@@ -362,6 +362,27 @@
       "xpReward": 550,
       "goldReward": 400,
       "description": "Town 7's Guild Master. Every account settles eventually. Registrar Null is the eventually."
+    },
+    {
+      "id": "the_dragon",
+      "name": "The Last Dragon",
+      "archetype": "sorcerer",
+      "stats": { "hp": 1400, "attack": 38, "magic": 26, "defense": 24, "speed": 30 },
+      "skills": ["breath_of_cinders", "breath_of_rime", "breath_of_storms", "breath_of_barrows", "breath_of_dawns", "breath_of_gloaming"],
+      "passives": ["first_strike", "lifedrink", "spell_ward"],
+      "minions": [],
+      "immunities": ["fire"],
+      "statusImmunities": ["confusion", "silence", "blind", "terrified", "stunned", "sleep"],
+      "immuneToStatScale": true,
+      "triggers": [
+        { "when": "first_time_hp_below_pct", "threshold": 50, "do": "drain_foe_mp", "mpDrainPct": 100, "text": "The Dragon inhales, and every incantation in the room goes with it." },
+        { "when": "first_time_hp_below_pct", "threshold": 10, "do": "scale_stats_self", "scaleAttackPct": 200, "scaleSpeedPct": 200, "text": "What remains of the Dragon stops pretending to be slow." },
+        { "when": "first_time_hp_below_pct", "threshold": 5, "do": "summon_clone", "cloneHpPct": 5, "text": "The Dragon refuses arithmetic: where one ending stood, now there are two." }
+      ],
+      "telegraph": "The Last Dragon opens one eye. It has been saving this nap for a century, and you are the reason it ends.",
+      "xpReward": 1000,
+      "goldReward": 600,
+      "description": "The King's nemesis, and the reason the crown is so tired. Twelve curios wake it. Nothing puts it back down but you."
     }
   ]
 }

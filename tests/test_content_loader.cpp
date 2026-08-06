@@ -135,13 +135,14 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     INFO(rep.summary());
     REQUIRE(ok);
     REQUIRE(db.classCount() == 9);  // 6 original + 3 M45 King-reward classes
-    REQUIRE(db.skillCount() == 72);  // +2 M76 (Mirrorbreak, Absolve), +7 M77 (enemy offense)
+    REQUIRE(db.skillCount() == 78);  // +2 M76 (Mirrorbreak, Absolve), +7 M77 (enemy offense),
+                                     // +6 M85 (the Dragon's breaths)
     REQUIRE(db.enemyCount() == 62);  // +12 M38 per-town, +2 M49 Royal Guards, +5 M61 Evil Geese,
                                      // +12 M84 guild courts
     REQUIRE(db.itemCount() == 95);  // +2 M76 (Holy Taxes, Evil Duckling), +13 M81 (5 elemental
                                     // weapons, 6 ward charms, 2 legendaries)
-    REQUIRE(db.bossCount() == 21);  // +1 M40 The Hollow King, +1 M61 The Deadly Duck,
-                                    // +7 M84 Guild Masters
+    REQUIRE(db.bossCount() == 22);  // +1 M40 The Hollow King, +1 M61 The Deadly Duck,
+                                    // +7 M84 Guild Masters, +1 M85 the Last Dragon
     REQUIRE(db.themeCount() == 3);
     REQUIRE(db.findClass("knight") != nullptr);
     REQUIRE(db.hasSkill("fireball"));

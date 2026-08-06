@@ -119,7 +119,7 @@ TEST_CASE("curios: the Curator achievement fires on the full dozen", "[curio]") 
         }
     }
     CHECK(found);
-    CHECK(kAchievementCount == 19);  // +1 M84 Guildbane
+    CHECK(kAchievementCount == 20);  // +1 M84 Guildbane, +1 M85 Wyrmbane
 }
 
 TEST_CASE("curios: owned curios round-trip the save; unknown ids drop", "[curio][save]") {

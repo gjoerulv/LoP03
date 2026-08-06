@@ -72,6 +72,12 @@
     { "id": "veil_of_slumber", "name": "Veil of Slumber", "category": "support", "target": "all_enemies", "power": 0, "mpCost": 12, "statusEffect": "sleep", "statusDuration": 1, "description": "A grey veil drifts down, and the whole party nods off." },
     { "id": "royal_decree", "name": "Royal Decree", "category": "support", "target": "single_enemy", "power": 16, "mpCost": 7, "statusEffect": "stunned", "statusDuration": 2, "description": "A word of royal law that wounds - and none may move while it is spoken." },
     { "id": "drowsing_verdict", "name": "Drowsing Verdict", "category": "support", "target": "single_enemy", "power": 14, "mpCost": 6, "statusEffect": "sleep", "statusDuration": 1, "description": "The sentence is rest. It is handed down heavily, and it is binding." },
-    { "id": "hexwings_grudge", "name": "Hexwing's Grudge", "category": "support", "target": "all_enemies", "power": 0, "mpCost": 14, "statusEffect": "curse", "statusDuration": 2, "description": "Every grudge a goose ever held, delivered all at once." }
+    { "id": "hexwings_grudge", "name": "Hexwing's Grudge", "category": "support", "target": "all_enemies", "power": 0, "mpCost": 14, "statusEffect": "curse", "statusDuration": 2, "description": "Every grudge a goose ever held, delivered all at once." },
+    { "id": "breath_of_cinders", "name": "Breath of Cinders", "category": "magic", "target": "all_enemies", "element": "fire", "power": 16, "mpCost": 20, "description": "The Dragon exhales an orchard of embers over everyone at once." },
+    { "id": "breath_of_rime", "name": "Breath of Rime", "category": "magic", "target": "all_enemies", "element": "ice", "power": 16, "mpCost": 20, "description": "A glacier's worth of patience, delivered in one breath." },
+    { "id": "breath_of_storms", "name": "Breath of Storms", "category": "magic", "target": "all_enemies", "element": "lightning", "power": 16, "mpCost": 20, "description": "The Dragon inhales a sky and returns it, with interest." },
+    { "id": "breath_of_barrows", "name": "Breath of Barrows", "category": "magic", "target": "all_enemies", "element": "earth", "power": 16, "mpCost": 20, "description": "Grave-dust and mountain grit, exhaled over the whole party." },
+    { "id": "breath_of_dawns", "name": "Breath of Dawns", "category": "magic", "target": "all_enemies", "element": "holy", "power": 16, "mpCost": 20, "description": "Unbearably bright and entirely unsympathetic." },
+    { "id": "breath_of_gloaming", "name": "Breath of Gloaming", "category": "magic", "target": "all_enemies", "element": "dark", "power": 16, "mpCost": 20, "description": "The Dragon breathes out a dusk that has been waiting a very long time." }
   ]
 }

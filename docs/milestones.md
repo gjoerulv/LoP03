@@ -3149,9 +3149,10 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M84 — Guild Masters & town milestones
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-06 on the post-M83 checkout (`d466e5b`). The program's largest
-  milestone, shipped unsplit. A **4-floor** clear in town N opens that
+- **Status:** ☑ complete (approved) — implemented 2026-08-06 on the
+  post-M83 checkout (`d466e5b`); approved and committed by the owner
+  2026-08-07 (`a047590`). The program's largest milestone, shipped
+  unsplit. A **4-floor** clear in town N opens that
   town's **"Fight the Guild Boss"** (always visible; the banner explains
   lock/trial/record): a castle-rules gauntlet — the five-foe seeded
   **Guild Trial** (the same five every attempt), then the town's unique
@@ -3182,7 +3183,30 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M85 — The Dragon & curio lore
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-07 on the post-M84 checkout (`a047590`). The twelve curios are
+  **inspectable** on the Maps screen (cursor + modal lore panel;
+  `data/curio_lore.json`, the second optional content file, Duck-
+  mythology register, name+description fallback). The castle menu gains
+  **"Fight the Dragon"** — always visible; under 12/12 the **Pale
+  Jester** (new character, story beat 10, loader range 1..10) counts and
+  refuses, and his tale precedes the gauntlet until the first victory.
+  The gauntlet (`CastleChallenge::Dragon`): three seeded elite vigils
+  (fixed `kDragonSeed`), then **the Last Dragon** alone at 500 % —
+  **7,000 effective HP, the game's largest fight** (base sim-tuned
+  2000 → 1400, recorded) — six all-party elemental breaths, immune to
+  every affliction except ATK−/DEF−/Curse/Poison, Spoon-proof,
+  fire-immune under the new **intrinsic-element engine rule** (a
+  milestone-granted Fire/Holy attack element is never nullified —
+  resolves at neutral vs any immunity; provably inert pre-M85, both
+  owner decisions honored, veto path in the note §E.1); one-time
+  full-party MP drain below 50 %, ATK & SPD ×2 below 10 %, a 5 %-HP
+  clone at the brink. `castleDragonBestTurns` record + **Wyrmbane**;
+  excluded from the rush/dungeons/Endless draw before the content
+  landed (nothing regenerated). Debug **722/722**, Release **718/718**,
+  capture **97/97** (`96_curio_lore`, `97_dragon_jester`); the gauntlet
+  sim-cleared in 22 rounds (vigils 3+3+3, the Dragon 13). Full evidence
+  in the note §F.
 - **Goal:** the 12 curios become inspectable with Duck-mythology lore
   (`data/curio_lore.json`); collecting all 12 opens the castle's
   visible-but-disabled "Fight the Dragon" (new jester, dry lore): three

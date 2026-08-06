@@ -16,8 +16,10 @@
 #include "raylib.h"
 #include "game/Achievements.hpp"
 #include "game/Guild.hpp"
+#include "game/Story.hpp"  // M85: kDragonJesterBeat
 #include "states/AchievementToast.hpp"
 #include "states/GuildPerkChoiceState.hpp"
+#include "states/StoryDialogState.hpp"  // M85: the Pale Jester's introduction
 #include "render/BattleBackdrop.hpp"
 #include "states/BattleState.hpp"
 #include "states/BossIntroState.hpp"
@@ -39,6 +41,7 @@ const char* challengeName(CastleChallenge kind) {
         case CastleChallenge::King: return "The Hollow King";
         case CastleChallenge::DuckGauntlet: return "The Deadly Duck";  // M61
         case CastleChallenge::GuildBoss: return "The Guild Boss";      // M84 (fallback)
+        case CastleChallenge::Dragon: return "The Last Dragon";        // M85
     }
     return "";
 }
@@ -61,6 +64,11 @@ dungeon::EnemyTeam teamFor(CastleChallenge kind, int wave, const content::Conten
                 return guildWaveTeam(db, guildTown);
             }
             return wave == 1 ? guildMasterTeam(db, guildTown) : dungeon::EnemyTeam{};
+        case CastleChallenge::Dragon:  // M85: three elite vigils, then the Dragon
+            if (wave < kDragonWaveCount) {
+                return dragonEliteWaveTeam(db, wave);
+            }
+            return wave == kDragonWaveCount ? dragonTeam(db) : dungeon::EnemyTeam{};
     }
     return {};
 }
@@ -83,6 +91,16 @@ void CastleChallengeState::onEnter() {
     if (kind_ != CastleChallenge::GuildBoss) {
         maybeTutorialPrompt(stack(), context_, tutorial::kFirstChallenge);
     }
+    // M85: until the Dragon first falls, the Pale Jester's introduction sits
+    // on top of the opening fight (the tutorial-prompt pattern — read first,
+    // dismissed to reveal the vigil beneath). Content-driven; a missing beat
+    // simply skips the tale.
+    if (kind_ == CastleChallenge::Dragon && !context_.party.castleRecords.dragonDefeated()) {
+        if (const content::StoryBeat* beat = context_.content.findStoryBeat(kDragonJesterBeat)) {
+            stack().pushState(std::make_unique<StoryDialogState>(
+                stack(), context_, beat->speaker, beat->title, beat->body));
+        }
+    }
 }
 
 void CastleChallengeState::startNextFight() {
@@ -95,7 +113,8 @@ void CastleChallengeState::startNextFight() {
     // M62: the Duck no longer borrows the King's theme — his pond, his own
     // anthem (MusicTrack::DuckBattle, battle-tier synth fallback). M84: a
     // Guild Master gets the ordinary boss anthem — a town fight, not a royal
-    // one — and an Endless boss wave (every 10th) does too.
+    // one — and an Endless boss wave (every 10th) does too. M85: so does the
+    // Dragon (no new audio this milestone; a bespoke anthem is an owner call).
     const MusicTrack music =
         kind_ == CastleChallenge::King
             ? MusicTrack::KingBattle
@@ -103,7 +122,8 @@ void CastleChallengeState::startNextFight() {
                    ? MusicTrack::DuckBattle
                    : (!team.bossId.empty() &&
                               (kind_ == CastleChallenge::GuildBoss ||
-                               kind_ == CastleChallenge::Endless)
+                               kind_ == CastleChallenge::Endless ||
+                               kind_ == CastleChallenge::Dragon)
                           ? MusicTrack::Boss
                           : MusicTrack::None));
     // M43: the `true` marks this as a castle fight, so a defeat message never
@@ -260,6 +280,20 @@ void CastleChallengeState::finish(bool cleared) {
                 msg = wavesWon_ == 0
                           ? "The Evil Geese overwhelm you. The Duck never even surfaced."
                           : "The Deadly Duck proves deadlier. Return stronger.";
+            }
+            break;
+        case CastleChallenge::Dragon:  // M85
+            if (cleared) {
+                if (dragonImproved(rec, totalRounds_)) {
+                    rec.dragonBestTurns = totalRounds_;
+                }
+                msg = "The Last Dragon burns out in " + std::to_string(totalRounds_) +
+                      " turns! The King, reached for comment, looks genuinely relieved. "
+                      "The Pale Jester writes something down.";
+            } else {
+                msg = wavesWon_ < kDragonWaveCount
+                          ? "The vigil holds. The Dragon never even uncoiled."
+                          : "The Last Dragon proves too vast. Return stronger.";
             }
             break;
         case CastleChallenge::GuildBoss: {  // M84

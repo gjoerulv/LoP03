@@ -31,7 +31,9 @@ inline constexpr int kGooseTown = 9;
 // M84: GuildBoss is a town-guild gauntlet riding this same challenge runner
 // (persistent HP/MP, the castle defeat price) — the one non-castle kind, so
 // its music/backdrop/return flow differ (see CastleChallengeState).
-enum class CastleChallenge { BossRush, Endless, King, DuckGauntlet, GuildBoss };
+// M85: Dragon is the curio-gated superboss gauntlet — three seeded elite
+// waves, then the King's nemesis (the Duck's shape, at the castle).
+enum class CastleChallenge { BossRush, Endless, King, DuckGauntlet, GuildBoss, Dragon };
 
 // --- Challenge scaling -----------------------------------------------------
 // Every fight is a normal Battle whose team.statScalePct sets the enemy stat
@@ -127,10 +129,25 @@ inline constexpr const char* kKingTitle = "Breaker of the Hollow Throne";
 // from the Boss Rush roster the way the King is (he has his own arena).
 inline constexpr const char* kGooseClassId = "goose";
 inline constexpr const char* kDuckBossId = "deadly_duck";
+// M85: the Dragon — the curio-gated castle superboss, excluded from the Boss
+// Rush and the generator's fallback boss sweep the same way (his arena opens
+// only at twelve curios; see game/Curios.hpp for the gate's count).
+inline constexpr const char* kDragonBossId = "the_dragon";
 // The gauntlet's scale. At 500% the Duck's authored base (1000 HP) lands on
 // the owner-specified 5000 EFFECTIVE HP — the largest fight in the game — and
 // each Evil Goose (base 100) on ~500. Same reference scale as the King's.
 inline constexpr int kGooseTownScalePct = 500;
+
+// --- The Dragon (M85) --------------------------------------------------------
+// The Duck's difficulty band (owner brief): the same 500% reference scale, on
+// a base HP (~2000) that makes him the largest fight in the game outright.
+inline constexpr int kDragonScalePct = 500;
+// Three seeded elite waves precede him; the sequence is a pure hash of this
+// fixed seed (the kEndlessSeed/kGuildSeed philosophy), so every attempt runs
+// the same gauntlet and the best-turns record is a reproducible measure.
+inline constexpr std::uint64_t kDragonSeed = 0xD9A6013A125EEDull;
+inline constexpr int kDragonWaveCount = 3;
+inline constexpr int kDragonWaveSize = 4;
 
 // --- Records (persisted as optional Party save fields, NOT the scoreboard) ---
 struct CastleRecords {
@@ -140,12 +157,14 @@ struct CastleRecords {
     int kingBestTurns = 0;      // 0 = never; fewer is better
     std::string kingTitle;      // the visible title earned for the first King kill
     int duckBestTurns = 0;      // M61: 0 = the Duck still swims; fewer is better
+    int dragonBestTurns = 0;    // M85: 0 = the Dragon still coils; fewer is better
 
     bool bossRushCleared() const { return bossRushBestTurns > 0; }
-    bool duckDefeated() const { return duckBestTurns > 0; }  // M61
+    bool duckDefeated() const { return duckBestTurns > 0; }      // M61
+    bool dragonDefeated() const { return dragonBestTurns > 0; }  // M85
     bool anyRecord() const {
         return bossRushBestTurns > 0 || endlessBestWave > 0 || kingDefeated ||
-               duckBestTurns > 0;
+               duckBestTurns > 0 || dragonBestTurns > 0;
     }
 };
 
@@ -163,6 +182,9 @@ inline bool kingImproved(const CastleRecords& r, int turns) {
 }
 inline bool duckImproved(const CastleRecords& r, int turns) {  // M61
     return turns > 0 && (r.duckBestTurns == 0 || turns < r.duckBestTurns);
+}
+inline bool dragonImproved(const CastleRecords& r, int turns) {  // M85
+    return turns > 0 && (r.dragonBestTurns == 0 || turns < r.dragonBestTurns);
 }
 
 // --- One-time first-clear rewards ------------------------------------------
@@ -188,5 +210,10 @@ dungeon::EnemyTeam kingTeam(const content::ContentDatabase& content);
 // alone (his court fell in the first fight), both at kGooseTownScalePct.
 dungeon::EnemyTeam gooseWaveTeam(const content::ContentDatabase& content);
 dungeon::EnemyTeam duckTeam(const content::ContentDatabase& content);
+// M85: the Dragon's gauntlet — elite wave `wave` (0..kDragonWaveCount-1),
+// four seeded picks from the whole ELITE roster (never bossOnly courts), then
+// the Dragon alone, all at kDragonScalePct.
+dungeon::EnemyTeam dragonEliteWaveTeam(const content::ContentDatabase& content, int wave);
+dungeon::EnemyTeam dragonTeam(const content::ContentDatabase& content);
 
 }  // namespace cd

@@ -71,6 +71,7 @@ bool achievementMet(const std::string& id, const Party& p, const AchvContext& ct
         }
         return false;
     }
+    if (id == "wyrmbane") return p.castleRecords.dragonDefeated();  // M85
     return false;
 }
 

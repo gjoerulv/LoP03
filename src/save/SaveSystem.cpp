@@ -80,6 +80,7 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["castleKingBestTurns"] = party.castleRecords.kingBestTurns;
   root["castleKingTitle"] = party.castleRecords.kingTitle;
   root["castleDuckBestTurns"] = party.castleRecords.duckBestTurns;  // M61 (optional; old -> 0)
+  root["castleDragonBestTurns"] = party.castleRecords.dragonBestTurns;  // M85 (optional; old -> 0)
   root["gooseTownUnlocked"] = party.gooseTownUnlocked;              // M61 (optional; old -> false)
   root["mapPieces"] = party.mapPieces;                              // M65 (optional; old -> 0)
   root["treasureActive"] = party.treasure.active;                   // M65
@@ -227,6 +228,8 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   loaded.castleRecords.kingBestTurns = rootReader.optIntMin("castleKingBestTurns", 0, 0);
   loaded.castleRecords.kingTitle = rootReader.optString("castleKingTitle");
   loaded.castleRecords.duckBestTurns = rootReader.optIntMin("castleDuckBestTurns", 0, 0);  // M61
+  loaded.castleRecords.dragonBestTurns =
+      rootReader.optIntMin("castleDragonBestTurns", 0, 0);  // M85
   loaded.gooseTownUnlocked = rootReader.optBool("gooseTownUnlocked", false);               // M61
   // M65 puzzle map: pieces clamp below the reveal threshold; a reveal whose
   // guard the content no longer knows deactivates (the pieces were spent — the

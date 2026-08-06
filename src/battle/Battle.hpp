@@ -269,6 +269,13 @@ struct Combatant {
     // one-directional by design — see the M48 note). Stored as bare element
     // lists, like `attackStatuses`, so the pure model needs no content struct.
     content::Element weaponElement = content::Element::None;
+    // M85: true when `weaponElement` came from a chosen class milestone (the
+    // M63 Fire bite / Holy basic) rather than a wielded weapon. An INTRINSIC
+    // element is never nullified (the M81-narrowed M48 absolute): against a
+    // foe immune to it, the hit resolves at the neutral 100% instead of 0.
+    // Inert for every shipped foe until M85's Dragon — the [elements] lint
+    // has always guaranteed no fire/holy immunity existed anywhere.
+    bool elementIntrinsic = false;
     std::vector<content::Element> weaknesses;
     std::vector<content::Element> immunities;
 

@@ -10,8 +10,8 @@ added an approval round-trip without shrinking any risky surface
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-06.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-06; approved and
+committed by the owner 2026-08-07 (`a047590`). Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -206,4 +206,5 @@ and a review contact sheet at `docs/sprite_review/guild_masters_*.png`.
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-07, committed as
+`a047590`.

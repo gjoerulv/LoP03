@@ -28,6 +28,9 @@ std::vector<std::string> bossRushOrder(const content::ContentDatabase& content) 
         if (id == kDuckBossId) {
             continue;  // M61: the Duck has his own pond, same rule as the King
         }
+        if (id == kDragonBossId) {
+            continue;  // M85: the Dragon waits behind twelve curios, nowhere else
+        }
         if (def.guildTown != 0) {
             continue;  // M84: a Guild Master presides over its town's gauntlet
         }
@@ -146,6 +149,48 @@ dungeon::EnemyTeam duckTeam(const content::ContentDatabase& content) {
     team.bossId = kDuckBossId;
     team.statScalePct = kGooseTownScalePct;
     if (const content::BossDef* b = content.findBoss(kDuckBossId)) {
+        team.name = b->name;
+    }
+    return team;
+}
+
+dungeon::EnemyTeam dragonEliteWaveTeam(const content::ContentDatabase& content, int wave) {
+    // M85: the whole ELITE roster (never a bossOnly court — those belong to
+    // their bosses), seeded from the fixed kDragonSeed so every attempt runs
+    // the same three waves.
+    dungeon::EnemyTeam team;
+    if (wave < 0 || wave >= kDragonWaveCount) {
+        return team;
+    }
+    std::vector<std::string> pool;
+    for (const auto& [id, def] : content.enemies()) {
+        if (def.bossOnly || def.tier != content::EnemyTier::Elite) {
+            continue;
+        }
+        pool.push_back(id);
+    }
+    std::sort(pool.begin(), pool.end());
+    if (pool.empty()) {
+        return team;
+    }
+    const std::uint64_t base = static_cast<std::uint64_t>(wave) * 1000u;
+    for (int i = 0; i < kDragonWaveSize; ++i) {
+        const std::uint64_t h = blackMarketHash(kDragonSeed, base + static_cast<std::uint64_t>(i));
+        team.enemyIds.push_back(pool[static_cast<std::size_t>(h % pool.size())]);
+    }
+    team.statScalePct = kDragonScalePct;
+    team.name = "The Dragon's Vigil " + std::to_string(wave + 1);
+    return team;
+}
+
+dungeon::EnemyTeam dragonTeam(const content::ContentDatabase& content) {
+    // M85: the Dragon fights alone — the vigil waves were the only court it
+    // ever needed (the Duck's shape).
+    dungeon::EnemyTeam team;
+    team.isBoss = true;
+    team.bossId = kDragonBossId;
+    team.statScalePct = kDragonScalePct;
+    if (const content::BossDef* b = content.findBoss(kDragonBossId)) {
         team.name = b->name;
     }
     return team;

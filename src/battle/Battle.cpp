@@ -108,10 +108,18 @@ int guardedDamage(const Combatant& d, int dmg) {
 
 // M63 (Elemental Attunement): a weak hit deals the attacker's override when it
 // carries one. Immune (0) and neutral (100) are never overridden.
+// M85: an INTRINSIC basic-attack element (a chosen class milestone, not a
+// wielded weapon) is never nullified — the M81-narrowed M48 absolute, now an
+// engine rule: against an immune foe it resolves at the neutral 100% (no
+// "Immune" float, no weak bonus — plain damage). Wielded and skill elements
+// still meet immunities as the informed trade they are.
 int attackerElementMod(const Combatant& a, const Combatant& d, content::Element element) {
     const int mod = elementModifier(d, element);
     if (mod == kElementWeakPct && a.weaknessBonusPct > 0) {
         return a.weaknessBonusPct;
+    }
+    if (mod == 0 && a.elementIntrinsic && element == a.weaponElement) {
+        return 100;
     }
     return mod;
 }
@@ -482,11 +490,13 @@ void applyMilestones(Combatant& u, const Character& c, const content::ContentDat
             case E::HolyBasic:
                 if (u.weaponElement == content::Element::None) {
                     u.weaponElement = content::Element::Holy;  // a real weapon element wins
+                    u.elementIntrinsic = true;                 // M85: never nullified
                 }
                 break;
             case E::FireBasic:
                 if (u.weaponElement == content::Element::None) {
                     u.weaponElement = content::Element::Fire;
+                    u.elementIntrinsic = true;  // M85: never nullified
                 }
                 break;
             case E::GoldBonusPct: u.goldBonusPct += m.magnitude; break;
@@ -1369,6 +1379,12 @@ std::string Battle::attackOne(int actor, int target, int scalePct) {
     // enemy, which has no weapon, and for anyone holding untagged steel).
     const content::Element element = a.weaponElement;
     const int mod = elementModifier(t, element);
+    // M85: the EFFECTIVE modifier the damage path used — an intrinsic element
+    // resolves an immunity at neutral, so the mark, the log line and the
+    // status rider must all agree with the damage and treat it as a plain
+    // hit. The weak mark stays on the raw modifier (the M63 override changes
+    // the percent, not the fact of the weakness).
+    const int effMod = attackerElementMod(a, t, element);
     int base = physicalDamage(a, t, 0, element);
     if (a.basicAttackPct > 0) {
         base = base * (100 + a.basicAttackPct) / 100;  // M63 (Heavy Swing family)
@@ -1389,7 +1405,7 @@ std::string Battle::attackOne(int actor, int target, int scalePct) {
     if (opener) {
         log += " (opening fury!)";
     }
-    if (mod == kElementImmunePct) {
+    if (effMod == kElementImmunePct) {
         // Not a miss: the blow lands and does nothing. Recorded for the float
         // and said plainly in the log, so the two never disagree.
         lastImmune.push_back(target);
@@ -1402,7 +1418,7 @@ std::string Battle::attackOne(int actor, int target, int scalePct) {
         log += " " + t.name + " is KO'd!";
     }
     log += extra;
-    if (mod != kElementImmunePct) {
+    if (effMod != kElementImmunePct) {
         log += applyAttackStatuses(actor, target);  // M45 (the Dragon's bite)
     }
     if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {

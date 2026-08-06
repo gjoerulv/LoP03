@@ -496,4 +496,14 @@ inline constexpr const char* kEventFlavorIds[] = {
 };
 inline constexpr std::size_t kEventFlavorIdCount = 11;
 
+// M85: authored inspect-lore for one dungeon curio (data/curio_lore.json,
+// the second OPTIONAL content file) — the Maps screen's lore panel. Pure
+// presentation: a curio without its entry simply shows its name and
+// description as before. Ids mirror game/Curios.hpp's table (a layer above,
+// so known-ness and full coverage are test-enforced, not loader-enforced).
+struct CurioLoreDef {
+    std::string id;    // a curio id
+    std::string body;  // the dry Duck-mythology lore (wrapped in the panel)
+};
+
 }  // namespace cd::content

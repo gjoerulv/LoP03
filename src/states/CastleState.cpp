@@ -8,6 +8,7 @@
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
 #include "game/Castle.hpp"
+#include "game/Curios.hpp"  // M85: the Dragon's kCurioCount gate
 #include "game/Party.hpp"
 #include "game/Story.hpp"
 #include "input/Input.hpp"
@@ -29,17 +30,22 @@ namespace {
 constexpr int kBossRush = 0;
 constexpr int kEndless = 1;
 constexpr int kKing = 2;
-constexpr int kJester = 3;
-constexpr int kInn = 4;
-constexpr int kSave = 5;
-constexpr int kLeave = 6;
+constexpr int kDragon = 3;  // M85: the curio-gated superboss
+constexpr int kJester = 4;
+constexpr int kInn = 5;
+constexpr int kSave = 6;
+constexpr int kLeave = 7;
 }  // namespace
 
 CastleState::CastleState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {
+    // M85: the Dragon row stays enabled while gated (the M84 guild-row rule —
+    // ui::Menu skips disabled rows, which would hide the goal); Confirm on it
+    // hands the refusal to the Pale Jester instead.
     menu_.setItems({{"Boss Rush", true},
                     {"Endless Rush", true},
                     {"Challenge the King", true},
+                    {"Fight the Dragon", true},
                     {"Speak with the Jester", true},
                     {"Rest at the Inn", true},
                     {"Save", true},
@@ -89,6 +95,26 @@ void CastleState::handleInput(const Input& input) {
                 stack().pushState(std::make_unique<CastleChallengeState>(stack(), context_,
                                                                          CastleChallenge::King));
                 break;
+            case kDragon:
+                // M85: gated behind the full curio dozen. While short, the
+                // Pale Jester delivers the refusal in his own register; at
+                // 12/12 the gauntlet begins (its onEnter tells his tale until
+                // the Dragon first falls).
+                if (static_cast<int>(context_.party.ownedCurios.size()) >= kCurioCount) {
+                    stack().pushState(std::make_unique<CastleChallengeState>(
+                        stack(), context_, CastleChallenge::Dragon));
+                } else {
+                    stack().pushState(std::make_unique<StoryDialogState>(
+                        stack(), context_, "The Pale Jester", "The Pale Jester",
+                        TextFormat(
+                            "The Pale Jester counts on his fingers without looking at "
+                            "them. \"Twelve trinkets wake the Dragon. You hold %d. It is "
+                            "not that the Dragon is picky - it is that the Dragon "
+                            "counts. Dig up the rest and I will tell you the part of "
+                            "the tale the other jester leaves out.\"",
+                            static_cast<int>(context_.party.ownedCurios.size()))));
+                }
+                break;
             case kJester:
                 if (storyAllHeard(context_.party.storyMet)) {
                     if (const content::StoryBeat* beat =
@@ -132,18 +158,19 @@ void CastleState::render() {
     ui::drawTitlePlaque("The Castle", w / 2, 10, 20);
     ui::drawTextCentered("above the seven towns", w / 2, 46, 10, p.textDim);
 
-    // Challenge menu (left).
+    // Challenge menu (left). M85: eight rows now — a tighter 16px pitch and a
+    // higher start keep the frame clear of the jester line and the footer.
     const int menuX = 44;
-    const int menuY = 78;
+    const int menuY = 70;
     const int menuRows = static_cast<int>(menu_.size());
-    ui::drawFrame(24, menuY - 10, 168, menuRows * 18 + 16, ui::FrameStyle::Standard);
-    ui::drawMenu(menu_, menuX, menuY, 18, 12, p.text, p.disabled, p.cursor);
+    ui::drawFrame(24, menuY - 10, 168, menuRows * 16 + 16, ui::FrameStyle::Standard);
+    ui::drawMenu(menu_, menuX, menuY, 16, 12, p.text, p.disabled, p.cursor);
 
     // Records panel (right).
     const CastleRecords& rec = context_.party.castleRecords;
     const int recX = w - 210;
     const int recY = 70;
-    ui::drawFrame(recX, recY, 190, 120, ui::FrameStyle::Reward);
+    ui::drawFrame(recX, recY, 190, 136, ui::FrameStyle::Reward);  // M85: +Dragon row
     ui::drawSectionHeader("Castle Records", recX + 12, recY + 10, 166);
     const Color label = p.textDim;
     const std::string rush = rec.bossRushCleared()
@@ -153,16 +180,20 @@ void CastleState::render() {
         rec.endlessBestWave > 0 ? std::string("wave ") + std::to_string(rec.endlessBestWave) : "-";
     const std::string king =
         rec.kingDefeated ? std::to_string(rec.kingBestTurns) + " turns" : "-";
+    const std::string dragon =
+        rec.dragonDefeated() ? std::to_string(rec.dragonBestTurns) + " turns" : "-";
     ui::drawText("Boss Rush:  " + rush, recX + 12, recY + 30, 10, label);
     ui::drawText("Endless:    " + endless, recX + 12, recY + 46, 10, label);
     ui::drawText("The King:   " + king, recX + 12, recY + 62, 10, label);
+    ui::drawText("The Dragon: " + dragon, recX + 12, recY + 78, 10, label);  // M85
     if (!rec.kingTitle.empty()) {
-        ui::drawTextWrapped("Title: " + rec.kingTitle, recX + 12, recY + 82, 166, 10,
+        ui::drawTextWrapped("Title: " + rec.kingTitle, recX + 12, recY + 98, 166, 10,
                             p.gold, "castle.records.title", 2);
     }
 
-    // The Jester lounges by the throne (M41).
-    ui::drawTextCentered("A jester lounges by the throne, waiting to share the tale's end.", w / 2,
+    // The Jester lounges by the throne (M41); his paler colleague (M85) keeps
+    // to the stairs, counting something.
+    ui::drawTextCentered("A jester lounges by the throne; a paler one counts on the stair.", w / 2,
                          h - 28, 8, ui::lighten(p.magic, 32));
     ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
                                               context_.input.activeDevice()),

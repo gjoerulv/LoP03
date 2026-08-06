@@ -29,14 +29,15 @@ content::ContentDatabase loadContent() {
 
 TEST_CASE("story: the shipped serial is 7 town beats + the Jester, all filled", "[story]") {
     const content::ContentDatabase db = loadContent();
-    // Towns 1..7 + the castle Jester + the Goose Town's Goofy Jester (M61).
-    CHECK(db.storyCount() == 9);
+    // Towns 1..7 + the castle Jester + the Goofy Jester (M61) + the Pale
+    // Jester's Dragon introduction (M85, beat 10).
+    CHECK(db.storyCount() == 10);
 
     std::set<int> towns;
     for (const content::StoryBeat& b : db.story()) {
         INFO("story town " << b.town);
         CHECK(b.town >= 1);
-        CHECK(b.town <= kGooseTown);
+        CHECK(b.town <= kDragonJesterBeat);
         CHECK(towns.insert(b.town).second);  // unique town
         CHECK(!b.speaker.empty());
         CHECK(!b.title.empty());

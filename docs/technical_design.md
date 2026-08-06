@@ -2506,3 +2506,65 @@ omen post-pass) with content-driven team builders in `Guild.cpp`.
   omen, and sim-backed clearability of all seven gauntlets by the
   castle battery's maxed party (recorded per town).
 
+## 39. M85 — the Last Dragon & curio lore
+
+No rules/generation/score version motion. The one engine change — the
+intrinsic-element amendment — is provably inert for every pre-M85
+battle: the [elements] lint has always guaranteed no shipped foe carried
+a fire/holy immunity, so the new branch never fired before the Dragon
+existed (the M75 inert-hook precedent).
+
+- **The intrinsic-element amendment**: `Combatant::elementIntrinsic` is
+  set when a chosen M63 milestone (Fire bite / Holy basic) supplies
+  `weaponElement` (a real weapon still wins and clears the intrinsic
+  claim). `attackerElementMod` resolves an immunity at the neutral 100 %
+  for an intrinsic element, and `attackOne` routes its immune
+  mark/log/rider gate through that same EFFECTIVE modifier — damage,
+  float, log and rider always agree. This carries the M81-narrowed M48
+  absolute ("an intrinsic element is never nullified") in the ENGINE, so
+  the content half of the lint could narrow once more: the Dragon is
+  the game's one authored fire immunity (pinned exclusive in
+  [elements]); wielded/skill fire against him fizzles as the informed
+  trade it is.
+- **The Dragon** (`kDragonBossId` = `the_dragon`, `data/bosses.json`):
+  authored on v15 — six all-party elemental breath skills (one per
+  element, mpCost 20 paces them into an opening barrage before the
+  bites), statusImmunities = the six afflictions (poison deliberately
+  absent — ATK−/DEF−/Curse/Poison are the counterplay doors),
+  fire-immune, Spoon-proof (`immuneToStatScale`, the Duck precedent —
+  the §G question, answered), First Strike + Lifedrink + Spell Ward,
+  and three `first_time_hp_below_pct` triggers: 50 → `drain_foe_mp`
+  100 %, 10 → `scale_stats_self` 200/200 ATK/SPD, 5 → `summon_clone`
+  at 5 % HP (the clone gag). Base 1400 HP — sim-tuned down from the
+  brief's ~2000 (recorded; at 2000 the maxed party could not finish
+  after the MP deplete) — still the largest fight in the game at
+  7,000 effective HP vs the Duck's 5,000. Excluded from the Boss Rush,
+  the generator's fallback sweep (both BEFORE the content landed, so
+  nothing changed), and thereby the Endless boss draw.
+- **The gauntlet**: `CastleChallenge::Dragon` on the castle runner —
+  `dragonEliteWaveTeam` (three waves of four from the whole elite
+  roster, never bossOnly, pure-hashed from the fixed `kDragonSeed`)
+  then `dragonTeam` (alone), all at `kDragonScalePct` 500. Records:
+  `CastleRecords::dragonBestTurns` (+ save field
+  `castleDragonBestTurns`), `dragonImproved`, the castle records panel
+  row, **Wyrmbane**.
+- **The gate & the Pale Jester**: the castle menu's "Fight the Dragon"
+  row stays enabled while locked (the M84 rule); Confirm under
+  `ownedCurios < kCurioCount` pushes the Pale Jester's counting refusal
+  (StoryDialogState), at 12/12 the gauntlet — whose onEnter pushes his
+  authored tale (story beat `kDragonJesterBeat` = 10; the loader's town
+  range widened 1..9 → 1..10) on top of the opening fight until the
+  first victory. The menu pitch tightened 18 → 16 px for the eighth row.
+- **Curio lore**: `data/curio_lore.json` — the SECOND optional content
+  file (the M80 terms): `CurioLoreDef` + `findCurioLore`; the loader
+  owns shape/duplicates while known-ness and full 12/12 coverage are
+  [dragon]-battery lints (the curio table lives a layer above the
+  loader). MapsState grows a 4×3 grid cursor and a modal lore panel
+  (fallback: the curio's own M66 description).
+- Scenes: `33_castle_hub` (fullest records + the new row),
+  `96_curio_lore`, `97_dragon_jester`; the `[dragon]` battery covers
+  the immunity matrix, breath coverage, the three triggers + the
+  prebuilt clone slot, gauntlet determinism, every exclusion, records +
+  save round-trip, lore coverage, the beat, Wyrmbane, and sim-backed
+  clearability (recorded per wave).
+

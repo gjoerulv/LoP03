@@ -150,6 +150,7 @@ TEST_CASE("offense: exactly the authored foes carry the new vocabulary", "[offen
     // M84 widened the authored sets by exactly the seven Guild Masters (all
     // triggered; Registrar Null opens reflected; the Cutlery Curator shrugs
     // off the Spoon). Every foe OUTSIDE these still resolves as before.
+    // M85 adds the Dragon: three authored triggers and the Spoon shrug.
     CHECK(triggered == std::set<std::string>{
                            "troll_berserker", "royal_guard_staff", "deep_king",
                            "sand_warlord", "frost_monarch", "obsidian_colossus",
@@ -157,12 +158,12 @@ TEST_CASE("offense: exactly the authored foes carry the new vocabulary", "[offen
                            "guild_foreman_brakk", "guild_auditor_vess",
                            "guild_chain_mistress", "guild_warden_mole",
                            "guild_cutlery_curator", "guild_grandmaster_ossia",
-                           "guild_registrar_null"});
+                           "guild_registrar_null", "the_dragon"});
     CHECK(initial == std::set<std::string>{"rune_sentry", "evil_goose_trickster",
                                            "crystal_sorcerer", "deadly_duck",
                                            "guild_registrar_null"});
     CHECK(mannered == std::set<std::string>{"the_hollow_king", "deadly_duck",
-                                            "guild_cutlery_curator"});
+                                            "guild_cutlery_curator", "the_dragon"});
 
     // The all-enemies support shape (the one the M77 AI amendment serves) is
     // carried by exactly these foes — no pre-M77 foe, which is the amendment's

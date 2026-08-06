@@ -89,6 +89,7 @@ add_executable(crystal_tests
     test_floors.cpp
     test_map_economy.cpp
     test_guild.cpp
+    test_dragon.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

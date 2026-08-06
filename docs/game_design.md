@@ -504,6 +504,31 @@ collected on the Maps screen. Gathering the full dozen earns the
 **Curator** achievement, after which buried treasures pay a legendary
 token. Curios are pure collection joy — no stats, no score.
 
+**The Last Dragon & curio lore (M85).** The twelve curios finally talk:
+every owned curio is **inspectable** on the Maps screen (a cursor walks
+the grid; Confirm opens a lore panel), and each entry ties the trinket to
+the **Deadly Duck mythology** in the game's dry register
+(`data/curio_lore.json`, the second optional content file — a missing
+entry falls back to the curio's own description). Completing the dozen
+opens the castle's endgame: **"Fight the Dragon"** sits on the castle
+menu from the first visit, but while curios are missing the **Pale
+Jester** — a second, paler jester counting on the stair — politely
+refuses with your current count. At 12/12 the gauntlet begins: **three
+seeded elite vigil waves, then the Last Dragon**, Duck-style (persistent
+HP/MP, no free healing, the castle defeat price, best-turns record on
+the castle panel; the Pale Jester tells his tale before the fight until
+the Dragon first falls). The Dragon is the game's largest single fight —
+**7,000 effective HP** at the Duck's 500 % reference scale — immune to
+every affliction except **ATK−, DEF−, Curse and Poison** (the intended
+counterplay doors), immune to **Fire** (wielded and cast fire fizzles;
+an intrinsic class-milestone fire bite still lands at neutral — nothing
+nullifies an intrinsic element, the M81 rule now enforced by the engine
+itself), Spoon-proof, and armed with **six party-wide elemental
+breaths** — one per element, met by the M81 ward charms. Below half HP
+it **inhales the party's entire MP once**; below 10 % its attack and
+speed **double**; at the brink it **clones itself** at 5 % of its full
+HP. Felling it earns the **Wyrmbane** achievement.
+
 **Story & lore (M41).** A light-hearted running serial threads the climb: a
 **wandering storyteller** stands in every town and, town by town, spins the
 increasingly absurd "Ballad of the Hollow King" — one verse per town, growing

@@ -650,8 +650,9 @@ void parseStory(const Json& root, const std::string& source, ContentDatabase& db
         ObjectReader r(el, ctx, source, rep);
         StoryBeat d;
         // town 1..7 are the storyteller's installments; 8 (the castle) is the
-        // Jester; 9 (M61, the Goose Town) is the Goofy Jester's duck tale.
-        d.town = r.reqIntRange("town", 1, 9);
+        // Jester; 9 (M61, the Goose Town) is the Goofy Jester's duck tale;
+        // 10 (M85) is the Pale Jester's Dragon introduction.
+        d.town = r.reqIntRange("town", 1, 10);
         d.speaker = r.reqString("speaker");
         d.title = r.reqString("title");
         d.body = r.reqString("body");
@@ -691,6 +692,27 @@ void parseEventFlavor(const Json& root, const std::string& source, ContentDataba
         }
         if (!db.addEventFlavor(d)) {
             rep.add(source, ctx, "duplicate event id '" + d.id + "'");
+        }
+    });
+}
+
+void parseCurioLore(const Json& root, const std::string& source, ContentDatabase& db,
+                    LoadReport& rep) {
+    // M85: inspect-lore for the Maps screen's curios. The curio id table
+    // lives a layer up (game/Curios.hpp), so KNOWN-ness and full coverage are
+    // asserted by the [dragon] battery rather than here; the loader owns
+    // shape and duplicates.
+    forEachEntry(root, source, "curios", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        CurioLoreDef d;
+        d.id = r.reqString("id");
+        d.body = r.reqString("body");
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addCurioLore(d)) {
+            rep.add(source, ctx, "duplicate curio id '" + d.id + "'");
         }
     });
 }
@@ -967,7 +989,7 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     if (readJsonFile(dataRoot / "story.json", json, rep)) {
         parseStory(json, "story.json", db, rep);
     }
-    // M80: event flavor is the one OPTIONAL content file — pure presentation
+    // M80: event flavor is an OPTIONAL content file — pure presentation
     // with a footer-prompt fallback per event, so its absence is not an error
     // and can never block play. Present-but-malformed is still reported like
     // any other file (a typo should be seen, not shrugged off).
@@ -976,6 +998,17 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
         if (fs::exists(dataRoot / "event_flavor.json", ec) && !ec) {
             if (readJsonFile(dataRoot / "event_flavor.json", json, rep)) {
                 parseEventFlavor(json, "event_flavor.json", db, rep);
+            }
+        }
+    }
+
+    // M85: curio lore is the second optional file, on the same terms — a
+    // curio without its entry simply shows name + description as before.
+    {
+        std::error_code ec;
+        if (fs::exists(dataRoot / "curio_lore.json", ec) && !ec) {
+            if (readJsonFile(dataRoot / "curio_lore.json", json, rep)) {
+                parseCurioLore(json, "curio_lore.json", db, rep);
             }
         }
     }
