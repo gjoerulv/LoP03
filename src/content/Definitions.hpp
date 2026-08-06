@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "content/Enums.hpp"
@@ -247,6 +248,32 @@ struct CompositionDef {
     }
 };
 
+// M81: the gear-icon vocabulary. Every equipment/relic row renders a
+// "ui.icon.<category>" pixel icon; these are exactly the categories the
+// shipped icon set draws (a plain string vocabulary, the M80 kEventFlavorIds
+// idiom — code only ever concatenates the id into a texture key). Kept in
+// lockstep with the generator's icon grids by the presentation lint.
+inline constexpr const char* kIconCategoryIds[] = {
+    "sword", "axe", "dagger", "bow", "staff", "mace",
+    "spear", "shield", "armor", "accessory", "relic",
+};
+inline constexpr int kIconCategoryIdCount =
+    static_cast<int>(sizeof(kIconCategoryIds) / sizeof(kIconCategoryIds[0]));
+
+inline bool isIconCategory(const std::string& s) {
+    for (const char* id : kIconCategoryIds) {
+        if (s == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The editor id list for the field's enum picker (the *Ids() idiom).
+inline std::vector<std::string_view> iconCategoryIds() {
+    return {kIconCategoryIds, kIconCategoryIds + kIconCategoryIdCount};
+}
+
 // One status a battle item applies to its target (M44). Authored as a list so an
 // item can carry more than one (the Dragon Crown applies ATK- and DEF-) without
 // the schema growing a field per slot.
@@ -322,6 +349,13 @@ struct ItemDef {
     std::vector<Element> resistElements;
     int resistPct = 0;
 
+    // M81: which hand-authored gear icon this piece renders with in every
+    // equipment list ("ui.icon.<category>"). Optional where the slot makes it
+    // obvious (armor and accessory pieces and relics default to their slot's
+    // category via iconCategoryFor); a WEAPON must author one — a sword and a
+    // staff share a slot. Validated against kIconCategoryIds, gear only.
+    std::string iconCategory;
+
     // M76: a one-liner shown on the quip channel when this item is used in
     // battle (the Evil Duckling's Hilarious Punchline). Presentation only —
     // nothing in the battle model reads it. Empty for every other item.
@@ -340,6 +374,38 @@ struct ItemDef {
         return minTown <= town && (maxTown <= 0 || town <= maxTown);
     }
 };
+
+// M81: the icon category a piece of gear actually renders with — the authored
+// override, else the slot-derived default. Weapons have no default, so an
+// empty result on a weapon is a content error (the loader and the presentation
+// lint both catch it); render code treats empty as "draw no icon". Non-gear
+// items never have an icon.
+inline std::string iconCategoryFor(const ItemDef& d) {
+    if (d.type != ItemType::Equipment && d.type != ItemType::Relic) {
+        return "";
+    }
+    if (!d.iconCategory.empty()) {
+        return d.iconCategory;
+    }
+    if (d.type == ItemType::Relic) {
+        return "relic";
+    }
+    if (d.slot == EquipSlot::Armor) {
+        return "armor";
+    }
+    if (d.slot == EquipSlot::Accessory) {
+        return "accessory";
+    }
+    return "";
+}
+
+// The manifest texture key that category renders as ("" = no icon). Kept next
+// to iconCategoryFor so the render sites and the presentation lint share one
+// convention instead of each concatenating its own.
+inline std::string gearIconTextureId(const ItemDef& d) {
+    const std::string cat = iconCategoryFor(d);
+    return cat.empty() ? "" : "ui.icon." + cat;
+}
 
 struct BossDef {
     std::string id;

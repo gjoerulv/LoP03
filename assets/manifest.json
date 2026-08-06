@@ -261,6 +261,18 @@
     { "id": "ui.emblem.crystal", "type": "texture", "path": "textures/ui/emblem_crystal.png" },
     { "id": "ui.facing_brackets", "type": "texture", "path": "textures/ui/facing_brackets.png" },
 
+    { "id": "ui.icon.sword", "type": "texture", "path": "textures/ui/icons/sword.png" },
+    { "id": "ui.icon.axe", "type": "texture", "path": "textures/ui/icons/axe.png" },
+    { "id": "ui.icon.dagger", "type": "texture", "path": "textures/ui/icons/dagger.png" },
+    { "id": "ui.icon.bow", "type": "texture", "path": "textures/ui/icons/bow.png" },
+    { "id": "ui.icon.staff", "type": "texture", "path": "textures/ui/icons/staff.png" },
+    { "id": "ui.icon.mace", "type": "texture", "path": "textures/ui/icons/mace.png" },
+    { "id": "ui.icon.spear", "type": "texture", "path": "textures/ui/icons/spear.png" },
+    { "id": "ui.icon.shield", "type": "texture", "path": "textures/ui/icons/shield.png" },
+    { "id": "ui.icon.armor", "type": "texture", "path": "textures/ui/icons/armor.png" },
+    { "id": "ui.icon.accessory", "type": "texture", "path": "textures/ui/icons/accessory.png" },
+    { "id": "ui.icon.relic", "type": "texture", "path": "textures/ui/icons/relic.png" },
+
     { "id": "anim.player.walk.down", "type": "animation", "texture": "actor.player.walk",
       "row": 0, "frameCount": 3, "frameWidth": 12, "frameHeight": 12, "frameTime": 0.15 },
     { "id": "anim.player.walk.up", "type": "animation", "texture": "actor.player.walk",

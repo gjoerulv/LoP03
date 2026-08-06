@@ -1,5 +1,6 @@
 #include "editor/CategoryDescriptors.hpp"
 
+#include "content/Definitions.hpp"
 #include "content/Enums.hpp"
 
 namespace cd::editor {
@@ -313,6 +314,7 @@ std::vector<FieldDesc> itemDescs() {
         obj("statBonus", "Stat Bonus", statChildren(-99, -99)),
         enList("resistElements", "Resist Elements (M75)", ids(content::elementIds())),
         num("resistPct", "Resist %", 0, 100),
+        en("iconCategory", "Icon Category (M81)", ids(content::iconCategoryIds()), ""),
         str("useLine", "Use Line (M76)"),
         ref("grantsSkill", "Grants Skill (scroll)", Category::Skills),
         txt("description", "Description"),

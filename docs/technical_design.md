@@ -2332,3 +2332,51 @@ a static_assert on the kind count) holds the two in lockstep.
   time as the flavor panel (it follows the flavor's Confirm). Scene
   `87_event_outcome` referees the widest dynamic string.
 
+## 35. M81 — arms, elements & icons
+
+No version motion. The M75 resist hook (`resistElements`/`resistPct`,
+resolved at `buildBattle` into `Combatant::elementResist` with
+**best-piece-wins stacking** — `std::max`, never a sum) gets its shipped
+content; the only new schema is the icon field.
+
+- **`ItemDef::iconCategory`** — validated against `kIconCategoryIds`
+  (sword/axe/dagger/bow/staff/mace/spear/shield/armor/accessory/relic, a
+  plain string vocabulary on the M80 `kEventFlavorIds` pattern). Gear
+  only. `iconCategoryFor(def)` resolves the authored value, else the
+  slot-derived default (Relic→relic, Armor→armor, Accessory→accessory);
+  a **weapon has no default** (a sword and a staff share a slot) so the
+  loader rejects a weapon without one. `gearIconTextureId(def)` maps the
+  category to the manifest key `ui.icon.<category>` — render sites and
+  the lint share that one convention. The CrystalForge descriptor
+  shipped with the field (the M78 precedent), so `--canonicalize`
+  round-trips it.
+- **Menu icons**: `ui::MenuItem` gains an optional `icon` texture id;
+  `drawMenuScrolled` gains a trailing `ResourceManager*` (default null —
+  every old call site renders unchanged). Once any row carries an icon,
+  every label indents by the icon span so the column stays straight.
+  `ui::drawGearIcon` draws the 10×10 glyph point-crisp (missing texture
+  draws nothing — placeholder discipline). Sites: equip-shop buy/equip
+  lists, Armory Ghost list, party-panel gear lines (manual draw at the
+  10px line pitch), black-market offer at 2×.
+- **Icon art** rides the M73 grid pipeline: a new RNG-free section at
+  the very END of `generate_textures.ps1` (`Save-IconGrid`, hard-failing
+  any non-10×10 grid) writes `assets/textures/ui/icons/<category>.png`;
+  verified by the M73 SHA-256 sweep that all 196 pre-existing PNGs stay
+  byte-identical. Review sheet: `tools/asset_gen/preview_icons.ps1`
+  (dark + light rows) → `docs/sprite_review/icons_contact.png`.
+- **The M48 weapon-immunity lint narrowed** (test_elements): absolute
+  for the INTRINSIC fire/holy basics (no equip choice can undo those);
+  wielded elements may now meet immunities (an informed trade — M53
+  chip, bestiary, "Immune" float) but every weapon element must
+  weak-hit at least one shipped foe. The [arms] suite pins the ward
+  set, the legendary pool membership, the buildBattle resist landing,
+  the stacking rule, the coverage dealers (and that each recipient's
+  MAG affords its cast), and the icon schema; the `[lint]` sweep holds
+  vocabulary ↔ shipped icon textures in lockstep both ways.
+- **Determinism**: 13 new items join the chest/black-market/boss-drop
+  pools by the existing catalog rules — one `rng.range` per chest
+  regardless of pool size, so layouts are untouched; which item a given
+  seed yields shifts, the same class of change as every prior
+  gear-adding milestone (M43/M53/M76). Generation stays v14, battle
+  rules stay v15.
+

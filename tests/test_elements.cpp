@@ -368,7 +368,7 @@ TEST_CASE("elements: only a weapon may carry an element", "[content][elements]")
         "version": 1,
         "items": [
           { "id": "w", "name": "Ember Blade", "type": "equipment", "slot": "weapon",
-            "element": "fire" }
+            "element": "fire", "iconCategory": "sword" }
         ]})",
                                                   weapons);
     CHECK(ok.errorCount() == 0);
@@ -408,11 +408,31 @@ TEST_CASE("elements: shipped affinities are disjoint and sparse", "[content][ele
     CHECK(taggedFoes > 0);  // the layer is actually used by the shipped content
 }
 
-TEST_CASE("elements: no weapon element can ever be nullified", "[content][elements][lint]") {
-    // The M48 no-dead-weapon rule. A skill can be swapped for another, but a
-    // basic attack cannot — and a skill-less class (the Dragon) has nothing else.
-    // So no shipped foe may be immune to an element any shipped WEAPON carries.
+TEST_CASE("elements: intrinsic attack elements can never be nullified",
+          "[content][elements][lint]") {
+    // The M48 no-dead-weapon rule, NARROWED by M81 (the owner-approved plan
+    // ships Ice/Lightning/Earth weapons into a roster that already carries
+    // those immunities). What must stay absolute is the part no equip choice
+    // can undo: the INTRINSIC basic-attack elements (the class-mod Fire bite
+    // and Holy basic — a skill-less class's only tool when it wields nothing)
+    // may never meet an immunity anywhere. A WIELDED element meeting one is
+    // now an informed trade: the shop chip (M53), the bestiary and the
+    // "Immune" float all say so before and during the fight.
     const content::ContentDatabase db = loadContent();
+    for (Element e : {Element::Fire, Element::Holy}) {
+        INFO("intrinsic element " << content::toString(e));
+        for (const auto& [id, def] : db.enemies()) {
+            INFO("enemy " << id);
+            CHECK_FALSE(def.affinity.immuneTo(e));
+        }
+        for (const auto& [id, def] : db.bosses()) {
+            INFO("boss " << id);
+            CHECK_FALSE(def.affinity.immuneTo(e));
+        }
+    }
+
+    // And a wielded element must still be WORTH something: every shipped
+    // weapon element has at least one weak foe to earn its rider against.
     std::vector<Element> weaponElements;
     for (const auto& [id, def] : db.items()) {
         if (def.element != Element::None) {
@@ -422,17 +442,16 @@ TEST_CASE("elements: no weapon element can ever be nullified", "[content][elemen
         }
     }
     REQUIRE_FALSE(weaponElements.empty());
-
     for (Element e : weaponElements) {
         INFO("weapon element " << content::toString(e));
+        bool anyWeak = false;
         for (const auto& [id, def] : db.enemies()) {
-            INFO("enemy " << id);
-            CHECK_FALSE(def.affinity.immuneTo(e));
+            anyWeak = anyWeak || def.affinity.weakTo(e);
         }
         for (const auto& [id, def] : db.bosses()) {
-            INFO("boss " << id);
-            CHECK_FALSE(def.affinity.immuneTo(e));
+            anyWeak = anyWeak || def.affinity.weakTo(e);
         }
+        CHECK(anyWeak);
     }
 }
 

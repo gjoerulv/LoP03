@@ -3,6 +3,8 @@
 #include <array>
 #include <string>
 
+#include "content/Definitions.hpp"
+#include "content/Enums.hpp"
 #include "content/Stats.hpp"
 
 // M52 — equip stat-bonus formatting, as pure functions.
@@ -50,6 +52,23 @@ inline std::string bonusDelta(const content::StatBlock& next, const content::Sta
     add("DEF", next.defense - cur.defense);
     add("SPD", next.speed - cur.speed);
     return out;
+}
+
+// M81: "Resists Fire 50%" / "Resists all elements 50%" summary of a piece's
+// worn element resistance; empty when it has none. Shared by the equip-shop
+// detail and the black-market offer so the wording cannot drift.
+inline std::string resistSummary(const content::ItemDef& it) {
+    if (it.resistPct <= 0 || it.resistElements.empty()) {
+        return "";
+    }
+    if (static_cast<int>(it.resistElements.size()) >= content::kElementCount) {
+        return "Resists all elements " + std::to_string(it.resistPct) + "%";
+    }
+    std::string names;
+    for (content::Element e : it.resistElements) {
+        names += (names.empty() ? "" : "/") + std::string(content::elementDisplayName(e));
+    }
+    return "Resists " + names + " " + std::to_string(it.resistPct) + "%";
 }
 
 // Net sign of a diff, so its colour is chosen in one place: +1 when the summed

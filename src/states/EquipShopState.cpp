@@ -49,6 +49,12 @@ std::string equipDetail(const content::ItemDef& it) {
     if (!stats.empty()) {
         out += (out.empty() ? "" : "  ") + stats;
     }
+    // M81: worn element resistance is the whole identity of the ward charms,
+    // so the shopping line says it outright.
+    const std::string resist = equip::resistSummary(it);
+    if (!resist.empty()) {
+        out += (out.empty() ? "" : "  ") + resist;
+    }
     if (!it.description.empty()) {
         out += (out.empty() ? "" : "  -  ") + it.description;
     }
@@ -111,6 +117,15 @@ void EquipShopState::captureEnterBuyList(content::EquipSlot slot) {
     phase_ = Phase::Buy;
     rebuild();
 }
+void EquipShopState::captureCursorToItem(const std::string& itemId) {
+    for (std::size_t i = 0; i < rowIds_.size(); ++i) {
+        if (rowIds_[i] == itemId) {
+            menu_.setCursor(static_cast<int>(i));
+            scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
+            break;
+        }
+    }
+}
 void EquipShopState::captureEnterEquipItem(int charIndex, content::EquipSlot slot) {
     selectedChar_ = charIndex;
     selectedSlot_ = slot == content::EquipSlot::Weapon ? 0
@@ -151,9 +166,11 @@ void EquipShopState::rebuild() {
                 rowIds_.push_back(id);
                 // M52: owned count + price, the item-shop column idiom (M46);
                 // M78: tab-split so drawMenuScrolled aligns both columns.
+                // M81: every gear row leads with its category icon.
                 items.push_back({it->name, true,
                                  TextFormat("x%d\t%dg", context_.party.inventory.count(id),
-                                            it->value)});
+                                            it->value),
+                                 content::gearIconTextureId(*it)});
             }
             break;
         }
@@ -167,14 +184,16 @@ void EquipShopState::rebuild() {
             const std::string eq[3] = {c.weapon, c.armor, c.accessory};
             for (int i = 0; i < 3; ++i) {
                 std::string label = std::string(kSlotNames[i]) + ": ";
+                std::string icon;  // M81: the equipped piece's icon leads its row
                 if (eq[i].empty()) {
                     label += "(none)";
                 } else if (const content::ItemDef* it = context_.content.findItem(eq[i])) {
                     label += it->name;
+                    icon = content::gearIconTextureId(*it);
                 } else {
                     label += eq[i];
                 }
-                items.push_back({label, true});
+                items.push_back({label, true, "", icon});
             }
             break;
         }
@@ -192,7 +211,8 @@ void EquipShopState::rebuild() {
                 const content::ItemDef* it = context_.content.findItem(id);
                 rowIds_.push_back(id);
                 items.push_back({it->name, true,
-                                 "x" + std::to_string(context_.party.inventory.count(id))});
+                                 "x" + std::to_string(context_.party.inventory.count(id)),
+                                 content::gearIconTextureId(*it)});  // M81
             }
             break;
         }
@@ -304,6 +324,10 @@ void EquipShopState::openItemDetails() {
     if (!own.empty()) {
         body += "\nBonus: " + own;
     }
+    const std::string resist = equip::resistSummary(*it);  // M81
+    if (!resist.empty()) {
+        body += "\n" + resist;
+    }
     if (!it->description.empty()) {
         body += "\n" + it->description;
     }
@@ -393,7 +417,8 @@ void EquipShopState::render() {
                   ui::FrameStyle::Inset);
     ui::drawMenuScrolled(menu_, scroll_, kVisibleRows, kListX, kListY, kListItemH,
                          style::kFontMenu, 300, p.text, p.disabled, p.cursor,
-                         "equipshop.list", style::kFontSmall, p.gold);
+                         "equipshop.list", style::kFontSmall, p.gold,
+                         &context_.resources);  // M81: gear icons
 
     // M67: the member being outfitted rides the free column right of the list —
     // the highlighted row while choosing, then the chosen member through the
@@ -486,6 +511,14 @@ void EquipShopState::render() {
             ui::drawChipRight(content::elementDisplayName(candItem->element),
                               kListX - 24 + 352 - 8, dy - 1,
                               ui::elementAccent(candItem->element, p));
+        } else if (candItem != nullptr) {
+            // M81: a ward charm's whole identity is its resistance, which the
+            // stat diff cannot show — say it where the element chip would sit.
+            const std::string resist = equip::resistSummary(*candItem);
+            if (!resist.empty()) {
+                ui::drawTextRight(resist, kListX - 24 + 352 - 8, dy, style::kFontBody,
+                                  p.textDim);
+            }
         }
     }
 

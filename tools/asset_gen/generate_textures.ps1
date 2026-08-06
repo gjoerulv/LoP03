@@ -2889,4 +2889,173 @@ FR $b 5 6 2 5 $PAL.glint; P $b 6 4 $PAL.glint; P $b 7 2 '#FFFFFF' # lit facet
 FR $b 9 6 2 5 $PAL.wat2; P $b 9 11 $PAL.wat2                      # shaded facet
 Outline $b; SaveImg $b 'props/save_crystal.png'
 
+# --- M81: gear icons (10x10 pixel grids) -----------------------------------
+#
+# One icon per gear category (`iconCategory` in data/items.json; the exact
+# vocabulary is content::kIconCategoryIds and the presentation lint holds the
+# two in lockstep). Drawn with the M73 grid idiom: explicit ASCII rows, the
+# shared $GRIDC palette key, hand-placed pixels only.
+#
+# DETERMINISM: like the enemy section above, this section calls NO random
+# helper, so it cannot shift any other generated file's bytes. It also runs
+# LAST, so nothing after it exists to shift.
+#
+# 10x10 is the size the UI actually renders: menu rows are 14px tall at font
+# 10 (equip shop, armory ghost) and the party panel's gear lines sit on a
+# 10px pitch, so 10 is the largest square that fits every site at 1x. No
+# Outline pass — these sit on dark Inset list panels where the light ramps
+# carry the shape.
+Write-Output 'Generating gear icons (M81 pixel grids)...'
+
+function Save-IconGrid([string]$name, [string[]]$rows) {
+  $b = Draw-Grid $rows
+  if ($b.Width -ne 10 -or $b.Height -ne 10) {
+    throw "Save-IconGrid: icon '$name' is $($b.Width)x$($b.Height); must be 10x10."
+  }
+  SaveImg $b "ui/icons/$name.png"
+}
+
+Save-IconGrid 'sword' @(     # diagonal blade, gold cross-guard, dark grip
+  '.........W'
+  '.......LS.'
+  '......LS..'
+  '.....LS...'
+  '....LS....'
+  '...LS.....'
+  '..YYY.....'
+  '..s.......'
+  '.s........'
+  'Y.........'
+)
+
+Save-IconGrid 'axe' @(       # crescent head with a flat right cutting edge
+  '......rrS.'
+  '.....rrrS.'
+  '....dsrrS.'
+  '.....rrrS.'
+  '......rrS.'
+  '....ds....'
+  '....ds....'
+  '....ds....'
+  '....ds....'
+  '..........'
+)
+
+Save-IconGrid 'dagger' @(    # short blade, wide guard, round pommel
+  '..........'
+  '......LS..'
+  '.....LS...'
+  '....LS....'
+  '...YY.....'
+  '..s.......'
+  '.sY.......'
+  '..........'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'bow' @(       # left-bulging stave, straight string
+  '.....dd...'
+  '...dd.S...'
+  '..d...S...'
+  '.d....S...'
+  '.d....S...'
+  '.d....S...'
+  '.d....S...'
+  '..d...S...'
+  '...dd.S...'
+  '.....dd...'
+)
+
+Save-IconGrid 'staff' @(     # crystal-topped rod
+  '....CG....'
+  '...CCCG...'
+  '....CC....'
+  '....ss....'
+  '....ds....'
+  '....ds....'
+  '....ds....'
+  '....ds....'
+  '....ss....'
+  '..........'
+)
+
+Save-IconGrid 'mace' @(      # studded stone head on a straight handle
+  '...www....'
+  '..wrKrw...'
+  '..wrrrw...'
+  '...www....'
+  '....ss....'
+  '....ss....'
+  '....ss....'
+  '....ss....'
+  '....ss....'
+  '..........'
+)
+
+Save-IconGrid 'spear' @(     # long 2px shaft, bright steel point
+  '........LS'
+  '.......LS.'
+  '......ss..'
+  '.....ss...'
+  '....ss....'
+  '...ss.....'
+  '..ss......'
+  '.ss.......'
+  'ss........'
+  '..........'
+)
+
+Save-IconGrid 'shield' @(    # heater: bright rim, gold boss
+  '.wwwwwww..'
+  '.weeeeew..'
+  '.weeYeew..'
+  '.weeeeew..'
+  '..weeew...'
+  '..weeew...'
+  '...wew....'
+  '....w.....'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'armor' @(     # cuirass: shoulders, rimmed torso, waist taper
+  '..........'
+  '.rr....rr.'
+  '.rrreerrr.'
+  '..reeeer..'
+  '..reeeer..'
+  '..rreerr..'
+  '...reer...'
+  '...rrrr...'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'accessory' @( # gold ring, cyan gem
+  '..........'
+  '..........'
+  '....CC....'
+  '...YCCY...'
+  '..Y....Y..'
+  '..Y....Y..'
+  '...Y..Y...'
+  '....YY....'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'relic' @(     # violet void-diamond with a glint core
+  '..........'
+  '....m.....'
+  '...mBm....'
+  '..mBVBm...'
+  '.mBVGVBm..'
+  '..mBVBm...'
+  '...mBm....'
+  '....m.....'
+  '..........'
+  '..........'
+)
+
 Write-Output 'Texture generation complete.'

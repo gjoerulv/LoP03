@@ -32,6 +32,18 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M81 update:** arms, elements & icons — every gear row anywhere
+> (equip shop, party panel, black market at 2×, Armory Ghost) leads with
+> a 10×10 category icon; six 50%-resist ward charms (t2–t4), the
+> +200 SPD Overwound Pocketwatch and the all-element −50% Motley Aegis
+> join the catalog; five elemental weapons fill t2–t5 (ice sword,
+> lightning bow, earth mace, fire daggers, holy spear); stone golems and
+> titan guards now cast Stone Edge, the soul render opens with Inferno,
+> the standard bearer smites. NOTE the M48 rule change: a WIELDED
+> element can now meet an immunity (informed by the shop chip, bestiary
+> and "Immune" float) — judge it deliberately. Capture set is now **88
+> scenes** (`88_ward_charms`). The M81 note §G is the checklist.
+>
 > **M80 update:** event flavor — every dungeon event opens a centered
 > panel (authored title + dry-humor body from `data/event_flavor.json`,
 > then the familiar gold trade-off line); Confirm commits, Cancel steps

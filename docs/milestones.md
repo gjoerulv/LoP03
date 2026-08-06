@@ -87,8 +87,8 @@
 | 77 | Enemy & boss offensive pass | ☑ complete (approved) |
 | 78 | Inventory caps & shop UX | ☑ complete (approved) |
 | 79 | Input & QoL: party cycling, three-slot remap | ☑ complete (approved) |
-| 80 | Event flavor text | ◑ implemented, awaiting manual approval |
-| 81 | Arms, elements & icons | ☐ planned |
+| 80 | Event flavor text | ☑ complete (approved) |
+| 81 | Arms, elements & icons | ◔ in progress |
 | 82 | Floors: 1-or-4-floor dungeons | ☐ planned |
 | 83 | Map economy: 4-floor map-piece drops | ☐ planned |
 | 84 | Guild Masters & town milestones | ☐ planned |
@@ -3048,8 +3048,9 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M80 — Event flavor text
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-06 on the post-M79 checkout (`3eb9986`). `data/event_flavor.json`
+- **Status:** ☑ complete (approved) — implemented 2026-08-06 on the
+  post-M79 checkout (`3eb9986`); approved and committed by the owner
+  2026-08-06 (`ccb4d2a`). `data/event_flavor.json`
   (new, 11 dry-humor entries — one per real `RoomEventKind`, the game's
   one OPTIONAL content file) behind `content::EventFlavorDef` /
   `kEventFlavorIds` with `dungeon::eventFlavorId` mapping the enum down

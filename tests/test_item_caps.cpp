@@ -114,7 +114,7 @@ TEST_CASE("caps: the loader rejects misplaced or over-ceiling cap fields", "[cap
         content::LoadReport rep;
         content::parseItems(parse(R"({"version":1,"items":[
             {"id":"blade","name":"Blade","type":"equipment","slot":"weapon",
-             "value":100,"maxHeld":2}]})"),
+             "value":100,"iconCategory":"sword","maxHeld":2}]})"),
                             "items", db, rep);
         CHECK_FALSE(rep.ok());
     }
@@ -131,7 +131,7 @@ TEST_CASE("caps: the loader rejects misplaced or over-ceiling cap fields", "[cap
         content::LoadReport rep;
         content::parseItems(parse(R"({"version":1,"items":[
             {"id":"blade","name":"Blade","type":"equipment","slot":"weapon",
-             "value":100,"notSoldInTown":true}]})"),
+             "value":100,"iconCategory":"sword","notSoldInTown":true}]})"),
                             "items", db, rep);
         CHECK_FALSE(rep.ok());
     }

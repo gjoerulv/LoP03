@@ -12,6 +12,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "states/EquipDiff.hpp"
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
@@ -145,9 +146,19 @@ void BlackMarketState::render() {
                            : it->slot == content::EquipSlot::Accessory ? "Accessory"
                                                                        : "Relic";
         ui::drawFrame(32, 46, w - 64, 70, ui::FrameStyle::Reward);
-        ui::drawTextFitted(TextFormat("%s  (Legendary %s)", it->name.c_str(), slot), 46, 53,
-                           w - 92, 12, p.gold, "market.name");
-        ui::drawTextFitted(statBonusSummary(it->statBonus), 46, 70, w - 92, style::kFontBody,
+        // M81: the offer leads with its gear icon at 2x — the dealer shows the
+        // goods, not just the name.
+        ui::drawGearIcon(context_.resources, content::gearIconTextureId(*it), 42, 50, 2);
+        ui::drawTextFitted(TextFormat("%s  (Legendary %s)", it->name.c_str(), slot), 68, 53,
+                           w - 114, 12, p.gold, "market.name");
+        // M81: worn resistance joins the stat summary (it is the whole point
+        // of the all-element piece, which has no stat bonus to show).
+        std::string summary = statBonusSummary(it->statBonus);
+        const std::string resist = equip::resistSummary(*it);
+        if (!resist.empty()) {
+            summary += (summary.empty() ? "" : "  ") + resist;
+        }
+        ui::drawTextFitted(summary, 46, 70, w - 92, style::kFontBody,
                            p.success, "market.stats");
         ui::drawTextWrapped(it->description, 46, 85, w - 92, style::kFontBody, p.textDim,
                             "market.desc", 2);

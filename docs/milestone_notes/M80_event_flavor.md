@@ -6,8 +6,9 @@ post-M79 checkout (`3eb9986`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-06.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-06 (incl. the same-cycle
+outcome-panel addendum); approved and committed by the owner 2026-08-06
+(`ccb4d2a`). Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -155,4 +156,4 @@ event mechanics, costs and seeded rolls are untouched.
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-06, committed as `ccb4d2a`.

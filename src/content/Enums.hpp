@@ -10,6 +10,9 @@
 namespace cd::content {
 
 enum class Element { None, Fire, Ice, Lightning, Earth, Holy, Dark };
+// The number of REAL elements (None excluded) — the "resists everything" bar
+// for the all-element gear summary (M81).
+inline constexpr int kElementCount = 6;
 
 enum class SkillCategory { Physical, Magic, Heal, Support };
 

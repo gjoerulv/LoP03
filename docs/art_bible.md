@@ -77,6 +77,16 @@ reserved for their meanings and never decorative.
   inside the 40px unit footprint. Growing either needs an `enemyBaseY()`
   change and owner approval.
 - UI frame: 24×24 nine-patch with 8px borders; icons 8×8 or 12×12.
+- **Gear icons (M81): 10×10**, one per `iconCategory` (11 shipped), drawn as
+  hand-placed grids on the §2 ramps with **no outline pass** — they sit on
+  dark Inset list panels where the light ramps carry the shape, and must also
+  read on a light ground (the review sheet shows both). The size is
+  layout-bound: menu rows are 14px at font 10 and the party panel's gear
+  lines sit on a 10px pitch. Strong silhouette first, at most three ramps,
+  one accent (gold guard, cyan gem, violet relic-glow); the axe's flat
+  vertical cutting edge exists to keep it off the mace's round head —
+  category collisions are the failure mode here, exactly like §5's enemy
+  silhouettes.
 - Native-resolution authoring only; nearest-neighbor scaling; no mixed-scale
   pixels ("pixel-perfect or absent").
 

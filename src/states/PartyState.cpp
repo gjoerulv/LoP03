@@ -220,11 +220,28 @@ void PartyState::render() {
                             c.level >= kMaxLevel ? 0 : xpToNext(c.level) - c.xp),
                  dx, y, 8, p.textDim);
     y += 11;
-    ui::drawTextFitted("Weapon: " + itemName(db, c.weapon), dx, y, dw, 8, p.textDim,
+    // M81: each gear line leads with its category icon (the icon carries the
+    // sword-vs-staff read the slot label cannot). Layout: [icon] label, with
+    // the armor line fitting armor + accessory at measured positions.
+    const auto gearIcon = [&](const std::string& itemId, int ix, int iy) {
+        if (const content::ItemDef* it = db.findItem(itemId)) {
+            ui::drawGearIcon(context_.resources, content::gearIconTextureId(*it), ix, iy);
+        }
+        return ix + ui::kGearIconSize + 3;
+    };
+    int gx = gearIcon(c.weapon, dx, y - 1);
+    ui::drawTextFitted("Weapon: " + itemName(db, c.weapon), gx, y, dw - (gx - dx), 8, p.textDim,
                        "party.gear");
     y += 10;
-    ui::drawTextFitted("Armor: " + itemName(db, c.armor) + "   Acc: " + itemName(db, c.accessory),
-                       dx, y, dw, 8, p.textDim, "party.gear");
+    gx = gearIcon(c.armor, dx, y - 1);
+    const std::string armorTxt = "Armor: " + itemName(db, c.armor);
+    ui::drawTextFitted(armorTxt, gx, y, dw - (gx - dx), 8, p.textDim, "party.gear");
+    int ax = gx + ui::measureText(armorTxt, 8) + 10;
+    if (ax < dx + dw - 40) {  // room for the accessory half; else it clips fitted
+        ax = gearIcon(c.accessory, ax, y - 1);
+        ui::drawTextFitted("Acc: " + itemName(db, c.accessory), ax, y, dx + dw - ax, 8,
+                           p.textDim, "party.gear");
+    }
     y += 10;
     const content::PassiveDef* passive =
         c.equippedPassive.empty() ? nullptr : db.findPassive(c.equippedPassive);

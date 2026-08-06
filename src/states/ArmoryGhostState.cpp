@@ -73,7 +73,8 @@ void ArmoryGhostState::rebuild() {
             continue;
         }
         ids_.push_back(s.itemId);
-        items.push_back({it->name, true, "x" + std::to_string(s.count)});
+        items.push_back({it->name, true, "x" + std::to_string(s.count),
+                         content::gearIconTextureId(*it)});  // M81
     }
     const int previous = menu_.cursor();
     menu_.setItems(std::move(items));
@@ -159,7 +160,8 @@ void ArmoryGhostState::render() {
     } else {
         ui::drawMenuScrolled(menu_, scroll_, kVisibleRows, kListX, kListY, kListItemH,
                              style::kFontMenu, kLabelW, p.text, p.disabled, p.cursor, "ghost.list",
-                             style::kFontSmall, p.textDim);
+                             style::kFontSmall, p.textDim,
+                             &context_.resources);  // M81: gear icons
     }
 
     // Detail line for the highlighted piece: what slot/rarity it is, and that the

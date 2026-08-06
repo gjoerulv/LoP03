@@ -626,18 +626,62 @@ shows the same as chips while you aim at it; and a resolved hit floats **"Weak!"
 (gold) or **"Immune"** (coral) beside the number. Every one is shape *and* text,
 never color alone.
 
-The curation is deliberately small — 8 enemies, 3 bosses, 5 weapons — and follows
-one hard rule: **no weapon element is ever an immunity anywhere in the game.** A
-skill can be swapped for another, but a basic attack cannot, and one class (the
-Dragon) has nothing else — so a wielded element that could be nullified would be
-a trap rather than a decision. Immunities use ice, earth and lightning; weapons
-use fire and holy. Dark weapons stay reserved — but since **M76** the element
+The curation started deliberately small — 8 enemies, 3 bosses, 5 weapons — under
+one hard M48 rule: *no weapon element is ever an immunity anywhere in the game*.
+That rule was **narrowed by M81** (whose owner-approved plan ships Ice,
+Lightning and Earth weapons into a roster that already carries those
+immunities). What stays absolute is the part no equip choice can undo: the
+**intrinsic** attack elements — the Dragon's fire bite and the holy basic, a
+skill-less class's only tool when it wields nothing — are **never an immunity
+anywhere**. A *wielded* element meeting an immunity is now an **informed
+trade**: the equip-shop element chip (M53), the bestiary affinity row and the
+in-battle "Immune" float all say so before and during the fight, and swapping
+the weapon back is a town visit, not a build reset. A lint holds both halves:
+fire and holy immunity-free, and every shipped weapon element weak-hitting at
+least one foe. Dark weapons stay reserved — but since **M76** the element
 itself has one player-side exception: the Rogue's **Shadow Strike** carries
 Dark (owner decision 2026-08-05), and no foe anywhere is immune to Dark, so
 the Rogue's signature opener can never become a trap. Since **M77** the Dark
 weaknesses are real: the **Wisp**, the **Crystal Guardian** and the **Throne
 Blade** — and exactly one boss, the **Crystal Sorcerer** (whose opening
 mirror bounces magic, making the physical Dark opener the town-1 story).
+
+**Arms, elements & icons (M81).** The party gets an elemental defense layer and
+the elements get a full armory:
+
+- **The ward set** — six 50 %-resist accessories, one per element, riding the
+  M75 `resistElements`/`resistPct` hook: **Flameward** and **Stormward** charms
+  from town 2, **Frostward** and **Nightward** from town 3, **Stoneward** and
+  **Lightward** from town 4. Pure resist pieces — no stat bonus — so wearing
+  one is a real trade against a stat accessory, priced at-or-under each town's
+  stat piece. Buyable in the equip shop and present in the chest pool like any
+  other gear; the shop detail line and the Details overlay state the resist
+  outright ("Resists Fire 50%").
+- **Two new legendaries** in the shared black-market/boss-drop pool: the
+  **Overwound Pocketwatch** (+200 SPD — the owner's number, verbatim: its
+  bearer simply goes first) and the **Motley Aegis** (−50 % from **all six**
+  elements, no stat bonus).
+- **Five elemental weapons** filling the t2–t5 gap where no elemental weapon
+  existed: **Winterbrand** (ice sword, t2), **Stormstring** (lightning bow,
+  t3), **Quakemaul** (earth mace, t4), **Emberfangs** (fire daggers, t5) and
+  the **Vigil Lance** (holy spear, t5). Each also extends a starved weapon
+  family (the bow and dagger lines had one entry each since town 1), stats on
+  the M54 tier curve with a ~15 % price premium over the tier's plain piece so
+  the budget choice stays alive.
+- **Coverage** so the wards matter: earth existed as a skill no foe cast, and
+  fire and holy each had a single dealer. Now the **Stone Golem** and the
+  **Titan Guard** cast **Stone Edge** (which also makes the Obsidian
+  Colossus fight an earth fight — both his minions are the golem and the
+  crawler), the **Soul Render** opens with **Inferno** (a party-wide t6 fire
+  nuke — the fight the Flameward earns its slot in), and the **Standard
+  Bearer**'s consecrated banner **Smites**. Ice, lightning and dark were
+  already healthy and are untouched.
+- **Gear icons** — every equipment and relic row anywhere in the game leads
+  with a hand-authored 10×10 pixel icon of its category (sword / axe / dagger
+  / bow / staff / mace / spear / shield / armor / accessory / relic): the
+  equip-shop buy and equip lists, the party panel's gear lines, the black
+  market's offer (at 2×) and the Armory Ghost's trade list. The icon carries
+  the sword-vs-staff read a slot label cannot.
 
 **The King's Court (M49).** The Hollow King stops fighting alone. Two **Royal
 Guards** — the **Throne Blade** and the **Throne Stave** — stand with him:

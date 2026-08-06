@@ -17,6 +17,12 @@ struct MenuItem {
     // row's right edge by drawMenuScrolled, so it is never squeezed out by a long
     // label — the label is fitted to whatever room is left instead.
     std::string suffix;
+    // M81: optional gear icon (a manifest texture id, "ui.icon.<category>").
+    // Drawn left of the label by drawMenuScrolled when it is given a
+    // ResourceManager; once any row in a menu has one, every row indents so
+    // the label column stays straight. Pure model — rendering ignores it
+    // unless the draw call opts in.
+    std::string icon;
 };
 
 class Menu {

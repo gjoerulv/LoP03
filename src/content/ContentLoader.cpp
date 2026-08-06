@@ -458,6 +458,7 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
                 d.resistElements.push_back(*parsed);
             }
         }
+        d.iconCategory = r.optString("iconCategory");  // M81 (gear icons)
         d.useLine = r.optString("useLine");  // M76 (the duckling's punchline)
         d.grantsSkill = r.optString("grantsSkill");
         d.description = r.optString("description");
@@ -527,6 +528,22 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         }
         if (d.resistPct > 0 && d.type != ItemType::Equipment && d.type != ItemType::Relic) {
             rep.add(source, ctx, "'resistPct' is only valid on equipment or a relic");
+        }
+        // M81: gear icons. The category must be one the shipped icon set
+        // draws, only gear renders icons, and a weapon has no slot-derived
+        // default (a sword and a staff share a slot) so it must author one.
+        if (!d.iconCategory.empty()) {
+            if (d.type != ItemType::Equipment && d.type != ItemType::Relic) {
+                rep.add(source, ctx, "'iconCategory' is only valid on equipment or a relic");
+            } else if (!isIconCategory(d.iconCategory)) {
+                rep.add(source, ctx, "unknown 'iconCategory' '" + d.iconCategory + "'");
+            }
+        }
+        if (d.type == ItemType::Equipment && d.slot == EquipSlot::Weapon &&
+            iconCategoryFor(d).empty()) {
+            rep.add(source, ctx,
+                    "a weapon must author 'iconCategory' "
+                    "(sword/axe/dagger/bow/staff/mace/spear)");
         }
         // M78: held-quantity caps and the town-shop delisting are consumable
         // policies; the cap ceiling is the owner's hard 9.

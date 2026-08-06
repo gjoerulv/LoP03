@@ -542,6 +542,18 @@ int run(const char* outDir) {
                  state->captureEnterBuyList(content::EquipSlot::Weapon);
                  s.pushState(std::move(state));
              }},
+            {"88_ward_charms",
+             [](StateStack& s, AppContext& c) {
+                 // M81: the accessory buy list where the ward-charm set lives,
+                 // cursor parked on a charm so its resist detail line and the
+                 // gear-icon column are both overflow-checked.
+                 c.party.currentTown = 7;
+                 c.party.gold = 9999;
+                 auto state = std::make_unique<EquipShopState>(s, c);
+                 state->captureEnterBuyList(content::EquipSlot::Accessory);
+                 state->captureCursorToItem("stoneward_charm");
+                 s.pushState(std::move(state));
+             }},
             {"31_battle_high_town",
              [&battleSlot](StateStack& s, AppContext& c) {
                  // M38: a five-enemy team of new town-7 foes (their own sprites),
