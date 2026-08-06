@@ -6,8 +6,10 @@ post-M80 checkout (`ccb4d2a`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-06.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-06; approved and
+committed by the owner 2026-08-06 (`5a8b09b` + `f2e32c8` docs). The
+owner's approval covers the §E.1 M48-rule narrowing (wielded elements
+may meet immunities; intrinsic fire/holy stay absolute). Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -216,4 +218,5 @@ itemId.
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-06, committed as
+`5a8b09b` (implementation) + `f2e32c8` (docs).

@@ -177,6 +177,25 @@ the classic footer prompt, so flavor can never block an event. And the
 the same centered box, dismissed with any button — the fleeting footer
 line remains only for pings (map pieces, battle results, "Guarded").
 
+**Runs come in two shapes (M82).** The Guild picker's **Floors** row
+chooses **1 or 4**. A 1-floor run is the classic dungeon, unchanged — the
+same seed still means the same run it always did. A **4-floor run**
+descends through four full levels of the chosen theme at the chosen depth
+(flat — owner decision; the elite gates and 4× length ARE the added
+challenge): floors 1–3 hold the **Stairway Wardens** — an all-elite gate
+team standing where the boss would — and beating them opens a **stairway
+down** where they stood; the real boss waits on floor 4. Descent is
+one-way and the whole descent is **one continuous run**: turns, danger,
+chests, and escapes accumulate into a single reckoning at the bottom, the
+run autosaves once at entry as always, and retreating or falling anywhere
+scores 0 exactly as today. The HUD chip reads the position outright
+(`Keep  D6  F2/4`). Each floor generates from a derived sub-seed of the
+run seed (floor 1 IS the run seed), so published seeds mean the same four
+floors for everyone. On the **scoreboard, the two shapes rank on separate
+boards** — cycled with the party-cycle keys (Q/E, LB/RB) — because a
+four-floor turn count compared against a one-floor sprint would make both
+numbers meaningless; every pre-M82 entry sits on the 1-floor board.
+
 **Bosses are mechanically distinct (M20).** Each archetype has one
 deterministic mechanic, stated in its telegraph: the Brute's damage swells
 below half HP (announced when it triggers), the Sorcerer's magic grows as
@@ -898,6 +917,9 @@ actions — defaults **Q / E**, alternates **Ctrl / Alt**, gamepad
 **LB / RB** — cycle the selected member in the Equip Shop's member-scoped
 phases and everywhere in the Training Hall, keeping the current phase and
 refreshing portrait and lists; the footers advertise the live bindings.
+(Since **M82** the same pair also flips the scoreboard between its
+1-floor and 4-floor boards — the "cycle the thing beside the list" verb,
+reused.)
 The **keyboard remap** shows three direct slots per action —
 **Primary / Alt 1 / Alt 2**, picked with Left/Right, each rebindable on
 its own. A key that is already in use raises an explicit warning naming

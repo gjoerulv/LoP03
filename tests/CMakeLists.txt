@@ -86,6 +86,7 @@ add_executable(crystal_tests
     test_input_qol.cpp
     test_item_caps.cpp
     test_arms_icons.cpp
+    test_floors.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

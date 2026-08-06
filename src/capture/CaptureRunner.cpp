@@ -304,6 +304,23 @@ int run(const char* outDir) {
                 mid.battleRulesVersion = 1;
                 scoreboard.add(mid);
             }
+            // M82: a few 4-floor runs, so the 4F board renders rows (they are
+            // invisible on the 1F board — the split itself under test).
+            for (int i = 0; i < 3; ++i) {
+                score::ScoreEntry deep;
+                deep.score = 9000 - i * 500;
+                deep.battleTurns = 120 + 10 * i;
+                deep.dangerDefeated = 40 + i;
+                deep.depth = 6 + i;
+                deep.theme = "Hollow Forest";
+                deep.seed = 4000u + static_cast<std::uint64_t>(i);
+                deep.generationVersion = 15;
+                deep.partyLevel = 30 + i;
+                deep.battleRulesVersion = 15;
+                deep.townIndex = 4;
+                deep.floors = 4;
+                scoreboard.add(deep);
+            }
         }
 
         battle::BattleResult battleSlot;  // outlives the battle scenes
@@ -395,6 +412,24 @@ int run(const char* outDir) {
             {"13_guild",
              [](StateStack& s, AppContext& c) {
                  s.pushState(std::make_unique<GuildState>(s, c));
+             }},
+            {"89_scoreboard_4f",
+             [](StateStack& s, AppContext& c) {
+                 // M82: the 4-floor board — its chip, rows, and cycle hint.
+                 auto st = std::make_unique<ScoreboardState>(s, c);
+                 st->captureShowFourFloorBoard();
+                 s.pushState(std::move(st));
+             }},
+            {"90_dungeon_stairs",
+             [](StateStack& s, AppContext& c) {
+                 // M82: floor 1 of a 4-floor run with its stair-gate cleared —
+                 // the opened stairway marker, the descend prompt, and the
+                 // F1/4 chip are all overflow-checked here.
+                 auto st = std::make_unique<DungeonState>(
+                     s, c,
+                     dungeon::generateFloors(424242, 6, c.content, "ruined_keep", 1, 4));
+                 st->captureOpenStairs();
+                 s.pushState(std::move(st));
              }},
             {"14_dungeon_keep",
              [](StateStack& s, AppContext& c) {

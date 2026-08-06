@@ -34,6 +34,7 @@ private:
     int themeIndex_ = 0;
     std::uint64_t seed_ = 1;
     int depth_ = 1;
+    int floors_ = 1;  // M82: 1 or 4 — the run's floor count
 };
 
 }  // namespace cd

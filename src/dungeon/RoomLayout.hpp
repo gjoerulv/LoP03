@@ -47,8 +47,15 @@ namespace cd::dungeon {
 // version 14 (M68) recalibrates the danger tiers to be PARTY-RELATIVE
 // (owner decision). Generated layouts, teams, and events are byte-identical
 // to v13 — the bump tags scoreboard comparability, because the
-// danger-defeated score credit follows the new tiers.
-inline constexpr int kGenerationVersion = 14;
+// danger-defeated score credit follows the new tiers;
+// version 15 (M82) adds 1-or-4-FLOOR runs: each floor is a standard level
+// from a derived sub-seed (floorSeed — floor 0 IS the run seed, so 1-floor
+// output is byte-identical to v14), floors 1-3 swap the boss for an elite
+// stair-gate via a fresh pure-hash Rng, and the boss waits on floor 4 at the
+// same depth (owner decision: flat). The bump tags comparability because a
+// seed now also means a 4-floor shape the board must distinguish
+// (ScoreEntry::floors; owner-approved, the program's single generation bump).
+inline constexpr int kGenerationVersion = 15;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

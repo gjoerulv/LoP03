@@ -26,6 +26,10 @@ struct AppContext;
 // dungeon; defeat ends the run. Inspect, open chests, retreat to town.
 class DungeonState : public GameState {
 public:
+    // M82: a run is a vector of floors (floors.front() is entered first; a
+    // 1-floor vector is every pre-M82 run). The single-Dungeon overload wraps
+    // it for the existing callers (capture, tests).
+    DungeonState(StateStack& stack, AppContext& context, std::vector<dungeon::Dungeon> floors);
     DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon);
 
     void onEnter() override;   // first-dungeon tutorial beat
@@ -46,12 +50,22 @@ public:
     bool captureOpenEventPanel(dungeon::RoomEventKind kind);
     // M80 addendum: show the outcome panel with a representative result.
     void captureShowOutcome(const std::string& title, const std::string& body);
+    // M82: clear the current floor's stair-gate, open the stairway, and stand
+    // facing it, so the descend prompt + floor chip render deterministically.
+    // False on a final floor (no stairway exists there).
+    bool captureOpenStairs();
 #endif
 
 private:
-    // M65 adds MapPiece; M66 adds the treasure-map Chart and the Buried spot.
-    enum class MarkerKind { GateTeam, GuardTeam, Boss, Chest, Event, MapPiece, Chart, Buried };
-    enum class EncounterKind { None, Gate, Guard, Boss, Challenge };
+    // M65 adds MapPiece; M66 adds the treasure-map Chart and the Buried spot;
+    // M82 adds the stairway down a multi-floor run (Stairs appears once the
+    // floor's stair-gate falls).
+    enum class MarkerKind {
+        GateTeam, GuardTeam, Boss, Chest, Event, MapPiece, Chart, Buried, Stairs
+    };
+    // M82: StairGate is the boss-slot fight on floors before the last — its
+    // victory opens the stairs instead of completing the run.
+    enum class EncounterKind { None, Gate, Guard, Boss, Challenge, StairGate };
     struct Marker {
         int x = 0;
         int y = 0;
@@ -95,8 +109,16 @@ private:
     void startBattle(int teamIndex, EncounterKind kind, dungeon::Dir gateDir);
     void completeDungeon();
     void renderMinimap() const;
+    // M82: is the current floor the run's last (its boss slot holds the boss)?
+    bool finalFloor() const { return dungeon_.floorIndex + 1 >= dungeon_.floorCount; }
+    void descendFloor();   // swap in the next floor; one continuous run
+    void rebuildTiers();   // snapshot party-relative danger for dungeon_'s teams
 
     AppContext& context_;
+    // M82: the run's floors. dungeon_ holds the CURRENT floor (moved out of
+    // this vector — descent is one-way, so spent floors stay moved-from).
+    // Declared before dungeon_: the constructor moves floors_.front() into it.
+    std::vector<dungeon::Dungeon> floors_;
     dungeon::Dungeon dungeon_;
     std::vector<dungeon::RoomLayout> layouts_;  // realized once, from pristine state
     int currentRoom_ = 0;

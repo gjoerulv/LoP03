@@ -92,6 +92,17 @@ struct Room {
 
 struct Dungeon {
     std::uint64_t seed = 0;
+    // M82: the seed the PLAYER entered at the Guild. On floor 0 (and every
+    // 1-floor run) it equals `seed`; deeper floors generate from a derived
+    // sub-seed in `seed` while `runSeed` keeps the re-enterable identity the
+    // scoreboard, black market, and boss drops key off.
+    std::uint64_t runSeed = 0;
+    // M82: this floor's position in its run. floorCount 1 is every pre-M82
+    // dungeon; floors below floorCount-1 hold an elite stair-gate in the boss
+    // slot instead of the boss, and `stairsOpen` flips live when it falls.
+    int floorIndex = 0;
+    int floorCount = 1;
+    bool stairsOpen = false;
     int depth = 1;
     int town = 1;  // town ladder index (M32); scales enemy stats + score bonus
     std::string themeName;

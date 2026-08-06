@@ -27,8 +27,9 @@ namespace {
 constexpr int kEnter = 0;
 constexpr int kTheme = 1;
 constexpr int kDepth = 2;
-constexpr int kReroll = 3;
-constexpr int kBack = 4;
+constexpr int kFloors = 3;  // M82: 1-or-4-floor runs
+constexpr int kReroll = 4;
+constexpr int kBack = 5;
 constexpr int kMaxDepth = 20;
 
 std::uint64_t randomSeed() {
@@ -52,6 +53,7 @@ void GuildState::rebuild() {
     items.push_back({"Enter Dungeon", true});
     items.push_back({"Theme", true});
     items.push_back({"Depth", true});
+    items.push_back({"Floors", true});  // M82
     items.push_back({"New Seed", true});
     items.push_back({"Back", true});
     menu_.setItems(std::move(items));
@@ -96,10 +98,12 @@ void GuildState::enterDungeon() {
     context_.saves.autosave(context_.party, report);
 
     const std::string themeId = themeIds_.empty() ? "" : themeIds_[static_cast<std::size_t>(themeIndex_)];
-    dungeon::Dungeon dungeon =
-        dungeon::generate(seed_, depth_, context_.content, themeId, context_.party.currentTown);
+    // M82: the run is its floors — one for the classic shape, four for the
+    // descent (floors 1-3 end at an elite stair-gate; the boss waits below).
+    std::vector<dungeon::Dungeon> floors = dungeon::generateFloors(
+        seed_, depth_, context_.content, themeId, context_.party.currentTown, floors_);
     stack().popState();  // leave the Guild
-    stack().pushState(std::make_unique<DungeonState>(stack(), context_, std::move(dungeon)));
+    stack().pushState(std::make_unique<DungeonState>(stack(), context_, std::move(floors)));
 }
 
 void GuildState::handleInput(const Input& input) {
@@ -119,6 +123,9 @@ void GuildState::handleInput(const Input& input) {
             rebuild();  // reflect the new value inline immediately
         } else if (menu_.cursor() == kDepth) {
             depth_ = std::clamp(depth_ + dir, 1, kMaxDepth);
+            rebuild();
+        } else if (menu_.cursor() == kFloors) {
+            floors_ = floors_ == 1 ? 4 : 1;  // M82: the two shapes, either arrow
             rebuild();
         }
     }
@@ -160,7 +167,7 @@ void GuildState::render() {
     const int px = 90;
     const int py = 44;
     const int pw = 246;
-    const int ph = 112;
+    const int ph = 130;  // M82: room for the Floors stepper row
     ui::drawFrame(px, py, pw, ph, ui::FrameStyle::Standard);
     const int rowX = px + 22;
 
@@ -199,6 +206,9 @@ void GuildState::render() {
     };
     stepperRow(kTheme, "Theme", currentThemeName(), py + 40);
     stepperRow(kDepth, "Depth", std::to_string(depth_), py + 58);
+    // M82: the run's shape — one classic level, or four flat floors with
+    // elite stair-gates and the boss at the bottom.
+    stepperRow(kFloors, "Floors", floors_ == 1 ? "1" : "4 (boss below)", py + 76);
 
     // Plain rows.
     const auto plainRow = [&](int index, const char* label, int y) {
@@ -210,8 +220,8 @@ void GuildState::render() {
         }
         ui::drawText(label, rowX, y, style::kFontMenu, focused ? p.cursor : p.text);
     };
-    plainRow(kReroll, "New Seed", py + 78);
-    plainRow(kBack, "Back", py + 94);
+    plainRow(kReroll, "New Seed", py + 96);
+    plainRow(kBack, "Back", py + 112);
 
     // Seed: a subdued information chip (non-adjustable readout).
     ui::drawChip("Seed " + std::to_string(static_cast<unsigned long long>(seed_)), px,

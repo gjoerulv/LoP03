@@ -62,6 +62,7 @@ bool Scoreboard::save(content::LoadReport& report) const {
     j["townIndex"] = e.townIndex;  // M32 (optional; legacy entries read 0)
     j["stakesPenaltyPct"] = e.stakesPenaltyPct;  // M33 (optional; legacy read 0)
     j["classModPct"] = e.classModPct;            // M45 (optional; legacy read 0)
+    j["floors"] = e.floors;                      // M82 (optional; legacy read 1)
     arr.push_back(std::move(j));
   }
   root["entries"] = std::move(arr);
@@ -129,6 +130,7 @@ bool Scoreboard::load(content::LoadReport& report) {
     e.townIndex = er.optIntMin("townIndex", 0, 0);  // M32
     e.stakesPenaltyPct = er.optIntMin("stakesPenaltyPct", 0, 0);  // M33
     e.classModPct = er.optInt("classModPct", 0);                  // M45 (may be negative)
+    e.floors = er.optIntMin("floors", 1, 1);  // M82 (legacy entries sit on the 1F board)
     if (auto seedIt = element.find("seed");
         seedIt != element.end() && seedIt->is_number_unsigned()) {
       e.seed = seedIt->get<std::uint64_t>();

@@ -126,17 +126,12 @@ AmbienceTrack themeAmbience(const std::string& themeId) {
 
 }  // namespace
 
-DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon)
-    : GameState(stack), context_(context), dungeon_(std::move(dungeon)),
+DungeonState::DungeonState(StateStack& stack, AppContext& context,
+                           std::vector<dungeon::Dungeon> floors)
+    : GameState(stack), context_(context), floors_(std::move(floors)),
+      dungeon_(std::move(floors_.front())),
       layouts_(dungeon::realizeAllRooms(dungeon_)), roomMap_(1, 1) {
-    // M68: tiers are party-relative, snapshotted ONCE at entry so the labels
-    // and the danger-defeated score credit agree for the whole run (mid-run
-    // level-ups do not relabel the dungeon under the player).
-    teamTier_.reserve(dungeon_.teams.size());
-    const int partyThreat = danger::partyThreat(context_.party.members);
-    for (const dungeon::EnemyTeam& team : dungeon_.teams) {
-        teamTier_.push_back(danger::assess(team, context_.content, partyThreat));
-    }
+    rebuildTiers();
     context_.fade.start();
     // Theme music + ambience are applied in onEnter(), not here: entering the
     // dungeon pops the Guild, which fires TownState::onResume and re-asserts
@@ -144,6 +139,40 @@ DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dung
     // pop, so the dungeon audio wins (previously the ambience stayed on the
     // town bed for the whole dungeon).
     enterRoom(dungeon_.startRoom, std::nullopt);
+}
+
+DungeonState::DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon)
+    : DungeonState(stack, context,
+                   std::vector<dungeon::Dungeon>{std::move(dungeon)}) {}
+
+void DungeonState::rebuildTiers() {
+    // M68: tiers are party-relative, snapshotted ONCE per floor at entry so
+    // the labels and the danger-defeated score credit agree for the whole
+    // floor (mid-run level-ups do not relabel the dungeon under the player).
+    teamTier_.clear();
+    teamTier_.reserve(dungeon_.teams.size());
+    const int partyThreat = danger::partyThreat(context_.party.members);
+    for (const dungeon::EnemyTeam& team : dungeon_.teams) {
+        teamTier_.push_back(danger::assess(team, context_.content, partyThreat));
+    }
+}
+
+void DungeonState::descendFloor() {
+    // M82: one continuous run — run_ and victoryStats_ keep accumulating; only
+    // the floor swaps. Descent is one-way (the spent floor is left moved-from).
+    const int next = dungeon_.floorIndex + 1;
+    if (next >= static_cast<int>(floors_.size())) {
+        return;  // defensive: the last floor has no stairway
+    }
+    dungeon_ = std::move(floors_[static_cast<std::size_t>(next)]);
+    layouts_ = dungeon::realizeAllRooms(dungeon_);
+    rebuildTiers();
+    chartFound_ = false;  // M66 state is per floor (each floor rolls its own chart)
+    context_.audio.play(Sfx::Door);
+    context_.fade.start();
+    enterRoom(dungeon_.startRoom, std::nullopt);
+    message_ = TextFormat("Floor %d of %d", dungeon_.floorIndex + 1, dungeon_.floorCount);
+    messageTimer_ = scaledMessageTime(context_, 2.5f);
 }
 
 void DungeonState::buildRoom() {
@@ -187,6 +216,14 @@ void DungeonState::buildRoom() {
     if (room.type == dungeon::RoomType::Boss && room.teamIndex >= 0 && layout.boss.valid()) {
         map.set(layout.boss.x, layout.boss.y, town::Tile::Building);
         markers_.push_back({layout.boss.x, layout.boss.y, MarkerKind::Boss, room.teamIndex,
+                            dungeon::Dir::North});
+    }
+    // M82: once a stair floor's gate team falls, the stairway down stands where
+    // the team stood (same anchored tile, facing-interact like the boss).
+    if (room.type == dungeon::RoomType::Boss && room.teamIndex < 0 && !finalFloor() &&
+        dungeon_.stairsOpen && layout.boss.valid()) {
+        map.set(layout.boss.x, layout.boss.y, town::Tile::Building);
+        markers_.push_back({layout.boss.x, layout.boss.y, MarkerKind::Stairs, -1,
                             dungeon::Dir::North});
     }
     if (room.chest.present && layout.chest.valid()) {
@@ -280,6 +317,28 @@ bool DungeonState::captureOpenEventPanel(dungeon::RoomEventKind kind) {
 
 void DungeonState::captureShowOutcome(const std::string& title, const std::string& body) {
     showOutcome(title, body);
+}
+
+bool DungeonState::captureOpenStairs() {
+    if (finalFloor()) {
+        return false;
+    }
+    dungeon_.rooms[static_cast<std::size_t>(dungeon_.bossRoom)].teamIndex = -1;
+    dungeon_.stairsOpen = true;
+    enterRoom(dungeon_.bossRoom, std::nullopt);
+    for (const Marker& m : markers_) {
+        if (m.kind != MarkerKind::Stairs) {
+            continue;
+        }
+        // The captureFaceEvent stance: one tile above, looking down at it.
+        const float inset = (kTile - kPlayerSize) * 0.5f;
+        player_ = Rect{static_cast<float>(m.x) * kTile + inset,
+                       static_cast<float>(m.y - 1) * kTile + inset, kPlayerSize, kPlayerSize};
+        facing_ = Vec2{0.0f, 1.0f};
+        recomputeInteraction(m.x, m.y - 1);
+        return facingMarker_ != nullptr;
+    }
+    return false;
 }
 #endif
 
@@ -379,7 +438,14 @@ void DungeonState::interact() {
     switch (facingMarker_->kind) {
         case MarkerKind::GateTeam: kind = EncounterKind::Gate; break;
         case MarkerKind::GuardTeam: kind = EncounterKind::Guard; break;
-        case MarkerKind::Boss: kind = EncounterKind::Boss; break;
+        case MarkerKind::Boss:
+            // M82: on floors before the last, the boss slot holds the elite
+            // stair-gate — its victory opens the stairway, not the reckoning.
+            kind = finalFloor() ? EncounterKind::Boss : EncounterKind::StairGate;
+            break;
+        case MarkerKind::Stairs:
+            descendFloor();  // M82: one press, one floor down — the run continues
+            return;
         case MarkerKind::Event: {
             // M80: an authored event opens its centered flavor panel first
             // (Confirm inside it commits); an unauthored kind — or a deleted
@@ -999,6 +1065,14 @@ void DungeonState::onResume() {
         buildRoom();
         message_ = "Challenge won - double danger, +1 legendary token.";
         messageTimer_ = scaledMessageTime(context_, 2.5f);
+    } else if (kind == EncounterKind::StairGate) {
+        // M82: the floor's climax falls and the stairway down stands revealed
+        // where the wardens stood. The run continues — nothing scores yet.
+        room.teamIndex = -1;
+        dungeon_.stairsOpen = true;
+        buildRoom();
+        message_ = "The Stairway Wardens fall - the way down stands open.";
+        messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Boss) {
         completeDungeon();
     }
@@ -1055,8 +1129,12 @@ void DungeonState::completeDungeon() {
     // Seeded from this run, so reloading the entry autosave cannot reroll it; the
     // offer persists in the party save until purchased, and a later hit replaces
     // it.
+    // M82: every run-level seeded system keys off the RUN seed (identical to
+    // dungeon_.seed on 1-floor runs, so v14 behavior is untouched; on a
+    // 4-floor run the final floor's sub-seed is not the identity the player
+    // entered, the board records, or a reload reproduces).
     if (blackMarketShouldSpawn(total > 0, /*completed=*/true, raisedStakes, dungeon_.town,
-                               dungeon_.seed, dungeon_.depth)) {
+                               dungeon_.runSeed, dungeon_.depth)) {
         // Shared legendary pool (M39): the market and boss drops draw the same set.
         const std::vector<std::string> legendaryIds = legendaryDropPool(context_.content);
         if (!legendaryIds.empty()) {
@@ -1064,9 +1142,9 @@ void DungeonState::completeDungeon() {
             offer.present = true;
             offer.town = dungeon_.town;
             offer.itemId = legendaryIds[static_cast<std::size_t>(
-                blackMarketItemIndex(dungeon_.seed, static_cast<int>(legendaryIds.size())))];
+                blackMarketItemIndex(dungeon_.runSeed, static_cast<int>(legendaryIds.size())))];
             offer.priceGold = blackMarketPriceGold(dungeon_.town);
-            const MarketTile mt = kBlackMarketTiles[blackMarketTileIndex(dungeon_.seed)];
+            const MarketTile mt = kBlackMarketTiles[blackMarketTileIndex(dungeon_.runSeed)];
             offer.tileX = mt.x;
             offer.tileY = mt.y;
             context_.party.blackMarket = offer;
@@ -1079,7 +1157,7 @@ void DungeonState::completeDungeon() {
     // and no reload rerolls them. Applied to the live party (saved on the next
     // save/autosave, like the run's gold/XP); shown on the result screen.
     const BossDropResult drops =
-        rollBossDrops(dungeon_.seed, dungeon_.town, dungeon_.depth, context_.content);
+        rollBossDrops(dungeon_.runSeed, dungeon_.town, dungeon_.depth, context_.content);
     if (drops.tokens > 0) {
         context_.party.legendaryTokens += drops.tokens;
     }
@@ -1095,7 +1173,8 @@ void DungeonState::completeDungeon() {
     entry.noDeath = summary.noDeath;
     entry.depth = dungeon_.depth;
     entry.theme = dungeon_.themeName;
-    entry.seed = dungeon_.seed;
+    entry.seed = dungeon_.runSeed;  // M82: the re-enterable identity
+    entry.floors = dungeon_.floorCount;  // M82: 1F and 4F rank on separate boards
     entry.generationVersion = dungeon::kGenerationVersion;
     entry.partyLevel = highestLevel(context_.party);
     entry.battleRulesVersion = battle::kBattleRulesVersion;
@@ -1431,6 +1510,21 @@ void DungeonState::render() {
                 glyph = "B";
                 spriteId = "marker.enemy.boss";
                 fallbackId = "prop.boss_marker";
+                // M82: on a stair floor the slot holds the elite gate, and the
+                // marker tells that truth — elite silhouette, gate colors.
+                if (!finalFloor()) {
+                    c = Color{206, 84, 84, 255};
+                    glyph = "!";
+                    if (m.teamIndex >= 0 && m.teamIndex < static_cast<int>(teamTier_.size())) {
+                        spriteId =
+                            tierSilhouetteId(teamTier_[static_cast<std::size_t>(m.teamIndex)]);
+                    }
+                    fallbackId = "prop.gate_marker";
+                }
+                break;
+            case MarkerKind::Stairs:  // M82: the way down (glyph marker,
+                c = Color{110, 214, 220, 255};  // the M55-rite precedent)
+                glyph = "v";
                 break;
             case MarkerKind::Chest: {
                 const dungeon::Chest& chest =
@@ -1573,7 +1667,11 @@ void DungeonState::render() {
             themeAccent = pal.success;
         }
         int cx = 4;
-        cx += ui::drawChip(TextFormat("%s  D%d", dungeon_.themeName.c_str(), dungeon_.depth),
+        cx += ui::drawChip(
+            dungeon_.floorCount > 1
+                ? TextFormat("%s  D%d  F%d/%d", dungeon_.themeName.c_str(), dungeon_.depth,
+                             dungeon_.floorIndex + 1, dungeon_.floorCount)
+                : TextFormat("%s  D%d", dungeon_.themeName.c_str(), dungeon_.depth),
                            cx, 4, themeAccent) + 4;
         cx += ui::drawChip(TextFormat("Gates %d", dungeon_.mandatoryGates), cx, 4, pal.danger) + 4;
         cx += ui::drawChip(TextFormat("%dg", context_.party.gold), cx, 4, pal.gold) + 4;
@@ -1612,6 +1710,11 @@ void DungeonState::render() {
                              "Read the weathered map - it shows THIS dungeon");
     } else if (onBuried_) {
         text = input::prompt(map, InputAction::Confirm, device, "Dig up the buried treasure");
+    } else if (facingMarker_ != nullptr && facingMarker_->kind == MarkerKind::Stairs) {
+        // M82: the opened stairway states where it leads before the step.
+        text = input::prompt(map, InputAction::Confirm, device,
+                             TextFormat("Descend to floor %d of %d", dungeon_.floorIndex + 2,
+                                        dungeon_.floorCount));
     } else if (facingMarker_ != nullptr && facingMarker_->kind == MarkerKind::Event) {
         text = eventPromptText();
     } else if (facingMarker_ != nullptr && facingMarker_->teamIndex >= 0 &&

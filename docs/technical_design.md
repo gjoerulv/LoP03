@@ -2380,3 +2380,35 @@ content; the only new schema is the icon field.
   gear-adding milestone (M43/M53/M76). Generation stays v14, battle
   rules stay v15.
 
+## 36. M82 — floors (generation 14 → 15)
+
+The program's single generation bump. A run is now a
+`std::vector<Dungeon>` of floors; a 1-floor vector is every pre-M82 run.
+
+- **Sub-seeds**: `floorSeed(runSeed, i)` — floor 0 IS the run seed
+  (1-floor output proven byte-identical to v14 by a deep-equality test);
+  deeper floors run `blackMarketHash(runSeed, salt+i)`, the SplitMix64
+  finalizer the market/drops already trust. `generateFloors` generates
+  each floor as a plain `generate(floorSeed(seed, i), ...)`, then — on
+  floors before the last — swaps the boss-room team for the all-elite
+  "Stairway Wardens" via a FRESH pure-hash Rng (zero draws from the
+  floor's own stream: the swap-isolation test deep-equals every floor
+  against its sub-seed's standalone output, modulo exactly that team).
+  `Dungeon` carries `runSeed` / `floorIndex` / `floorCount` /
+  `stairsOpen`; every run-level seeded system (score entry seed, black
+  market, boss drops) reads `runSeed` — identical on 1-floor runs.
+- **DungeonState** owns the floor vector (current floor moved out;
+  descent one-way). `EncounterKind::StairGate` (the boss-slot fight on
+  stair floors) opens `MarkerKind::Stairs` (glyph marker, M55-rite
+  precedent) on victory; Confirm descends: floors swap, layouts
+  re-realize, M68 danger tiers re-snapshot per floor, `chartFound_`
+  resets (M65/M66 features roll per floor — each floor is a standard
+  level). `run_`/`victoryStats_` accumulate across floors; retreat/
+  defeat/autosave paths untouched. The HUD theme chip gains `F#/#`.
+- **Scoreboard**: `ScoreEntry::floors` (optional, default 1 — the
+  M32-style no-format-bump precedent); `score::onFloorsBoard` is the
+  pure split rule; ScoreboardState filters `visible_` per board and
+  cycles with CyclePrev/CycleNext. Ranking within a board unchanged.
+- The exact generation pin (test_danger) moved to 15; capture grew to
+  **90 scenes** (`89_scoreboard_4f`, `90_dungeon_stairs`).
+

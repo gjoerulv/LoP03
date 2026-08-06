@@ -88,8 +88,8 @@
 | 78 | Inventory caps & shop UX | ☑ complete (approved) |
 | 79 | Input & QoL: party cycling, three-slot remap | ☑ complete (approved) |
 | 80 | Event flavor text | ☑ complete (approved) |
-| 81 | Arms, elements & icons | ◑ implemented, awaiting manual approval |
-| 82 | Floors: 1-or-4-floor dungeons | ☐ planned |
+| 81 | Arms, elements & icons | ☑ complete (approved) |
+| 82 | Floors: 1-or-4-floor dungeons | ◑ implemented, awaiting manual approval |
 | 83 | Map economy: 4-floor map-piece drops | ☐ planned |
 | 84 | Guild Masters & town milestones | ☐ planned |
 | 85 | The Dragon & curio lore | ☐ planned |
@@ -3072,8 +3072,10 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M81 — Arms, elements & icons
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-06 on the post-M80 checkout (`ccb4d2a`). The M75 resist hook
+- **Status:** ☑ complete (approved) — implemented 2026-08-06 on the
+  post-M80 checkout (`ccb4d2a`); approved and committed by the owner
+  2026-08-06 (`5a8b09b` + `f2e32c8` docs, incl. acceptance of the §E.1
+  M48-rule narrowing). The M75 resist hook
   gets its content: six 50%-resist **ward charms** (one per element,
   t2–t4, pure resist — no stat bonus), the **Overwound Pocketwatch**
   (+200 SPD) and **Motley Aegis** (all-element −50%) legendaries, and
@@ -3100,7 +3102,21 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M82 — Floors: 1-or-4-floor dungeons
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-06 on the post-M81 checkout (`f2e32c8`). **Generation 14 → 15**
+  (the program's single bump): the Guild picker gains **Floors: 1 / 4**;
+  each floor of a 4-floor run is a standard level from
+  `floorSeed(runSeed, i)` (floor 0 IS the run seed — 1-floor output
+  proven **byte-identical to v14**), floors 1–3 swap the boss for the
+  all-elite **Stairway Wardens** via a fresh pure-hash Rng (swap-isolation
+  proven by deep equality), the boss waits on floor 4 at the same flat
+  depth. One continuous run: stats accumulate, one entry autosave,
+  retreat/defeat score 0 unchanged, HUD chip `F2/4`, descent one-way.
+  `ScoreEntry::floors` (optional, default 1) splits the scoreboard into
+  1F/4F boards cycled with the M79 pair. Run-level seeded systems key
+  off the new `Dungeon::runSeed` (identical on 1F). Debug **693/693**,
+  Release **689/689**, capture **90/90** (`89_scoreboard_4f`,
+  `90_dungeon_stairs`). Full evidence in the note §F.
 - **Goal:** the Guild picker offers 1 or 4 floors; each floor a full level
   from a derived sub-seed; floors 1–3 end in an elite stair-gate, the boss
   on floor 4, all at the chosen depth; `ScoreEntry.floors` splits the

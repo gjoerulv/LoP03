@@ -32,6 +32,16 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M82 update:** floors — the Guild picker gains **Floors: 1 / 4**; a
+> 4-floor run descends four flat levels (elite "Stairway Wardens" guard
+> the stairs on floors 1–3, the boss waits on 4), one continuous run
+> with one score entry; the HUD chip reads `F2/4`; the scoreboard
+> splits 1F/4F boards cycled with Q/E (LB/RB). Same seed at Floors: 1
+> still means the same dungeon it always did (generation 14→15 tags the
+> new shape). Retreat/defeat/autosave semantics unchanged. Capture set
+> is now **90 scenes** (`89_scoreboard_4f`, `90_dungeon_stairs`). The
+> M82 note §G is the checklist.
+>
 > **M81 update:** arms, elements & icons — every gear row anywhere
 > (equip shop, party panel, black market at 2×, Armory Ghost) leads with
 > a 10×10 category icon; six 50%-resist ward charms (t2–t4), the
