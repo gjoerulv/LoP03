@@ -81,5 +81,26 @@ inline constexpr int kDuckPeddlerPriceGold = 300;
 // this seed, or -1 for none (the common case). Pure.
 int duckPeddlerSlot(std::uint64_t seed, int eligibleCount);
 
+// M80: the content-layer flavor id for an event kind (data/event_flavor.json,
+// content::kEventFlavorIds). Empty for None. A test holds this mapping and
+// the content-side vocabulary in lockstep.
+inline const char* eventFlavorId(RoomEventKind kind) {
+    switch (kind) {
+        case RoomEventKind::Shrine: return "shrine";
+        case RoomEventKind::HealingSpring: return "healing_spring";
+        case RoomEventKind::Merchant: return "merchant";
+        case RoomEventKind::EliteChallenge: return "elite_challenge";
+        case RoomEventKind::ScoreWager: return "score_wager";
+        case RoomEventKind::RestToken: return "rest_token";
+        case RoomEventKind::RoyalRelic: return "royal_relic";
+        case RoomEventKind::ArmoryGhost: return "armory_ghost";
+        case RoomEventKind::MinersCache: return "miners_cache";
+        case RoomEventKind::ElderRoot: return "elder_root";
+        case RoomEventKind::DuckPeddler: return "duck_peddler";
+        case RoomEventKind::None: break;
+    }
+    return "";
+}
+
 }  // namespace dungeon
 }  // namespace cd

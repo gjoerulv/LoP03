@@ -266,6 +266,21 @@ bool DungeonState::captureFaceEvent(dungeon::RoomEventKind kind) {
     }
     return false;
 }
+
+bool DungeonState::captureOpenEventPanel(dungeon::RoomEventKind kind) {
+    if (!captureFaceEvent(kind)) {
+        return false;
+    }
+    if (context_.content.findEventFlavor(dungeon::eventFlavorId(kind)) == nullptr) {
+        return false;
+    }
+    eventPanelOpen_ = true;
+    return true;
+}
+
+void DungeonState::captureShowOutcome(const std::string& title, const std::string& body) {
+    showOutcome(title, body);
+}
 #endif
 
 void DungeonState::recomputeInteraction(int tx, int ty) {
@@ -305,8 +320,7 @@ void DungeonState::openChest() {
         return;
     }
     if (room.chest.opened) {
-        message_ = "The chest is empty.";
-        messageTimer_ = scaledMessageTime(context_, 2.0f);
+        showOutcome("The Chest", "It is empty. It was empty the last time, too.");
         return;
     }
     if (room.chest.guarded) {
@@ -337,8 +351,8 @@ void DungeonState::openChest() {
         }
         msg = "The trap bites - the party is wounded! " + msg;
     }
-    message_ = msg;
-    messageTimer_ = scaledMessageTime(context_, 3.0f);
+    // M80 addendum: chest results ride the outcome panel.
+    showOutcome("The Chest", msg);
 }
 
 void DungeonState::interact() {
@@ -366,7 +380,19 @@ void DungeonState::interact() {
         case MarkerKind::GateTeam: kind = EncounterKind::Gate; break;
         case MarkerKind::GuardTeam: kind = EncounterKind::Guard; break;
         case MarkerKind::Boss: kind = EncounterKind::Boss; break;
-        case MarkerKind::Event:
+        case MarkerKind::Event: {
+            // M80: an authored event opens its centered flavor panel first
+            // (Confirm inside it commits); an unauthored kind — or a deleted
+            // flavor file — keeps the classic immediate path, so flavor can
+            // never block an event.
+            const dungeon::RoomEvent& ev =
+                dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].event;
+            if (!ev.resolved && context_.content.findEventFlavor(
+                                    dungeon::eventFlavorId(ev.kind)) != nullptr) {
+                eventPanelOpen_ = true;
+                context_.audio.play(Sfx::Interact);
+                return;
+            }
             if (facingMarker_->teamIndex >= 0) {
                 startBattle(facingMarker_->teamIndex, EncounterKind::Challenge,
                             facingMarker_->gateDir);
@@ -374,6 +400,7 @@ void DungeonState::interact() {
                 resolveEvent();
             }
             return;
+        }
         case MarkerKind::Chest:
         case MarkerKind::MapPiece:
         case MarkerKind::Chart:
@@ -408,17 +435,18 @@ void DungeonState::digBuried() {
     if (curioId.empty()) {
         // The dozen is complete: buried treasures pay a legendary token now.
         p.legendaryTokens += 1;
-        message_ = "Buried riches! +1 legendary token (your curio collection is complete).";
+        showOutcome("The Buried Treasure",
+                    "Buried riches! +1 legendary token (your curio collection is complete).");
     } else {
         p.ownedCurios.push_back(curioId);
         const CurioDef* curio = findCurio(curioId);
-        message_ = TextFormat("Buried treasure: %s! (curios: %d of %d - see Maps in town)",
-                              curio != nullptr ? curio->name : curioId.c_str(),
-                              static_cast<int>(p.ownedCurios.size()), kCurioCount);
+        showOutcome("The Buried Treasure",
+                    TextFormat("Buried treasure: %s! (curios: %d of %d - see Maps in town)",
+                               curio != nullptr ? curio->name : curioId.c_str(),
+                               static_cast<int>(p.ownedCurios.size()), kCurioCount));
         // Curator may fire the moment the dozen completes.
         pushAchievementToasts(stack(), context_, AchvContext{});
     }
-    messageTimer_ = scaledMessageTime(context_, 4.0f);
     buildRoom();
 }
 
@@ -457,6 +485,9 @@ void DungeonState::takeMapPiece() {
     buildRoom();  // the piece marker clears
 }
 
+// M80 addendum: defined below resolveEvent, used inside it.
+static std::string outcomeTitleFor(const AppContext& context, dungeon::RoomEventKind kind);
+
 // Applies a non-battle event exactly as its footer prompt stated it.
 void DungeonState::resolveEvent() {
     dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)];
@@ -468,9 +499,9 @@ void DungeonState::resolveEvent() {
         case dungeon::RoomEventKind::Shrine: {
             if (context_.party.gold < ev.goldCost) {
                 context_.audio.play(Sfx::Error);
-                message_ = "The shrine asks " + std::to_string(ev.goldCost) +
-                           "g - you cannot pay.";
-                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The shrine asks " + std::to_string(ev.goldCost) +
+                                "g - you cannot pay.");
                 return;
             }
             context_.party.gold -= ev.goldCost;
@@ -478,7 +509,8 @@ void DungeonState::resolveEvent() {
                 c.hp = std::min(c.maxHp, c.hp + (c.maxHp - c.hp) / 2);
             }
             context_.audio.play(Sfx::Heal);
-            message_ = "The shrine accepts your offering - the party's wounds half-mend.";
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "The shrine accepts your offering - the party's wounds half-mend.");
             break;
         }
         case dungeon::RoomEventKind::HealingSpring:
@@ -488,7 +520,8 @@ void DungeonState::resolveEvent() {
                 }
             }
             context_.audio.play(Sfx::Heal);
-            message_ = "The spring's water restores the party. It runs dry.";
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "The spring's water restores the party. It runs dry.");
             break;
         case dungeon::RoomEventKind::Merchant: {
             const content::ItemDef* it = context_.content.findItem(ev.itemId);
@@ -499,34 +532,37 @@ void DungeonState::resolveEvent() {
             const int price = it != nullptr ? merchantPriceFor(*it, ev.goldCost) : ev.goldCost;
             if (it != nullptr && !canBuyMore(context_.party.inventory, *it)) {
                 context_.audio.play(Sfx::Error);
-                message_ = "You cannot carry more of " + it->name +
-                           " (max " + std::to_string(capFor(*it)) + "). The merchant waits.";
-                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "You cannot carry more of " + it->name + " (max " +
+                                std::to_string(capFor(*it)) + "). The merchant waits.");
                 return;
             }
             if (context_.party.gold < price) {
                 context_.audio.play(Sfx::Error);
-                message_ = "The merchant wants " + std::to_string(price) +
-                           "g - you cannot pay.";
-                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The merchant wants " + std::to_string(price) +
+                                "g - you cannot pay.");
                 return;
             }
             context_.party.gold -= price;
             context_.party.inventory.add(ev.itemId, 1);
             context_.audio.play(Sfx::Interact);
-            message_ = "Bought " + (it != nullptr ? it->name : ev.itemId) +
-                       ". The merchant moves on.";
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "Bought " + (it != nullptr ? it->name : ev.itemId) +
+                            ". The merchant moves on.");
             break;
         }
         case dungeon::RoomEventKind::ScoreWager:
             run_.wagerAccepted = true;
             context_.audio.play(Sfx::Interact);
-            message_ = "The omen accepts your dare. Finish without a death!";
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "The omen accepts your dare. Finish without a death!");
             break;
         case dungeon::RoomEventKind::RestToken:
             context_.party.restTokens += 1;
             context_.audio.play(Sfx::Interact);
-            message_ = "You pocket a free-rest token - redeem it at the inn.";
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "You pocket a free-rest token - redeem it at the inn.");
             break;
         case dungeon::RoomEventKind::RoyalRelic: {
             // M44: which relic is granted is decided HERE, at resolution, from a
@@ -542,8 +578,9 @@ void DungeonState::resolveEvent() {
             context_.party.inventory.add(relicId, 1);
             const content::ItemDef* it = context_.content.findItem(relicId);
             context_.audio.play(Sfx::Interact);
-            message_ = "The reliquary yields " + (it != nullptr ? it->name : relicId) +
-                       "! Save it for a foe that deserves it.";
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "The reliquary yields " + (it != nullptr ? it->name : relicId) +
+                            "! Save it for a foe that deserves it.");
             break;
         }
         case dungeon::RoomEventKind::ArmoryGhost: {
@@ -574,7 +611,8 @@ void DungeonState::resolveEvent() {
                 reward += std::string(" + ") + (it != nullptr ? it->name : ev.itemId);
             }
             context_.audio.play(Sfx::Chest);
-            message_ = "You clear the rockfall - battered, but richer: " + reward + ".";
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "You clear the rockfall - battered, but richer: " + reward + ".");
             break;
         }
         case dungeon::RoomEventKind::ElderRoot: {
@@ -582,16 +620,18 @@ void DungeonState::resolveEvent() {
             // of fighting for XP - no battle turns spent).
             if (context_.party.gold < ev.goldCost) {
                 context_.audio.play(Sfx::Error);
-                message_ = "The Elder Root asks " + std::to_string(ev.goldCost) +
-                           "g for its wisdom - you cannot pay.";
-                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The Elder Root asks " + std::to_string(ev.goldCost) +
+                                "g for its wisdom - you cannot pay.");
                 return;
             }
             context_.party.gold -= ev.goldCost;
             const int xp = dungeon::elderRootXp(dungeon_.town, dungeon_.depth);
             grantPartyXp(context_.party, xp, context_.content);
             context_.audio.play(Sfx::Interact);
-            message_ = TextFormat("The Elder Root drinks your offering - the party gains %d XP.", xp);
+            showOutcome(
+                outcomeTitleFor(context_, ev.kind),
+                TextFormat("The Elder Root drinks your offering - the party gains %d XP.", xp));
             maybePushMilestoneChoice(stack(), context_);  // M63: the level-up moment
             break;
         }
@@ -602,24 +642,25 @@ void DungeonState::resolveEvent() {
             // so what a seed GENERATES never depends on the party's bag.
             if (context_.party.inventory.count(dungeon::kEvilDucklingItemId) >= 1) {
                 context_.audio.play(Sfx::Error);
-                message_ = "\"One per customer. Duck rules.\" The peddler will not budge.";
-                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "\"One per customer. Duck rules.\" The peddler will not budge.");
                 return;
             }
             if (context_.party.gold < ev.goldCost) {
                 context_.audio.play(Sfx::Error);
-                message_ = "The peddler wants " + std::to_string(ev.goldCost) +
-                           "g - you cannot pay.";
-                messageTimer_ = scaledMessageTime(context_, 2.5f);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The peddler wants " + std::to_string(ev.goldCost) +
+                                "g - you cannot pay.");
                 return;
             }
             context_.party.gold -= ev.goldCost;
             context_.party.inventory.add(dungeon::kEvilDucklingItemId, 1);
             const content::ItemDef* it = context_.content.findItem(ev.itemId);
             context_.audio.play(Sfx::Interact);
-            message_ = "The peddler hands over the " +
-                       (it != nullptr ? it->name : std::string("Evil Duckling")) +
-                       ". It looks... pleased.";
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "The peddler hands over the " +
+                            (it != nullptr ? it->name : std::string("Evil Duckling")) +
+                            ". It looks... pleased.");
             break;
         }
         case dungeon::RoomEventKind::EliteChallenge:
@@ -628,7 +669,98 @@ void DungeonState::resolveEvent() {
     }
     ev.resolved = true;
     buildRoom();
-    messageTimer_ = scaledMessageTime(context_, 3.0f);
+    // M80 addendum: every branch above raised the outcome panel; the old
+    // footer-message timer has nothing left to time.
+}
+
+// M80 addendum (owner, 2026-08-06): event and chest OUTCOMES ride the same
+// centered treatment as the flavor text — a modal the player dismisses —
+// instead of the transient footer line. The footer line remains for the
+// incidental notices (map-piece pings, battle results, the guarded nudge).
+void DungeonState::showOutcome(const std::string& title, std::string body) {
+    outcomeTitle_ = title;
+    outcomeBody_ = std::move(body);
+    outcomePanelOpen_ = true;
+    message_.clear();
+    messageTimer_ = 0.0f;
+}
+
+// The outcome's heading: the event's authored flavor title when it exists,
+// so the panel that promised the trade-off also announces its result.
+static std::string outcomeTitleFor(const AppContext& context, dungeon::RoomEventKind kind) {
+    if (const content::EventFlavorDef* flavor =
+            context.content.findEventFlavor(dungeon::eventFlavorId(kind))) {
+        return flavor->title;
+    }
+    return "The Event";
+}
+
+void DungeonState::renderOutcomePanel() const {
+    const int w = context_.virtualWidth;
+    const int h = context_.virtualHeight;
+    const ui::style::Palette& pal = ui::style::palette();
+    constexpr int kBoxW = 360;
+    constexpr int kBoxH = 86;
+    const int boxX = (w - kBoxW) / 2;
+    const int boxY = (h - kBoxH) / 2;
+    ui::drawModalDim(w, h);
+    ui::drawFrame(boxX, boxY, kBoxW, kBoxH, ui::FrameStyle::Crystal);
+    ui::drawTextCentered(outcomeTitle_.c_str(), w / 2, boxY + 8, ui::style::kFontMenu,
+                         pal.crystal);
+    ui::drawTextWrapped(outcomeBody_, boxX + 14, boxY + 26, kBoxW - 28,
+                        ui::style::kFontBody, pal.text, "dungeon.outcome", 3);
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    ui::drawTextCentered(
+        input::prompt(map, InputAction::Confirm, device, "Continue").c_str(), w / 2,
+        boxY + kBoxH - 13, ui::style::kFontSmall, pal.textHint);
+}
+
+// M80: the panel's Confirm — the same dispatch interact() used to do
+// directly (an elite challenge fights, everything else resolves).
+void DungeonState::confirmEventPanel() {
+    if (facingMarker_ == nullptr || facingMarker_->kind != MarkerKind::Event) {
+        return;
+    }
+    if (facingMarker_->teamIndex >= 0) {
+        startBattle(facingMarker_->teamIndex, EncounterKind::Challenge,
+                    facingMarker_->gateDir);
+    } else {
+        resolveEvent();
+    }
+}
+
+// M80: the centered flavor panel — title, dry-humor body, then the SAME
+// trade-off line the footer used to carry (cost/risk stays visible before
+// commitment, the M20 bar), with the step-away binding at the bottom.
+void DungeonState::renderEventPanel() const {
+    const int w = context_.virtualWidth;
+    const int h = context_.virtualHeight;
+    const ui::style::Palette& pal = ui::style::palette();
+    const dungeon::RoomEvent& ev =
+        dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].event;
+    const content::EventFlavorDef* flavor =
+        context_.content.findEventFlavor(dungeon::eventFlavorId(ev.kind));
+    if (flavor == nullptr) {
+        return;  // defensive: the panel only opens when flavor exists
+    }
+    constexpr int kBoxW = 360;
+    constexpr int kBoxH = 118;
+    const int boxX = (w - kBoxW) / 2;
+    const int boxY = (h - kBoxH) / 2;
+    ui::drawModalDim(w, h);
+    ui::drawFrame(boxX, boxY, kBoxW, kBoxH, ui::FrameStyle::Crystal);
+    ui::drawTextCentered(flavor->title.c_str(), w / 2, boxY + 8, ui::style::kFontMenu,
+                         pal.crystal);
+    ui::drawTextWrapped(flavor->body, boxX + 14, boxY + 26, kBoxW - 28,
+                        ui::style::kFontBody, pal.text, "dungeon.eventflavor", 4);
+    ui::drawTextWrapped(eventPromptText(), boxX + 14, boxY + 78, kBoxW - 28,
+                        ui::style::kFontBody, pal.gold, "dungeon.eventtrade", 2);
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    ui::drawTextCentered(
+        input::prompt(map, InputAction::Cancel, device, "Step away").c_str(), w / 2,
+        boxY + kBoxH - 13, ui::style::kFontSmall, pal.textHint);
 }
 
 // The visible trade-off, shown in the footer BEFORE the player confirms.
@@ -1014,6 +1146,33 @@ void DungeonState::completeDungeon() {
 }
 
 void DungeonState::handleInput(const Input& input) {
+    // M80 addendum: the outcome panel just wants to be read — anything
+    // affirmative dismisses it.
+    if (outcomePanelOpen_) {
+        moveX_ = 0.0f;
+        moveY_ = 0.0f;
+        if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel) ||
+            input.pressed(InputAction::Menu)) {
+            outcomePanelOpen_ = false;
+        }
+        return;
+    }
+
+    // M80: while the flavor panel is up it owns the input — Confirm accepts
+    // the trade-off, Cancel (or Menu) steps away and the event keeps waiting.
+    if (eventPanelOpen_) {
+        moveX_ = 0.0f;
+        moveY_ = 0.0f;
+        if (input.pressed(InputAction::Confirm)) {
+            eventPanelOpen_ = false;
+            confirmEventPanel();
+        } else if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Menu)) {
+            eventPanelOpen_ = false;
+            context_.audio.play(Sfx::Cancel);
+        }
+        return;
+    }
+
     moveX_ = (input.down(InputAction::MoveRight) ? 1.0f : 0.0f) -
              (input.down(InputAction::MoveLeft) ? 1.0f : 0.0f);
     moveY_ = (input.down(InputAction::MoveDown) ? 1.0f : 0.0f) -
@@ -1496,6 +1655,15 @@ void DungeonState::render() {
         const int promptX = std::max(4, (context_.virtualWidth - promptW) / 2);
         ui::drawTextFitted(text, promptX, h - 12, context_.virtualWidth - promptX - 4, 8,
                            pal.text, "dungeon.prompt");
+    }
+
+    // M80: the flavor and outcome panels sit above everything (modal; they
+    // are never open at once — the outcome follows the flavor's Confirm).
+    if (eventPanelOpen_) {
+        renderEventPanel();
+    }
+    if (outcomePanelOpen_) {
+        renderOutcomePanel();
     }
 }
 

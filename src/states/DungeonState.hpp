@@ -41,6 +41,11 @@ public:
     // overflow check. Returns false when the dungeon has no such event. Not
     // present in shipping builds.
     bool captureFaceEvent(dungeon::RoomEventKind kind);
+    // M80: face the event AND open its flavor panel (false when the dungeon
+    // lacks the event or the kind has no authored flavor).
+    bool captureOpenEventPanel(dungeon::RoomEventKind kind);
+    // M80 addendum: show the outcome panel with a representative result.
+    void captureShowOutcome(const std::string& title, const std::string& body);
 #endif
 
 private:
@@ -81,6 +86,12 @@ private:
     void digBuried();     // M66: claim the buried treasure (a curio / a token)
     void resolveEvent();  // applies a non-battle event's stated trade-off
     std::string eventPromptText() const;  // the pre-confirmation trade-off line
+    void confirmEventPanel();       // M80: the panel's Confirm — resolve or fight
+    void renderEventPanel() const;  // M80: the centered flavor + trade-off modal
+    // M80 addendum (owner, 2026-08-06): event and chest OUTCOMES ride the same
+    // centered treatment instead of the footer line.
+    void showOutcome(const std::string& title, std::string body);
+    void renderOutcomePanel() const;
     void startBattle(int teamIndex, EncounterKind kind, dungeon::Dir gateDir);
     void completeDungeon();
     void renderMinimap() const;
@@ -103,6 +114,14 @@ private:
     bool onChart_ = false;     // M66: standing on the dungeon treasure map
     bool onBuried_ = false;    // M66: standing on the (revealed) buried spot
     bool chartFound_ = false;  // M66: the map was read this run
+    // M80: the centered event-flavor panel is open (movement and the other
+    // dungeon inputs pause; Confirm accepts, Cancel steps away).
+    bool eventPanelOpen_ = false;
+    // M80 addendum: the outcome panel (event/chest results); any of
+    // Confirm/Cancel/Menu dismisses it.
+    bool outcomePanelOpen_ = false;
+    std::string outcomeTitle_;
+    std::string outcomeBody_;
 
     std::vector<danger::Tier> teamTier_;  // precomputed danger per team
     RunStats run_;

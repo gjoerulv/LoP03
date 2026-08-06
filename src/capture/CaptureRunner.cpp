@@ -753,6 +753,42 @@ int run(const char* outDir) {
                      }
                  }
              }},
+            {"86_event_flavor",
+             [](StateStack& s, AppContext& c) {
+                 // M80: the centered flavor panel over a live dungeon, opened on
+                 // the DUCK PEDDLER — the longest authored body — so the wrap
+                 // budget is refereed at maximum length (seed searched, as the
+                 // relic scene does).
+                 for (std::uint64_t seed = 1; seed < 4000; ++seed) {
+                     dungeon::Dungeon d =
+                         dungeon::generate(seed, 8, c.content, "crystal_mine", 3);
+                     bool holdsPeddler = false;
+                     for (const dungeon::Room& r : d.rooms) {
+                         holdsPeddler = holdsPeddler ||
+                                        r.event.kind == dungeon::RoomEventKind::DuckPeddler;
+                     }
+                     if (!holdsPeddler) {
+                         continue;
+                     }
+                     auto state = std::make_unique<DungeonState>(s, c, std::move(d));
+                     if (state->captureOpenEventPanel(dungeon::RoomEventKind::DuckPeddler)) {
+                         s.pushState(std::move(state));
+                         return;
+                     }
+                 }
+             }},
+            {"87_event_outcome",
+             [](StateStack& s, AppContext& c) {
+                 // M80 addendum: the outcome panel at a representative long
+                 // result (the trapped chest's bite + loot is the widest
+                 // dynamic outcome string).
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine"));
+                 state->captureShowOutcome(
+                     "The Chest",
+                     "The trap bites - the party is wounded! Found 1240 gold + Hi-Potion");
+                 s.pushState(std::move(state));
+             }},
             {"46_battle_relics",
              [&battleSlot](StateStack& s, AppContext& c) {
                  // M44: the battle item list holding all four relics plus the

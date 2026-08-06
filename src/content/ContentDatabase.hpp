@@ -24,6 +24,7 @@ public:
     bool addPassive(const PassiveDef& def);
     bool addMilestone(const MilestoneDef& def);  // M63
     bool addStory(const StoryBeat& def);  // M41; false on a duplicate town
+    bool addEventFlavor(const EventFlavorDef& def);  // M80
 
     const SkillDef* findSkill(const std::string& id) const;
     const ClassDef* findClass(const std::string& id) const;
@@ -39,6 +40,9 @@ public:
     std::pair<const MilestoneDef*, const MilestoneDef*> milestonePair(const std::string& classId,
                                                                       int level) const;
     const StoryBeat* findStoryBeat(int town) const;  // M41
+    // M80: nullptr when unauthored — the caller falls back to the footer
+    // prompt, so flavor can never block an event.
+    const EventFlavorDef* findEventFlavor(const std::string& id) const;
 
     bool hasSkill(const std::string& id) const { return findSkill(id) != nullptr; }
     bool hasPassive(const std::string& id) const { return findPassive(id) != nullptr; }
@@ -52,6 +56,9 @@ public:
     const std::unordered_map<std::string, PassiveDef>& passives() const { return passives_; }
     const std::unordered_map<std::string, MilestoneDef>& milestones() const { return milestones_; }
     const std::vector<StoryBeat>& story() const { return story_; }  // M41
+    const std::unordered_map<std::string, EventFlavorDef>& eventFlavors() const {
+        return eventFlavors_;  // M80
+    }
 
     // Team-composition constraints (M20). Defaults apply until
     // data/composition.json is loaded.
@@ -67,6 +74,7 @@ public:
     std::size_t passiveCount() const { return passives_.size(); }
     std::size_t milestoneCount() const { return milestones_.size(); }  // M63
     std::size_t storyCount() const { return story_.size(); }
+    std::size_t eventFlavorCount() const { return eventFlavors_.size(); }  // M80
 
     bool empty() const;
     void clear();
@@ -81,6 +89,7 @@ private:
     std::unordered_map<std::string, PassiveDef> passives_;
     std::unordered_map<std::string, MilestoneDef> milestones_;  // M63
     std::vector<StoryBeat> story_;
+    std::unordered_map<std::string, EventFlavorDef> eventFlavors_;  // M80
     CompositionDef composition_;
 };
 

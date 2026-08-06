@@ -82,6 +82,7 @@ add_executable(crystal_tests
     test_rules_v15.cpp
     test_counterplay.cpp
     test_enemy_offensive.cpp
+    test_event_flavor.cpp
     test_input_qol.cpp
     test_item_caps.cpp
 )

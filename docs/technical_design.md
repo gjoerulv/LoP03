@@ -2299,3 +2299,36 @@ the existing per-action key arrays).
   outcome, the warn-then-steal contract, round-trips, pre-M79-file
   behavior, volume precedence, Decisive.
 
+## 34. M80 — event flavor
+
+No version motion. New content category `EventFlavorDef` keyed by
+`kEventFlavorIds` — the content layer cannot name `dungeon::RoomEventKind`
+(it lives a layer above), so the vocabulary is mirrored as strings and
+`dungeon::eventFlavorId(kind)` maps the enum down; a `[flavor]` test (with
+a static_assert on the kind count) holds the two in lockstep.
+
+- `parseEventFlavor` validates per-entry (unknown id, duplicate, missing
+  title/body) so a typo costs one panel, never the file.
+  **`event_flavor.json` is the one OPTIONAL content file**: `loadAll`
+  skips it when absent (pure presentation with a per-event fallback);
+  present-but-malformed reports like any other file. It is NOT an editor
+  category until M86, so the canonical byte-stability sweep does not
+  govern it.
+- `DungeonState`: `eventPanelOpen_` gates input (Confirm commits via
+  `confirmEventPanel` — the same dispatch `interact()` used to perform;
+  Cancel/Menu steps away); `renderEventPanel` draws the modal (title,
+  body wrapped ≤4 lines, then `eventPromptText()` verbatim in gold — the
+  approved trade-off wording is reused, not duplicated). No flavor →
+  `interact()` keeps the classic immediate path.
+- Capture scene `86_event_flavor` opens the Peddler's panel (the longest
+  body) via `captureOpenEventPanel` — the wrap budget's in-situ referee.
+- **Outcome panel (owner addendum, same cycle)**: `showOutcome(title,
+  body)` + `renderOutcomePanel` — every `resolveEvent` branch (rewards
+  and refusals), `openChest` and `digBuried` raise it instead of the
+  footer `message_` (whose timer path remains for the map-piece pings,
+  battle results and the "Guarded" nudge). Headed by the event's flavor
+  title via `outcomeTitleFor`, "The Chest"/"The Buried Treasure" for the
+  loot moments; dismissed by Confirm/Cancel/Menu; never open at the same
+  time as the flavor panel (it follows the flavor's Confirm). Scene
+  `87_event_outcome` referees the widest dynamic string.
+

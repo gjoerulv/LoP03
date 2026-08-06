@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "events": [
+    { "id": "shrine", "title": "The Coin-Operated Shrine", "body": "A stone saint holds out one cupped hand, palm up. The gesture is unambiguous. Miracles, a small sign explains, are self-service." },
+    { "id": "healing_spring", "title": "The Spring", "body": "The water is clear, cold, and smug about it. It has healed a thousand adventurers before you and will absolutely bring that up." },
+    { "id": "merchant", "title": "A Merchant, Somehow", "body": "He has set up a full stall in a lightless ruin, hours from the nearest road. Do not ask about the overhead. He will tell you." },
+    { "id": "elite_challenge", "title": "The Challenge Totem", "body": "The totem asks one question, carved deep: ARE YOU STRONG. The things waiting behind it would like to check your answer." },
+    { "id": "score_wager", "title": "The Omen", "body": "A hooded figure shuffles cards that refuse to be counted. It offers the classic arrangement: glory if nobody falls. Otherwise, the other thing." },
+    { "id": "rest_token", "title": "A Quiet Corner", "body": "Somebody swept this room, straightened the stones, and left. Whoever they were, they understood what adventurers truly need: five minutes." },
+    { "id": "royal_relic", "title": "The Reliquary", "body": "A royal reliquary, remarkably far from any royalty. The crown's lost property office has clearly given up. Finders, as the saying goes, keepers." },
+    { "id": "armory_ghost", "title": "The Armory Ghost", "body": "The ghost of a quartermaster polishes gear that nobody requisitioned. Death has not improved his patience. His stock, however, remains impeccable." },
+    { "id": "miners_cache", "title": "The Miner's Cache", "body": "A tin lunchbox, a bent pickaxe, and a cache packed by someone who meant to come back for it. The mine disagrees with unattended property." },
+    { "id": "elder_root", "title": "The Elder Root", "body": "The oldest tree in the wood has opinions, and rings to prove them. Tuition is payable in gold. Wisdom is dispensed by weight." },
+    { "id": "duck_peddler", "title": "The Duckling Peddler", "body": "A cloaked figure opens one side of its coat. Inside sits a single duckling, radiating malice. 'Finest quality,' the peddler whispers. 'One per customer.'" }
+  ]
+}

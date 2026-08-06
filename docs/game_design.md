@@ -164,6 +164,19 @@ the score breakdown), and a **rest camp (M30)** that grants a free-rest token
 redeemable at the inn. Some unguarded chests are visibly **trapped**: extra
 gold, but claiming wounds the whole party.
 
+**Events have a voice (M80).** Triggering any event opens a **centered
+panel**: an authored title and a dry-humor body from
+`data/event_flavor.json` (one entry per event kind, JSON-editable), then
+the familiar gold **trade-off line** — cost and risk still visible before
+commitment, the M20 bar unchanged — with Confirm committing and Cancel
+stepping away (the event waits). The file is the game's one OPTIONAL
+content file: a missing entry (or the whole file deleted) falls back to
+the classic footer prompt, so flavor can never block an event. And the
+**outcome answers in kind**: event results and refusals, chest opens
+(loot, traps, the empty re-check) and the buried-treasure dig present in
+the same centered box, dismissed with any button — the fleeting footer
+line remains only for pings (map pieces, battle results, "Guarded").
+
 **Bosses are mechanically distinct (M20).** Each archetype has one
 deterministic mechanic, stated in its telegraph: the Brute's damage swells
 below half HP (announced when it triggers), the Sorcerer's magic grows as

@@ -86,8 +86,8 @@
 | 76 | Counterplay: breaker skills, Holy Taxes, Evil Duckling | ☑ complete (approved) |
 | 77 | Enemy & boss offensive pass | ☑ complete (approved) |
 | 78 | Inventory caps & shop UX | ☑ complete (approved) |
-| 79 | Input & QoL: party cycling, three-slot remap | ◑ implemented, awaiting manual approval |
-| 80 | Event flavor text | ☐ planned |
+| 79 | Input & QoL: party cycling, three-slot remap | ☑ complete (approved) |
+| 80 | Event flavor text | ◑ implemented, awaiting manual approval |
 | 81 | Arms, elements & icons | ☐ planned |
 | 82 | Floors: 1-or-4-floor dungeons | ☐ planned |
 | 83 | Map economy: 4-floor map-piece drops | ☐ planned |
@@ -3026,8 +3026,9 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M79 — Input & QoL: party cycling, three-slot remap
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-06 on the post-M78 checkout (`97c74d2`). Two new remappable
+- **Status:** ☑ complete (approved) — implemented 2026-08-06 (incl. the
+  same-day owner-review fix pass on the remap screen); approved and
+  committed by the owner 2026-08-06 (`3eb9986`). Two new remappable
   actions `CyclePrev`/`CycleNext` (Q/E, Ctrl/Alt with real prompt names,
   LB/RB) switch the member in place across the Equip Shop's member
   phases and the whole Training Hall; the keyboard remap gained three
@@ -3047,7 +3048,21 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M80 — Event flavor text
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-06 on the post-M79 checkout (`3eb9986`). `data/event_flavor.json`
+  (new, 11 dry-humor entries — one per real `RoomEventKind`, the game's
+  one OPTIONAL content file) behind `content::EventFlavorDef` /
+  `kEventFlavorIds` with `dungeon::eventFlavorId` mapping the enum down
+  (a test holds them in lockstep); `DungeonState` opens a centered modal
+  on trigger — title, wrapped body, then the SAME approved trade-off line
+  in gold, Confirm commits / Cancel steps away — with the classic footer
+  path as the per-event fallback (deleting the file blocks nothing,
+  proven by test). Owner addition (2026-08-06, same cycle): **outcomes
+  ride the same centered treatment** — event results/refusals, chest
+  opens and the buried dig raise a dismissable outcome panel (footer
+  line kept for pings). Capture grew to **87 scenes**
+  (`86_event_flavor`, `87_event_outcome`). Full evidence in the
+  note §F.
 - **Goal:** every dungeon event presents centered, dry-humor,
   JSON-authored flavor text (`data/event_flavor.json`) with the trade-off
   and confirmation, replacing the footer-only prompt; defensive fallback;

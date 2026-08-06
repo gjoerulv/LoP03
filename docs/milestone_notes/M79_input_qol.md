@@ -6,8 +6,9 @@ post-M78 checkout (`97c74d2`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-06.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-06 (incl. the same-day
+owner-review fix pass); approved and committed by the owner 2026-08-06
+(`3eb9986`). Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -161,4 +162,4 @@ No rules/generation/save version motion; settings schema stays v1.
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-06.

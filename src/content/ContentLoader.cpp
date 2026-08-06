@@ -639,6 +639,37 @@ void parseStory(const Json& root, const std::string& source, ContentDatabase& db
     });
 }
 
+void parseEventFlavor(const Json& root, const std::string& source, ContentDatabase& db,
+                      LoadReport& rep) {
+    // M80: authored event flavor. Unknown ids are rejected so a typo cannot
+    // silently author nothing; a rejected entry only costs its own panel (the
+    // event falls back to the footer prompt).
+    forEachEntry(root, source, "events", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        EventFlavorDef d;
+        d.id = r.reqString("id");
+        d.title = r.reqString("title");
+        d.body = r.reqString("body");
+        bool known = false;
+        for (std::size_t i = 0; i < kEventFlavorIdCount; ++i) {
+            if (d.id == kEventFlavorIds[i]) {
+                known = true;
+                break;
+            }
+        }
+        if (!d.id.empty() && !known) {
+            rep.add(source, ctx, "unknown event id '" + d.id + "'");
+        }
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addEventFlavor(d)) {
+            rep.add(source, ctx, "duplicate event id '" + d.id + "'");
+        }
+    });
+}
+
 void parseMilestones(const Json& root, const std::string& source, ContentDatabase& db,
                      LoadReport& rep) {
     // M63: class level-milestone bonuses. Tier and option are validated here;
@@ -892,6 +923,18 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     }
     if (readJsonFile(dataRoot / "story.json", json, rep)) {
         parseStory(json, "story.json", db, rep);
+    }
+    // M80: event flavor is the one OPTIONAL content file — pure presentation
+    // with a footer-prompt fallback per event, so its absence is not an error
+    // and can never block play. Present-but-malformed is still reported like
+    // any other file (a typo should be seen, not shrugged off).
+    {
+        std::error_code ec;
+        if (fs::exists(dataRoot / "event_flavor.json", ec) && !ec) {
+            if (readJsonFile(dataRoot / "event_flavor.json", json, rep)) {
+                parseEventFlavor(json, "event_flavor.json", db, rep);
+            }
+        }
     }
 
     validateReferences(db, rep);

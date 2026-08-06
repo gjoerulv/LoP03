@@ -402,4 +402,25 @@ struct StoryBeat {
     std::string body;         // the beat text (wrapped in the dialog panel)
 };
 
+// M80: authored flavor for one dungeon event kind (data/event_flavor.json) —
+// the centered panel's title and body. Pure presentation: nothing in the
+// battle, generation or scoring model reads it, and an event whose id is
+// absent (or the whole file missing — it is the one OPTIONAL content file)
+// falls back to the classic footer prompt.
+struct EventFlavorDef {
+    std::string id;     // one of kEventFlavorIds
+    std::string title;  // panel heading (one line)
+    std::string body;   // dry-humor flavor (wrapped in the panel)
+};
+
+// The event vocabulary the loader accepts — the content-layer mirror of
+// dungeon::RoomEventKind (which lives a layer above and cannot be named
+// here); a test holds the two in lockstep.
+inline constexpr const char* kEventFlavorIds[] = {
+    "shrine",       "healing_spring", "merchant",    "elite_challenge",
+    "score_wager",  "rest_token",     "royal_relic", "armory_ghost",
+    "miners_cache", "elder_root",     "duck_peddler",
+};
+inline constexpr std::size_t kEventFlavorIdCount = 11;
+
 }  // namespace cd::content

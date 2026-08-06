@@ -32,6 +32,17 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M80 update:** event flavor — every dungeon event opens a centered
+> panel (authored title + dry-humor body from `data/event_flavor.json`,
+> then the familiar gold trade-off line); Confirm commits, Cancel steps
+> away, missing entries/file fall back to the footer prompt. Owner
+> addition, same cycle: **outcomes ride a centered box too** — event
+> results/refusals, chest opens and the buried dig (map-piece pings and
+> battle results keep the footer line). Capture set is now **87 scenes**
+> (`86_event_flavor`, `87_event_outcome`). Older rows' event-prompt and
+> chest-message expectations gain the panel steps; the M80 note §G is
+> the checklist.
+>
 > **M79 update:** input & QoL — party cycling (Q/E, Ctrl/Alt, LB/RB) in
 > the Equip Shop's member phases and the Training Hall; the keyboard remap
 > shows three direct slots per action with an in-use warning
