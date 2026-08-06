@@ -28,7 +28,10 @@ inline constexpr int kCastleTown = 8;  // distinct place, NOT a ladder town
 // distinct id (used by the story beat), never a ladder town.
 inline constexpr int kGooseTown = 9;
 
-enum class CastleChallenge { BossRush, Endless, King, DuckGauntlet };
+// M84: GuildBoss is a town-guild gauntlet riding this same challenge runner
+// (persistent HP/MP, the castle defeat price) — the one non-castle kind, so
+// its music/backdrop/return flow differ (see CastleChallengeState).
+enum class CastleChallenge { BossRush, Endless, King, DuckGauntlet, GuildBoss };
 
 // --- Challenge scaling -----------------------------------------------------
 // Every fight is a normal Battle whose team.statScalePct sets the enemy stat

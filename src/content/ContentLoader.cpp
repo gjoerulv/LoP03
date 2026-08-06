@@ -1,5 +1,6 @@
 #include "content/ContentLoader.hpp"
 
+#include <array>
 #include <fstream>
 
 #include "content/Enums.hpp"
@@ -595,6 +596,13 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.avoidSleepingTargets = r.optBool("avoidSleepingTargets", false);
         d.noStunWhileAllFoesSleep = r.optBool("noStunWhileAllFoesSleep", false);
         d.immuneToStatScale = r.optBool("immuneToStatScale", false);
+        // M84: 0 = ordinary boss; 1..7 = that town's Guild Master. The upper
+        // bound is the seven-town ladder (kTownCount; the story parser's 1..9
+        // literal precedent).
+        d.guildTown = r.optIntMin("guildTown", 0, 0);
+        if (d.guildTown > 7) {
+            rep.add(source, ctx, "'guildTown' must be 0 (ordinary boss) or a town 1..7");
+        }
         d.telegraph = r.optString("telegraph");
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
@@ -794,6 +802,24 @@ void validateReferences(const ContentDatabase& db, LoadReport& rep) {
             if (!db.hasPassive(passive)) {
                 rep.add(source, "boss '" + id + "'.passives",
                         "references unknown passive '" + passive + "'");
+            }
+        }
+    }
+    // M84: a town keeps at most one Guild Master — two claimants would make
+    // the gauntlet's team builder ambiguous.
+    {
+        std::array<std::string, 7> masters{};
+        for (const auto& [id, boss] : db.bosses()) {
+            if (boss.guildTown < 1 || boss.guildTown > 7) {
+                continue;
+            }
+            std::string& slot = masters[static_cast<std::size_t>(boss.guildTown - 1)];
+            if (!slot.empty()) {
+                rep.add(source, "boss '" + id + "'",
+                        "town " + std::to_string(boss.guildTown) +
+                            " already has guild master '" + slot + "'");
+            } else {
+                slot = id;
             }
         }
     }

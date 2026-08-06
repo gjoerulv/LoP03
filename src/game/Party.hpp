@@ -7,6 +7,7 @@
 #include "game/BlackMarket.hpp"
 #include "game/Castle.hpp"
 #include "game/Character.hpp"
+#include "game/Guild.hpp"
 #include "game/Inventory.hpp"
 #include "game/StakesLadder.hpp"
 #include "game/TreasureMap.hpp"  // M65: TreasureReveal + the puzzle-map rules
@@ -61,6 +62,10 @@ struct Party {
     // game/Curios.hpp). Optional save field; the Curator achievement fires at
     // the full dozen.
     std::vector<std::string> ownedCurios;
+    // M84: the per-town Guild Master ladder — the unlock (a 4-floor clear in
+    // that town), the best-turns record, and the chosen permanent town perk.
+    // All optional save fields (old saves -> every audience still locked).
+    GuildRecords guild;
     // Story serial (M41): a 7-bit mask of which town installments have been heard
     // (see game/Story.hpp). Optional save field; old saves -> 0 (nothing heard).
     int storyMet = 0;

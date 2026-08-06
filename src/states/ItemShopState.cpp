@@ -47,7 +47,8 @@ void ItemShopState::rebuild() {
         // suffix is tab-split into two FIXED right-aligned columns by
         // drawMenuScrolled (the old space padding never lined up in a
         // proportional font), and an at-cap row wears its cap on its sleeve.
-        const bool atCap = !canBuyMore(context_.party.inventory, *it);
+        const bool atCap =
+            !canBuyMore(context_.party.inventory, *it, guildCapBonus(context_.party.guild));
         items.push_back({it->name, true,
                          atCap ? TextFormat("x%d MAX\t%dg", owned, it->value)
                                : TextFormat("x%d\t%dg", owned, it->value)});
@@ -73,11 +74,13 @@ void ItemShopState::handleInput(const Input& input) {
             context_.content.findItem(ids_[static_cast<std::size_t>(menu_.cursor())]);
         if (it != nullptr) {
             // M78: the held-quantity cap gates the sale before gold does — an
-            // over-full bag is the clearer refusal.
-            if (!canBuyMore(context_.party.inventory, *it)) {
+            // over-full bag is the clearer refusal. M84: the Deep Pockets
+            // perks widen every cap (ceiling 9).
+            const int capBonus = guildCapBonus(context_.party.guild);
+            if (!canBuyMore(context_.party.inventory, *it, capBonus)) {
                 context_.audio.play(Sfx::Error);
                 message_ = "You cannot carry more of " + it->name + " (max " +
-                           std::to_string(capFor(*it)) + ")";
+                           std::to_string(capFor(*it, capBonus)) + ")";
                 messageIsError_ = true;
             } else if (context_.party.gold >= it->value) {
                 context_.party.gold -= it->value;

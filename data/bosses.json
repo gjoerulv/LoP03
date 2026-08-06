@@ -230,6 +230,138 @@
       "xpReward": 800,
       "goldReward": 500,
       "description": "The terror beneath the pond, mightier than the Hollow King himself. The geese speak of him only in whispers. Fought nowhere but Goose Town."
+    },
+    {
+      "id": "guild_foreman_brakk",
+      "name": "Foreman Brakk, the First Chair",
+      "archetype": "brute",
+      "stats": { "hp": 300, "attack": 24, "magic": 0, "defense": 14, "speed": 9 },
+      "skills": ["power_smash", "battle_cry"],
+      "passives": ["iron_will"],
+      "minions": ["guild_clerk", "guild_clerk"],
+      "guildTown": 1,
+      "triggers": [
+        { "when": "first_time_hp_below_pct", "threshold": 50, "do": "scale_stats_self", "scaleAttackPct": 130, "text": "The Foreman folds his coat over the chair. Now it is a real interview." }
+      ],
+      "telegraph": "The great chair creaks under a man who has denied stronger applicants than you.",
+      "xpReward": 260,
+      "goldReward": 180,
+      "description": "Town 1's Guild Master. Every membership in the realm began with his signature, and he has never once needed a second pen."
+    },
+    {
+      "id": "guild_auditor_vess",
+      "name": "Auditor Vess, the Red Quill",
+      "archetype": "sorcerer",
+      "stats": { "hp": 290, "attack": 8, "magic": 26, "defense": 12, "speed": 12 },
+      "skills": ["soul_tithe", "frost_lance", "silence"],
+      "passives": ["clarity"],
+      "minions": ["guild_inkwing", "guild_ledger_golem"],
+      "guildTown": 2,
+      "triggers": [
+        { "when": "every_nth_own_turn", "threshold": 4, "do": "status_all_foes", "status": "silence", "duration": 1, "text": "The Quill strikes a line through every incantation on the page." }
+      ],
+      "telegraph": "Auditor Vess opens your file. It is thicker than you remember living.",
+      "xpReward": 300,
+      "goldReward": 210,
+      "description": "Town 2's Guild Master. Audits reserves of gold, of magic, and of nerve, in that order."
+    },
+    {
+      "id": "guild_chain_mistress",
+      "name": "Chain-Mistress Karga",
+      "archetype": "commander",
+      "stats": { "hp": 330, "attack": 26, "magic": 6, "defense": 16, "speed": 11 },
+      "skills": ["strike", "battle_cry", "weaken"],
+      "passives": ["counter_attack"],
+      "minions": ["guild_debt_hound", "guild_debt_hound", "guild_chirurgeon"],
+      "guildTown": 3,
+      "attackStatuses": [
+        { "type": "attack_down", "magnitude": 10, "duration": 2 }
+      ],
+      "triggers": [
+        { "when": "every_nth_hit_taken", "threshold": 5, "do": "status_attacker", "status": "stunned", "duration": 1, "text": "The chain snaps taut around the last wrist that dared." }
+      ],
+      "telegraph": "Chain-Mistress Karga measures your ankles by eye. Old habit, she says.",
+      "xpReward": 340,
+      "goldReward": 240,
+      "description": "Town 3's Guild Master. Collections used to be a department. Now it is a person."
+    },
+    {
+      "id": "guild_warden_mole",
+      "name": "Warden Mole, Keeper of Keys",
+      "archetype": "brute",
+      "stats": { "hp": 360, "attack": 24, "magic": 10, "defense": 22, "speed": 6 },
+      "skills": ["sunder", "stone_edge", "strike"],
+      "passives": ["thorns", "iron_will"],
+      "minions": ["guild_vault_mimic", "guild_key_rat"],
+      "guildTown": 4,
+      "triggers": [
+        { "when": "every_nth_hit_taken", "threshold": 6, "do": "status_attacker", "status": "stunned", "duration": 2, "text": "A lock the attacker never saw clicks shut around the moment." },
+        { "when": "first_time_hp_below_pct", "threshold": 40, "do": "scale_stats_self", "scaleDefensePct": 150, "text": "The Warden turns the third key. The door of him closes." }
+      ],
+      "telegraph": "Warden Mole does not look up. The keys around his neck do.",
+      "xpReward": 380,
+      "goldReward": 270,
+      "description": "Town 4's Guild Master. Nobody knows what the vault under the guild holds. Warden Mole is why."
+    },
+    {
+      "id": "guild_cutlery_curator",
+      "name": "The Cutlery Curator",
+      "archetype": "sorcerer",
+      "stats": { "hp": 380, "attack": 12, "magic": 30, "defense": 14, "speed": 13 },
+      "skills": ["bewilder", "smoke_screen", "arcane_burst", "venom_mist"],
+      "passives": ["evasion", "spell_ward"],
+      "minions": ["guild_fork_fiend", "guild_ladle_shade"],
+      "guildTown": 5,
+      "immuneToStatScale": true,
+      "triggers": [
+        { "when": "first_time_hp_below_pct", "threshold": 50, "do": "status_self", "status": "reflect", "duration": 2, "text": "The Curator raises a soup spoon to exactly the wrong angle. Or exactly the right one." },
+        { "when": "every_nth_own_turn", "threshold": 5, "do": "status_all_foes", "status": "confusion", "duration": 1, "text": "A drawer of mismatched forks opens somewhere. The clatter is indescribable." }
+      ],
+      "telegraph": "The Curator inventories your party at a glance: four entries, one regrettable.",
+      "xpReward": 420,
+      "goldReward": 300,
+      "description": "Town 5's Guild Master. Keeps the guild's collection of significant utensils, and will not say which one is THE spoon."
+    },
+    {
+      "id": "guild_grandmaster_ossia",
+      "name": "Grandmaster Ossia, the Tenth Seat",
+      "archetype": "commander",
+      "stats": { "hp": 420, "attack": 30, "magic": 14, "defense": 18, "speed": 16 },
+      "skills": ["strike", "smite", "battle_cry"],
+      "passives": ["first_strike", "counter_attack"],
+      "minions": ["guild_seat_warden", "guild_seat_warden"],
+      "guildTown": 6,
+      "triggers": [
+        { "when": "first_time_ally_felled", "do": "scale_stats_self", "scaleAttackPct": 125, "scaleSpeedPct": 115, "text": "Ossia bows to the fallen, then stops being polite." },
+        { "when": "every_nth_hit_taken", "threshold": 8, "do": "status_attacker", "status": "terrified", "duration": 2, "text": "One look from the Tenth Seat, and the arm remembers fear." }
+      ],
+      "telegraph": "Grandmaster Ossia has retired undefeated nine times. This chair is the tenth.",
+      "xpReward": 480,
+      "goldReward": 340,
+      "description": "Town 6's Guild Master. The nine previous chairs are kept polished, empty, and slightly afraid."
+    },
+    {
+      "id": "guild_registrar_null",
+      "name": "Registrar Null, the Final Ledger",
+      "archetype": "sorcerer",
+      "stats": { "hp": 450, "attack": 16, "magic": 34, "defense": 20, "speed": 14 },
+      "skills": ["shadow_bolt", "soul_tithe", "weaken", "venom_mist"],
+      "passives": ["spell_ward", "lifedrink"],
+      "minions": ["guild_null_notary", "guild_final_clause"],
+      "guildTown": 7,
+      "weaknesses": ["holy"],
+      "statusImmunities": ["stunned"],
+      "initialStatuses": [
+        { "type": "reflect", "duration": 2 }
+      ],
+      "triggers": [
+        { "when": "first_time_hp_below_pct", "threshold": 50, "do": "status_all_foes", "status": "curse", "duration": 2, "text": "Null underlines each of your names once. The ink does not dry so much as arrive." },
+        { "when": "every_nth_hit_taken", "threshold": 10, "do": "scale_stats_self", "scaleSpeedPct": 120, "text": "The Registrar turns a page. The margin narrows." }
+      ],
+      "telegraph": "Registrar Null closes the ledger. Yours was the last open entry.",
+      "xpReward": 550,
+      "goldReward": 400,
+      "description": "Town 7's Guild Master. Every account settles eventually. Registrar Null is the eventually."
     }
   ]
 }

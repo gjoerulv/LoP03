@@ -2437,3 +2437,72 @@ to what a seed generates). All rules are pure functions in
   `TreasureFightState::finish` appends the payout sentence; MapsState
   states the debt. Scene `91_result_map` referees the fullest panel.
 
+## 38. M84 — Guild Masters & town milestones
+
+No version motion: content rides rules v15, the gauntlet and perks are
+new logic outside the generator, and generation stays byte-identical (the
+guards below exist precisely for that). The pure model lives in
+`game/Guild.hpp` (records, the constexpr perk table, effect queries, the
+omen post-pass) with content-driven team builders in `Guild.cpp`.
+
+- **`BossDef::guildTown`** (optional int, 0 = ordinary boss; validated
+  0..7, at most one Master per town): one field does triple duty —
+  identifies the town's Master for `findGuildMaster`/`guildMasterTeam`,
+  excludes it from the generator's theme-less fallback boss sweep
+  (`pickBoss`), and excludes it from `bossRushOrder` (the `kKingBossId`
+  exclusion rule, as data). Without both exclusions, ADDING the seven
+  Masters to `bosses.json` would have changed what existing seeds
+  generate and grown the Boss Rush. The editor descriptor shipped with
+  the field (the M59 staleness sweep requires it; nothing left for M86
+  here). The twelve court minions are ordinary `bossOnly` enemies.
+- **Records**: `GuildRecords` = `std::array<GuildTownRecord, kTownCount>`
+  on Party — `unlocked` (set by a 4-floor `completeDungeon` in that
+  town), `bestTurns` (0 = undefeated; `guildImproved` mirrors
+  `duckImproved`), `perkId` ("" = unchosen). Saved as a 7-bit
+  `guildUnlocked` mask (the `storyMet` idiom) plus flat
+  `guildBest1..7`/`guildPerk1..7` keys (the castle-records idiom).
+  Defensive load: unknown or wrong-town perk ids drop (the choice simply
+  re-offers, the M63 keepMilestone rule), a perk without a victory
+  drops, and a recorded victory forces `unlocked`.
+- **The gauntlet** rides `CastleChallengeState` (`CastleChallenge::
+  GuildBoss` + a `guildTown` ctor param): wave 0 = `guildWaveTeam` (five
+  `blackMarketHash(kGuildSeed, town·1000+i)` picks from `guildTownPool` —
+  every non-bossOnly enemy with `minTown ≤ town`, sorted; a FIXED seed,
+  so every attempt fields the same trial and best-turns is a
+  reproducible measure, the kEndlessSeed philosophy), wave 1 =
+  `guildMasterTeam` (the Master + authored court). Both at
+  `guildScalePct(town)` = `combineTownScale(100 +
+  composition.statScalePct(kGuildThreatDepth=20), town)` — derived from
+  the generator's own rules, 190 % (t1) to 570 % (t7). Persistent HP/MP,
+  `clampCastleDefeat` on a loss, `MusicTrack::Boss` + the Plain backdrop
+  (a town hall, not the throne room), "Return to the Guild". First
+  victory pushes `GuildPerkChoiceState` beneath the celebration/toasts.
+- **Perks**: `kGuildPerks[14]` (constexpr, two per town, stable ids) with
+  one effect-query helper per hook. Consumption points: `capFor`/
+  `canBuyMore` capBonus (ItemShop + dungeon merchant), `applySpoils`
+  (EXP % and enemy-gold % — applied inside so the victory panel shows
+  what was granted), chest gold at OPEN time (the score's `treasureGold`
+  keeps the generated amount — no score-rule motion), the chest-trap
+  wound percent, `mapDropRolls` bonusPct (the M83 hook goes live),
+  `blackMarketRolls` bonusPct (the 20 % stakes path only; the M52
+  high-stakes roll keeps its own odds), `guildTokenPrice` (3 → 1) at the
+  black-market till, and the **Mind-the-Spoon omen**:
+  `applyGuildRelicOmen` runs AFTER `generateFloors` at the run's entry
+  (the M76 peddler precedent — the generator never sees party state):
+  per floor without a relic event, one pure-hash roll (`kGuildOmenSalt`
+  + floorIndex on the RUN seed, reload-proof) may upgrade the first
+  plain rolled event (never a rite, the peddler, or an elite challenge)
+  into `RoyalRelic`, keeping the M44 at-most-one rule.
+- **Endless Rush**: every 10th wave ((w+1) % 10 == 0) replaces the plain
+  draw with a seeded boss — `bossRushOrder` ∪ the Masters, hashed on a
+  salt far above the per-slot ones — carrying its authored minions
+  (`bossOnly` legitimately enters the endless arena ONLY here; the
+  king's-court lint was narrowed to say exactly that). Ordinary waves
+  are byte-identical to pre-M84.
+- **Guildbane** achievement (any `bestTurns > 0`); scenes
+  `92_guild_boss_locked`, `93_guild_boss_best`, `94_guild_perk`,
+  `95_guild_result`; the `[guild]` battery covers the perk table, the
+  records + tamper degradation, team determinism and exclusions, the
+  omen, and sim-backed clearability of all seven gauntlets by the
+  castle battery's maxed party (recorded per town).
+

@@ -470,6 +470,30 @@ moment the dig guardian falls**, jump-starting the next cycle (the payout
 never overfills the pouch; what does not fit stays banked for the next
 dig). The Maps screen states any standing debt.
 
+**Guild Masters & town milestones (M84).** Every town's Guild hides a
+**Guild Master** — seven unique bosses, one per town, from Foreman Brakk in
+the First Chair to Registrar Null and the Final Ledger. Clearing a
+**4-floor** dungeon in a town unlocks that town's **"Fight the Guild
+Boss"** on the Guild screen (visible from the start; the banner under the
+panel explains the lock, the trial, or the standing record). The fight is
+a two-wave **gauntlet on the castle rules** — persistent HP/MP, no free
+healing between waves, the castle's carried-out-at-1-HP defeat price, no
+gold lost: wave 1 is **the Guild Trial**, five seeded foes from that
+town's unlocked enemy pool (the same five every attempt, so the record
+measures the party, not the draw); wave 2 is the Master with its unique
+court, both at roughly **depth-20 threat times the town's own scaling**
+(190 % at town 1 up to the ladder's 570 % ceiling at town 7). Masters are
+**refightable** for a best-turns record kept on the Guild screen, outside
+the dungeon scoreboard. The **first** victory grants that town's
+**milestone**: a pick-1-of-2 **permanent town perk** (the M63 modal;
+postponing re-offers it on the next town visit) — extra consumable
+capacity, battle EXP or gold, map-piece or black-market odds, softer chest
+traps, richer chests, the token price falling to 1, and town 5's
+deliberately cryptic option about minding a certain spoon. Felling any
+Master earns the **Guildbane** achievement — and the Masters return the
+visit: **every 10th Endless Rush wave** now fields a seeded-random boss
+(a dungeon boss or a Guild Master) with its usual court.
+
 **The dungeon treasure map + curios (M66).** Similarly rare (~1 dungeon in 8),
 a weathered **chart of the current dungeon** waits in a plain room: reading
 it instantly marks a buried treasure elsewhere in that same run — a gold X

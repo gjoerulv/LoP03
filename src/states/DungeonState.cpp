@@ -389,10 +389,16 @@ void DungeonState::openChest() {
     }
     room.chest.opened = true;
     context_.audio.play(Sfx::Chest);
-    context_.party.gold += room.chest.gold;
+    // M84 (Appraiser's Eye): the perk fattens the PAYOUT at open time. The
+    // score's treasureGold keeps the generated amount, so scoring stays
+    // comparable across parties (no score-rule motion) — and generation is
+    // untouched, the M76 interaction-time precedent.
+    const int chestGold =
+        room.chest.gold + room.chest.gold * guildChestGoldPct(context_.party.guild) / 100;
+    context_.party.gold += chestGold;
     ++run_.chestsOpened;
     run_.treasureGold += room.chest.gold;
-    std::string msg = TextFormat("Found %d gold", room.chest.gold);
+    std::string msg = TextFormat("Found %d gold", chestGold);
     if (!room.chest.itemId.empty()) {
         context_.party.inventory.add(room.chest.itemId, 1);
         const char* name = room.chest.itemId.c_str();
@@ -403,9 +409,11 @@ void DungeonState::openChest() {
     }
     if (room.chest.trapped) {
         // Exactly the wound the prompt warned about: 25% max HP, never fatal.
+        // M84 (Trap Sense): the perk shaves percentage points off the wound.
+        const int woundPct = 25 - guildTrapGuardPct(context_.party.guild);
         for (Character& c : context_.party.members) {
             if (c.hp > 0) {
-                c.hp = std::max(1, c.hp - c.maxHp / 4);
+                c.hp = std::max(1, c.hp - c.maxHp * (woundPct > 0 ? woundPct : 0) / 100);
             }
         }
         msg = "The trap bites - the party is wounded! " + msg;
@@ -594,11 +602,12 @@ void DungeonState::resolveEvent() {
             // precedent), and a full bag refuses the sale WITHOUT spending
             // the merchant, so the party may use an item and come back.
             const int price = it != nullptr ? merchantPriceFor(*it, ev.goldCost) : ev.goldCost;
-            if (it != nullptr && !canBuyMore(context_.party.inventory, *it)) {
+            const int capBonus = guildCapBonus(context_.party.guild);  // M84 perk
+            if (it != nullptr && !canBuyMore(context_.party.inventory, *it, capBonus)) {
                 context_.audio.play(Sfx::Error);
                 showOutcome(outcomeTitleFor(context_, ev.kind),
                             "You cannot carry more of " + it->name + " (max " +
-                                std::to_string(capFor(*it)) + "). The merchant waits.");
+                                std::to_string(capFor(*it, capBonus)) + "). The merchant waits.");
                 return;
             }
             if (context_.party.gold < price) {
@@ -852,9 +861,10 @@ std::string DungeonState::eventPromptText() const {
             // premium tonic at full value, everything else at street price.
             const int price = it != nullptr ? merchantPriceFor(*it, ev.goldCost) : ev.goldCost;
             const bool premium = it != nullptr && it->notSoldInTown;
-            if (it != nullptr && !canBuyMore(context_.party.inventory, *it)) {
+            const int capBonus = guildCapBonus(context_.party.guild);  // M84 perk
+            if (it != nullptr && !canBuyMore(context_.party.inventory, *it, capBonus)) {
                 return "Merchant sells " + name + " - you cannot carry more (max " +
-                       std::to_string(capFor(*it)) + ").";
+                       std::to_string(capFor(*it, capBonus)) + ").";
             }
             if (context_.party.gold < price) {
                 return "Merchant sells " + name + " for " + std::to_string(price) +
@@ -1112,6 +1122,11 @@ void DungeonState::completeDungeon() {
     if (dungeon_.town >= kTownCount) {
         context_.party.castleUnlocked = true;
     }
+    // M84: a 4-FLOOR clear earns this town's Guild Master audience (persisted
+    // like the other unlocks; the guild screen's boss row goes live).
+    if (dungeon_.floorCount >= 4) {
+        guildRecord(context_.party.guild, dungeon_.town).unlocked = true;
+    }
     // M33: advance the stakes baseline/penalty on a scoring completion. A
     // completed-but-zero run (extreme turn penalty) is treated like a score-0
     // run: it does not move the baseline (owner rule).
@@ -1132,7 +1147,8 @@ void DungeonState::completeDungeon() {
     // 4-floor run the final floor's sub-seed is not the identity the player
     // entered, the board records, or a reload reproduces).
     if (blackMarketShouldSpawn(total > 0, /*completed=*/true, raisedStakes, dungeon_.town,
-                               dungeon_.runSeed, dungeon_.depth)) {
+                               dungeon_.runSeed, dungeon_.depth,
+                               guildBlackMarketPct(context_.party.guild))) {  // M84 perk
         // Shared legendary pool (M39): the market and boss drops draw the same set.
         const std::vector<std::string> legendaryIds = legendaryDropPool(context_.content);
         if (!legendaryIds.empty()) {
@@ -1169,7 +1185,9 @@ void DungeonState::completeDungeon() {
     // stands revealed, the piece banks as an IOU (cap 3, overflow lost) and
     // pays out after the dig guardian falls. The line rides the result screen.
     std::string mapLine;
-    if (dungeon_.floorCount >= 4 && mapDropRolls(dungeon_.runSeed, dungeon_.town)) {
+    if (dungeon_.floorCount >= 4 &&
+        mapDropRolls(dungeon_.runSeed, dungeon_.town,
+                     guildMapBonusPct(context_.party.guild))) {  // M84 perk (M83 hook)
         Party& p = context_.party;
         if (p.treasure.active) {
             if (bankMapDebt(p.mapPiecesOwed)) {

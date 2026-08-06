@@ -443,6 +443,13 @@ struct BossDef {
     bool avoidSleepingTargets = false;
     bool noStunWhileAllFoesSleep = false;
     bool immuneToStatScale = false;
+    // M84: 0 for every ordinary boss. 1..7 marks this boss as that town's
+    // GUILD MASTER: fought only in the town's guild gauntlet, excluded from
+    // the dungeon boss pools and the Boss Rush (the kKingBossId exclusion
+    // rule, as data instead of an id constant), and eligible for the Endless
+    // Rush's every-10th-wave boss draw. At most one Master per town
+    // (validated).
+    int guildTown = 0;
     std::string telegraph;              // flavor line shown when the battle begins
     int xpReward = 0;
     int goldReward = 0;

@@ -284,10 +284,10 @@ TEST_CASE("court: a bossOnly enemy is never generated into a dungeon", "[court][
             bossOnly.push_back(id);
         }
     }
-    // The two Royal Guards + the five Evil Geese (M61). Every bossOnly foe must
-    // belong to some boss's authored court — a flag with no boss would be a foe
-    // that exists nowhere.
-    REQUIRE(bossOnly.size() == 7);
+    // The two Royal Guards + the five Evil Geese (M61) + the twelve guild
+    // courts (M84). Every bossOnly foe must belong to some boss's authored
+    // court — a flag with no boss would be a foe that exists nowhere.
+    REQUIRE(bossOnly.size() == 19);
     for (const std::string& id : bossOnly) {
         bool courted = false;
         for (const auto& [bossId, boss] : db.bosses()) {
@@ -318,10 +318,18 @@ TEST_CASE("court: a bossOnly enemy is never generated into a dungeon", "[court][
     }
 }
 
-TEST_CASE("court: a bossOnly enemy never appears in an endless wave", "[court][castle]") {
+TEST_CASE("court: a bossOnly enemy never appears in an ORDINARY endless wave",
+          "[court][castle]") {
+    // M84 narrowed this invariant: every 10th wave now fields a boss WITH its
+    // authored court, and a court is bossOnly by design — that is the one
+    // legitimate door. Ordinary waves still draw from the open pool only.
     const content::ContentDatabase db = loadContent();
     for (int wave = 0; wave < 80; ++wave) {
         const dungeon::EnemyTeam t = endlessWaveTeam(db, wave);
+        if ((wave + 1) % 10 == 0) {
+            CHECK(t.isBoss);  // the boss wave carries its own court rules
+            continue;
+        }
         for (const std::string& id : t.enemyIds) {
             const content::EnemyDef* def = db.findEnemy(id);
             REQUIRE(def != nullptr);

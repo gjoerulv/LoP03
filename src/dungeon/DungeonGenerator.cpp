@@ -111,7 +111,10 @@ const content::BossDef* pickBoss(Rng& rng, const content::DungeonThemeDef* theme
     }
     if (ids.empty()) {
         for (const auto& [id, def] : db.bosses()) {
-            if (def.minTown <= town) {
+            // M84: a Guild Master presides over its town's gauntlet, never a
+            // dungeon — the fallback sweep must skip it or adding one would
+            // change what existing seeds generate.
+            if (def.minTown <= town && def.guildTown == 0) {
                 ids.push_back(id);
             }
         }

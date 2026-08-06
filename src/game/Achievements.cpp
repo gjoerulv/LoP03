@@ -65,6 +65,12 @@ bool achievementMet(const std::string& id, const Party& p, const AchvContext& ct
     if (id == "curator") {  // M66
         return static_cast<int>(p.ownedCurios.size()) >= kCurioCount;
     }
+    if (id == "guildbane") {  // M84: any town's Master has fallen
+        for (const GuildTownRecord& g : p.guild) {
+            if (g.defeated()) return true;
+        }
+        return false;
+    }
     return false;
 }
 

@@ -44,6 +44,7 @@
 #include "states/CastleChallengeState.hpp"
 #include "states/CastleState.hpp"
 #include "states/GooseTownState.hpp"
+#include "states/GuildPerkChoiceState.hpp"
 #include "states/MilestoneChoiceState.hpp"
 #include "game/Curios.hpp"
 #include "states/MapsState.hpp"
@@ -429,6 +430,41 @@ int run(const char* outDir) {
                      s, c,
                      dungeon::generateFloors(424242, 6, c.content, "ruined_keep", 1, 4));
                  st->captureOpenStairs();
+                 s.pushState(std::move(st));
+             }},
+            {"92_guild_boss_locked",
+             [](StateStack& s, AppContext& c) {
+                 // M84: the Guild Boss row while the audience is unearned — the
+                 // dim row plus the longest status banner (the lock hint).
+                 auto st = std::make_unique<GuildState>(s, c);
+                 st->captureFocusGuildBoss();
+                 s.pushState(std::move(st));
+             }},
+            {"93_guild_boss_best",
+             [](StateStack& s, AppContext& c) {
+                 // M84: the same row after a victory — the gold best-turns
+                 // readout and the rematch banner with its %d expansion.
+                 guildRecord(c.party.guild, c.party.currentTown).unlocked = true;
+                 guildRecord(c.party.guild, c.party.currentTown).bestTurns = 888;
+                 auto st = std::make_unique<GuildState>(s, c);
+                 st->captureFocusGuildBoss();
+                 s.pushState(std::move(st));
+             }},
+            {"94_guild_perk",
+             [](StateStack& s, AppContext& c) {
+                 // M84: the town-milestone modal on town 5 — the cryptic
+                 // Mind-the-Spoon description is the longest option text.
+                 auto st = std::make_unique<GuildPerkChoiceState>(s, c);
+                 st->captureSelect(5);
+                 s.pushState(std::move(st));
+             }},
+            {"95_guild_result",
+             [](StateStack& s, AppContext& c) {
+                 // M84: the gauntlet's fullest first-victory overlay (longest
+                 // Master name + the milestone invitation, wrapped).
+                 auto st = std::make_unique<CastleChallengeState>(
+                     s, c, CastleChallenge::GuildBoss, 6);
+                 st->captureGuildResult();
                  s.pushState(std::move(st));
              }},
             {"14_dungeon_keep",

@@ -77,6 +77,7 @@ add_library(crystal_core STATIC
     src/game/Inventory.cpp
     src/game/BossDrops.cpp
     src/game/Castle.cpp
+    src/game/Guild.cpp
     src/game/Achievements.cpp
     src/game/Profile.cpp
     src/save/SaveSystem.cpp
@@ -118,6 +119,7 @@ add_library(crystal_core STATIC
     src/states/GooseTownState.cpp
     src/states/RoadForkState.cpp
     src/states/MilestoneChoiceState.cpp
+    src/states/GuildPerkChoiceState.cpp
     src/states/CelebrationState.cpp
     src/states/PartyState.cpp
     src/states/MapsState.cpp

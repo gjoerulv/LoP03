@@ -3126,8 +3126,9 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M83 — Map economy: 4-floor map-piece drops
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-06 on the post-M82 checkout (`53ab02f`). Completing a
+- **Status:** ☑ complete (approved) — implemented 2026-08-06 on the
+  post-M82 checkout (`53ab02f`); approved and committed by the owner
+  2026-08-06 (`d466e5b`). Completing a
   **4-floor** run in town ≥ 2 rolls a committed map-piece drop
   (**15/27/39/51/63/75 %** towns 2–7; a pure hash of the run seed —
   reload-proof), announced in gold on the result screen. The M65 grant
@@ -3148,7 +3149,28 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M84 — Guild Masters & town milestones
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-06 on the post-M83 checkout (`d466e5b`). The program's largest
+  milestone, shipped unsplit. A **4-floor** clear in town N opens that
+  town's **"Fight the Guild Boss"** (always visible; the banner explains
+  lock/trial/record): a castle-rules gauntlet — the five-foe seeded
+  **Guild Trial** (the same five every attempt), then the town's unique
+  **Master + court** — at depth-20 threat × town scaling (190 %→570 %),
+  refightable for best turns. Seven original Masters + twelve `bossOnly`
+  court minions on the v15 vocabulary with 19 new M73-style sprites
+  (contact sheet in `docs/sprite_review/`); the new `BossDef::guildTown`
+  field identifies each Master AND excludes it from dungeon generation
+  and the Boss Rush, so generation stays byte-identical (no version
+  motion; the editor descriptor shipped with the field). First victory
+  grants the pick-1-of-2 **town milestone** (M63-pattern modal, postpone
+  re-offers) — all fourteen perks live at their hooks, incl. the M83 map
+  bonus and the cryptic Mind-the-Spoon relic omen (a pure-hash
+  post-generation pass, the M76 precedent). Every 10th Endless wave now
+  fields a seeded boss + court; new **Guildbane** achievement. Debug
+  **711/711**, Release **707/707**, capture **95/95**
+  (`92_guild_boss_locked`–`95_guild_result`); all seven gauntlets
+  sim-cleared by the castle battery's maxed party (4→13 rounds up the
+  ladder). Full evidence in the note §F.
 - **Goal:** each town's 4-floor clear unlocks its Guild Boss — a
   depth-20-grade gauntlet (five seeded town enemies, then a unique new
   Master with 1–3 unique minions; refightable, recorded); first victory

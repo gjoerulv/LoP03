@@ -266,6 +266,9 @@ std::vector<FieldDesc> bossDescs() {
         refList("minions", "Minions", Category::Enemies),
         refList("passives", "Passives", Category::Passives),
         num("minTown", "Min Town", 1, 7, 1, 1),
+        // M84: 0 = ordinary boss; 1..7 marks the town's Guild Master (fought
+        // only in that town's guild gauntlet, excluded from dungeons/rush).
+        num("guildTown", "Guild Master Of Town (M84)", 0, 7),
         enList("weaknesses", "Weak To", ids(content::elementIds())),
         enList("immunities", "Immune To", ids(content::elementIds())),
         num("reviveMinionTurns", "Revive Minions (turns)", 0, 99),

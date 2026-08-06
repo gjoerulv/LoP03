@@ -147,12 +147,22 @@ TEST_CASE("offense: exactly the authored foes carry the new vocabulary", "[offen
             mannered.insert(id);
         }
     }
-    CHECK(triggered == std::set<std::string>{"troll_berserker", "royal_guard_staff", "deep_king",
-                                             "sand_warlord", "frost_monarch", "obsidian_colossus",
-                                             "abyssal_tyrant", "the_hollow_king", "deadly_duck"});
+    // M84 widened the authored sets by exactly the seven Guild Masters (all
+    // triggered; Registrar Null opens reflected; the Cutlery Curator shrugs
+    // off the Spoon). Every foe OUTSIDE these still resolves as before.
+    CHECK(triggered == std::set<std::string>{
+                           "troll_berserker", "royal_guard_staff", "deep_king",
+                           "sand_warlord", "frost_monarch", "obsidian_colossus",
+                           "abyssal_tyrant", "the_hollow_king", "deadly_duck",
+                           "guild_foreman_brakk", "guild_auditor_vess",
+                           "guild_chain_mistress", "guild_warden_mole",
+                           "guild_cutlery_curator", "guild_grandmaster_ossia",
+                           "guild_registrar_null"});
     CHECK(initial == std::set<std::string>{"rune_sentry", "evil_goose_trickster",
-                                           "crystal_sorcerer", "deadly_duck"});
-    CHECK(mannered == std::set<std::string>{"the_hollow_king", "deadly_duck"});
+                                           "crystal_sorcerer", "deadly_duck",
+                                           "guild_registrar_null"});
+    CHECK(mannered == std::set<std::string>{"the_hollow_king", "deadly_duck",
+                                            "guild_cutlery_curator"});
 
     // The all-enemies support shape (the one the M77 AI amendment serves) is
     // carried by exactly these foes — no pre-M77 foe, which is the amendment's

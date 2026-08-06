@@ -6,8 +6,8 @@ post-M82 checkout (`53ab02f`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-06.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-06; approved and
+committed by the owner 2026-08-06 (`d466e5b`). Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -116,4 +116,5 @@ they extend (headless-tested; the states only speak).
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-06, committed as
+`d466e5b`.

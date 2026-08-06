@@ -57,8 +57,10 @@ void BlackMarketState::rebuild() {
     // Fixed rows: buy-with-gold (0), buy-with-tokens (1), leave (2). The buy rows
     // disable when unaffordable or already sold; Leave is always enabled.
     const int tokens = context_.party.legendaryTokens;
+    // M84 (Legendary Patronage): the town-7 perk drops the token price 3 -> 1.
+    const int tokenPrice = guildTokenPrice(context_.party.guild);
     const bool canGold = !purchased_ && context_.party.gold >= priceGold_;
-    const bool canTokens = !purchased_ && tokens >= kBlackMarketTokenPrice;
+    const bool canTokens = !purchased_ && tokens >= tokenPrice;
 
     std::string goldLabel;
     std::string tokenLabel;
@@ -68,8 +70,8 @@ void BlackMarketState::rebuild() {
     } else {
         goldLabel = TextFormat("Buy for %dg%s", priceGold_,
                                canGold ? "" : "  (not enough gold)");
-        tokenLabel = TextFormat("Buy for %d legendary tokens  (%d held)%s",
-                                kBlackMarketTokenPrice, tokens,
+        tokenLabel = TextFormat("Buy for %d legendary token%s  (%d held)%s",
+                                tokenPrice, tokenPrice == 1 ? "" : "s", tokens,
                                 canTokens ? "" : "  (not enough)");
     }
 
@@ -115,8 +117,8 @@ void BlackMarketState::handleInput(const Input& input) {
         if (cursor == 0) {  // gold
             context_.party.gold -= priceGold_;
             grantOffered();
-        } else if (cursor == 1) {  // tokens
-            context_.party.legendaryTokens -= kBlackMarketTokenPrice;
+        } else if (cursor == 1) {  // tokens (M84: the perk-adjusted price)
+            context_.party.legendaryTokens -= guildTokenPrice(context_.party.guild);
             grantOffered();
         }
     }

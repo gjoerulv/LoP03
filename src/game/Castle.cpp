@@ -22,12 +22,14 @@ int castleFloorScalePct(const content::ContentDatabase& content) {
 std::vector<std::string> bossRushOrder(const content::ContentDatabase& content) {
     std::vector<std::string> ids;
     for (const auto& [id, def] : content.bosses()) {
-        (void)def;
         if (id == kKingBossId) {
             continue;  // the King is its own challenge, not part of the rush roster
         }
         if (id == kDuckBossId) {
             continue;  // M61: the Duck has his own pond, same rule as the King
+        }
+        if (def.guildTown != 0) {
+            continue;  // M84: a Guild Master presides over its town's gauntlet
         }
         ids.push_back(id);
     }
@@ -57,6 +59,35 @@ dungeon::EnemyTeam bossRushTeam(const content::ContentDatabase& content, int ind
 
 dungeon::EnemyTeam endlessWaveTeam(const content::ContentDatabase& content, int wave) {
     dungeon::EnemyTeam team;
+    const int w = wave < 0 ? 0 : wave;
+    // M84: every 10th wave (10, 20, 30, ...) the rush is interrupted by a
+    // boss — a dungeon boss or a Guild Master — bringing its usual minions.
+    // Drawn from the same fixed seed on a salt far above the per-slot ones,
+    // so the sequence stays reproducible and every other wave is untouched.
+    if ((w + 1) % 10 == 0) {
+        std::vector<std::string> bossPool = bossRushOrder(content);
+        for (const auto& [id, def] : content.bosses()) {
+            if (def.guildTown != 0) {
+                bossPool.push_back(id);
+            }
+        }
+        std::sort(bossPool.begin(), bossPool.end());
+        if (!bossPool.empty()) {
+            const std::uint64_t h = blackMarketHash(
+                kEndlessSeed, 0xB055000000ull + static_cast<std::uint64_t>(w));
+            const std::string& id = bossPool[static_cast<std::size_t>(h % bossPool.size())];
+            team.isBoss = true;
+            team.bossId = id;
+            team.statScalePct = endlessWaveScalePct(w);
+            team.name = "Wave " + std::to_string(w + 1);
+            if (const content::BossDef* b = content.findBoss(id)) {
+                team.name = b->name;
+                team.enemyIds = b->minions;
+            }
+            return team;
+        }
+        // A content set with no bosses at all: fall through to a plain wave.
+    }
     std::vector<std::string> pool;
     for (const auto& [id, def] : content.enemies()) {
         // M49: the Royal Guards belong to the King's throne room and nowhere

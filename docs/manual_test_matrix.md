@@ -32,6 +32,19 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M84 update:** Guild Masters & town milestones — the Guild screen
+> gains **"Fight the Guild Boss"** (visible always; the banner explains
+> the lock until a 4-floor clear in that town, then the trial, then the
+> record). The gauntlet is castle-rules: the five-foe Guild Trial (the
+> same five every attempt), then the town's unique Master + court at
+> depth-20 threat × town scaling; refightable, best turns on the Guild
+> screen; defeat = carried out at 1 HP, no gold lost. First victory
+> opens the pick-1-of-2 **town milestone** modal (Cancel postpones —
+> town re-offers). Every 10th Endless wave now fields a boss + court.
+> New **Guildbane** achievement. Capture set is now **95 scenes**
+> (`92_guild_boss_locked`, `93_guild_boss_best`, `94_guild_perk`,
+> `95_guild_result`). The M84 note §G is the checklist.
+>
 > **M83 update:** map economy — completing a **4-floor** run in town 2+
 > rolls a committed map-piece drop (15%→75% by town; reload-proof); the
 > result screen announces it in gold. With a treasure revealed, drops

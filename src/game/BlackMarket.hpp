@@ -68,11 +68,14 @@ inline std::uint64_t blackMarketHash(std::uint64_t seed, std::uint64_t salt) {
 }
 
 // Does a stakes-raising completed run at (town, depth) spawn a market? 20%,
-// deterministic from the run seed and the stakes.
-inline bool blackMarketRolls(std::uint64_t seed, int town, int depth) {
+// deterministic from the run seed and the stakes. `bonusPct` (M84's Whisper
+// Network town perk) widens the chance in percentage points; the hash itself
+// is untouched, so the same seed that would hit at 20% still hits.
+inline bool blackMarketRolls(std::uint64_t seed, int town, int depth, int bonusPct = 0) {
     const std::uint64_t salt =
         static_cast<std::uint64_t>(town) * 1000u + static_cast<std::uint64_t>(depth);
-    return static_cast<int>(blackMarketHash(seed, salt) % 100) < kBlackMarketChancePct;
+    const int pct = kBlackMarketChancePct + (bonusPct > 0 ? bonusPct : 0);
+    return static_cast<int>(blackMarketHash(seed, salt) % 100) < (pct > 100 ? 100 : pct);
 }
 
 // M52: the independent high-stakes roll (34%), on a fresh salt so it is a
@@ -92,11 +95,13 @@ inline bool blackMarketHighStakesRolls(std::uint64_t seed, int town, int depth) 
 //   - M52: any completed run (`completed`, i.e. a beaten boss) at town 7,
 //     depth >= 20 that wins the independent 34% roll — regardless of score,
 //     stakes, or penalty.
-// This is the exact predicate DungeonState::completeDungeon uses.
+// This is the exact predicate DungeonState::completeDungeon uses. `bonusPct`
+// (M84) widens only the 20% stakes path; the M52 high-stakes roll keeps its
+// own odds.
 inline bool blackMarketShouldSpawn(bool completedWithScore, bool completed, bool raisedStakes,
-                                   int town, std::uint64_t seed, int depth) {
+                                   int town, std::uint64_t seed, int depth, int bonusPct = 0) {
     if (completedWithScore && raisedStakes && town >= kBlackMarketMinTown &&
-        blackMarketRolls(seed, town, depth)) {
+        blackMarketRolls(seed, town, depth, bonusPct)) {
         return true;
     }
     if (completed && town >= kBlackMarketHighStakesTown && depth >= kBlackMarketHighStakesDepth &&
