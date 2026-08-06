@@ -36,7 +36,7 @@ inline constexpr AchievementDef kAchievements[] = {
     {"trailblazer", "Trailblazer", "Reach the fourth town."},
     {"ladders_end", "Ladder's End", "Reach the seventh town."},
     {"untouchable", "Untouchable", "Clear a dungeon without a single death."},
-    {"decisive", "Decisive", "Clear a dungeon in 20 battle turns or fewer."},
+    {"decisive", "Decisive", "Clear a dungeon in 15 battle turns or fewer."},
     {"deep_diver", "Deep Diver", "Clear a dungeon at depth 10 or deeper."},
     {"second_nature", "Second Nature", "Equip a passive skill on a hero."},
     {"high_roller", "High Roller", "Win a legendary token."},

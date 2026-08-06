@@ -168,10 +168,12 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
   if (const auto it = root.find("audio"); it != root.end() && it->is_object()) {
     content::ObjectReader audio(*it, "settings.audio", kSource, report);
     values.masterVolume = clamp01(audio.optFloat("master", 1.0f));
-    values.musicVolume = clamp01(audio.optFloat("music", 1.0f));
+    // M79: the absent-key fallbacks track the struct defaults (7/10, 3/10);
+    // any written value is the player's and always wins.
+    values.musicVolume = clamp01(audio.optFloat("music", 0.7f));
     values.sfxVolume = clamp01(audio.optFloat("sfx", 1.0f));
-    // M52: optional; absent keeps the 0.5 default so pre-M52 files load unchanged.
-    values.ambienceVolume = clamp01(audio.optFloat("ambience", 0.5f));
+    // M52: optional; absent keeps the default so pre-M52 files load unchanged.
+    values.ambienceVolume = clamp01(audio.optFloat("ambience", 0.3f));
   }
 
   if (const auto it = root.find("display"); it != root.end() && it->is_object()) {

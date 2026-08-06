@@ -112,12 +112,12 @@ content::ItemDef makeCrown() {
 
 // === E1: ambience volume slider ==============================================
 
-TEST_CASE("comforts: ambienceVolume round-trips, defaults to 0.5 absent, clamps",
+TEST_CASE("comforts: ambienceVolume round-trips, defaults to 0.3 absent, clamps",
           "[comforts][settings]") {
     using namespace cd::settings;
 
     Settings values;
-    values.ambienceVolume = 0.3f;
+    values.ambienceVolume = 0.6f;
     InputMap map;
     const std::string text = serializeSettings(values, map);
 
@@ -126,14 +126,15 @@ TEST_CASE("comforts: ambienceVolume round-trips, defaults to 0.5 absent, clamps"
     content::LoadReport rep;
     REQUIRE(parseSettingsText(text, loaded, lm, rep));
     CHECK(rep.errorCount() == 0);
-    CHECK(loaded.ambienceVolume == 0.3f);
+    CHECK(loaded.ambienceVolume == 0.6f);
 
-    // A pre-M52 audio block (no ambience key) keeps the 0.5 default.
+    // A pre-M52 audio block (no ambience key) keeps the default — 0.3 since
+    // M79 (owner decision: fresh ambience is 3/10).
     Settings old;
     content::LoadReport rep2;
     REQUIRE(parseSettingsText(R"({"version":1,"audio":{"master":1.0,"music":1.0,"sfx":1.0}})", old,
                               lm, rep2));
-    CHECK(old.ambienceVolume == 0.5f);
+    CHECK(old.ambienceVolume == 0.3f);
 
     // Out-of-range values clamp to 0..1.
     Settings hi;

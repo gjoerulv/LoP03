@@ -32,6 +32,14 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M79 update:** input & QoL — party cycling (Q/E, Ctrl/Alt, LB/RB) in
+> the Equip Shop's member phases and the Training Hall; the keyboard remap
+> shows three direct slots per action with an in-use warning
+> (Steal/Keep) and a stranding block; Confirm also on Z, Cancel also on
+> X; fresh-profile volumes music 7/10 / ambience 3/10; Decisive tightens
+> to ≤15 turns. Older rows' remap-flow and default-binding expectations
+> are superseded; the M79 note §G is the checklist.
+>
 > **M78 update:** inventory caps & shop UX — consumables cap at 2 held
 > (Potion 9, Hi-Potion 6), enforced at purchase only (`x2 MAX` rows, no
 > clamping of old saves); Elixir/Hi-Ether gone from town item shops and

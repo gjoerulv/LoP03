@@ -85,8 +85,8 @@
 | 75 | Battle rules v15: Reflect, Sleep, Curse & triggers | ☑ complete (approved) |
 | 76 | Counterplay: breaker skills, Holy Taxes, Evil Duckling | ☑ complete (approved) |
 | 77 | Enemy & boss offensive pass | ☑ complete (approved) |
-| 78 | Inventory caps & shop UX | ◑ implemented, awaiting manual approval |
-| 79 | Input & QoL: party cycling, three-slot remap | ☐ planned |
+| 78 | Inventory caps & shop UX | ☑ complete (approved) |
+| 79 | Input & QoL: party cycling, three-slot remap | ◑ implemented, awaiting manual approval |
 | 80 | Event flavor text | ☐ planned |
 | 81 | Arms, elements & icons | ☐ planned |
 | 82 | Floors: 1-or-4-floor dungeons | ☐ planned |
@@ -3007,8 +3007,8 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M78 — Inventory caps & shop UX
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-06 on the post-M77 checkout (`3b6d816`). Data-driven caps
+- **Status:** ☑ complete (approved) — implemented 2026-08-06; approved
+  and committed by the owner 2026-08-06 (`97c74d2`). Data-driven caps
   (`maxHeld`: Potion 9, Hi-Potion 6; every other consumable 2; gear
   uncapped) enforced `>=` at purchase only through the pure
   `game/ItemCaps.hpp` helper — old saves' overages never clamped; the
@@ -3026,7 +3026,18 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M79 — Input & QoL: party cycling, three-slot remap
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-06 on the post-M78 checkout (`97c74d2`). Two new remappable
+  actions `CyclePrev`/`CycleNext` (Q/E, Ctrl/Alt with real prompt names,
+  LB/RB) switch the member in place across the Equip Shop's member
+  phases and the whole Training Hall; the keyboard remap gained three
+  direct slots per action (`input::assignKeySlot` — replace-at-slot,
+  pack-left, warn-then-steal with the M13 never-unbound rule surfaced as
+  an explicit block); Confirm alt2 = Z, Cancel alt2 = X; fresh-profile
+  volumes 7/10 music / 3/10 ambience (written values always win);
+  Decisive ≤15. Settings schema untouched (a slot is a position in the
+  existing arrays; pre-M79 files gain the pair via the defensive
+  loader). Full evidence in the note §F.
 - **Goal:** `CyclePrev`/`CycleNext` (Q/E, Ctrl/Alt, shoulder buttons)
   cycling members in the Equip Shop and Training Hall; keyboard remap with
   Primary/Alt1/Alt2 each directly mappable and an in-use warning; Confirm

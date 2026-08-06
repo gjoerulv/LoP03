@@ -32,7 +32,8 @@ bool achievementMet(const std::string& id, const Party& p, const AchvContext& ct
     if (id == "trailblazer") return p.highestUnlockedTown >= 4;
     if (id == "ladders_end") return p.highestUnlockedTown >= 7;
     if (id == "untouchable") return ctx.clearedDungeon && ctx.runNoDeath;
-    if (id == "decisive") return ctx.clearedDungeon && ctx.runTurns > 0 && ctx.runTurns <= 20;
+    // M79 (owner decision 2026-08-05): tightened from 20 to 15.
+    if (id == "decisive") return ctx.clearedDungeon && ctx.runTurns > 0 && ctx.runTurns <= 15;
     if (id == "deep_diver") return ctx.clearedDungeon && ctx.runDepth >= 10;
     if (id == "second_nature") {
         for (const Character& m : p.members) {

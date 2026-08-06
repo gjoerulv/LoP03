@@ -17,10 +17,17 @@ InputMap::InputMap() {
 
     bindKey(InputAction::Confirm, KEY_ENTER);
     bindKey(InputAction::Confirm, KEY_SPACE);
+    bindKey(InputAction::Confirm, KEY_Z);  // M79: alt2 (owner decision)
     bindKey(InputAction::Cancel, KEY_BACKSPACE);
     bindKey(InputAction::Cancel, KEY_ESCAPE);
+    bindKey(InputAction::Cancel, KEY_X);   // M79: alt2 (owner decision)
     bindKey(InputAction::Menu, KEY_TAB);
     bindKey(InputAction::Details, KEY_C);
+    // M79: party cycling — Q/E beside WASD, Ctrl/Alt beside the arrows.
+    bindKey(InputAction::CyclePrev, KEY_Q);
+    bindKey(InputAction::CyclePrev, KEY_LEFT_CONTROL);
+    bindKey(InputAction::CycleNext, KEY_E);
+    bindKey(InputAction::CycleNext, KEY_LEFT_ALT);
     bindKey(InputAction::TextBackspace, KEY_BACKSPACE);  // text editing only
     bindKey(InputAction::ToggleDebug, KEY_F1);
     bindKey(InputAction::ReloadAssets, KEY_F5);  // consumed in debug builds only
@@ -40,6 +47,8 @@ InputMap::InputMap() {
     bindButton(InputAction::Cancel, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT);       // B
     bindButton(InputAction::Menu, GAMEPAD_BUTTON_MIDDLE_RIGHT);             // Start
     bindButton(InputAction::Details, GAMEPAD_BUTTON_RIGHT_FACE_UP);         // Y
+    bindButton(InputAction::CyclePrev, GAMEPAD_BUTTON_LEFT_TRIGGER_1);      // LB (M79)
+    bindButton(InputAction::CycleNext, GAMEPAD_BUTTON_RIGHT_TRIGGER_1);     // RB (M79)
     bindButton(InputAction::TextBackspace, GAMEPAD_BUTTON_RIGHT_FACE_LEFT);  // X
 }
 

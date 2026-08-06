@@ -15,6 +15,14 @@ constexpr int kLeft = 263;
 constexpr int kDown = 264;
 constexpr int kUp = 265;
 constexpr int kF1 = 290;
+// M79: the party-cycling alternates are modifier keys; without names they
+// would render as "Key#341" in every prompt.
+constexpr int kLeftShift = 340;
+constexpr int kLeftControl = 341;
+constexpr int kLeftAlt = 342;
+constexpr int kRightShift = 344;
+constexpr int kRightControl = 345;
+constexpr int kRightAlt = 346;
 
 }  // namespace
 
@@ -29,10 +37,43 @@ std::string keyName(int key) {
         case kLeft: return "Left";
         case kDown: return "Down";
         case kUp: return "Up";
+        case kLeftShift: return "Shift";
+        case kLeftControl: return "Ctrl";
+        case kLeftAlt: return "Alt";
+        case kRightShift: return "RShift";
+        case kRightControl: return "RCtrl";
+        case kRightAlt: return "RAlt";
+        // M79 owner feedback: the navigation cluster and the numpad used to
+        // fall through to "Key#328"-style labels; every key a player can
+        // plausibly bind deserves a real name.
+        case 260: return "Insert";
+        case 261: return "Delete";
+        case 266: return "PgUp";
+        case 267: return "PgDn";
+        case 268: return "Home";
+        case 269: return "End";
+        case 280: return "CapsLock";
+        case 281: return "ScrLock";
+        case 282: return "NumLock";
+        case 283: return "PrtScr";
+        case 284: return "Pause";
+        case 330: return "Num .";
+        case 331: return "Num /";
+        case 332: return "Num *";
+        case 333: return "Num -";
+        case 334: return "Num +";
+        case 335: return "Num Enter";
+        case 336: return "Num =";
+        case 343: return "Super";
+        case 347: return "RSuper";
+        case 348: return "MenuKey";
         default: break;
     }
     if (key >= kF1 && key <= kF1 + 11) {
         return "F" + std::to_string(key - kF1 + 1);
+    }
+    if (key >= 320 && key <= 329) {  // the numpad digits
+        return "Num " + std::to_string(key - 320);
     }
     // Printable ASCII range (raylib key codes match uppercase ASCII).
     if (key > 32 && key < 127) {

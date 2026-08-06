@@ -330,6 +330,22 @@ void EquipShopState::handleInput(const Input& input) {
     if (input.navPressed(InputAction::MoveDown)) {
         menu_.moveDown();
     }
+    // M79: shoulder-button/Q-E party cycling wherever a member is in scope —
+    // in the member list it walks the cursor; deeper in, it switches the
+    // selected member while KEEPING the current phase (the JRPG standard).
+    const int cycle = (input.pressed(InputAction::CycleNext) ? 1 : 0) -
+                      (input.pressed(InputAction::CyclePrev) ? 1 : 0);
+    if (cycle != 0) {
+        const int n = static_cast<int>(context_.party.members.size());
+        if (phase_ == Phase::EquipChar && n > 0) {
+            menu_.setCursor((menu_.cursor() + cycle + n) % n);
+            context_.audio.play(Sfx::Move);
+        } else if ((phase_ == Phase::EquipSlot || phase_ == Phase::EquipItem) && n > 0) {
+            selectedChar_ = (selectedChar_ + cycle + n) % n;
+            rebuild();
+            context_.audio.play(Sfx::Move);
+        }
+    }
     scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
     if (phase_ == Phase::Buy && input.pressed(InputAction::Details)) {
         openItemDetails();
@@ -486,6 +502,13 @@ void EquipShopState::render() {
                      phase_ == Phase::Buy ? "Buy" : "Select"});
     if (phase_ == Phase::Buy) {
         hints.push_back({input::primaryLabel(map, InputAction::Details, device), "Compare"});
+    }
+    // M79: the member-scoped phases advertise the cycling pair as one hint.
+    if (phase_ == Phase::EquipChar || phase_ == Phase::EquipSlot ||
+        phase_ == Phase::EquipItem) {
+        hints.push_back({input::primaryLabel(map, InputAction::CyclePrev, device) + "/" +
+                             input::primaryLabel(map, InputAction::CycleNext, device),
+                         "Member"});
     }
     hints.push_back({input::primaryLabel(map, InputAction::Cancel, device), "Back"});
     ui::drawFooterHints(hints, w, h, "equipshop.footer");

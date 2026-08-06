@@ -2267,3 +2267,35 @@ generatedGoldCost)`.
   the loader validation, and the shipped data (exactly two
   `notSoldInTown` items; the town shelves clean of them at every town).
 
+## 33. M79 — input & QoL
+
+No version motion; settings schema stays v1 (a slot is just a position in
+the existing per-action key arrays).
+
+- **Two new remappable actions** `CyclePrev`/`CycleNext`
+  (`kInputActionCount` 12→14, remappable 8→10; serialization names
+  `cycle_prev`/`cycle_next`). Defaults Q/E + Ctrl/Alt (PromptLabels
+  learned the modifier names) and LB/RB. The defensive settings loader
+  needed nothing: an unmentioned action keeps its defaults, so pre-M79
+  files gain the pair silently. Wired as in-place member switches in
+  `EquipShopState` (member-scoped phases) and `TrainingHallState` (all
+  phases), cursor-walks in the member lists.
+- **`input::assignKeySlot`** (beside the M13 engine in `input/Remap`):
+  direct per-slot keyboard assignment — replace-at-slot, append-to-empty,
+  pack-left (no gaps; the public arrays stay sentinel-free), free moves
+  between an action's own slots, `NeedsConfirm` for a key owned
+  elsewhere (map untouched until the player agrees), `Stolen` after
+  consent, `Blocked` for Esc / non-remappables / a steal that would
+  strand its old owner (the M13 never-unbound rule, now surfaced as an
+  explicit warning instead of a silent swap). The M13 `remapKey` engine
+  remains the gamepad flow and keeps its tests.
+- **RemapState**: keyboard rows draw the three slots as live columns
+  (headers, Left/Right slot selection, 14px rows so 10 actions + Reset +
+  Back fit the frame); a steal-confirmation modal sits beside the
+  listen modal. Gamepad UI unchanged.
+- Volume defaults 0.7/0.3 (struct + absent-key parse fallbacks in
+  lockstep); Decisive ≤15 (`Achievements`).
+- **Tests** (`tests/test_input_qol.cpp`, `[qol]`): defaults, every slot
+  outcome, the warn-then-steal contract, round-trips, pre-M79-file
+  behavior, volume precedence, Decisive.
+

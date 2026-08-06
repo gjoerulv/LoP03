@@ -41,7 +41,9 @@ TEST_CASE("labels: primary label reflects the live map per device") {
 
 TEST_CASE("labels: allLabels joins bindings; prompt composes") {
     InputMap map;
-    CHECK(allLabels(map, InputAction::Confirm, ActiveDevice::Keyboard) == "Enter or Space");
+    // M79: the third default slot (Z) joins the list.
+    CHECK(allLabels(map, InputAction::Confirm, ActiveDevice::Keyboard) ==
+          "Enter or Space or Z");
     CHECK(prompt(map, InputAction::Cancel, ActiveDevice::Keyboard, "Back") == "[Backspace] Back");
     CHECK(prompt(map, InputAction::Confirm, ActiveDevice::Gamepad, "Buy") == "[A] Buy");
 }

@@ -6,8 +6,8 @@ post-M77 checkout (`3b6d816`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-06.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-06; approved and
+committed by the owner 2026-08-06 (`97c74d2`). Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -148,4 +148,4 @@ shared-UI column fix.
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-06.

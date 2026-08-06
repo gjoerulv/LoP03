@@ -836,6 +836,20 @@ and status shorthand in battle, danger-tier derivation in the dungeon,
 score components on the result and scoreboard, and per-member gear
 comparison in the equip shop. Nothing behind Details is required to play.
 
+**Input & QoL (M79).** JRPG-standard **party cycling**: two remappable
+actions — defaults **Q / E**, alternates **Ctrl / Alt**, gamepad
+**LB / RB** — cycle the selected member in the Equip Shop's member-scoped
+phases and everywhere in the Training Hall, keeping the current phase and
+refreshing portrait and lists; the footers advertise the live bindings.
+The **keyboard remap** shows three direct slots per action —
+**Primary / Alt 1 / Alt 2**, picked with Left/Right, each rebindable on
+its own. A key that is already in use raises an explicit warning naming
+its current home (Steal or Keep); a steal that would leave an action with
+no keys is refused outright. Fresh defaults: **Confirm also on Z, Cancel
+also on X**. Fresh-profile volumes are **music 7/10, ambience 3/10**
+(existing files keep the player's values), and **Decisive** tightened to
+**15 turns or fewer**.
+
 **Accessibility commitments:** keyboard-only and gamepad-only complete;
 no color-only or sound-only information anywhere; a High Contrast palette
 toggle; battle flash/shake reducible to off; message pacing and battle
