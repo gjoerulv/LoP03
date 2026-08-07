@@ -397,10 +397,30 @@ std::vector<FieldDesc> compositionDescs() {
 }
 
 std::vector<FieldDesc> storyDescs() {
+    // Town bounds follow the loader (M85 widened 9 -> 10 for the Pale Jester).
     return {
-        num("town", "Town (8 castle, 9 goose town)", 1, 9, 1, 1, true),
+        num("town", "Town (8 castle, 9 goose, 10 pale jester)", 1, 10, 1, 1, true),
         str("speaker", "Speaker", true),
         str("title", "Title", true),
+        txt("body", "Body", true),
+    };
+}
+
+// M86: the two optional content files (M80 event flavor, M85 curio lore).
+// Both are plain id-keyed entity arrays; the loader owns shape/duplicates and
+// (for events) rejects unknown ids, so a typo'd id fails validation on save
+// rather than silently authoring nothing.
+std::vector<FieldDesc> eventFlavorDescs() {
+    return {
+        idField(),
+        str("title", "Title", true),
+        txt("body", "Body", true),
+    };
+}
+
+std::vector<FieldDesc> curioLoreDescs() {
+    return {
+        idField(),
         txt("body", "Body", true),
     };
 }
@@ -419,6 +439,8 @@ const std::vector<CategoryInfo>& categories() {
         {Category::Themes, "dungeon_themes.json", "themes", "Themes", true},
         {Category::Composition, "composition.json", "", "Composition", false},
         {Category::Story, "story.json", "story", "Story", false},
+        {Category::EventFlavor, "event_flavor.json", "events", "Event Flavor", true},
+        {Category::CurioLore, "curio_lore.json", "curios", "Curio Lore", true},
     };
     return kInfos;
 }
@@ -443,6 +465,8 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
     static const std::vector<FieldDesc> kThemes = themeDescs();
     static const std::vector<FieldDesc> kComposition = compositionDescs();
     static const std::vector<FieldDesc> kStory = storyDescs();
+    static const std::vector<FieldDesc> kEventFlavor = eventFlavorDescs();
+    static const std::vector<FieldDesc> kCurioLore = curioLoreDescs();
     switch (category) {
         case Category::Skills: return kSkills;
         case Category::Classes: return kClasses;
@@ -454,6 +478,8 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
         case Category::Themes: return kThemes;
         case Category::Composition: return kComposition;
         case Category::Story: return kStory;
+        case Category::EventFlavor: return kEventFlavor;
+        case Category::CurioLore: return kCurioLore;
     }
     return kSkills;
 }

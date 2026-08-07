@@ -90,10 +90,10 @@
 | 80 | Event flavor text | ☑ complete (approved) |
 | 81 | Arms, elements & icons | ☑ complete (approved) |
 | 82 | Floors: 1-or-4-floor dungeons | ☑ complete (approved) |
-| 83 | Map economy: 4-floor map-piece drops | ◑ implemented, awaiting manual approval |
-| 84 | Guild Masters & town milestones | ☐ planned |
-| 85 | The Dragon & curio lore | ☐ planned |
-| 86 | CrystalForge catch-up & version 0.6.0 | ☐ planned |
+| 83 | Map economy: 4-floor map-piece drops | ☑ complete (approved) |
+| 84 | Guild Masters & town milestones | ☑ complete (approved) |
+| 85 | The Dragon & curio lore | ☑ complete (approved) |
+| 86 | CrystalForge catch-up & version 0.6.0 | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -3183,8 +3183,9 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M85 — The Dragon & curio lore
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
-  2026-08-07 on the post-M84 checkout (`a047590`). The twelve curios are
+- **Status:** ☑ complete (approved) — implemented 2026-08-07 on the
+  post-M84 checkout (`a047590`); approved and committed by the owner
+  2026-08-07 (`f562d5c`). The twelve curios are
   **inspectable** on the Maps screen (cursor + modal lore panel;
   `data/curio_lore.json`, the second optional content file, Duck-
   mythology register, name+description fallback). The castle menu gains
@@ -3219,7 +3220,29 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M86 — CrystalForge catch-up & version 0.6.0
 
-- **Status:** ☐ planned
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-08-07 on the post-M85 checkout (`f562d5c`). The re-audit found
+  **no descriptor catch-up owed** — every program field shipped its
+  descriptor with its milestone under the M59 sweep, and the enum
+  pickers read the live `*Ids()` tables. The real work:
+  `event_flavor.json` and `curio_lore.json` became **editor
+  categories** (through the real loaders, one-line canonical style —
+  the shipped files were already byte-canonical, so
+  `--canonicalize` proved **0 files rewritten, 0 errors** over the
+  full 12-file tree), plus four latent editor defects fixed and
+  test-pinned: `kCategoryCount` stuck at 9 since M63 (the sidebar off
+  by one — **Story unreachable**, its row opened the Sim Lab), the
+  dirty-star refresh truncating the two tool rows, the story
+  descriptor still capping town at 9 (the Pale Jester's beat
+  un-authorable), and skeletons injecting a stray `"name"` into
+  name-less categories. Version deliberately renumbered
+  **0.9.0 → 0.6.0** (`Version.hpp`/`.rc` regenerate from the one
+  source; nothing else hardcodes a version — the "README claim" lived
+  in the CMake comment, now rewritten; 1.0.0 still waits on M23).
+  Docs swept (technical_design §40, editor_guide, the M80/M85 "until
+  M86" limitations annotated resolved); the M23 → M24 execution-order
+  note was already in place. Debug **725/725**, Release **721/721**,
+  capture **97/97**. Full evidence in the note §F.
 - **Goal:** editor FieldDescriptor coverage for every new field and the
   two new content files; canonicalize round-trip proven; the deliberate
   version renumber to 0.6.0 with the README claim fixed; the final docs

@@ -2311,9 +2311,9 @@ a static_assert on the kind count) holds the two in lockstep.
   title/body) so a typo costs one panel, never the file.
   **`event_flavor.json` is the one OPTIONAL content file**: `loadAll`
   skips it when absent (pure presentation with a per-event fallback);
-  present-but-malformed reports like any other file. It is NOT an editor
-  category until M86, so the canonical byte-stability sweep does not
-  govern it.
+  present-but-malformed reports like any other file. Since M86 it is an
+  editor category (§40), governed by the canonical byte-stability sweep
+  like every other file.
 - `DungeonState`: `eventPanelOpen_` gates input (Confirm commits via
   `confirmEventPanel` — the same dispatch `interact()` used to perform;
   Cancel/Menu steps away); `renderEventPanel` draws the modal (title,
@@ -2567,4 +2567,43 @@ existed (the M75 inert-hook precedent).
   prebuilt clone slot, gauntlet determinism, every exclusion, records +
   save round-trip, lore coverage, the beat, Wyrmbane, and sim-backed
   clearability (recorded per wave).
+
+## 40. M86 — CrystalForge catch-up & version 0.6.0
+
+No game-behavior change: the editor, the version constant, and three
+latent editor defects only. The M75–M85 program's fields needed **no**
+descriptor catch-up — each milestone shipped its own descriptors under
+the M59 completeness sweep, and the enum pickers read the live
+`content::*Ids()` tables (re-audit finding, recorded in the note).
+
+- **Two new editor categories**: `Category::EventFlavor`
+  (`event_flavor.json`, M80) and `Category::CurioLore`
+  (`curio_lore.json`, M85) — id-keyed entity arrays on the standard
+  machinery (browse/edit/save/validate through the real
+  `parseEventFlavor`/`parseCurioLore`; `parseCurioLore` gained its
+  header declaration on the M59 precedent). Both canonicalize in the
+  one-line `InlineEntities` style the shipped files already used, so
+  the normalization was a no-op (`--canonicalize`: 0 files rewritten).
+  In the game's loader the files remain OPTIONAL with graceful
+  fallbacks; the editor simply reports a missing file per-file, like
+  any other.
+- **Latent editor fixes** (found by the M86 re-audit, in the catch-up
+  mandate): (1) `kCategoryCount` was still 9 after M63 grew the enum to
+  10 — the sidebar's Sim Lab/Test Runner indices sat on the Story row,
+  making Story unreachable; now 12 and pinned to `categories().size()`
+  (plus enum-order agreement) in `[editor]`. (2) The dirty-star sidebar
+  refresh rebuilt the menu without the two surface rows, truncating the
+  sidebar after any edit. (3) The story descriptor still bounded town
+  at 1..9 after M85 widened the loader to 1..10; and `skeletonFor`
+  injected a placeholder `"name"` into categories whose schema has no
+  name field (story, and now the two new files) — new entities only get
+  the placeholder where a name descriptor exists.
+- **Version 0.6.0** (owner decision 2026-08-05): `project(CrystalDungeons
+  VERSION 0.6.0)` — the deliberate renumber; the label should trail the
+  game. `Version.hpp` and the Windows `.rc` regenerate from it
+  (configure-time), and nothing else in the tree hardcodes a version:
+  the README defers to CMakeLists, so only the CMake comment carried
+  the old "0.9.0 until M23" claim. 1.0.0 still waits on the M23
+  playtests. Save/score/content schema versions are independent and
+  unchanged.
 

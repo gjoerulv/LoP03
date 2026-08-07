@@ -153,6 +153,7 @@ event mechanics, costs and seeded rolls are untouched.
 - Flavor is one authored body per kind — no per-theme or seeded variety
   yet (trivially extendable if wanted).
 - CrystalForge cannot edit the file until M86.
+  *(Resolved: M86 made it an editor category.)*
 
 ## I. Final status
 

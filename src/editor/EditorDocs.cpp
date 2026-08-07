@@ -25,7 +25,11 @@ std::string readWholeFile(const std::filesystem::path& path, std::string& error)
 // (descriptor defaults; required enums get their default id).
 OrderedJson skeletonFor(Category category, const std::string& newId) {
     OrderedJson entity = OrderedJson::object();
+    bool hasNameField = false;
     for (const FieldDesc& desc : descriptorsFor(category)) {
+        if (desc.key == "name") {
+            hasNameField = true;
+        }
         if (!desc.required) {
             continue;
         }
@@ -43,7 +47,10 @@ OrderedJson skeletonFor(Category category, const std::string& newId) {
         }
         entity[desc.key] = fieldValue(entity, desc);
     }
-    if (entity.find("name") == entity.end()) {
+    // Only categories that actually have a name field get the placeholder —
+    // injecting one elsewhere (story, event flavor, curio lore) would save a
+    // stray unrecognized key (M86 fix).
+    if (hasNameField && entity.find("name") == entity.end()) {
         entity["name"] = "New Entry";
     }
     return entity;
@@ -152,7 +159,11 @@ std::string EditorDocs::entitySuffix(Category category, int index) const {
     if (category == Category::Composition) {
         return {};
     }
-    const char* key = category == Category::Story ? "title" : "name";
+    // Story and event flavor label by title; curio lore has neither name nor
+    // title, so its lookup misses and the suffix stays empty (ids carry it).
+    const char* key = category == Category::Story || category == Category::EventFlavor
+                          ? "title"
+                          : "name";
     const auto it = entity->find(key);
     return it != entity->end() && it->is_string() ? it->get<std::string>() : std::string();
 }

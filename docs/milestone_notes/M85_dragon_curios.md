@@ -6,8 +6,8 @@ post-M84 checkout (`a047590`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-07.
-Evidence in §F.
+**☑ complete (approved)** — implemented 2026-08-07; approved and
+committed by the owner 2026-08-07 (`f562d5c`). Evidence in §F.
 
 ## B. Goal (owner brief)
 
@@ -194,7 +194,9 @@ jester with dry lore.
   way any boss battle ends (victory needs every foe down — both
   Dragons).
 - CrystalForge cannot edit `curio_lore.json` until M86 (in its scope).
+  *(Resolved: M86 made it an editor category.)*
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-07, committed as
+`f562d5c`.

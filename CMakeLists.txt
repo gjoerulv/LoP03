@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Release-candidate version (owner decision 2026-07-20): 0.9.0 until the
-# M23 external playtests pass; then 1.0.0. This is the single source —
-# Version.hpp and the Windows .rc are configured from it.
+# Version (owner decision 2026-08-05, M86): deliberately renumbered
+# 0.9.0 -> 0.6.0 — the label should trail the game, not lead it. It rises
+# to 1.0.0 only after the M23 external playtests pass. This is the single
+# source — Version.hpp and the Windows .rc are configured from it.
 project(CrystalDungeons
-        VERSION 0.9.0
+        VERSION 0.6.0
         DESCRIPTION "16-bit-inspired turn-based JRPG roguelite"
         LANGUAGES C CXX)
 

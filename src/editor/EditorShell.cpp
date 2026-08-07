@@ -78,7 +78,9 @@ OrderedJson steppedValue(const FieldDesc& desc, const OrderedJson& current, int 
 
 namespace {
 
-// Sidebar rows: the nine categories, then the two M60 surfaces.
+// Sidebar rows: every category, then the two M60 surfaces. kCategoryCount is
+// pinned to categories().size() by the [editor] suite, so these two indices
+// can never drift onto a category row again (the M63..M85 Story regression).
 constexpr int kSidebarSimLab = kCategoryCount;
 constexpr int kSidebarTests = kCategoryCount + 1;
 
@@ -1153,11 +1155,15 @@ void EditorShell::render() {
 
     if (entitiesStale_) {
         rebuildEntities(true);
-        // Dirty stars in the sidebar track the same edits.
+        // Dirty stars in the sidebar track the same edits. The two surface
+        // rows must be rebuilt too, or the refresh truncates the sidebar
+        // (M86 fix — this list must mirror selectCategory's).
         std::vector<ui::MenuItem> items;
         for (const CategoryInfo& info : categories()) {
             items.push_back({info.title, true, docs_.file(info.category).dirty ? "*" : ""});
         }
+        items.push_back({"Sim Lab", true, ""});
+        items.push_back({"Test Runner", true, ""});
         const int cursor = categoryMenu_.cursor();
         categoryMenu_.setItems(std::move(items));
         categoryMenu_.setCursor(cursor);
