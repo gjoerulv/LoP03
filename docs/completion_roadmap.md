@@ -624,7 +624,7 @@ buffs/debuffs). The game reaches town 7 and stops. This program adds an
 skills), per-town equipment and enemy content so the ladder has fresh gear and
 foes at every rung, seeded boss drops that reward deep high-town clears, and — the
 payoff — a **castle above the town-7 ceiling** where a King guards three
-challenges with their own records. A light-hearted serial story and three
+challenges with their own records (a fourth, the Dragon, arrived with M85). A light-hearted serial story and three
 enrichment features (bestiary, victory stats, achievements) round it out. It is
 content and systems on the same loop: town → prepare → seeded dungeon → boss →
 score → upgrade is unchanged, and the castle is a distinct summit hub reached by
@@ -676,8 +676,8 @@ full boss roster from M38) exists. The castle (M40) needs that full boss roster
 for its gauntlet and sits at the top of everything below it. Story (M41) hangs on
 the finished town-and-castle geography, and the enrichment features (M42) —
 bestiary, victory stats, achievements — reference the complete enemy roster,
-combat systems, and story voice, so they come last. M23 → M24 now run after
-the King's Gambit program (§15), re-audited for everything.
+combat systems, and story voice, so they come last. M23 → M24 then follow —
+the ledger's execution-order note is authoritative for when.
 
 ## 15. King's Gambit program (M43–M45) — direction
 
@@ -767,13 +767,13 @@ pause comforts are independent quick wins. Elements next (M48): the guards'
 kits and any boss affinities build on them. The King's Court third (M49):
 it is balanced against the M47 stakes with M48 tools. The town rework (M50)
 and the presentation/options pass (M51) are self-contained and land last so
-the balance-critical work is never blocked on UI. M23 → M24 run after M51,
-unless a later expansion is authorized (M52 was).
+the balance-critical work is never blocked on UI. M23 → M24 then follow —
+the ledger's execution-order note is authoritative for when.
 
 ## 17. Comforts & secrets (M52) — direction
 
 Authorized 2026-07-23 as one quality-of-life milestone before M23/M24 —
-believed at the time to be the last expansion (§18–§22 were authorized
+believed at the time to be the last expansion (§18–§23 were authorized
 after). Scope and owner decisions live in
 `docs/milestones.md` and `docs/milestone_notes/M52_comforts_secrets.md`; this
 section records only why and in what order.
@@ -807,8 +807,8 @@ All prior bars still apply. Additionally:
 
 One milestone, six independent slices; the only cross-cutting change is the
 Crown's rules bump (9 → 10), so it and its schema field are implemented and
-tested as a unit. M23 → M24 run after M52, re-audited against the post-M52
-checkout.
+tested as a unit. M23 → M24 then follow — the ledger's execution-order note
+is authoritative for when.
 
 ## 18. Adjustment program (M53–M56) — direction
 

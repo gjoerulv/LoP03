@@ -225,4 +225,4 @@ debug-poke:
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved)` — owner approval 2026-08-05, committed as `2538a92`.

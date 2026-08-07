@@ -26,7 +26,9 @@ supported and must not be used. `std::filesystem`, `std::optional`,
 CLAUDE.md                 # operating contract
 README.md                 # human build/run instructions
 CMakeLists.txt            # root build
+CMakePresets.json         # msvc-debug / msvc-release + build/test presets (M24)
 cmake/                    # Dependencies.cmake, CompilerWarnings.cmake
+packaging/                # Version.hpp.in, CrystalDungeons.rc.in, crystal.ico (M24)
 docs/                     # design + technical + milestones (source of truth)
 data/                     # JSON content (populated M2+)
 assets/                   # manifest.json + generated textures/audio + credits.md
@@ -189,7 +191,7 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` is currently **14** (bump history: M29 enlarged the theme
+  `kGenerationVersion` is currently **15** (bump history: M29 enlarged the theme
   enemy/boss pools; M30 added the RestToken event; M37 gave the merchant a 75 %
   bargain and gated chest gear by town; **M38 gates the per-town enemy/boss pools
   by `minTown`**; **M43 reprices the consumables a merchant offers and windows
@@ -197,7 +199,8 @@ carry the information without color.
   from the event stream**; **M55 guarantees each theme's rite event once per
   dungeon** (v11); **M65/M66 add the seed-hashed treasure maps** (v12/v13);
   **M68 tags the party-relative danger recalibration** (v14, generated output
-  byte-identical) — each owner-approved. The version-history comment in
+  byte-identical); **M82 adds the 1-or-4-floor system** (v15, §36) — each
+  owner-approved. The version-history comment in
   `src/dungeon/RoomLayout.hpp` is the authority).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
@@ -243,8 +246,8 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; 85 scenes as of the
-post-M75 details-legend fix, which added `85_battle_details`) — all
+list lives in `src/capture/CaptureRunner.cpp`; **97 scenes as of M85**,
+`97_dragon_jester` last) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
@@ -268,7 +271,7 @@ clearing curve from 1/1/1/1/3/5/9/11 to 1/1/1/2/3/7/9/11 (depths
 ### Onboarding & accessibility (M22)
 
 Tutorial: `src/tutorial/Tutorial.*` is raylib-free — a constexpr beat table
-(9 beats, stable ids), `Progress {enabled, seen}` with defensive
+(9 beats at M22; **15 today**, stable ids), `Progress {enabled, seen}` with defensive
 parse/serialize (malformed or foreign-version `tutorial.json` → fresh
 state, reported, never a crash; unknown seen ids survive round trips), and
 `TutorialStore::takeBeat` which marks-and-saves on first fire so a prompt
@@ -315,10 +318,12 @@ identically.
 
 ### Score comparability & economy audit (M19)
 
-`ScoreEntry` carries two optional comparability tags, both loaded with
-absent-defaults and written without a scoreboard format bump:
+`ScoreEntry` carried two optional comparability tags at M19, both loaded
+with absent-defaults and written without a scoreboard format bump:
 `generationVersion` (M16) and `partyLevel` (M19; highest party level at
-completion, 0 = legacy shown as "-"). Ranking (`ranksAbove`) never reads
+completion, 0 = legacy shown as "-"). Later milestones grew the set to six
+tags plus `floors` (M82) — `src/score/ScoreEntry.hpp` is the authoritative
+list. Ranking (`ranksAbove`) never reads
 them — they make comparison conditions visible instead of normalizing.
 The economy evidence battery lives in `tests/test_economy.cpp`: pure
 score-incentive guards (fewer turns always better; stalling and escapes
@@ -406,22 +411,35 @@ Each file is a versioned wrapper around a named array:
 { "version": 1, "skills": [ { "id": "strike", "name": "Strike", ... } ] }
 ```
 
-`version` must equal the supported schema version (currently `1`). Files:
-`skills.json`, `classes.json`, `enemies.json`, `items.json`, `bosses.json`,
-`dungeon_themes.json`. Bosses carry an `archetype`, `skills`, `minions`, and a
+`version` must equal the supported schema version (currently `1`). Files
+(**twelve** as of M85): `skills.json`, `classes.json`, `enemies.json`,
+`items.json`, `bosses.json`, `dungeon_themes.json`, `composition.json`
+(M20), `passives.json` (M36), `story.json` (M41), `milestones.json` (M63),
+and the two **optional** files `event_flavor.json` (M80) and
+`curio_lore.json` (M85) — `loadAll` skips an optional file when absent
+(§34/§39); all twelve are CrystalForge categories since M86 (§40). Bosses
+carry an `archetype`, `skills`, `minions`, and a
 `telegraph`; themes list `normalEnemies`/`eliteEnemies`/`bosses` id pools; skills
 may carry an optional `statusEffect`/`statusMagnitude`/`statusDuration`. All ids
 are reference-checked across files.
+
+The M2 baseline schema (later milestones add fields; the loader in
+`src/content/ContentLoader.cpp` and the editor descriptor tables are the
+authoritative field lists):
 
 | Type   | Required fields | Notable optional fields |
 |--------|-----------------|-------------------------|
 | skill  | `id`, `name`, `category`, `target` | `element`, `power`≥0, `mpCost`≥0, `description` |
 | class  | `id`, `name`, `baseStats`{hp≥1,attack,magic,defense,speed} | `role`, `growth`{floats}, `startingSkills`[skill ids], `learnset`[{`skill`,`level`≥1}] |
-| enemy  | `id`, `name`, `stats`{…} | `tier`(normal/elite), `tags`[fast/magic/armored/poison], `skills`[ids], `xpReward`, `goldReward` |
+| enemy  | `id`, `name`, `stats`{…}, `role` (required since M20) | `tier`(normal/elite), `tags`[fast/magic/armored/poison], `skills`[ids], `xpReward`, `goldReward` |
 | item   | `id`, `name`, `type`(consumable/equipment/relic/scroll) | `slot`, `rarity`, `value`, `effect`, `effectAmount`, `statBonus`, `grantsSkill`, `description` |
 
-Enums (string values): `Element`, `SkillCategory`, `SkillTarget`, `EnemyTag`,
-`EnemyTier`, `ItemType`, `EquipSlot`, `Rarity`, `ConsumableEffect`.
+Enums (string values), as of M2: `Element`, `SkillCategory`, `SkillTarget`,
+`EnemyTag`, `EnemyTier`, `ItemType`, `EquipSlot`, `Rarity`,
+`ConsumableEffect` — later milestones added `SkillEffect`, `EnemyRole`,
+`StatusType`, `BattleTarget`, `BossArchetype`, `PassiveHook`,
+`MilestoneEffect`, `TriggerWhen`, `TriggerDo`;
+`src/content/Enums.hpp` is the authority.
 
 ### Validation rules
 
@@ -464,7 +482,8 @@ via an optional `restTokens` save field (no `kSaveVersion` bump; absent = 0).
 
 ### Town (walkable)
 
-A fixed single-screen **26×15** tilemap (16px tiles) built by `town::buildTown()`.
+A fixed single-screen **24×12** tilemap since the M50 rework (26×15 before;
+16px tiles) built by `town::buildTown()`.
 `Tilemap` answers solidity and pixel-rect collision; `town::resolveMove` does
 axis-separated collision (natural wall-sliding). Both are pure and unit-tested.
 Seven `Building`s each expose a walkable **Door** interact tile; standing on one
@@ -489,6 +508,10 @@ manual (`save_slot1..5.json`; three until M53) plus an autosave
 { "version": 1, "gold": 150,
   "party": [ { "classId": "knight", "name": "Rolan", "level": 1, "xp": 0, "hp": 120, "mp": 4 } ] }
 ```
+
+The block above is **illustrative** (the M3 shape); every later milestone's
+fields are optional and additive with defensive absent-defaults —
+`src/save/SaveSystem.cpp` is the authoritative field list.
 
 - Loading reuses the M2 validator (`ObjectReader`/`LoadReport`): malformed,
   foreign-version, or unknown-class saves are reported and **leave the target
@@ -535,7 +558,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 14 — the history comment in
+  `kGenerationVersion` (currently 15 — the history comment in
   `RoomLayout.hpp` is the authority; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
@@ -611,8 +634,9 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   **Confusion is cleared the instant its bearer takes attack/skill damage** (in
   the shared `applyDamage` chokepoint, so sim/live agree and the poison DoT —
   which bypasses `applyDamage` — does not clear it). Statuses live only inside a
-  `Battle` (never serialized), so no save bump; `battle::kBattleRulesVersion` is
-  **2**.
+  `Battle` (never serialized), so no save bump; `battle::kBattleRulesVersion`
+  was **2** at M35 (15 today — the history comment in `src/battle/Battle.hpp`
+  is the authority).
 - **Passive skills (M36).** `content::PassiveDef { id, name, hook, magnitude,
   price }` (a `PassiveHook` enum of 10) loads from `data/passives.json` into a
   `ContentDatabase` map; enemy/boss defs gain an optional `passives` list, and
@@ -656,9 +680,10 @@ Both modules are pure and unit-tested.
 
 `teamThreat(team, db)` = per-enemy stat threat (weighted HP/Attack/Magic/Defense/
 Speed) + per-skill threat (damaging skills weighted full, support/heal half),
-scaled by a synergy factor (more enemies and a healer raise it). `tierFor(threat,
-depth, isBoss)` compares the threat to a depth baseline (`50 + 25·(depth−1)`) and
-returns **Trivial/Easy/Fair/Dangerous/Deadly**; boss teams are always **Boss**.
+scaled by a synergy factor (more enemies and a healer raise it).
+`tierFor(threat, partyThreat, isBoss)` — **party-relative since M68** (§25;
+the original depth baseline `50 + 25·(depth−1)` was replaced) — returns
+**Trivial/Easy/Fair/Dangerous/Deadly**; boss teams are always **Boss**.
 The tier is therefore derived solely from stats and abilities — **never
 hand-authored** — and is shown on the map (colored label) and the fight prompt.
 Weights/thresholds are explicit constants, tuned in M9.
@@ -666,9 +691,13 @@ Weights/thresholds are explicit constants, tuned in M9.
 ### Scoring (`score/`)
 
 A run is summarized as `RunSummary` (completed, battleTurns = total rounds,
-dangerDefeated, chestsOpened, treasureGold, noDeath, escapes). `scoreBreakdown`
+dangerDefeated, chestsOpened, treasureGold, noDeath, escapes — later
+milestones added the M20 wager, the M32 town bonus, the M33 stakes
+penalty and the M45 class modifier; `src/score/Scoring.hpp` is the
+authoritative list). `scoreBreakdown`
 yields each component and the clamped total: base + boss − **per-round turn
-penalty** + chest + danger-defeated + treasure + no-death − escape. An
+penalty** + chest + danger-defeated + treasure + no-death − escape, then
+the wager and the M32/M33/M45 subtotal modifiers (§12). An
 **unfinished run scores 0**, and the turn penalty is large relative to the
 bonuses so *fewest battle turns* dominates — and because each team/chest is
 finite, there is nothing to farm. The `Scoreboard` persists ranked entries as
@@ -685,18 +714,24 @@ a `ScoreEntry`, and shows `DungeonResultState` before returning to town. The tow
 
 ### Status effects (`battle/`)
 
-A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down, and the
-M35 Confusion/Silence/Blind). Skills/items apply them to their targets;
+A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down, the
+M35 Confusion/Silence/Blind, the M44 Terrified/Stunned, and the M75
+Reflect/Sleep/Curse — §29). Skills/items apply them to their targets;
 `Battle::tickStatuses` (called at each unit's turn start) deals poison and ages
 durations. Buffs/debuffs scale the effective attack/defense used in the damage
 formulas; `Cure`/Remedy items strip every negative status (poison, debuffs, and
-the M35 afflictions), while `SkillEffect::Cleanse` (the Cleric's Purify) lifts
-**only the four afflictions** since M47 — the rules-v7 section has the split. See
+the afflictions — **except Curse**, which only Uncurse or a `curesCurse`
+item lifts, and Reflect, a positive status; both M75, §29), while
+`SkillEffect::Cleanse` (the Cleric's Purify) lifts
+**only the afflictions** since M47 (Sleep joined the cleansable set in
+M75) — the rules-v7 section has the split. See
 §10's M35 bullet for the Confusion/Silence/Blind behaviour and the seeded to-hit
 stream.
 A **Brute** boss `enrages` (×1.5 attack below half HP) and
 shows a telegraph line; **Commander/Rush** bosses field a fixed minion team
-(dynamic summons / true waves are deferred). The base (no-status, non-boss)
+(true mid-fight roster growth is still deferred — M75's `summon_clone`
+trigger raises a clone **prebuilt dead** at `buildBattle`, §29; the
+gauntlets run waves as separate battles). The base (no-status, non-boss)
 formulas are unchanged, so prior battle tests still hold.
 
 ### Equipment (`game/`)
@@ -743,8 +778,11 @@ preserved → deterministic). 12 new standard enemies (4 normal + 8 elite) and 6
 bosses (towns 2–7) ship in `enemies.json`/`bosses.json`, added to every theme's
 pools so they surface at their town in any theme, with kits built on the M35
 statuses and (bosses) M36 passives, and their own generated 24×24/32×32 battle
-sprites (lint-enforced, provenance in `assets/credits.md`). The full boss roster is
-now 12 (what M40's gauntlet enumerates in sorted order). Because the town-gated
+sprites (lint-enforced, provenance in `assets/credits.md`). The **dungeon** boss
+roster is now 12 (what M40's gauntlet enumerates in sorted order — the total
+roster later grows to 22 with the King, the Duck, the seven M84 Guild
+Masters and the M85 Dragon, all excluded from dungeons and the rush).
+Because the town-gated
 pools change a seed's roster at towns 2+, `dungeon::kGenerationVersion` is **8**;
 `minTown` is content (no `kSaveVersion` / `kBattleRulesVersion` change). This
 supersedes M32's "town does not change enemy composition" property — town now
@@ -809,9 +847,11 @@ everywhere, so pre-M32 behaviour, seeds, and scores are unchanged.
 
 Pure rules in `game/StakesLadder.hpp` (`StakesState { prevTown, prevDepth,
 penaltySteps }`, `stakesRaised`, `stakesPenaltyPct`, `afterCompletedRun`,
-`clampStakesSteps`; constants 15 / 6 / 90). A run's stakes is `(town, depth)`,
+`clampStakesSteps`; shipped constants **30 / 4 / 99** —
+`kStakesPenaltyPerStep` / `kStakesPenaltyMaxSteps` / `kStakesPenaltyCapPct`
+in `StakesLadder.hpp`, the authority). A run's stakes is `(town, depth)`,
 compared town-first against the previous completed run; a non-raising completed
-run grows the penalty one 15 % step (cap 90 %), a raising one resets it, and the
+run grows the penalty one 30 % step (cap 99 %), a raising one resets it, and the
 baseline moves to each completed run's stakes.
 
 - **State/save.** `Party.stakes` (a `StakesState`), persisted as three optional
@@ -1177,13 +1217,14 @@ classes are `data/classes.json` plus generic flags.
 
 ## 13. Presentation (Milestone 8)
 
-- **Audio (`audio/AudioManager`):** SFX and looping music are **synthesized at
-  runtime** into raylib `Sound`s (RAII-wrapped) — no asset files required. An
+- **Audio (`audio/AudioManager`):** SFX and looping music can be **synthesized
+  at runtime** into raylib `Sound`s (RAII-wrapped) — since M14/M21 this is the
+  **fallback**: the shipped catalog is 39 generated WAVs resolved through the
+  asset manifest (§3), and synthesis covers only missing files. An
   internal device guard owns `InitAudioDevice`/`CloseAudioDevice` (so sounds
   unload before the device closes). Every call is guarded by the device state, so
   a failed init or generation is a silent no-op, never a crash. Music loops by
-  re-playing when the current track stops. Real files dropped under
-  `assets/audio/` are the intended later replacement.
+  re-playing when the current track stops.
 - **Transitions (`core/FadeController`):** a pure fade-in timer; `Application`
   draws a black overlay at `coverAlpha()` inside the 426×240 target so it scales
   with the game. Scene states call `fade.start()` (and set music) in their
@@ -1747,10 +1788,12 @@ of** the caller (never `replaceState`), and neither backdrops nor the intro touc
   equips gear; `TrainingHallState` pays gold to level a character up by one
   (gold→level progression alongside battle XP). Parties start with a little gold.
 - **Packaging:** the final `README.md` documents what the game is, the MSVC build/
-  run, controls, the play loop, project layout, the smoke test (the 125-test
-  suite, which loads content, generates dungeons, and simulates a clear), and
-  known limitations. The deliverable is `CrystalDungeons.exe` plus the `data/`
-  folder copied beside it.
+  run, controls, the play loop, project layout, the smoke test (the test
+  suite — 125 tests at M10, 725 today — which loads content, generates
+  dungeons, and simulates a clear), and
+  known limitations. The M10 deliverable was `CrystalDungeons.exe` plus the
+  `data/` folder copied beside it — superseded by the M24 staged zip
+  (`tools/package.ps1`, §3).
 
 ## Release-hardening corrections (post-356619d audit)
 

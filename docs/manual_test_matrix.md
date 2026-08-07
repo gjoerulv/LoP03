@@ -32,6 +32,13 @@ The older rows below are retained as historical baseline evidence and are **not*
 > needs a product call: a contextual legend (only active statuses
 > explained), a shorter legend, or a scrollable overlay.
 >
+> **M86 update:** CrystalForge catch-up & version 0.6.0 — no new game
+> rows: the milestone is editor-only plus the deliberate version
+> renumber, so the capture set stays **97 scenes**. The one in-game
+> check: the window title and packaged artifacts now report **0.6.0**
+> (record it in the packaged-build block above). Editor validation
+> lives in the `[editor]` suite and the M86 note §G checklist.
+>
 > **M85 update:** the Last Dragon & curio lore — every owned curio is
 > inspectable on the Maps screen (cursor + Confirm opens the lore
 > panel; Duck-mythology register). The castle menu gains **"Fight the
@@ -455,9 +462,10 @@ cmake --build build-msvc
 .\build-msvc\CrystalDungeons.exe
 ```
 
-**Input passes:** run the matrix once keyboard-only, once gamepad-D-pad-only.
-A left-stick pass is expected to fail wholesale until M13 (defect CTRL-006:
-no axis support) — verify and note it, don't file new defects per row.
+**Input passes:** run the matrix once keyboard-only, once gamepad-D-pad-only,
+and once left-stick. Run the stick pass for real: CTRL-006 (no axis support)
+was fixed in M13 — stick and D-pad are equivalent in every UI, so any stick
+failure is a NEW defect and must be filed.
 
 **Display cases** (apply to every screenshot row; spot-check others):
 
@@ -483,10 +491,10 @@ sound fires.
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | Title / main menu | fresh launch | pass | not run | pass | pass | not run | 01_title_main_menu.png | partial |
 | 2 | Title: Continue disabled | no save files (rename `%APPDATA%\CrystalDungeons\saves`) | not run | not run | not run | not run | — | 07_title_no_saves.png | not run |
-| 3 | Help / controls | — | pass | not run | pass | n/a | not run | 02_help_controls.png | partial — table claims Left Stick: **fail(CTRL-006)** pending pad check |
+| 3 | Help / controls | — | pass | not run | pass | n/a | not run | 02_help_controls.png | partial — pad pass not run (CTRL-006 fixed in M13; stick expected to pass) |
 | 4 | Party creation | default names | pass | not run | pass | pass | not run | 03_party_creation.png | partial |
 | 5 | Party creation: max names | all four names 12 chars (e.g. `Brandelbrook`) | not run | not run | not run | not run | — | 08_party_max_names.png | not run |
-| 6 | Name editing modal | type/backspace/finish | pass (auto) | **expect fail(UI-INPUT-001)** | pass | pass | not run | 04_party_name_editing.png | partial |
+| 6 | Name editing modal | type/backspace/finish | pass (auto) | **expect pass** (UI-INPUT-001 fixed in M13 — verify) | pass | pass | not run | 04_party_name_editing.png | partial |
 | 7 | Save slots (Save mode) | 0, 1, 3 slots used; overwrite | not run | not run | not run | not run | not run | 09_save_slots.png | not run |
 | 8 | Load slots (Continue) | autosave + manual mix; empty disabled | not run | not run | not run | not run | not run | 10_load_slots.png | not run |
 | 9 | Town exploration | 4×12-char names in HUD | partial | not run | **check UI-TEXT-008 spill** | n/a | not run | 05_town.png (default names), 11_town_max_names.png | partial |
@@ -507,9 +515,9 @@ sound fires.
 | 23 | Dungeon pause / retreat | mid-run | not run | not run | pass | pass | not run | 23_dungeon_pause.png | not run |
 | 24 | Battle: intro + boss telegraph | boss with longest telegraph (Sorcerer) | not run | not run | 55-char line fits? | n/a | battle music | 24_battle_boss_intro.png | not run |
 | 25 | Battle: command menu | item/skill rows disabled when none | not run | not run | pass? | pass? | move/confirm sfx | 25_battle_command.png | not run |
-| 26 | Battle: skill list, 5+ skills | high-level char or scroll-taught | not run | not run | **expect fail(UI-TEXT-002)** | **expect fail** | not run | 26_battle_skills_overflow.png | not run |
-| 27 | Battle: item list, many types | carry 6+ consumable types | not run | not run | **expect fail(UI-TEXT-002)** | not run | not run | 27_battle_items.png | not run |
-| 28 | Battle: 5-enemy encounter | deep-dungeon gate team | not run | not run | **expect fail(UI-LAYOUT-003)** | target marker visible? | not run | 28_battle_5_enemies.png | not run |
+| 26 | Battle: skill list, 5+ skills | high-level char or scroll-taught | not run | not run | **expect pass — verify** (UI-TEXT-002 fixed in M12) | **expect pass — verify** | not run | 26_battle_skills_overflow.png | not run |
+| 27 | Battle: item list, many types | carry 6+ consumable types | not run | not run | **expect pass — verify** (UI-TEXT-002 fixed in M12) | not run | not run | 27_battle_items.png | not run |
+| 28 | Battle: 5-enemy encounter | deep-dungeon gate team | not run | not run | **expect pass — verify** (UI-LAYOUT-003 fixed in M12) | target marker visible? | not run | 28_battle_5_enemies.png | not run |
 | 29 | Battle: status-heavy | poison + buffs/debuffs on several units | not run | not run | status rows overlap? | n/a | not run | 29_battle_statuses.png | not run |
 | 30 | Battle: outcomes | victory (+XP/gold msg), escape, defeat | not run | not run | defeat: gold-loss unexplained (**UI-INFO-014**) | n/a | victory/defeat sfx | 30_battle_outcome.png | not run |
 | 31 | Dungeon result | with and without escapes line | not run | not run | 8-line fit (UI-LAYOUT-018) | n/a | victory sfx | 31_dungeon_result.png | not run |
@@ -600,7 +608,7 @@ sound fires.
 | 114 | Menu closes the pause menu (M47) | in town and in a dungeon, press Tab (then Start on a pad) to open the pause menu, and press it again | not run | not run | the same key closes it; Cancel still closes it; no double-toggle from one press | cursor returns where it was | cancel sfx | 50_dungeon_pause.png | not run |
 | 115 | Quit from town (M47) | town pause → Quit; try Cancel, Keep Playing, Quit to Title, and finally Quit Game | not run | not run | three answers with the cursor on Keep Playing; Cancel and Keep Playing return to the pause menu with the run intact; Quit to Title returns to the main menu; **Quit Game closes the game cleanly** (no crash, no hung window, settings kept) | cursor never starts on a destructive row | confirm/cancel sfx | 44_quit_confirm.png | not run |
 | 116 | Quit from a dungeon (M47) | mid-run, dungeon pause → Quit; read the body, then try each answer | not run | not run | the body says the run is lost but the entry autosave is kept — verify that by quitting and using Continue; the panel fits all three answers over the taller pause box | n/a | confirm/cancel sfx | 52_dungeon_quit.png | not run |
-| 117 | Battle-rules tag (M47/M48) | clear a dungeon, then open the Scoreboard | not run | not run | the run is tagged with the current battle rules (v8 since M48); older entries keep their own version and are flagged as played under different rules (never renormalized) | n/a | n/a | 12_scoreboard.png | not run |
+| 117 | Battle-rules tag (M47/M48) | clear a dungeon, then open the Scoreboard | not run | not run | the run is tagged with the current battle rules (v15 since M75); older entries keep their own version and are flagged as played under different rules (never renormalized) | n/a | n/a | 12_scoreboard.png | not run |
 | 118 | Weakness in play (M48) | with a Mage, cast Fireball at a Frost Imp (town 1) and at the Frost Monarch (town 3 boss); compare with Arcane Burst | not run | not run | the fire hit is visibly larger, floats a gold **Weak!** above the foe, and the log says "It is devastating!"; the untagged spell is unchanged. **Judge whether x150% feels worth aiming for** | n/a | hit sfx | 53_battle_weak_hit.png | not run |
 | 119 | Immunity in play (M48) | cast Blizzard at the Frost Monarch; then let a Dragon (fire weapon) swing at it | not run | not run | damage is **0**, a coral **Immune** floats, the log says it is immune — and it never reads as a miss; no status rider lands either. **Judge whether a wasted turn is instructive or just annoying** | n/a | hit sfx | 54_battle_immune_hit.png | not run |
 | 120 | Affinity reveal (M48) | target a tagged foe in battle; then open Pause → Bestiary on a foe you have fought and one you have not | not run | not run | the target panel shows **Weak Fire** / **Immune Ice** chips clear of the other rows; the bestiary shows the same lines for a known foe and **nothing** for an unmet one | chips legible at the panel's edge | n/a | 56_battle_target_affinity.png, 55_bestiary_affinity.png | not run |
@@ -647,7 +655,7 @@ sound fires.
 | 159 | Load-screen slot rows (M67) | open Load with occupied titled slots (post-King save); move the cursor across all six rows | not run | not run | rows read `Slot N  -  Lv.X  Ng` (no "party 4"); a titled row's King title sits **fully inside** the selection slab (both lines covered); untitled rows keep the shorter slab; nothing overlaps the next row | slab covers both lines | move sfx | 43_slot_menu_load.png | not run |
 | 160 | Chart prompt un-latches (M67) | find an M66 chart; walk ACROSS its tile without pressing Confirm; step off; open a chest and start a battle; step back on and read it; repeat for the buried X | not run | not run | the "Read the weathered map" / "Dig up" footer prompt shows **only while standing on the tile** and vanishes on step-off; Confirm still opens chests and starts battles afterwards (it used to be silently swallowed for the rest of the run); standing back on the tile reads/digs normally | footer prompt swaps correctly | chest sfx on read/dig | — | not run |
 | 161 | Victory spoils panel (M68) | win a gate fight without level-ups; win one that levels 1+ members (a fresh party gains levels fast); win a boss fight; try a castle challenge | not run | not run | a compact panel over the battlefield shows `+N XP each  +N gold` (plus, per leveled member: `Name Lv.a > b`, the non-zero stat gains, `New:` skills in gold); **ONE Confirm continues — the exact press that always ended a battle**; the dungeon HUD message no longer repeats the reward; a level past 10/20/30 prompts the milestone choice right after the battle; castle fights show no spoils panel; a diff cross-checks against the Party panel. **Judge the panel's feel — it must not slow the loop** | panel fits over four leveled 12-char members | victory jingle unchanged | 83_battle_spoils.png | not run |
-| 162 | Party-relative threat labels (M68) | with your strong party, enter a dungeon you find easy and read every team label (Guild preview + in-dungeon); repeat with a fresh/underleveled party on a hard town; level mid-run and re-read a label | not run | not run | the strong party reads mostly **Trivial/Easy/Fair** with Dangerous/Deadly only on genuinely nasty teams (the old build read nearly everything Deadly at towns 3+); the weak party reads the same seeds Dangerous/Deadly; labels do NOT shift mid-run (snapshotted at entry — by design, so the score credit matches the preview); new scoreboard entries tag **v14**. **Judge the calibration bands** | labels readable everywhere they show | n/a | — | not run |
+| 162 | Party-relative threat labels (M68) | with your strong party, enter a dungeon you find easy and read every team label (Guild preview + in-dungeon); repeat with a fresh/underleveled party on a hard town; level mid-run and re-read a label | not run | not run | the strong party reads mostly **Trivial/Easy/Fair** with Dangerous/Deadly only on genuinely nasty teams (the old build read nearly everything Deadly at towns 3+); the weak party reads the same seeds Dangerous/Deadly; labels do NOT shift mid-run (snapshotted at entry — by design, so the score credit matches the preview); new scoreboard entries tag the current generation version (**v15** since M82). **Judge the calibration bands** | labels readable everywhere they show | n/a | — | not run |
 | 163 | Town exteriors (M69) | walk every town: enter all five services via their doorsteps; interact with the Scoreboard stele and the Save crystal; check towns 2–7 | not run | not run | the five houses read as real buildings — per-service roof colors, lit windows, an emblem pennant, the **door built into the facade** with a path doorstep below (no door tile sticking out); the Scoreboard is a freestanding engraved stone sheet (2×2) and the Save Point a cyan crystal (1×1), both interacted from the tile in front; every entrance/interaction works exactly as before; the freed ground tiles are walkable; facades sit acceptably on the darker per-town ground. **Art judgment is the owner's — roofs, pennants, stele, crystal** | labels + facades read at 426×240 | door sfx unchanged | 06_town.png | not run |
 | 164 | CRT Curvature separated (M70) | Settings → Display: sweep both sliders; view the §11 combos (0/0, 7/0, **7/2–3**, 7/5, 7/10, 3/3, 10/3) at 1278×720, 1080p/borderless, 426×240, and one freely resized window, across title / Display / a shop / Crystal Mine / pause modal / battle / a boss / High Contrast; load a pre-M70 settings file with strength 7 | not run | not run | Strength 0 = exact unfiltered image regardless of curvature; **Curvature 0 = perfect rectangle** (no bend, no rounded corners, no edge mask) while strength effects stay fully present; 7/2–3 = the strong CRT texture with only mild glass; changing curvature does not visibly weaken scanlines/mask/glow/chroma/tone/grain; nothing essential crops at 10; centred + symmetric; both sliders apply instantly with no hitch; the old strength-7 file loads as Strength 7 / Curvature 3; capture stays pre-shader; the debug overlay stays unfiltered. **Judge the pow(C,1.35) feel and the 7/2–3 target** | Display list fits at 7 rows | move sfx per step | 60_settings_display.png | not run |
 | 165 | Victory celebration (M71) | clear a dungeon that is fully clean (no stakes penalty, positive score, zero escapes); clear one WITH a penalty, one with an escape, and a zero-score one; clear one where a member ended KO'd (incl. the damage MVP); beat the King, the Duck gauntlet, and the Boss Rush; run the Endless Rush; lose a challenge; celebrate several times | not run | not run | ONLY the fully clean clear shows the celebration FIRST (Victory! plaque, the score alone in gold, a **random dry punchline** beneath — varying across celebrations — and confetti), then Confirm → the usual detailed reckoning; a stakes penalty, an escape, or a 0-score all skip straight to the reckoning; every standing member jumps at a visibly different rhythm/height, the **MVP stands named on the centre pedestal** with the gold chip (jumping higher); a KO'd member lies horizontal, dimmed, not jumping — and a **KO'd MVP lies in state ON the pedestal, chip and name intact** (owner-confirmed comedy); the King/Duck/Boss-Rush wins show the same screen with "Cleared in N turns!" before their result overlay; the Endless Rush and all losses never celebrate. **Judge the jump feel, pedestal, confetti density, and the punchline pool's voice** | headline + punchline + MVP name fit | fanfare (Result) music during the celebration | 84_celebration.png | not run |
@@ -663,8 +671,7 @@ sound fires.
 
 ## Owner notes
 
-- Rows 14, 26–28 are the fastest way to see the worst text defects live.
-- Row 6 on gamepad is the Blocker (UI-INPUT-001): have a keyboard within
-  reach when you test it.
-- File new defects in `docs/presentation_audit.md` with the next free ID in
-  the matching category.
+- Rows 14, 26–28 are the fastest live check that the M12 text fixes hold.
+- File new defects in this matrix's Status column (next free ID in the
+  matching category). `docs/presentation_audit.md` is a closed historical
+  register — nothing new goes there.

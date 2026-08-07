@@ -13,12 +13,14 @@ exceptions since M13 — text entry flows through the input layer):
 | Action | Keyboard default | Gamepad default | Used by |
 |---|---|---|---|
 | MoveUp/Down/Right/Left | Arrows + WASD | D-pad **and left stick** (hysteresis 0.5 enter / 0.35 release) | movement, menu nav, value adjust |
-| Confirm | Enter, Space | A | select, interact, advance |
-| Cancel | Esc, Backspace | B | back, close, (opens pause in town/dungeon) |
+| Confirm | Enter, Space, Z | A | select, interact, advance |
+| Cancel | Esc, Backspace, X | B | back, close, (opens pause in town/dungeon) |
 | Menu | Tab | Start | opens **and closes** (M47) pause in town/dungeon; opens/closes the battle log in battle (M52) |
 | Details | C | Y | M22: contextual help panels (battle stats/statuses, dungeon danger, score components, gear comparison) |
+| CyclePrev / CycleNext | Q / E (alt Left Ctrl / Left Alt) | L1 / R1 | M79: party-member cycling in the Equip Shop member phases and Training Hall; M82: 1F/4F scoreboard switch |
 | TextBackspace | Backspace (fixed) | X (fixed) | delete-one-char in text editing |
 | ToggleDebug | F1 (fixed) | — | debug overlay |
+| ReloadAssets | F5 (fixed, debug builds) | — | live manifest reload (see `docs/asset_pipeline.md`) |
 | Quit | — | — | reserved, unbound |
 
 The former `Pause` action (P / Select) was **removed** — it was bound but
@@ -96,12 +98,16 @@ characters still require a keyboard (labeled in-game).
 
 - Settings → Remap Keyboard / Remap Gamepad: per-action listen-for-input
   rebind; `[Esc]` always cancels listening and can never be bound (reserved).
-- Conflict policy: **swap** — the input's previous owner takes the action's
+- **Keyboard (M79): three slots per action** — Primary / Alt 1 / Alt 2, each
+  directly remappable (`assignKeySlot`). Assigning a key another action
+  holds warns and asks to **steal** (confirm) or keep; outcomes are
+  Rebound / Stolen / NeedsConfirm / Blocked. **Gamepad keeps the M13
+  replace-and-swap engine**: the input's previous owner takes the action's
   old primary binding; a swap with nothing to donate is **blocked** (map
-  unchanged). Invariants (tested in `test_remap.cpp`): only the 8 remappable
-  actions participate (`kRemappableActions` — movement, Confirm, Cancel,
-  Menu, Details); no remappable action ever ends up unbound;
-  TextBackspace/ToggleDebug are fixed.
+  unchanged). Invariants (tested in `test_remap.cpp`): only the **10**
+  remappable actions participate (`kRemappableActions` — movement, Confirm,
+  Cancel, Menu, Details, CyclePrev, CycleNext); no remappable action ever
+  ends up unbound; TextBackspace/ToggleDebug/ReloadAssets/Quit are fixed.
 - Reset to defaults exists in both the remap screen and Settings; every
   successful change saves immediately.
 - Persistence: versioned `settings.json` (v1) in the user data dir —
@@ -115,7 +121,8 @@ characters still require a keyboard (labeled in-game).
 
 ## 7. Still-unresolved actions
 
-- `PageLeft`/`PageRight` — only if a screen adopts pagination.
+- `PageLeft`/`PageRight` — retired: CyclePrev/CycleNext (M79) already serve
+  as the pagination pair (the M82 scoreboard cycles its boards with them).
 - Explicit `Quit` — the action stays reserved and unbound; the quit
   *affordance* was resolved in M47 (both pause menus offer Quit → Quit to
   Title / Quit Game / Keep Playing).

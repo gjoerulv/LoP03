@@ -21,9 +21,13 @@ M22 acceptance test ("completes a depth-1 run without external instruction").
 
 ## 2. Session rules
 
-- Fresh state: delete `settings.json`, `tutorial.json`, and saves from the
-  user data folder before profile-1 sessions (Settings > "Reset tutorial
-  prompts" is not enough — bindings and options should be defaults too).
+- Fresh state: delete the **entire user data folder** before profile-1
+  sessions — it holds `settings.json`, `tutorial.json`, the `saves/`
+  folder, **and** `profile.json` (cross-save unlocks — a leftover one
+  hands profile 1 an unlocked Goose class), `achievements.json`, and
+  `scoreboard.json` (a populated board is not first-run state).
+  (Settings > "Reset tutorial prompts" is not enough — bindings and
+  options should be defaults too).
 - Say only: "Play as you like; think aloud; I can't answer questions until
   the end." Never touch the input. If they are hard-stuck for 3+ minutes,
   note WHERE and WHY, then you may unstick them — that moment is a finding.
@@ -47,6 +51,8 @@ Danger labels: did they read them? change behavior because of them?
 Score screen: can they say what the score rewards? (ask at debrief)
 Deaths/retreats and reaction:
 Run duration + depth(s) attempted:
+Floors chosen at the Guild (1 or 4) — did they understand the choice?
+Perk / milestone picks (guild perk, class milestone): understood the tradeoff?
 Dominant strategy observed (spam attack? one skill? shopping loop?):
 Voluntary replay? (did they start another run unprompted?)
 Quotes worth keeping:
@@ -69,8 +75,10 @@ Bring the filled sheets back. Findings get triaged into:
   score-comprehension failure, any stuck moment, any clipped/unread text.
 - **Balance evidence** — pacing/difficulty observations, cross-checked
   against the sim report (`crystal_tests "[sim-report]" -s`).
-- **Defer with reason** — logged in `docs/presentation_audit.md`; deferral
-  needs a written why, not silence.
+- **Defer with reason** — logged in the M23 milestone note
+  (`docs/milestone_notes/`) or `docs/manual_test_matrix.md`; deferral
+  needs a written why, not silence. (`docs/presentation_audit.md` is a
+  closed historical register — nothing new goes there.)
 
 The M23 acceptance bar: all six profiles observed; repeated defects fixed
 (not documented away); no dominant strategy trivializes representative runs.

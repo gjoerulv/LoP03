@@ -37,7 +37,9 @@ battle-turn efficiency → return to town → upgrade/unlock → repeat.
 
 ## 4. Party & classes
 
-Party of 4, chosen and renamable at new game from 6 classes:
+Party of 4, chosen and renamable at new game from 6 classes (9 once the
+King's reward classes unlock — they appear Locked at creation until then;
+see the M45 section):
 
 1. **Knight** — durable physical attacker.
 2. **Ranger** — fast, precision attacks.
@@ -53,7 +55,8 @@ Characters gain XP/levels; player gains gold/items.
 grows and its battle menu widens with progression. Known skills are *derived*
 from the class and the character's level (not stored), so leveling mid-run
 immediately unlocks the new options and no save is ever invalidated. By the
-level cap each class commands roughly six to seven skills.
+level cap each class commands roughly seven to nine skills (the M76
+counterplay skills widened several learnsets).
 
 **Level milestones (M63).** At levels **10, 20 and 30** every character —
 all nine classes, the joke classes included — chooses **one of two
@@ -67,7 +70,8 @@ effects like the Guardian's first-hit-glances-off, the Ranger's double
 shot, the Cleric's *Purifying Light* — which deliberately buys back
 Purify's pre-M62 healing — and the Jester's on-kill/on-death theatrics).
 Choices are permanent, persist in the save, and old saves simply get asked
-on arrival. Battle-side effects are part of battle rules **v14**.
+on arrival. Battle-side effects landed under battle rules **v14** (current:
+v15 since M75).
 
 **Scroll learning and the Party panel (M64).** Skill **scrolls** finally
 teach: using one (from the new **Party** panel on either pause menu) has a
@@ -203,9 +207,10 @@ its minions fall, the Commander rallies its fallen minions once below half
 HP, and the Rush tyrant's opening blow lands with doubled force.
 
 **Rooms are compact and purposeful (M16),** drawn centered on the screen
-rather than filling it. Each room is realized as one of eight archetypes
+rather than filling it. Each room is realized as one of nine archetypes
 derived from its role in the graph — Entry, Corridor, Crossroads, Gate
-Chamber, Treasure Alcove, Treasure Vault, Boss Antechamber, Boss Arena — with
+Chamber, Treasure Alcove, Treasure Vault, Event Chamber (§6's event rooms),
+Boss Antechamber, Boss Arena — with
 bounded dimensions (common chambers ≈9–15 × 7–11 tiles, corridors narrow
 along their travel axis, the boss arena largest), centered door gaps, sparse
 landmark pillars that never block a path, and purposeful anchor placement
@@ -222,8 +227,8 @@ Displayed danger is computed **deterministically from enemy stats and abilities*
 "Deadly" means deadly for THIS party, and the same team reads easier as the
 party grows. Tiers: **Trivial, Easy, Fair, Dangerous, Deadly, Boss**;
 snapshotted once at dungeon entry so the labels and the danger-defeated score
-credit agree for the whole run (generation v14 tags the recalibration on the
-scoreboard). Formula is explicit and unit-tested (M6; recalibrated M68 via the
+credit agree for the whole run (generation v14 tagged the recalibration on the
+scoreboard; current: v15 since M82). Formula is explicit and unit-tested (M6; recalibrated M68 via the
 `[danger-report]` battery).
 
 ## 8. Combat
@@ -307,8 +312,10 @@ returning to town. Combat stays fully readable with audio muted.
 
 **Score comparability (M19, owner-approved):** runs are never silently
 normalized. Every new score entry is tagged with its run conditions — depth,
-theme, seed, generation version, and **party level** (highest member at
-completion) — and the scoreboard shows Depth and Lv per row with a plain
+theme, seed, generation version, **party level** (highest member at
+completion), and the later tags (town M32, battle-rules version M48,
+class modifier M45, **floors** M82 — the 1F/4F boards are separate, §6) —
+and the scoreboard shows Depth and Lv per row with a plain
 legend: *compare runs at the same Depth and Lv*. Older entries without the
 tag show "-". Farming power before a run is legal; it is simply visible.
 The score formula itself ignores party level.
@@ -319,8 +326,9 @@ tie-break only).
 
 Score components: base completion, **battle-turn penalty**, escape penalty where
 relevant, chest bonus, boss-defeat bonus, danger bonus, no-death bonus, and — as
-percentages of the whole subtotal — the **town-ladder bonus** (M32, +10 % per
-town above town 1, up to +100 %) and the **stakes penalty** (M33, subtracted).
+percentages of the whole subtotal — the **town-ladder bonus** (M32,
++0/10/20/30/40/50/100 % across towns 1–7 — the §5 table is the curve) and
+the **stakes penalty** (M33, subtracted).
 The town a run was cleared in is recorded as an optional `townIndex` tag and
 shown on the scoreboard as "T#" (a comparability tag like depth and level, never
 used for ranking); *compare runs at the same Town, Depth and Lv*. Design guard:
@@ -380,8 +388,9 @@ scarcity holds. Boss drops never affect the score (they are a post-battle reward
 **The castle & the King (M40).** Clearing any **town-7 dungeon** opens a road that
 climbs from town 7 up to the **castle** — a distinct place above the seven-town
 ladder (not a town: no shops, dungeons, stakes, or score bonus). The castle hosts
-an inn, a save point, the party's **castle records**, and the **King's three
-challenges**, each a step above normal play and each paying a **one-time first-clear
+an inn, a save point, the party's **castle records**, and **four
+challenges** (three at M40; M85 added the Dragon), each a step above normal
+play and each paying a **one-time first-clear
 reward**:
 
 - **Boss Rush** — the full 12-boss roster, back to back, **each with its own
@@ -400,6 +409,8 @@ reward**:
   §10, "Enemy offensive"). Beating
   him the first time grants a **unique legendary** (the Sovereign's Regalia, won
   nowhere else), a **visible title**, gold, and tokens.
+- **The Last Dragon** (M85) — gated on all twelve curios; three seeded elite
+  vigil waves, then the game's largest fight (see §10, "The Dragon").
 
 Castle records live **entirely apart from the dungeon scoreboard** (score
 comparability is preserved); challenges never touch your dungeon score, stakes, or
@@ -558,8 +569,9 @@ single "strongest" number would be honest.
 **Victory stats** appear on the clear screen's Run-stats view: this run's
 total damage, biggest single hit, statuses inflicted, and the party MVP, plus your
 personal records (biggest hit ever, most damage in a run) — display-only, never
-ranked. **Achievements** (also from the pause menu) are 18 original cross-game
-goals (16 at M42; M61 added Quackbane, M66 the Curator) — clearing dungeons, climbing the ladder, beating the King's challenges,
+ranked. **Achievements** (also from the pause menu) are 20 original cross-game
+goals (16 at M42; M61 added Quackbane, M66 the Curator, M84 Guildbane,
+M85 Wyrmbane) — clearing dungeons, climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
 
@@ -696,7 +708,8 @@ a miss). Nothing is ever both.
 Elements reach a foe two ways: a **skill's own element** (the shipped fire, ice,
 lightning, earth and holy spells were always authored with one — until now it
 did nothing), and a **weapon's element**, which every basic attack of its wielder
-carries. Five weapons are elemental, spanning the ladder from the town-1 **Holy
+carries. Ten weapons are elemental (five at M48, five more at M81 — see
+"Arms, elements & icons" below), spanning the ladder from the town-1 **Holy
 Mace** to the legendary **Dawnforged Blade**, so the system is met early and
 still matters late. Enemies carry no weapons, so their own basic attacks stay
 unelemented, and the party has no affinities — the layer only ever describes
@@ -794,9 +807,11 @@ uses, so it moves if they do.
 - **Endless Rush from ×5.00**, climbing ×0.10 per wave, passing the ladder
   ceiling within a handful of waves and never stopping.
 - **The Hollow King ×5.00** — a lower percentage than the rush, and still by far
-  the largest single fight in the game: his base stats are so far above any
+  the largest single fight **on the ladder's own terms**: his base stats are so
+  far above any
   dungeon boss that ×5.00 makes him a **3750 HP** opponent where the deepest
-  dungeon boss the ladder can produce is 2280. Against a **level-99** party (the
+  dungeon boss the ladder can produce is 2280. (The optional gauntlets rise
+  higher still — the Duck at 5,000 and the Dragon at 7,000 effective HP, §10.) Against a **level-99** party (the
   cap, raised from 50 so the endgame has an answer) the post-M77 simulation
   still loses with nothing (17 rounds) and still wins with the modest plan —
   one Tax Sheets, one Evil Goose, a bag of Royal Snacks, and a Mirrorbreak
@@ -824,7 +839,8 @@ join the vocabulary, worn by enemies unless a later milestone says otherwise:
 - **Reflect (RFL)** — hostile *magic* aimed at the bearer **bounces back onto
   its caster**, damage, MP drain and status rider alike, with no roll taken.
   It wears off naturally; the only other answer is a **mirror-breaker** skill
-  (`break_reflect`, arriving on the Ranger and Rogue in M76) — and a breaker is
+  (`break_reflect` — shipped as **Mirrorbreak** on the Ranger and Rogue in
+  M76) — and a breaker is
   never magic, because it would bounce off the very mirror it came to break.
 - **Sleep (SLP)** — the bearer **skips its turns**. Any damage wakes it — but a
   **poison tick does not** (the owner's rule: the dot burns through the nap).
@@ -837,7 +853,8 @@ join the vocabulary, worn by enemies unless a later milestone says otherwise:
   costs **double MP** (the menu shows the real doubled cost). It wears off
   naturally but lasts **half again as long** as any other status, and exactly
   **two things lift it early**: an `uncurse` skill and a `curesCurse` item
-  (both arriving in M76) — no cleanse, no Remedy, no Purify touches it.
+  (both shipped in M76 — Absolve and Holy Taxes) — no cleanse, no Remedy,
+  no Purify touches it.
 
 Two old numbers finally matter again. **Poison scales**: the applied magnitude
 gains the *applier's* Magic ÷ 4, snapshotted at application, so a flat authored
@@ -853,7 +870,7 @@ the HP damage — `mpDamagePct`); foes may **start the battle with statuses**
 (`initialStatuses` — a mirror already up as the curtain rises); bosses may
 shrug off the Deadly Spoon (`immuneToStatScale`) or carry a bespoke per-status
 immunity list; worn equipment may **resist elements** (`resistPct` /
-`resistElements`, halving what remains — the accessories arrive in M81); and
+`resistElements`, halving what remains — the accessories shipped in M81); and
 the battle log now **names an attack's element** outright.
 
 And bosses, elites and minions gain **triggers** — deterministic WHEN → DO
@@ -863,7 +880,7 @@ can apply a status (to the bearer, the attacker, every foe, or the bearer's own
 boss — a minion mirroring its king), scale the bearer's stats (a rage that is
 data, not code), **drain the party's MP**, or **raise the bearer's clone** — a
 copy prebuilt dead at battle start so the roster never grows mid-fight. The
-authoring arrives with the M77 enemy pass and carries the M84/M85 bosses; v15
+authoring shipped with the M77 enemy pass and carries the M84/M85 bosses; v15
 is the machine that runs it. A battle whose content carries none of the new
 fields and no poison or ATK±/DEF± resolves exactly as it did under v14 — any
 fight where those statuses appear resolves differently, which is the point,
@@ -928,8 +945,9 @@ stockpile: shops sell a party only so many of each.
   still grant freely, and a save already holding more than a cap keeps
   every one of them — it is simply refused further purchases. At-cap shop
   rows read `x2 MAX` and refuse with the reason.
-- A later town-milestone perk (M84) may raise every cap by 1 per rank,
-  against a **hard ceiling of 9** — Potion simply stays 9.
+- Three town-milestone perks (M84 — the "pockets" picks in towns 1, 2
+  and 6) each raise every cap by 1, against a **hard ceiling of 9** —
+  Potion simply stays 9.
 - **Elixir and Hi-Ether left the town shelves for good.** The in-dungeon
   merchant is now their only seller — and asks **exactly full value**
   (400g / 500g) where its other wares keep the usual street discount; its
@@ -940,7 +958,8 @@ stockpile: shops sell a party only so many of each.
 
 ## 11. Bosses
 
-One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1
+One boss per run (in an M82 4-floor run he waits on floor 4, behind the
+Stairway Warden gates). Each: multiple actions, telegraph-style status text, ≥1
 unique mechanic, escapable (but escaping fails the score). Archetypes:
 
 1. **Brute** — high HP/attack.
@@ -1026,9 +1045,9 @@ gameplay:
 **Comforts & secrets (M52).** Six small quality-of-life additions and one
 secret, none touching the core loop:
 - **Ambience has its own volume slider** (Audio submenu), no longer chained to
-  the SFX slider as it was since M27. It **defaults to 5/10** — quieter by
-  design — and applies live and at startup. Old settings files (with no ambience
-  field) load at 0.5.
+  the SFX slider as it was since M27. M52 shipped it at 5/10; **since M79 it
+  defaults to 3/10** — quieter by design — applies live and at startup, and
+  old settings files (with no ambience field) load at the 3/10 default.
 - An **in-battle battle log**: the **Menu/Pause** action (hinted on the command
   menu, and openable in **any** phase — including the auto-played turns of a full
   Jester party) opens a scrollable overlay of the **last 30 action results** (the
@@ -1106,18 +1125,18 @@ every event:
   the reduced-motion/flash settings (the pulse is gated by Battle Flash, the shake
   by Battle Shake); Endless Rush waves stay plain.
 
-## 13. First-complete-version content target
+## 13. Content baseline (snapshot at M38)
 
 6 classes (each with a level-based learnset) · 26 normal enemy types · 17 elites ·
 12 bosses across 4 archetypes · 50+ items/equipment · 48 skills/spells across the
 broad categories · **10 passive skills** · 3 themes (**Ruined Keep, Crystal Mine,
 Hollow Forest**) · infinite seeded dungeons with depth and town scaling. (Counts
-as of M38, which added 12 per-town enemies and 6 per-town bosses; the roster and
-lists grow with content milestones.)
+as of M38; the roster grew with the content milestones — as of M85 the ship
+is 9 classes, 26 normal + 36 elite enemies, 22 bosses, 95 items, 78 skills,
+10 passives, 3 themes.)
 
 ## 14. Open design questions (decide with human when reached)
 
-- Exact danger weights and tier thresholds (M6).
-- Exact score coefficients and anti-farming caps (M6).
-- Equipment/relic stat ranges and economy tuning (M7/M9).
-- Suspend-save anti-scum mechanism, if implemented (M3+).
+- Suspend-save anti-scum mechanism, if implemented (M3+). (The M38-era
+  entries here — danger weights, score coefficients, economy ranges — were
+  all decided and shipped: M6/M68 danger, §9 scoring, the M54 rebalance.)

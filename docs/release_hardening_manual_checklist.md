@@ -1,6 +1,9 @@
 # Release-hardening manual validation
 
-Target baseline: `356619d64d4511c7f047bef1a4ca82d1df561595` plus the release-hardening patch.
+> **Written against the pre-M75 baseline
+> `356619d64d4511c7f047bef1a4ca82d1df561595`** plus the release-hardening
+> patch. The checks remain the right ones, but the run that counts is
+> against the **then-current checkout during M24** — re-run it there.
 
 This checklist records work the owner must perform. It does **not** claim any result in advance.
 
@@ -50,4 +53,4 @@ Inspect both Release executables and confirm:
 
 ## Final release evidence
 
-Record build SHA, package version, tester, date, display mode, keyboard/controller used, and results in `docs/manual_test_matrix.md`. Keep M23/M24 as awaiting approval until the full packaged-build matrix and clean-machine smoke test pass.
+Record build SHA, package version, tester, date, display mode, keyboard/controller used, and results in `docs/manual_test_matrix.md`. Keep M23/M24 open until the full packaged-build matrix and clean-machine smoke test pass.

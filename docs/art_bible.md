@@ -61,6 +61,13 @@ Rules: 3-band shading (shadow/base/highlight) from the ramps above; sparse
 single-pixel speckle for texture, no heavy dithering; signal colors are
 reserved for their meanings and never decorative.
 
+> **Audit note (2026-08-07):** `generate_textures.ps1` now contains ~68
+> distinct hex literals against the ~43 recorded in this section — most are
+> the allowed ±1-step variations, but several sit outside any recorded
+> ramp's neighbourhood (accumulated across the M73–M85 sprite passes). The
+> rule above stands; a reconciliation pass in the M73 style (attribute each
+> survivor, record or retint) is **owed before the next art milestone**.
+
 ## 3. Pixel grid and scale
 
 - **Tile size: 16×16** (authoritative; matches `Tilemap::kTileSize`).
@@ -70,13 +77,15 @@ reserved for their meanings and never decorative.
   side-profile, party faces left, enemies face right.
   The boss canvas is a hard limit, not a preference: `BattleState::drawUnit`
   anchors bottom-centre at `sy = enemyBaseY() + 16 - tex.height`, and
-  `enemyBaseY()` drops from 36 to 20 once a fight fields 5+ enemies (three
-  authored boss teams do — Rush Tyrant, Abyssal Tyrant, the Deadly Duck). 36
+  `enemyBaseY()` drops from 36 to 20 once a fight fields 5+ enemies (several
+  authored fights do — the Rush Tyrant, Abyssal Tyrant and Deadly Duck teams,
+  plus the M84 Guild Trial and boss-court Endless waves). 36
   rows lands the sprite top at exactly y = 0; anything taller loses its crown
   off the top of the screen. 36 columns is likewise the widest that stays
   inside the 40px unit footprint. Growing either needs an `enemyBaseY()`
   change and owner approval.
-- UI frame: 24×24 nine-patch with 8px borders; icons 8×8 or 12×12.
+- UI frame: 24×24 nine-patch with 8px borders; icons 8×8, 10×10 (the gear
+  categories, next bullet), or 12×12.
 - **Gear icons (M81): 10×10**, one per `iconCategory` (11 shipped), drawn as
   hand-placed grids on the §2 ramps with **no outline pass** — they sit on
   dark Inset list panels where the light ramps carry the shape, and must also

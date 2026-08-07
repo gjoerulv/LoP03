@@ -54,7 +54,7 @@ dungeon::EnemyTeam bossRushTeam(const content::ContentDatabase& content, int ind
         team.name = b->name;
         // M49: a rush boss brings the same court it brings in a dungeon. A boss
         // with an empty minion list still fights alone, so this is one rule for
-        // all thirteen rather than a rush-specific roster.
+        // the whole rush roster rather than a rush-specific one.
         team.enemyIds = b->minions;
     }
     return team;
