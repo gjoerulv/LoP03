@@ -317,8 +317,13 @@ Composition carries each theme; palettes stay within §2:
 
 - Chiptune-style: square-wave lead, triangle bass, generous decay; calm
   major-mode town, sparse minor dungeon with drone, driving battle at
-  ~140 BPM. Loops are seamless and short (6–10s for the slice); real
-  arrangements in M21 follow this language.
+  ~140 BPM. Loops are seamless — short 6–10s slices at M15, the M21
+  arrangements in the same language, and since the owner-directed
+  2026-08-08 extension **sectioned 24–46s loops** (A / B / breakdown or
+  interlude / A / turnaround; the original tune is always the A section
+  verbatim, same key and scale). The note tables live in
+  `tools/asset_gen/music_data.ps1`, shared with the MIDI export
+  (`docs/music/`).
 
 ### 9b. Ambience identity (M27; mine reworked M74)
 

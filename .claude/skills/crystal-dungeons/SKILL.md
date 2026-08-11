@@ -105,8 +105,10 @@ powershell -ExecutionPolicy Bypass -File tools\package.ps1  # stage+validate+zip
 ```
 
 Asset generators (deterministic; reruns byte-identical):
-`tools\asset_gen\generate_textures.ps1`, `generate_audio.ps1`,
-`generate_font.ps1`, `generate_icon.ps1`, plus `preview.ps1` (the M73
+`tools\asset_gen\generate_textures.ps1`, `generate_audio.ps1` (music note
+tables in `music_data.ps1`, shared with the `generate_midi.ps1` MIDI
+export → git-ignored `docs/music/`), `generate_font.ps1`,
+`generate_icon.ps1`, plus `preview.ps1` (the M73
 sprite-review harness — the gate for accepting sprite work). Every asset
 needs a row in `assets/credits.md`.
 

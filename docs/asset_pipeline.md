@@ -75,7 +75,12 @@ tests validate the shipped manifest against them). All **39** shipped WAVs
 (20 music, 4 ambience, 15 SFX — 30 at M21, grown by the per-town, castle,
 King and Duck tracks; the mine bed rebuilt in M74) are original, produced by
 `tools/asset_gen/generate_audio.ps1` (deterministic — reruns are
-byte-identical).
+byte-identical). Since the owner-directed 2026-08-08 extension the music
+note tables live in `tools/asset_gen/music_data.ps1` (sectioned 24–46s
+arrangements; art_bible §9) — one source of truth shared with
+`tools/asset_gen/generate_midi.ps1`, which exports every tune as a
+Standard MIDI File into the git-ignored `docs/music/` for DAW editing
+(never shipped; ambience and SFX are untouched by the music pipeline).
 
 | Role id | Used for |
 |---|---|
@@ -99,7 +104,8 @@ synth tier (silence). File-backed music uses raylib music streams with the
 manifest `loop` flag; track changes crossfade over 0.25 s; rapid SFX are
 rate-limited per role (`kSfxMinInterval`). Volumes combine group settings
 (M13 Settings screen) × per-asset `volume`; since **M52** ambience has its
-**own volume slider** (`ambienceVolume`, default 5/10 — it followed the SFX
+**own volume slider** (`ambienceVolume`, default 3/10 since M79 — 5/10 at
+M52; it followed the SFX
 slider from M27 to M52, and the music slider before that).
 
 Texture/font roles follow the same pattern (placeholder checker / default
