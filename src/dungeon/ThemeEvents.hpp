@@ -65,5 +65,42 @@ inline int elderRootXp(int town, int depth) {
 // reload reproduces the same outcome rather than rerolling it.
 std::uint64_t themeEventHash(std::uint64_t seed, int roomIndex, std::uint64_t salt);
 
+// M76: the Duckling Peddler. A rare event that REPLACES one plain rolled event
+// (never a rite, the relic, or an elite challenge), decided by a PURE hash of
+// the dungeon seed so no rng draw is consumed and every other roll of a seed
+// stays byte-identical — generation stays v14 (the M52 additive precedent; the
+// program's one generation bump is reserved for M82's floors). The peddler
+// sells the Evil Duckling for a flat price and, per the owner's rule, will not
+// deal while the party already owns one (checked at interaction time, so the
+// dungeon a seed generates never depends on the party's bag).
+inline constexpr const char* kEvilDucklingItemId = "evil_duckling";
+inline constexpr int kDuckPeddlerChancePct = 10;
+inline constexpr int kDuckPeddlerPriceGold = 300;
+
+// Which of the `eligibleCount` plain rolled event slots the peddler takes for
+// this seed, or -1 for none (the common case). Pure.
+int duckPeddlerSlot(std::uint64_t seed, int eligibleCount);
+
+// M80: the content-layer flavor id for an event kind (data/event_flavor.json,
+// content::kEventFlavorIds). Empty for None. A test holds this mapping and
+// the content-side vocabulary in lockstep.
+inline const char* eventFlavorId(RoomEventKind kind) {
+    switch (kind) {
+        case RoomEventKind::Shrine: return "shrine";
+        case RoomEventKind::HealingSpring: return "healing_spring";
+        case RoomEventKind::Merchant: return "merchant";
+        case RoomEventKind::EliteChallenge: return "elite_challenge";
+        case RoomEventKind::ScoreWager: return "score_wager";
+        case RoomEventKind::RestToken: return "rest_token";
+        case RoomEventKind::RoyalRelic: return "royal_relic";
+        case RoomEventKind::ArmoryGhost: return "armory_ghost";
+        case RoomEventKind::MinersCache: return "miners_cache";
+        case RoomEventKind::ElderRoot: return "elder_root";
+        case RoomEventKind::DuckPeddler: return "duck_peddler";
+        case RoomEventKind::None: break;
+    }
+    return "";
+}
+
 }  // namespace dungeon
 }  // namespace cd

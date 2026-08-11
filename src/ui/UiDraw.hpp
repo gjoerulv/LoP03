@@ -53,6 +53,12 @@ constexpr int portraitBox(int scale) { return kPortraitSprite * scale + 2 * kPor
 void drawActorPortrait(ResourceManager& resources, const std::string& classId, int x, int y,
                        int scale);
 
+// M81: gear icon (a 10x10 hand-authored pixel glyph, "ui.icon.<category>")
+// drawn point-crisp at an integer scale. A missing texture or empty id draws
+// nothing — placeholder discipline, never a crash.
+inline constexpr int kGearIconSize = 10;
+void drawGearIcon(ResourceManager& resources, const std::string& id, int x, int y, int scale = 1);
+
 // Installs the active UI fonts (M25): text is rendered with the base font
 // whose native size is nearest the requested size, so pixel glyphs stay crisp
 // (small=8, main=10, title=20). Any pointer may be null and any size with no
@@ -216,9 +222,15 @@ void drawMenu(const Menu& menu, int x, int y, int itemHeight, int fontSize, Colo
 // An item's optional `suffix` is drawn right-aligned at x + maxLabelWidth in
 // `suffixFontSize` (0 = the row font) and the label is fitted to the room that
 // is left, so a trailing cost or count is always fully readable.
+//
+// M81: pass `resources` to render per-item gear icons. Once any item in the
+// menu carries one, every label indents by the icon span so the column stays
+// straight; with no icons (or a null ResourceManager) rows render exactly as
+// before.
 void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleRows, int x, int y,
                       int itemHeight, int fontSize, int maxLabelWidth, Color normal,
                       Color disabled, Color cursor, const char* site, int suffixFontSize = 0,
-                      Color suffixColor = Color{150, 175, 235, 255});
+                      Color suffixColor = Color{150, 175, 235, 255},
+                      ResourceManager* resources = nullptr);
 
 }  // namespace cd::ui

@@ -7,6 +7,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
+#include "game/ItemCaps.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -42,10 +43,15 @@ void ItemShopState::rebuild() {
     for (const std::string& id : ids_) {
         const content::ItemDef* it = context_.content.findItem(id);
         const int owned = context_.party.inventory.count(id);
-        // Name column left, owned-count + price columns right (M46): the
-        // suffix is right-aligned by drawMenuScrolled and padded to a fixed
-        // width (monospace glyphs), so both value columns line up per row.
-        items.push_back({it->name, true, TextFormat("x%-3d%5dg", owned, it->value)});
+        // Name column left, owned-count + price columns right (M46). M78: the
+        // suffix is tab-split into two FIXED right-aligned columns by
+        // drawMenuScrolled (the old space padding never lined up in a
+        // proportional font), and an at-cap row wears its cap on its sleeve.
+        const bool atCap =
+            !canBuyMore(context_.party.inventory, *it, guildCapBonus(context_.party.guild));
+        items.push_back({it->name, true,
+                         atCap ? TextFormat("x%d MAX\t%dg", owned, it->value)
+                               : TextFormat("x%d\t%dg", owned, it->value)});
     }
     const int previous = menu_.cursor();
     menu_.setItems(std::move(items));
@@ -67,7 +73,16 @@ void ItemShopState::handleInput(const Input& input) {
         const content::ItemDef* it =
             context_.content.findItem(ids_[static_cast<std::size_t>(menu_.cursor())]);
         if (it != nullptr) {
-            if (context_.party.gold >= it->value) {
+            // M78: the held-quantity cap gates the sale before gold does — an
+            // over-full bag is the clearer refusal. M84: the Deep Pockets
+            // perks widen every cap (ceiling 9).
+            const int capBonus = guildCapBonus(context_.party.guild);
+            if (!canBuyMore(context_.party.inventory, *it, capBonus)) {
+                context_.audio.play(Sfx::Error);
+                message_ = "You cannot carry more of " + it->name + " (max " +
+                           std::to_string(capFor(*it, capBonus)) + ")";
+                messageIsError_ = true;
+            } else if (context_.party.gold >= it->value) {
                 context_.party.gold -= it->value;
                 context_.party.inventory.add(it->id, 1);
                 context_.audio.play(Sfx::Confirm);

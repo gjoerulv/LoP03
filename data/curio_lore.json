@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "curios": [
+    { "id": "keep_crown_shard", "body": "A sliver of the old crown - the one before the Hollow King's. Records say it shattered the day something white landed on the battlements, ate the coronation bread, and left. The crown never forgave the bread." },
+    { "id": "keep_banner", "body": "The watch sewed a duck onto this banner as a joke. The next morning every goose feather in the armory was gone, and so was the joke. The duck stitching remains. Nobody volunteers to unpick it." },
+    { "id": "keep_gate_key", "body": "The last gatekeeper locked the keep from the outside and mailed the key to himself, twice. His final log entry reads: 'Heard quacking in the cistern. Not paid enough. Nobody is.'" },
+    { "id": "keep_gargoyle_ear", "body": "Gargoyles hear everything and repeat none of it. This one broke its own ear off. Scholars agree it heard something on the pond side of the wall it needed to not know." },
+    { "id": "mine_singing_crystal", "body": "It hums a note just off every tune you know. Miners say the crystals learned their pitch from something that sings beneath the flooded shaft - patiently, in the dark, slightly wrong on purpose." },
+    { "id": "mine_lucky_lamp", "body": "Its last owner swore the flame ducked half a second before every collapse. Duck, he told everyone, was the wrong word to teach a mining crew. The lamp survived him out of habit." },
+    { "id": "mine_geode_heart", "body": "Plain outside, a cathedral inside. Crack any stone in these mountains and there is a one-in-twelve chance of cathedral. The miners' guild insists this is geology and not, as the songs say, an egg." },
+    { "id": "mine_vein_etching", "body": "A scratched map of veins that ran out long ago. In the corner, in older scratches, a warning: DO NOT DIG BELOW THE POND. Below the pond has been productively undug ever since." },
+    { "id": "forest_elder_acorn", "body": "Heavier than it should be, and faintly warm. The Elder Root drops one only when frightened. This one dropped the year the pond went quiet, which the forest has agreed never happened." },
+    { "id": "forest_owl_quill", "body": "Writes only at night, and only the truth. Asked about the Deadly Duck, it wrote 'HE IS REAL AND HE IS RESTING' and then refused to write anything at all for a month." },
+    { "id": "forest_moss_idol", "body": "Whoever it depicts, the moss gave them a beard. Under the beard, older hands carved a bill. Under the bill, the oldest hands carved nothing - they had clearly left in a hurry." },
+    { "id": "forest_firefly_lantern", "body": "Empty, yet it glows when nobody is looking. Fireflies will not enter it. Light, they reason, attracts attention, and attention is how the pond found the LAST lantern." }
+  ]
+}

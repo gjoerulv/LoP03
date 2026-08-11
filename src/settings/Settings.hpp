@@ -48,12 +48,16 @@ float messageDurationScale(MessageSpeed s);
 
 struct Settings {
     float masterVolume = 1.0f;  // 0..1
-    float musicVolume = 1.0f;   // 0..1
+    // M79 (owner decision 2026-08-05): fresh profiles start at music 7/10 and
+    // ambience 3/10. New-file defaults only — a settings.json with the values
+    // written keeps the player's choice.
+    float musicVolume = 0.7f;   // 0..1
     float sfxVolume = 1.0f;     // 0..1
     // M52 (owner-approved): ambience gets its own slider instead of following
-    // SFX (the M27 chaining). Optional field; absent = 0.5 (default 5/10), so
-    // pre-M52 files load quieter-by-design rather than at the old effective 1.0.
-    float ambienceVolume = 0.5f;  // 0..1
+    // SFX (the M27 chaining). Optional field; absent = the default (M79: 0.3),
+    // so pre-M52 files load quieter-by-design rather than at the old
+    // effective 1.0.
+    float ambienceVolume = 0.3f;  // 0..1
     bool borderlessFullscreen = false;
     BattleSpeed battleSpeed = BattleSpeed::Normal;
     MessageSpeed messageSpeed = MessageSpeed::Normal;

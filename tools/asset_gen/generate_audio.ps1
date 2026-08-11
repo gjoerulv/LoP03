@@ -78,188 +78,37 @@ function WriteWav([string]$name, [double[][]]$channels, [int]$total) {
 
 Write-Output 'Generating music loops...'
 
-# --- Town: calm major arpeggios, 104 BPM, 16 beats (~9.2s) ---
-# The lead/bass sequences are captured in variables so the M32 town-ladder
-# variants (below) can re-render them transposed/slowed without duplicating the
-# notes. town.wav itself is unchanged (same sequences, bpm, waves, amps).
-$bpm = 104.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$townLeadSeq = @(
-  @('C5',0.5),@('E5',0.5),@('G5',0.5),@('E5',0.5), @('A4',0.5),@('C5',0.5),@('E5',0.5),@('C5',0.5),
-  @('F4',0.5),@('A4',0.5),@('C5',0.5),@('A4',0.5), @('G4',0.5),@('B4',0.5),@('D5',0.5),@('B4',0.5),
-  @('C5',0.5),@('E5',0.5),@('G5',0.5),@('C6',0.5), @('A4',0.5),@('E5',0.5),@('C5',0.5),@('A4',0.5),
-  @('F4',0.5),@('C5',0.5),@('A4',0.5),@('F4',0.5), @('G4',0.5),@('D5',0.5),@('B4',1.0)
-)
-$townBassSeq = @(
-  @('C3',2),@('A2',2),@('F2',2),@('G2',2), @('C3',2),@('A2',2),@('F2',2),@('G2',2)
-)
-$lead = Render $townLeadSeq $bpm 'square' 0.30 $total
-$bass = Render $townBassSeq $bpm 'tri' 0.26 $total
-WriteWav 'town.wav' @($lead, $bass) $total
+# All music note tables live in music_data.ps1 — one source of truth shared
+# with generate_midi.ps1, which exports the same songs as editable .mid files.
+# Rendering stays here: square lead + triangle bass per song, buffer sized
+# from bpm x beats. Adding a song = adding a data entry; no other file's
+# bytes shift (the old append-only discipline, now structural).
+. (Join-Path $PSScriptRoot 'music_data.ps1')
 
-# --- Dungeon (Ruined Keep): sparse minor with drone, 80 BPM, 16 beats (~12s) ---
-$bpm = 80.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('A4',1.0),@('C5',1.0),@('E5',1.5),@('D5',0.5), @('C5',1.0),@('B4',1.0),@('A4',2.0),
-  @('-',1.0),@('E4',1.0),@('G4',1.5),@('F4',0.5), @('E4',1.0),@('D4',1.0),@('E4',2.0)
-) $bpm 'square' 0.22 $total
-$bass = Render @(
-  @('A2',4),@('A2',4),@('F2',4),@('E2',4)
-) $bpm 'tri' 0.30 $total
-WriteWav 'dungeon_keep.wav' @($lead, $bass) $total
+foreach ($songName in $MusicSongs.Keys) {
+  $song = $MusicSongs[$songName]
+  $total = [int]($rate * 60.0 / $song.bpm * $song.beats)
+  $lead = Render $song.lead $song.bpm $song.leadWave $song.leadAmp $total
+  $bass = Render $song.bass $song.bpm 'tri' $song.bassAmp $total
+  WriteWav "$songName.wav" @($lead, $bass) $total
+}
 
-# --- Battle: driving minor, 138 BPM, 16 beats (~7s) ---
-$bpm = 138.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('E5',0.5),@('E5',0.25),@('E5',0.25),@('G5',0.5),@('E5',0.5), @('D5',0.5),@('B4',0.5),@('D5',0.5),@('E5',0.5),
-  @('C5',0.5),@('C5',0.25),@('C5',0.25),@('E5',0.5),@('C5',0.5), @('B4',0.5),@('G4',0.5),@('B4',0.5),@('D5',0.5),
-  @('E5',0.5),@('G5',0.5),@('A5',0.5),@('G5',0.5), @('E5',0.5),@('D5',0.5),@('B4',0.5),@('D5',0.5),
-  @('C5',0.5),@('E5',0.5),@('D5',0.5),@('B4',0.5), @('E5',1.0),@('-',1.0)
-) $bpm 'square' 0.30 $total
-$bass = Render @(
-  @('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),
-  @('C2',0.5),@('C2',0.5),@('C2',0.5),@('C2',0.5),@('B1',0.5),@('B1',0.5),@('B1',0.5),@('B1',0.5),
-  @('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),@('E2',0.5),
-  @('C2',0.5),@('C2',0.5),@('C2',0.5),@('C2',0.5),@('B1',0.5),@('B1',0.5),@('E2',1.0)
-) $bpm 'tri' 0.30 $total
-WriteWav 'battle.wav' @($lead, $bass) $total
+# The M32 town-ladder variants (towns 2..7): the town song re-rendered darker
+# per $TownVariants (transposed down, slowed, softer; tri lead in the deepest
+# towns; variant bass always tri at 0.28). Town 1 keeps town.wav.
+Write-Output 'Generating M32 town-ladder music variants...'
+$townSong = $MusicSongs['town']
+foreach ($t in 2, 3, 4, 5, 6, 7) {
+  $v = $TownVariants[$t]
+  $tbpm = $townSong.bpm * $v.tempo
+  $ttotal = [int]($rate * 60.0 / $tbpm * $townSong.beats)
+  $tlead = Render $townSong.lead $tbpm $v.wave $v.amp $ttotal $v.semi
+  $tbass = Render $townSong.bass $tbpm 'tri' 0.28 $ttotal $v.semi
+  WriteWav "town_$t.wav" @($tlead, $tbass) $ttotal
+}
 
-# ============================ M21 music ============================
-
-# --- Title: stately major with suspensions, 96 BPM, 16 beats (~10s) ---
-$bpm = 96.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('G4',1.0),@('C5',1.0),@('E5',1.0),@('D5',0.5),@('C5',0.5),
-  @('D5',1.0),@('B4',1.0),@('G4',2.0),
-  @('A4',1.0),@('C5',1.0),@('E5',1.0),@('D5',0.5),@('B4',0.5),
-  @('C5',1.5),@('G4',0.5),@('C5',2.0)
-) $bpm 'square' 0.28 $total
-$bass = Render @(
-  @('C3',4),@('A2',4),@('F2',4),@('G2',4)
-) $bpm 'tri' 0.28 $total
-WriteWav 'title.wav' @($lead, $bass) $total
-
-# --- Guild: preparation march in D dorian, 112 BPM, 16 beats (~8.6s) ---
-$bpm = 112.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('D5',0.5),@('F5',0.5),@('A5',0.5),@('F5',0.5), @('E5',0.5),@('D5',0.5),@('E5',0.5),@('F5',0.5),
-  @('D5',0.5),@('F5',0.5),@('G5',0.5),@('A5',0.5), @('C5',0.5),@('D5',0.5),@('E5',0.5),@('C5',0.5),
-  @('D5',0.5),@('A4',0.5),@('D5',0.5),@('F5',0.5), @('E5',0.5),@('C5',0.5),@('B4',0.5),@('C5',0.5),
-  @('D5',1.0),@('A4',1.0),@('D5',2.0)
-) $bpm 'square' 0.28 $total
-$bass = Render @(
-  @('D3',2),@('D3',2),@('C3',2),@('C3',2), @('D3',2),@('F2',2),@('G2',2),@('A2',2)
-) $bpm 'tri' 0.28 $total
-WriteWav 'guild.wav' @($lead, $bass) $total
-
-# --- Dungeon (Crystal Mine): glinting arpeggios over drone, 92 BPM, 16 beats ---
-$bpm = 92.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('E5',0.5),@('G5',0.5),@('B5',0.5),@('G5',0.5), @('E5',0.5),@('B5',0.5),@('G5',0.5),@('E5',0.5),
-  @('D5',0.5),@('F#5',0.5),@('A5',0.5),@('F#5',0.5), @('D5',0.5),@('A5',0.5),@('F#5',0.5),@('D5',0.5),
-  @('E5',0.5),@('G5',0.5),@('B5',0.5),@('E6',0.5), @('B5',0.5),@('G5',0.5),@('E5',0.5),@('B4',0.5),
-  @('C5',0.5),@('E5',0.5),@('A5',0.5),@('E5',0.5), @('B4',1.0),@('E5',1.0)
-) $bpm 'square' 0.20 $total
-$bass = Render @(
-  @('E2',8),@('D2',4),@('E2',4)
-) $bpm 'tri' 0.30 $total
-WriteWav 'dungeon_mine.wav' @($lead, $bass) $total
-
-# --- Dungeon (Hollow Forest): minor waltz, 102 BPM, 18 beats (6 bars of 3) ---
-$bpm = 102.0; $total = [int]($rate * 60.0 / $bpm * 18)
-$lead = Render @(
-  @('A4',1.0),@('C5',0.5),@('E5',0.5),@('C5',1.0),
-  @('B4',1.0),@('D5',0.5),@('F5',0.5),@('D5',1.0),
-  @('C5',1.0),@('E5',0.5),@('A5',0.5),@('E5',1.0),
-  @('B4',1.0),@('D5',0.5),@('G5',0.5),@('D5',1.0),
-  @('A4',1.0),@('C5',0.5),@('E5',0.5),@('C5',1.0),
-  @('B4',1.5),@('E4',0.5),@('A4',1.0)
-) $bpm 'square' 0.24 $total
-$bass = Render @(
-  @('A2',3),@('G2',3),@('A2',3),@('E2',3),@('F2',3),@('E2',3)
-) $bpm 'tri' 0.28 $total
-WriteWav 'dungeon_forest.wav' @($lead, $bass) $total
-
-# --- Boss: driving chromatic minor, 152 BPM, 16 beats (~6.3s) ---
-$bpm = 152.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('A4',0.5),@('A4',0.25),@('A4',0.25),@('C5',0.5),@('A4',0.5), @('D#5',0.5),@('D5',0.5),@('C5',0.5),@('A4',0.5),
-  @('A4',0.5),@('A4',0.25),@('A4',0.25),@('C5',0.5),@('E5',0.5), @('F5',0.5),@('E5',0.5),@('D#5',0.5),@('E5',0.5),
-  @('G5',0.5),@('F5',0.5),@('E5',0.5),@('D5',0.5), @('C5',0.5),@('B4',0.5),@('C5',0.5),@('D#5',0.5),
-  @('E5',0.5),@('C5',0.5),@('A4',0.5),@('G#4',0.5), @('A4',2.0)
-) $bpm 'square' 0.30 $total
-$bass = Render @(
-  @('A2',0.5),@('A2',0.5),@('A2',0.5),@('A2',0.5), @('A2',0.5),@('A2',0.5),@('G2',0.5),@('G#2',0.5),
-  @('A2',0.5),@('A2',0.5),@('A2',0.5),@('A2',0.5), @('F2',0.5),@('F2',0.5),@('E2',0.5),@('E2',0.5),
-  @('A2',0.5),@('A2',0.5),@('A2',0.5),@('A2',0.5), @('A2',0.5),@('A2',0.5),@('G2',0.5),@('G#2',0.5),
-  @('F2',0.5),@('F2',0.5),@('E2',0.5),@('E2',0.5), @('A2',2.0)
-) $bpm 'tri' 0.32 $total
-WriteWav 'boss.wav' @($lead, $bass) $total
-
-# --- Victory: one-shot fanfare, 128 BPM, 7.5 beats (~3.5s, no loop) ---
-$bpm = 128.0; $total = [int]($rate * 60.0 / $bpm * 7.5)
-$lead = Render @(
-  @('G4',0.25),@('C5',0.25),@('E5',0.25),@('G5',0.75),
-  @('E5',0.25),@('G5',0.25),@('C6',1.0),
-  @('B5',0.5),@('A5',0.5),@('G5',0.5),@('C6',3.0)
-) $bpm 'square' 0.30 $total
-$bass = Render @(
-  @('C3',1.5),@('E3',1.5),@('F3',0.75),@('G3',0.75),@('C3',3.0)
-) $bpm 'tri' 0.28 $total
-WriteWav 'victory.wav' @($lead, $bass) $total
-
-# --- Defeat: one-shot dirge, 60 BPM, 4.5 beats (~4.5s, no loop) ---
-$bpm = 60.0; $total = [int]($rate * 60.0 / $bpm * 4.5)
-$lead = Render @(
-  @('A4',1.0),@('G4',1.0),@('F4',1.0),@('E4',1.5)
-) $bpm 'square' 0.22 $total
-$bass = Render @(
-  @('A2',1.0),@('E2',1.0),@('F2',1.0),@('E2',1.5)
-) $bpm 'tri' 0.30 $total
-WriteWav 'defeat.wav' @($lead, $bass) $total
-
-# --- Result: calm reflection, 84 BPM, 16 beats (~11.4s) ---
-$bpm = 84.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('E5',1.0),@('C5',1.0),@('D5',1.0),@('G4',1.0),
-  @('A4',1.0),@('C5',1.0),@('B4',2.0),
-  @('E5',1.0),@('D5',1.0),@('C5',1.0),@('A4',1.0),
-  @('G4',1.0),@('B4',1.0),@('C5',2.0)
-) $bpm 'square' 0.20 $total
-$bass = Render @(
-  @('C3',4),@('F2',4),@('G2',4),@('C3',4)
-) $bpm 'tri' 0.24 $total
-WriteWav 'result.wav' @($lead, $bass) $total
-
-# ============================ M40 castle music ============================
-
-# --- Castle: stately, grand-but-ominous minor, 90 BPM, 16 beats (~10.7s) ---
-$bpm = 90.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('C5',1.0),@('G4',1.0),@('G#4',1.0),@('C5',1.0),
-  @('D#5',1.0),@('D5',1.0),@('C5',2.0),
-  @('G4',1.0),@('C5',1.0),@('D#5',1.0),@('D5',0.5),@('C5',0.5),
-  @('G4',1.5),@('C5',0.5),@('C5',2.0)
-) $bpm 'square' 0.26 $total
-$bass = Render @(
-  @('C3',4),@('G#2',4),@('F2',4),@('G2',4)
-) $bpm 'tri' 0.28 $total
-WriteWav 'castle.wav' @($lead, $bass) $total
-
-# --- King: the hardest fight, driving chromatic D minor, 160 BPM, 16 beats ---
-$bpm = 160.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('D5',0.5),@('D5',0.25),@('D5',0.25),@('F5',0.5),@('D5',0.5), @('G#5',0.5),@('G5',0.5),@('F5',0.5),@('D5',0.5),
-  @('D5',0.5),@('D5',0.25),@('D5',0.25),@('F5',0.5),@('A5',0.5), @('A#5',0.5),@('A5',0.5),@('G#5',0.5),@('A5',0.5),
-  @('C6',0.5),@('A#5',0.5),@('A5',0.5),@('G5',0.5), @('F5',0.5),@('E5',0.5),@('F5',0.5),@('G#5',0.5),
-  @('A5',0.5),@('F5',0.5),@('D5',0.5),@('C#5',0.5), @('D5',2.0)
-) $bpm 'square' 0.30 $total
-$bass = Render @(
-  @('D2',0.5),@('D2',0.5),@('D2',0.5),@('D2',0.5), @('D2',0.5),@('D2',0.5),@('C2',0.5),@('C#2',0.5),
-  @('D2',0.5),@('D2',0.5),@('D2',0.5),@('D2',0.5), @('A#1',0.5),@('A#1',0.5),@('A1',0.5),@('A1',0.5),
-  @('D2',0.5),@('D2',0.5),@('D2',0.5),@('D2',0.5), @('D2',0.5),@('D2',0.5),@('C2',0.5),@('C#2',0.5),
-  @('A#1',0.5),@('A#1',0.5),@('A1',0.5),@('A1',0.5), @('D2',2.0)
-) $bpm 'tri' 0.32 $total
-WriteWav 'king.wav' @($lead, $bass) $total
+# (Title, guild, both remaining dungeon themes, boss, the jingles, result,
+# and the M40 castle/king pair all render from music_data.ps1 above.)
 
 # ============================ M21 ambience ============================
 
@@ -487,41 +336,4 @@ WriteSfx 'door.wav'      @(@('sine', 180, 120, 0.08, 0.6, 3.0), @('noise', 0, 0,
 WriteSfx 'interact.wav'  (,@('sine', 659, 880, 0.09, 0.5, 3.0)) 0.55
 
 # ============================ M32 town-ladder music ============================
-# The town theme, progressively darker for towns 2..7: lower register, slower,
-# softer, and a mellower triangle lead in the deepest towns. Reuses the town
-# lead/bass sequences (captured above); town 1 keeps town.wav. Only ADDS files.
-Write-Output 'Generating M32 town-ladder music variants...'
-$townSemi  = @{ 2=-2.0; 3=-4.0; 4=-5.0; 5=-7.0; 6=-9.0; 7=-12.0 }
-$townTempo = @{ 2=0.98; 3=0.95; 4=0.92; 5=0.88; 6=0.84; 7=0.80 }
-$townAmp   = @{ 2=0.30; 3=0.30; 4=0.29; 5=0.28; 6=0.27; 7=0.26 }
-$townWave  = @{ 2='square'; 3='square'; 4='square'; 5='tri'; 6='tri'; 7='tri' }
-foreach ($t in 2, 3, 4, 5, 6, 7) {
-  $tbpm = 104.0 * $townTempo[$t]
-  $ttotal = [int]($rate * 60.0 / $tbpm * 16)
-  $tlead = Render $townLeadSeq $tbpm $townWave[$t] $townAmp[$t] $ttotal $townSemi[$t]
-  $tbass = Render $townBassSeq $tbpm 'tri' 0.28 $ttotal $townSemi[$t]
-  WriteWav "town_$t.wav" @($tlead, $tbass) $ttotal
-}
-
-# ============================ M62 Duck battle music ============================
-# The Deadly Duck's own anthem: a lumbering, comedic-ominous F-minor march at
-# 132 BPM — an oom-pah "waddle" bass under a heavy staccato lead, deliberately
-# slower and weightier than the King's driving chromatics. Appended last: only
-# ADDS duck.wav; every earlier file stays byte-identical.
-Write-Output 'Generating M62 Duck battle music...'
-$bpm = 132.0; $total = [int]($rate * 60.0 / $bpm * 16)
-$lead = Render @(
-  @('F4',0.75),@('F4',0.25),@('G#4',0.5),@('F4',0.5), @('C5',0.75),@('C5',0.25),@('B4',0.5),@('C5',0.5),
-  @('C#5',0.5),@('C5',0.5),@('G#4',0.5),@('F4',0.5), @('G4',0.75),@('G4',0.25),@('C4',1.0),
-  @('F4',0.5),@('G#4',0.5),@('C5',0.5),@('C#5',0.5), @('D#5',0.5),@('C#5',0.5),@('C5',0.5),@('G#4',0.5),
-  @('F5',0.75),@('E5',0.25),@('F5',0.5),@('C5',0.5), @('F4',2.0)
-) $bpm 'square' 0.28 $total
-$bass = Render @(
-  @('F2',0.5),@('C2',0.5),@('F2',0.5),@('C2',0.5), @('F2',0.5),@('C2',0.5),@('G#1',0.5),@('C2',0.5),
-  @('F2',0.5),@('C2',0.5),@('F2',0.5),@('C2',0.5), @('G1',0.5),@('G1',0.5),@('C2',1.0),
-  @('F2',0.5),@('C2',0.5),@('F2',0.5),@('C2',0.5), @('C#2',0.5),@('G#1',0.5),@('C2',0.5),@('C2',0.5),
-  @('F2',0.5),@('C2',0.5),@('F2',0.5),@('C2',0.5), @('F2',2.0)
-) $bpm 'tri' 0.32 $total
-WriteWav 'duck.wav' @($lead, $bass) $total
-
 Write-Output 'Audio generation complete.'

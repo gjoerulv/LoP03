@@ -26,7 +26,9 @@ supported and must not be used. `std::filesystem`, `std::optional`,
 CLAUDE.md                 # operating contract
 README.md                 # human build/run instructions
 CMakeLists.txt            # root build
+CMakePresets.json         # msvc-debug / msvc-release + build/test presets (M24)
 cmake/                    # Dependencies.cmake, CompilerWarnings.cmake
+packaging/                # Version.hpp.in, CrystalDungeons.rc.in, crystal.ico (M24)
 docs/                     # design + technical + milestones (source of truth)
 data/                     # JSON content (populated M2+)
 assets/                   # manifest.json + generated textures/audio + credits.md
@@ -189,7 +191,7 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` is currently **14** (bump history: M29 enlarged the theme
+  `kGenerationVersion` is currently **15** (bump history: M29 enlarged the theme
   enemy/boss pools; M30 added the RestToken event; M37 gave the merchant a 75 %
   bargain and gated chest gear by town; **M38 gates the per-town enemy/boss pools
   by `minTown`**; **M43 reprices the consumables a merchant offers and windows
@@ -197,7 +199,8 @@ carry the information without color.
   from the event stream**; **M55 guarantees each theme's rite event once per
   dungeon** (v11); **M65/M66 add the seed-hashed treasure maps** (v12/v13);
   **M68 tags the party-relative danger recalibration** (v14, generated output
-  byte-identical) — each owner-approved. The version-history comment in
+  byte-identical); **M82 adds the 1-or-4-floor system** (v15, §36) — each
+  owner-approved. The version-history comment in
   `src/dungeon/RoomLayout.hpp` is the authority).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
@@ -243,7 +246,8 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; 84 scenes as of M74) — all
+list lives in `src/capture/CaptureRunner.cpp`; **97 scenes as of M85**,
+`97_dragon_jester` last) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
@@ -267,7 +271,7 @@ clearing curve from 1/1/1/1/3/5/9/11 to 1/1/1/2/3/7/9/11 (depths
 ### Onboarding & accessibility (M22)
 
 Tutorial: `src/tutorial/Tutorial.*` is raylib-free — a constexpr beat table
-(9 beats, stable ids), `Progress {enabled, seen}` with defensive
+(9 beats at M22; **15 today**, stable ids), `Progress {enabled, seen}` with defensive
 parse/serialize (malformed or foreign-version `tutorial.json` → fresh
 state, reported, never a crash; unknown seen ids survive round trips), and
 `TutorialStore::takeBeat` which marks-and-saves on first fire so a prompt
@@ -314,10 +318,12 @@ identically.
 
 ### Score comparability & economy audit (M19)
 
-`ScoreEntry` carries two optional comparability tags, both loaded with
-absent-defaults and written without a scoreboard format bump:
+`ScoreEntry` carried two optional comparability tags at M19, both loaded
+with absent-defaults and written without a scoreboard format bump:
 `generationVersion` (M16) and `partyLevel` (M19; highest party level at
-completion, 0 = legacy shown as "-"). Ranking (`ranksAbove`) never reads
+completion, 0 = legacy shown as "-"). Later milestones grew the set to six
+tags plus `floors` (M82) — `src/score/ScoreEntry.hpp` is the authoritative
+list. Ranking (`ranksAbove`) never reads
 them — they make comparison conditions visible instead of normalizing.
 The economy evidence battery lives in `tests/test_economy.cpp`: pure
 score-incentive guards (fewer turns always better; stalling and escapes
@@ -405,22 +411,35 @@ Each file is a versioned wrapper around a named array:
 { "version": 1, "skills": [ { "id": "strike", "name": "Strike", ... } ] }
 ```
 
-`version` must equal the supported schema version (currently `1`). Files:
-`skills.json`, `classes.json`, `enemies.json`, `items.json`, `bosses.json`,
-`dungeon_themes.json`. Bosses carry an `archetype`, `skills`, `minions`, and a
+`version` must equal the supported schema version (currently `1`). Files
+(**twelve** as of M85): `skills.json`, `classes.json`, `enemies.json`,
+`items.json`, `bosses.json`, `dungeon_themes.json`, `composition.json`
+(M20), `passives.json` (M36), `story.json` (M41), `milestones.json` (M63),
+and the two **optional** files `event_flavor.json` (M80) and
+`curio_lore.json` (M85) — `loadAll` skips an optional file when absent
+(§34/§39); all twelve are CrystalForge categories since M86 (§40). Bosses
+carry an `archetype`, `skills`, `minions`, and a
 `telegraph`; themes list `normalEnemies`/`eliteEnemies`/`bosses` id pools; skills
 may carry an optional `statusEffect`/`statusMagnitude`/`statusDuration`. All ids
 are reference-checked across files.
+
+The M2 baseline schema (later milestones add fields; the loader in
+`src/content/ContentLoader.cpp` and the editor descriptor tables are the
+authoritative field lists):
 
 | Type   | Required fields | Notable optional fields |
 |--------|-----------------|-------------------------|
 | skill  | `id`, `name`, `category`, `target` | `element`, `power`≥0, `mpCost`≥0, `description` |
 | class  | `id`, `name`, `baseStats`{hp≥1,attack,magic,defense,speed} | `role`, `growth`{floats}, `startingSkills`[skill ids], `learnset`[{`skill`,`level`≥1}] |
-| enemy  | `id`, `name`, `stats`{…} | `tier`(normal/elite), `tags`[fast/magic/armored/poison], `skills`[ids], `xpReward`, `goldReward` |
+| enemy  | `id`, `name`, `stats`{…}, `role` (required since M20) | `tier`(normal/elite), `tags`[fast/magic/armored/poison], `skills`[ids], `xpReward`, `goldReward` |
 | item   | `id`, `name`, `type`(consumable/equipment/relic/scroll) | `slot`, `rarity`, `value`, `effect`, `effectAmount`, `statBonus`, `grantsSkill`, `description` |
 
-Enums (string values): `Element`, `SkillCategory`, `SkillTarget`, `EnemyTag`,
-`EnemyTier`, `ItemType`, `EquipSlot`, `Rarity`, `ConsumableEffect`.
+Enums (string values), as of M2: `Element`, `SkillCategory`, `SkillTarget`,
+`EnemyTag`, `EnemyTier`, `ItemType`, `EquipSlot`, `Rarity`,
+`ConsumableEffect` — later milestones added `SkillEffect`, `EnemyRole`,
+`StatusType`, `BattleTarget`, `BossArchetype`, `PassiveHook`,
+`MilestoneEffect`, `TriggerWhen`, `TriggerDo`;
+`src/content/Enums.hpp` is the authority.
 
 ### Validation rules
 
@@ -463,7 +482,8 @@ via an optional `restTokens` save field (no `kSaveVersion` bump; absent = 0).
 
 ### Town (walkable)
 
-A fixed single-screen **26×15** tilemap (16px tiles) built by `town::buildTown()`.
+A fixed single-screen **24×12** tilemap since the M50 rework (26×15 before;
+16px tiles) built by `town::buildTown()`.
 `Tilemap` answers solidity and pixel-rect collision; `town::resolveMove` does
 axis-separated collision (natural wall-sliding). Both are pure and unit-tested.
 Seven `Building`s each expose a walkable **Door** interact tile; standing on one
@@ -488,6 +508,10 @@ manual (`save_slot1..5.json`; three until M53) plus an autosave
 { "version": 1, "gold": 150,
   "party": [ { "classId": "knight", "name": "Rolan", "level": 1, "xp": 0, "hp": 120, "mp": 4 } ] }
 ```
+
+The block above is **illustrative** (the M3 shape); every later milestone's
+fields are optional and additive with defensive absent-defaults —
+`src/save/SaveSystem.cpp` is the authoritative field list.
 
 - Loading reuses the M2 validator (`ObjectReader`/`LoadReport`): malformed,
   foreign-version, or unknown-class saves are reported and **leave the target
@@ -534,7 +558,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 14 — the history comment in
+  `kGenerationVersion` (currently 15 — the history comment in
   `RoomLayout.hpp` is the authority; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
@@ -610,8 +634,9 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   **Confusion is cleared the instant its bearer takes attack/skill damage** (in
   the shared `applyDamage` chokepoint, so sim/live agree and the poison DoT —
   which bypasses `applyDamage` — does not clear it). Statuses live only inside a
-  `Battle` (never serialized), so no save bump; `battle::kBattleRulesVersion` is
-  **2**.
+  `Battle` (never serialized), so no save bump; `battle::kBattleRulesVersion`
+  was **2** at M35 (15 today — the history comment in `src/battle/Battle.hpp`
+  is the authority).
 - **Passive skills (M36).** `content::PassiveDef { id, name, hook, magnitude,
   price }` (a `PassiveHook` enum of 10) loads from `data/passives.json` into a
   `ContentDatabase` map; enemy/boss defs gain an optional `passives` list, and
@@ -655,9 +680,10 @@ Both modules are pure and unit-tested.
 
 `teamThreat(team, db)` = per-enemy stat threat (weighted HP/Attack/Magic/Defense/
 Speed) + per-skill threat (damaging skills weighted full, support/heal half),
-scaled by a synergy factor (more enemies and a healer raise it). `tierFor(threat,
-depth, isBoss)` compares the threat to a depth baseline (`50 + 25·(depth−1)`) and
-returns **Trivial/Easy/Fair/Dangerous/Deadly**; boss teams are always **Boss**.
+scaled by a synergy factor (more enemies and a healer raise it).
+`tierFor(threat, partyThreat, isBoss)` — **party-relative since M68** (§25;
+the original depth baseline `50 + 25·(depth−1)` was replaced) — returns
+**Trivial/Easy/Fair/Dangerous/Deadly**; boss teams are always **Boss**.
 The tier is therefore derived solely from stats and abilities — **never
 hand-authored** — and is shown on the map (colored label) and the fight prompt.
 Weights/thresholds are explicit constants, tuned in M9.
@@ -665,9 +691,13 @@ Weights/thresholds are explicit constants, tuned in M9.
 ### Scoring (`score/`)
 
 A run is summarized as `RunSummary` (completed, battleTurns = total rounds,
-dangerDefeated, chestsOpened, treasureGold, noDeath, escapes). `scoreBreakdown`
+dangerDefeated, chestsOpened, treasureGold, noDeath, escapes — later
+milestones added the M20 wager, the M32 town bonus, the M33 stakes
+penalty and the M45 class modifier; `src/score/Scoring.hpp` is the
+authoritative list). `scoreBreakdown`
 yields each component and the clamped total: base + boss − **per-round turn
-penalty** + chest + danger-defeated + treasure + no-death − escape. An
+penalty** + chest + danger-defeated + treasure + no-death − escape, then
+the wager and the M32/M33/M45 subtotal modifiers (§12). An
 **unfinished run scores 0**, and the turn penalty is large relative to the
 bonuses so *fewest battle turns* dominates — and because each team/chest is
 finite, there is nothing to farm. The `Scoreboard` persists ranked entries as
@@ -684,18 +714,24 @@ a `ScoreEntry`, and shows `DungeonResultState` before returning to town. The tow
 
 ### Status effects (`battle/`)
 
-A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down, and the
-M35 Confusion/Silence/Blind). Skills/items apply them to their targets;
+A `Combatant` carries `StatusInstance`s (Poison + Attack/Defense up/down, the
+M35 Confusion/Silence/Blind, the M44 Terrified/Stunned, and the M75
+Reflect/Sleep/Curse — §29). Skills/items apply them to their targets;
 `Battle::tickStatuses` (called at each unit's turn start) deals poison and ages
 durations. Buffs/debuffs scale the effective attack/defense used in the damage
 formulas; `Cure`/Remedy items strip every negative status (poison, debuffs, and
-the M35 afflictions), while `SkillEffect::Cleanse` (the Cleric's Purify) lifts
-**only the four afflictions** since M47 — the rules-v7 section has the split. See
+the afflictions — **except Curse**, which only Uncurse or a `curesCurse`
+item lifts, and Reflect, a positive status; both M75, §29), while
+`SkillEffect::Cleanse` (the Cleric's Purify) lifts
+**only the afflictions** since M47 (Sleep joined the cleansable set in
+M75) — the rules-v7 section has the split. See
 §10's M35 bullet for the Confusion/Silence/Blind behaviour and the seeded to-hit
 stream.
 A **Brute** boss `enrages` (×1.5 attack below half HP) and
 shows a telegraph line; **Commander/Rush** bosses field a fixed minion team
-(dynamic summons / true waves are deferred). The base (no-status, non-boss)
+(true mid-fight roster growth is still deferred — M75's `summon_clone`
+trigger raises a clone **prebuilt dead** at `buildBattle`, §29; the
+gauntlets run waves as separate battles). The base (no-status, non-boss)
 formulas are unchanged, so prior battle tests still hold.
 
 ### Equipment (`game/`)
@@ -742,8 +778,11 @@ preserved → deterministic). 12 new standard enemies (4 normal + 8 elite) and 6
 bosses (towns 2–7) ship in `enemies.json`/`bosses.json`, added to every theme's
 pools so they surface at their town in any theme, with kits built on the M35
 statuses and (bosses) M36 passives, and their own generated 24×24/32×32 battle
-sprites (lint-enforced, provenance in `assets/credits.md`). The full boss roster is
-now 12 (what M40's gauntlet enumerates in sorted order). Because the town-gated
+sprites (lint-enforced, provenance in `assets/credits.md`). The **dungeon** boss
+roster is now 12 (what M40's gauntlet enumerates in sorted order — the total
+roster later grows to 22 with the King, the Duck, the seven M84 Guild
+Masters and the M85 Dragon, all excluded from dungeons and the rush).
+Because the town-gated
 pools change a seed's roster at towns 2+, `dungeon::kGenerationVersion` is **8**;
 `minTown` is content (no `kSaveVersion` / `kBattleRulesVersion` change). This
 supersedes M32's "town does not change enemy composition" property — town now
@@ -808,9 +847,11 @@ everywhere, so pre-M32 behaviour, seeds, and scores are unchanged.
 
 Pure rules in `game/StakesLadder.hpp` (`StakesState { prevTown, prevDepth,
 penaltySteps }`, `stakesRaised`, `stakesPenaltyPct`, `afterCompletedRun`,
-`clampStakesSteps`; constants 15 / 6 / 90). A run's stakes is `(town, depth)`,
+`clampStakesSteps`; shipped constants **30 / 4 / 99** —
+`kStakesPenaltyPerStep` / `kStakesPenaltyMaxSteps` / `kStakesPenaltyCapPct`
+in `StakesLadder.hpp`, the authority). A run's stakes is `(town, depth)`,
 compared town-first against the previous completed run; a non-raising completed
-run grows the penalty one 15 % step (cap 90 %), a raising one resets it, and the
+run grows the penalty one 30 % step (cap 99 %), a raising one resets it, and the
 baseline moves to each completed run's stakes.
 
 - **State/save.** `Party.stakes` (a `StakesState`), persisted as three optional
@@ -1176,13 +1217,14 @@ classes are `data/classes.json` plus generic flags.
 
 ## 13. Presentation (Milestone 8)
 
-- **Audio (`audio/AudioManager`):** SFX and looping music are **synthesized at
-  runtime** into raylib `Sound`s (RAII-wrapped) — no asset files required. An
+- **Audio (`audio/AudioManager`):** SFX and looping music can be **synthesized
+  at runtime** into raylib `Sound`s (RAII-wrapped) — since M14/M21 this is the
+  **fallback**: the shipped catalog is 39 generated WAVs resolved through the
+  asset manifest (§3), and synthesis covers only missing files. An
   internal device guard owns `InitAudioDevice`/`CloseAudioDevice` (so sounds
   unload before the device closes). Every call is guarded by the device state, so
   a failed init or generation is a silent no-op, never a crash. Music loops by
-  re-playing when the current track stops. Real files dropped under
-  `assets/audio/` are the intended later replacement.
+  re-playing when the current track stops.
 - **Transitions (`core/FadeController`):** a pure fade-in timer; `Application`
   draws a black overlay at `coverAlpha()` inside the 426×240 target so it scales
   with the game. Scene states call `fade.start()` (and set music) in their
@@ -1746,10 +1788,12 @@ of** the caller (never `replaceState`), and neither backdrops nor the intro touc
   equips gear; `TrainingHallState` pays gold to level a character up by one
   (gold→level progression alongside battle XP). Parties start with a little gold.
 - **Packaging:** the final `README.md` documents what the game is, the MSVC build/
-  run, controls, the play loop, project layout, the smoke test (the 125-test
-  suite, which loads content, generates dungeons, and simulates a clear), and
-  known limitations. The deliverable is `CrystalDungeons.exe` plus the `data/`
-  folder copied beside it.
+  run, controls, the play loop, project layout, the smoke test (the test
+  suite — 125 tests at M10, 725 today — which loads content, generates
+  dungeons, and simulates a clear), and
+  known limitations. The M10 deliverable was `CrystalDungeons.exe` plus the
+  `data/` folder copied beside it — superseded by the M24 staged zip
+  (`tools/package.ps1`, §3).
 
 ## Release-hardening corrections (post-356619d audit)
 
@@ -2059,4 +2103,550 @@ lines (actual-advance via `drawTextWrapped`'s return) and the skills
 budget computed from the real remaining space (4–5 lines at the maxed
 case). Capture scene `79_party_panel` pins the exact reported worst case
 (level cap + all three cleric milestones incl. the longest description).
+
+## 29. M75 — battle rules v15
+
+The M75–M86 program's single engine revision:
+`battle::kBattleRulesVersion` **14 → 15** (its header comment is the
+authoritative change list). No generation/save/settings motion; every
+new content field is optional with an inert default.
+
+- **Statuses.** `StatusType` gains `Reflect`/`Sleep`/`Curse` (tables in
+  `Enums.cpp`; `statusTypeIds()` feeds the editor automatically).
+  Reflect resolves inside `useSkill`'s target loop *before* the ward
+  roll — a pure branch, `rollCursor` untouched — bouncing damage, the
+  `mpDamagePct` drain and the status rider onto the caster via
+  `dealMagic(actor, actor, …)`. Sleep is a `ForcedAction::Skip` in
+  `forcedActionFor` (between Stunned and Terrified); the wake rule
+  lives at the `applyDamage` chokepoint beside the confusion snap, so
+  the poison tick (which bypasses it) deliberately does not wake.
+  Curse halves outgoing damage as the last attacker-side modifier in
+  `dealPhysical`/`dealMagic` (and the counter-attack site), and doubles
+  MP costs through `battle::mpCostFor` — the one rule shared by
+  `useSkill`'s deduction, both AIs and the skill menu. Duration ×1.5
+  (`kCurseDurationPct`) at the `addStatus` chokepoint. Removal is
+  exclusive: `SkillEffect::Uncurse` + `ItemDef::curesCurse`;
+  `clearAfflictions` gained Sleep, `clearNegativeStatuses` now keeps
+  Reflect and Curse. `isAffliction` covers Sleep/Curse (so the Duck's
+  blanket holds); `isImmuneTo` consults the new per-combatant
+  `statusImmunities` list, which `addStatus` also blocks on (the legacy
+  immunity FLAGS keep their historical store-but-ignore behaviour — a
+  stored inert status still feeds Keen Senses, and changing that would
+  have altered v14 battles).
+- **Rebalances.** Poison magnitude = authored + applier MAG /
+  `kPoisonMagicDiv` (4), snapshotted at application via
+  `statusMagnitudeFor` (skills, attack riders, triggers; item statuses
+  keep authored numbers). `physicalDamage` scales the whole
+  `(attack + power)` term by `attackPercent`; both damage paths scale
+  the **final** hit by `100 / defensePercent`. With no statuses every
+  formula reduces exactly to its v14 shape.
+- **New schema** (loader + validators in `ContentLoader.cpp`, editor
+  descriptors in `CategoryDescriptors.cpp`): `SkillDef.mpDamagePct`
+  (0–100, damaging categories only; drains that share of dealt HP
+  damage as MP), `initialStatuses[]` on enemies/bosses (applied at
+  `buildBattle` through `addStatus`), `statusImmunities[]`,
+  `avoidSleepingTargets` / `noStunWhileAllFoesSleep` (read by
+  `chooseEnemyAction`: sleepers are skipped in target scoring while a
+  waking candidate stands; stun-rider skills are shelved while every
+  foe sleeps), `BossDef.immuneToStatScale` (guarded at `useItem`'s
+  stat-scale branch; `itemAffects` returns false for a scale-only relic
+  so the caller keeps it), and `ItemDef.resistElements`/`resistPct`
+  (equipment/relic only, both-or-neither; resolved per party member at
+  `buildBattle` into `Combatant.elementResist`, applied inside
+  `elementModifier` as `mod × (100 − resist) / 100` after the
+  weak/immune decision — immunity's 0 stays 0).
+- **Triggers.** `TriggerWhen`/`TriggerDo` enums + `TriggerDef`
+  (content) mirrored into pure `battle::TriggerRule`s at `buildBattle`.
+  State conditions (`first_time_hp_below_pct`, `every_nth_own_turn`,
+  `first_time_ally_felled`) evaluate in `beginUnitTurn` — the M49
+  revive-clock seam both drivers already call (the clock body moved to
+  `reviveCourtRule`; `fireTurnTriggers` composes with it) — and
+  `every_nth_hit_taken` fires in `dealPhysical`/`dealMagic` after a
+  deliberate connecting hit (`fireHitTriggers`; thorns/counters/poison
+  never count). Actions in `applyTriggerAction`: status to
+  self/attacker/all-foes/own-boss, `scale_stats_self` (the Spoon shape,
+  upward), `drain_foe_mp`, and `summon_clone` — the clone is **prebuilt
+  dead** at `buildBattle` (`Combatant.summonSlot`, boss identity minus
+  triggers/clock/statuses, maxHp = cloneHpPct of the bearer's) so the
+  unit roster never grows mid-battle; the trigger simply raises it.
+  BattleState zeroes `koFade_` for units that start dead, and the
+  existing revive path fades a summoned clone in. No condition or
+  action ever consumes a roll: sim == live by construction.
+- **Presentation.** The battle log names an attack's element
+  (`elementDisplayName` on the attack/skill line), chips gained
+  RFL/SLP/CRS (`statusShort`), the Details legend explains all three,
+  the skill menu shows the cursed doubled cost, and the Skip beat says
+  "fast asleep" when Sleep (not a stun) took the turn.
+- **Tests.** `tests/test_rules_v15.cpp` (`[v15]`): formulas, curse
+  math/duration/exclusive removal, sleep skip/wake/poison-no-wake,
+  reflect bounce + breaker (rollCursor pinned), poison scaling, MP
+  damage, every trigger condition/action, sleep manners, the Spoon
+  shrug, element resist, `initialStatuses` + clone via `buildBattle`,
+  and the loader's semantic rules. Two stale v14 poison pins updated to
+  the scaled values; the editor enum-list pins extended.
+
+## 30. M76 — counterplay content
+
+Content on the v15 engine — **no version motion of any kind**
+(rules 15, generation 14, save/settings v1 untouched).
+
+- **Skills** (`data/skills.json` / `data/classes.json`): `mirrorbreak`
+  (physical, `control: break_reflect` — the loader forbids a magic
+  breaker) in the Rogue (11) and Ranger (12) learnsets; `absolve`
+  (support single-ally, `control: uncurse`) in the Cleric's (12);
+  `smite` added to the Knight's (13); `shadow_strike` gains
+  `element: dark` (the one player-side Dark, owner decision 2026-08-05 —
+  a `[counterplay]` test proves no foe is Dark-immune, honouring the M48
+  never-a-trap rule for the Rogue's only always-known opener).
+- **Items** (`data/items.json`): `holy_taxes` (consumable, 200g,
+  `minTown: 3`, heal 10 + `curesCurse` — stocked by the existing
+  town-window machinery, zero shop code) and `evil_duckling`
+  (consumable, **value 0** so the M44 value-gate keeps it out of every
+  shop, chest pool and merchant roll; `battleTarget: enemy`, a
+  2-authored-turn Curse rider, and the new `ItemDef.useLine`).
+- **`ItemDef.useLine`** — a one-liner delivered on the Jester-quip
+  channel when the item is actually spent (`BattleState::executePending`,
+  `spends` only). Presentation-only; the battle model never reads it.
+- **The Duckling Peddler** (`RoomEventKind::DuckPeddler`): a post-pass in
+  `dungeon::generate` replaces ONE plain rolled event
+  (Shrine/Spring/Merchant/Wager/Rest — never a rite, the relic, or an
+  elite challenge) via `duckPeddlerSlot(seed, eligibleCount)` in
+  `dungeon/ThemeEvents` — a pure `themeEventHash` under two fresh salts,
+  **no rng draw consumed**, so every other roll of a seed is
+  byte-identical and **generation stays v14** (the M52 additive
+  precedent; the program's one generation bump is reserved for M82's
+  floors — recorded for the owner's veto in the M76 note). Constants:
+  `kDuckPeddlerChancePct` 10, `kDuckPeddlerPriceGold` 300,
+  `kEvilDucklingItemId`. The one-per-customer rule is enforced at
+  INTERACTION time in `DungeonState` (prompt + resolution both decline
+  while the party owns one, leaving the event unresolved for a duckless
+  return), so what a seed generates never depends on the party's bag.
+- **Tests** (`tests/test_counterplay.cpp`, `[counterplay]`): shipped
+  shapes and learnset levels, the two-removers exclusivity against the
+  real Purify/Remedy defs, the duckling's curse + doubled costs through
+  real content, mirrorbreak vs a real Reflect, the Holy Taxes town
+  window, peddler purity/determinism/rarity/shape, and the
+  rite-never-displaced sweep. Count pins updated (skills 63 → 65,
+  items 80 → 82).
+
+## 31. M77 — the enemy offensive pass
+
+Content on the v15 engine (7 new enemy-side skills, 20 roster entries
+touched, all 14 telegraphs rewritten) plus **two scoped v15 amendments**
+in `battle/Battle.cpp` that the new content is the first to reach — the
+rules version deliberately holds at 15 because both are provably
+unreachable by pre-M77 content (a `[offense]` test pins the exact carrier
+sets; see the M77 note §E for the veto offer):
+
+- **The support-loop AoE gate** (`chooseEnemyAction`): an enemy-side
+  support skill targeting `all_enemies` is presence-gated on the PROFILED
+  party target instead of the caster. The old actor-side check meant a
+  party-wide status skill re-cast every single turn (its caster never
+  carries the status) — measured in the battery as a zero-agency
+  lockdown. No pre-M77 foe carries such a skill.
+- **Trigger-borne stun manners** (`applyTriggerAction`): a
+  `noStunWhileAllFoesSleep` owner lets a Stunned trigger action pass
+  while every living foe sleeps (the every-Nth beat is missed, not
+  banked). No pre-M77 foe carries a trigger.
+
+Design law learned by battery and recorded for M84/M85 authoring: **an
+AI-chosen AoE status skill whose status is short-lived is a lockdown**
+(the gate reopens before the boss's next action). Party-wide boss beats
+belong on TRIGGERS with authored cadence (the King's 5th-turn cradle-song,
+the Duck's 4th-turn Final Notice and 12th-hit Duck Down); AI-chosen AoE
+support is safe only when the status is long (Hexwing's 6-turn curse) or
+the caster is MP-starved (Veil of Slumber carriers).
+
+A second law, load-bearing for every high-Magic boss authored from here
+on: **v15's poison scaling (magnitude + applier Magic/4) turns any poison
+rider on a big-Magic boss into a silent nuke** — the Duck's old authored
+8 became ~65 magnitude ≈ 520 damage a round for free, which is why his
+rider is now ATK-down only (M77 note §E.3, with the tuning ladder).
+
+Battery architecture: the goose gauntlet (`tests/test_goose_town.cpp`)
+now scripts BOTH fights with the obtainable M76 counterplay (Mirrorbreak
+casts, Absolve, Holy Taxes, the one held Evil Duckling straight at the
+boss, debuff upkeep, elixirs/tears in one shared bag) since the Deadly
+Spoon is closed; the King hook (`tests/test_royal_relics.cpp`) learned
+Mirrorbreak for the Stave's mirror. Skill pin 65 → 72.
+
+The Duck's blanket `immuneToAfflictions` became a bespoke
+`statusImmunities` list (owner decision 2026-08-06): every affliction
+except **Curse** — the first shipped use of the M75 per-status list, the
+Dragon's (M85) precedent.
+
+## 32. M78 — inventory caps & shop UX
+
+No version motion of any kind. Two optional validated `ItemDef` fields —
+`maxHeld` (1..9, consumables only; 0 = the type default) and
+`notSoldInTown` (consumables only) — and one pure helper header,
+`game/ItemCaps.hpp` (the ItemShopFilter shape): `capFor(def, capBonus)` /
+`canBuyMore(inventory, def, capBonus)` / `merchantPriceFor(def,
+generatedGoldCost)`.
+
+- **Cap policy**: default consumable cap 2 (`kDefaultConsumableCap`),
+  authored exceptions via `maxHeld` (Potion 9, Hi-Potion 6), gear
+  uncapped, `>=` at purchase only, never a clamp. The `capBonus`
+  parameter is M84's town-perk hook against `kConsumableCapCeiling` (9);
+  nothing passes it yet. The Evil Duckling carries no `maxHeld` — the
+  Duckling Peddler's one-per-customer rule (M76) is its cap and would
+  fight a bonus-eligible number.
+- **Gates**: `ItemShopState` (cap refusal outranks the gold refusal; an
+  at-cap row shows `x2 MAX` but stays selectable so its description
+  renders) and the `DungeonState` merchant (a refusal does NOT resolve
+  the event). Audit: no other consumable till exists — the black market
+  and equip shop sell gear, everything else is a grant.
+- **Merchant pricing is interaction-time**: the generated `goldCost`
+  (M37's 75% street price) is untouched — `merchantPriceFor` answers at
+  the till, full value for a `notSoldInTown` tonic, so generation stays
+  byte-identical and `kGenerationVersion` holds at 14 (the M76 peddler
+  precedent; the program's one generation bump stays reserved for M82).
+- **UI**: `drawMenuScrolled` renders a `\t`-split suffix as two fixed
+  right-aligned columns sized over the WHOLE menu (scrolling cannot shift
+  them); tab-free suffixes keep the old path bit-for-bit. Both shops'
+  buy lists moved to the tab shape.
+- **Tests** (`tests/test_item_caps.cpp`, `[caps]`): the cap math, the
+  purchase semantics (overage tolerated, untouched), the pricing rule,
+  the loader validation, and the shipped data (exactly two
+  `notSoldInTown` items; the town shelves clean of them at every town).
+
+## 33. M79 — input & QoL
+
+No version motion; settings schema stays v1 (a slot is just a position in
+the existing per-action key arrays).
+
+- **Two new remappable actions** `CyclePrev`/`CycleNext`
+  (`kInputActionCount` 12→14, remappable 8→10; serialization names
+  `cycle_prev`/`cycle_next`). Defaults Q/E + Ctrl/Alt (PromptLabels
+  learned the modifier names) and LB/RB. The defensive settings loader
+  needed nothing: an unmentioned action keeps its defaults, so pre-M79
+  files gain the pair silently. Wired as in-place member switches in
+  `EquipShopState` (member-scoped phases) and `TrainingHallState` (all
+  phases), cursor-walks in the member lists.
+- **`input::assignKeySlot`** (beside the M13 engine in `input/Remap`):
+  direct per-slot keyboard assignment — replace-at-slot, append-to-empty,
+  pack-left (no gaps; the public arrays stay sentinel-free), free moves
+  between an action's own slots, `NeedsConfirm` for a key owned
+  elsewhere (map untouched until the player agrees), `Stolen` after
+  consent, `Blocked` for Esc / non-remappables / a steal that would
+  strand its old owner (the M13 never-unbound rule, now surfaced as an
+  explicit warning instead of a silent swap). The M13 `remapKey` engine
+  remains the gamepad flow and keeps its tests.
+- **RemapState**: keyboard rows draw the three slots as live columns
+  (headers, Left/Right slot selection, 14px rows so 10 actions + Reset +
+  Back fit the frame); a steal-confirmation modal sits beside the
+  listen modal. Gamepad UI unchanged.
+- Volume defaults 0.7/0.3 (struct + absent-key parse fallbacks in
+  lockstep); Decisive ≤15 (`Achievements`).
+- **Tests** (`tests/test_input_qol.cpp`, `[qol]`): defaults, every slot
+  outcome, the warn-then-steal contract, round-trips, pre-M79-file
+  behavior, volume precedence, Decisive.
+
+## 34. M80 — event flavor
+
+No version motion. New content category `EventFlavorDef` keyed by
+`kEventFlavorIds` — the content layer cannot name `dungeon::RoomEventKind`
+(it lives a layer above), so the vocabulary is mirrored as strings and
+`dungeon::eventFlavorId(kind)` maps the enum down; a `[flavor]` test (with
+a static_assert on the kind count) holds the two in lockstep.
+
+- `parseEventFlavor` validates per-entry (unknown id, duplicate, missing
+  title/body) so a typo costs one panel, never the file.
+  **`event_flavor.json` is the one OPTIONAL content file**: `loadAll`
+  skips it when absent (pure presentation with a per-event fallback);
+  present-but-malformed reports like any other file. Since M86 it is an
+  editor category (§40), governed by the canonical byte-stability sweep
+  like every other file.
+- `DungeonState`: `eventPanelOpen_` gates input (Confirm commits via
+  `confirmEventPanel` — the same dispatch `interact()` used to perform;
+  Cancel/Menu steps away); `renderEventPanel` draws the modal (title,
+  body wrapped ≤4 lines, then `eventPromptText()` verbatim in gold — the
+  approved trade-off wording is reused, not duplicated). No flavor →
+  `interact()` keeps the classic immediate path.
+- Capture scene `86_event_flavor` opens the Peddler's panel (the longest
+  body) via `captureOpenEventPanel` — the wrap budget's in-situ referee.
+- **Outcome panel (owner addendum, same cycle)**: `showOutcome(title,
+  body)` + `renderOutcomePanel` — every `resolveEvent` branch (rewards
+  and refusals), `openChest` and `digBuried` raise it instead of the
+  footer `message_` (whose timer path remains for the map-piece pings,
+  battle results and the "Guarded" nudge). Headed by the event's flavor
+  title via `outcomeTitleFor`, "The Chest"/"The Buried Treasure" for the
+  loot moments; dismissed by Confirm/Cancel/Menu; never open at the same
+  time as the flavor panel (it follows the flavor's Confirm). Scene
+  `87_event_outcome` referees the widest dynamic string.
+
+## 35. M81 — arms, elements & icons
+
+No version motion. The M75 resist hook (`resistElements`/`resistPct`,
+resolved at `buildBattle` into `Combatant::elementResist` with
+**best-piece-wins stacking** — `std::max`, never a sum) gets its shipped
+content; the only new schema is the icon field.
+
+- **`ItemDef::iconCategory`** — validated against `kIconCategoryIds`
+  (sword/axe/dagger/bow/staff/mace/spear/shield/armor/accessory/relic, a
+  plain string vocabulary on the M80 `kEventFlavorIds` pattern). Gear
+  only. `iconCategoryFor(def)` resolves the authored value, else the
+  slot-derived default (Relic→relic, Armor→armor, Accessory→accessory);
+  a **weapon has no default** (a sword and a staff share a slot) so the
+  loader rejects a weapon without one. `gearIconTextureId(def)` maps the
+  category to the manifest key `ui.icon.<category>` — render sites and
+  the lint share that one convention. The CrystalForge descriptor
+  shipped with the field (the M78 precedent), so `--canonicalize`
+  round-trips it.
+- **Menu icons**: `ui::MenuItem` gains an optional `icon` texture id;
+  `drawMenuScrolled` gains a trailing `ResourceManager*` (default null —
+  every old call site renders unchanged). Once any row carries an icon,
+  every label indents by the icon span so the column stays straight.
+  `ui::drawGearIcon` draws the 10×10 glyph point-crisp (missing texture
+  draws nothing — placeholder discipline). Sites: equip-shop buy/equip
+  lists, Armory Ghost list, party-panel gear lines (manual draw at the
+  10px line pitch), black-market offer at 2×.
+- **Icon art** rides the M73 grid pipeline: a new RNG-free section at
+  the very END of `generate_textures.ps1` (`Save-IconGrid`, hard-failing
+  any non-10×10 grid) writes `assets/textures/ui/icons/<category>.png`;
+  verified by the M73 SHA-256 sweep that all 196 pre-existing PNGs stay
+  byte-identical. Review sheet: `tools/asset_gen/preview_icons.ps1`
+  (dark + light rows) → `docs/sprite_review/icons_contact.png`.
+- **The M48 weapon-immunity lint narrowed** (test_elements): absolute
+  for the INTRINSIC fire/holy basics (no equip choice can undo those);
+  wielded elements may now meet immunities (an informed trade — M53
+  chip, bestiary, "Immune" float) but every weapon element must
+  weak-hit at least one shipped foe. The [arms] suite pins the ward
+  set, the legendary pool membership, the buildBattle resist landing,
+  the stacking rule, the coverage dealers (and that each recipient's
+  MAG affords its cast), and the icon schema; the `[lint]` sweep holds
+  vocabulary ↔ shipped icon textures in lockstep both ways.
+- **Determinism**: 13 new items join the chest/black-market/boss-drop
+  pools by the existing catalog rules — one `rng.range` per chest
+  regardless of pool size, so layouts are untouched; which item a given
+  seed yields shifts, the same class of change as every prior
+  gear-adding milestone (M43/M53/M76). Generation stays v14, battle
+  rules stay v15.
+
+## 36. M82 — floors (generation 14 → 15)
+
+The program's single generation bump. A run is now a
+`std::vector<Dungeon>` of floors; a 1-floor vector is every pre-M82 run.
+
+- **Sub-seeds**: `floorSeed(runSeed, i)` — floor 0 IS the run seed
+  (1-floor output proven byte-identical to v14 by a deep-equality test);
+  deeper floors run `blackMarketHash(runSeed, salt+i)`, the SplitMix64
+  finalizer the market/drops already trust. `generateFloors` generates
+  each floor as a plain `generate(floorSeed(seed, i), ...)`, then — on
+  floors before the last — swaps the boss-room team for the all-elite
+  "Stairway Wardens" via a FRESH pure-hash Rng (zero draws from the
+  floor's own stream: the swap-isolation test deep-equals every floor
+  against its sub-seed's standalone output, modulo exactly that team).
+  `Dungeon` carries `runSeed` / `floorIndex` / `floorCount` /
+  `stairsOpen`; every run-level seeded system (score entry seed, black
+  market, boss drops) reads `runSeed` — identical on 1-floor runs.
+- **DungeonState** owns the floor vector (current floor moved out;
+  descent one-way). `EncounterKind::StairGate` (the boss-slot fight on
+  stair floors) opens `MarkerKind::Stairs` (glyph marker, M55-rite
+  precedent) on victory; Confirm descends: floors swap, layouts
+  re-realize, M68 danger tiers re-snapshot per floor, `chartFound_`
+  resets (M65/M66 features roll per floor — each floor is a standard
+  level). `run_`/`victoryStats_` accumulate across floors; retreat/
+  defeat/autosave paths untouched. The HUD theme chip gains `F#/#`.
+- **Scoreboard**: `ScoreEntry::floors` (optional, default 1 — the
+  M32-style no-format-bump precedent); `score::onFloorsBoard` is the
+  pure split rule; ScoreboardState filters `visible_` per board and
+  cycles with CyclePrev/CycleNext. Ranking within a board unchanged.
+- The exact generation pin (test_danger) moved to 15; capture grew to
+  **90 scenes** (`89_scoreboard_4f`, `90_dungeon_stairs`).
+
+## 37. M83 — the map economy
+
+No version motion (new logic on the M82 completion event, not a change
+to what a seed generates). All rules are pure functions in
+`game/TreasureMap.hpp`, beside the M65 machinery they extend:
+
+- `mapDropChancePct(town, bonusPct = 0)` — 0 below town 2, else
+  15 + 12·(town−2) capped at 75 (+bonus, total ≤ 100). `bonusPct` is the
+  M84 town-perk hook, inert until authored.
+- `mapDropRolls(runSeed, town, bonus)` — `blackMarketHash` on a fresh
+  salt: committed at entry, reload-proof, statistically pinned (±4 pts /
+  4000 fixed seeds).
+- `grantMapPiece(...)` — the M65 grant rule EXTRACTED (the fourth piece
+  fires the reveal and resets the pouch); `takeMapPiece` and the M83
+  completion drop share it so the paths cannot drift.
+- `bankMapDebt` / `payMapDebt` + `Party::mapPiecesOwed` (optional save
+  field, 0–3, clamped on load): bank caps at 3 (overflow lost, stated);
+  payout after the dig pays what fits (pouch ceiling 3 — a reveal needs
+  a run's town/guard context) and keeps the remainder banked.
+- Wiring: `completeDungeon` (floorCount ≥ 4, town ≥ 2) → the gold
+  `mapLine` on `DungeonResultState` (new optional ctor param, wrapped ≤2
+  lines, counted in the panel height math);
+  `TreasureFightState::finish` appends the payout sentence; MapsState
+  states the debt. Scene `91_result_map` referees the fullest panel.
+
+## 38. M84 — Guild Masters & town milestones
+
+No version motion: content rides rules v15, the gauntlet and perks are
+new logic outside the generator, and generation stays byte-identical (the
+guards below exist precisely for that). The pure model lives in
+`game/Guild.hpp` (records, the constexpr perk table, effect queries, the
+omen post-pass) with content-driven team builders in `Guild.cpp`.
+
+- **`BossDef::guildTown`** (optional int, 0 = ordinary boss; validated
+  0..7, at most one Master per town): one field does triple duty —
+  identifies the town's Master for `findGuildMaster`/`guildMasterTeam`,
+  excludes it from the generator's theme-less fallback boss sweep
+  (`pickBoss`), and excludes it from `bossRushOrder` (the `kKingBossId`
+  exclusion rule, as data). Without both exclusions, ADDING the seven
+  Masters to `bosses.json` would have changed what existing seeds
+  generate and grown the Boss Rush. The editor descriptor shipped with
+  the field (the M59 staleness sweep requires it; nothing left for M86
+  here). The twelve court minions are ordinary `bossOnly` enemies.
+- **Records**: `GuildRecords` = `std::array<GuildTownRecord, kTownCount>`
+  on Party — `unlocked` (set by a 4-floor `completeDungeon` in that
+  town), `bestTurns` (0 = undefeated; `guildImproved` mirrors
+  `duckImproved`), `perkId` ("" = unchosen). Saved as a 7-bit
+  `guildUnlocked` mask (the `storyMet` idiom) plus flat
+  `guildBest1..7`/`guildPerk1..7` keys (the castle-records idiom).
+  Defensive load: unknown or wrong-town perk ids drop (the choice simply
+  re-offers, the M63 keepMilestone rule), a perk without a victory
+  drops, and a recorded victory forces `unlocked`.
+- **The gauntlet** rides `CastleChallengeState` (`CastleChallenge::
+  GuildBoss` + a `guildTown` ctor param): wave 0 = `guildWaveTeam` (five
+  `blackMarketHash(kGuildSeed, town·1000+i)` picks from `guildTownPool` —
+  every non-bossOnly enemy with `minTown ≤ town`, sorted; a FIXED seed,
+  so every attempt fields the same trial and best-turns is a
+  reproducible measure, the kEndlessSeed philosophy), wave 1 =
+  `guildMasterTeam` (the Master + authored court). Both at
+  `guildScalePct(town)` = `combineTownScale(100 +
+  composition.statScalePct(kGuildThreatDepth=20), town)` — derived from
+  the generator's own rules, 190 % (t1) to 570 % (t7). Persistent HP/MP,
+  `clampCastleDefeat` on a loss, `MusicTrack::Boss` + the Plain backdrop
+  (a town hall, not the throne room), "Return to the Guild". First
+  victory pushes `GuildPerkChoiceState` beneath the celebration/toasts.
+- **Perks**: `kGuildPerks[14]` (constexpr, two per town, stable ids) with
+  one effect-query helper per hook. Consumption points: `capFor`/
+  `canBuyMore` capBonus (ItemShop + dungeon merchant), `applySpoils`
+  (EXP % and enemy-gold % — applied inside so the victory panel shows
+  what was granted), chest gold at OPEN time (the score's `treasureGold`
+  keeps the generated amount — no score-rule motion), the chest-trap
+  wound percent, `mapDropRolls` bonusPct (the M83 hook goes live),
+  `blackMarketRolls` bonusPct (the 20 % stakes path only; the M52
+  high-stakes roll keeps its own odds), `guildTokenPrice` (3 → 1) at the
+  black-market till, and the **Mind-the-Spoon omen**:
+  `applyGuildRelicOmen` runs AFTER `generateFloors` at the run's entry
+  (the M76 peddler precedent — the generator never sees party state):
+  per floor without a relic event, one pure-hash roll (`kGuildOmenSalt`
+  + floorIndex on the RUN seed, reload-proof) may upgrade the first
+  plain rolled event (never a rite, the peddler, or an elite challenge)
+  into `RoyalRelic`, keeping the M44 at-most-one rule.
+- **Endless Rush**: every 10th wave ((w+1) % 10 == 0) replaces the plain
+  draw with a seeded boss — `bossRushOrder` ∪ the Masters, hashed on a
+  salt far above the per-slot ones — carrying its authored minions
+  (`bossOnly` legitimately enters the endless arena ONLY here; the
+  king's-court lint was narrowed to say exactly that). Ordinary waves
+  are byte-identical to pre-M84.
+- **Guildbane** achievement (any `bestTurns > 0`); scenes
+  `92_guild_boss_locked`, `93_guild_boss_best`, `94_guild_perk`,
+  `95_guild_result`; the `[guild]` battery covers the perk table, the
+  records + tamper degradation, team determinism and exclusions, the
+  omen, and sim-backed clearability of all seven gauntlets by the
+  castle battery's maxed party (recorded per town).
+
+## 39. M85 — the Last Dragon & curio lore
+
+No rules/generation/score version motion. The one engine change — the
+intrinsic-element amendment — is provably inert for every pre-M85
+battle: the [elements] lint has always guaranteed no shipped foe carried
+a fire/holy immunity, so the new branch never fired before the Dragon
+existed (the M75 inert-hook precedent).
+
+- **The intrinsic-element amendment**: `Combatant::elementIntrinsic` is
+  set when a chosen M63 milestone (Fire bite / Holy basic) supplies
+  `weaponElement` (a real weapon still wins and clears the intrinsic
+  claim). `attackerElementMod` resolves an immunity at the neutral 100 %
+  for an intrinsic element, and `attackOne` routes its immune
+  mark/log/rider gate through that same EFFECTIVE modifier — damage,
+  float, log and rider always agree. This carries the M81-narrowed M48
+  absolute ("an intrinsic element is never nullified") in the ENGINE, so
+  the content half of the lint could narrow once more: the Dragon is
+  the game's one authored fire immunity (pinned exclusive in
+  [elements]); wielded/skill fire against him fizzles as the informed
+  trade it is.
+- **The Dragon** (`kDragonBossId` = `the_dragon`, `data/bosses.json`):
+  authored on v15 — six all-party elemental breath skills (one per
+  element, mpCost 20 paces them into an opening barrage before the
+  bites), statusImmunities = the six afflictions (poison deliberately
+  absent — ATK−/DEF−/Curse/Poison are the counterplay doors),
+  fire-immune, Spoon-proof (`immuneToStatScale`, the Duck precedent —
+  the §G question, answered), First Strike + Lifedrink + Spell Ward,
+  and three `first_time_hp_below_pct` triggers: 50 → `drain_foe_mp`
+  100 %, 10 → `scale_stats_self` 200/200 ATK/SPD, 5 → `summon_clone`
+  at 5 % HP (the clone gag). Base 1400 HP — sim-tuned down from the
+  brief's ~2000 (recorded; at 2000 the maxed party could not finish
+  after the MP deplete) — still the largest fight in the game at
+  7,000 effective HP vs the Duck's 5,000. Excluded from the Boss Rush,
+  the generator's fallback sweep (both BEFORE the content landed, so
+  nothing changed), and thereby the Endless boss draw.
+- **The gauntlet**: `CastleChallenge::Dragon` on the castle runner —
+  `dragonEliteWaveTeam` (three waves of four from the whole elite
+  roster, never bossOnly, pure-hashed from the fixed `kDragonSeed`)
+  then `dragonTeam` (alone), all at `kDragonScalePct` 500. Records:
+  `CastleRecords::dragonBestTurns` (+ save field
+  `castleDragonBestTurns`), `dragonImproved`, the castle records panel
+  row, **Wyrmbane**.
+- **The gate & the Pale Jester**: the castle menu's "Fight the Dragon"
+  row stays enabled while locked (the M84 rule); Confirm under
+  `ownedCurios < kCurioCount` pushes the Pale Jester's counting refusal
+  (StoryDialogState), at 12/12 the gauntlet — whose onEnter pushes his
+  authored tale (story beat `kDragonJesterBeat` = 10; the loader's town
+  range widened 1..9 → 1..10) on top of the opening fight until the
+  first victory. The menu pitch tightened 18 → 16 px for the eighth row.
+- **Curio lore**: `data/curio_lore.json` — the SECOND optional content
+  file (the M80 terms): `CurioLoreDef` + `findCurioLore`; the loader
+  owns shape/duplicates while known-ness and full 12/12 coverage are
+  [dragon]-battery lints (the curio table lives a layer above the
+  loader). MapsState grows a 4×3 grid cursor and a modal lore panel
+  (fallback: the curio's own M66 description).
+- Scenes: `33_castle_hub` (fullest records + the new row),
+  `96_curio_lore`, `97_dragon_jester`; the `[dragon]` battery covers
+  the immunity matrix, breath coverage, the three triggers + the
+  prebuilt clone slot, gauntlet determinism, every exclusion, records +
+  save round-trip, lore coverage, the beat, Wyrmbane, and sim-backed
+  clearability (recorded per wave).
+
+## 40. M86 — CrystalForge catch-up & version 0.6.0
+
+No game-behavior change: the editor, the version constant, and three
+latent editor defects only. The M75–M85 program's fields needed **no**
+descriptor catch-up — each milestone shipped its own descriptors under
+the M59 completeness sweep, and the enum pickers read the live
+`content::*Ids()` tables (re-audit finding, recorded in the note).
+
+- **Two new editor categories**: `Category::EventFlavor`
+  (`event_flavor.json`, M80) and `Category::CurioLore`
+  (`curio_lore.json`, M85) — id-keyed entity arrays on the standard
+  machinery (browse/edit/save/validate through the real
+  `parseEventFlavor`/`parseCurioLore`; `parseCurioLore` gained its
+  header declaration on the M59 precedent). Both canonicalize in the
+  one-line `InlineEntities` style the shipped files already used, so
+  the normalization was a no-op (`--canonicalize`: 0 files rewritten).
+  In the game's loader the files remain OPTIONAL with graceful
+  fallbacks; the editor simply reports a missing file per-file, like
+  any other.
+- **Latent editor fixes** (found by the M86 re-audit, in the catch-up
+  mandate): (1) `kCategoryCount` was still 9 after M63 grew the enum to
+  10 — the sidebar's Sim Lab/Test Runner indices sat on the Story row,
+  making Story unreachable; now 12 and pinned to `categories().size()`
+  (plus enum-order agreement) in `[editor]`. (2) The dirty-star sidebar
+  refresh rebuilt the menu without the two surface rows, truncating the
+  sidebar after any edit. (3) The story descriptor still bounded town
+  at 1..9 after M85 widened the loader to 1..10; and `skeletonFor`
+  injected a placeholder `"name"` into categories whose schema has no
+  name field (story, and now the two new files) — new entities only get
+  the placeholder where a name descriptor exists.
+- **Version 0.6.0** (owner decision 2026-08-05): `project(CrystalDungeons
+  VERSION 0.6.0)` — the deliberate renumber; the label should trail the
+  game. `Version.hpp` and the Windows `.rc` regenerate from it
+  (configure-time), and nothing else in the tree hardcodes a version:
+  the README defers to CMakeLists, so only the CMake comment carried
+  the old "0.9.0 until M23" claim. 1.0.0 still waits on the M23
+  playtests. Save/score/content schema versions are independent and
+  unchanged.
 

@@ -38,4 +38,36 @@ RemapResult remapButton(InputMap& map, InputAction action, int newButton);
 // Restores all default bindings (both devices).
 void resetBindings(InputMap& map);
 
+// --- M79: three direct keyboard slots (Primary / Alt 1 / Alt 2) -------------
+//
+// The keyboard remap screen edits one SLOT at a time instead of replacing the
+// whole binding list. Slots pack left (no gaps): a slot index beyond the
+// current count lands at the end. Assigning to an occupied slot replaces that
+// slot's key. The M13 never-unbound rule stands: a steal that would leave its
+// old owner with zero keyboard keys is Blocked. The gamepad flow keeps the
+// M13 replace-and-swap engine above.
+
+inline constexpr int kKeySlotCount = 3;
+
+enum class SlotOutcome {
+    Rebound,       // the slot holds the key; nobody else was involved
+    Stolen,        // the slot holds the key, taken from `owner`/`ownerSlot`
+    NeedsConfirm,  // the key belongs to another action; nothing changed —
+                   // call again with confirmSteal after the player agrees
+    Blocked,       // rejected (reserved Esc, non-remappable, stranding steal)
+};
+
+struct SlotResult {
+    SlotOutcome outcome = SlotOutcome::Blocked;
+    // For Stolen / NeedsConfirm (and the stranding Blocked): where the key
+    // lives (or lived).
+    InputAction owner = InputAction::Confirm;
+    int ownerSlot = 0;
+};
+
+// Assigns `key` to `slot` (0..kKeySlotCount-1) of `action`'s keyboard list.
+// Moving a key between an action's OWN slots needs no confirmation.
+SlotResult assignKeySlot(InputMap& map, InputAction action, int slot, int key,
+                         bool confirmSteal);
+
 }  // namespace cd::input

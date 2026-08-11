@@ -18,4 +18,9 @@ inline int storyBit(int town) {
 inline bool storyHeard(int storyMet, int town) { return (storyMet & storyBit(town)) != 0; }
 inline bool storyAllHeard(int storyMet) { return (storyMet & kStoryAllMask) == kStoryAllMask; }
 
+// M85: the Pale Jester's beat id — the second jester at the castle, who
+// introduces the Dragon. Follows the place-beat convention (8 = the castle
+// Jester, 9 = the Goofy Jester); never part of the unlock mask.
+inline constexpr int kDragonJesterBeat = 10;
+
 }  // namespace cd

@@ -25,8 +25,10 @@ inline std::vector<std::string> itemShopBuyIds(const content::ContentDatabase& c
     for (const auto& [id, def] : content.items()) {
         // M44: an item with no gold value has no price and is never stocked — it
         // exists only through whatever grants it (the Royal Relics).
+        // M78: a premium tonic (`notSoldInTown` — Elixir, Hi-Ether) left the
+        // town shelves for good; the in-dungeon merchant is its only seller.
         if (def.type == content::ItemType::Consumable && def.value > 0 &&
-            def.availableAtTown(town)) {
+            def.availableAtTown(town) && !def.notSoldInTown) {
             ids.push_back(id);
         }
     }

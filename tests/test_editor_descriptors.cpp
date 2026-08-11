@@ -50,6 +50,61 @@ void requireCovered(const OrderedJson& entity, const std::vector<FieldDesc>& des
 
 }  // namespace
 
+TEST_CASE("editor: the category table and kCategoryCount agree", "[editor]") {
+    // M86: kCategoryCount positions the sidebar's Sim Lab / Test Runner rows.
+    // M63 grew the enum without bumping it, which silently shifted both onto
+    // the Story row (Story unreachable, rows off by one) until M86. This pin
+    // makes that class of drift a suite failure.
+    REQUIRE(cd::editor::categories().size() ==
+            static_cast<std::size_t>(cd::editor::kCategoryCount));
+    // Every file(category) lookup indexes the doc list by enum value, so the
+    // table's order must match the enum's declaration order.
+    for (std::size_t i = 0; i < cd::editor::categories().size(); ++i) {
+        REQUIRE(static_cast<std::size_t>(cd::editor::categories()[i].category) == i);
+    }
+}
+
+TEST_CASE("editor: the M86 categories are shaped like their loaders", "[editor]") {
+    // event_flavor.json: id + title + body, all loader-required.
+    const std::vector<FieldDesc>& flavor = cd::editor::descriptorsFor(Category::EventFlavor);
+    REQUIRE(flavor.size() == 3);
+    REQUIRE(descForKey(flavor, "id") != nullptr);
+    REQUIRE(descForKey(flavor, "title") != nullptr);
+    REQUIRE(descForKey(flavor, "body") != nullptr);
+    for (const FieldDesc& desc : flavor) {
+        REQUIRE(desc.required);
+    }
+    // curio_lore.json: id + body only.
+    const std::vector<FieldDesc>& lore = cd::editor::descriptorsFor(Category::CurioLore);
+    REQUIRE(lore.size() == 2);
+    REQUIRE(descForKey(lore, "id") != nullptr);
+    REQUIRE(descForKey(lore, "body") != nullptr);
+    for (const FieldDesc& desc : lore) {
+        REQUIRE(desc.required);
+    }
+}
+
+TEST_CASE("editor: new entities only get a name where the schema has one", "[editor]") {
+    // M86 fix: the skeleton used to inject a placeholder "name" into every
+    // category, which saved a stray unrecognized key into name-less files
+    // (story, event flavor, curio lore).
+    cd::editor::EditorDocs docs;
+    REQUIRE(docs.loadAll(fs::path(CRYSTAL_TEST_DATA_DIR)));
+    const int skillIdx = docs.addEntity(Category::Skills);
+    REQUIRE(skillIdx >= 0);
+    REQUIRE(docs.entityAt(Category::Skills, skillIdx)->contains("name"));
+    const int loreIdx = docs.addEntity(Category::CurioLore);
+    REQUIRE(loreIdx >= 0);
+    const OrderedJson* lore = docs.entityAt(Category::CurioLore, loreIdx);
+    REQUIRE(lore != nullptr);
+    REQUIRE_FALSE(lore->contains("name"));
+    REQUIRE(lore->contains("id"));
+    REQUIRE(lore->contains("body"));
+    const int storyIdx = docs.addEntity(Category::Story);
+    REQUIRE(storyIdx >= 0);
+    REQUIRE_FALSE(docs.entityAt(Category::Story, storyIdx)->contains("name"));
+}
+
 TEST_CASE("editor: descriptors cover every key in the shipped data", "[editor]") {
     cd::editor::EditorDocs docs;
     REQUIRE(docs.loadAll(fs::path(CRYSTAL_TEST_DATA_DIR)));

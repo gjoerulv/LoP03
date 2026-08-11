@@ -10,6 +10,8 @@
 #include "content/Enums.hpp"
 #include "dungeon/Rng.hpp"
 #include "dungeon/ThemeEvents.hpp"  // M55 per-theme rites (themeEventKind, prices)
+#include "game/BlackMarket.hpp"  // blackMarketHash — the shared SplitMix64 (M82 floors)
+#include "game/Castle.hpp"  // kDragonBossId (M85: the fallback-sweep exclusion)
 #include "game/Relics.hpp"  // relicEventChancePct (M44)
 #include "game/WorldLadder.hpp"
 
@@ -110,7 +112,11 @@ const content::BossDef* pickBoss(Rng& rng, const content::DungeonThemeDef* theme
     }
     if (ids.empty()) {
         for (const auto& [id, def] : db.bosses()) {
-            if (def.minTown <= town) {
+            // M84: a Guild Master presides over its town's gauntlet, never a
+            // dungeon — the fallback sweep must skip it or adding one would
+            // change what existing seeds generate. M85: the Dragon's arena is
+            // behind the twelve curios, same rule.
+            if (def.minTown <= town && def.guildTown == 0 && id != kDragonBossId) {
                 ids.push_back(id);
             }
         }
@@ -276,6 +282,7 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
 
     Dungeon d;
     d.seed = seed;
+    d.runSeed = seed;  // M82: floors 1+ of a multi-floor run override this
     d.depth = depth < 1 ? 1 : depth;
     d.town = townIdx;
     d.themeName = theme != nullptr ? theme->name : "Dungeon";
@@ -558,11 +565,44 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                 case RoomEventKind::RestToken:
                 case RoomEventKind::ArmoryGhost:  // M55: the upgrade is picked at trade time
                 case RoomEventKind::RoyalRelic:  // the relic is picked at resolution (M44)
+                case RoomEventKind::DuckPeddler:  // M76: placed by the post-pass, never rolled here
                 case RoomEventKind::None:
                     break;
             }
             d.rooms[static_cast<std::size_t>(sideIndex)].event = ev;
             ++made;
+        }
+    }
+
+    // --- The Duckling Peddler (M76): a rare replacement of ONE plain rolled
+    // event, decided by a PURE hash of the seed — no rng draw is consumed, so
+    // every other roll of this seed is byte-identical and generation stays
+    // v14 (the M52 additive precedent; the program's one generation bump is
+    // reserved for M82). Never a theme rite, the relic, or an elite challenge
+    // (whose team would be orphaned). Whether the peddler DEALS is a separate,
+    // interaction-time question (one per customer — see DungeonState), so the
+    // dungeon a seed generates never depends on the party's bag.
+    {
+        std::vector<int> plainEventRooms;
+        for (std::size_t ri = 0; ri < d.rooms.size(); ++ri) {
+            const RoomEventKind k = d.rooms[ri].event.kind;
+            if (d.rooms[ri].type != RoomType::Event) {
+                continue;
+            }
+            if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
+                k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
+                k == RoomEventKind::RestToken) {
+                plainEventRooms.push_back(static_cast<int>(ri));
+            }
+        }
+        const int slot = duckPeddlerSlot(seed, static_cast<int>(plainEventRooms.size()));
+        if (slot >= 0) {
+            RoomEvent& ev =
+                d.rooms[static_cast<std::size_t>(plainEventRooms[static_cast<std::size_t>(slot)])]
+                    .event;
+            ev.kind = RoomEventKind::DuckPeddler;
+            ev.goldCost = kDuckPeddlerPriceGold;
+            ev.itemId = kEvilDucklingItemId;
         }
     }
 
@@ -628,6 +668,65 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
     }
 
     return d;
+}
+
+std::uint64_t floorSeed(std::uint64_t runSeed, int floorIndex) {
+    // Floor 0 IS the run seed, so a 1-floor run (and the first floor of a
+    // 4-floor run) generates byte-identically to what that seed always meant.
+    // Deeper floors derive an independent stream from the same SplitMix64
+    // finalizer the black market and boss drops trust (a pure function — no
+    // Rng draw anywhere, so nothing else about a seed shifts).
+    if (floorIndex <= 0) {
+        return runSeed;
+    }
+    constexpr std::uint64_t kSaltFloor = 0xF100F5EEDull;  // M82 floor stream
+    return blackMarketHash(runSeed, kSaltFloor + static_cast<std::uint64_t>(floorIndex));
+}
+
+std::vector<Dungeon> generateFloors(std::uint64_t seed, int depth,
+                                    const content::ContentDatabase& db, std::string themeId,
+                                    int town, int floorCount) {
+    if (floorCount < 1) {
+        floorCount = 1;
+    }
+    std::vector<Dungeon> floors;
+    floors.reserve(static_cast<std::size_t>(floorCount));
+    for (int i = 0; i < floorCount; ++i) {
+        Dungeon f = generate(floorSeed(seed, i), depth, db, themeId, town);
+        f.runSeed = seed;
+        f.floorIndex = i;
+        f.floorCount = floorCount;
+
+        // Floors before the last swap the boss for an elite STAIR-GATE team.
+        // The swap is a post-pass drawing from a FRESH pure-hash Rng — zero
+        // draws from the floor's own generation stream — so everything else
+        // about the floor (layout, gates, chests, events) is byte-identical
+        // to what its sub-seed generates standalone.
+        if (i + 1 < floorCount) {
+            const int bossTeamIdx =
+                f.rooms[static_cast<std::size_t>(f.bossRoom)].teamIndex;
+            if (bossTeamIdx >= 0) {
+                constexpr std::uint64_t kSaltStairGate = 0x57A1B6A7Eull;  // M82
+                Rng gateRng(blackMarketHash(
+                    seed, kSaltStairGate + static_cast<std::uint64_t>(i)));
+                const content::DungeonThemeDef* theme =
+                    themeId.empty() ? nullptr : db.findTheme(themeId);
+                Pools pools = buildPools(db, theme, clampTown(town));
+                // All-elite slots: the gate is the floor's climax, so every
+                // pick comes from the elite pool (falling back to normals
+                // only when a theme has no elites at this town).
+                if (!pools.eliteEnemies.empty()) {
+                    pools.normalEnemies = pools.eliteEnemies;
+                }
+                EnemyTeam gate =
+                    makeTeam(gateRng, pools, f.depth, /*boss=*/false, db, clampTown(town));
+                gate.name = "Stairway Wardens";  // a recognizable fixture, floor to floor
+                f.teams[static_cast<std::size_t>(bossTeamIdx)] = std::move(gate);
+            }
+        }
+        floors.push_back(std::move(f));
+    }
+    return floors;
 }
 
 }  // namespace cd::dungeon

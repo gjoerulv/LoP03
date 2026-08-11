@@ -1,5 +1,6 @@
 #include "editor/CategoryDescriptors.hpp"
 
+#include "content/Definitions.hpp"
 #include "content/Enums.hpp"
 
 namespace cd::editor {
@@ -164,6 +165,25 @@ std::vector<FieldDesc> statusRiderChildren() {
     };
 }
 
+// M75: one deterministic WHEN -> DO trigger row (enemies and bosses).
+std::vector<FieldDesc> triggerChildren() {
+    return {
+        en("when", "When", ids(content::triggerWhenIds()), "first_time_hp_below_pct", true),
+        num("threshold", "Threshold (N / HP %)", 0, 100),
+        en("do", "Do", ids(content::triggerDoIds()), "status_self", true),
+        en("status", "Status", ids(content::statusTypeIds())),
+        num("magnitude", "Magnitude", 0, 300),
+        num("duration", "Duration", 0, 99),
+        num("scaleAttackPct", "Scale ATK %", 1, 400, 5, 100),
+        num("scaleMagicPct", "Scale MAG %", 1, 400, 5, 100),
+        num("scaleDefensePct", "Scale DEF %", 1, 400, 5, 100),
+        num("scaleSpeedPct", "Scale SPD %", 1, 400, 5, 100),
+        num("cloneHpPct", "Clone HP %", 0, 100),
+        num("mpDrainPct", "MP Drain %", 0, 100),
+        str("text", "Announcement"),
+    };
+}
+
 // --- per-category tables ----------------------------------------------------
 
 std::vector<FieldDesc> skillDescs() {
@@ -182,6 +202,7 @@ std::vector<FieldDesc> skillDescs() {
         en("control", "Control Effect", ids(content::skillEffectIds())),
         num("reviveHpPct", "Revive HP %", 0, 100),
         bl("alsoBuffsEnemies", "Also Buffs Enemies"),
+        num("mpDamagePct", "MP Damage % (M75)", 0, 100),
         txt("description", "Description"),
     };
 }
@@ -224,6 +245,11 @@ std::vector<FieldDesc> enemyDescs() {
         bl("bossOnly", "Boss Only"),
         num("doNothingPct", "Do-Nothing % (M61)", 0, 100),
         str("doNothingText", "Do-Nothing Line"),
+        objArr("initialStatuses", "Initial Statuses (M75)", statusRiderChildren()),
+        objArr("triggers", "Triggers (M75)", triggerChildren()),
+        enList("statusImmunities", "Status Immunities", ids(content::statusTypeIds())),
+        bl("avoidSleepingTargets", "Avoid Sleeping Targets"),
+        bl("noStunWhileAllFoesSleep", "No Stun While All Sleep"),
         num("xpReward", "XP Reward", 0, 99999),
         num("goldReward", "Gold Reward", 0, 99999),
     };
@@ -240,6 +266,9 @@ std::vector<FieldDesc> bossDescs() {
         refList("minions", "Minions", Category::Enemies),
         refList("passives", "Passives", Category::Passives),
         num("minTown", "Min Town", 1, 7, 1, 1),
+        // M84: 0 = ordinary boss; 1..7 marks the town's Guild Master (fought
+        // only in that town's guild gauntlet, excluded from dungeons/rush).
+        num("guildTown", "Guild Master Of Town (M84)", 0, 7),
         enList("weaknesses", "Weak To", ids(content::elementIds())),
         enList("immunities", "Immune To", ids(content::elementIds())),
         num("reviveMinionTurns", "Revive Minions (turns)", 0, 99),
@@ -247,6 +276,12 @@ std::vector<FieldDesc> bossDescs() {
         bl("attackHitsAll", "Attack Hits All (M61)"),
         objArr("attackStatuses", "Attack Statuses", statusRiderChildren()),
         bl("immuneToAfflictions", "Immune To Afflictions"),
+        objArr("initialStatuses", "Initial Statuses (M75)", statusRiderChildren()),
+        objArr("triggers", "Triggers (M75)", triggerChildren()),
+        enList("statusImmunities", "Status Immunities", ids(content::statusTypeIds())),
+        bl("avoidSleepingTargets", "Avoid Sleeping Targets"),
+        bl("noStunWhileAllFoesSleep", "No Stun While All Sleep"),
+        bl("immuneToStatScale", "Immune To Stat Scale (Spoon)"),
         txt("telegraph", "Telegraph"),
         num("xpReward", "XP Reward", 0, 99999),
         num("goldReward", "Gold Reward", 0, 99999),
@@ -266,9 +301,12 @@ std::vector<FieldDesc> itemDescs() {
         num("value", "Value (gold)", 0, 99999, 10),
         num("minTown", "Min Town", 1, 7, 1, 1),
         num("maxTown", "Max Town", 0, 7),
+        num("maxHeld", "Max Held (M78)", 0, 9),
+        bl("notSoldInTown", "Not Sold In Town (M78)"),
         en("effect", "Effect", ids(content::consumableEffectIds())),
         num("effectAmount", "Effect Amount", 0, 9999),
         bl("curesDebuffs", "Cures Debuffs"),
+        bl("curesCurse", "Cures Curse (M75)"),
         num("kingEffectAmount", "King Effect Amount", 0, 9999),
         num("kingMpAmount", "King MP Amount", 0, 9999),
         en("battleTarget", "Battle Target", ids(content::battleTargetIds()), "ally"),
@@ -277,6 +315,10 @@ std::vector<FieldDesc> itemDescs() {
         num("statScalePct", "Stat Scale %", 0, 200),
         bl("disablesMinionRevive", "Disables Minion Revive"),
         obj("statBonus", "Stat Bonus", statChildren(-99, -99)),
+        enList("resistElements", "Resist Elements (M75)", ids(content::elementIds())),
+        num("resistPct", "Resist %", 0, 100),
+        en("iconCategory", "Icon Category (M81)", ids(content::iconCategoryIds()), ""),
+        str("useLine", "Use Line (M76)"),
         ref("grantsSkill", "Grants Skill (scroll)", Category::Skills),
         txt("description", "Description"),
     };
@@ -355,10 +397,30 @@ std::vector<FieldDesc> compositionDescs() {
 }
 
 std::vector<FieldDesc> storyDescs() {
+    // Town bounds follow the loader (M85 widened 9 -> 10 for the Pale Jester).
     return {
-        num("town", "Town (8 castle, 9 goose town)", 1, 9, 1, 1, true),
+        num("town", "Town (8 castle, 9 goose, 10 pale jester)", 1, 10, 1, 1, true),
         str("speaker", "Speaker", true),
         str("title", "Title", true),
+        txt("body", "Body", true),
+    };
+}
+
+// M86: the two optional content files (M80 event flavor, M85 curio lore).
+// Both are plain id-keyed entity arrays; the loader owns shape/duplicates and
+// (for events) rejects unknown ids, so a typo'd id fails validation on save
+// rather than silently authoring nothing.
+std::vector<FieldDesc> eventFlavorDescs() {
+    return {
+        idField(),
+        str("title", "Title", true),
+        txt("body", "Body", true),
+    };
+}
+
+std::vector<FieldDesc> curioLoreDescs() {
+    return {
+        idField(),
         txt("body", "Body", true),
     };
 }
@@ -377,6 +439,8 @@ const std::vector<CategoryInfo>& categories() {
         {Category::Themes, "dungeon_themes.json", "themes", "Themes", true},
         {Category::Composition, "composition.json", "", "Composition", false},
         {Category::Story, "story.json", "story", "Story", false},
+        {Category::EventFlavor, "event_flavor.json", "events", "Event Flavor", true},
+        {Category::CurioLore, "curio_lore.json", "curios", "Curio Lore", true},
     };
     return kInfos;
 }
@@ -401,6 +465,8 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
     static const std::vector<FieldDesc> kThemes = themeDescs();
     static const std::vector<FieldDesc> kComposition = compositionDescs();
     static const std::vector<FieldDesc> kStory = storyDescs();
+    static const std::vector<FieldDesc> kEventFlavor = eventFlavorDescs();
+    static const std::vector<FieldDesc> kCurioLore = curioLoreDescs();
     switch (category) {
         case Category::Skills: return kSkills;
         case Category::Classes: return kClasses;
@@ -412,6 +478,8 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
         case Category::Themes: return kThemes;
         case Category::Composition: return kComposition;
         case Category::Story: return kStory;
+        case Category::EventFlavor: return kEventFlavor;
+        case Category::CurioLore: return kCurioLore;
     }
     return kSkills;
 }

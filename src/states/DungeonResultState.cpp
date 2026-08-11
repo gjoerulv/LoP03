@@ -25,13 +25,15 @@ namespace cd {
 
 DungeonResultState::DungeonResultState(StateStack& stack, AppContext& context,
                                        score::RunSummary summary, int score,
-                                       BossDropResult drops, RunStats stats)
+                                       BossDropResult drops, RunStats stats,
+                                       std::string mapLine)
     : GameState(stack),
       context_(context),
       summary_(std::move(summary)),
       score_(score),
       drops_(std::move(drops)),
-      stats_(std::move(stats)) {
+      stats_(std::move(stats)),
+      mapLine_(std::move(mapLine)) {
     context_.fade.start();
     context_.audio.setMusic(MusicTrack::Result);
     context_.audio.setAmbience(AmbienceTrack::None);
@@ -87,12 +89,14 @@ void DungeonResultState::render() {
     const int dropGap = anyDrop ? 6 : 0;
     // The panel grows with its line count (escapes and the M20 wager are
     // conditional) so the breakdown never crowds the footer (UI-LAYOUT-018).
+    // M83: the map-drop story wraps to at most two lines below the drops.
+    const int mapLines = mapLine_.empty() ? 0 : 2;
     const int lineCount = 6 + (summary_.escapes > 0 ? 1 : 0) +
                           (summary_.wagerAccepted ? 1 : 0) +
                           (summary_.townBonusPct > 0 ? 1 : 0) +        // M32 town bonus
                           (summary_.stakesPenaltyPct > 0 ? 1 : 0) +    // M33 stakes penalty
                           (summary_.classModPct != 0 ? 1 : 0) +        // M45 class modifier
-                          dropLines;                                   // M39 boss drops
+                          dropLines + mapLines;                        // M39 drops + M83 map
     // Pitch 13 keeps the common breakdown clear of the footer (audit
     // UI-LAYOUT-018); but the fullest panel (all 10 breakdown lines + the M39
     // drop block) would exceed the virtual height, so when it would, tighten the
@@ -169,6 +173,11 @@ void DungeonResultState::render() {
             ui::drawText(("Won  " + name).c_str(), boxX + 22, y, 10, gold);
             y += pitch;
         }
+    }
+
+    // M83: the map economy speaks below the drops, in the reward voice.
+    if (!mapLine_.empty()) {
+        ui::drawTextWrapped(mapLine_, boxX + 22, y, boxW - 44, 10, p.gold, "result.map", 2);
     }
 
     ui::drawTextCentered((input::prompt(context_.input.map(), InputAction::Confirm,

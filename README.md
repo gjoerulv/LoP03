@@ -8,8 +8,10 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M74
-> delivered and owner-approved). In the box: a seven-town difficulty ladder
+> **Status: feature-complete, polished playable build** (milestones M1–M85
+> delivered and owner-approved; M86 — the CrystalForge catch-up and the
+> deliberate version renumber to **0.6.0** — implemented, awaiting
+> approval). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
 > dungeons with room events including the rare Royal Relics and per-theme
@@ -53,7 +55,17 @@ music, or text. Built in **C++20** with **raylib**.
 > sprite redrawn as hand-authored pixel grids — bosses on a larger 36×36
 > canvas with real silhouettes), and **M74** (the Crystal Mine ambience
 > rebuilt around rockfall and crystal-shard echoes — the old "drips" were
-> synthesised as bird whistles). Only the
+> synthesised as bird whistles). The **M75–M86 expansion program**
+> (approved milestone by milestone through 2026-08-07) then added: three
+> new statuses (**Reflect / Sleep / Curse**) with authored counterplay
+> skills and items, a deterministic **boss trigger system**, an enemy &
+> boss offensive pass (King and Duck reworks included), **held-item caps**
+> and shop UX, party-cycling keys and a **three-slot keyboard remap**,
+> dungeon **event flavor** panels, elemental weapons + resist charms +
+> **gear icons**, **1-or-4-floor dungeons** with split scoreboards, a
+> map-piece economy, per-town **Guild Masters** paying permanent town
+> perks, the curio-gated **Last Dragon** at the castle, and the
+> CrystalForge catch-up with the version renumbered to 0.6.0. Only the
 > deferred **validation playtesting (M23)** and **release sign-off (M24)**
 > remain. Current status always lives in `docs/milestones.md`.
 
@@ -159,12 +171,17 @@ cmake --build build-msvc --config Release
 
 ## Controls
 
-Default bindings — everything except text-delete and the debug toggle is
+Default bindings — everything except a few fixed keys (text-delete, the
+debug toggle, the debug-build F5 asset reload) is
 **remappable in-game** under **Main Menu → Settings** (also reachable from the
-pause menus). Settings are organized into **Audio / Display / Gameplay /
+pause menus); since M79 every keyboard action offers **three slots**
+(Primary / Alt 1 / Alt 2), with a steal-with-confirm warning when a key is
+already in use. Settings are organized into **Audio / Display / Gameplay /
 Controls** submenus (M51): master/music/SFX volumes, a separate **Ambience
-Volume** slider (M52, default 5) and a **Background Audio** toggle; window
-mode, a **CRT Strength** slider (M57, 0–10, 0 by default), battle flash/shake,
+Volume** slider (M52; default 3 since M79) and a **Background Audio**
+toggle; window
+mode, **CRT Strength** and **CRT Curvature** sliders (M57/M70, each 0–10),
+battle flash/shake,
 and high-contrast; battle/message speed and tutorial prompts; and per-device
 remapping. All of it persists in `settings.json` in the user data folder;
 one-time tutorial-prompt progress persists in `tutorial.json` beside it. By
@@ -174,10 +191,11 @@ to keep it playing).
 | Action                | Keyboard               | Gamepad            |
 |-----------------------|------------------------|--------------------|
 | Move / Navigate       | Arrows or WASD         | D-Pad / Left Stick |
-| Confirm               | Enter or Space         | A                  |
-| Cancel / Back         | Esc or Backspace       | B                  |
+| Confirm               | Enter, Space, or Z     | A                  |
+| Cancel / Back         | Esc, Backspace, or X   | B                  |
 | Menu / Pause          | Tab                    | Start              |
 | Details / Info        | C                      | Y                  |
+| Prev / Next member    | Q / E (or Ctrl / Alt)  | L1 / R1            |
 | Adjust (Guild, Settings) | Left / Right        | D-Pad L/R / Stick  |
 | Delete (name entry)   | Backspace              | X                  |
 | Toggle debug overlay  | F1                     | —                  |
@@ -191,15 +209,21 @@ letterbox/pillarbox bars.
 1. **New Game** → pick 4 classes (Knight, Ranger, Mage, Cleric, Rogue, Guardian)
    and name them. You start with a little gold.
 2. In the **town**, walk to buildings: **Inn** (rest to full HP/MP for gold, or
-   free with a rest token), **Item Shop** (buy consumables), **Equip Shop**
+   free with a rest token), **Item Shop** (buy consumables — held
+   quantities are capped per item since M78), **Equip Shop**
    (buy by category + equip gear — each town unlocks stronger gear as you climb),
    **Training Hall** (level up, and buy passive skills — own many, equip one),
    **Scoreboard**, **Save Point** (5 slots), and the **Guild**. **Walk out the
    west/east roads** to move between the **seven towns** (no button — just walk
    into the road); each later town raises enemy stats (up to +200 %) and score
    bonus (up to +100 %); clearing a dungeon in a town unlocks the road onward.
-3. At the **Guild**, pick a theme + depth and enter a seeded dungeon. Entering
-   autosaves.
+3. At the **Guild**, pick a theme, a depth, and **1 or 4 floors** (M82 —
+   a 4-floor run keeps the boss on the last floor behind Stairway Warden
+   gates, posts to its own scoreboard, and in town 2+ can drop **Secret
+   Map Pieces**), then enter a seeded dungeon. Entering
+   autosaves. The Guild also hosts **"Fight the Guild Boss"** (M84):
+   clear a 4-floor dungeon in that town to unlock its unique Master —
+   the first victory pays a pick-1-of-2 **permanent town perk**.
 4. Walk the dungeon: enemy teams show a **danger tier**; fight them to clear
    **gates** (≥3 before the boss) and chest guards. Win battles to earn **XP and
    gold**; open chests for loot.
@@ -221,12 +245,16 @@ letterbox/pillarbox bars.
    dealer, regardless of score or stakes (M52). During any battle, **Menu/Pause**
    opens a scrollable **battle log** of the last actions.
 7. Clear any **town-7 dungeon** to open the northern road to the **castle** — a
-   place above the ladder with the **King's three challenges**: the **Boss Rush**
-   (all 12 bosses back-to-back **with their minions**, no free healing), the
-   **Endless Rush** (escalating waves, survive as long as you can), and **the
-   Hollow King** himself (the hardest fight — immune to blind/silence/confusion,
+   place above the ladder with **four challenges**: the **Boss Rush**
+   (all 12 dungeon bosses back-to-back **with their minions**, no free
+   healing), the
+   **Endless Rush** (escalating waves — every 10th fields a boss and its
+   court), **the
+   Hollow King** himself (immune to blind/silence/confusion,
    flanked by **two Royal Guards he calls back from the dead every five turns**;
-   beat him for a unique legendary and a title). The castle keeps its **own records**, separate from your dungeon scores.
+   beat him for a unique legendary and a title), and — for collectors of
+   all **twelve curios** — **the Last Dragon** (M85): three elite waves,
+   then the game's largest single fight. The castle keeps its **own records**, separate from your dungeon scores.
    Failing (or fleeing) a challenge costs **no gold** — but nobody is healed:
    survivors are carried to the gates at **1 HP**, the fallen stay fallen, and a
    full wipe leaves exactly one member standing so an inn is always reachable.
@@ -260,7 +288,9 @@ src/
   states/    game states (menu, town, dungeon, battle, shops, ...)
   capture/   deterministic screenshot scenes (dev builds only)
   editor/    CrystalForge content editor (separate dev tool; never shipped)
-data/        JSON content (classes, enemies, items, skills, bosses, themes)
+data/        JSON content (12 files: skills, classes, enemies, items, bosses,
+             themes, composition, passives, milestones, story,
+             event_flavor + curio_lore)
 assets/      manifest.json + generated textures/audio/font + credits.md
 tools/       package.ps1 + deterministic asset generators (asset_gen/)
 tests/       Catch2 unit/integration tests (headless)
@@ -322,17 +352,25 @@ save round-trips via the Save Point + Continue.
   sound and visual role is replaceable without code via
   `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload
   with F5); missing files fall back to synthesized placeholders or silence.
-- Status effects include poison, attack/defense buffs/debuffs, and (M35)
-  Blind (physical attacks usually miss), Silence (no MP-cost skills), and
+- Status effects: poison, attack/defense buffs/debuffs, (M35) Blind
+  (physical attacks usually miss), Silence (no MP-cost skills), and
   Confusion (forces a basic attack at its own side, on both sides equally since
-  M43) — all deterministic and seeded. **Elements (M48)** are a deliberately
+  M43), (M44) Terrified and Stunned, and (M75) **Reflect, Sleep, and
+  Curse** — all deterministic and seeded; Curse is the one status ordinary
+  cures never lift (a dedicated skill or item does). **Elements
+  (M48/M81)** are a deliberately
   sparse layer: a handful of foes are weak (×150 %) or immune (0 damage, and no
-  status rider) to one element, carried by elemental spells and by five
-  elemental weapons; affinities are shown in the bestiary and the battle target
+  status rider) to one element, carried by elemental spells and **ten**
+  elemental weapons and answered by seven resist accessories; affinities
+  are shown in the bestiary and the battle target
   panel for foes you have met. Bosses use
-  stats, skills, minions, telegraph text, and a Brute enrage; dynamic summons and
-  true multi-wave "rush" are not implemented.
-- Equipment has no per-class restrictions; the economy is lightly tuned.
+  stats, skills, minions, telegraph text, archetype mechanics, and (M75)
+  deterministic triggers — one can even raise a clone of itself; true
+  mid-fight reinforcements are still not implemented (the endgame
+  gauntlets run their waves as separate battles).
+- The six starting classes share all equipment (no per-class
+  restrictions); each reward class bans slots (the Goose wears nothing).
+  The economy is lightly tuned.
 - The seven towns share one fixed layout (exterior palette, service interiors,
   and music vary per town); no per-character portraits.
 

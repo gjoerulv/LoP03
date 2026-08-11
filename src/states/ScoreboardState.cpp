@@ -38,15 +38,42 @@ constexpr int kVisibleRows = 10;
 }  // namespace
 
 ScoreboardState::ScoreboardState(StateStack& stack, AppContext& context)
-    : GameState(stack), context_(context) {}
+    : GameState(stack), context_(context) {
+    rebuildBoard();
+}
+
+void ScoreboardState::rebuildBoard() {
+    // M82: the board shows only its shape's runs; ranking within a board is
+    // the scoreboard's own order (entries() is already ranked).
+    visible_.clear();
+    const auto& entries = context_.scoreboard.entries();
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        if (score::onFloorsBoard(entries[i], boardFloors_)) {
+            visible_.push_back(static_cast<int>(i));
+        }
+    }
+    scroll_.reset();
+}
+
+#ifdef CRYSTAL_CAPTURE
+void ScoreboardState::captureShowFourFloorBoard() {
+    boardFloors_ = 4;
+    rebuildBoard();
+}
+#endif
 
 void ScoreboardState::handleInput(const Input& input) {
-    const int total = static_cast<int>(context_.scoreboard.entries().size());
+    const int total = static_cast<int>(visible_.size());
     if (input.navPressed(InputAction::MoveUp)) {
         scroll_.scrollBy(total, kVisibleRows, -1);
     }
     if (input.navPressed(InputAction::MoveDown)) {
         scroll_.scrollBy(total, kVisibleRows, 1);
+    }
+    // M82: the M79 cycle pair flips between the 1-floor and 4-floor boards.
+    if (input.pressed(InputAction::CyclePrev) || input.pressed(InputAction::CycleNext)) {
+        boardFloors_ = boardFloors_ == 1 ? 4 : 1;
+        rebuildBoard();
     }
     if (input.pressed(InputAction::Details)) {
         stack().pushState(std::make_unique<DetailsOverlayState>(
@@ -65,14 +92,28 @@ void ScoreboardState::render() {
     ui::drawSceneBackground(context_.resources, "bg.scoreboard", pal.canvas,
                             context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
     ui::drawHeaderBand("Scoreboard", w, pal.gold);
+    // M82: which board is showing, as a centered chip under the band. Both
+    // boards always exist; the cycle hint lives in the footer.
+    {
+        const char* label = boardFloors_ == 1 ? "1-Floor Runs" : "4-Floor Runs";
+        const int chipW = ui::measureText(label, 8) + 12;
+        ui::drawChip(label, w / 2 - chipW / 2, 26, boardFloors_ == 1 ? pal.gold : pal.crystal);
+    }
 
     const auto& entries = context_.scoreboard.entries();
-    if (entries.empty()) {
-        ui::drawTextWrapped("No runs recorded yet. Clear a dungeon to set a score!", 60, h / 2,
-                            w - 120, style::kFontBody, pal.textDim, "scoreboard.empty", 2);
-        ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
-                                                  context_.input.activeDevice()),
-                              "Back"}},
+    if (visible_.empty()) {
+        const char* empty = boardFloors_ == 1
+                                ? "No runs recorded yet. Clear a dungeon to set a score!"
+                                : "No 4-floor runs yet. Choose Floors: 4 at the Guild and "
+                                  "descend!";
+        ui::drawTextWrapped(empty, 60, h / 2, w - 120, style::kFontBody, pal.textDim,
+                            "scoreboard.empty", 2);
+        const InputMap& emap = context_.input.map();
+        const ActiveDevice edev = context_.input.activeDevice();
+        ui::drawFooterHints({{input::primaryLabel(emap, InputAction::CyclePrev, edev) + "/" +
+                                  input::primaryLabel(emap, InputAction::CycleNext, edev),
+                              "Board"},
+                             {input::primaryLabel(emap, InputAction::Cancel, edev), "Back"}},
                             w, h, "scoreboard.footer");
         return;
     }
@@ -87,12 +128,13 @@ void ScoreboardState::render() {
     ui::drawTextRight("Lv", kLvR, kHeaderY, style::kFontBody, style::palette().textDim);
     ui::drawText("Theme", kThemeX, kHeaderY, style::kFontBody, style::palette().textDim);
 
-    const int total = static_cast<int>(entries.size());
+    const int total = static_cast<int>(visible_.size());
     const int first = scroll_.top();
     const int count = scroll_.visibleCount(total, kVisibleRows);
     for (int row = 0; row < count; ++row) {
         const int i = first + row;
-        const score::ScoreEntry& e = entries[static_cast<std::size_t>(i)];
+        const score::ScoreEntry& e =
+            entries[static_cast<std::size_t>(visible_[static_cast<std::size_t>(i)])];
         const int y = kRowsY + row * kRowH;
         const Color rowColor = e.noDeath ? pal.success : pal.text;
         ui::drawText(TextFormat("%d", i + 1), kRankX, y, style::kFontBody, rowColor);
@@ -140,13 +182,14 @@ void ScoreboardState::render() {
                           w - 16, legendY, style::kFontSmall, style::palette().textDim);
     }
 
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
     ui::drawFooterHints(
-        {{input::primaryLabel(context_.input.map(), InputAction::Details,
-                              context_.input.activeDevice()),
-          "How scoring works"},
-         {input::primaryLabel(context_.input.map(), InputAction::Cancel,
-                              context_.input.activeDevice()),
-          "Back"}},
+        {{input::primaryLabel(map, InputAction::CyclePrev, device) + "/" +
+              input::primaryLabel(map, InputAction::CycleNext, device),
+          "Board"},  // M82
+         {input::primaryLabel(map, InputAction::Details, device), "How scoring works"},
+         {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
         w, h, "scoreboard.footer");
 }
 

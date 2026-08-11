@@ -15,7 +15,11 @@
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "game/Achievements.hpp"
+#include "game/Guild.hpp"
+#include "game/Story.hpp"  // M85: kDragonJesterBeat
 #include "states/AchievementToast.hpp"
+#include "states/GuildPerkChoiceState.hpp"
+#include "states/StoryDialogState.hpp"  // M85: the Pale Jester's introduction
 #include "render/BattleBackdrop.hpp"
 #include "states/BattleState.hpp"
 #include "states/BossIntroState.hpp"
@@ -36,13 +40,16 @@ const char* challengeName(CastleChallenge kind) {
         case CastleChallenge::Endless: return "Endless Rush";
         case CastleChallenge::King: return "The Hollow King";
         case CastleChallenge::DuckGauntlet: return "The Deadly Duck";  // M61
+        case CastleChallenge::GuildBoss: return "The Guild Boss";      // M84 (fallback)
+        case CastleChallenge::Dragon: return "The Last Dragon";        // M85
     }
     return "";
 }
 
 // The team for fight/wave `wave`; empty when the challenge is complete (the Boss
 // Rush past its last boss, or the King past its single fight).
-dungeon::EnemyTeam teamFor(CastleChallenge kind, int wave, const content::ContentDatabase& db) {
+dungeon::EnemyTeam teamFor(CastleChallenge kind, int wave, const content::ContentDatabase& db,
+                           int guildTown) {
     switch (kind) {
         case CastleChallenge::BossRush: return bossRushTeam(db, wave);
         case CastleChallenge::Endless: return endlessWaveTeam(db, wave);
@@ -52,6 +59,16 @@ dungeon::EnemyTeam teamFor(CastleChallenge kind, int wave, const content::Conten
                 return gooseWaveTeam(db);
             }
             return wave == 1 ? duckTeam(db) : dungeon::EnemyTeam{};
+        case CastleChallenge::GuildBoss:  // M84: the Guild Trial, then the Master
+            if (wave == 0) {
+                return guildWaveTeam(db, guildTown);
+            }
+            return wave == 1 ? guildMasterTeam(db, guildTown) : dungeon::EnemyTeam{};
+        case CastleChallenge::Dragon:  // M85: three elite vigils, then the Dragon
+            if (wave < kDragonWaveCount) {
+                return dragonEliteWaveTeam(db, wave);
+            }
+            return wave == kDragonWaveCount ? dragonTeam(db) : dungeon::EnemyTeam{};
     }
     return {};
 }
@@ -59,8 +76,8 @@ dungeon::EnemyTeam teamFor(CastleChallenge kind, int wave, const content::Conten
 }  // namespace
 
 CastleChallengeState::CastleChallengeState(StateStack& stack, AppContext& context,
-                                           CastleChallenge kind)
-    : GameState(stack), context_(context), kind_(kind) {}
+                                           CastleChallenge kind, int guildTown)
+    : GameState(stack), context_(context), kind_(kind), guildTown_(guildTown) {}
 
 void CastleChallengeState::onEnter() {
     if (done_) {
@@ -69,39 +86,67 @@ void CastleChallengeState::onEnter() {
     // Start the first fight, THEN push the tutorial prompt so it sits on top and is
     // read before the battle begins (dismissing it reveals the fight beneath).
     startNextFight();
-    maybeTutorialPrompt(stack(), context_, tutorial::kFirstChallenge);
+    // M84: the first-challenge tutorial speaks of the castle; the guild
+    // gauntlet's stakes are already spelled out on the guild screen.
+    if (kind_ != CastleChallenge::GuildBoss) {
+        maybeTutorialPrompt(stack(), context_, tutorial::kFirstChallenge);
+    }
+    // M85: until the Dragon first falls, the Pale Jester's introduction sits
+    // on top of the opening fight (the tutorial-prompt pattern — read first,
+    // dismissed to reveal the vigil beneath). Content-driven; a missing beat
+    // simply skips the tale.
+    if (kind_ == CastleChallenge::Dragon && !context_.party.castleRecords.dragonDefeated()) {
+        if (const content::StoryBeat* beat = context_.content.findStoryBeat(kDragonJesterBeat)) {
+            stack().pushState(std::make_unique<StoryDialogState>(
+                stack(), context_, beat->speaker, beat->title, beat->body));
+        }
+    }
 }
 
 void CastleChallengeState::startNextFight() {
-    const dungeon::EnemyTeam team = teamFor(kind_, wave_, context_.content);
+    const dungeon::EnemyTeam team = teamFor(kind_, wave_, context_.content, guildTown_);
     if (team.bossId.empty() && team.enemyIds.empty()) {
         finish(true);  // no more fights -> the gauntlet/King was cleared
         return;
     }
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
     // M62: the Duck no longer borrows the King's theme — his pond, his own
-    // anthem (MusicTrack::DuckBattle, battle-tier synth fallback).
+    // anthem (MusicTrack::DuckBattle, battle-tier synth fallback). M84: a
+    // Guild Master gets the ordinary boss anthem — a town fight, not a royal
+    // one — and an Endless boss wave (every 10th) does too. M85: so does the
+    // Dragon (no new audio this milestone; a bespoke anthem is an owner call).
     const MusicTrack music =
         kind_ == CastleChallenge::King
             ? MusicTrack::KingBattle
-            : (kind_ == CastleChallenge::DuckGauntlet && wave_ == 1 ? MusicTrack::DuckBattle
-                                                                    : MusicTrack::None);
+            : (kind_ == CastleChallenge::DuckGauntlet && wave_ == 1
+                   ? MusicTrack::DuckBattle
+                   : (!team.bossId.empty() &&
+                              (kind_ == CastleChallenge::GuildBoss ||
+                               kind_ == CastleChallenge::Endless ||
+                               kind_ == CastleChallenge::Dragon)
+                          ? MusicTrack::Boss
+                          : MusicTrack::None));
     // M43: the `true` marks this as a castle fight, so a defeat message never
     // claims the dungeon's gold penalty. M56: castle fights wear the Castle
     // backdrop; a boss-team fight (a Boss Rush wave or the King) opens with the
     // Crystal Shatter, which then launches the same battle. Endless waves have no
     // bossId and stay plain. The intro seed is a stable function of the wave.
     const std::uint64_t introSeed = 0xB055C0DE0000ull + static_cast<std::uint64_t>(wave_);
+    // M84: a guild fight happens in a town hall, not the throne room — the
+    // neutral stage instead of the castle's.
+    const render::BackdropStage stage = kind_ == CastleChallenge::GuildBoss
+                                            ? render::BackdropStage::Plain
+                                            : render::BackdropStage::Castle;
     // M71: the challenge accumulates its own damage tallies so the celebration
     // can put the true MVP on the pedestal.
     if (!team.bossId.empty()) {
         stack().pushState(std::make_unique<BossIntroState>(
             stack(), context_, std::move(b), &result_, music, &stats_, /*castleChallenge=*/true,
-            render::BackdropStage::Castle, introSeed));
+            stage, introSeed));
     } else {
         stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &result_,
                                                         music, &stats_, /*castleChallenge=*/true,
-                                                        render::BackdropStage::Castle));
+                                                        stage));
     }
 }
 
@@ -127,7 +172,9 @@ void CastleChallengeState::onResume() {
 
 void CastleChallengeState::finish(bool cleared) {
     done_ = true;
-    context_.audio.setMusic(MusicTrack::Castle);
+    // M84: the guild gauntlet returns to the Guild's scene, not the castle's.
+    context_.audio.setMusic(kind_ == CastleChallenge::GuildBoss ? MusicTrack::Guild
+                                                                : MusicTrack::Castle);
     CastleRecords& rec = context_.party.castleRecords;
     std::string msg;
     // M47: a lost challenge costs no gold and forfeits no run — but it is no
@@ -235,15 +282,58 @@ void CastleChallengeState::finish(bool cleared) {
                           : "The Deadly Duck proves deadlier. Return stronger.";
             }
             break;
+        case CastleChallenge::Dragon:  // M85
+            if (cleared) {
+                if (dragonImproved(rec, totalRounds_)) {
+                    rec.dragonBestTurns = totalRounds_;
+                }
+                msg = "The Last Dragon burns out in " + std::to_string(totalRounds_) +
+                      " turns! The King, reached for comment, looks genuinely relieved. "
+                      "The Pale Jester writes something down.";
+            } else {
+                msg = wavesWon_ < kDragonWaveCount
+                          ? "The vigil holds. The Dragon never even uncoiled."
+                          : "The Last Dragon proves too vast. Return stronger.";
+            }
+            break;
+        case CastleChallenge::GuildBoss: {  // M84
+            GuildTownRecord& g = guildRecord(context_.party.guild, guildTown_);
+            const content::BossDef* master = findGuildMaster(context_.content, guildTown_);
+            const std::string masterName =
+                master != nullptr ? master->name : std::string("The Guild Master");
+            if (cleared) {
+                const bool first = !g.defeated();
+                if (guildImproved(g, totalRounds_)) {
+                    g.bestTurns = totalRounds_;
+                }
+                msg = masterName + " falls in " + std::to_string(totalRounds_) + " turns!";
+                if (first) {
+                    msg += " The town will remember this: its milestone is yours to choose.";
+                    // The pick-1-of-2 town-perk modal goes on the stack FIRST,
+                    // so the celebration and the toasts land above it and the
+                    // choice greets the player right after the fanfare. Cancel
+                    // postpones — the town re-offers it (the M63 rule).
+                    maybePushGuildPerkChoice(stack(), context_);
+                } else {
+                    msg += " The guild quietly updates its ledger.";
+                }
+            } else {
+                msg = wavesWon_ == 0
+                          ? "The Guild Trial overwhelms you. The Master never rose from "
+                            "the big chair."
+                          : masterName + " proves mightier. Return stronger.";
+            }
+            break;
+        }
     }
     if (!cleared) {
         msg += " You are carried to the gates, barely breathing. No gold is taken, "
                "but nothing is healed - find an inn.";
     }
     resultText_ = msg;
-    // M71: beating the King, the Deadly Duck, or the Boss Rush earns the
-    // celebration (the Endless Rush has no "beating"): shown above this
-    // state's result overlay, headline = the challenge's turns.
+    // M71: beating the King, the Deadly Duck, the Boss Rush — or, since M84, a
+    // Guild Master — earns the celebration (the Endless Rush has no "beating"):
+    // shown above this state's result overlay, headline = the challenge's turns.
     if (cleared && kind_ != CastleChallenge::Endless) {
         stack().pushState(std::make_unique<CelebrationState>(
             stack(), context_,
@@ -255,6 +345,17 @@ void CastleChallengeState::finish(bool cleared) {
 }
 
 #ifdef CRYSTAL_CAPTURE
+void CastleChallengeState::captureGuildResult() {
+    kind_ = CastleChallenge::GuildBoss;
+    guildTown_ = 6;  // Grandmaster Ossia — the longest Master name for the title
+    totalRounds_ = 88;
+    done_ = true;
+    const content::BossDef* master = findGuildMaster(context_.content, guildTown_);
+    const std::string name = master != nullptr ? master->name : "The Guild Master";
+    resultText_ = name + " falls in " + std::to_string(totalRounds_) +
+                  " turns! The town will remember this: its milestone is yours to choose.";
+}
+
 void CastleChallengeState::captureKingReward() {
     kind_ = CastleChallenge::King;
     totalRounds_ = 18;
@@ -285,15 +386,24 @@ void CastleChallengeState::render() {
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
-    ui::drawTextCentered(challengeName(kind_), w / 2, boxY + 12, 16, p.gold);
+    // M84: the guild overlay is titled by the town's Master itself.
+    std::string title = challengeName(kind_);
+    if (kind_ == CastleChallenge::GuildBoss) {
+        if (const content::BossDef* master = findGuildMaster(context_.content, guildTown_)) {
+            title = master->name;
+        }
+    }
+    ui::drawTextCentered(title.c_str(), w / 2, boxY + 12, 16, p.gold);
     ui::drawDivider(boxX + 14, boxY + 34, boxW - 28);
     ui::drawTextWrapped(resultText_, boxX + 16, boxY + 42, boxW - 32, 10, p.text,
                         "castle.challenge.result", 6);
     // M62: the Duck gauntlet pops back to Goose Town, not the castle — the
-    // prompt says where you actually go.
+    // prompt says where you actually go. M84: the guild gauntlet, to the Guild.
     const char* returnLabel = kind_ == CastleChallenge::DuckGauntlet
                                   ? "Return to Goose Town"
-                                  : "Return to the Castle";
+                                  : (kind_ == CastleChallenge::GuildBoss
+                                         ? "Return to the Guild"
+                                         : "Return to the Castle");
     ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,
                                        context_.input.activeDevice(), returnLabel)
                              .c_str(),

@@ -36,7 +36,7 @@ inline constexpr AchievementDef kAchievements[] = {
     {"trailblazer", "Trailblazer", "Reach the fourth town."},
     {"ladders_end", "Ladder's End", "Reach the seventh town."},
     {"untouchable", "Untouchable", "Clear a dungeon without a single death."},
-    {"decisive", "Decisive", "Clear a dungeon in 20 battle turns or fewer."},
+    {"decisive", "Decisive", "Clear a dungeon in 15 battle turns or fewer."},
     {"deep_diver", "Deep Diver", "Clear a dungeon at depth 10 or deeper."},
     {"second_nature", "Second Nature", "Equip a passive skill on a hero."},
     {"high_roller", "High Roller", "Win a legendary token."},
@@ -50,6 +50,8 @@ inline constexpr AchievementDef kAchievements[] = {
     {"naturalist", "Naturalist", "Record 30 different foes in the bestiary."},
     {"quackbane", "Quackbane", "Fell the Deadly Duck."},  // M61 (locked shows ???)
     {"curator", "Curator", "Gather all twelve dungeon curios."},  // M66
+    {"guildbane", "Guildbane", "Defeat a Guild Master."},  // M84
+    {"wyrmbane", "Wyrmbane", "Fell the Last Dragon."},  // M85 (locked shows ???)
 };
 inline constexpr int kAchievementCount =
     static_cast<int>(sizeof(kAchievements) / sizeof(kAchievements[0]));

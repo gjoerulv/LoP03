@@ -90,6 +90,10 @@ TEST_CASE("editor: the real loader accepts the shipped files with zero errors", 
     REQUIRE(db.themeCount() == direct.themeCount());
     REQUIRE(db.passiveCount() == direct.passiveCount());
     REQUIRE(db.storyCount() == direct.storyCount());
+    // M86: the two optional files are editor categories now — same equivalence.
+    REQUIRE(db.eventFlavorCount() == direct.eventFlavorCount());
+    REQUIRE(db.curioLoreCount() == direct.curioLoreCount());
+    REQUIRE(db.curioLoreCount() > 0);
 }
 
 TEST_CASE("editor: quick checks run and pass on the shipped content", "[editor]") {

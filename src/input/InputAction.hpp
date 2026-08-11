@@ -19,13 +19,15 @@ enum class InputAction {
     Cancel,
     Menu,
     Details,  // M22: contextual help panels (stats, statuses, danger, score)
+    CyclePrev,  // M79: previous party member (shops/hall); more screens later
+    CycleNext,  // M79: next party member
     TextBackspace,  // delete-one-char while editing text (never remapped)
     ToggleDebug,
     ReloadAssets,  // debug builds: re-resolve the asset manifest (never remapped)
     Quit,  // reserved for an explicit quit affordance; no default binding
 };
 
-inline constexpr std::size_t kInputActionCount = 12;
+inline constexpr std::size_t kInputActionCount = 14;
 
 inline constexpr std::size_t actionIndex(InputAction a) { return static_cast<std::size_t>(a); }
 
@@ -38,8 +40,9 @@ inline constexpr InputAction kRemappableActions[] = {
     InputAction::MoveUp,  InputAction::MoveDown, InputAction::MoveLeft,
     InputAction::MoveRight, InputAction::Confirm, InputAction::Cancel,
     InputAction::Menu, InputAction::Details,
+    InputAction::CyclePrev, InputAction::CycleNext,  // M79
 };
-inline constexpr std::size_t kRemappableActionCount = 8;
+inline constexpr std::size_t kRemappableActionCount = 10;
 
 // Stable identifiers for settings serialization (do not rename: they are a
 // public schema once shipped).
@@ -53,6 +56,8 @@ constexpr std::string_view actionName(InputAction a) {
         case InputAction::Cancel: return "cancel";
         case InputAction::Menu: return "menu";
         case InputAction::Details: return "details";
+        case InputAction::CyclePrev: return "cycle_prev";
+        case InputAction::CycleNext: return "cycle_next";
         case InputAction::TextBackspace: return "text_backspace";
         case InputAction::ToggleDebug: return "toggle_debug";
         case InputAction::ReloadAssets: return "reload_assets";
@@ -82,6 +87,8 @@ constexpr std::string_view actionDisplayName(InputAction a) {
         case InputAction::Cancel: return "Cancel / Back";
         case InputAction::Menu: return "Menu / Pause";
         case InputAction::Details: return "Details / Info";
+        case InputAction::CyclePrev: return "Prev Party Member";
+        case InputAction::CycleNext: return "Next Party Member";
         case InputAction::TextBackspace: return "Delete (text entry)";
         case InputAction::ToggleDebug: return "Toggle debug overlay";
         case InputAction::ReloadAssets: return "Reload assets (debug)";

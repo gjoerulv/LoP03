@@ -7,6 +7,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "dungeon/DungeonModel.hpp"
+#include "game/Guild.hpp"  // M84: town-perk EXP/gold bonuses
 #include "game/Milestones.hpp"
 #include "game/Party.hpp"
 #include "game/Scrolls.hpp"
@@ -69,8 +70,13 @@ struct SpoilsResult {
 inline SpoilsResult applySpoils(Party& party, const BattleSpoils& spoils,
                                 const content::ContentDatabase& db) {
     SpoilsResult out;
-    out.xp = spoils.xp;
-    out.gold = spoils.gold + spoils.gold * partyGoldBonusPct(party.members, db) / 100;
+    // M84 town perks: Guild Lessons/Mastery raise battle EXP, the Bounty
+    // Clause raises battle gold — additive with the M63 standing-member
+    // bonuses, and applied HERE so the victory panel shows what was granted.
+    out.xp = spoils.xp + spoils.xp * guildExpBonusPct(party.guild) / 100;
+    out.gold = spoils.gold +
+               spoils.gold *
+                   (partyGoldBonusPct(party.members, db) + guildEnemyGoldPct(party.guild)) / 100;
     party.gold += out.gold;
 
     struct Snapshot {
@@ -84,7 +90,7 @@ inline SpoilsResult applySpoils(Party& party, const BattleSpoils& spoils,
                           c.stats.defense, c.stats.speed, allKnownSkills(c, db)});
     }
 
-    grantPartyXp(party, spoils.xp, db);
+    grantPartyXp(party, out.xp, db);  // the perk-adjusted amount (M84)
 
     for (std::size_t i = 0; i < party.members.size(); ++i) {
         const Character& c = party.members[i];

@@ -126,6 +126,12 @@ TEST_CASE("castle: the castle outclasses the deepest dungeon", "[castle]") {
         if (id == std::string(kKingBossId) || id == std::string(kDuckBossId)) {
             continue;  // castle-only / pond-only (M61), never generated into a dungeon
         }
+        if (boss.guildTown != 0) {
+            continue;  // M84: a Guild Master presides over its gauntlet, never a dungeon
+        }
+        if (id == std::string(kDragonBossId)) {
+            continue;  // M85: the Dragon sleeps behind the curios, never a dungeon
+        }
         deepestDungeonHp = std::max(deepestDungeonHp, boss.stats.maxHp * floorPct / 100);
     }
     REQUIRE(deepestDungeonHp > 0);

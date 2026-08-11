@@ -5,6 +5,7 @@
 /cmake-build-*/
 /dist/
 /docs/screenshots/*
+/docs/music/*
 *.o
 *.obj
 *.exe

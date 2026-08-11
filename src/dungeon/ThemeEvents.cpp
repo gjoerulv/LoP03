@@ -77,4 +77,23 @@ std::uint64_t themeEventHash(std::uint64_t seed, int roomIndex, std::uint64_t sa
     return x;
 }
 
+namespace {
+// M76: the peddler's own salt — one for the appearance roll, one for the slot
+// pick, so the two draws stay independent (the M35 salt discipline).
+constexpr std::uint64_t kSaltDuckAppears = 0xD0CC1157E11E2500ull;
+constexpr std::uint64_t kSaltDuckSlot = 0xD0CC1157E11E2501ull;
+}  // namespace
+
+int duckPeddlerSlot(std::uint64_t seed, int eligibleCount) {
+    if (eligibleCount <= 0) {
+        return -1;
+    }
+    const std::uint64_t roll = themeEventHash(seed, 0, kSaltDuckAppears);
+    if (static_cast<int>(roll % 100) >= kDuckPeddlerChancePct) {
+        return -1;  // the common case: no peddler in this dungeon
+    }
+    const std::uint64_t pick = themeEventHash(seed, 1, kSaltDuckSlot);
+    return static_cast<int>(pick % static_cast<std::uint64_t>(eligibleCount));
+}
+
 }  // namespace cd::dungeon

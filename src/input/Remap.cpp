@@ -108,4 +108,65 @@ RemapResult remapButton(InputMap& map, InputAction action, int newButton) {
 
 void resetBindings(InputMap& map) { map = InputMap{}; }
 
+SlotResult assignKeySlot(InputMap& map, InputAction action, int slot, int key,
+                         bool confirmSteal) {
+    if (!isRemappable(action) || key == kReservedKeyEscape || slot < 0 ||
+        slot >= kKeySlotCount) {
+        return {SlotOutcome::Blocked, action, 0};
+    }
+
+    // Where does the key live today (among the remappable keyboard lists)?
+    InputAction owner = action;
+    int ownerSlot = -1;
+    bool foreign = false;
+    for (InputAction other : kRemappableActions) {
+        const auto& keys = map.keys(other);
+        for (std::size_t i = 0; i < keys.size(); ++i) {
+            if (keys[i] == key) {
+                owner = other;
+                ownerSlot = static_cast<int>(i);
+                foreign = other != action;
+            }
+        }
+    }
+    if (foreign) {
+        if (!confirmSteal) {
+            return {SlotOutcome::NeedsConfirm, owner, ownerSlot};
+        }
+        if (map.keys(owner).size() <= 1) {
+            return {SlotOutcome::Blocked, owner, ownerSlot};  // never strand
+        }
+    }
+
+    const auto setKeys = [&map](InputAction a, const std::vector<int>& keys) {
+        const std::vector<int> buttons = map.buttons(a);
+        map.clear(a);
+        for (int k : keys) {
+            map.bindKey(a, k);
+        }
+        for (int b : buttons) {
+            map.bindButton(a, b);
+        }
+    };
+
+    // Pull the key out of wherever it lives — the old owner, or this action's
+    // other slot (a move between own slots).
+    if (ownerSlot >= 0) {
+        std::vector<int> ownerKeys = map.keys(owner);
+        ownerKeys.erase(ownerKeys.begin() + ownerSlot);
+        setKeys(owner, ownerKeys);
+    }
+
+    std::vector<int> keys = map.keys(action);
+    const std::size_t target = std::min(static_cast<std::size_t>(slot), keys.size());
+    if (target < keys.size()) {
+        keys[target] = key;  // a direct slot remap replaces that slot's key
+    } else {
+        keys.push_back(key);  // pack left: no gaps between slots
+    }
+    setKeys(action, keys);
+    return {foreign ? SlotOutcome::Stolen : SlotOutcome::Rebound, owner,
+            ownerSlot < 0 ? 0 : ownerSlot};
+}
+
 }  // namespace cd::input

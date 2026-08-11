@@ -12,6 +12,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "states/EquipDiff.hpp"
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
@@ -56,8 +57,10 @@ void BlackMarketState::rebuild() {
     // Fixed rows: buy-with-gold (0), buy-with-tokens (1), leave (2). The buy rows
     // disable when unaffordable or already sold; Leave is always enabled.
     const int tokens = context_.party.legendaryTokens;
+    // M84 (Legendary Patronage): the town-7 perk drops the token price 3 -> 1.
+    const int tokenPrice = guildTokenPrice(context_.party.guild);
     const bool canGold = !purchased_ && context_.party.gold >= priceGold_;
-    const bool canTokens = !purchased_ && tokens >= kBlackMarketTokenPrice;
+    const bool canTokens = !purchased_ && tokens >= tokenPrice;
 
     std::string goldLabel;
     std::string tokenLabel;
@@ -67,8 +70,8 @@ void BlackMarketState::rebuild() {
     } else {
         goldLabel = TextFormat("Buy for %dg%s", priceGold_,
                                canGold ? "" : "  (not enough gold)");
-        tokenLabel = TextFormat("Buy for %d legendary tokens  (%d held)%s",
-                                kBlackMarketTokenPrice, tokens,
+        tokenLabel = TextFormat("Buy for %d legendary token%s  (%d held)%s",
+                                tokenPrice, tokenPrice == 1 ? "" : "s", tokens,
                                 canTokens ? "" : "  (not enough)");
     }
 
@@ -114,8 +117,8 @@ void BlackMarketState::handleInput(const Input& input) {
         if (cursor == 0) {  // gold
             context_.party.gold -= priceGold_;
             grantOffered();
-        } else if (cursor == 1) {  // tokens
-            context_.party.legendaryTokens -= kBlackMarketTokenPrice;
+        } else if (cursor == 1) {  // tokens (M84: the perk-adjusted price)
+            context_.party.legendaryTokens -= guildTokenPrice(context_.party.guild);
             grantOffered();
         }
     }
@@ -145,9 +148,19 @@ void BlackMarketState::render() {
                            : it->slot == content::EquipSlot::Accessory ? "Accessory"
                                                                        : "Relic";
         ui::drawFrame(32, 46, w - 64, 70, ui::FrameStyle::Reward);
-        ui::drawTextFitted(TextFormat("%s  (Legendary %s)", it->name.c_str(), slot), 46, 53,
-                           w - 92, 12, p.gold, "market.name");
-        ui::drawTextFitted(statBonusSummary(it->statBonus), 46, 70, w - 92, style::kFontBody,
+        // M81: the offer leads with its gear icon at 2x — the dealer shows the
+        // goods, not just the name.
+        ui::drawGearIcon(context_.resources, content::gearIconTextureId(*it), 42, 50, 2);
+        ui::drawTextFitted(TextFormat("%s  (Legendary %s)", it->name.c_str(), slot), 68, 53,
+                           w - 114, 12, p.gold, "market.name");
+        // M81: worn resistance joins the stat summary (it is the whole point
+        // of the all-element piece, which has no stat bonus to show).
+        std::string summary = statBonusSummary(it->statBonus);
+        const std::string resist = equip::resistSummary(*it);
+        if (!resist.empty()) {
+            summary += (summary.empty() ? "" : "  ") + resist;
+        }
+        ui::drawTextFitted(summary, 46, 70, w - 92, style::kFontBody,
                            p.success, "market.stats");
         ui::drawTextWrapped(it->description, 46, 85, w - 92, style::kFontBody, p.textDim,
                             "market.desc", 2);

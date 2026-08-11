@@ -80,6 +80,7 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["castleKingBestTurns"] = party.castleRecords.kingBestTurns;
   root["castleKingTitle"] = party.castleRecords.kingTitle;
   root["castleDuckBestTurns"] = party.castleRecords.duckBestTurns;  // M61 (optional; old -> 0)
+  root["castleDragonBestTurns"] = party.castleRecords.dragonBestTurns;  // M85 (optional; old -> 0)
   root["gooseTownUnlocked"] = party.gooseTownUnlocked;              // M61 (optional; old -> false)
   root["mapPieces"] = party.mapPieces;                              // M65 (optional; old -> 0)
   root["treasureActive"] = party.treasure.active;                   // M65
@@ -87,7 +88,23 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["treasureBossId"] = party.treasure.bossId;
   root["treasureScalePct"] = party.treasure.scalePct;
   root["treasureScrollsAwarded"] = party.treasureScrollsAwarded;    // M65
+  root["mapPiecesOwed"] = party.mapPiecesOwed;                      // M83 (optional; old -> 0)
   root["ownedCurios"] = party.ownedCurios;                          // M66 (optional; old -> none)
+  // M84 guild ladder: the unlocks as a 7-bit town mask (the storyMet idiom),
+  // the records and chosen perks as one flat key per town (the castle-records
+  // idiom). All optional; old saves load with every audience locked.
+  {
+    int guildMask = 0;
+    for (int t = 1; t <= kTownCount; ++t) {
+      const GuildTownRecord& g = guildRecord(party.guild, t);
+      if (g.unlocked) {
+        guildMask |= 1 << (t - 1);
+      }
+      root["guildBest" + std::to_string(t)] = g.bestTurns;
+      root["guildPerk" + std::to_string(t)] = g.perkId;
+    }
+    root["guildUnlocked"] = guildMask;
+  }
   root["storyMet"] = party.storyMet;  // M41 (optional; old -> 0)
   root["encountered"] = party.encountered;             // M42 (optional; old -> empty)
   root["recordBiggestHit"] = party.recordBiggestHit;   // M42 (optional; old -> 0)
@@ -211,6 +228,8 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   loaded.castleRecords.kingBestTurns = rootReader.optIntMin("castleKingBestTurns", 0, 0);
   loaded.castleRecords.kingTitle = rootReader.optString("castleKingTitle");
   loaded.castleRecords.duckBestTurns = rootReader.optIntMin("castleDuckBestTurns", 0, 0);  // M61
+  loaded.castleRecords.dragonBestTurns =
+      rootReader.optIntMin("castleDragonBestTurns", 0, 0);  // M85
   loaded.gooseTownUnlocked = rootReader.optBool("gooseTownUnlocked", false);               // M61
   // M65 puzzle map: pieces clamp below the reveal threshold; a reveal whose
   // guard the content no longer knows deactivates (the pieces were spent — the
@@ -224,6 +243,10 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   if (loaded.treasure.active && db_.findBoss(loaded.treasure.bossId) == nullptr) {
     loaded.treasure = TreasureReveal{};
   }
+  // M83: the IOU bank clamps to its hard cap (a tampered value degrades, never
+  // crashes — and never overpays).
+  loaded.mapPiecesOwed =
+      std::clamp(rootReader.optIntMin("mapPiecesOwed", 0, 0), 0, kMapPiecesOwedMax);
   for (const std::string& sid : rootReader.optStringArray("treasureScrollsAwarded")) {
     if (db_.findItem(sid) != nullptr &&
         std::find(loaded.treasureScrollsAwarded.begin(), loaded.treasureScrollsAwarded.end(),
@@ -235,6 +258,28 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
   for (const std::string& cid : rootReader.optStringArray("ownedCurios")) {
     if (findCurio(cid) != nullptr && !ownsCurio(loaded.ownedCurios, cid)) {
       loaded.ownedCurios.push_back(cid);
+    }
+  }
+  // M84 guild ladder: every field defensive. A perk id the table does not
+  // know — or one stored on the wrong town — is dropped, so the choice simply
+  // re-offers (the M63 keepMilestone rule); a record without its unlock flag
+  // forces the unlock (a defeated Master proves the audience was earned).
+  {
+    const int guildMask = rootReader.optIntMin("guildUnlocked", 0, 0);
+    for (int t = 1; t <= kTownCount; ++t) {
+      GuildTownRecord& g = guildRecord(loaded.guild, t);
+      g.unlocked = (guildMask & (1 << (t - 1))) != 0;
+      g.bestTurns =
+          rootReader.optIntMin(("guildBest" + std::to_string(t)).c_str(), 0, 0);
+      const std::string perkId =
+          rootReader.optString(("guildPerk" + std::to_string(t)).c_str());
+      const GuildPerkDef* perk = findGuildPerk(perkId);
+      if (perk != nullptr && perk->town == t && g.defeated()) {
+        g.perkId = perkId;
+      }
+      if (g.defeated()) {
+        g.unlocked = true;
+      }
     }
   }
   loaded.storyMet = rootReader.optIntMin("storyMet", 0, 0);  // M41 (optional; old -> 0)

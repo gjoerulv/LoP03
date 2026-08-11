@@ -2649,6 +2649,700 @@ Save-EnemyGrid 'boss_deadly_duck' @( # the Duck: no crown. Bulk, wings, pond.
   '....................................'
 )
 
+# --- M84: the seven Guild Masters (36x36) and their courts (24x24). Same
+# --- rules as every boss above: 2-3 readable masses, one thematic motif from
+# --- the bosses.json entry, one asymmetry, no crowns. All hand-placed — no
+# --- random helper, so every earlier sprite stays byte-identical. ---
+
+Save-EnemyGrid 'boss_guild_foreman_brakk' @( # brute: the First Chair itself
+  # stands beside him (left slab with rail shading) while the Foreman rises
+  # out of it mid-interview: flat cap, buttoned coat (gold YY studs), and a
+  # DENIED-stamp raised on its handle top-right — the dry joke is that the
+  # stamp is the weapon.
+  '....................................'
+  '....................................'
+  '..........................KDDDDDDK..'
+  '............22222222222...KDDDDDDK..'
+  '...........3333333333333...qwwwwq...'
+  '.............yyyyyyyyy.......qw.....'
+  '.............yyyKyyKyy.......qw.....'
+  '..aaaaaaa....yyyyyyyyy.......qw.....'
+  '..asssssa....yyyyy...dddddddddw.....'
+  '..asssssa..dddddddddddddddddd.......'
+  '..asssssa..dddddddddddddddd.........'
+  '..asssssa..dddddddddddddddd.........'
+  '..asssssa..dddddddYYddddddd.........'
+  '..asssssa..dddddddddddddddd.........'
+  '..asssssa..dddddddddddddddd.........'
+  '..asssssa..dddddddYYddddddd.........'
+  '..asssssa..dddddddddddddddd.........'
+  '..asssssa..dddddddddddddddd.........'
+  '..asssssa..dddddddYYddddddd.........'
+  '..asssssa...dddddddddddddd..........'
+  '..asssssa...dddddddddddddd..........'
+  '..asssssa...ffdddddddddddd..........'
+  '..asssssa...11111111111111..........'
+  '..asssssa...22222...22222...........'
+  '..aaaaaaa...22222...22222...........'
+  '............22222...22222...........'
+  '............22222...22222...........'
+  '............22222...22222...........'
+  '............22222...22222...........'
+  '............22222...22222...........'
+  '............22222...22222...........'
+  '...........2222222.2222222..........'
+  '...........1111111.1111111..........'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_guild_auditor_vess' @( # sorcerer: a narrow hooded column
+  # of night beside the RED QUILL — taller than she is, planted nib-down like
+  # a headsman's axe. Red glints in the hood; the open file floats at her
+  # left in white pages; the hem frays into deducted fragments.
+  '....................................'
+  '....................................'
+  '.............................D......'
+  '................22222222....DD......'
+  '...............2233333322...DD......'
+  '...............22KKKKKK22...DD......'
+  '...............22KDDKKK22...DD......'
+  '...............22KKKKKK22...DD......'
+  '................22222222....DD......'
+  '.............2222222222222..DD......'
+  '.............222222222222222DD......'
+  '.............2222222222222..DD......'
+  '....WWWWWW....22222222222...DD......'
+  '....WSSSSW....22222222222...DD......'
+  '....WWWWWW....22222222222...DD......'
+  '....WSSSSW....22222222222...DD......'
+  '....WWWWWW....22222222222...DD......'
+  '....WSSSSW....22222222222...DD......'
+  '....WWWWWW....22222222222...DD......'
+  '..............22222222222...K.......'
+  '...............222222222....K.......'
+  '...............222222222....K.......'
+  '...............222222222............'
+  '...............222222222............'
+  '...............122222221............'
+  '...............122222221............'
+  '...............112222211............'
+  '...............111111111............'
+  '..............11111111111...........'
+  '..............11111111111...........'
+  '..............11.111.11.1...........'
+  '...............1..11..1.............'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_guild_chain_mistress' @( # commander: crested enforcer
+  # whose CHAIN arcs from the raised fist to an open shackle hanging at the
+  # right — sized for an ankle, per her habit. The sash of office crosses the
+  # cuirass in collection-red.
+  '....................................'
+  '....................................'
+  '.............DDD....................'
+  '...........eeeDDDee.................'
+  '...........eeeeeeee.................'
+  '...........eeKKKKee.................'
+  '...........eewKKwee.................'
+  '...........eeeeeeee.................'
+  '...........weeeeeew........qq.......'
+  '.........wwwwwwwwwwww....qq..qq.....'
+  '.........wwwwwwwwwwww..qq....qq.....'
+  '.........wwwDwwwwwwwqqq...qqqqqqq...'
+  '.........wwwwDwwwwwww......qwwwwwq..'
+  '.........wwwwwDwwwwww......qwKKKwq..'
+  '.........wwwwwwDwwwww......qwKKKwq..'
+  '.........wwwwwwwDwwww......qwwwwwq..'
+  '.........qwwwwwwwwwwq......qqqqqqq..'
+  '.........qwwwwwwwwwwq...............'
+  '.........qwwwwwwwwwwq...............'
+  '.........qqqqqqqqqqqq...............'
+  '..........wwwwwwwwww................'
+  '..........wwwwwwwwww................'
+  '..........wwwwwwwwww................'
+  '..........qqqqqqqqqq................'
+  '...........222...222................'
+  '...........222...222................'
+  '...........222...222................'
+  '...........222...222................'
+  '...........222...222................'
+  '...........222...222................'
+  '...........222...222................'
+  '..........22222.22222...............'
+  '..........11111.11111...............'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_guild_warden_mole' @( # brute: a vault door with a pulse.
+  # One earthen dome — no neck, no waist — tiny buried eyes, and the great
+  # KEYRING hanging at his right with keys nobody has ever seen turned. The
+  # legs barely clear the ground; he does not need to move much.
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+  '..........ssssssssssss..............'
+  '........ssssssssssssssss............'
+  '.......sddddddddddddddss............'
+  '......sddddddddddddddddss...........'
+  '......sddKKdddddddKKdddss...........'
+  '......sdddddddddddddddddss..........'
+  '.....ssdddddddddddddddddss..........'
+  '.....ssddddddddddddddddddss.........'
+  '.....ssddddddddddddddddddss....YY...'
+  '....ssddddddddddddddddddddss..Y..Y..'
+  '....ssddddddddddddddddddddssY....Y..'
+  '....ssddddddddddddddddddddssY....Y..'
+  '....ssddddddddddddddddddddssY....Y..'
+  '....ssddddddddddddddddddddssY....Y..'
+  '....ssddddddddddddddddddddss.Y..Y...'
+  '....ssddddddddddddddddddddss..YY....'
+  '....ssddddddddddddddddddddss..YY....'
+  '....ssddddddddddddddddddddss..YY....'
+  '.....ssddddddddddddddddddss..YYYY...'
+  '.....ssddddddddddddddddddss...YY....'
+  '......ssddddddddddddddddss....YY.Y..'
+  '......ssddddddddddddddddss..........'
+  '.......ssssssssssssssss.............'
+  '.......ss..ssssssss..ss.............'
+  '.......ss...ssssss...ss.............'
+  '......sss....ssss....sss............'
+  '......sss....ssss....sss............'
+  '......qqq....qqqq....qqq............'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_guild_cutlery_curator' @( # sorcerer: a night-robed
+  # column with a single violet seam, holding aloft — at arm's length, with
+  # full ceremony — one very small gold spoon. The glint rays say it matters.
+  # Nobody will say why. The hem breaks like a drawer of dropped cutlery.
+  '....................................'
+  '............................G.......'
+  '..........................G.Y.G.....'
+  '...........................YYY......'
+  '...........................YYY......'
+  '............................Y.......'
+  '............................Y.......'
+  '..............nnnnnnnn......Y.......'
+  '.............nnnnnnnnnn.....Y.......'
+  '.............nnKKKKKKnn.....Y.......'
+  '.............nnKVVVVKnn.....Y.......'
+  '.............nnKKKKKKnn.....Y.......'
+  '..............nnnnnnnn......Y.......'
+  '...........nnnnnnnnnnnnnn..nn.......'
+  '..........nnnnnnnnnnnnnnnn.nn.......'
+  '..........nVnnnnnnnnnnnnnnnnn.......'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nVnnnnnnnnnnnnnn..........'
+  '..........nnnnnnnnnnnnnnnn..........'
+  '.........nnnnnnnnnnnnnnnnnn.........'
+  '.........bbbbbbbbbbbbbbbbbb.........'
+  '.........bb.bbbb.bbbb.bbbb..........'
+  '..........b..bbb..bbb..bb...........'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_guild_grandmaster_ossia' @( # commander: the one Master
+  # who is mostly posture. A slim white duelling coat with a single seam, the
+  # blade raised straight past her shoulder to the canvas top, gold guard at
+  # the fist. No armor. Nine retirements said she never needed any.
+  '....................................'
+  '.............................LL.....'
+  '.............................LL.....'
+  '.............................LL.....'
+  '..............2222...........LL.....'
+  '.............222222..........LL.....'
+  '.............yyyyyy..........LL.....'
+  '.............yyKyKy..........LL.....'
+  '.............yyyyyy..........LL.....'
+  '..............yyyy...........LL.....'
+  '..........SSSSSSSSSSSS.......LL.....'
+  '.........SSSSSSSSSSSSSS....SLL......'
+  '.........SSSSSSSSSSSSSS...SSYY......'
+  '.........SSSSSSSSSSSSSS....SS.......'
+  '.........SSWSSSSSSSSSSS.............'
+  '.........SSWSSSSSSSSSSS.............'
+  '.........SSWSSSSSSSSSSS.............'
+  '.........SSWSSSSSSSSSSS.............'
+  '..........SSWSSSSSSSSS..............'
+  '..........SSWSSSSSSSSS..............'
+  '..........SSSSSSSSSSSS..............'
+  '..........SSSSSSSSSSSS..............'
+  '...........1111..1111...............'
+  '...........1111..1111...............'
+  '...........1111..1111...............'
+  '...........1111..1111...............'
+  '...........1111..1111...............'
+  '...........1111..1111...............'
+  '...........1111..1111...............'
+  '...........1111..1111...............'
+  '..........11111..11111..............'
+  '..........KKKKK..KKKKK..............'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_guild_registrar_null' @( # sorcerer: not a person holding
+  # a ledger — the LEDGER. A standing void-bound tome, page block at the right
+  # edge, a keyhole void where a face would file itself, two violet ribbon
+  # seams, and shadow hands that come out only at the margins. The underline
+  # glows; the ink arrives.
+  '....................................'
+  '....................................'
+  '..........bbbbbbbbbbbbbbbb..........'
+  '.........bnnnnnnnnnnnnnnnbSS........'
+  '.........bnnnnnnnnnnnnnnnbSS........'
+  '.........bnnnnnnnnnnnnnnnbSS........'
+  '.........bnnKKKKKKKKKnnnnbSS........'
+  '.........bnnKVVKVVKKKnnnnbSS........'
+  '.........bnnKKKKKKKKKnnnnbSS........'
+  '.........bnnnKKKKKKKnnnnnbSS........'
+  '.........bnnnnnKKKnnnnnnnbSS........'
+  '.........bnnnnnKKKnnnnnnnbSS........'
+  '.........bnnnnnnnnnnnnnnnbSS........'
+  '.........bnVnnnnnnnnnnVnnbSS........'
+  '.........bnVnnnnnnnnnnVnnbSS........'
+  '.........bnVnnnnnnnnnnVnnbSS........'
+  'mm.......bnVnnnnnnnnnnVnnbSS.....mm.'
+  'mmm......bnVnnnnnnnnnnVnnbSS....mmm.'
+  '.mm......bnVnnnnnnnnnnVnnbSS....mm..'
+  '.........bnVnnnnnnnnnnVnnbSS........'
+  '.........bnVnnnnnnnnnnVnnbSS........'
+  '.........bnnnnnnnnnnnnnnnbSS........'
+  '.........bnnnnnnnnnnnnnnnbSS........'
+  '.........bnnnnnnnnnnnnnnnbSS........'
+  '.........bnnnnnnnnnnnnnnnbSS........'
+  '.........bnnnnnnnnnnnnnnnbSS........'
+  '.........bbbbbbbbbbbbbbbbbSS........'
+  '.........bbbbbbbbbbbbbbbbbbb........'
+  '..........BBBBBBBBBBBBBBBB..........'
+  '...........V....V....V..............'
+  '...........V.........V..............'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+Save-EnemyGrid 'guild_clerk' @(     # a paper stack with a clerk attached:
+  # the pile leans, the gold seal marks the one form that matters, and the
+  # clerk peers around the right edge wishing you had an appointment.
+  '........................'
+  '........................'
+  '........WWWWWWWWWWW.....'
+  '........WSSSSSSSSSW.....'
+  '........WWWWWWWWWWW.....'
+  '........WSSSYSSSSSW.....'
+  '........WWWWWWWWWWW.....'
+  '.......SWWWWWWWWWWWS....'
+  '.......SSSSSSSSSSSSS....'
+  '............tyyyyy......'
+  '............yyKyKy......'
+  '............yyyyyy......'
+  '.........2222222222.....'
+  '.........2222222222.....'
+  '........222222222222....'
+  '........222222222222....'
+  '........222222222222....'
+  '........122222222221....'
+  '........112222222211....'
+  '........111111111111....'
+  '.........11....11.......'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_inkwing' @(   # a bird made of spilled ink mid-swoop:
+  # spiked wing crests, one cyan glint of an eye, and a drip trail that never
+  # quite dries. It files nothing. It IS the filing.
+  '........................'
+  '......m....m............'
+  '.....mm...mm............'
+  '.....mmm..mmm...........'
+  '....mmmmmmmmmm..........'
+  '....mmmmmmmmmmmm........'
+  '...mmmmmmmmmmmmmmm......'
+  '...mmmmmmmmmmmCmmKK.....'
+  '...mmmmmmmmmmmmmmKK.....'
+  '....mmmmmmmmmmmm........'
+  '.....mmmmmmmmm..........'
+  '......mmmmmm............'
+  '.......mmm..............'
+  '.......bm...............'
+  '........b...............'
+  '........................'
+  '......b.....b...........'
+  '............b...........'
+  '........b...............'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_ledger_golem' @( # a walking backlog: six mismatched
+  # ledgers stacked spine-out with the page edges showing at the right, eyes
+  # glowing from the gap where a bookmark should be, stone feet under it all.
+  '........................'
+  '........................'
+  '........................'
+  '.....aaaaaaaaaaaaaa.....'
+  '.....aaaaaaaaaaaaaS.....'
+  '.....qqqqqqqqqqqqqS.....'
+  '.....qqqqqqqqqqqqqS.....'
+  '....KKdddddddddddKKS....'
+  '....dddddddddddddddS....'
+  '....dddddddddddddddS....'
+  '.....111111111111111....'
+  '.....111111111111111....'
+  '....aaaaaaaaaaaaaaaaS...'
+  '....aaaaaaaaaaaaaaaaS...'
+  '....ssssssssssssssssS...'
+  '....ssssssssssssssssS...'
+  '....qqqqqqqqqqqqqqqqq...'
+  '....qqqqqqqqqqqqqqqqq...'
+  '......ww........ww......'
+  '......ww........ww......'
+  '.....qww........wwq.....'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_debt_hound' @( # all sprint and no spare weight: a lean
+  # night-coated hound stretched flat out, chain collar still on, one red eye
+  # fixed on whatever still owes.
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '...1.............2222...'
+  '....11...........2D22...'
+  '..........22222222222W..'
+  '........22222222222q2W..'
+  '......222222222222222...'
+  '.....2222222222222222...'
+  '.....22222..22222.......'
+  '....222.......2222......'
+  '....22.........222......'
+  '...22...........22......'
+  '...22...........22......'
+  '..122............22.....'
+  '..11..............1.....'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_chirurgeon' @( # the guild's field medic: white robes,
+  # the heal-green cross worn where armor should be, and a plain staff. Mends
+  # whatever the Mistress's chain leaves.
+  '........................'
+  '........................'
+  '........................'
+  '.........WWWWWW.....q...'
+  '........WWWWWWWW....q...'
+  '........WKKKKKKW....q...'
+  '........WKyyyyKW....q...'
+  '........WWWWWWWW....q...'
+  '......WWWWWWWWWWWW..q...'
+  '.....WWWWWWWWWWWWWWWq...'
+  '.....WWWWHHWWWWWWW..q...'
+  '.....WWWHHHHWWWWWW..q...'
+  '.....WWWWHHWWWWWWW..q...'
+  '.....WWWWWWWWWWWWW..q...'
+  '.....WWWWWWWWWWWWW..q...'
+  '.....WWWWWWWWWWWWW..q...'
+  '.....SWWWWWWWWWWWS..q...'
+  '.....SSWWWWWWWWWSS..q...'
+  '.....SSSSSSSSSSSSS..q...'
+  '......SS.......SS...q...'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_vault_mimic' @( # the vault's oldest joke: a gold-
+  # trimmed strongbox with its lid up and a mouth where the valuables should
+  # be. Everyone has already seen it. It bites anyway.
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '.....aaaaaaaaaaaaaa.....'
+  '....aYaaaaaaaaaaaaYa....'
+  '....aaaaaaaaaaaaaaaa....'
+  '....YYYYYYYYYYYYYYYY....'
+  '....KKKKKKKKKKKKKKKK....'
+  '....KWKKWKKKWKKKWKKK....'
+  '....KKKKKKKKKKKKKKKK....'
+  '....KKDDDDDDDDDDDKKK....'
+  '....KWKKKWKKKWKKWKKK....'
+  '....ssssssssssssssss....'
+  '....ssssssYYssssssss....'
+  '....ssssssYYssssssss....'
+  '....ssssssssssssssss....'
+  '....ssssssssssssssss....'
+  '....qqqqqqqqqqqqqqqq....'
+  '.....ww..........ww.....'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_key_rat' @(   # the Warden's runner: a grey rat at full
+  # scurry with a stolen gold key clamped in its teeth and its tail still
+  # somewhere in the last corridor.
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '..................ww....'
+  '.........wwwwwwwwwww....'
+  '........wwwwwwwwwKwww...'
+  '.......wwwwwwwwwwwwwwY..'
+  '......wwwwwwwwwwwwww.YY.'
+  '.q....wwwwwwwwwwwww..YY.'
+  '.q...wwwwwwwwwwwww...Y..'
+  '.qq...wwwwwwwwwww....Y..'
+  '..qq...wwwwwwwww.....Y..'
+  '...qqq..ww..ww..........'
+  '.....q..ww..ww..........'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_fork_fiend' @( # an imp whose skull tapers into three
+  # polished tines. The Curator insists it came with the collection. The
+  # collection insists otherwise.
+  '........................'
+  '........................'
+  '..........S..S..S.......'
+  '..........S..S..S.......'
+  '..........S..S..S.......'
+  '..........SSSSSSS.......'
+  '...........SSSSS........'
+  '............SSS.........'
+  '...........ttttt........'
+  '...........tKtKt........'
+  '...........ttttt........'
+  '.........ttttttttt......'
+  '........ttttttttttt.....'
+  '........t.ttttttt.t.....'
+  '........t.ttttttt.t.....'
+  '..........ttttttt.......'
+  '..........tt..ttt.......'
+  '..........tt...tt.......'
+  '.........Ktt...ttK......'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_ladle_shade' @( # what is left when a soup ladle is
+  # mourned properly: a polished bowl for a face, hollow eyes, and a body of
+  # smoke that trails off before reaching any conclusion.
+  '........................'
+  '........................'
+  '........................'
+  '..........wwwwww........'
+  '.........wwwwwwww.......'
+  '.........wKKwwKKw.......'
+  '.........wwwwwwww.......'
+  '..........mmmmmm........'
+  '.........mmmmmmmm.......'
+  '........mmmmmmmmmm......'
+  '........mmmmmmmmmm......'
+  '........mmmmmmmmmm......'
+  '.........mmmmmmmm.......'
+  '.........mmmmmmm........'
+  '..........mmmmm.........'
+  '..........mm.mm.........'
+  '...........m..m.........'
+  '...........m............'
+  '............m...........'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_seat_warden' @( # honor guard of the Tenth Seat: plate
+  # and helm, with a chair-back carried as a slatted tower shield. It is a
+  # very good chair. That is the entire point.
+  '........................'
+  '........................'
+  '........................'
+  '..............aaaaaa....'
+  '..............aaaaaa....'
+  '......eee.....a.aa.a....'
+  '.....eeeee....a.aa.a....'
+  '.....eKKKe....a.aa.a....'
+  '.....eeeee....a.aa.a....'
+  '....wwwwwww...a.aa.a....'
+  '....wwwwwwwwwwa.aa.a....'
+  '....wwwwwww...a.aa.a....'
+  '....wwwwwww...a.aa.a....'
+  '....wwwwwww...a.aa.a....'
+  '....wwwwwww...aaaaaa....'
+  '....wwwwwww.............'
+  '....qwwwwwq.............'
+  '.....22.22..............'
+  '.....22.22..............'
+  '....q22.22q.............'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_null_notary' @( # the Registrar's clerk-of-record: a
+  # hooded absence raising a violet seal that stamps things OUT of existence.
+  # Strictly by appointment.
+  '........................'
+  '........................'
+  '..................VVV...'
+  '..................VmV...'
+  '..................VVV...'
+  '.......nnnnnn......m....'
+  '......nnnnnnnn.....m....'
+  '......nKKKKKKn.....m....'
+  '......nKVKKVKn.....m....'
+  '......nKKKKKKn.....m....'
+  '......nnnnnnnn.....m....'
+  '....nnnnnnnnnnnn...m....'
+  '...nnnnnnnnnnnnnnnnm....'
+  '...nnnnnnnnnnnnnn.......'
+  '...nnnnnnnnnnnnnn.......'
+  '...nnnnnnnnnnnnnn.......'
+  '...nnnnnnnnnnnnnn.......'
+  '...nnnnnnnnnnnnnn.......'
+  '....nnnnnnnnnnnn........'
+  '....bbbbbbbbbbbb........'
+  '.....b..bb...b..........'
+  '........................'
+  '........................'
+  '........................'
+)
+
+Save-EnemyGrid 'guild_final_clause' @( # the contract that collects itself: a
+  # brute built of bound white document blocks, sealed in black wax at the
+  # joints, strapped once at the waist. It has no face. It has signatories.
+  '........................'
+  '........................'
+  '........................'
+  '........WWWWWWWW........'
+  '........WKKWWKKW........'
+  '........WWWWWWWW........'
+  '....WWWWWWWWWWWWWWWW....'
+  '....WWWWWWWWWWWWWWWW....'
+  '....WWKWWWWWWWWWWKWW....'
+  '....WWWWWWWWWWWWWWWW....'
+  '....qqqqqqqqqqqqqqqq....'
+  '....WWWWWWWWWWWWWWWW....'
+  '....WWWWWKWWWWKWWWWW....'
+  '....WWWWWWWWWWWWWWWW....'
+  '....SSSSSSSSSSSSSSSS....'
+  '....SSSSSSSSSSSSSSSS....'
+  '.....SSSSSSSSSSSSSS.....'
+  '......SSS......SSS......'
+  '......SSS......SSS......'
+  '.....qSSSq....qSSSq.....'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+)
+
+# --- M85: the Last Dragon (36x36). Not a rearing wyvern — a HILL that turned
+# --- out to be a dragon: one coiled void mass with stone belly-bands, a spiked
+# --- wing ridge, gold horns and claws, a wrapped tail, and exactly ONE open
+# --- red eye (the telegraph). Smoke drifts from the nostril. RNG-free like
+# --- every grid above.
+
+Save-EnemyGrid 'boss_the_dragon' @(
+  '....................................'
+  '..................................1.'
+  '.................................1..'
+  '.........................mmmmmmmm...'
+  '.......................YYmmmmmmmmm..'
+  '.......................mmmmmmDDmmmm.'
+  '.......................mmmmmmmmmmmm.'
+  '........................mmmmmmmmYmm.'
+  '.........................mmmmmmmmm..'
+  '........................mmmmmmmm....'
+  '........m...m...m.......mmmmmmm.....'
+  '.......mm..mmm..mm......mmmmmmm.....'
+  '......mmmmmmmmmmmmmm....mmmmmm......'
+  '.....nmmmmmmmmmmmmmmmm..mmmmmm......'
+  '....nmmmmmmmmmmmmmmmmmmmmmmmm.......'
+  '...nBmmmmmmmmmmmmmmmmmmmmmmmmm......'
+  '...nmmmmmmmmmmmmmmmmmmmmmmmmmmm.....'
+  '..nmmmmmmmmmmmmmmmmmmmmmmmmmmmm.....'
+  '..nmmmmmmmmmmmmmmmmmmmmmmmmmmmmm....'
+  '..nmmqqqqqqqqqqqqqqqqqqqqqmmmmmm....'
+  '..nmmqwwwwwwwwwwwwwwwwwwwqmmmmmm....'
+  '..nmmqwwwwwwwwwwwwwwwwwwwqmmmmmm....'
+  '..nmmqqqqqqqqqqqqqqqqqqqqqmmmmmm....'
+  '..nmmmmmmmmmmmmmmmmmmmmmmmmmmmm.....'
+  '..nnmmmmmmmmmmmmmmmmmmmmmmmmmm......'
+  '...nnmmmmmmmmmmmmmmmmmmmmmmmm.......'
+  '..mm..nnmmmmmmmmmmmmmmmmmmmm........'
+  '.mmmm...nnnmmmmmmmmmmmmmmm..........'
+  '.mmmmm..nnmmmmmmmmmmmmmmmmm.........'
+  '..mmm....nnnmmmmmmmmmmmmm...........'
+  '...K.......nnnnnnnnnnn..............'
+  '............YY....YY....YY..........'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
 #<<<M73-ENEMY-SPRITES>>>
 Write-Output 'Generating M27 service backgrounds...'
 
@@ -2888,5 +3582,174 @@ FR $b 6 11 4 2 $PAL.cyan
 FR $b 5 6 2 5 $PAL.glint; P $b 6 4 $PAL.glint; P $b 7 2 '#FFFFFF' # lit facet
 FR $b 9 6 2 5 $PAL.wat2; P $b 9 11 $PAL.wat2                      # shaded facet
 Outline $b; SaveImg $b 'props/save_crystal.png'
+
+# --- M81: gear icons (10x10 pixel grids) -----------------------------------
+#
+# One icon per gear category (`iconCategory` in data/items.json; the exact
+# vocabulary is content::kIconCategoryIds and the presentation lint holds the
+# two in lockstep). Drawn with the M73 grid idiom: explicit ASCII rows, the
+# shared $GRIDC palette key, hand-placed pixels only.
+#
+# DETERMINISM: like the enemy section above, this section calls NO random
+# helper, so it cannot shift any other generated file's bytes. It also runs
+# LAST, so nothing after it exists to shift.
+#
+# 10x10 is the size the UI actually renders: menu rows are 14px tall at font
+# 10 (equip shop, armory ghost) and the party panel's gear lines sit on a
+# 10px pitch, so 10 is the largest square that fits every site at 1x. No
+# Outline pass — these sit on dark Inset list panels where the light ramps
+# carry the shape.
+Write-Output 'Generating gear icons (M81 pixel grids)...'
+
+function Save-IconGrid([string]$name, [string[]]$rows) {
+  $b = Draw-Grid $rows
+  if ($b.Width -ne 10 -or $b.Height -ne 10) {
+    throw "Save-IconGrid: icon '$name' is $($b.Width)x$($b.Height); must be 10x10."
+  }
+  SaveImg $b "ui/icons/$name.png"
+}
+
+Save-IconGrid 'sword' @(     # diagonal blade, gold cross-guard, dark grip
+  '.........W'
+  '.......LS.'
+  '......LS..'
+  '.....LS...'
+  '....LS....'
+  '...LS.....'
+  '..YYY.....'
+  '..s.......'
+  '.s........'
+  'Y.........'
+)
+
+Save-IconGrid 'axe' @(       # crescent head with a flat right cutting edge
+  '......rrS.'
+  '.....rrrS.'
+  '....dsrrS.'
+  '.....rrrS.'
+  '......rrS.'
+  '....ds....'
+  '....ds....'
+  '....ds....'
+  '....ds....'
+  '..........'
+)
+
+Save-IconGrid 'dagger' @(    # short blade, wide guard, round pommel
+  '..........'
+  '......LS..'
+  '.....LS...'
+  '....LS....'
+  '...YY.....'
+  '..s.......'
+  '.sY.......'
+  '..........'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'bow' @(       # left-bulging stave, straight string
+  '.....dd...'
+  '...dd.S...'
+  '..d...S...'
+  '.d....S...'
+  '.d....S...'
+  '.d....S...'
+  '.d....S...'
+  '..d...S...'
+  '...dd.S...'
+  '.....dd...'
+)
+
+Save-IconGrid 'staff' @(     # crystal-topped rod
+  '....CG....'
+  '...CCCG...'
+  '....CC....'
+  '....ss....'
+  '....ds....'
+  '....ds....'
+  '....ds....'
+  '....ds....'
+  '....ss....'
+  '..........'
+)
+
+Save-IconGrid 'mace' @(      # studded stone head on a straight handle
+  '...www....'
+  '..wrKrw...'
+  '..wrrrw...'
+  '...www....'
+  '....ss....'
+  '....ss....'
+  '....ss....'
+  '....ss....'
+  '....ss....'
+  '..........'
+)
+
+Save-IconGrid 'spear' @(     # long 2px shaft, bright steel point
+  '........LS'
+  '.......LS.'
+  '......ss..'
+  '.....ss...'
+  '....ss....'
+  '...ss.....'
+  '..ss......'
+  '.ss.......'
+  'ss........'
+  '..........'
+)
+
+Save-IconGrid 'shield' @(    # heater: bright rim, gold boss
+  '.wwwwwww..'
+  '.weeeeew..'
+  '.weeYeew..'
+  '.weeeeew..'
+  '..weeew...'
+  '..weeew...'
+  '...wew....'
+  '....w.....'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'armor' @(     # cuirass: shoulders, rimmed torso, waist taper
+  '..........'
+  '.rr....rr.'
+  '.rrreerrr.'
+  '..reeeer..'
+  '..reeeer..'
+  '..rreerr..'
+  '...reer...'
+  '...rrrr...'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'accessory' @( # gold ring, cyan gem
+  '..........'
+  '..........'
+  '....CC....'
+  '...YCCY...'
+  '..Y....Y..'
+  '..Y....Y..'
+  '...Y..Y...'
+  '....YY....'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'relic' @(     # violet void-diamond with a glint core
+  '..........'
+  '....m.....'
+  '...mBm....'
+  '..mBVBm...'
+  '.mBVGVBm..'
+  '..mBVBm...'
+  '...mBm....'
+  '....m.....'
+  '..........'
+  '..........'
+)
 
 Write-Output 'Texture generation complete.'

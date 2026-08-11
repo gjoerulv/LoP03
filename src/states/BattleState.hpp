@@ -79,6 +79,10 @@ public:
     // (two level-ups incl. new skills), so the victory panel's fullest layout is
     // overflow-checked.
     void captureShowSpoils();
+    // Capture-only: open the unit Details overlay on a party actor staged at the
+    // fullest layout the panel admits (guard line + four status chips), so the
+    // wrapped status legend is overflow-checked against the panel's line budget.
+    void captureOpenDetails();
 #endif
 
 private:

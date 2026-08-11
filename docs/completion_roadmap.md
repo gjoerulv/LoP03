@@ -624,7 +624,7 @@ buffs/debuffs). The game reaches town 7 and stops. This program adds an
 skills), per-town equipment and enemy content so the ladder has fresh gear and
 foes at every rung, seeded boss drops that reward deep high-town clears, and — the
 payoff — a **castle above the town-7 ceiling** where a King guards three
-challenges with their own records. A light-hearted serial story and three
+challenges with their own records (a fourth, the Dragon, arrived with M85). A light-hearted serial story and three
 enrichment features (bestiary, victory stats, achievements) round it out. It is
 content and systems on the same loop: town → prepare → seeded dungeon → boss →
 score → upgrade is unchanged, and the castle is a distinct summit hub reached by
@@ -676,8 +676,8 @@ full boss roster from M38) exists. The castle (M40) needs that full boss roster
 for its gauntlet and sits at the top of everything below it. Story (M41) hangs on
 the finished town-and-castle geography, and the enrichment features (M42) —
 bestiary, victory stats, achievements — reference the complete enemy roster,
-combat systems, and story voice, so they come last. M23 → M24 now run after
-the King's Gambit program (§15), re-audited for everything.
+combat systems, and story voice, so they come last. M23 → M24 then follow —
+the ledger's execution-order note is authoritative for when.
 
 ## 15. King's Gambit program (M43–M45) — direction
 
@@ -767,13 +767,13 @@ pause comforts are independent quick wins. Elements next (M48): the guards'
 kits and any boss affinities build on them. The King's Court third (M49):
 it is balanced against the M47 stakes with M48 tools. The town rework (M50)
 and the presentation/options pass (M51) are self-contained and land last so
-the balance-critical work is never blocked on UI. M23 → M24 run after M51,
-unless a later expansion is authorized (M52 was).
+the balance-critical work is never blocked on UI. M23 → M24 then follow —
+the ledger's execution-order note is authoritative for when.
 
 ## 17. Comforts & secrets (M52) — direction
 
 Authorized 2026-07-23 as one quality-of-life milestone before M23/M24 —
-believed at the time to be the last expansion (§18–§22 were authorized
+believed at the time to be the last expansion (§18–§23 were authorized
 after). Scope and owner decisions live in
 `docs/milestones.md` and `docs/milestone_notes/M52_comforts_secrets.md`; this
 section records only why and in what order.
@@ -807,8 +807,8 @@ All prior bars still apply. Additionally:
 
 One milestone, six independent slices; the only cross-cutting change is the
 Crown's rules bump (9 → 10), so it and its schema field are implemented and
-tested as a unit. M23 → M24 run after M52, re-audited against the post-M52
-checkout.
+tested as a unit. M23 → M24 then follow — the ledger's execution-order note
+is authoritative for when.
 
 ## 18. Adjustment program (M53–M56) — direction
 
@@ -935,4 +935,70 @@ Crystal Mine ambience: the "water drips" were synthesised as bird
 whistles, and the bed now uses unpitched rockfall and inharmonic
 crystal-shard echoes instead.
 
-M23 → M24 run after M74, re-audited against the then-current checkout.
+M23 → M24 run after the newest authorized expansion — the M75–M86 program
+(§23) — re-audited against the then-current checkout.
+
+## 23. Expansion program (M75–M86) — direction
+
+Authorized 2026-08-05 (one plan, one approval, two Q&A rounds). Direction
+and quality bars only; scope and the owner's eight locked decisions live in
+`docs/milestones.md` (the program section) and the per-milestone notes.
+
+### Why this phase exists
+
+The endgame has teeth but combat's status vocabulary stopped growing at
+M44, poison and the stat buffs stopped mattering by town 5, and the
+seven-town ladder has exactly one thing to do per town. This program
+deepens combat (Reflect/Sleep/Curse, a deterministic boss-trigger engine,
+MP damage, elemental defense) with counterplay shipped before threats, and
+gives every town a second summit: the 1-or-4-floor choice, a Guild Master
+guarding a permanent pick-1-of-2 town perk, a map-piece economy that pays
+long runs, and — behind the full curio collection — the King's nemesis.
+It closes with the tooling catch-up and an honest version renumber
+(0.9.0 → 0.6.0): the label should trail the game, not lead it. The core
+loop is untouched: town → prepare → seeded dungeon → boss → score →
+upgrade; floors, guilds and the Dragon are more of that loop, not a new
+genre.
+
+### Quality bars for this phase
+
+All prior bars (§4, §5, §9, §10, §12–§22) still apply. Additionally:
+
+1. **One bump each.** Every battle-rule change of the program lands in
+   M75's single `battleRulesVersion` 14 → 15; every generation change in
+   M82's single 14 → 15. Content-only milestones move no version. A
+   pre-program battle or seed resolves byte-identically until content
+   uses a new field (the M61 inert-schema precedent).
+2. **Counterplay ships before the threat.** The Reflect-breaker, the
+   Curse removers and the caps land (M76/M78) before the King, the Duck
+   and the roster start sleeping and cursing the party (M77); the Duck
+   loses the Spoon only after his new counterplay exists, and the
+   batteries must re-prove the gauntlets at the castle bar.
+3. **New chance rides committed state.** Map-piece rolls, the duckling
+   event, gauntlet waves and the every-10th-wave Endless boss all derive
+   from committed seeds or pure hashes — reloading changes nothing, and
+   the Simulator and live play keep agreeing exactly.
+4. **Perks deepen the loop, they do not replace it.** Town milestones are
+   bounded, enumerated hooks (caps ceiling 9, single-digit percentages),
+   not an open meta-progression tree; the scoreboard's existing
+   comparability tags stay honest about the rest.
+5. **The joke register is content.** The duckling's punchlines, the curio
+   lore, the new jester and the cryptic Spoon line are data-driven,
+   deterministic, layout-linted and original — funny is never an excuse
+   for a special case in the battle model.
+
+### Ordering rationale
+
+Engine first (M75) so every later milestone is content on stable rules;
+player counterplay (M76) before the enemy pass (M77) — the bar above.
+The two QoL milestones (M78 caps, M79 input) follow while balance
+evidence from M77 settles, and M79's cycle actions are reused by M82's
+scoreboard. Presentation text (M80) precedes the big structural work so
+the duckling event and rites speak properly early. Gear (M81) lands
+before floors so deep 4-floor runs are fought with the elemental layer
+in place. Floors (M82) → map economy (M83) → Guild Masters (M84) is a
+strict dependency chain (completion rolls and guild unlocks key off
+4-floor clears; a perk feeds back into M83's chance). The Dragon (M85)
+comes last of the content — it uses the trigger vocabulary, the resist
+layer and the disabled-option pattern. CrystalForge and the renumber
+(M86) close the program, and M23 → M24 follow, re-audited.

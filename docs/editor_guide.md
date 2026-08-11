@@ -3,7 +3,9 @@
 CrystalForge is Crystal Dungeons' content editor: a separate desktop tool for
 balancing and authoring the JSON content in `data/` — skills, classes,
 enemies, bosses, items and equipment, passives, dungeon themes, the team
-composition rules, the class level milestones (M63), and the story beats. It is built from the same code the
+composition rules, the class level milestones (M63), the story beats, the
+dungeon event flavor (M80), and the curio lore (M85; both editable since
+M86). It is built from the same code the
 game runs: the **real content loader** validates your edits and (M60) the
 **real battle simulator** plays them out, so the editor can never accept
 something the game rejects, and its sims can never behave differently from
@@ -32,7 +34,7 @@ save, and `git diff` shows every change it made. Save deliberately.
 
 Four panes, left to right:
 
-1. **Categories** — the ten content files. A `*` marks unsaved changes.
+1. **Categories** — the twelve content files. A `*` marks unsaved changes.
 2. **Entries** — the entities of the selected category (id + display name).
 3. **Fields** — the selected entity's fields, one row each, driven by the
    game's own schema. Unrecognized keys (future schema) are shown dimmed and
@@ -104,7 +106,8 @@ The full balance batteries (`ctest`) remain the real referee.
 ## Canonical formatting
 
 Saves always go through one canonical writer (2-space indent; one line per
-entry in `skills`/`enemies`/`items`/`passives`, block entries elsewhere), so
+entry in `skills`/`enemies`/`items`/`passives`/`milestones`/`event_flavor`/
+`curio_lore`, block entries elsewhere), so
 formatting can never drift between saves and diffs stay minimal. The one-time
 normalization of the shipped files happened at M59. If a file is ever
 hand-edited into a different shape, `CrystalForge --canonicalize` restores

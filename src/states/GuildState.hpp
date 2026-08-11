@@ -23,6 +23,13 @@ public:
     void handleInput(const Input& input) override;
     void render() override;
 
+#ifdef CRYSTAL_CAPTURE
+    // Capture-only (M84): park the cursor on the Guild Boss row so its status
+    // banner (locked/undefeated/defeated) is overflow-checked. The record
+    // itself is capture fixture state on the party.
+    void captureFocusGuildBoss();
+#endif
+
 private:
     void enterDungeon();
     void rebuild();  // composes Theme/Depth values into their menu labels (M25)
@@ -34,6 +41,7 @@ private:
     int themeIndex_ = 0;
     std::uint64_t seed_ = 1;
     int depth_ = 1;
+    int floors_ = 1;  // M82: 1 or 4 — the run's floor count
 };
 
 }  // namespace cd

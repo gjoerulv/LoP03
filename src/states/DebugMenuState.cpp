@@ -15,8 +15,10 @@
 #include "core/AppContext.hpp"
 #include "game/BlackMarket.hpp"
 #include "game/BossDrops.hpp"  // legendaryDropPool
+#include "game/Curios.hpp"       // M85 debug: grant curios toward the Dragon gate
 #include "game/Party.hpp"
 #include "game/Profile.hpp"
+#include "game/TreasureMap.hpp"  // M85 debug: grant map pieces via the real rule
 #include "game/WorldLadder.hpp"  // clampTown, kTownCount
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -91,6 +93,13 @@ void DebugMenuState::rebuild() {
         context_.profile.classesUnlocked() ? "done" : "");
     add("Fill bestiary", Row::FillBestiary,
         std::to_string(p.encountered.size()) + " foes");
+    // M85 debug aids: the map cycle and the curio dozen (the Dragon's gate).
+    add("Grant map piece", Row::GrantMapPiece,
+        p.treasure.active ? "revealed: town " + std::to_string(p.treasure.town)
+                          : std::to_string(p.mapPieces) + "/" +
+                                std::to_string(kMapPiecesNeeded));
+    add("Grant next curio", Row::GrantCurio,
+        std::to_string(p.ownedCurios.size()) + "/" + std::to_string(kCurioCount));
 
     const int previous = menu_.cursor();
     menu_.setItems(std::move(items));
@@ -184,6 +193,46 @@ void DebugMenuState::activate(const RowDef& row) {
             context_.profile.recordKingDefeated();
             message_ = "Reward classes unlocked at character creation.";
             break;
+        case Row::GrantMapPiece: {
+            // Route through the REAL M65/M83 grant rule so the fourth piece
+            // fires a genuine reveal (seeded guard roster, plausible scale) —
+            // the debug path can never drift from the shipped one. The seed is
+            // raylib-random: debug grants need no reload-proofness.
+            const std::uint64_t seed =
+                (static_cast<std::uint64_t>(GetRandomValue(1, 2000000000)) << 20) ^
+                static_cast<std::uint64_t>(GetRandomValue(1, 2000000000));
+            const int scalePct = combineTownScale(
+                100 + context_.content.composition().statScalePct(8), p.currentTown);
+            if (grantMapPiece(p.mapPieces, p.treasure, p.currentTown, context_.content,
+                              seed, scalePct)) {
+                message_ = "Fourth piece: treasure revealed in town " +
+                           std::to_string(p.treasure.town) + ".";
+            } else {
+                message_ = "Map piece granted (" + std::to_string(p.mapPieces) + "/" +
+                           std::to_string(kMapPiecesNeeded) + ").";
+            }
+            break;
+        }
+        case Row::GrantCurio: {
+            // The next unowned curio in table order; twelve presses open the
+            // Dragon's gate (M85).
+            const CurioDef* next = nullptr;
+            for (const CurioDef& c : kCurios) {
+                if (!ownsCurio(p.ownedCurios, c.id)) {
+                    next = &c;
+                    break;
+                }
+            }
+            if (next != nullptr) {
+                p.ownedCurios.push_back(next->id);
+                message_ = std::string("Granted ") + next->name + " (" +
+                           std::to_string(p.ownedCurios.size()) + "/" +
+                           std::to_string(kCurioCount) + ").";
+            } else {
+                message_ = "All twelve curios already held.";
+            }
+            break;
+        }
         case Row::FillBestiary: {
             const auto record = [&p](const std::string& id) {
                 if (std::find(p.encountered.begin(), p.encountered.end(), id) ==

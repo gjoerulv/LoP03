@@ -72,11 +72,11 @@ Character member(int maxHp, int atk, int mag, int def, int spd) {
 
 }  // namespace
 
-// M68: the exact generation pin rides the newest bump — v14 tags the
-// party-relative danger recalibration for scoreboard comparability (layouts
-// and teams are byte-identical to v13).
-TEST_CASE("danger: generation version tags the M68 recalibration", "[danger]") {
-    CHECK(dungeon::kGenerationVersion == 14);
+// The exact generation pin rides the newest bump — v15 (M82) tags the
+// 1-or-4-floor run shape for scoreboard comparability (1-floor output stays
+// byte-identical to v14; the pin moves with each owner-approved bump).
+TEST_CASE("danger: generation version rides the newest bump", "[danger]") {
+    CHECK(dungeon::kGenerationVersion == 15);
 }
 
 TEST_CASE("danger: threat grows with stronger and more numerous enemies", "[danger]") {

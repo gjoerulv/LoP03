@@ -135,6 +135,15 @@ void drawSceneBackground(ResourceManager& resources, const std::string& id, Colo
     drawSceneBackground(resources, id, fallback, w, h);
 }
 
+void drawGearIcon(ResourceManager& resources, const std::string& id, int x, int y, int scale) {
+    if (id.empty() || !resources.hasTexture(id)) {
+        return;  // placeholder discipline: a missing icon draws nothing
+    }
+    const Texture2D& tex = resources.texture(id);
+    DrawTextureEx(tex, Vector2{static_cast<float>(x), static_cast<float>(y)}, 0.0f,
+                  static_cast<float>(scale), WHITE);
+}
+
 void drawActorPortrait(ResourceManager& resources, const std::string& classId, int x, int y,
                        int scale) {
     const int box = portraitBox(scale);
@@ -594,12 +603,44 @@ void drawMenu(const Menu& menu, int x, int y, int itemHeight, int fontSize, Colo
 void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleRows, int x, int y,
                       int itemHeight, int fontSize, int maxLabelWidth, Color normal,
                       Color disabled, Color cursor, const char* site, int suffixFontSize,
-                      Color suffixColor) {
+                      Color suffixColor, ResourceManager* resources) {
     const auto& items = menu.items();
     const int total = static_cast<int>(items.size());
     const int first = window.top();
     const int count = window.visibleCount(total, visibleRows);
     const int suffixFont = suffixFontSize > 0 ? suffixFontSize : fontSize;
+
+    // M81: once any row carries a gear icon, every label indents by the icon
+    // span so the column stays straight across icon-less rows (e.g. a menu
+    // that mixes gear with "(Unequip)").
+    int iconSpan = 0;
+    if (resources != nullptr) {
+        for (const MenuItem& it : items) {
+            if (!it.icon.empty()) {
+                iconSpan = kGearIconSize + 3;
+                break;
+            }
+        }
+    }
+
+    // M78: a suffix containing '\t' is drawn as TWO right-aligned columns
+    // (owned count | price), each sized to the MENU's widest entry, so the
+    // columns line up vertically across every row — the old single-string
+    // space padding never did in a proportional font. Widths are taken over
+    // the whole menu, not the visible window, so scrolling cannot shift them.
+    int leftColW = 0;
+    int rightColW = 0;
+    for (const MenuItem& it : items) {
+        const std::size_t tab = it.suffix.find('\t');
+        if (tab == std::string::npos) {
+            continue;
+        }
+        leftColW = std::max(leftColW,
+                            measureWidth(it.suffix.substr(0, tab).c_str(), suffixFont));
+        rightColW = std::max(rightColW,
+                             measureWidth(it.suffix.substr(tab + 1).c_str(), suffixFont));
+    }
+    constexpr int kColGap = 8;
 
     for (int row = 0; row < count; ++row) {
         const MenuItem& item = items[static_cast<std::size_t>(first + row)];
@@ -614,7 +655,24 @@ void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleR
         }
         // The suffix column is reserved first; the label takes what is left.
         int labelWidth = maxLabelWidth;
-        if (!item.suffix.empty()) {
+        const std::size_t tab = item.suffix.find('\t');
+        if (tab != std::string::npos) {
+            const std::string left = item.suffix.substr(0, tab);
+            const std::string right = item.suffix.substr(tab + 1);
+            const Color sc = item.enabled ? suffixColor : disabled;
+            const int sy = rowY + (fontSize - suffixFont);
+            drawTextRaw(right.c_str(),
+                        x + maxLabelWidth - measureWidth(right.c_str(), suffixFont), sy,
+                        suffixFont, sc);
+            drawTextRaw(left.c_str(),
+                        x + maxLabelWidth - rightColW - kColGap -
+                            measureWidth(left.c_str(), suffixFont),
+                        sy, suffixFont, sc);
+            labelWidth = maxLabelWidth - leftColW - rightColW - kColGap - 6;
+            if (labelWidth < 8) {
+                labelWidth = 8;
+            }
+        } else if (!item.suffix.empty()) {
             const int suffixWidth = measureWidth(item.suffix.c_str(), suffixFont);
             labelWidth = maxLabelWidth - suffixWidth - 6;
             if (labelWidth < 8) {
@@ -624,7 +682,11 @@ void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleR
                         rowY + (fontSize - suffixFont), suffixFont,
                         item.enabled ? suffixColor : disabled);
         }
-        drawTextFitted(item.label, x, rowY, labelWidth, fontSize, color, site);
+        if (iconSpan > 0 && !item.icon.empty()) {
+            drawGearIcon(*resources, item.icon, x, rowY + (fontSize - kGearIconSize) / 2);
+        }
+        drawTextFitted(item.label, x + iconSpan, rowY, std::max(8, labelWidth - iconSpan),
+                       fontSize, color, site);
     }
 
     // Chunky stepped more-above/below arrows right of the list.

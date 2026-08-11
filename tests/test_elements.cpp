@@ -11,6 +11,7 @@
 #include "content/Definitions.hpp"
 #include "content/Enums.hpp"
 #include "content/LoadReport.hpp"
+#include "game/Castle.hpp"  // M85: kDragonBossId (the one authored fire immunity)
 #include "dungeon/DungeonModel.hpp"
 #include "game/Party.hpp"
 
@@ -173,6 +174,37 @@ TEST_CASE("elements: an immune basic attack applies no attack-status", "[battle]
     b.attack(0, 2);
     CHECK(b.units[2].hp < 500);
     CHECK_FALSE(b.units[2].statuses.empty());
+}
+
+TEST_CASE("elements: an intrinsic element is never nullified", "[battle][elements]") {
+    // M85: the engine half of the M81-narrowed M48 absolute. A milestone-
+    // granted INTRINSIC element (the Fire bite / Holy basic) resolves at the
+    // neutral 100% against an immune foe — plain damage, no immune mark, and
+    // the attack-status rider lands. A WIELDED element still meets the
+    // immunity as the informed trade it is (the case above).
+    Battle plain = board();
+    plain.attack(0, 1);
+    const int unelemented = 500 - plain.units[1].hp;
+    REQUIRE(unelemented > 0);
+
+    Battle b = board();
+    b.units[0].weaponElement = Element::Fire;
+    b.units[0].elementIntrinsic = true;
+    b.units[0].attackStatuses.push_back({content::StatusType::Poison, 5, 3});
+    b.units[1].immunities = {Element::Fire};
+    const std::string log = b.attack(0, 1);
+    CHECK(500 - b.units[1].hp == unelemented);  // neutral damage, not 0, not x150
+    CHECK(b.lastImmune.empty());                // no float, no "is immune!" line
+    CHECK(log.find("immune") == std::string::npos);
+    CHECK_FALSE(b.units[1].statuses.empty());   // the rider lands with the hit
+
+    // The same intrinsic attacker still enjoys a weakness elsewhere.
+    Battle weak = board();
+    weak.units[0].weaponElement = Element::Fire;
+    weak.units[0].elementIntrinsic = true;
+    weak.units[1].weaknesses = {Element::Fire};
+    weak.attack(0, 1);
+    CHECK(500 - weak.units[1].hp == unelemented * 150 / 100);
 }
 
 TEST_CASE("elements: a basic attack carries the wielder's weapon element",
@@ -368,7 +400,7 @@ TEST_CASE("elements: only a weapon may carry an element", "[content][elements]")
         "version": 1,
         "items": [
           { "id": "w", "name": "Ember Blade", "type": "equipment", "slot": "weapon",
-            "element": "fire" }
+            "element": "fire", "iconCategory": "sword" }
         ]})",
                                                   weapons);
     CHECK(ok.errorCount() == 0);
@@ -408,11 +440,41 @@ TEST_CASE("elements: shipped affinities are disjoint and sparse", "[content][ele
     CHECK(taggedFoes > 0);  // the layer is actually used by the shipped content
 }
 
-TEST_CASE("elements: no weapon element can ever be nullified", "[content][elements][lint]") {
-    // The M48 no-dead-weapon rule. A skill can be swapped for another, but a
-    // basic attack cannot — and a skill-less class (the Dragon) has nothing else.
-    // So no shipped foe may be immune to an element any shipped WEAPON carries.
+TEST_CASE("elements: intrinsic attack elements can never be nullified",
+          "[content][elements][lint]") {
+    // The M48 no-dead-weapon rule, NARROWED by M81 (the owner-approved plan
+    // ships Ice/Lightning/Earth weapons into a roster that already carries
+    // those immunities). What must stay absolute is the part no equip choice
+    // can undo: the INTRINSIC basic-attack elements (the class-mod Fire bite
+    // and Holy basic — a skill-less class's only tool when it wields nothing)
+    // may never meet an immunity anywhere. A WIELDED element meeting one is
+    // now an informed trade: the shop chip (M53), the bestiary and the
+    // "Immune" float all say so before and during the fight.
+    // M85 narrowed the CONTENT half of the absolute once more: the Dragon is
+    // the one authored fire immunity in the game — and the engine now carries
+    // the absolute instead, resolving an INTRINSIC element at neutral damage
+    // against any immunity (see "an intrinsic element is never nullified"
+    // below). Everything else still may not author one.
     const content::ContentDatabase db = loadContent();
+    for (Element e : {Element::Fire, Element::Holy}) {
+        INFO("intrinsic element " << content::toString(e));
+        for (const auto& [id, def] : db.enemies()) {
+            INFO("enemy " << id);
+            CHECK_FALSE(def.affinity.immuneTo(e));
+        }
+        for (const auto& [id, def] : db.bosses()) {
+            INFO("boss " << id);
+            if (id == std::string(kDragonBossId)) {
+                CHECK(def.affinity.immuneTo(Element::Fire));  // the one exception
+                CHECK_FALSE(def.affinity.immuneTo(Element::Holy));
+                continue;
+            }
+            CHECK_FALSE(def.affinity.immuneTo(e));
+        }
+    }
+
+    // And a wielded element must still be WORTH something: every shipped
+    // weapon element has at least one weak foe to earn its rider against.
     std::vector<Element> weaponElements;
     for (const auto& [id, def] : db.items()) {
         if (def.element != Element::None) {
@@ -422,17 +484,16 @@ TEST_CASE("elements: no weapon element can ever be nullified", "[content][elemen
         }
     }
     REQUIRE_FALSE(weaponElements.empty());
-
     for (Element e : weaponElements) {
         INFO("weapon element " << content::toString(e));
+        bool anyWeak = false;
         for (const auto& [id, def] : db.enemies()) {
-            INFO("enemy " << id);
-            CHECK_FALSE(def.affinity.immuneTo(e));
+            anyWeak = anyWeak || def.affinity.weakTo(e);
         }
         for (const auto& [id, def] : db.bosses()) {
-            INFO("boss " << id);
-            CHECK_FALSE(def.affinity.immuneTo(e));
+            anyWeak = anyWeak || def.affinity.weakTo(e);
         }
+        CHECK(anyWeak);
     }
 }
 

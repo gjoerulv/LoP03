@@ -42,6 +42,11 @@ struct ScoreEntry {
     // six original classes (or a legacy entry). Optional in the file, no format
     // bump; a comparability tag shown next to the run, never used for ranking.
     int classModPct = 0;
+    // How many floors the run descended (M82). 1 = the classic shape and every
+    // legacy entry (optional in the file, no format bump). The scoreboard
+    // screen splits 1-floor and 4-floor runs onto separate boards; ranking
+    // WITHIN a board is unchanged.
+    int floors = 1;
 };
 
 }  // namespace cd::score

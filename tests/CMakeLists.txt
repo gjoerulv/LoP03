@@ -79,6 +79,17 @@ add_executable(crystal_tests
     test_treasure_map.cpp
     test_curios.cpp
     test_spoils.cpp
+    test_rules_v15.cpp
+    test_counterplay.cpp
+    test_enemy_offensive.cpp
+    test_event_flavor.cpp
+    test_input_qol.cpp
+    test_item_caps.cpp
+    test_arms_icons.cpp
+    test_floors.cpp
+    test_map_economy.cpp
+    test_guild.cpp
+    test_dragon.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

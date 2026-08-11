@@ -45,12 +45,14 @@ constexpr std::array<std::pair<std::string_view, SkillCategory>, 4> kSkillCatego
     {"support", SkillCategory::Support},
 }};
 
-constexpr std::array<std::pair<std::string_view, SkillEffect>, 5> kSkillEffects{{
+constexpr std::array<std::pair<std::string_view, SkillEffect>, 7> kSkillEffects{{
     {"none", SkillEffect::None},
     {"taunt", SkillEffect::Taunt},
     {"fade", SkillEffect::Fade},
     {"intercept", SkillEffect::Intercept},
     {"cleanse", SkillEffect::Cleanse},
+    {"break_reflect", SkillEffect::BreakReflect},  // M75: strips Reflect from foes
+    {"uncurse", SkillEffect::Uncurse},             // M75: lifts Curse from allies
 }};
 
 constexpr std::array<std::pair<std::string_view, SkillTarget>, 5> kSkillTargets{{
@@ -113,7 +115,7 @@ constexpr std::array<std::pair<std::string_view, ConsumableEffect>, 5> kConsumab
     {"cure", ConsumableEffect::Cure},
 }};
 
-constexpr std::array<std::pair<std::string_view, StatusType>, 11> kStatusTypes{{
+constexpr std::array<std::pair<std::string_view, StatusType>, 14> kStatusTypes{{
     {"none", StatusType::None},
     {"poison", StatusType::Poison},
     {"attack_up", StatusType::AttackUp},
@@ -125,6 +127,9 @@ constexpr std::array<std::pair<std::string_view, StatusType>, 11> kStatusTypes{{
     {"blind", StatusType::Blind},
     {"terrified", StatusType::Terrified},  // M44: forced to Guard next turn
     {"stunned", StatusType::Stunned},      // M44: skips its next turn
+    {"reflect", StatusType::Reflect},      // M75: bounces hostile magic back
+    {"sleep", StatusType::Sleep},          // M75: skips turns; damage wakes
+    {"curse", StatusType::Curse},          // M75: half damage out, double MP costs
 }};
 
 constexpr std::array<std::pair<std::string_view, BattleTarget>, 2> kBattleTargets{{
@@ -196,6 +201,26 @@ constexpr std::array<std::pair<std::string_view, MilestoneEffect>, 37> kMileston
     {"grant_bodyguard", MilestoneEffect::GrantBodyguard},
 }};
 
+// The valid trigger conditions and actions (M75); "none" is intentionally
+// absent from both so it is rejected in data and only ever the inert error
+// fallback, the PassiveHook precedent.
+constexpr std::array<std::pair<std::string_view, TriggerWhen>, 4> kTriggerWhens{{
+    {"every_nth_hit_taken", TriggerWhen::EveryNthHitTaken},
+    {"first_time_hp_below_pct", TriggerWhen::FirstTimeHpBelowPct},
+    {"every_nth_own_turn", TriggerWhen::EveryNthOwnTurn},
+    {"first_time_ally_felled", TriggerWhen::FirstTimeAllyFelled},
+}};
+
+constexpr std::array<std::pair<std::string_view, TriggerDo>, 7> kTriggerDos{{
+    {"status_self", TriggerDo::StatusSelf},
+    {"status_attacker", TriggerDo::StatusAttacker},
+    {"status_all_foes", TriggerDo::StatusAllFoes},
+    {"status_boss", TriggerDo::StatusBoss},
+    {"scale_stats_self", TriggerDo::ScaleStatsSelf},
+    {"summon_clone", TriggerDo::SummonCloneSelf},
+    {"drain_foe_mp", TriggerDo::DrainFoeMp},
+}};
+
 }  // namespace
 
 std::optional<Element> parseElement(std::string_view s) { return parseFrom(kElements, s); }
@@ -230,6 +255,10 @@ std::optional<PassiveHook> parsePassiveHook(std::string_view s) {
 std::optional<MilestoneEffect> parseMilestoneEffect(std::string_view s) {
     return parseFrom(kMilestoneEffects, s);
 }
+std::optional<TriggerWhen> parseTriggerWhen(std::string_view s) {
+    return parseFrom(kTriggerWhens, s);
+}
+std::optional<TriggerDo> parseTriggerDo(std::string_view s) { return parseFrom(kTriggerDos, s); }
 
 const char* toString(Element v) { return nameFrom(kElements, v); }
 
@@ -261,6 +290,8 @@ const char* toString(BattleTarget v) { return nameFrom(kBattleTargets, v); }
 const char* toString(BossArchetype v) { return nameFrom(kBossArchetypes, v); }
 const char* toString(PassiveHook v) { return nameFrom(kPassiveHooks, v); }
 const char* toString(MilestoneEffect v) { return nameFrom(kMilestoneEffects, v); }
+const char* toString(TriggerWhen v) { return nameFrom(kTriggerWhens, v); }
+const char* toString(TriggerDo v) { return nameFrom(kTriggerDos, v); }
 
 namespace {
 
@@ -293,5 +324,7 @@ std::vector<std::string_view> battleTargetIds() { return idsFrom(kBattleTargets)
 std::vector<std::string_view> bossArchetypeIds() { return idsFrom(kBossArchetypes); }
 std::vector<std::string_view> passiveHookIds() { return idsFrom(kPassiveHooks); }
 std::vector<std::string_view> milestoneEffectIds() { return idsFrom(kMilestoneEffects); }
+std::vector<std::string_view> triggerWhenIds() { return idsFrom(kTriggerWhens); }
+std::vector<std::string_view> triggerDoIds() { return idsFrom(kTriggerDos); }
 
 }  // namespace cd::content

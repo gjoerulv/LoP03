@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "content/Enums.hpp"
@@ -39,6 +40,12 @@ struct SkillDef {
     // a buff, so healing the party cheers the enemy up too.
     bool alsoBuffsEnemies = false;
 
+    // M75 (rules v15): a damaging skill may also drain MP — the target loses
+    // this percent of the HP damage it just took as MP (the owner's rule:
+    // MP damage is about a quarter of the HP damage, so the authored value is
+    // 25). 0 for every pre-M75 skill; valid on physical/magic only.
+    int mpDamagePct = 0;
+
     std::string description;
 };
 
@@ -50,10 +57,33 @@ struct LearnEntry {
 };
 
 // One status a basic attack applies on a connecting hit (M45, the Dragon).
+// M75 reuses the same {type, magnitude, duration} triple for `initialStatuses`
+// (statuses a foe starts the battle already carrying).
 struct AttackStatus {
     StatusType type = StatusType::None;
     int magnitude = 0;
     int duration = 0;
+};
+
+// One deterministic boss/elite trigger (M75, rules v15): WHEN a condition
+// holds, DO an action. Authored on enemies and bosses (`triggers[]`); resolved
+// onto the Combatant at buildBattle and evaluated in shared battle code, so
+// the Simulator and live play agree by construction. Only the fields the
+// chosen action reads are meaningful (validated by the loader).
+struct TriggerDef {
+    TriggerWhen when = TriggerWhen::None;
+    int threshold = 0;         // every Nth hit/turn, or the HP percent bound
+    TriggerDo action = TriggerDo::None;
+    StatusType status = StatusType::None;  // Status* actions
+    int magnitude = 0;
+    int duration = 0;
+    int scaleAttackPct = 100;  // ScaleStatsSelf (100 = unchanged; 200 = doubled)
+    int scaleMagicPct = 100;
+    int scaleDefensePct = 100;
+    int scaleSpeedPct = 100;
+    int cloneHpPct = 0;        // SummonCloneSelf: clone max HP as % of the bearer's
+    int mpDrainPct = 0;        // DrainFoeMp: % of every living foe's current MP
+    std::string text;          // authored announcement line (optional)
 };
 
 struct ClassDef {
@@ -160,6 +190,17 @@ struct EnemyDef {
     // is every pre-M61 enemy.
     int doNothingPct = 0;
     std::string doNothingText;
+    // M75 (rules v15), all optional and inert by default so every pre-M75
+    // enemy is untouched: statuses the foe starts the battle carrying, its
+    // deterministic triggers, statuses that can never land on it, and the
+    // sleep-aware AI manners (single-target attacks spare sleeping targets
+    // while another stands; stun-rider skills are shelved while every foe
+    // sleeps).
+    std::vector<AttackStatus> initialStatuses;
+    std::vector<TriggerDef> triggers;
+    std::vector<StatusType> statusImmunities;
+    bool avoidSleepingTargets = false;
+    bool noStunWhileAllFoesSleep = false;
     int xpReward = 0;
     int goldReward = 0;
 };
@@ -207,6 +248,32 @@ struct CompositionDef {
     }
 };
 
+// M81: the gear-icon vocabulary. Every equipment/relic row renders a
+// "ui.icon.<category>" pixel icon; these are exactly the categories the
+// shipped icon set draws (a plain string vocabulary, the M80 kEventFlavorIds
+// idiom — code only ever concatenates the id into a texture key). Kept in
+// lockstep with the generator's icon grids by the presentation lint.
+inline constexpr const char* kIconCategoryIds[] = {
+    "sword", "axe", "dagger", "bow", "staff", "mace",
+    "spear", "shield", "armor", "accessory", "relic",
+};
+inline constexpr int kIconCategoryIdCount =
+    static_cast<int>(sizeof(kIconCategoryIds) / sizeof(kIconCategoryIds[0]));
+
+inline bool isIconCategory(const std::string& s) {
+    for (const char* id : kIconCategoryIds) {
+        if (s == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The editor id list for the field's enum picker (the *Ids() idiom).
+inline std::vector<std::string_view> iconCategoryIds() {
+    return {kIconCategoryIds, kIconCategoryIds + kIconCategoryIdCount};
+}
+
 // One status a battle item applies to its target (M44). Authored as a list so an
 // item can carry more than one (the Dragon Crown applies ATK- and DEF-) without
 // the schema growing a field per slot.
@@ -229,6 +296,16 @@ struct ItemDef {
     int value = 0;      // gold value (>= 0)
     int minTown = 1;    // per-town gating (M37): stocked/dropped only at town >= minTown
     int maxTown = 0;    // M43: upper end of the town window (0 = unbounded)
+    // M78: how many of this consumable the party may HOLD before shops refuse
+    // to sell another (0 = the type default, kDefaultConsumableCap; see
+    // game/ItemCaps.hpp). Enforced at PURCHASE time only — nothing ever clamps
+    // an existing overage. Validated 1..9, consumables only.
+    int maxHeld = 0;
+    // M78 (owner decision 2026-08-05): a premium tonic town item shops never
+    // stock — but the in-dungeon merchant may still offer it, at FULL value
+    // instead of its usual street discount. Consumables only; chest and
+    // merchant pools (availableAtTown) are untouched.
+    bool notSoldInTown = false;
 
     // Consumable behavior.
     ConsumableEffect effect = ConsumableEffect::None;
@@ -236,6 +313,11 @@ struct ItemDef {
     // M43: the item also lifts ATK-/DEF- (stat debuffs only - full affliction
     // cleansing remains the Cure effect's job).
     bool curesDebuffs = false;
+    // M75: the item lifts Curse (Holy Taxes). Deliberately its own flag —
+    // neither the Cure effect nor a cleanse ever touches a Curse, so the two
+    // removers (this and an `uncurse` skill) are exactly the ones the owner
+    // named. Inert (false) for every other item.
+    bool curesCurse = false;
     // M43 (Royal Snacks): amounts used INSTEAD of the normal ones when the fight
     // is the King's (battle::Battle::kingBattle). 0 = no King-specific behavior,
     // which is every other item. Bespoke King fields follow the M40 precedent
@@ -259,6 +341,26 @@ struct ItemDef {
     // Equipment/relic flat stat bonus.
     StatBlock statBonus;
 
+    // M75 (engine hook; content arrives in M81): worn equipment may halve (or
+    // otherwise reduce) incoming damage of the listed elements. `resistPct`
+    // applies to every element in `resistElements` (the all-element legendary
+    // simply lists all six). Both-or-neither, equipment/relic only (validated);
+    // empty for every pre-M81 item, so the hook is inert until authored.
+    std::vector<Element> resistElements;
+    int resistPct = 0;
+
+    // M81: which hand-authored gear icon this piece renders with in every
+    // equipment list ("ui.icon.<category>"). Optional where the slot makes it
+    // obvious (armor and accessory pieces and relics default to their slot's
+    // category via iconCategoryFor); a WEAPON must author one — a sword and a
+    // staff share a slot. Validated against kIconCategoryIds, gear only.
+    std::string iconCategory;
+
+    // M76: a one-liner shown on the quip channel when this item is used in
+    // battle (the Evil Duckling's Hilarious Punchline). Presentation only —
+    // nothing in the battle model reads it. Empty for every other item.
+    std::string useLine;
+
     // Scroll: the skill id it teaches (empty for non-scrolls).
     std::string grantsSkill;
 
@@ -272,6 +374,38 @@ struct ItemDef {
         return minTown <= town && (maxTown <= 0 || town <= maxTown);
     }
 };
+
+// M81: the icon category a piece of gear actually renders with — the authored
+// override, else the slot-derived default. Weapons have no default, so an
+// empty result on a weapon is a content error (the loader and the presentation
+// lint both catch it); render code treats empty as "draw no icon". Non-gear
+// items never have an icon.
+inline std::string iconCategoryFor(const ItemDef& d) {
+    if (d.type != ItemType::Equipment && d.type != ItemType::Relic) {
+        return "";
+    }
+    if (!d.iconCategory.empty()) {
+        return d.iconCategory;
+    }
+    if (d.type == ItemType::Relic) {
+        return "relic";
+    }
+    if (d.slot == EquipSlot::Armor) {
+        return "armor";
+    }
+    if (d.slot == EquipSlot::Accessory) {
+        return "accessory";
+    }
+    return "";
+}
+
+// The manifest texture key that category renders as ("" = no icon). Kept next
+// to iconCategoryFor so the render sites and the presentation lint share one
+// convention instead of each concatenating its own.
+inline std::string gearIconTextureId(const ItemDef& d) {
+    const std::string cat = iconCategoryFor(d);
+    return cat.empty() ? "" : "ui.icon." + cat;
+}
 
 struct BossDef {
     std::string id;
@@ -298,6 +432,24 @@ struct BossDef {
     bool attackHitsAll = false;
     std::vector<AttackStatus> attackStatuses;
     bool immuneToAfflictions = false;
+    // M75 (rules v15), all optional and inert by default (see EnemyDef): the
+    // battle-start statuses, the deterministic triggers, the per-status
+    // immunity list (the Dragon's bespoke matrix), the sleep-aware AI manners,
+    // and `immuneToStatScale` — the boss shrugs off a battle-long stat-scale
+    // relic (the Deadly Spoon) entirely.
+    std::vector<AttackStatus> initialStatuses;
+    std::vector<TriggerDef> triggers;
+    std::vector<StatusType> statusImmunities;
+    bool avoidSleepingTargets = false;
+    bool noStunWhileAllFoesSleep = false;
+    bool immuneToStatScale = false;
+    // M84: 0 for every ordinary boss. 1..7 marks this boss as that town's
+    // GUILD MASTER: fought only in the town's guild gauntlet, excluded from
+    // the dungeon boss pools and the Boss Rush (the kKingBossId exclusion
+    // rule, as data instead of an id constant), and eligible for the Endless
+    // Rush's every-10th-wave boss draw. At most one Master per town
+    // (validated).
+    int guildTown = 0;
     std::string telegraph;              // flavor line shown when the battle begins
     int xpReward = 0;
     int goldReward = 0;
@@ -321,6 +473,37 @@ struct StoryBeat {
     std::string speaker;      // who tells it (display)
     std::string title;        // panel heading
     std::string body;         // the beat text (wrapped in the dialog panel)
+};
+
+// M80: authored flavor for one dungeon event kind (data/event_flavor.json) —
+// the centered panel's title and body. Pure presentation: nothing in the
+// battle, generation or scoring model reads it, and an event whose id is
+// absent (or the whole file missing — it is the one OPTIONAL content file)
+// falls back to the classic footer prompt.
+struct EventFlavorDef {
+    std::string id;     // one of kEventFlavorIds
+    std::string title;  // panel heading (one line)
+    std::string body;   // dry-humor flavor (wrapped in the panel)
+};
+
+// The event vocabulary the loader accepts — the content-layer mirror of
+// dungeon::RoomEventKind (which lives a layer above and cannot be named
+// here); a test holds the two in lockstep.
+inline constexpr const char* kEventFlavorIds[] = {
+    "shrine",       "healing_spring", "merchant",    "elite_challenge",
+    "score_wager",  "rest_token",     "royal_relic", "armory_ghost",
+    "miners_cache", "elder_root",     "duck_peddler",
+};
+inline constexpr std::size_t kEventFlavorIdCount = 11;
+
+// M85: authored inspect-lore for one dungeon curio (data/curio_lore.json,
+// the second OPTIONAL content file) — the Maps screen's lore panel. Pure
+// presentation: a curio without its entry simply shows its name and
+// description as before. Ids mirror game/Curios.hpp's table (a layer above,
+// so known-ness and full coverage are test-enforced, not loader-enforced).
+struct CurioLoreDef {
+    std::string id;    // a curio id
+    std::string body;  // the dry Duck-mythology lore (wrapped in the panel)
 };
 
 }  // namespace cd::content

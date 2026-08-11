@@ -102,6 +102,32 @@ TEST_CASE("lint: every convention-derived texture id resolves in the manifest", 
     }
 }
 
+TEST_CASE("lint: every piece of gear resolves a shipped icon (M81)", "[lint]") {
+    const ContentDatabase db = loadShippedContent();
+    const AssetManifest m = loadShippedManifest();
+
+    // Both directions of the lockstep: every category in the vocabulary has a
+    // shipped icon texture, and every shipped piece of gear resolves to one of
+    // them. A category fallback exists in code (a missing icon draws nothing),
+    // but shipped content relying on it is a failing result here — the M25
+    // distinctness precedent.
+    for (const char* cat : cd::content::kIconCategoryIds) {
+        const std::string tex = std::string("ui.icon.") + cat;
+        INFO(tex);
+        CHECK(hasTexture(m, tex));
+    }
+    for (const auto& [id, def] : db.items()) {
+        if (def.type != cd::content::ItemType::Equipment &&
+            def.type != cd::content::ItemType::Relic) {
+            continue;
+        }
+        INFO("gear " << id);
+        const std::string tex = cd::content::gearIconTextureId(def);
+        CHECK_FALSE(tex.empty());
+        CHECK(hasTexture(m, tex));
+    }
+}
+
 TEST_CASE("lint: every town resolves its per-town art and music (M32)", "[lint]") {
     const AssetManifest m = loadShippedManifest();
     // Town 1 uses the base ids (tiles.town.<kind>, bg.<place>, music.town) which

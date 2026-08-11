@@ -48,6 +48,8 @@ private:
         InstantClear,      // action (dungeon only)
         UnlockClasses,     // action
         FillBestiary,      // action
+        GrantMapPiece,     // action: one Secret Map Piece via the real M65 rule
+        GrantCurio,        // action: the next unowned curio (M66/M85)
     };
     struct RowDef {
         Row kind;

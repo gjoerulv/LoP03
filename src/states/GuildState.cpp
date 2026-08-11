@@ -14,6 +14,7 @@
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "save/SaveSystem.hpp"
+#include "states/CastleChallengeState.hpp"
 #include "states/DungeonState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
@@ -27,8 +28,10 @@ namespace {
 constexpr int kEnter = 0;
 constexpr int kTheme = 1;
 constexpr int kDepth = 2;
-constexpr int kReroll = 3;
-constexpr int kBack = 4;
+constexpr int kFloors = 3;    // M82: 1-or-4-floor runs
+constexpr int kGuildBoss = 4;  // M84: the town's Guild Master gauntlet
+constexpr int kReroll = 5;
+constexpr int kBack = 6;
 constexpr int kMaxDepth = 20;
 
 std::uint64_t randomSeed() {
@@ -52,6 +55,11 @@ void GuildState::rebuild() {
     items.push_back({"Enter Dungeon", true});
     items.push_back({"Theme", true});
     items.push_back({"Depth", true});
+    items.push_back({"Floors", true});  // M82
+    // M84: kept enabled even while locked so the row stays reachable — the
+    // banner under the panel explains the lock, and Confirm refuses politely
+    // (ui::Menu skips disabled rows entirely, which would hide the goal).
+    items.push_back({"Fight the Guild Boss", true});
     items.push_back({"New Seed", true});
     items.push_back({"Back", true});
     menu_.setItems(std::move(items));
@@ -80,6 +88,10 @@ void GuildState::onResume() {
     context_.audio.setAmbience(AmbienceTrack::None);
 }
 
+#ifdef CRYSTAL_CAPTURE
+void GuildState::captureFocusGuildBoss() { menu_.setCursor(kGuildBoss); }
+#endif
+
 std::string GuildState::currentThemeName() const {
     if (themeIds_.empty()) {
         return "Dungeon";
@@ -96,10 +108,16 @@ void GuildState::enterDungeon() {
     context_.saves.autosave(context_.party, report);
 
     const std::string themeId = themeIds_.empty() ? "" : themeIds_[static_cast<std::size_t>(themeIndex_)];
-    dungeon::Dungeon dungeon =
-        dungeon::generate(seed_, depth_, context_.content, themeId, context_.party.currentTown);
+    // M82: the run is its floors — one for the classic shape, four for the
+    // descent (floors 1-3 end at an elite stair-gate; the boss waits below).
+    std::vector<dungeon::Dungeon> floors = dungeon::generateFloors(
+        seed_, depth_, context_.content, themeId, context_.party.currentTown, floors_);
+    // M84 (Mind the Spoon): the omen perk's relic upgrade rides a pure hash of
+    // the run seed AFTER generation, so the generator never sees party state
+    // and a reload of this entry reproduces the same dungeon, omen included.
+    applyGuildRelicOmen(floors, seed_, guildSpoonOmenPct(context_.party.guild));
     stack().popState();  // leave the Guild
-    stack().pushState(std::make_unique<DungeonState>(stack(), context_, std::move(dungeon)));
+    stack().pushState(std::make_unique<DungeonState>(stack(), context_, std::move(floors)));
 }
 
 void GuildState::handleInput(const Input& input) {
@@ -120,6 +138,9 @@ void GuildState::handleInput(const Input& input) {
         } else if (menu_.cursor() == kDepth) {
             depth_ = std::clamp(depth_ + dir, 1, kMaxDepth);
             rebuild();
+        } else if (menu_.cursor() == kFloors) {
+            floors_ = floors_ == 1 ? 4 : 1;  // M82: the two shapes, either arrow
+            rebuild();
         }
     }
 
@@ -136,6 +157,17 @@ void GuildState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Confirm)) {
         switch (menu_.cursor()) {
             case kEnter: enterDungeon(); break;
+            case kGuildBoss:
+                // M84: the audience must be earned — a 4-floor clear in THIS
+                // town. The banner under the panel already says so.
+                if (guildRecord(context_.party.guild, context_.party.currentTown).unlocked) {
+                    stack().pushState(std::make_unique<CastleChallengeState>(
+                        stack(), context_, CastleChallenge::GuildBoss,
+                        context_.party.currentTown));
+                } else {
+                    context_.audio.play(Sfx::Cancel);
+                }
+                break;
             case kReroll: seed_ = randomSeed(); break;
             case kBack: stack().popState(); break;
             default: break;  // Theme/Depth are adjusted with Left/Right
@@ -156,16 +188,18 @@ void GuildState::render() {
                          p.textDim);
 
     // Control panel: the CTA row on top, then the two stepper rows, then the
-    // plain rows. The menu model still owns navigation.
+    // plain rows. The menu model still owns navigation. M84: the paddings are
+    // trimmed by 2px so the Guild Boss row fits above the seed chip and the
+    // banner without crowding the footer.
     const int px = 90;
-    const int py = 44;
+    const int py = 42;
     const int pw = 246;
-    const int ph = 112;
+    const int ph = 140;  // M82 Floors + M84 Guild Boss rows
     ui::drawFrame(px, py, pw, ph, ui::FrameStyle::Standard);
     const int rowX = px + 22;
 
     // "Enter Dungeon" — the dominant call to action.
-    const int enterY = py + 10;
+    const int enterY = py + 8;
     const bool enterFocused = menu_.cursor() == kEnter;
     ui::drawFrame(px + 10, enterY - 4, pw - 20, 22,
                   enterFocused ? ui::FrameStyle::Reward : ui::FrameStyle::Raised);
@@ -174,7 +208,7 @@ void GuildState::render() {
     if (enterFocused) {
         ui::drawChevron(px + 18, enterY + 2, p.cursor, ui::motionPhase());
     }
-    ui::drawDivider(px + 10, py + 32, pw - 20);
+    ui::drawDivider(px + 10, py + 30, pw - 20);
 
     // Stepper rows: label, left arrow, framed value capsule, right arrow.
     const auto stepperRow = [&](int index, const char* label, const std::string& value, int y) {
@@ -197,32 +231,66 @@ void GuildState::render() {
         ui::drawTextFitted(value, capX + (capW - vw) / 2, y + 1, capW - 6, style::kFontBody,
                            focused ? p.cursor : p.text, "guild.capsule");
     };
-    stepperRow(kTheme, "Theme", currentThemeName(), py + 40);
-    stepperRow(kDepth, "Depth", std::to_string(depth_), py + 58);
+    stepperRow(kTheme, "Theme", currentThemeName(), py + 38);
+    stepperRow(kDepth, "Depth", std::to_string(depth_), py + 56);
+    // M82: the run's shape — one classic level, or four flat floors with
+    // elite stair-gates and the boss at the bottom.
+    stepperRow(kFloors, "Floors", floors_ == 1 ? "1" : "4 (boss below)", py + 74);
 
     // Plain rows.
-    const auto plainRow = [&](int index, const char* label, int y) {
+    const auto plainRow = [&](int index, const char* label, int y, bool dim = false) {
         const bool focused = menu_.cursor() == index;
         if (focused) {
             ui::drawSelectionSlab(rowX - 12, y - 2, ui::measureText(label, style::kFontMenu) + 24,
                                   15);
             ui::drawChevron(rowX - 9, y + 1, p.cursor, ui::motionPhase());
         }
-        ui::drawText(label, rowX, y, style::kFontMenu, focused ? p.cursor : p.text);
+        ui::drawText(label, rowX, y, style::kFontMenu,
+                     focused ? p.cursor : (dim ? p.textDim : p.text));
     };
-    plainRow(kReroll, "New Seed", py + 78);
-    plainRow(kBack, "Back", py + 94);
+    // M84: the Master's row — dim while the audience is unearned, carrying the
+    // best-turns record once it falls. The banner below explains its state
+    // whenever the row is focused.
+    const GuildTownRecord& guildRec =
+        guildRecord(context_.party.guild, context_.party.currentTown);
+    plainRow(kGuildBoss, "Fight the Guild Boss", py + 92, !guildRec.unlocked);
+    if (guildRec.defeated()) {
+        const std::string best = "best " + std::to_string(guildRec.bestTurns);
+        ui::drawText(best.c_str(), px + pw - 22 - ui::measureText(best, style::kFontBody),
+                     py + 93, style::kFontBody, p.gold);
+    }
+    plainRow(kReroll, "New Seed", py + 108);
+    plainRow(kBack, "Back", py + 124);
 
     // Seed: a subdued information chip (non-adjustable readout).
     ui::drawChip("Seed " + std::to_string(static_cast<unsigned long long>(seed_)), px,
-                 py + ph + 8, p.borderMid);
+                 py + ph + 6, p.borderMid);
 
     // M33 stakes forewarning: the penalty this run (currentTown + chosen depth)
     // will incur, updating live as Depth changes; matches what completeDungeon
-    // applies. Honest and shown before entering (M19).
+    // applies. Honest and shown before entering (M19). M84: while the Guild
+    // Boss row is focused this line speaks for the gauntlet instead — the
+    // stakes belong to the run being configured, not to that fight.
     const int pen = stakesPenaltyPct(context_.party.stakes, context_.party.currentTown, depth_);
-    const int bannerY = py + ph + 26;
-    if (pen > 0) {
+    const int bannerY = py + ph + 24;
+    // One line each, <= ~38 chars: drawBanner wraps at 260px here and GROWS
+    // DOWNWARD, and a second line lands under the footer (caught by the
+    // 92/93 capture review).
+    if (menu_.cursor() == kGuildBoss) {
+        if (!guildRec.unlocked) {
+            ui::drawBanner(ui::BannerKind::Danger,
+                           "Clear a 4-floor dungeon here first.",
+                           70, bannerY, w - 140, "guild.boss.status");
+        } else if (!guildRec.defeated()) {
+            ui::drawBanner(ui::BannerKind::Reward,
+                           "Five foes, then the Master. No rest.",
+                           70, bannerY, w - 140, "guild.boss.status");
+        } else {
+            ui::drawBanner(ui::BannerKind::Success,
+                           TextFormat("The Master fell in %d turns.", guildRec.bestTurns),
+                           70, bannerY, w - 140, "guild.boss.status");
+        }
+    } else if (pen > 0) {
         ui::drawBanner(ui::BannerKind::Danger,
                        TextFormat("Stakes penalty: -%d%% - raise town or depth to clear it.", pen),
                        70, bannerY, w - 140, "guild.stakes");

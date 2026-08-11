@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -76,8 +77,34 @@ struct BattleObserver;  // M60 record-only telemetry hook (battle/BattleObserver
 // immunity, Iron Will healing, on-kill/on-death triggers, and grants of
 // the existing passive hooks. A party with no chosen milestones resolves
 // byte-identically; any chosen battle-side milestone changes outcomes,
-// hence the bump).
-inline constexpr int kBattleRulesVersion = 14;
+// hence the bump);
+// 15 = M75 (the program's one engine revision, batched deliberately so the
+// scoreboard tags a single rules change: THREE new statuses — Reflect
+// (hostile magic bounces back onto its caster), Sleep (the bearer skips its
+// turns; any damage except a poison tick wakes it), Curse (outgoing damage
+// halved, skill MP costs doubled, duration x1.5) — plus their removers
+// (`break_reflect` / `uncurse` skill effects, a `curesCurse` item flag, and
+// Sleep joining the cleanse/cure sets); poison ticks now scale with the
+// applier's Magic (snapshotted at application); ATK+/- now scales the whole
+// (attack + power) term and DEF+/- scales the FINAL damage taken (both were
+// stat-only nudges too small to matter); damaging skills may drain
+// `mpDamagePct` of the HP damage as MP; foes may start the battle with
+// `initialStatuses`; the deterministic trigger framework (every-Nth-hit,
+// first-time-below-HP%, every-Nth-own-turn, first-ally-felled conditions;
+// status/stat-scale/clone/MP-drain actions) evaluated in shared code with no
+// new rolls; sleep-aware enemy targeting; `immuneToStatScale` (a boss the
+// Deadly Spoon cannot diminish); per-status immunity lists; and worn
+// equipment may resist elements (`resistElements`/`resistPct`, content in
+// M81). A battle whose content carries none of the new fields AND no
+// poison/ATK+-/DEF+- status changes nothing; any battle where those statuses
+// appear resolves differently — that rebalance is the point, hence the bump).
+// M77 amended v15 in two places its shipped content is the first to reach —
+// the enemy AI's support-loop gate for all_enemies support skills reads the
+// profiled party target instead of the caster, and trigger-borne stuns honour
+// `noStunWhileAllFoesSleep` — both provably unreachable by pre-M77 content
+// (no such skill in any earlier kit; no earlier foe carries a trigger), so no
+// recorded battle changes and the version holds at 15 (see the M77 note §E).
+inline constexpr int kBattleRulesVersion = 15;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -88,6 +115,13 @@ inline constexpr int kBlindMissPct = 75;
 // damage (see applyDamage).
 inline constexpr int kStatusDurationMult = 2;
 inline constexpr int kPoisonDamageMult = 2;
+// M75: Curse lasts 50% longer than every other status (owner decision
+// 2026-08-05) — its scaled duration is multiplied by this percent in addStatus.
+inline constexpr int kCurseDurationPct = 150;
+// M75: poison ticks scale with the APPLIER's Magic — the authored magnitude
+// gains caster Magic divided by this, snapshotted at application, so flat
+// authored poisons stay relevant against endgame HP pools.
+inline constexpr int kPoisonMagicDiv = 4;
 
 enum class Side { Party, Enemy };
 enum class Outcome { Ongoing, Victory, Defeat, Escaped };
@@ -96,6 +130,26 @@ struct StatusInstance {
     content::StatusType type = content::StatusType::None;
     int magnitude = 0;  // poison damage, or buff/debuff percent
     int turns = 0;      // remaining turns
+};
+
+// A resolved boss/elite trigger (M75): the content TriggerDef mirrored into
+// plain fields plus its runtime state, the StatusInstance precedent — the pure
+// model never needs a content struct. buildBattle converts the authored list.
+struct TriggerRule {
+    content::TriggerWhen when = content::TriggerWhen::None;
+    int threshold = 0;
+    content::TriggerDo action = content::TriggerDo::None;
+    content::StatusType status = content::StatusType::None;
+    int magnitude = 0;
+    int duration = 0;
+    int scaleAttackPct = 100;
+    int scaleMagicPct = 100;
+    int scaleDefensePct = 100;
+    int scaleSpeedPct = 100;
+    int mpDrainPct = 0;
+    std::string text;   // authored announcement (may be empty)
+    bool fired = false; // FirstTime* conditions fire exactly once
+    int counter = 0;    // EveryNthOwnTurn's own-turn count
 };
 
 // Reported back to the caller (the dungeon) when a battle ends.
@@ -215,6 +269,13 @@ struct Combatant {
     // one-directional by design — see the M48 note). Stored as bare element
     // lists, like `attackStatuses`, so the pure model needs no content struct.
     content::Element weaponElement = content::Element::None;
+    // M85: true when `weaponElement` came from a chosen class milestone (the
+    // M63 Fire bite / Holy basic) rather than a wielded weapon. An INTRINSIC
+    // element is never nullified (the M81-narrowed M48 absolute): against a
+    // foe immune to it, the hit resolves at the neutral 100% instead of 0.
+    // Inert for every shipped foe until M85's Dragon — the [elements] lint
+    // has always guaranteed no fire/holy immunity existed anywhere.
+    bool elementIntrinsic = false;
     std::vector<content::Element> weaknesses;
     std::vector<content::Element> immunities;
 
@@ -224,6 +285,25 @@ struct Combatant {
     // with speed or turn order the way a round counter would.
     int reviveMinionTurns = 0;
     int reviveMinionCounter = 0;
+
+    // M75 (rules v15), every field inert by default so pre-M75 content is
+    // untouched. `statusImmunities` extends the bespoke immunity flags with a
+    // per-status list (the Dragon's matrix); `statScaleImmune` shrugs off a
+    // battle-long stat-scale relic (the Deadly Spoon); the two AI manners are
+    // read by chooseEnemyAction; `elementResist` (indexed by content::Element,
+    // resolved from worn equipment) reduces incoming damage of that element in
+    // elementModifier; `triggers` + `hitsTaken` drive the trigger framework;
+    // `summonSlot` marks a prebuilt clone that lies dead until a summon_clone
+    // trigger raises it (built at buildBattle so the unit roster never grows
+    // mid-battle).
+    std::vector<content::StatusType> statusImmunities;
+    bool statScaleImmune = false;
+    bool avoidSleepingTargets = false;
+    bool noStunWhileAllFoesSleep = false;
+    std::array<int, 7> elementResist{};  // one slot per content::Element value
+    std::vector<TriggerRule> triggers;
+    int hitsTaken = 0;
+    bool summonSlot = false;
 
     bool alive() const { return hp > 0; }
 };
@@ -347,6 +427,18 @@ private:
     int dealPhysical(int actor, int target, int baseDmg, std::string& extra);
     int dealMagic(int actor, int target, int baseDmg, std::string& extra);
     int bodyguardFor(int target) const;
+
+    // M75 trigger framework (all shared code, so sim == live by construction).
+    // reviveCourtRule is the M49 revive clock, extracted so beginUnitTurn can
+    // compose it with the turn-start triggers. fireTurnTriggers evaluates the
+    // state conditions at the start of the bearer's own turn; fireHitTriggers
+    // reacts to a deliberate connecting hit (EveryNthHitTaken) from inside
+    // dealPhysical/dealMagic; applyTriggerAction executes one fired rule
+    // (`attacker` only meaningful for hit-reactive rules, -1 otherwise).
+    std::string reviveCourtRule(int actor);
+    std::string fireTurnTriggers(int actor);
+    std::string fireHitTriggers(int target, int attacker);
+    std::string applyTriggerAction(int owner, TriggerRule& tr, int attacker);
 };
 
 // --- M35 status queries (pure, header-inline) ---
@@ -372,26 +464,55 @@ inline bool isBlinded(const Combatant& c) {
     return hasStatus(c, content::StatusType::Blind) && !c.blindImmune;
 }
 // M61: is this status an AFFLICTION — a "bad status" in the owner's sense?
-// Poison, the M35 control trio, and the M44 turn-takers. Deliberately broader
-// than a cleanse's reach (a cleanse cannot refund a turn-control status, but
-// immunity stops one from ever landing). The ATK-/DEF- stat debuffs are NOT
-// afflictions: an affliction-immune boss can still be debuffed by design.
+// Poison, the M35 control trio, the M44 turn-takers, and (M75) Sleep and
+// Curse. Deliberately broader than a cleanse's reach (a cleanse cannot refund
+// a turn-control status or lift a Curse, but immunity stops one from ever
+// landing). The ATK-/DEF- stat debuffs are NOT afflictions: an
+// affliction-immune boss can still be debuffed by design. Reflect is a
+// BENEFICIAL status and never an affliction.
 inline bool isAffliction(content::StatusType t) {
     return t == content::StatusType::Poison || t == content::StatusType::Confusion ||
            t == content::StatusType::Silence || t == content::StatusType::Blind ||
-           t == content::StatusType::Terrified || t == content::StatusType::Stunned;
+           t == content::StatusType::Terrified || t == content::StatusType::Stunned ||
+           t == content::StatusType::Sleep || t == content::StatusType::Curse;
 }
 
 // M40: whether this unit is immune to a status type. A stored status the unit is
 // immune to has no effect (the queries above ignore it), so it must never be shown
 // as afflicted either — display sites skip statuses for which this is true.
 // M61: `afflictionImmune` (the Deadly Duck) covers every affliction at once.
+// M75: `statusImmunities` lists bespoke per-status immunities (the Dragon).
 inline bool isImmuneTo(const Combatant& c, content::StatusType t) {
+    for (content::StatusType x : c.statusImmunities) {
+        if (x == t) {
+            return true;
+        }
+    }
     return (c.afflictionImmune && isAffliction(t)) ||
            (t == content::StatusType::Blind && c.blindImmune) ||
            (t == content::StatusType::Silence && c.silenceImmune) ||
            (t == content::StatusType::Confusion && c.confusionImmune);
 }
+
+// M75 status queries, the isConfused shape: immunity is honoured so an immune
+// unit never reads as affected anywhere these are used.
+inline bool isAsleep(const Combatant& c) {
+    return hasStatus(c, content::StatusType::Sleep) &&
+           !isImmuneTo(c, content::StatusType::Sleep);
+}
+inline bool isCursed(const Combatant& c) {
+    return hasStatus(c, content::StatusType::Curse) &&
+           !isImmuneTo(c, content::StatusType::Curse);
+}
+inline bool hasReflect(const Combatant& c) {
+    return hasStatus(c, content::StatusType::Reflect);
+}
+
+// M75: the MP a skill actually costs THIS caster — double under a Curse. The
+// single rule every affordability check and the deduction itself must share
+// (BattleState's menu, both AIs, useSkill), or a cursed caster could pick a
+// skill it cannot pay for and desync live play from the Simulator.
+int mpCostFor(const Combatant& c, const content::SkillDef& skill);
 
 // M35: may this combatant cast this skill? False only if silenced and the skill
 // costs MP (silence blocks MP-cost skills; 0-MP skills, items, attacks are fine).

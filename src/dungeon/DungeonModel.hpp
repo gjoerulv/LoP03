@@ -21,9 +21,14 @@ enum class RoomType { Start, Normal, Treasure, Boss, Event };
 // M55 adds the three per-theme rites (ArmoryGhost / MinersCache / ElderRoot): each
 // is GUARANTEED exactly once per dungeon of its theme (forced onto the first event
 // slot) and never appears outside that theme. See dungeon/ThemeEvents.hpp.
+// M76 adds DuckPeddler: a rare replacement of one plain rolled event, decided by
+// a PURE hash of the seed (never an rng draw — every other roll of a seed is
+// byte-identical, so generation stays v14; see dungeon/ThemeEvents.hpp). The
+// peddler sells the Evil Duckling for flat gold and will not deal while the
+// party already owns one.
 enum class RoomEventKind {
     None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken, RoyalRelic,
-    ArmoryGhost, MinersCache, ElderRoot
+    ArmoryGhost, MinersCache, ElderRoot, DuckPeddler
 };
 
 struct RoomEvent {
@@ -87,6 +92,17 @@ struct Room {
 
 struct Dungeon {
     std::uint64_t seed = 0;
+    // M82: the seed the PLAYER entered at the Guild. On floor 0 (and every
+    // 1-floor run) it equals `seed`; deeper floors generate from a derived
+    // sub-seed in `seed` while `runSeed` keeps the re-enterable identity the
+    // scoreboard, black market, and boss drops key off.
+    std::uint64_t runSeed = 0;
+    // M82: this floor's position in its run. floorCount 1 is every pre-M82
+    // dungeon; floors below floorCount-1 hold an elite stair-gate in the boss
+    // slot instead of the boss, and `stairsOpen` flips live when it falls.
+    int floorIndex = 0;
+    int floorCount = 1;
+    bool stairsOpen = false;
     int depth = 1;
     int town = 1;  // town ladder index (M32); scales enemy stats + score bonus
     std::string themeName;

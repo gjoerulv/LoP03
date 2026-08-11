@@ -19,6 +19,7 @@
 #include "resource/ResourceManager.hpp"
 #include "states/AchievementToast.hpp"
 #include "states/BlackMarketState.hpp"
+#include "states/GuildPerkChoiceState.hpp"  // M84
 #include "states/MilestoneChoiceState.hpp"  // M63
 #include "states/TreasureFightState.hpp"    // M65
 #include "states/CastleState.hpp"
@@ -181,6 +182,9 @@ void TownState::onEnter() {
     // milestones — prompt once on arrival. Event-driven sites (battle XP, the
     // Training Hall, the Elder Root) cover everything after this.
     maybePushMilestoneChoice(stack(), context_);
+    // M84: same rule for a postponed town-milestone perk — the gauntlet's
+    // first victory offered it; the town keeps offering until it is chosen.
+    maybePushGuildPerkChoice(stack(), context_);
 }
 
 void TownState::onResume() {

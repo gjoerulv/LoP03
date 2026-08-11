@@ -44,8 +44,10 @@
 #include "states/CastleChallengeState.hpp"
 #include "states/CastleState.hpp"
 #include "states/GooseTownState.hpp"
+#include "states/GuildPerkChoiceState.hpp"
 #include "states/MilestoneChoiceState.hpp"
 #include "game/Curios.hpp"
+#include "game/Story.hpp"  // M85: kDragonJesterBeat
 #include "states/MapsState.hpp"
 #include "states/PartyState.hpp"
 #include "states/TreasureFightState.hpp"
@@ -304,6 +306,23 @@ int run(const char* outDir) {
                 mid.battleRulesVersion = 1;
                 scoreboard.add(mid);
             }
+            // M82: a few 4-floor runs, so the 4F board renders rows (they are
+            // invisible on the 1F board — the split itself under test).
+            for (int i = 0; i < 3; ++i) {
+                score::ScoreEntry deep;
+                deep.score = 9000 - i * 500;
+                deep.battleTurns = 120 + 10 * i;
+                deep.dangerDefeated = 40 + i;
+                deep.depth = 6 + i;
+                deep.theme = "Hollow Forest";
+                deep.seed = 4000u + static_cast<std::uint64_t>(i);
+                deep.generationVersion = 15;
+                deep.partyLevel = 30 + i;
+                deep.battleRulesVersion = 15;
+                deep.townIndex = 4;
+                deep.floors = 4;
+                scoreboard.add(deep);
+            }
         }
 
         battle::BattleResult battleSlot;  // outlives the battle scenes
@@ -395,6 +414,59 @@ int run(const char* outDir) {
             {"13_guild",
              [](StateStack& s, AppContext& c) {
                  s.pushState(std::make_unique<GuildState>(s, c));
+             }},
+            {"89_scoreboard_4f",
+             [](StateStack& s, AppContext& c) {
+                 // M82: the 4-floor board — its chip, rows, and cycle hint.
+                 auto st = std::make_unique<ScoreboardState>(s, c);
+                 st->captureShowFourFloorBoard();
+                 s.pushState(std::move(st));
+             }},
+            {"90_dungeon_stairs",
+             [](StateStack& s, AppContext& c) {
+                 // M82: floor 1 of a 4-floor run with its stair-gate cleared —
+                 // the opened stairway marker, the descend prompt, and the
+                 // F1/4 chip are all overflow-checked here.
+                 auto st = std::make_unique<DungeonState>(
+                     s, c,
+                     dungeon::generateFloors(424242, 6, c.content, "ruined_keep", 1, 4));
+                 st->captureOpenStairs();
+                 s.pushState(std::move(st));
+             }},
+            {"92_guild_boss_locked",
+             [](StateStack& s, AppContext& c) {
+                 // M84: the Guild Boss row while the audience is unearned — the
+                 // dim row plus the longest status banner (the lock hint).
+                 auto st = std::make_unique<GuildState>(s, c);
+                 st->captureFocusGuildBoss();
+                 s.pushState(std::move(st));
+             }},
+            {"93_guild_boss_best",
+             [](StateStack& s, AppContext& c) {
+                 // M84: the same row after a victory — the gold best-turns
+                 // readout and the rematch banner with its %d expansion.
+                 guildRecord(c.party.guild, c.party.currentTown).unlocked = true;
+                 guildRecord(c.party.guild, c.party.currentTown).bestTurns = 888;
+                 auto st = std::make_unique<GuildState>(s, c);
+                 st->captureFocusGuildBoss();
+                 s.pushState(std::move(st));
+             }},
+            {"94_guild_perk",
+             [](StateStack& s, AppContext& c) {
+                 // M84: the town-milestone modal on town 5 — the cryptic
+                 // Mind-the-Spoon description is the longest option text.
+                 auto st = std::make_unique<GuildPerkChoiceState>(s, c);
+                 st->captureSelect(5);
+                 s.pushState(std::move(st));
+             }},
+            {"95_guild_result",
+             [](StateStack& s, AppContext& c) {
+                 // M84: the gauntlet's fullest first-victory overlay (longest
+                 // Master name + the milestone invitation, wrapped).
+                 auto st = std::make_unique<CastleChallengeState>(
+                     s, c, CastleChallenge::GuildBoss, 6);
+                 st->captureGuildResult();
+                 s.pushState(std::move(st));
              }},
             {"14_dungeon_keep",
              [](StateStack& s, AppContext& c) {
@@ -542,6 +614,18 @@ int run(const char* outDir) {
                  state->captureEnterBuyList(content::EquipSlot::Weapon);
                  s.pushState(std::move(state));
              }},
+            {"88_ward_charms",
+             [](StateStack& s, AppContext& c) {
+                 // M81: the accessory buy list where the ward-charm set lives,
+                 // cursor parked on a charm so its resist detail line and the
+                 // gear-icon column are both overflow-checked.
+                 c.party.currentTown = 7;
+                 c.party.gold = 9999;
+                 auto state = std::make_unique<EquipShopState>(s, c);
+                 state->captureEnterBuyList(content::EquipSlot::Accessory);
+                 state->captureCursorToItem("stoneward_charm");
+                 s.pushState(std::move(state));
+             }},
             {"31_battle_high_town",
              [&battleSlot](StateStack& s, AppContext& c) {
                  // M38: a five-enemy team of new town-7 foes (their own sprites),
@@ -568,17 +652,56 @@ int run(const char* outDir) {
                  s.pushState(std::make_unique<DungeonResultState>(
                      s, c, run, score::computeScore(run), drops));
              }},
+            {"91_result_map",
+             [](StateStack& s, AppContext& c) {
+                 // M83: the fullest breakdown + drops PLUS the longest map-drop
+                 // line (the banked IOU wording at 3), so the panel's tightened
+                 // pitch and the wrapped gold line are overflow-checked.
+                 const score::RunSummary run = maximalRunSummary();
+                 BossDropResult drops;
+                 drops.tokens = 2;
+                 drops.legendary = true;
+                 drops.legendaryId = "titanforged_heart";
+                 s.pushState(std::make_unique<DungeonResultState>(
+                     s, c, run, score::computeScore(run), drops, RunStats{},
+                     "The guild owes you a map piece - dig up the treasure to collect "
+                     "(3 banked)."));
+             }},
             {"33_castle_hub",
              [](StateStack& s, AppContext& c) {
                  // M40: the castle throne hall with a full records panel (earned
-                 // title) to overflow-check the hub layout.
+                 // title) to overflow-check the hub layout. M85: the panel grew
+                 // the Dragon row and the menu the Dragon option — fullest here.
                  c.party.castleUnlocked = true;
                  c.party.castleRecords.bossRushBestTurns = 44;
                  c.party.castleRecords.endlessBestWave = 17;
                  c.party.castleRecords.kingDefeated = true;
                  c.party.castleRecords.kingBestTurns = 18;
                  c.party.castleRecords.kingTitle = kKingTitle;
+                 c.party.castleRecords.dragonBestTurns = 41;  // M85
                  s.pushState(std::make_unique<CastleState>(s, c));
+             }},
+            {"96_curio_lore",
+             [](StateStack& s, AppContext& c) {
+                 // M85: the Maps screen's inspect panel on the longest lore
+                 // entry, with the whole collection owned so the grid shows
+                 // every name under the cursor styling.
+                 for (const CurioDef& cd : kCurios) {
+                     c.party.ownedCurios.push_back(cd.id);
+                 }
+                 auto st = std::make_unique<MapsState>(s, c);
+                 st->captureInspect(0);  // Crown Shard: the longest body
+                 s.pushState(std::move(st));
+             }},
+            {"97_dragon_jester",
+             [](StateStack& s, AppContext& c) {
+                 // M85: the Pale Jester's introduction — the longest new dialog
+                 // body, refereed in the story panel it actually uses.
+                 if (const content::StoryBeat* beat =
+                         c.content.findStoryBeat(kDragonJesterBeat)) {
+                     s.pushState(std::make_unique<StoryDialogState>(
+                         s, c, beat->speaker, beat->title, beat->body));
+                 }
              }},
             {"34_king_battle",
              [&battleSlot](StateStack& s, AppContext& c) {
@@ -752,6 +875,42 @@ int run(const char* outDir) {
                          return;
                      }
                  }
+             }},
+            {"86_event_flavor",
+             [](StateStack& s, AppContext& c) {
+                 // M80: the centered flavor panel over a live dungeon, opened on
+                 // the DUCK PEDDLER — the longest authored body — so the wrap
+                 // budget is refereed at maximum length (seed searched, as the
+                 // relic scene does).
+                 for (std::uint64_t seed = 1; seed < 4000; ++seed) {
+                     dungeon::Dungeon d =
+                         dungeon::generate(seed, 8, c.content, "crystal_mine", 3);
+                     bool holdsPeddler = false;
+                     for (const dungeon::Room& r : d.rooms) {
+                         holdsPeddler = holdsPeddler ||
+                                        r.event.kind == dungeon::RoomEventKind::DuckPeddler;
+                     }
+                     if (!holdsPeddler) {
+                         continue;
+                     }
+                     auto state = std::make_unique<DungeonState>(s, c, std::move(d));
+                     if (state->captureOpenEventPanel(dungeon::RoomEventKind::DuckPeddler)) {
+                         s.pushState(std::move(state));
+                         return;
+                     }
+                 }
+             }},
+            {"87_event_outcome",
+             [](StateStack& s, AppContext& c) {
+                 // M80 addendum: the outcome panel at a representative long
+                 // result (the trapped chest's bite + loot is the widest
+                 // dynamic outcome string).
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine"));
+                 state->captureShowOutcome(
+                     "The Chest",
+                     "The trap bites - the party is wounded! Found 1240 gold + Hi-Potion");
+                 s.pushState(std::move(state));
              }},
             {"46_battle_relics",
              [&battleSlot](StateStack& s, AppContext& c) {
@@ -1106,8 +1265,10 @@ int run(const char* outDir) {
              [](StateStack& s, AppContext& c) {
                  // M65: the half-solved puzzle map (two quadrants + status).
                  // Self-contained: scene 82 runs earlier on the same party,
-                 // so its reveal/curios are cleared here.
+                 // so its reveal/curios are cleared here. M83: the guild's IOU
+                 // line rides the status (the longest combined form).
                  c.party.mapPieces = 2;
+                 c.party.mapPiecesOwed = 2;
                  c.party.treasure = TreasureReveal{};
                  c.party.ownedCurios.clear();
                  c.party.treasureScrollsAwarded.clear();
@@ -1166,6 +1327,20 @@ int run(const char* outDir) {
                  auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
                  state->captureShowSpoils();
                  s.pushState(std::move(state));
+             }},
+            {"85_battle_details",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // The unit Details overlay at the fullest layout the panel's
+                 // line budget admits (guard line + four status chips — see
+                 // captureOpenDetails for the known Passive-line gap), so the
+                 // wrapped status legend (TRF/STN joined it after M75) is
+                 // overflow-checked.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 BattleState* raw = state.get();
+                 s.pushState(std::move(state));
+                 raw->captureOpenDetails();  // queues the overlay push after the battle's
              }},
             {"84_celebration",
              [](StateStack& s, AppContext& c) {

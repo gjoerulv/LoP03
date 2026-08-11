@@ -105,8 +105,12 @@ powershell -ExecutionPolicy Bypass -File tools\package.ps1  # stage+validate+zip
 ```
 
 Asset generators (deterministic; reruns byte-identical):
-`tools\asset_gen\generate_textures.ps1`, `generate_audio.ps1`,
-`generate_icon.ps1`. Every asset needs a row in `assets/credits.md`.
+`tools\asset_gen\generate_textures.ps1`, `generate_audio.ps1` (music note
+tables in `music_data.ps1`, shared with the `generate_midi.ps1` MIDI
+export → git-ignored `docs/music/`), `generate_font.ps1`,
+`generate_icon.ps1`, plus `preview.ps1` (the M73
+sprite-review harness — the gate for accepting sprite work). Every asset
+needs a row in `assets/credits.md`.
 
 ## Gotchas (read these before you waste an hour)
 
@@ -162,7 +166,7 @@ Asset generators (deterministic; reruns byte-identical):
 12. **Generation changes need a version bump.** Anything that alters what a
     seed produces (generator code OR composition/data curves — including item
     prices, which the dungeon merchant derives its offer from) bumps
-    `dungeon::kGenerationVersion` (currently 14; battle rules are at 14 —
+    `dungeon::kGenerationVersion` (currently 15; battle rules are at 15 —
     the history comments in `src/dungeon/RoomLayout.hpp` and
     `src/battle/Battle.hpp` are the authorities) — the scoreboard tags it
     for comparability. Owner-gated.
@@ -206,26 +210,29 @@ authorization to start the next.
 inspection only. The owner handles all commits and pushes.
 
 Milestones: `docs/milestones.md` is the single source for statuses — trust it
-over any restatement, including this one. Everything through **M74** is
+over any restatement, including this one. Everything through **M85** is
 `complete (approved)`: the expansion programs M35–M42, M43–M45, M46, M47–M51,
-M52, M53–M56, M57 and M58 closed 2026-07-24, and
-**M59–M74** (the CrystalForge editor, Goose Town & the Deadly Duck, the
-M62–M66 program — Duck stagecraft, class milestones, scrolls + party panel,
-the two treasure-map systems — the M67 polish batch, M68's victory
-spoils + party-relative threat rating, M69's town exteriors, M70's
-CRT strength/curvature split, M71's victory celebration, M72's party
-panel reflow, M73's enemy & boss sprite art pass, and M74's Crystal Mine
-ambience rework) were batch-approved by the owner 2026-08-05. The M46 UI kit
-(`docs/ui_style_guide.md`) binds all UI work; the M49 castle retune (Boss
-Rush 580 % / King 500 % / Endless +10 %pts per wave, level cap 99) plus the
-M54 equipment rebalance are the balance baseline. Now only the
-deliberately deferred **M23** (validation/playtesting/balance) and **M24**
-(release packaging) remain, in that order: their tooling and packaging are
-built (v0.9.0 RC flow), awaiting owner-run external playtests
-(`docs/playtest_protocol.md`) and a clean-machine sign-off; version bumps to
-1.0.0 after playtests pass. Both must be re-audited against the then-current
-checkout first. Details: `docs/milestones.md` + one note per
-milestone under `docs/milestone_notes/`.
+M52, M53–M56, M57 and M58 closed 2026-07-24; **M59–M74** (the CrystalForge
+editor, Goose Town & the Deadly Duck, the M62–M66 program, the M67–M74
+polish/art/audio batch) were batch-approved 2026-08-05; and the
+**M75–M86 expansion program** (battle rules v15 — Reflect/Sleep/Curse +
+the trigger framework — counterplay content, the enemy offensive pass,
+inventory caps, input QoL, event flavor, arms & icons, 1-or-4-floor
+dungeons on generation v15, the map economy, the M84 Guild Masters with
+town perks, and M85's Last Dragon + curio lore) was approved milestone by
+milestone through 2026-08-07. **M86** (CrystalForge catch-up + the
+deliberate 0.9.0 → 0.6.0 version renumber) is `implemented, awaiting
+manual approval`. The M46 UI kit (`docs/ui_style_guide.md`) binds all UI
+work; the M49 castle retune (Boss Rush 580 % / King 500 % / Endless
++10 %pts per wave, level cap 99) plus the M54 equipment rebalance are the
+balance baseline. After M86's approval only the deliberately deferred
+**M23** (validation/playtesting/balance) and **M24** (release packaging)
+remain, in that order: their tooling and packaging are built (v0.6.0 RC
+flow), awaiting owner-run external playtests (`docs/playtest_protocol.md`)
+and a clean-machine sign-off; version bumps to 1.0.0 after playtests pass.
+Both must be re-audited against the then-current checkout first. Details:
+`docs/milestones.md` + one note per milestone under
+`docs/milestone_notes/`.
 
 ## Verification checklist (before claiming done)
 

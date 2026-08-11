@@ -37,7 +37,9 @@ battle-turn efficiency → return to town → upgrade/unlock → repeat.
 
 ## 4. Party & classes
 
-Party of 4, chosen and renamable at new game from 6 classes:
+Party of 4, chosen and renamable at new game from 6 classes (9 once the
+King's reward classes unlock — they appear Locked at creation until then;
+see the M45 section):
 
 1. **Knight** — durable physical attacker.
 2. **Ranger** — fast, precision attacks.
@@ -53,7 +55,8 @@ Characters gain XP/levels; player gains gold/items.
 grows and its battle menu widens with progression. Known skills are *derived*
 from the class and the character's level (not stored), so leveling mid-run
 immediately unlocks the new options and no save is ever invalidated. By the
-level cap each class commands roughly six to seven skills.
+level cap each class commands roughly seven to nine skills (the M76
+counterplay skills widened several learnsets).
 
 **Level milestones (M63).** At levels **10, 20 and 30** every character —
 all nine classes, the joke classes included — chooses **one of two
@@ -67,7 +70,8 @@ effects like the Guardian's first-hit-glances-off, the Ranger's double
 shot, the Cleric's *Purifying Light* — which deliberately buys back
 Purify's pre-M62 healing — and the Jester's on-kill/on-death theatrics).
 Choices are permanent, persist in the save, and old saves simply get asked
-on arrival. Battle-side effects are part of battle rules **v14**.
+on arrival. Battle-side effects landed under battle rules **v14** (current:
+v15 since M75).
 
 **Scroll learning and the Party panel (M64).** Skill **scrolls** finally
 teach: using one (from the new **Party** panel on either pause menu) has a
@@ -164,6 +168,38 @@ the score breakdown), and a **rest camp (M30)** that grants a free-rest token
 redeemable at the inn. Some unguarded chests are visibly **trapped**: extra
 gold, but claiming wounds the whole party.
 
+**Events have a voice (M80).** Triggering any event opens a **centered
+panel**: an authored title and a dry-humor body from
+`data/event_flavor.json` (one entry per event kind, JSON-editable), then
+the familiar gold **trade-off line** — cost and risk still visible before
+commitment, the M20 bar unchanged — with Confirm committing and Cancel
+stepping away (the event waits). The file is the game's one OPTIONAL
+content file: a missing entry (or the whole file deleted) falls back to
+the classic footer prompt, so flavor can never block an event. And the
+**outcome answers in kind**: event results and refusals, chest opens
+(loot, traps, the empty re-check) and the buried-treasure dig present in
+the same centered box, dismissed with any button — the fleeting footer
+line remains only for pings (map pieces, battle results, "Guarded").
+
+**Runs come in two shapes (M82).** The Guild picker's **Floors** row
+chooses **1 or 4**. A 1-floor run is the classic dungeon, unchanged — the
+same seed still means the same run it always did. A **4-floor run**
+descends through four full levels of the chosen theme at the chosen depth
+(flat — owner decision; the elite gates and 4× length ARE the added
+challenge): floors 1–3 hold the **Stairway Wardens** — an all-elite gate
+team standing where the boss would — and beating them opens a **stairway
+down** where they stood; the real boss waits on floor 4. Descent is
+one-way and the whole descent is **one continuous run**: turns, danger,
+chests, and escapes accumulate into a single reckoning at the bottom, the
+run autosaves once at entry as always, and retreating or falling anywhere
+scores 0 exactly as today. The HUD chip reads the position outright
+(`Keep  D6  F2/4`). Each floor generates from a derived sub-seed of the
+run seed (floor 1 IS the run seed), so published seeds mean the same four
+floors for everyone. On the **scoreboard, the two shapes rank on separate
+boards** — cycled with the party-cycle keys (Q/E, LB/RB) — because a
+four-floor turn count compared against a one-floor sprint would make both
+numbers meaningless; every pre-M82 entry sits on the 1-floor board.
+
 **Bosses are mechanically distinct (M20).** Each archetype has one
 deterministic mechanic, stated in its telegraph: the Brute's damage swells
 below half HP (announced when it triggers), the Sorcerer's magic grows as
@@ -171,9 +207,10 @@ its minions fall, the Commander rallies its fallen minions once below half
 HP, and the Rush tyrant's opening blow lands with doubled force.
 
 **Rooms are compact and purposeful (M16),** drawn centered on the screen
-rather than filling it. Each room is realized as one of eight archetypes
+rather than filling it. Each room is realized as one of nine archetypes
 derived from its role in the graph — Entry, Corridor, Crossroads, Gate
-Chamber, Treasure Alcove, Treasure Vault, Boss Antechamber, Boss Arena — with
+Chamber, Treasure Alcove, Treasure Vault, Event Chamber (§6's event rooms),
+Boss Antechamber, Boss Arena — with
 bounded dimensions (common chambers ≈9–15 × 7–11 tiles, corridors narrow
 along their travel axis, the boss arena largest), centered door gaps, sparse
 landmark pillars that never block a path, and purposeful anchor placement
@@ -190,8 +227,8 @@ Displayed danger is computed **deterministically from enemy stats and abilities*
 "Deadly" means deadly for THIS party, and the same team reads easier as the
 party grows. Tiers: **Trivial, Easy, Fair, Dangerous, Deadly, Boss**;
 snapshotted once at dungeon entry so the labels and the danger-defeated score
-credit agree for the whole run (generation v14 tags the recalibration on the
-scoreboard). Formula is explicit and unit-tested (M6; recalibrated M68 via the
+credit agree for the whole run (generation v14 tagged the recalibration on the
+scoreboard; current: v15 since M82). Formula is explicit and unit-tested (M6; recalibrated M68 via the
 `[danger-report]` battery).
 
 ## 8. Combat
@@ -275,8 +312,10 @@ returning to town. Combat stays fully readable with audio muted.
 
 **Score comparability (M19, owner-approved):** runs are never silently
 normalized. Every new score entry is tagged with its run conditions — depth,
-theme, seed, generation version, and **party level** (highest member at
-completion) — and the scoreboard shows Depth and Lv per row with a plain
+theme, seed, generation version, **party level** (highest member at
+completion), and the later tags (town M32, battle-rules version M48,
+class modifier M45, **floors** M82 — the 1F/4F boards are separate, §6) —
+and the scoreboard shows Depth and Lv per row with a plain
 legend: *compare runs at the same Depth and Lv*. Older entries without the
 tag show "-". Farming power before a run is legal; it is simply visible.
 The score formula itself ignores party level.
@@ -287,8 +326,9 @@ tie-break only).
 
 Score components: base completion, **battle-turn penalty**, escape penalty where
 relevant, chest bonus, boss-defeat bonus, danger bonus, no-death bonus, and — as
-percentages of the whole subtotal — the **town-ladder bonus** (M32, +10 % per
-town above town 1, up to +100 %) and the **stakes penalty** (M33, subtracted).
+percentages of the whole subtotal — the **town-ladder bonus** (M32,
++0/10/20/30/40/50/100 % across towns 1–7 — the §5 table is the curve) and
+the **stakes penalty** (M33, subtracted).
 The town a run was cleared in is recorded as an optional `townIndex` tag and
 shown on the scoreboard as "T#" (a comparability tag like depth and level, never
 used for ranking); *compare runs at the same Town, Depth and Lv*. Design guard:
@@ -348,8 +388,9 @@ scarcity holds. Boss drops never affect the score (they are a post-battle reward
 **The castle & the King (M40).** Clearing any **town-7 dungeon** opens a road that
 climbs from town 7 up to the **castle** — a distinct place above the seven-town
 ladder (not a town: no shops, dungeons, stakes, or score bonus). The castle hosts
-an inn, a save point, the party's **castle records**, and the **King's three
-challenges**, each a step above normal play and each paying a **one-time first-clear
+an inn, a save point, the party's **castle records**, and **four
+challenges** (three at M40; M85 added the Dragon), each a step above normal
+play and each paying a **one-time first-clear
 reward**:
 
 - **Boss Rush** — the full 12-boss roster, back to back, **each with its own
@@ -360,9 +401,16 @@ reward**:
 - **The Hollow King** — the hardest fight in the game. A bespoke boss above every
   town-7 foe, immune to Blind, Silence, **and** Confusion, striking your afflicted
   party harder as the fight wears on, with a kit that inflicts every status —
-  and, since M49, **two Royal Guards he keeps calling back**. Beating
+  and, since M49, **two Royal Guards he keeps calling back**. Since **M77** he
+  also hums a **cradle-song every 5th of his own turns** (the whole party
+  sleeps), wounds-and-stuns with **Royal Decree**, wounds-and-sleeps with
+  **Drowsing Verdict**, and **spares sleeping party members** while anyone
+  else stands; the Stave mirrors him at low health and the Blade curses (see
+  §10, "Enemy offensive"). Beating
   him the first time grants a **unique legendary** (the Sovereign's Regalia, won
   nowhere else), a **visible title**, gold, and tokens.
+- **The Last Dragon** (M85) — gated on all twelve curios; three seeded elite
+  vigil waves, then the game's largest fight (see §10, "The Dragon").
 
 Castle records live **entirely apart from the dungeon scoreboard** (score
 comparability is preserved); challenges never touch your dungeon score, stakes, or
@@ -380,12 +428,21 @@ true final fight, a **no-heal gauntlet**:
    **10% chance per turn to simply "Quack."** and do nothing.
 2. **The Deadly Duck** — the mightiest foe in the realm, above the King in
    every effective stat, at **5000 effective HP**. His basic attack strikes
-   the **whole party** and inflicts statuses (ATK-down + poison); he is
-   **immune to every affliction** — poison, blind, silence, confusion,
-   terror, stun, all of it bounces off — yet **stat debuffs still land**, so
-   the Deadly Spoon (and honest healing) is the obtainable counterplay, the
-   King's own design philosophy one step up. He carries **Counter Attack,
-   Thorns and Spell Ward**, and he enrages.
+   the **whole party** and saps it (ATK-down; the old poison rider retired
+   in M77 — under v15 poison scaling his Magic made it a silent
+   ~520-a-round death sentence). He is **immune to every affliction but
+   one** — since **M77** (owner decision) a **Curse slips through the
+   feathers**, so the Evil Duckling finally has its worthy target — and
+   immune to the **Deadly Spoon**, his one former counterplay
+   closed. Instead he opens **behind a mirror** (Mirrorbreak's marquee
+   target), serves the whole party a stunning **Final Notice** every 4th of
+   his own turns (his sweep the same turn supplies the damage — the
+   Tax-Sheet effect returned to sender), and every **12th blow the party
+   lands** shakes loose a blizzard of **sleeping down**. Manners: he never
+   serves the Notice while the whole party sleeps. **Stat debuffs still
+   land**, so Weaken/Sunder upkeep, the M76 kit and honest healing are the
+   obtainable counterplay. He carries **Counter Attack, Thorns and Spell
+   Ward**, and he enrages.
 
 The **Goofy Jester** by the pond tells the legendary "Ballad of the Deadly
 Duck" (pure flavor, all original). Clearing the gauntlet earns the
@@ -410,6 +467,44 @@ else**, its skill **learned on the spot** by a chosen member (the M64
 scroll system); once all six are dug up, further treasures pay a legendary
 token and gold. The map then resets — the cycle repeats forever.
 
+**The map economy (M83).** The 4-floor descent feeds the puzzle:
+completing a **4-floor** run in **town 2 or later** rolls a map-piece drop
+whose chance climbs the ladder — **15 % at town 2, +12 points per town, 75
+% at town 7**. The roll is committed the moment the run is entered (a pure
+function of the run seed, like the black market), so reloading the entry
+autosave cannot reroll it; the result screen announces a hit in gold.
+1-floor runs and town 1 never roll; in-dungeon piece finds are unchanged
+and coexist. While a treasure already stands revealed, earned drops
+**bank as IOUs** — the guild owes up to **three**; rolls beyond a full
+ledger are lost, and the line says so — and the debt **pays out the
+moment the dig guardian falls**, jump-starting the next cycle (the payout
+never overfills the pouch; what does not fit stays banked for the next
+dig). The Maps screen states any standing debt.
+
+**Guild Masters & town milestones (M84).** Every town's Guild hides a
+**Guild Master** — seven unique bosses, one per town, from Foreman Brakk in
+the First Chair to Registrar Null and the Final Ledger. Clearing a
+**4-floor** dungeon in a town unlocks that town's **"Fight the Guild
+Boss"** on the Guild screen (visible from the start; the banner under the
+panel explains the lock, the trial, or the standing record). The fight is
+a two-wave **gauntlet on the castle rules** — persistent HP/MP, no free
+healing between waves, the castle's carried-out-at-1-HP defeat price, no
+gold lost: wave 1 is **the Guild Trial**, five seeded foes from that
+town's unlocked enemy pool (the same five every attempt, so the record
+measures the party, not the draw); wave 2 is the Master with its unique
+court, both at roughly **depth-20 threat times the town's own scaling**
+(190 % at town 1 up to the ladder's 570 % ceiling at town 7). Masters are
+**refightable** for a best-turns record kept on the Guild screen, outside
+the dungeon scoreboard. The **first** victory grants that town's
+**milestone**: a pick-1-of-2 **permanent town perk** (the M63 modal;
+postponing re-offers it on the next town visit) — extra consumable
+capacity, battle EXP or gold, map-piece or black-market odds, softer chest
+traps, richer chests, the token price falling to 1, and town 5's
+deliberately cryptic option about minding a certain spoon. Felling any
+Master earns the **Guildbane** achievement — and the Masters return the
+visit: **every 10th Endless Rush wave** now fields a seeded-random boss
+(a dungeon boss or a Guild Master) with its usual court.
+
 **The dungeon treasure map + curios (M66).** Similarly rare (~1 dungeon in 8),
 a weathered **chart of the current dungeon** waits in a plain room: reading
 it instantly marks a buried treasure elsewhere in that same run — a gold X
@@ -419,6 +514,31 @@ it is lost with the run. The dig pays one of **twelve original curios**
 collected on the Maps screen. Gathering the full dozen earns the
 **Curator** achievement, after which buried treasures pay a legendary
 token. Curios are pure collection joy — no stats, no score.
+
+**The Last Dragon & curio lore (M85).** The twelve curios finally talk:
+every owned curio is **inspectable** on the Maps screen (a cursor walks
+the grid; Confirm opens a lore panel), and each entry ties the trinket to
+the **Deadly Duck mythology** in the game's dry register
+(`data/curio_lore.json`, the second optional content file — a missing
+entry falls back to the curio's own description). Completing the dozen
+opens the castle's endgame: **"Fight the Dragon"** sits on the castle
+menu from the first visit, but while curios are missing the **Pale
+Jester** — a second, paler jester counting on the stair — politely
+refuses with your current count. At 12/12 the gauntlet begins: **three
+seeded elite vigil waves, then the Last Dragon**, Duck-style (persistent
+HP/MP, no free healing, the castle defeat price, best-turns record on
+the castle panel; the Pale Jester tells his tale before the fight until
+the Dragon first falls). The Dragon is the game's largest single fight —
+**7,000 effective HP** at the Duck's 500 % reference scale — immune to
+every affliction except **ATK−, DEF−, Curse and Poison** (the intended
+counterplay doors), immune to **Fire** (wielded and cast fire fizzles;
+an intrinsic class-milestone fire bite still lands at neutral — nothing
+nullifies an intrinsic element, the M81 rule now enforced by the engine
+itself), Spoon-proof, and armed with **six party-wide elemental
+breaths** — one per element, met by the M81 ward charms. Below half HP
+it **inhales the party's entire MP once**; below 10 % its attack and
+speed **double**; at the brink it **clones itself** at 5 % of its full
+HP. Felling it earns the **Wyrmbane** achievement.
 
 **Story & lore (M41).** A light-hearted running serial threads the climb: a
 **wandering storyteller** stands in every town and, town by town, spins the
@@ -449,8 +569,9 @@ single "strongest" number would be honest.
 **Victory stats** appear on the clear screen's Run-stats view: this run's
 total damage, biggest single hit, statuses inflicted, and the party MVP, plus your
 personal records (biggest hit ever, most damage in a run) — display-only, never
-ranked. **Achievements** (also from the pause menu) are 18 original cross-game
-goals (16 at M42; M61 added Quackbane, M66 the Curator) — clearing dungeons, climbing the ladder, beating the King's challenges,
+ranked. **Achievements** (also from the pause menu) are 20 original cross-game
+goals (16 at M42; M61 added Quackbane, M66 the Curator, M84 Guildbane,
+M85 Wyrmbane) — clearing dungeons, climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
 
@@ -587,7 +708,8 @@ a miss). Nothing is ever both.
 Elements reach a foe two ways: a **skill's own element** (the shipped fire, ice,
 lightning, earth and holy spells were always authored with one — until now it
 did nothing), and a **weapon's element**, which every basic attack of its wielder
-carries. Five weapons are elemental, spanning the ladder from the town-1 **Holy
+carries. Ten weapons are elemental (five at M48, five more at M81 — see
+"Arms, elements & icons" below), spanning the ladder from the town-1 **Holy
 Mace** to the legendary **Dawnforged Blade**, so the system is met early and
 still matters late. Enemies carry no weapons, so their own basic attacks stay
 unelemented, and the party has no affinities — the layer only ever describes
@@ -599,12 +721,62 @@ shows the same as chips while you aim at it; and a resolved hit floats **"Weak!"
 (gold) or **"Immune"** (coral) beside the number. Every one is shape *and* text,
 never color alone.
 
-The curation is deliberately small — 8 enemies, 3 bosses, 5 weapons — and follows
-one hard rule: **no weapon element is ever an immunity anywhere in the game.** A
-skill can be swapped for another, but a basic attack cannot, and one class (the
-Dragon) has nothing else — so a wielded element that could be nullified would be
-a trap rather than a decision. Immunities use ice, earth and lightning; weapons
-use fire and holy. Dark stays reserved for later content.
+The curation started deliberately small — 8 enemies, 3 bosses, 5 weapons — under
+one hard M48 rule: *no weapon element is ever an immunity anywhere in the game*.
+That rule was **narrowed by M81** (whose owner-approved plan ships Ice,
+Lightning and Earth weapons into a roster that already carries those
+immunities). What stays absolute is the part no equip choice can undo: the
+**intrinsic** attack elements — the Dragon's fire bite and the holy basic, a
+skill-less class's only tool when it wields nothing — are **never an immunity
+anywhere**. A *wielded* element meeting an immunity is now an **informed
+trade**: the equip-shop element chip (M53), the bestiary affinity row and the
+in-battle "Immune" float all say so before and during the fight, and swapping
+the weapon back is a town visit, not a build reset. A lint holds both halves:
+fire and holy immunity-free, and every shipped weapon element weak-hitting at
+least one foe. Dark weapons stay reserved — but since **M76** the element
+itself has one player-side exception: the Rogue's **Shadow Strike** carries
+Dark (owner decision 2026-08-05), and no foe anywhere is immune to Dark, so
+the Rogue's signature opener can never become a trap. Since **M77** the Dark
+weaknesses are real: the **Wisp**, the **Crystal Guardian** and the **Throne
+Blade** — and exactly one boss, the **Crystal Sorcerer** (whose opening
+mirror bounces magic, making the physical Dark opener the town-1 story).
+
+**Arms, elements & icons (M81).** The party gets an elemental defense layer and
+the elements get a full armory:
+
+- **The ward set** — six 50 %-resist accessories, one per element, riding the
+  M75 `resistElements`/`resistPct` hook: **Flameward** and **Stormward** charms
+  from town 2, **Frostward** and **Nightward** from town 3, **Stoneward** and
+  **Lightward** from town 4. Pure resist pieces — no stat bonus — so wearing
+  one is a real trade against a stat accessory, priced at-or-under each town's
+  stat piece. Buyable in the equip shop and present in the chest pool like any
+  other gear; the shop detail line and the Details overlay state the resist
+  outright ("Resists Fire 50%").
+- **Two new legendaries** in the shared black-market/boss-drop pool: the
+  **Overwound Pocketwatch** (+200 SPD — the owner's number, verbatim: its
+  bearer simply goes first) and the **Motley Aegis** (−50 % from **all six**
+  elements, no stat bonus).
+- **Five elemental weapons** filling the t2–t5 gap where no elemental weapon
+  existed: **Winterbrand** (ice sword, t2), **Stormstring** (lightning bow,
+  t3), **Quakemaul** (earth mace, t4), **Emberfangs** (fire daggers, t5) and
+  the **Vigil Lance** (holy spear, t5). Each also extends a starved weapon
+  family (the bow and dagger lines had one entry each since town 1), stats on
+  the M54 tier curve with a ~15 % price premium over the tier's plain piece so
+  the budget choice stays alive.
+- **Coverage** so the wards matter: earth existed as a skill no foe cast, and
+  fire and holy each had a single dealer. Now the **Stone Golem** and the
+  **Titan Guard** cast **Stone Edge** (which also makes the Obsidian
+  Colossus fight an earth fight — both his minions are the golem and the
+  crawler), the **Soul Render** opens with **Inferno** (a party-wide t6 fire
+  nuke — the fight the Flameward earns its slot in), and the **Standard
+  Bearer**'s consecrated banner **Smites**. Ice, lightning and dark were
+  already healthy and are untouched.
+- **Gear icons** — every equipment and relic row anywhere in the game leads
+  with a hand-authored 10×10 pixel icon of its category (sword / axe / dagger
+  / bow / staff / mace / spear / shield / armor / accessory / relic): the
+  equip-shop buy and equip lists, the party panel's gear lines, the black
+  market's offer (at 2×) and the Armory Ghost's trade list. The icon carries
+  the sword-vs-staff read a slot label cannot.
 
 **The King's Court (M49).** The Hollow King stops fighting alone. Two **Royal
 Guards** — the **Throne Blade** and the **Throne Stave** — stand with him:
@@ -635,14 +807,17 @@ uses, so it moves if they do.
 - **Endless Rush from ×5.00**, climbing ×0.10 per wave, passing the ladder
   ceiling within a handful of waves and never stopping.
 - **The Hollow King ×5.00** — a lower percentage than the rush, and still by far
-  the largest single fight in the game: his base stats are so far above any
+  the largest single fight **on the ladder's own terms**: his base stats are so
+  far above any
   dungeon boss that ×5.00 makes him a **3750 HP** opponent where the deepest
-  dungeon boss the ladder can produce is 2280. Against a **level-99** party (the
-  cap, raised from 50 so the endgame has an answer) the simulation beats him with
-  three Tax Sheets, three Evil Geese and a bag of Royal Snacks — three survivors
-  at a third health — and comfortably with the Dragon Crown and Deadly Spoon on
-  top. He rewards a full relic haul without demanding the absolute maximum, and a
-  party carrying nothing still loses.
+  dungeon boss the ladder can produce is 2280. (The optional gauntlets rise
+  higher still — the Duck at 5,000 and the Dragon at 7,000 effective HP, §10.) Against a **level-99** party (the
+  cap, raised from 50 so the endgame has an answer) the post-M77 simulation
+  still loses with nothing (17 rounds) and still wins with the modest plan —
+  one Tax Sheets, one Evil Goose, a bag of Royal Snacks, and a Mirrorbreak
+  for the Stave's mirror — now down to **a single survivor** (21 rounds,
+  M77's rework at work). He rewards a relic haul without demanding the
+  absolute maximum, and a party carrying nothing still loses.
 
 Because a multiplier alone is misleading once base stats differ this much, the
 "castle outranks the ladder" rule is enforced in **effective stats**, not in
@@ -657,9 +832,134 @@ the **same minions it brings in a dungeon**, so the rush finally tests the fight
 the game actually taught — and, under the castle floor above, each of them is
 scaled beyond the deepest dungeon boss as well.
 
+**Battle rules v15 (M75).** The M75–M86 program's one engine revision, batched
+deliberately so the scoreboard tags a single rules change. Three new statuses
+join the vocabulary, worn by enemies unless a later milestone says otherwise:
+
+- **Reflect (RFL)** — hostile *magic* aimed at the bearer **bounces back onto
+  its caster**, damage, MP drain and status rider alike, with no roll taken.
+  It wears off naturally; the only other answer is a **mirror-breaker** skill
+  (`break_reflect` — shipped as **Mirrorbreak** on the Ranger and Rogue in
+  M76) — and a breaker is
+  never magic, because it would bounce off the very mirror it came to break.
+- **Sleep (SLP)** — the bearer **skips its turns**. Any damage wakes it — but a
+  **poison tick does not** (the owner's rule: the dot burns through the nap).
+  Cleanses, cure items and its natural expiry all end it. Sleep-heavy foes can
+  carry **manners**: one authored flag makes single-target attacks spare
+  sleepers while anyone else stands (multi-hit sweeps are exempt — they hit
+  everyone by nature), another shelves stun-rider skills while the whole
+  opposing side sleeps.
+- **Curse (CRS)** — everything the bearer deals is **halved** and every skill
+  costs **double MP** (the menu shows the real doubled cost). It wears off
+  naturally but lasts **half again as long** as any other status, and exactly
+  **two things lift it early**: an `uncurse` skill and a `curesCurse` item
+  (both shipped in M76 — Absolve and Holy Taxes) — no cleanse, no Remedy,
+  no Purify touches it.
+
+Two old numbers finally matter again. **Poison scales**: the applied magnitude
+gains the *applier's* Magic ÷ 4, snapshotted at application, so a flat authored
+tick stays a threat against endgame HP pools. **ATK± / DEF± got teeth**: the
+attack percent now scales the whole offensive term (a buffed skill hits like a
+buffed skill), and the defense percent scales the **final damage taken** —
+DEF+30 shaves about a quarter off every hit, DEF−30 adds about forty percent —
+instead of nudging a stat the formula then halved and quartered away.
+
+The rest of the revision is inert schema until content uses it (the M61
+precedent): damaging skills may drain **MP** alongside HP (about a quarter of
+the HP damage — `mpDamagePct`); foes may **start the battle with statuses**
+(`initialStatuses` — a mirror already up as the curtain rises); bosses may
+shrug off the Deadly Spoon (`immuneToStatScale`) or carry a bespoke per-status
+immunity list; worn equipment may **resist elements** (`resistPct` /
+`resistElements`, halving what remains — the accessories shipped in M81); and
+the battle log now **names an attack's element** outright.
+
+And bosses, elites and minions gain **triggers** — deterministic WHEN → DO
+rules evaluated in shared code with no new randomness: *every Nth hit taken*,
+*first time below an HP percent*, *every Nth own turn*, or *first ally felled*
+can apply a status (to the bearer, the attacker, every foe, or the bearer's own
+boss — a minion mirroring its king), scale the bearer's stats (a rage that is
+data, not code), **drain the party's MP**, or **raise the bearer's clone** — a
+copy prebuilt dead at battle start so the roster never grows mid-fight. The
+authoring shipped with the M77 enemy pass and carries the M84/M85 bosses; v15
+is the machine that runs it. A battle whose content carries none of the new
+fields and no poison or ATK±/DEF± resolves exactly as it did under v14 — any
+fight where those statuses appear resolves differently, which is the point,
+hence the bump.
+
+**Counterplay (M76).** Before the enemy pass turns the v15 statuses loose
+(M77), the party gets its answers — the "counterplay ships with the threat"
+bar, honoured in order:
+
+- **Mirrorbreak** — a physical strike that **shatters a foe's Reflect** (a
+  breaker is never magic; it would bounce off the very mirror it came to
+  break). Learned by the **Rogue at 11** and the **Ranger at 12**.
+- **Absolve** — the Cleric's level-12 answer to a **Curse**, and **Holy
+  Taxes** — sanctified paperwork stocked by item shops **from town 3**
+  (200g) and found in chests from there. These two are the ONLY things that
+  ever lift a Curse; Purify and the Remedy provably skip it.
+- The **Knight learns Smite at 13** (the owner's Holy access), and the
+  Rogue's **Shadow Strike turns Dark** — the element's one player-side
+  exception (see the M48 section above).
+- **The Evil Duckling** — a small, deeply unpleasant consumable that
+  **curses one foe** (half damage out, double MP costs). It cannot be
+  bought, found or dropped; it is sold by exactly one merchant: the
+  **Duckling Peddler**, a rare dungeon event (~10% of dungeons, decided by
+  a pure hash of the seed so a reload changes nothing) asking a flat
+  **300 gold**. Strictly **one per customer** — while the party owns a
+  duckling the peddler refuses to deal, and the offer stands unresolved
+  until the duck is spent. Using it delivers a **Hilarious Punchline** on
+  the battle's quip channel. ("What do you call a duck that steals? A
+  robber ducky.")
+
+**Enemy offensive (M77).** The roster picks the v15 weapons up — every
+threat below is deterministic and announces itself with an authored line:
+
+- **MP drains**: the Hex Wisp's and Void Weaver's **Thought Thief** and the
+  Soul Render's **Soul Tithe** also take ~¼ of the damage dealt as MP.
+- **Mirrors**: the Rune Sentry, the Goose Trickster, the Crystal Sorcerer
+  and the Deadly Duck open behind Reflect; the Frost Monarch freezes into
+  one at half health, and the Throne Stave casts one **on the King** when
+  the Stave itself is nearly down.
+- **Curses**: the Blight Matron, the Dread Sovereign and the Throne Blade
+  wound-and-curse with **Leaden Hex**; the Goose Hexwing curses the whole
+  party at once. Absolve and Holy Taxes are the answers, exactly as M76
+  promised.
+- **Sleep**: the Blight Chanter and the Hollow Sovereign drop a party-wide
+  **Veil of Slumber** (their thin MP is the cadence); the King and the Duck
+  deliver theirs on authored beats (above).
+- **Tempers**: the Troll's fury feeds on its wounds (+25% ATK below half);
+  the Obsidian Colossus **rings back every 4th blow** (the attacker is
+  stunned); the Deep King digs in at the last quarter (+50% DEF); the Sand
+  Warlord whips its storm into every eye (party-wide Blind, every 4th
+  turn); the Abyssal Tyrant surges over its first fallen follower.
+- **Telegraphs are atmosphere now** — every boss intro was rewritten
+  flavor-only (no thresholds, no "silence it first"); the fight teaches
+  itself, and a lint test keeps the coaching out.
+
+**Inventory caps & the premium shelf (M78).** Consumables stop being a
+stockpile: shops sell a party only so many of each.
+
+- **Every consumable caps at 2 held** — with two authored exceptions,
+  **Potion 9** and **Hi-Potion 6**. Equipment, relics and scrolls are
+  uncapped. The check is **at the till only**: chests, events and rewards
+  still grant freely, and a save already holding more than a cap keeps
+  every one of them — it is simply refused further purchases. At-cap shop
+  rows read `x2 MAX` and refuse with the reason.
+- Three town-milestone perks (M84 — the "pockets" picks in towns 1, 2
+  and 6) each raise every cap by 1, against a **hard ceiling of 9** —
+  Potion simply stays 9.
+- **Elixir and Hi-Ether left the town shelves for good.** The in-dungeon
+  merchant is now their only seller — and asks **exactly full value**
+  (400g / 500g) where its other wares keep the usual street discount; its
+  prompt says "(full price)" so nobody mistakes the deal. Chest finds are
+  unchanged.
+- The shop lists' owned-count and price columns finally sit in clean
+  vertical lines (both shops, one shared fix).
+
 ## 11. Bosses
 
-One boss per dungeon. Each: multiple actions, telegraph-style status text, ≥1
+One boss per run (in an M82 4-floor run he waits on floor 4, behind the
+Stairway Warden gates). Each: multiple actions, telegraph-style status text, ≥1
 unique mechanic, escapable (but escaping fails the score). Archetypes:
 
 1. **Brute** — high HP/attack.
@@ -693,6 +993,23 @@ opens read-only contextual help wherever the footer offers it: unit stats
 and status shorthand in battle, danger-tier derivation in the dungeon,
 score components on the result and scoreboard, and per-member gear
 comparison in the equip shop. Nothing behind Details is required to play.
+
+**Input & QoL (M79).** JRPG-standard **party cycling**: two remappable
+actions — defaults **Q / E**, alternates **Ctrl / Alt**, gamepad
+**LB / RB** — cycle the selected member in the Equip Shop's member-scoped
+phases and everywhere in the Training Hall, keeping the current phase and
+refreshing portrait and lists; the footers advertise the live bindings.
+(Since **M82** the same pair also flips the scoreboard between its
+1-floor and 4-floor boards — the "cycle the thing beside the list" verb,
+reused.)
+The **keyboard remap** shows three direct slots per action —
+**Primary / Alt 1 / Alt 2**, picked with Left/Right, each rebindable on
+its own. A key that is already in use raises an explicit warning naming
+its current home (Steal or Keep); a steal that would leave an action with
+no keys is refused outright. Fresh defaults: **Confirm also on Z, Cancel
+also on X**. Fresh-profile volumes are **music 7/10, ambience 3/10**
+(existing files keep the player's values), and **Decisive** tightened to
+**15 turns or fewer**.
 
 **Accessibility commitments:** keyboard-only and gamepad-only complete;
 no color-only or sound-only information anywhere; a High Contrast palette
@@ -728,9 +1045,9 @@ gameplay:
 **Comforts & secrets (M52).** Six small quality-of-life additions and one
 secret, none touching the core loop:
 - **Ambience has its own volume slider** (Audio submenu), no longer chained to
-  the SFX slider as it was since M27. It **defaults to 5/10** — quieter by
-  design — and applies live and at startup. Old settings files (with no ambience
-  field) load at 0.5.
+  the SFX slider as it was since M27. M52 shipped it at 5/10; **since M79 it
+  defaults to 3/10** — quieter by design — applies live and at startup, and
+  old settings files (with no ambience field) load at the 3/10 default.
 - An **in-battle battle log**: the **Menu/Pause** action (hinted on the command
   menu, and openable in **any** phase — including the auto-played turns of a full
   Jester party) opens a scrollable overlay of the **last 30 action results** (the
@@ -808,18 +1125,18 @@ every event:
   the reduced-motion/flash settings (the pulse is gated by Battle Flash, the shake
   by Battle Shake); Endless Rush waves stay plain.
 
-## 13. First-complete-version content target
+## 13. Content baseline (snapshot at M38)
 
 6 classes (each with a level-based learnset) · 26 normal enemy types · 17 elites ·
 12 bosses across 4 archetypes · 50+ items/equipment · 48 skills/spells across the
 broad categories · **10 passive skills** · 3 themes (**Ruined Keep, Crystal Mine,
 Hollow Forest**) · infinite seeded dungeons with depth and town scaling. (Counts
-as of M38, which added 12 per-town enemies and 6 per-town bosses; the roster and
-lists grow with content milestones.)
+as of M38; the roster grew with the content milestones — as of M85 the ship
+is 9 classes, 26 normal + 36 elite enemies, 22 bosses, 95 items, 78 skills,
+10 passives, 3 themes.)
 
 ## 14. Open design questions (decide with human when reached)
 
-- Exact danger weights and tier thresholds (M6).
-- Exact score coefficients and anti-farming caps (M6).
-- Equipment/relic stat ranges and economy tuning (M7/M9).
-- Suspend-save anti-scum mechanism, if implemented (M3+).
+- Suspend-save anti-scum mechanism, if implemented (M3+). (The M38-era
+  entries here — danger weights, score coefficients, economy ranges — were
+  all decided and shipped: M6/M68 danger, §9 scoring, the M54 rebalance.)

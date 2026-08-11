@@ -159,6 +159,29 @@ void TrainingHallState::handleInput(const Input& input) {
     const bool up = input.navPressed(InputAction::MoveUp);
     const bool down = input.navPressed(InputAction::MoveDown);
 
+    // M79: shoulder-button/Q-E party cycling — walks the member list's cursor,
+    // or switches the selected member in place through the deeper phases
+    // (portrait, costs and passive marks all refresh; the phase is kept).
+    const int cycle = (input.pressed(InputAction::CycleNext) ? 1 : 0) -
+                      (input.pressed(InputAction::CyclePrev) ? 1 : 0);
+    if (cycle != 0) {
+        const int n = static_cast<int>(context_.party.members.size());
+        if (n > 0) {
+            if (phase_ == Phase::Members) {
+                memberMenu_.setCursor((memberMenu_.cursor() + cycle + n) % n);
+            } else {
+                selectedMember_ = (selectedMember_ + cycle + n) % n;
+                message_.clear();
+                if (phase_ == Phase::CharMenu) {
+                    rebuildCharMenu();
+                } else {
+                    rebuildPassives();
+                }
+            }
+            context_.audio.play(Sfx::Move);
+        }
+    }
+
     switch (phase_) {
         case Phase::Members: {
             if (up) memberMenu_.moveUp();
@@ -293,7 +316,11 @@ void TrainingHallState::render() {
     const char* verb = phase_ == Phase::Members   ? "Select"
                        : phase_ == Phase::CharMenu ? "Choose"
                                                    : "Buy/Equip";
+    // M79: every phase is member-scoped here, so the cycling pair is always on.
     ui::drawFooterHints({{input::primaryLabel(map, InputAction::Confirm, device), verb},
+                         {input::primaryLabel(map, InputAction::CyclePrev, device) + "/" +
+                              input::primaryLabel(map, InputAction::CycleNext, device),
+                          "Member"},
                          {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
                         w, h, "training.footer");
 }
