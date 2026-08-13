@@ -4,6 +4,7 @@
 
 #include "battle/Battle.hpp"
 #include "states/GameState.hpp"
+#include "ui/TextViewport.hpp"
 
 // M65: the puzzle-map treasure dig. One guarded fight — a seeded
 // dungeon-roster boss (with its authored court) at the scale of the dungeon
@@ -43,6 +44,9 @@ private:
     std::string pendingScrollId_;
     int cursor_ = 0;             // member picker
     std::string resultText_;
+    // M87: the result body scrolls while reading; during the member pick the
+    // list owns Up/Down, so the body is a compact marked preview instead.
+    ui::TextViewport resultView_;
 };
 
 }  // namespace cd

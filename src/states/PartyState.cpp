@@ -1,7 +1,9 @@
 #include "states/PartyState.hpp"
 
 #include <algorithm>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "audio/AudioManager.hpp"
@@ -14,6 +16,7 @@
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "resource/ResourceManager.hpp"
+#include "states/DetailsOverlayState.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -61,6 +64,64 @@ std::string itemName(const content::ContentDatabase& db, const std::string& id) 
 
 PartyState::PartyState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {}
+
+void PartyState::openMemberDetails() {
+    if (context_.party.members.empty()) {
+        return;
+    }
+    const content::ContentDatabase& db = context_.content;
+    const Character& c = context_.party.members[static_cast<std::size_t>(cursor_)];
+    const content::ClassDef* cls = db.findClass(c.classId);
+    std::string body = "Lv." + std::to_string(c.level) + " " +
+                       (cls != nullptr ? cls->name : c.classId);
+
+    const content::PassiveDef* passive =
+        c.equippedPassive.empty() ? nullptr : db.findPassive(c.equippedPassive);
+    if (passive != nullptr) {
+        body += "\n\nPassive: " + passive->name;
+        if (!passive->description.empty()) {
+            body += "\n" + passive->description;
+        }
+    }
+
+    bool anyMilestone = false;
+    for (int tier : kMilestoneTiers) {
+        const content::MilestoneDef* m = chosenMilestone(c, tier, db);
+        if (m == nullptr) {
+            continue;
+        }
+        body += anyMilestone ? "\n" : "\n\n";
+        anyMilestone = true;
+        body += "Lv." + std::to_string(tier) + "  " + m->name;
+        if (!m->description.empty()) {
+            body += "\n" + m->description;
+        }
+    }
+
+    body += "\n\nSkills:";
+    const std::vector<std::string> known = allKnownSkills(c, db);
+    if (known.empty()) {
+        body += " none";
+    }
+    bool anyScroll = false;
+    for (const std::string& id : known) {
+        const content::SkillDef* s = db.findSkill(id);
+        std::string name = s != nullptr ? s->name : id;
+        if (std::find(c.extraSkills.begin(), c.extraSkills.end(), id) != c.extraSkills.end()) {
+            name += "*";
+            anyScroll = true;
+        }
+        body += "\n" + name;
+        if (s != nullptr && !s->description.empty()) {
+            body += " - " + s->description;
+        }
+    }
+    if (anyScroll) {
+        body += "\n(* learned from a scroll)";
+    }
+    stack().pushState(
+        std::make_unique<DetailsOverlayState>(stack(), context_, c.name, std::move(body)));
+}
 
 void PartyState::rebuildScrolls() {
     std::vector<ui::MenuItem> rows;
@@ -126,6 +187,13 @@ void PartyState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Cancel)) {
         context_.audio.play(Sfx::Cancel);
         stack().popState();
+        return;
+    }
+    // M87: the full member sheet — the compact panel previews long texts;
+    // Details reaches all of them in the scrollable reading overlay.
+    if (input.pressed(InputAction::Details) && count > 0) {
+        context_.audio.play(Sfx::Confirm);
+        openMemberDetails();
         return;
     }
     if (input.pressed(InputAction::Confirm) && count > 0) {
@@ -251,9 +319,10 @@ void PartyState::render() {
     y += 9;
     if (passive != nullptr && !passive->description.empty()) {
         // M67: what the equipped passive does, in the hint colour. M72: long
-        // descriptions wrap to a second line instead of clipping.
-        y = ui::drawTextWrapped(passive->description, dx + 8, y, dw - 8, 8, p.textHint,
-                                "party.passive.desc", 2);
+        // descriptions wrap to a second line. M87: the two lines are a
+        // policy-B preview (arrow marks more; Details has the full text).
+        y = ui::drawTextPreview(passive->description, dx + 8, y, dw - 8, 8, p.textHint, 2)
+                .bottom;
     }
 
     // Milestone choices (M63) — M67: each chosen bonus shows its name and, in
@@ -269,8 +338,8 @@ void PartyState::render() {
             ui::drawTextFitted(TextFormat("Lv.%d  %s", tier, m->name.c_str()), dx, y, dw, 8,
                                p.text, "party.milestone");
             y += 9;
-            y = ui::drawTextWrapped(m->description, dx + 8, y, dw - 8, 8, p.textHint,
-                                    "party.milestone.desc", 2);
+            y = ui::drawTextPreview(m->description, dx + 8, y, dw - 8, 8, p.textHint, 2)
+                    .bottom;
         } else if (c.level >= tier) {
             anyTier = true;
             unchosen += (unchosen.empty() ? "" : ", ") + std::string("Lv.") + std::to_string(tier);
@@ -300,9 +369,12 @@ void PartyState::render() {
         skills += (skills.empty() ? "" : ", ") + name;
     }
     const int skillLines = std::max(2, (bottom - y) / ui::lineHeight(8));
-    ui::drawTextWrapped("Skills: " + (skills.empty() ? "none" : skills) +
+    // M87: the frame's remaining room is a preview budget, not a hard budget —
+    // an overlong (e.g. translated) list marks more and Details lists every
+    // skill with its description.
+    ui::drawTextPreview("Skills: " + (skills.empty() ? "none" : skills) +
                             (c.extraSkills.empty() ? "" : "   (* from a scroll)"),
-                        dx, y, dw, 8, p.text, "party.skills", skillLines);
+                        dx, y, dw, 8, p.text, skillLines);
 
     if (!message_.empty()) {
         // M67: overlay banner (the equip-shop toast idiom) — the old centered
@@ -325,6 +397,9 @@ void PartyState::render() {
     ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Confirm,
                                               context_.input.activeDevice()),
                           phase_ == Phase::PickScroll ? "Teach" : "Use Scroll"},
+                         {input::primaryLabel(context_.input.map(), InputAction::Details,
+                                              context_.input.activeDevice()),
+                          "Details"},
                          {input::primaryLabel(context_.input.map(), InputAction::Cancel,
                                               context_.input.activeDevice()),
                           "Back"}},

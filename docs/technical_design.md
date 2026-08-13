@@ -246,8 +246,8 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; **97 scenes as of M85**,
-`97_dragon_jester` last) — all
+list lives in `src/capture/CaptureRunner.cpp`; **105 scenes as of M87**,
+`98`–`105` the pseudo-localized long-prose set) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
@@ -1303,6 +1303,74 @@ tested; raylib adapters live in `ui/UiDraw`.
 - **Migration is complete:** every screen renders through the measured
   helpers, and control prompts are binding-derived (M13). The M46 kit below
   is the visual layer on top of these guarantees.
+
+### Translation-ready text containers (Milestone 87)
+
+Prose-heavy UI moved from English-sized budgets to bounded, scrollable
+containers so Latin-script translations can expand without authored layout
+newlines or silent clipping. Four policies bind every text element
+(`docs/ui_style_guide.md` §7/§12 is the authoring contract; this section is
+the architecture):
+
+- **`ui/TextViewport`** (pure, header-only): the scrollable wrapped-prose
+  model — `setContent` wraps once per (text, width, font) change via the M12
+  `wrapText` and caches (states may call it every frame; render never
+  re-wraps), `setVisibleLines` caps the widget-owned height, `scrollBy`
+  clamps and reports movement, `moreAbove`/`moreBelow`/`scrollable` drive
+  indicators and hints. Scrolling composes the pure `ScrollWindow`, so prose
+  viewports and row lists share one clamping model. Tested headlessly in
+  `tests/test_text_viewport.cpp`.
+- **`ui/TextLayout::previewText`** (pure): the first N wrapped lines plus an
+  explicit `hasMore` — the policy-B core.
+- **`ui/UiDraw` adapters:** `drawTextViewport` draws only the visible window,
+  scissored to the content rect (the final safety boundary), with the
+  stepped more-above/below arrows in a reserved `kScrollGutterW` (10px)
+  right of the wrap width; `drawTextPreview` draws a capped preview and
+  marks intentional truncation with the stepped down-arrow. **Neither
+  touches the `[ui-overflow]` counter** — after M87 that diagnostic means an
+  actual layout defect, never "more text below a scroll viewport" or "a
+  preview intentionally summarized". `drawTextFitted`/`drawTextWrapped` keep
+  their hard-budget contract (report + clip) for policy-A lines and the few
+  deliberate fixed budgets (boss telegraph 2 lines, the event trade-off
+  line 2 lines, choice-modal descriptions).
+- **Converted screens (policy C):** `DetailsOverlayState` (the canonical
+  reading overlay — capped panel, scrolling body, Up/Down + close, used by
+  every Details context), `StoryDialogState` and `TutorialPromptState`
+  (height caps inside the safe area instead of growing with the body),
+  `BestiaryState` flavor (body font in a bounded viewport; the Details
+  action toggles **read focus** — brackets mark the prose region, Up/Down
+  scrolls it, roster browsing untouched otherwise), the `DungeonState`
+  event-flavor and outcome panels (bodies scroll; title, gold trade-off
+  line, and hints fixed), `MapsState` curio lore, and the
+  `TreasureFightState`/`CastleChallengeState` result bodies.
+- **Battle stays fast (policy B):** skill/item descriptions during selection
+  remain a 2-line preview (no scrolling in the bottom panel) with the
+  more-arrow when truncated; **Details is context-sensitive** — the
+  highlighted skill/item's full sheet (name, MP cost/held count, block
+  reason, complete description) in the reading overlay during selection,
+  the unit sheet otherwise. `PartyState` likewise previews passive/
+  milestone/skill texts compactly and puts the full member sheet (every
+  known skill WITH its description) behind Details.
+- **Glyph coverage:** the bitmap font covers printable ASCII plus every
+  Latin-1 Supplement letter and `¡ ¿ « »` (161 glyphs; generator
+  `tools/asset_gen/generate_font.ps1`, same 7-row cell — ASCII rendering is
+  byte-identical). `src/ui/GlyphCoverage.hpp` (pure) is the contract:
+  `isSupportedCodepoint`/`isAllowedInContent` (newline yes — paragraph
+  semantics; tabs/controls no) plus a UTF-8 decoder;
+  `tests/test_glyph_coverage.cpp` binds the three layers (contract ↔
+  shipped `.fnt` char ids ↔ every string in the shipped `data/*.json`), so
+  a translation using an unsupported character fails the suite instead of
+  rendering the `?` fallback. `wrapText` remains a deliberate Latin-script
+  wrapper: spaces break, runs collapse, `\n` is a paragraph, NBSP glues —
+  no general Unicode line-breaking engine.
+- **Capture:** scenes `98`–`105` (the set is **105**) exercise long
+  storyteller/details/bestiary/party/event/outcome prose and the battle
+  preview + full-sheet pair, driven by a deterministic capture-only
+  `pseudoLocalize` transform (~1.3× expansion using the new glyphs) and one
+  capture-only long-description skill parsed into the capture db (unused by
+  any class/pool, so every other scene is unaffected). Scenes with visible
+  scroll remainder pass the zero-overflow check by construction — genuine
+  overflow still fails the run.
 
 ### Procedural UI kit (Milestone 46)
 

@@ -111,10 +111,15 @@ slider from M27 to M52, and the music slider before that).
 Texture/font roles follow the same pattern (placeholder checker / default
 font as fallback); visual role names are assigned in M15/M17 as art lands.
 
-**Fonts (M25):** the shipped UI font is original, produced by
+**Fonts (M25; Latin set M87):** the shipped UI font is original, produced by
 `tools/asset_gen/generate_font.ps1` (deterministic — reruns are byte-identical),
-which emits one 5×7 proportional glyph design (printable ASCII 32–126) as a PNG
-atlas + three BMFont `.fnt` descriptors sharing it:
+which emits one 5×7 proportional glyph design — **161 glyphs**: printable
+ASCII 32–126 plus, since M87, every Latin-1 Supplement letter and `¡ ¿ « »`
+(accents in the cell's top two rows, compressed capitals; ASCII glyphs are
+byte-identical to M25). The supported-codepoint authority is
+`src/ui/GlyphCoverage.hpp`, enforced by `tests/test_glyph_coverage.cpp`
+against the emitted `.fnt` char ids AND all shipped `data/*.json` text. The
+output is a PNG atlas + three BMFont `.fnt` descriptors sharing it:
 
 | Role id | File | Base size (`lineHeight`) | Used for |
 |---|---|---|---|

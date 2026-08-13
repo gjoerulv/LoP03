@@ -16,7 +16,7 @@ exceptions since M13 — text entry flows through the input layer):
 | Confirm | Enter, Space, Z | A | select, interact, advance |
 | Cancel | Esc, Backspace, X | B | back, close, (opens pause in town/dungeon) |
 | Menu | Tab | Start | opens **and closes** (M47) pause in town/dungeon; opens/closes the battle log in battle (M52) |
-| Details | C | Y | M22: contextual help panels (battle stats/statuses, dungeon danger, score components, gear comparison) |
+| Details | C | Y | M22: contextual help panels (battle stats/statuses, dungeon danger, score components, gear comparison); M87: the full skill/item sheet during battle selection, the full party-member sheet, bestiary read focus |
 | CyclePrev / CycleNext | Q / E (alt Left Ctrl / Left Alt) | L1 / R1 | M79: party-member cycling in the Equip Shop member phases and Training Hall; M82: 1F/4F scoreboard switch |
 | TextBackspace | Backspace (fixed) | X (fixed) | delete-one-char in text editing |
 | ToggleDebug | F1 (fixed) | — | debug overlay |
@@ -45,6 +45,12 @@ characters still require a keyboard (labeled in-game).
 - **Details** (M22) opens a read-only overlay wherever the footer offers it;
   Confirm, Cancel, or Details again closes it. It is remappable and never
   required to progress — everything it explains is also learnable by play.
+  Since M87 the overlay is a bounded scrolling reader (Up/Down reaches every
+  line; indicators show when more exists), Details is **context-sensitive**
+  in battle (the highlighted skill/item's full sheet during selection, the
+  focused unit otherwise), and in the bestiary it toggles **read focus** on
+  the selected entry's prose (Up/Down scrolls the text instead of the
+  roster; Cancel/Confirm/Details returns to roster browsing).
 - **Destructive actions need an explicit second step** (M22): overwriting an
   existing save slot arms on the first Confirm (with a visible warning) and
   executes on the second; moving the cursor or Cancel disarms. Quitting

@@ -80,9 +80,12 @@ public:
     // overflow-checked.
     void captureShowSpoils();
     // Capture-only: open the unit Details overlay on a party actor staged at the
-    // fullest layout the panel admits (guard line + four status chips), so the
-    // wrapped status legend is overflow-checked against the panel's line budget.
+    // fullest layout (guard line + four status chips + a Passive line — the
+    // combination that overran the pre-M87 hard budget; it scrolls now).
     void captureOpenDetails();
+    // Capture-only (M87): open the skill list and the highlighted skill's full
+    // sheet in the scrollable Details overlay.
+    void captureOpenSkillDetails(std::vector<std::string> skills = {});
 #endif
 
 private:
@@ -139,6 +142,10 @@ private:
                       bool statusAction = false);
     // M22: pushes the contextual Details overlay for the focused unit.
     void openDetails();
+    // M87: full skill/item sheets for the selection phases — the bottom-panel
+    // preview stays 2 lines; Details reaches the whole text.
+    void openSkillDetails();
+    void openItemDetails();
     void commitPresentation();
 
     void drawUnit(const battle::Combatant& c, int index, int x, int y, bool current,

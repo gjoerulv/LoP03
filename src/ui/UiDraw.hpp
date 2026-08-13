@@ -7,6 +7,7 @@
 #include "ui/Menu.hpp"
 #include "ui/ScrollWindow.hpp"
 #include "ui/TextLayout.hpp"
+#include "ui/TextViewport.hpp"
 
 // Shared raylib drawing helpers for the UI windows, plus the M46 procedural
 // UI kit: hard-edged frames, plaques, chips, keycap footers, framed meters,
@@ -96,6 +97,32 @@ int drawTextWrapped(const std::string& text, int x, int y, int maxWidth, int fon
 // The same wrapped block with every line centered on centerX.
 int drawTextWrappedCentered(const std::string& text, int centerX, int y, int maxWidth, int fontSize,
                             Color color, const char* site, int maxLines = 0);
+
+// --- M87 text containers ----------------------------------------------------
+//
+// Reserved gutter right of a viewport/preview wrap width where the stepped
+// more-above/below arrows draw — callers wrap prose to (available - this).
+inline constexpr int kScrollGutterW = 10;
+
+// Bounded scrollable prose viewport (policy C). Draws only the visible
+// window of the viewport's wrapped lines at its cached wrap width/font,
+// scissored to the content rectangle as a final safety boundary, plus the
+// stepped more-above/more-below arrows in the gutter right of the text.
+// Scrollable remainder is NOT an overflow event — the [ui-overflow]
+// diagnostic keeps meaning an actual layout defect. Returns the y just
+// below the viewport rectangle.
+int drawTextViewport(const TextViewport& vp, int x, int y, Color color);
+
+// Fixed wrapped preview (policy B). Draws at most maxLines wrapped lines;
+// when more exists (and markMore) a stepped down-arrow marks the block's
+// bottom-right corner. Intentional truncation: never reported to the
+// overflow diagnostic — callers expose the rest through Details.
+struct TextPreviewDraw {
+    bool hasMore = false;
+    int bottom = 0;  // y just below the last drawn line
+};
+TextPreviewDraw drawTextPreview(const std::string& text, int x, int y, int maxWidth,
+                                int fontSize, Color color, int maxLines, bool markMore = true);
 
 // --- M46 procedural UI kit -------------------------------------------------
 

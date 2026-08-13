@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "audio/AudioManager.hpp"
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "content/Enums.hpp"
@@ -134,9 +135,43 @@ void BestiaryState::captureSelect(const std::string& id) {
         }
     }
 }
+
+void BestiaryState::captureStretchFlavor() {
+    if (entries_.empty()) {
+        return;
+    }
+    Entry& e = entries_[static_cast<std::size_t>(cursor_)];
+    e.known = true;
+    // Deterministic pseudo-translation growth, exercising the M87 Latin
+    // glyphs in situ; the viewport must scroll it, never clip or shrink it.
+    // (UTF-8 spelled in escapes — source files stay plain ASCII.)
+    e.flavor += " \xC3\x90" "e l\xC3\xA4rgest chr\xC3\xB6nicle grows"
+                " l\xC3\xB6nger still in translation: \xC3\xA6" "fter every"
+                " v\xC3\xA4rse another follows, \xC3\xBCnd the tale of the"
+                " \xC3\x98-marked wyrm gains a p\xC3\xA4r\xC3\xA1graph in"
+                " \xC2\xA1" "every! tongue - \xC2\xABs\xC3\xA5 the codex"
+                " scrolls\xC2\xBB.";
+    readFocus_ = true;
+}
 #endif
 
 void BestiaryState::handleInput(const Input& input) {
+    // M87 read focus: the flavor viewport owns Up/Down; anything else steps
+    // back out to roster browsing. Entered through Details below.
+    if (readFocus_) {
+        if (input.navPressed(InputAction::MoveUp) && flavorView_.scrollBy(-1)) {
+            context_.audio.play(Sfx::Move);
+        }
+        if (input.navPressed(InputAction::MoveDown) && flavorView_.scrollBy(1)) {
+            context_.audio.play(Sfx::Move);
+        }
+        if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Confirm) ||
+            input.pressed(InputAction::Details)) {
+            context_.audio.play(Sfx::Cancel);
+            readFocus_ = false;
+        }
+        return;
+    }
     const int total = static_cast<int>(entries_.size());
     if (input.navPressed(InputAction::MoveUp) && cursor_ > 0) {
         --cursor_;
@@ -145,6 +180,17 @@ void BestiaryState::handleInput(const Input& input) {
     if (input.navPressed(InputAction::MoveDown) && cursor_ + 1 < total) {
         ++cursor_;
         scroll_.follow(total, kVisibleRows, cursor_);
+    }
+    // Details enters read focus when the selected entry has prose to read —
+    // a deliberate focus change, so roster Up/Down never fights the text.
+    if (input.pressed(InputAction::Details) && total > 0) {
+        const Entry& e = entries_[static_cast<std::size_t>(cursor_)];
+        if (e.known && !e.flavor.empty()) {
+            context_.audio.play(Sfx::Confirm);
+            flavorView_.scrollToTop();
+            readFocus_ = true;
+        }
+        return;
     }
     if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Confirm)) {
         stack().popState();
@@ -230,19 +276,24 @@ void BestiaryState::renderDetail(const Entry& e, int px, int pw) {
     }
 
     if (e.known && !e.flavor.empty()) {
-        // Prefer the body font; drop to the caption font only when the flavor
-        // would not otherwise fit the room the panel has left.
-        const int room = bottom - y;
-        const int bodyLines = room / ui::lineHeight(style::kFontBody);
-        const bool fitsBody =
-            static_cast<int>(
-                ui::wrapText(e.flavor, bodyW, style::kFontBody, ui::raylibMeasure()).size()) <=
-            bodyLines;
-        const int font = fitsBody ? style::kFontBody : style::kFontSmall;
-        const int lines = room / ui::lineHeight(font);
+        // M87: the flavor is a bounded scrollable viewport at the body font —
+        // the pre-M87 "drop to the caption font, then truncate what still
+        // does not fit" policy is gone. The widget owns the height (whatever
+        // room the fixed rows above left); Details toggles read focus and
+        // Up/Down reaches every line.
+        const int lines = (bottom - y) / ui::lineHeight(style::kFontBody);
         if (lines > 0) {
-            ui::drawTextWrapped(e.flavor, px + 12, y, bodyW, font, style::palette().text,
-                                "bestiary.flavor", lines);
+            flavorView_.setContent(e.flavor, bodyW - ui::kScrollGutterW, style::kFontBody,
+                                   ui::raylibMeasure());
+            flavorView_.setVisibleLines(std::clamp(flavorView_.lineCount(), 1, lines));
+            ui::drawTextViewport(flavorView_, px + 12, y, style::palette().text);
+            if (readFocus_) {
+                // Read focus is visible, not implied: brackets around the
+                // prose region (the battle-targeting signal, shape not hue).
+                const int vh = flavorView_.visibleLines() * ui::lineHeight(style::kFontBody);
+                ui::drawFocusBrackets(px + 10, y - 1, bodyW + 2, vh + 2,
+                                      style::palette().cursor);
+            }
         }
     }
 }
@@ -284,10 +335,25 @@ void BestiaryState::render() {
         renderDetail(entries_[static_cast<std::size_t>(cursor_)], kPanelX, pw);
     }
 
-    ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
-                                              context_.input.activeDevice()),
-                          "Back"}},
-                        w, h, "bestiary.footer");
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    std::vector<ui::Hint> hints;
+    if (readFocus_) {
+        hints.push_back({input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
+                             input::primaryLabel(map, InputAction::MoveDown, device),
+                         "Scroll"});
+        hints.push_back({input::primaryLabel(map, InputAction::Cancel, device), "Roster"});
+    } else {
+        if (total > 0) {
+            const Entry& e = entries_[static_cast<std::size_t>(cursor_)];
+            if (e.known && !e.flavor.empty()) {
+                hints.push_back(
+                    {input::primaryLabel(map, InputAction::Details, device), "Read"});
+            }
+        }
+        hints.push_back({input::primaryLabel(map, InputAction::Cancel, device), "Back"});
+    }
+    ui::drawFooterHints(hints, w, h, "bestiary.footer");
 }
 
 }  // namespace cd

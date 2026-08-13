@@ -94,6 +94,7 @@
 | 84 | Guild Masters & town milestones | ☑ complete (approved) |
 | 85 | The Dragon & curio lore | ☑ complete (approved) |
 | 86 | CrystalForge catch-up & version 0.6.0 | ◑ implemented, awaiting manual approval |
+| 87 | Translation-ready text containers & scrollable prose | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -3249,7 +3250,37 @@ derives from committed seeds or pure hashes — no new RNG streams.
   consistency sweep.
 - **Milestone note:** `docs/milestone_notes/M86_crystalforge_060.md`
 
+### M87 — Translation-ready text containers & scrollable prose
+
+- **Status:** ◑ implemented, awaiting manual approval — authorized and
+  implemented 2026-08-11 on the post-M86 checkout (owner brief, full
+  implementation authorized in the same message). Prose-heavy UI moves
+  from English-sized budgets to bounded, scrollable text containers so
+  translations can expand naturally: a pure `ui::TextViewport` model
+  (composing the M12 `ScrollWindow`) + scissored `drawTextViewport` /
+  explicit-`hasMore` `drawTextPreview` adapters; the Details overlay,
+  storyteller, tutorial prompts, bestiary flavor (Details = read focus),
+  dungeon event flavor/outcome panels, curio lore, and treasure/castle
+  result bodies all scroll inside capped panels with fixed titles,
+  trade-off lines, and control hints; battle skill/item previews keep
+  their compact 2-line budget but mark truncation explicitly and route
+  Details to the full skill/item sheet; the party panel gains a full
+  member sheet behind Details. `[ui-overflow]` now means an actual
+  layout defect — intentional preview truncation and scrollable
+  remainder no longer count. The bitmap font grows from printable ASCII
+  to the full Latin-1 letter set (+ `¡ ¿ « »`), deterministic pipeline
+  intact, with `ui::GlyphCoverage` + tests binding font/content coverage
+  and a capture-only pseudo-localization stress path. The M80 "flavor
+  fits 4 English lines" test rule is repealed in favor of container-
+  behavior tests. Full record: the milestone note.
+- **Goal:** prose containers behave like proper bounded text areas
+  (wrap to width, cap height, scroll the rest) so future Latin-script
+  translations need no authored layout newlines and cannot silently
+  clip; the font and validation are structurally ready for them.
+- **Milestone note:** `docs/milestone_notes/M87_text_containers.md`
+
 **Execution order:** M75 → M76 → M77 → M78 → M79 → M80 → M81 → M82 →
-M83 → M84 → M85 → M86, then M23 → M24 (re-audited against the
-then-current checkout). Approval of one milestone is not authorization to
+M83 → M84 → M85 → M86, then the owner-directed **M87** (authorized
+2026-08-11), then M23 → M24 (re-audited against the then-current
+checkout). Approval of one milestone is not authorization to
 start the next.

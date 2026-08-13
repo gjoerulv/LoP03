@@ -67,6 +67,18 @@ void drawPipDiamond(int x, int y, Color c) {
     DrawRectangle(x + 1, y, 1, 3, c);
 }
 
+// Chunky stepped scroll arrows (M87): the drawMenuScrolled shapes, shared so
+// prose viewports and row lists speak one indicator language. 8x4 px.
+void drawArrowUp(int x, int y, Color c) {
+    DrawRectangle(x + 2, y, 4, 2, c);
+    DrawRectangle(x, y + 2, 8, 2, c);
+}
+
+void drawArrowDown(int x, int y, Color c) {
+    DrawRectangle(x, y, 8, 2, c);
+    DrawRectangle(x + 2, y + 2, 4, 2, c);
+}
+
 }  // namespace
 
 long overflowEvents() { return gOverflowEvents; }
@@ -226,6 +238,54 @@ int drawTextWrappedCentered(const std::string& text, int centerX, int y, int max
         ++drawn;
     }
     return y + drawn * step;
+}
+
+// --- M87 text containers ---------------------------------------------------
+
+int drawTextViewport(const TextViewport& vp, int x, int y, Color color) {
+    const int step = lineHeight(vp.fontSize());
+    const int rectH = vp.visibleLines() * step;
+    // Scissor as the final safety boundary: the lines are already wrapped to
+    // the viewport width, so this only matters if a glyph edge disagrees
+    // with the measurer by a pixel.
+    BeginScissorMode(x, y, vp.wrapWidth(), rectH);
+    const int count = vp.visibleCount();
+    for (int i = 0; i < count; ++i) {
+        drawTextRaw(vp.line(vp.top() + i).c_str(), x, y + i * step, vp.fontSize(), color);
+    }
+    EndScissorMode();
+    // More-above/below arrows in the reserved gutter, aligned with the
+    // rectangle's top/bottom lines. Scrollable remainder is expected, never
+    // an overflow event.
+    const int ax = x + vp.wrapWidth() + 2;
+    const Color ac = style::palette().textDim;
+    if (vp.moreAbove()) {
+        drawArrowUp(ax, y + 1, ac);
+    }
+    if (vp.moreBelow()) {
+        drawArrowDown(ax, y + rectH - 5, ac);
+    }
+    return y + rectH;
+}
+
+TextPreviewDraw drawTextPreview(const std::string& text, int x, int y, int maxWidth,
+                                int fontSize, Color color, int maxLines, bool markMore) {
+    const TextPreview preview = previewText(text, maxWidth, fontSize, maxLines, raylibMeasure());
+    const int step = lineHeight(fontSize);
+    int drawn = 0;
+    for (const std::string& line : preview.lines) {
+        drawTextRaw(line.c_str(), x, y + drawn * step, fontSize, color);
+        ++drawn;
+    }
+    TextPreviewDraw result;
+    result.hasMore = preview.hasMore;
+    result.bottom = y + drawn * step;
+    if (preview.hasMore && markMore) {
+        // Intentional truncation is visible, not silent: the stepped
+        // down-arrow at the block's bottom-right corner.
+        drawArrowDown(x + maxWidth - 8, result.bottom - 5, style::palette().textDim);
+    }
+    return result;
 }
 
 // --- M46 procedural UI kit -------------------------------------------------

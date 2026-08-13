@@ -6,6 +6,7 @@
 #include "content/Stats.hpp"
 #include "states/GameState.hpp"
 #include "ui/ScrollWindow.hpp"
+#include "ui/TextViewport.hpp"
 
 namespace cd {
 
@@ -26,6 +27,10 @@ public:
     // Capture-only: park the cursor on a given foe so its detail panel renders
     // deterministically for the overflow check. Not present in shipping builds.
     void captureSelect(const std::string& id);
+    // Capture-only (M87): append a deterministic long paragraph to the
+    // selected entry's flavor and enter read focus, so the scrolling flavor
+    // viewport is lint-checked at translation-expanded length.
+    void captureStretchFlavor();
 #endif
 
 private:
@@ -56,6 +61,12 @@ private:
     ui::ScrollWindow scroll_;
     int cursor_ = 0;
     int known_ = 0;
+    // M87: the selected entry's flavor renders in a bounded viewport at the
+    // body font (no more shrink-to-fit + truncate). When it overflows, the
+    // Details action toggles READ FOCUS: Up/Down scrolls the flavor instead
+    // of the roster; Cancel/Details/Confirm returns to roster browsing.
+    ui::TextViewport flavorView_;
+    bool readFocus_ = false;
 };
 
 }  // namespace cd

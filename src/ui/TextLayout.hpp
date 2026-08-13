@@ -27,4 +27,15 @@ bool fitsWidth(const std::string& text, int maxWidth, int fontSize, const TextMe
 std::vector<std::string> wrapText(const std::string& text, int maxWidth, int fontSize,
                                   const TextMeasure& measure);
 
+// Fixed wrapped preview (M87, policy B): the first maxLines wrapped lines
+// plus whether more content exists. Truncation here is INTENTIONAL — the
+// caller surfaces hasMore (a more-indicator / Details affordance) instead of
+// reporting a layout overflow. maxLines <= 0 keeps every line.
+struct TextPreview {
+    std::vector<std::string> lines;
+    bool hasMore = false;
+};
+TextPreview previewText(const std::string& text, int maxWidth, int fontSize, int maxLines,
+                        const TextMeasure& measure);
+
 }  // namespace cd::ui

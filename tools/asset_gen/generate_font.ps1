@@ -1,7 +1,17 @@
-# Crystal Dungeons - deterministic bitmap-font generator (M25 slice 0).
-# Produces an ORIGINAL proportional pixel font (printable ASCII 32-126) as a
-# PNG atlas + AngelCode BMFont (.fnt) descriptors under assets/fonts/. Rerunning
-# reproduces byte-identical files. Requires Windows PowerShell (System.Drawing).
+# Crystal Dungeons - deterministic bitmap-font generator (M25 slice 0; M87
+# Latin extension). Produces an ORIGINAL proportional pixel font (printable
+# ASCII 32-126 plus the M87 Latin localization set: every Latin-1 Supplement
+# letter and the inverted marks / guillemets — the authority is
+# src/ui/GlyphCoverage.hpp) as a PNG atlas + AngelCode BMFont (.fnt)
+# descriptors under assets/fonts/. Rerunning reproduces byte-identical files.
+# Requires Windows PowerShell (System.Drawing).
+#
+# M87 glyph conventions (7-row cell kept, so ASCII is byte-identical):
+#   - accents live in rows 0-1: acute ...#/..#  grave #.../..#  circumflex
+#     ..#/.#.#  diaeresis (row 1 only) .#.#  tilde .##.#/#.##.  ring ..#/.###
+#   - accented letter bodies are the existing lowercase bodies (rows 2-6) or
+#     5-row compressed capitals (classic squashed-cap pixel forms);
+#   - cedilla replaces the glyph's last row (c/C compress one row up).
 #
 # One 5x7 glyph design is emitted as three descriptors so raylib's DrawTextEx
 # (which scales glyphs by requestedSize / font.baseSize, and where LoadBMFont
@@ -784,6 +794,534 @@ G 126
 .....
 .....
 .....
+G 161
+#
+.
+#
+#
+#
+#
+#
+G 171
+......
+..#..#
+.#..#.
+#..#..
+.#..#.
+..#..#
+......
+G 187
+......
+#..#..
+.#..#.
+..#..#
+.#..#.
+#..#..
+......
+G 191
+..#..
+.....
+..#..
+..#..
+.#...
+#...#
+.###.
+G 192
+.#...
+..#..
+.###.
+#...#
+#####
+#...#
+#...#
+G 193
+...#.
+..#..
+.###.
+#...#
+#####
+#...#
+#...#
+G 194
+..#..
+.#.#.
+.###.
+#...#
+#####
+#...#
+#...#
+G 195
+.##.#
+#.##.
+.###.
+#...#
+#####
+#...#
+#...#
+G 196
+.....
+.#.#.
+.###.
+#...#
+#####
+#...#
+#...#
+G 197
+..#..
+.###.
+.###.
+#...#
+#####
+#...#
+#...#
+G 198
+.#####
+#.#...
+#.#...
+######
+#.#...
+#.#...
+#.####
+G 199
+.###.
+#...#
+#....
+#....
+#...#
+.###.
+..#..
+G 200
+.#...
+..#..
+#####
+#....
+####.
+#....
+#####
+G 201
+...#.
+..#..
+#####
+#....
+####.
+#....
+#####
+G 202
+..#..
+.#.#.
+#####
+#....
+####.
+#....
+#####
+G 203
+.....
+.#.#.
+#####
+#....
+####.
+#....
+#####
+G 204
+.#...
+..#..
+.###.
+..#..
+..#..
+..#..
+.###.
+G 205
+...#.
+..#..
+.###.
+..#..
+..#..
+..#..
+.###.
+G 206
+..#..
+.#.#.
+.###.
+..#..
+..#..
+..#..
+.###.
+G 207
+.....
+.#.#.
+.###.
+..#..
+..#..
+..#..
+.###.
+G 208
+###..
+#..#.
+#...#
+##..#
+#...#
+#..#.
+###..
+G 209
+.##.#
+#.##.
+#...#
+##..#
+#.#.#
+#..##
+#...#
+G 210
+.#...
+..#..
+.###.
+#...#
+#...#
+#...#
+.###.
+G 211
+...#.
+..#..
+.###.
+#...#
+#...#
+#...#
+.###.
+G 212
+..#..
+.#.#.
+.###.
+#...#
+#...#
+#...#
+.###.
+G 213
+.##.#
+#.##.
+.###.
+#...#
+#...#
+#...#
+.###.
+G 214
+.....
+.#.#.
+.###.
+#...#
+#...#
+#...#
+.###.
+G 216
+....#
+.###.
+#..##
+#.#.#
+##..#
+.###.
+#....
+G 217
+.#...
+..#..
+#...#
+#...#
+#...#
+#...#
+.###.
+G 218
+...#.
+..#..
+#...#
+#...#
+#...#
+#...#
+.###.
+G 219
+..#..
+.#.#.
+#...#
+#...#
+#...#
+#...#
+.###.
+G 220
+.....
+.#.#.
+#...#
+#...#
+#...#
+#...#
+.###.
+G 221
+...#.
+..#..
+#...#
+.#.#.
+..#..
+..#..
+..#..
+G 222
+#....
+####.
+#...#
+#...#
+####.
+#....
+#....
+G 223
+.##..
+#..#.
+#..#.
+#.##.
+#...#
+#...#
+#.##.
+G 224
+.#...
+..#..
+.###.
+....#
+.####
+#...#
+.####
+G 225
+...#.
+..#..
+.###.
+....#
+.####
+#...#
+.####
+G 226
+..#..
+.#.#.
+.###.
+....#
+.####
+#...#
+.####
+G 227
+.##.#
+#.##.
+.###.
+....#
+.####
+#...#
+.####
+G 228
+.....
+.#.#.
+.###.
+....#
+.####
+#...#
+.####
+G 229
+..#..
+.###.
+.###.
+....#
+.####
+#...#
+.####
+G 230
+.....
+.....
+####.
+...#.
+#####
+#.#..
+.####
+G 231
+.....
+.....
+.###.
+#....
+#....
+.###.
+..#..
+G 232
+.#...
+..#..
+.###.
+#...#
+#####
+#....
+.###.
+G 233
+...#.
+..#..
+.###.
+#...#
+#####
+#....
+.###.
+G 234
+..#..
+.#.#.
+.###.
+#...#
+#####
+#....
+.###.
+G 235
+.....
+.#.#.
+.###.
+#...#
+#####
+#....
+.###.
+G 236
+.#...
+..#..
+.##..
+..#..
+..#..
+..#..
+.###.
+G 237
+...#.
+..#..
+.##..
+..#..
+..#..
+..#..
+.###.
+G 238
+..#..
+.#.#.
+.##..
+..#..
+..#..
+..#..
+.###.
+G 239
+.....
+.#.#.
+.##..
+..#..
+..#..
+..#..
+.###.
+G 240
+.##.#
+..##.
+...##
+.####
+#...#
+#...#
+.###.
+G 241
+.##.#
+#.##.
+####.
+#...#
+#...#
+#...#
+#...#
+G 242
+.#...
+..#..
+.###.
+#...#
+#...#
+#...#
+.###.
+G 243
+...#.
+..#..
+.###.
+#...#
+#...#
+#...#
+.###.
+G 244
+..#..
+.#.#.
+.###.
+#...#
+#...#
+#...#
+.###.
+G 245
+.##.#
+#.##.
+.###.
+#...#
+#...#
+#...#
+.###.
+G 246
+.....
+.#.#.
+.###.
+#...#
+#...#
+#...#
+.###.
+G 248
+.....
+....#
+.###.
+#..##
+#.#.#
+##..#
+.###.
+G 249
+.#...
+..#..
+#...#
+#...#
+#...#
+#...#
+.####
+G 250
+...#.
+..#..
+#...#
+#...#
+#...#
+#...#
+.####
+G 251
+..#..
+.#.#.
+#...#
+#...#
+#...#
+#...#
+.####
+G 252
+.....
+.#.#.
+#...#
+#...#
+#...#
+#...#
+.####
+G 253
+...#.
+..#..
+#...#
+#...#
+.####
+....#
+.###.
+G 254
+#....
+#....
+####.
+#...#
+#...#
+####.
+#....
+G 255
+.....
+.#.#.
+#...#
+#...#
+.####
+....#
+.###.
 '@
 
 # --- Parse the glyph blocks into an ordered list of glyph records ---
@@ -861,7 +1399,7 @@ function Save-Png($bmp, [string]$rel) {
 # --- Emit a BMFont .fnt descriptor (LF newlines, UTF-8 no BOM) ---
 function Save-Fnt([string]$rel, [int]$lineHeight, [int]$base, [int]$scale, [string]$page) {
   $sb = New-Object System.Text.StringBuilder
-  [void]$sb.Append("info face=`"CrystalPixel`" size=$($cellH * $scale) bold=0 italic=0 unicode=0`n")
+  [void]$sb.Append("info face=`"CrystalPixel`" size=$($cellH * $scale) bold=0 italic=0 unicode=1`n")
   [void]$sb.Append("common lineHeight=$lineHeight base=$base scaleW=$($atlasW * $scale) scaleH=$($cellH * $scale) pages=1 packed=0`n")
   [void]$sb.Append("page id=0 file=`"$page`"`n")
   [void]$sb.Append("chars count=$($glyphs.Count)`n")

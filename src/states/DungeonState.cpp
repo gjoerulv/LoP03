@@ -55,6 +55,15 @@ constexpr int kTile = town::Tilemap::kTileSize;
 constexpr float kSpeed = 78.0f;
 constexpr float kPlayerSize = 12.0f;
 
+// M87: the two centered panels (event flavor / outcome) share one geometry
+// family; their bodies wrap to this width (the indicator gutter reserved)
+// and scroll past the visible budget instead of truncating. Content is set
+// when a panel OPENS, so render stays const and no wrapping runs per frame.
+constexpr int kPanelBoxW = 360;
+constexpr int kPanelTextW = kPanelBoxW - 28 - ui::kScrollGutterW;
+constexpr int kEventBodyLines = 4;    // visible flavor lines; more scrolls
+constexpr int kOutcomeBodyLines = 3;  // visible outcome lines; more scrolls
+
 Color tileColor(town::Tile t) {
     switch (t) {
         case town::Tile::Building: return Color{32, 28, 44, 255};
@@ -304,14 +313,25 @@ bool DungeonState::captureFaceEvent(dungeon::RoomEventKind kind) {
     return false;
 }
 
-bool DungeonState::captureOpenEventPanel(dungeon::RoomEventKind kind) {
+bool DungeonState::captureOpenEventPanel(dungeon::RoomEventKind kind,
+                                         const std::string& bodyOverride) {
     if (!captureFaceEvent(kind)) {
         return false;
     }
-    if (context_.content.findEventFlavor(dungeon::eventFlavorId(kind)) == nullptr) {
+    const content::EventFlavorDef* flavor =
+        context_.content.findEventFlavor(dungeon::eventFlavorId(kind));
+    if (flavor == nullptr) {
         return false;
     }
-    eventPanelOpen_ = true;
+    openEventPanel(*flavor);
+    if (!bodyOverride.empty()) {
+        // M87: a pseudo-translated body, so the scrolling flavor viewport is
+        // lint-checked at expanded length (the title/trade-off stay real).
+        eventFlavorView_.setContent(bodyOverride, kPanelTextW, ui::style::kFontBody,
+                                    ui::raylibMeasure());
+        eventFlavorView_.setVisibleLines(
+            std::clamp(eventFlavorView_.lineCount(), 1, kEventBodyLines));
+    }
     return true;
 }
 
@@ -461,9 +481,10 @@ void DungeonState::interact() {
             // never block an event.
             const dungeon::RoomEvent& ev =
                 dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].event;
-            if (!ev.resolved && context_.content.findEventFlavor(
-                                    dungeon::eventFlavorId(ev.kind)) != nullptr) {
-                eventPanelOpen_ = true;
+            const content::EventFlavorDef* flavor =
+                context_.content.findEventFlavor(dungeon::eventFlavorId(ev.kind));
+            if (!ev.resolved && flavor != nullptr) {
+                openEventPanel(*flavor);
                 context_.audio.play(Sfx::Interact);
                 return;
             }
@@ -754,6 +775,11 @@ void DungeonState::showOutcome(const std::string& title, std::string body) {
     outcomeTitle_ = title;
     outcomeBody_ = std::move(body);
     outcomePanelOpen_ = true;
+    outcomeView_.setContent(outcomeBody_, kPanelTextW, ui::style::kFontBody,
+                            ui::raylibMeasure());
+    outcomeView_.setVisibleLines(
+        std::clamp(outcomeView_.lineCount(), 1, kOutcomeBodyLines));
+    outcomeView_.scrollToTop();
     message_.clear();
     messageTimer_ = 0.0f;
 }
@@ -772,21 +798,24 @@ void DungeonState::renderOutcomePanel() const {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     const ui::style::Palette& pal = ui::style::palette();
-    constexpr int kBoxW = 360;
     constexpr int kBoxH = 86;
-    const int boxX = (w - kBoxW) / 2;
+    const int boxX = (w - kPanelBoxW) / 2;
     const int boxY = (h - kBoxH) / 2;
     ui::drawModalDim(w, h);
-    ui::drawFrame(boxX, boxY, kBoxW, kBoxH, ui::FrameStyle::Crystal);
+    ui::drawFrame(boxX, boxY, kPanelBoxW, kBoxH, ui::FrameStyle::Crystal);
     ui::drawTextCentered(outcomeTitle_.c_str(), w / 2, boxY + 8, ui::style::kFontMenu,
                          pal.crystal);
-    ui::drawTextWrapped(outcomeBody_, boxX + 14, boxY + 26, kBoxW - 28,
-                        ui::style::kFontBody, pal.text, "dungeon.outcome", 3);
+    // M87: the body scrolls past the visible budget instead of truncating.
+    ui::drawTextViewport(outcomeView_, boxX + 14, boxY + 26, pal.text);
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
-    ui::drawTextCentered(
-        input::prompt(map, InputAction::Confirm, device, "Continue").c_str(), w / 2,
-        boxY + kBoxH - 13, ui::style::kFontSmall, pal.textHint);
+    std::string hint = input::prompt(map, InputAction::Confirm, device, "Continue");
+    if (outcomeView_.scrollable()) {
+        hint = input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
+               input::primaryLabel(map, InputAction::MoveDown, device) + " Scroll   " + hint;
+    }
+    ui::drawTextCentered(hint.c_str(), w / 2, boxY + kBoxH - 13, ui::style::kFontSmall,
+                         pal.textHint);
 }
 
 // M80: the panel's Confirm — the same dispatch interact() used to do
@@ -806,6 +835,18 @@ void DungeonState::confirmEventPanel() {
 // M80: the centered flavor panel — title, dry-humor body, then the SAME
 // trade-off line the footer used to carry (cost/risk stays visible before
 // commitment, the M20 bar), with the step-away binding at the bottom.
+// M87: the body is a bounded scrollable viewport (filled at open time); the
+// title, trade-off line, and controls are FIXED — however long an authored
+// or translated flavor grows, the cost stays on screen before Confirm.
+void DungeonState::openEventPanel(const content::EventFlavorDef& flavor) {
+    eventFlavorView_.setContent(flavor.body, kPanelTextW, ui::style::kFontBody,
+                                ui::raylibMeasure());
+    eventFlavorView_.setVisibleLines(
+        std::clamp(eventFlavorView_.lineCount(), 1, kEventBodyLines));
+    eventFlavorView_.scrollToTop();
+    eventPanelOpen_ = true;
+}
+
 void DungeonState::renderEventPanel() const {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
@@ -817,23 +858,25 @@ void DungeonState::renderEventPanel() const {
     if (flavor == nullptr) {
         return;  // defensive: the panel only opens when flavor exists
     }
-    constexpr int kBoxW = 360;
     constexpr int kBoxH = 118;
-    const int boxX = (w - kBoxW) / 2;
+    const int boxX = (w - kPanelBoxW) / 2;
     const int boxY = (h - kBoxH) / 2;
     ui::drawModalDim(w, h);
-    ui::drawFrame(boxX, boxY, kBoxW, kBoxH, ui::FrameStyle::Crystal);
+    ui::drawFrame(boxX, boxY, kPanelBoxW, kBoxH, ui::FrameStyle::Crystal);
     ui::drawTextCentered(flavor->title.c_str(), w / 2, boxY + 8, ui::style::kFontMenu,
                          pal.crystal);
-    ui::drawTextWrapped(flavor->body, boxX + 14, boxY + 26, kBoxW - 28,
-                        ui::style::kFontBody, pal.text, "dungeon.eventflavor", 4);
-    ui::drawTextWrapped(eventPromptText(), boxX + 14, boxY + 78, kBoxW - 28,
+    ui::drawTextViewport(eventFlavorView_, boxX + 14, boxY + 26, pal.text);
+    ui::drawTextWrapped(eventPromptText(), boxX + 14, boxY + 78, kPanelBoxW - 28,
                         ui::style::kFontBody, pal.gold, "dungeon.eventtrade", 2);
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
-    ui::drawTextCentered(
-        input::prompt(map, InputAction::Cancel, device, "Step away").c_str(), w / 2,
-        boxY + kBoxH - 13, ui::style::kFontSmall, pal.textHint);
+    std::string hint = input::prompt(map, InputAction::Cancel, device, "Step away");
+    if (eventFlavorView_.scrollable()) {
+        hint = input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
+               input::primaryLabel(map, InputAction::MoveDown, device) + " Scroll   " + hint;
+    }
+    ui::drawTextCentered(hint.c_str(), w / 2, boxY + kBoxH - 13, ui::style::kFontSmall,
+                         pal.textHint);
 }
 
 // The visible trade-off, shown in the footer BEFORE the player confirms.
@@ -1278,10 +1321,16 @@ void DungeonState::completeDungeon() {
 
 void DungeonState::handleInput(const Input& input) {
     // M80 addendum: the outcome panel just wants to be read — anything
-    // affirmative dismisses it.
+    // affirmative dismisses it. M87: Up/Down scrolls a long body first.
     if (outcomePanelOpen_) {
         moveX_ = 0.0f;
         moveY_ = 0.0f;
+        if (input.navPressed(InputAction::MoveUp) && outcomeView_.scrollBy(-1)) {
+            context_.audio.play(Sfx::Move);
+        }
+        if (input.navPressed(InputAction::MoveDown) && outcomeView_.scrollBy(1)) {
+            context_.audio.play(Sfx::Move);
+        }
         if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel) ||
             input.pressed(InputAction::Menu)) {
             outcomePanelOpen_ = false;
@@ -1291,9 +1340,16 @@ void DungeonState::handleInput(const Input& input) {
 
     // M80: while the flavor panel is up it owns the input — Confirm accepts
     // the trade-off, Cancel (or Menu) steps away and the event keeps waiting.
+    // M87: Up/Down scrolls a long flavor body; the trade-off line is fixed.
     if (eventPanelOpen_) {
         moveX_ = 0.0f;
         moveY_ = 0.0f;
+        if (input.navPressed(InputAction::MoveUp) && eventFlavorView_.scrollBy(-1)) {
+            context_.audio.play(Sfx::Move);
+        }
+        if (input.navPressed(InputAction::MoveDown) && eventFlavorView_.scrollBy(1)) {
+            context_.audio.play(Sfx::Move);
+        }
         if (input.pressed(InputAction::Confirm)) {
             eventPanelOpen_ = false;
             confirmEventPanel();

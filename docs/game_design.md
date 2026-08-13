@@ -174,12 +174,18 @@ panel**: an authored title and a dry-humor body from
 the familiar gold **trade-off line** — cost and risk still visible before
 commitment, the M20 bar unchanged — with Confirm committing and Cancel
 stepping away (the event waits). The file is the game's one OPTIONAL
-content file: a missing entry (or the whole file deleted) falls back to
+content file (M85 added a second, `curio_lore.json`): a missing entry (or
+the whole file deleted) falls back to
 the classic footer prompt, so flavor can never block an event. And the
 **outcome answers in kind**: event results and refusals, chest opens
 (loot, traps, the empty re-check) and the buried-treasure dig present in
 the same centered box, dismissed with any button — the fleeting footer
 line remains only for pings (map pieces, battle results, "Guarded").
+Since M87 both panels' bodies are **bounded scrolling viewports**: a body
+longer than the visible budget scrolls with Up/Down (indicators show when
+more exists) while the title, the gold trade-off line, and the control
+hints hold their fixed places — authored or translated flavor of any
+length never hides the cost of a decision.
 
 **Runs come in two shapes (M82).** The Guild picker's **Floors** row
 chooses **1 or 4**. A 1-floor run is the classic dungeon, unchanged — the

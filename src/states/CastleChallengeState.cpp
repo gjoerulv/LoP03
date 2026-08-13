@@ -368,7 +368,17 @@ void CastleChallengeState::captureKingReward() {
 #endif
 
 void CastleChallengeState::handleInput(const Input& input) {
-    if (done_ && (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel))) {
+    if (!done_) {
+        return;
+    }
+    // M87: Up/Down scrolls a long result body first.
+    if (input.navPressed(InputAction::MoveUp) && resultView_.scrollBy(-1)) {
+        context_.audio.play(Sfx::Move);
+    }
+    if (input.navPressed(InputAction::MoveDown) && resultView_.scrollBy(1)) {
+        context_.audio.play(Sfx::Move);
+    }
+    if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel)) {
         stack().popState();  // back to whichever hub pushed us (castle or Goose Town)
     }
 }
@@ -395,8 +405,11 @@ void CastleChallengeState::render() {
     }
     ui::drawTextCentered(title.c_str(), w / 2, boxY + 12, 16, p.gold);
     ui::drawDivider(boxX + 14, boxY + 34, boxW - 28);
-    ui::drawTextWrapped(resultText_, boxX + 16, boxY + 42, boxW - 32, 10, p.text,
-                        "castle.challenge.result", 6);
+    // M87: the body scrolls past six visible lines instead of truncating.
+    resultView_.setContent(resultText_, boxW - 32 - ui::kScrollGutterW, 10,
+                           ui::raylibMeasure());
+    resultView_.setVisibleLines(std::clamp(resultView_.lineCount(), 1, 6));
+    ui::drawTextViewport(resultView_, boxX + 16, boxY + 42, p.text);
     // M62: the Duck gauntlet pops back to Goose Town, not the castle — the
     // prompt says where you actually go. M84: the guild gauntlet, to the Guild.
     const char* returnLabel = kind_ == CastleChallenge::DuckGauntlet

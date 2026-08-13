@@ -20,6 +20,7 @@
 #include "core/FadeController.hpp"
 #include "core/GameConfig.hpp"
 #include "dungeon/DungeonGenerator.hpp"
+#include "dungeon/ThemeEvents.hpp"  // M87: eventFlavorId for the long-flavor scene
 #include "game/Achievements.hpp"
 #include "game/Profile.hpp"
 #include "game/Castle.hpp"
@@ -203,6 +204,49 @@ score::RunSummary maximalRunSummary() {
     return run;
 }
 
+// M87: deterministic pseudo-localization for the long-prose stress scenes —
+// swaps ASCII vowels for their supported Latin-1 kin and appends ~a third of
+// expansion padding, the classic translation-growth envelope. Capture-only:
+// nothing here ever touches shipping content, and the swapped glyphs double
+// as an in-situ render check of the M87 font extension.
+std::string pseudoLocalize(const std::string& text) {
+    std::string out;
+    out.reserve(text.size() * 2);
+    for (const char ch : text) {
+        switch (ch) {
+            case 'a': out += "\xC3\xA5"; break;  // å
+            case 'e': out += "\xC3\xA9"; break;  // é
+            case 'i': out += "\xC3\xAF"; break;  // ï
+            case 'o': out += "\xC3\xB8"; break;  // ø
+            case 'u': out += "\xC3\xBC"; break;  // ü
+            case 'A': out += "\xC3\x86"; break;  // Æ
+            case 'O': out += "\xC3\x96"; break;  // Ö
+            case 'U': out += "\xC3\x9C"; break;  // Ü
+            default: out += ch; break;
+        }
+    }
+    out += " \xC2\xAB";  // «
+    for (std::size_t i = 0; i < text.size() / 3; i += 8) {
+        out += " \xC3\xA6\xC3\xB0\xC3\x9F~";  // æðß~
+    }
+    out += " \xC2\xBB";  // »
+    return out;
+}
+
+// M87: a pangram-style line exercising every family of the new Latin glyphs,
+// appended to a long Details body so the atlas extension is visually pinned.
+// (Escapes are split with "" wherever a hex digit follows, or MSVC's greedy
+// \x parsing swallows it.)
+const char* kLatinPangram =
+    "\xC3\x86" "blegr\xC3\xB8" "d p\xC3\xA5 \xC3\x98" "rken\xC3\xB8" "y: "
+    "\xC3\xA4\xC3\xB6\xC3\xBC \xC3\x84\xC3\x96\xC3\x9C \xC3\x9F, "
+    "\xC3\xA7 \xC3\xA9\xC3\xA8\xC3\xAA\xC3\xAB \xC3\xA0\xC3\xA2 "
+    "\xC3\xAD\xC3\xAC\xC3\xAE\xC3\xAF \xC3\xB3\xC3\xB2\xC3\xB4\xC3\xB5 "
+    "\xC3\xBA\xC3\xB9\xC3\xBB \xC3\xB1 \xC3\xBD\xC3\xBF \xC3\xB0\xC3\xBE "
+    "\xC2\xA1hola! \xC2\xBF" "qu\xC3\xA9? \xC2\xAB" "cit\xC3\xA9\xC2\xBB "
+    "\xC3\x80\xC3\x82 \xC3\x89\xC3\x88\xC3\x8A\xC3\x8B \xC3\x87 "
+    "\xC3\x91 \xC3\x8D\xC3\x8E \xC3\x93\xC3\x94 \xC3\x9A\xC3\x9B \xC3\x9D \xC3\x90\xC3\x9E.";
+
 }  // namespace
 
 int run(const char* outDir) {
@@ -236,6 +280,19 @@ int run(const char* outDir) {
             }
             content::LoadReport assetReport;
             manifest.load(bundledDir("assets"), assetReport);
+            // M87: one capture-only skill with a deliberately long description,
+            // so the battle preview's EXPLICIT truncation (policy B) and the
+            // full-sheet Details overlay are exercised by a real db entry. No
+            // class, enemy, or generator pool references it, so every other
+            // scene is byte-identical with or without it.
+            content::LoadReport stretchReport;
+            content::parseSkills(
+                content::Json::parse(R"({"version":1,"skills":[{
+                    "id":"zz_capture_stretch","name":"Winter Saga",
+                    "category":"magic","target":"all_enemies","power":18,"mpCost":9,
+                    "description":"A saga recited in full before the frost obeys: it names every winter the realm has endured, every duck that weathered them, and every excuse the court scribes offered for both. Foes caught listening take ice damage scaled by their patience, and translated editions of the saga only ever grow longer."
+                }]})"),
+                "capture_stretch", content, stretchReport);
         }
         const fs::path assetsRoot = bundledDir("assets");
         resources.setCatalog(&manifest, assetsRoot);
@@ -1341,6 +1398,137 @@ int run(const char* outDir) {
                  BattleState* raw = state.get();
                  s.pushState(std::move(state));
                  raw->captureOpenDetails();  // queues the overlay push after the battle's
+             }},
+            {"98_story_long",
+             [](StateStack& s, AppContext& c) {
+                 // M87: the storyteller panel with a pseudo-translated LONGEST
+                 // beat — the panel must cap inside the safe area and scroll
+                 // (more-below arrow), never grow off the 426x240 screen.
+                 // (No TownState underneath: an earlier guild scene leaves a
+                 // pending town-milestone offer that would modal over this.)
+                 if (const content::StoryBeat* beat =
+                         c.content.findStoryBeat(kDragonJesterBeat)) {
+                     // Doubled: even the safe-area cap (~14 lines) overflows,
+                     // so the more-below arrow and scroll hint are in frame.
+                     s.pushState(std::make_unique<StoryDialogState>(
+                         s, c, beat->speaker, beat->title,
+                         pseudoLocalize(beat->body + "\n\n" + beat->body)));
+                 }
+             }},
+            {"99_details_long",
+             [](StateStack& s, AppContext& c) {
+                 // M87: the canonical reading overlay on a pseudo-translated
+                 // scoring text, SCROLLED to the bottom clamp — the more-above
+                 // arrow shows and the tail is the Latin pangram, pinning the
+                 // whole new glyph set as actually rendered.
+                 auto st = std::make_unique<DetailsOverlayState>(
+                     s, c, "How Scoring Works",
+                     pseudoLocalize(scoreDetailsText()) + "\n\n" + kLatinPangram);
+                 st->captureScroll(999);
+                 s.pushState(std::move(st));
+             }},
+            {"100_bestiary_read",
+             [](StateStack& s, AppContext& c) {
+                 // M87: the King's flavor at the BODY font (the shrink-to-fit
+                 // policy is gone), stretched past the panel and put in read
+                 // focus — focus brackets + scrolling viewport + swapped
+                 // footer hints.
+                 c.party.encountered.push_back(kKingBossId);
+                 auto state = std::make_unique<BestiaryState>(s, c);
+                 state->captureSelect(kKingBossId);
+                 state->captureStretchFlavor();
+                 s.pushState(std::move(state));
+             }},
+            {"101_party_details",
+             [](StateStack& s, AppContext& c) {
+                 // M87: the full member sheet behind Details — the maxed
+                 // cleric of scene 79 (three milestones, passive, scroll
+                 // skill), now with every skill's DESCRIPTION, long enough
+                 // to scroll.
+                 if (!c.party.members.empty()) {
+                     c.party.members[0].level = kMaxLevel;
+                     c.party.members[0].extraSkills.push_back("fireball");
+                     c.party.members[0].milestone10 = "cleric_10_a";
+                     c.party.members[0].milestone20 = "cleric_20_a";
+                     c.party.members[0].milestone30 = "cleric_30_a";
+                     c.party.members[0].equippedPassive = "clarity";
+                     c.party.members[0].ownedPassives = {"clarity"};
+                     refreshCharacter(c.party.members[0], c.content);
+                 }
+                 auto state = std::make_unique<PartyState>(s, c);
+                 state->captureSelect(0);
+                 PartyState* raw = state.get();
+                 s.pushState(std::move(state));
+                 raw->captureOpenDetails();  // queued AFTER the panel's own push
+             }},
+            {"102_battle_skill_preview",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M87: the 2-line battle preview on the capture-stretch
+                 // skill — the stepped more-arrow marks the intentional
+                 // truncation and the scene passes the zero-overflow check
+                 // (policy B never counts as a defect).
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterSkillMenu({"zz_capture_stretch"});
+                 s.pushState(std::move(state));
+             }},
+            {"103_battle_skill_details",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M87: Details during skill selection — the full skill sheet
+                 // (MP cost + complete description) in the scrolling overlay.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 BattleState* raw = state.get();
+                 s.pushState(std::move(state));
+                 raw->captureOpenSkillDetails({"zz_capture_stretch"});
+             }},
+            {"104_event_flavor_long",
+             [](StateStack& s, AppContext& c) {
+                 // M87: the Peddler's panel with a pseudo-translated body —
+                 // the flavor scrolls while the title, the gold trade-off
+                 // line, and the step-away hint hold their fixed places.
+                 const content::EventFlavorDef* flavor = c.content.findEventFlavor(
+                     dungeon::eventFlavorId(dungeon::RoomEventKind::DuckPeddler));
+                 if (flavor == nullptr) {
+                     return;
+                 }
+                 for (std::uint64_t seed = 1; seed < 4000; ++seed) {
+                     dungeon::Dungeon d =
+                         dungeon::generate(seed, 8, c.content, "crystal_mine", 3);
+                     bool holdsPeddler = false;
+                     for (const dungeon::Room& r : d.rooms) {
+                         holdsPeddler = holdsPeddler ||
+                                        r.event.kind == dungeon::RoomEventKind::DuckPeddler;
+                     }
+                     if (!holdsPeddler) {
+                         continue;
+                     }
+                     auto state = std::make_unique<DungeonState>(s, c, std::move(d));
+                     // A doubled body simulates the truly verbose translation:
+                     // well past the 4 visible lines, so the scroll indicator
+                     // and the fixed trade-off line are both in frame.
+                     if (state->captureOpenEventPanel(
+                             dungeon::RoomEventKind::DuckPeddler,
+                             pseudoLocalize(flavor->body + " " + flavor->body))) {
+                         s.pushState(std::move(state));
+                         return;
+                     }
+                 }
+             }},
+            {"105_event_outcome_long",
+             [](StateStack& s, AppContext& c) {
+                 // M87: a pseudo-translated outcome — the body scrolls inside
+                 // the fixed box instead of truncating at three lines.
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine"));
+                 state->captureShowOutcome(
+                     "The Chest",
+                     pseudoLocalize("The trap bites - the party is wounded! Found 1240 gold "
+                                    "+ Hi-Potion, and the guild's appraisal committee "
+                                    "appends its full report in every official language."));
+                 s.pushState(std::move(state));
              }},
             {"84_celebration",
              [](StateStack& s, AppContext& c) {

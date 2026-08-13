@@ -43,7 +43,9 @@ event mechanics, costs and seeded rolls are untouched.
 ### The panel (`DungeonState`)
 
 - Confirm on an authored event now opens a **centered modal**: title
-  (crystal), dry-humor body (wrapped, ≤4 lines), then the **same
+  (crystal), dry-humor body (wrapped, ≤4 lines — *M87 repealed the fixed
+  budget: the body is now a 4-line scrolling viewport, and the authored-fit
+  test became a containment test*), then the **same
   trade-off line the footer used to carry** in gold — cost/risk stays
   visible BEFORE commitment (the M20 bar), including the cannot-pay and
   one-per-customer variants — and the step-away binding at the bottom.

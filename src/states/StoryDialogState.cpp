@@ -1,7 +1,7 @@
 #include "states/StoryDialogState.hpp"
 
+#include <algorithm>
 #include <utility>
-#include <vector>
 
 #include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
@@ -18,7 +18,7 @@ namespace style = ui::style;
 
 namespace {
 constexpr int kPanelW = 320;
-constexpr int kTextW = kPanelW - 2 * style::kPad;
+constexpr int kTextW = kPanelW - 2 * style::kPad - ui::kScrollGutterW;
 }  // namespace
 
 StoryDialogState::StoryDialogState(StateStack& stack, AppContext& context, std::string speaker,
@@ -30,6 +30,12 @@ StoryDialogState::StoryDialogState(StateStack& stack, AppContext& context, std::
       body_(std::move(body)) {}
 
 void StoryDialogState::handleInput(const Input& input) {
+    if (input.navPressed(InputAction::MoveUp) && bodyView_.scrollBy(-1)) {
+        context_.audio.play(Sfx::Move);
+    }
+    if (input.navPressed(InputAction::MoveDown) && bodyView_.scrollBy(1)) {
+        context_.audio.play(Sfx::Move);
+    }
     if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel)) {
         context_.audio.play(Sfx::Confirm);
         stack().popState();
@@ -41,11 +47,18 @@ void StoryDialogState::render() {
     const int h = context_.virtualHeight;
     ui::drawModalDim(w, h);  // dim the frozen scene
 
-    const std::vector<std::string> lines =
-        ui::wrapText(body_, kTextW, style::kFontBody, ui::raylibMeasure());
-    const int bodyH = static_cast<int>(lines.size()) * ui::lineHeight(style::kFontBody);
-    const int panelH = style::kPad + style::kFontHeading + 4 + style::kFontSmall + 6 + bodyH + 4 +
-                       style::kFontSmall + style::kPad;
+    // M87: the panel no longer grows with its body — height caps inside the
+    // safe area (fixed title/speaker, scrolling body, fixed Continue line),
+    // so a translated beat of any length stays on screen and reachable.
+    // Story JSON never carries layout newlines; '\n' is paragraph semantics.
+    bodyView_.setContent(body_, kTextW, style::kFontBody, ui::raylibMeasure());
+    const int chromeH = style::kPad + style::kFontHeading + 4 + style::kFontSmall + 6 + 4 +
+                        style::kFontSmall + style::kPad;
+    const int maxBodyH = h - 2 * style::kSafeMargin - chromeH;
+    const int capLines = std::max(1, maxBodyH / ui::lineHeight(style::kFontBody));
+    bodyView_.setVisibleLines(std::clamp(bodyView_.lineCount(), 1, capLines));
+    const int bodyH = bodyView_.visibleLines() * ui::lineHeight(style::kFontBody);
+    const int panelH = chromeH + bodyH;
     const int x = (w - kPanelW) / 2;
     const int y = (h - panelH) / 2;
 
@@ -58,14 +71,17 @@ void StoryDialogState::render() {
     ui::drawTextCentered(("- " + speaker_ + " -").c_str(), x + kPanelW / 2, ty, style::kFontSmall,
                          style::palette().textHint);
     ty += style::kFontSmall + 6;
-    ui::drawTextWrapped(body_, x + style::kPad, ty, kTextW, style::kFontBody,
-                        style::palette().text, "story.body");
-    ty += bodyH + 4;
-    ui::drawTextCentered(
-        input::prompt(context_.input.map(), InputAction::Confirm, context_.input.activeDevice(),
-                      "Continue")
-            .c_str(),
-        x + kPanelW / 2, ty, style::kFontSmall, style::palette().textHint);
+    ty = ui::drawTextViewport(bodyView_, x + style::kPad, ty, style::palette().text);
+    ty += 4;
+    const InputMap& map = context_.input.map();
+    const ActiveDevice device = context_.input.activeDevice();
+    std::string hint = input::prompt(map, InputAction::Confirm, device, "Continue");
+    if (bodyView_.scrollable()) {
+        hint = input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
+               input::primaryLabel(map, InputAction::MoveDown, device) + " Scroll   " + hint;
+    }
+    ui::drawTextCentered(hint.c_str(), x + kPanelW / 2, ty, style::kFontSmall,
+                         style::palette().textHint);
 }
 
 }  // namespace cd

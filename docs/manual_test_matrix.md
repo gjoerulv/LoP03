@@ -18,19 +18,34 @@ The older rows below are retained as historical baseline evidence and are **not*
 > review; everything else is owner work. Update this file as rows are run —
 > it stays the living pre-release matrix through M24.
 >
+> **M87 update:** translation-ready text containers — prose panels are now
+> bounded scrolling viewports (Up/Down + more-above/below arrows; titles,
+> trade-off lines, and control hints stay fixed): the Details overlay, the
+> storyteller, tutorial prompts, bestiary flavor (Details toggles **read
+> focus** — brackets on the prose, Up/Down scrolls it, Cancel returns to
+> the roster), dungeon event flavor + outcome panels, curio lore, and the
+> treasure/castle result boxes. Battle skill/item previews keep their
+> 2-line budget but mark truncation with a small down-arrow and are NOT
+> overflow defects; **Details during selection opens the full skill/item
+> sheet**, and the Party panel's Details opens the full member sheet
+> (every skill with its description). The bitmap font now covers the
+> Latin-1 letters + `¡ ¿ « »` (set a party name with `æøå ÄÖÜ ß é` to
+> spot-check). New checks: scroll every listed panel to its last line and
+> back (clamped, no dead keys); confirm `[ui-overflow]` stays absent from
+> the log while scrolling/previews are on screen. Capture set is now
+> **105 scenes** (`98_story_long`–`105_event_outcome_long`, pseudo-
+> localized long-prose stress). The M87 note §G is the checklist.
+>
 > **Details-legend fix (post-M75, 2026-08-05):** the battle Details legend
 > now also explains the M44 turn-control statuses (TRF: forced to Guard
 > next turn; STN: loses its next turn), which it had omitted since M44.
 > To keep the wrapped block inside the overlay's 14-line budget, four
 > entries were tightened (PSN timing, the merged ATK±/DEF± pair, the
-> Escape tip) — same content, terser wording. New capture scene
-> `85_battle_details` pins the fullest fitting body (guard line + four
-> status chips; the capture set is **85 scenes**). KNOWN GAP for the
-> owner: a unit that is guarding, multi-statused, AND shows a Passive
-> line runs 1–2 wrapped lines over budget (the tail of the score tip
-> clips) — true since the M75 legend growth, before this fix. Fitting it
-> needs a product call: a contextual legend (only active statuses
-> explained), a shorter legend, or a scrollable overlay.
+> Escape tip) — same content, terser wording. Capture scene
+> `85_battle_details` pins the fullest body. *(The KNOWN GAP this block
+> carried — a guarding, multi-statused unit WITH a Passive line running
+> 1–2 lines over the overlay's hard budget — is RESOLVED by M87: the
+> overlay scrolls, and scene 85 now stages that exact fullest case.)*
 >
 > **M86 update:** CrystalForge catch-up & version 0.6.0 — no new game
 > rows: the milestone is editor-only plus the deliberate version

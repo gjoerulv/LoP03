@@ -26,12 +26,18 @@ public:
 
 #ifdef CRYSTAL_CAPTURE
     void captureSelect(int member) { cursor_ = member; }
+    // Capture-only (M87): open the full member sheet (the Details overlay).
+    void captureOpenDetails() { openMemberDetails(); }
 #endif
 
 private:
     enum class Phase { Browse, PickScroll };
 
     void rebuildScrolls();  // -> scrollMenu_ from the bag's teaching scrolls
+    // M87: pushes the scrollable Details overlay with the selected member's
+    // full sheet — complete passive/milestone texts and every known skill
+    // WITH its description (the compact panel only ever previews these).
+    void openMemberDetails();
 
     AppContext& context_;
     Phase phase_ = Phase::Browse;

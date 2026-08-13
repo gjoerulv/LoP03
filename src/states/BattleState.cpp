@@ -363,12 +363,11 @@ void BattleState::captureElementHit(const content::SkillDef& skill) {
 }
 
 void BattleState::captureOpenDetails() {
-    // Stages the fullest unit body the panel's line budget admits: guard line
-    // plus a four-chip status row. KNOWN GAP: a Passive line on a unit this
-    // decorated is 1-2 wrapped lines over budget (so its tail would clip) —
-    // true since the M75 legend growth, before TRF/STN joined. Fitting that
-    // case needs an owner decision (shorter legend, or a contextual one), so
-    // this scene pins the budget at the passing envelope until then.
+    // Stages the fullest unit body: guard line, a four-chip status row, AND a
+    // Passive line. Before M87 that combination ran 1-2 wrapped lines over
+    // the overlay's hard budget (the known gap the matrix carried since the
+    // M75 legend growth); the overlay now scrolls, so the fullest case is
+    // finally the captured case — the scene shows the more-below indicator.
     captureEnterTargeting();  // reuse: puts a living party member on turn
     phase_ = Phase::Command;  // details must show the ACTOR (MP row), not a target
     battle::Combatant& self = battle_.units[static_cast<std::size_t>(currentActor())];
@@ -379,7 +378,17 @@ void BattleState::captureOpenDetails() {
     self.statuses.push_back({content::StatusType::AttackDown, 25, 2});
     self.statuses.push_back({content::StatusType::DefenseDown, 25, 2});
     self.statuses.push_back({content::StatusType::Curse, 0, 2});
+    if (context_.content.findPassive("iron_will") != nullptr) {
+        self.passiveIds.push_back("iron_will");
+    }
     openDetails();
+}
+
+void BattleState::captureOpenSkillDetails(std::vector<std::string> skills) {
+    // M87: the context-sensitive Details on the highlighted skill — the full
+    // sheet in the scrollable overlay.
+    captureEnterSkillMenu(std::move(skills));
+    openSkillDetails();
 }
 #endif
 
@@ -1122,6 +1131,55 @@ void BattleState::openDetails() {
         std::make_unique<DetailsOverlayState>(stack(), context_, "Battle Details", body));
 }
 
+// M87: Details is context-sensitive — while a skill is highlighted it opens
+// that skill's FULL sheet (the bottom panel shows only a 2-line preview),
+// in the scrollable Details overlay. Presentation only; no battle change.
+void BattleState::openSkillDetails() {
+    if (skillIds_.empty()) {
+        openDetails();
+        return;
+    }
+    const std::string& sid = skillIds_[static_cast<std::size_t>(skillMenu_.cursor())];
+    const content::SkillDef* s = context_.content.findSkill(sid);
+    if (s == nullptr) {
+        return;
+    }
+    std::string body = "MP cost " + std::to_string(s->mpCost) + ".";
+    if (s->element != content::Element::None) {
+        body += "  Element: " + std::string(content::elementDisplayName(s->element)) + ".";
+    }
+    const battle::Combatant& a = battle_.units[static_cast<std::size_t>(currentActor())];
+    if (!battle::canCast(a, *s)) {
+        body += "\nSilenced: MP skills are blocked until it wears off.";
+    }
+    if (!s->description.empty()) {
+        body += "\n\n" + s->description;
+    }
+    stack().pushState(std::make_unique<DetailsOverlayState>(stack(), context_, s->name, body));
+}
+
+// M87: the same for the highlighted item during item selection.
+void BattleState::openItemDetails() {
+    if (itemIds_.empty()) {
+        openDetails();
+        return;
+    }
+    const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
+    const content::ItemDef* it = context_.content.findItem(iid);
+    if (it == nullptr) {
+        return;
+    }
+    std::string body = "Held x" + std::to_string(context_.party.inventory.count(iid)) + ".";
+    const std::string blocked = itemBlockReason(*it);
+    if (!blocked.empty()) {
+        body += "\n" + blocked;
+    }
+    if (!it->description.empty()) {
+        body += "\n\n" + it->description;
+    }
+    stack().pushState(std::make_unique<DetailsOverlayState>(stack(), context_, it->name, body));
+}
+
 void BattleState::handleInput(const Input& input) {
     // Up/Down only: Left/Right are reserved for future columns/adjust
     // (control standard; M13 dropped the old Left/Right aliases).
@@ -1140,11 +1198,19 @@ void BattleState::handleInput(const Input& input) {
         context_.audio.play(Sfx::Cancel);
     }
 
-    // Contextual Details (M22): explain the focused unit and the status
-    // shorthand whenever the player is choosing, never mid-resolve.
+    // Contextual Details (M22; context-sensitive since M87): during skill/item
+    // selection it opens the highlighted skill/item's full sheet; everywhere
+    // else it explains the focused unit and the status shorthand. Never
+    // mid-resolve.
     if (phase_ != Phase::Resolve && phase_ != Phase::Done &&
         input.pressed(InputAction::Details)) {
-        openDetails();
+        if (phase_ == Phase::ChooseSkill) {
+            openSkillDetails();
+        } else if (phase_ == Phase::ChooseItem) {
+            openItemDetails();
+        } else {
+            openDetails();
+        }
         return;
     }
 
@@ -1574,16 +1640,18 @@ void BattleState::render() {
                 if (const content::SkillDef* s = context_.content.findSkill(sid)) {
                     // The row's "SIL" tag is terse by necessity; spell the block
                     // out here rather than leaving the player to decode it.
+                    // M87: a 2-line POLICY-B preview — intentional truncation
+                    // marked by the arrow (never an overflow event); Details
+                    // opens the full sheet.
                     const battle::Combatant& a =
                         battle_.units[static_cast<std::size_t>(actor)];
                     if (!battle::canCast(a, *s)) {
-                        ui::drawTextWrapped("SIL: silenced - MP skills are blocked.", kInfoX,
+                        ui::drawTextPreview("SIL: silenced - MP skills are blocked.", kInfoX,
                                             panelY + 20, infoW, style::kFontBody,
-                                            style::palette().textDim, "battle.skillblocked", 2);
+                                            style::palette().textDim, 2);
                     } else if (!s->description.empty()) {
-                        ui::drawTextWrapped(s->description, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().success,
-                                            "battle.skilldesc", 2);
+                        ui::drawTextPreview(s->description, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::palette().success, 2);
                     }
                 }
             }
@@ -1600,14 +1668,14 @@ void BattleState::render() {
                 const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
                 if (const content::ItemDef* it = context_.content.findItem(iid)) {
                     // M43: a greyed item says why before it says what it does.
+                    // M87: policy-B preview; Details opens the full sheet.
                     const std::string blocked = itemBlockReason(*it);
                     if (!blocked.empty()) {
-                        ui::drawTextWrapped(blocked, kInfoX, panelY + 20, infoW, style::kFontBody,
-                                            style::palette().textDim, "battle.itemblocked", 2);
+                        ui::drawTextPreview(blocked, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::palette().textDim, 2);
                     } else if (!it->description.empty()) {
-                        ui::drawTextWrapped(it->description, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().success,
-                                            "battle.itemdesc", 2);
+                        ui::drawTextPreview(it->description, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::palette().success, 2);
                     }
                 }
             }

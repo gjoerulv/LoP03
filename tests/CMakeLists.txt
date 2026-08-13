@@ -25,6 +25,8 @@ add_executable(crystal_tests
     test_ui_kit.cpp
     test_text_input.cpp
     test_text_layout.cpp
+    test_text_viewport.cpp
+    test_glyph_coverage.cpp
     test_scroll_window.cpp
     test_party.cpp
     test_save_system.cpp

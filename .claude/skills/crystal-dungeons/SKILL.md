@@ -176,6 +176,18 @@ needs a row in `assets/credits.md`.
     Terrified guard, and the M44 Stunned skip). Enforcing one in a state only — as
     M35 did with confusion — silently desynchronizes live play from the simulator;
     M43 exists partly to fix that.
+14. **Prose lives in bounded containers (M87) — pick the right text policy.**
+    Reading surfaces use `ui::TextViewport` + `ui::drawTextViewport` (capped
+    height, Up/Down scroll, indicators; wrap width reserves
+    `ui::kScrollGutterW`); compact decision-time summaries use
+    `ui::drawTextPreview` (explicit `hasMore`, marked truncation); one-line UI
+    uses `drawTextFitted` with authored short labels. `[ui-overflow]` means an
+    actual defect — never route scrollable prose or an intentional preview
+    through `drawTextWrapped(maxLines)`, which logs and fails the capture
+    lint. Authored `\n` is paragraph semantics only (never layout), and
+    content may use only the glyphs `src/ui/GlyphCoverage.hpp` allows —
+    `tests/test_glyph_coverage.cpp` fails on anything else. The full contract:
+    `docs/ui_style_guide.md` §7/§11.
 
 ## Architecture rules (enforce in review)
 
@@ -221,11 +233,14 @@ inventory caps, input QoL, event flavor, arms & icons, 1-or-4-floor
 dungeons on generation v15, the map economy, the M84 Guild Masters with
 town perks, and M85's Last Dragon + curio lore) was approved milestone by
 milestone through 2026-08-07. **M86** (CrystalForge catch-up + the
-deliberate 0.9.0 → 0.6.0 version renumber) is `implemented, awaiting
+deliberate 0.9.0 → 0.6.0 version renumber) and **M87** (owner-directed
+2026-08-11: translation-ready text containers & scrollable prose — the
+text policies in gotcha 14, the Latin-1 font extension, the capture set
+now **105 scenes**) are both `implemented, awaiting
 manual approval`. The M46 UI kit (`docs/ui_style_guide.md`) binds all UI
 work; the M49 castle retune (Boss Rush 580 % / King 500 % / Endless
 +10 %pts per wave, level cap 99) plus the M54 equipment rebalance are the
-balance baseline. After M86's approval only the deliberately deferred
+balance baseline. After M86/M87's approval only the deliberately deferred
 **M23** (validation/playtesting/balance) and **M24** (release packaging)
 remain, in that order: their tooling and packaging are built (v0.6.0 RC
 flow), awaiting owner-run external playtests (`docs/playtest_protocol.md`)
