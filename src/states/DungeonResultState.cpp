@@ -96,6 +96,7 @@ void DungeonResultState::render() {
                           (summary_.townBonusPct > 0 ? 1 : 0) +        // M32 town bonus
                           (summary_.stakesPenaltyPct > 0 ? 1 : 0) +    // M33 stakes penalty
                           (summary_.classModPct != 0 ? 1 : 0) +        // M45 class modifier
+                          (summary_.dragonformFights > 0 ? 1 : 0) +    // M93 dragonform pact
                           dropLines + mapLines;                        // M39 drops + M83 map
     // Pitch 13 keeps the common breakdown clear of the footer (audit
     // UI-LAYOUT-018); but the fullest panel (all 10 breakdown lines + the M39
@@ -140,6 +141,10 @@ void DungeonResultState::render() {
     if (summary_.wagerAccepted) {
         line(b.wager >= 0 ? "Omen wager won" : "Omen wager lost", b.wager,
              b.wager >= 0 ? plus : minus);
+    }
+    if (summary_.dragonformFights > 0) {  // M93: the pact, as promised
+        line(TextFormat("Dragonform pact (%d)", summary_.dragonformFights), -b.dragonformPact,
+             minus);
     }
     if (summary_.townBonusPct > 0) {
         line(TextFormat("Town bonus (+%d%%)", summary_.townBonusPct), b.townBonus, plus);

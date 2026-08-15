@@ -43,6 +43,12 @@ private:
         UnlockCastle,      // action
         GrantConsumables,  // action: 5x each consumable
         GrantLegendaries,  // action: 1x each legendary
+        GrantScrolls,      // action: 1x each teachable skill scroll (M92)
+        GrantSummons,      // action: 1x each summon scroll (M95)
+        ResetSummons,      // action: clear the run's used-summon ledger (M95)
+        GrantHeirlooms,    // action: 1x each heirloom (M96)
+        PatrolNow,         // action: set the danger counter to 1 step (M93; dungeon only)
+        ArmDragonform,     // action: arm the next battle as Dragons (M93; dungeon only)
         SpawnMarket,       // action (town only)
         GodMode,           // toggle
         InstantClear,      // action (dungeon only)
@@ -50,6 +56,8 @@ private:
         FillBestiary,      // action
         GrantMapPiece,     // action: one Secret Map Piece via the real M65 rule
         GrantCurio,        // action: the next unowned curio (M66/M85)
+        PlayCutscene,      // stepper cycles the scene, Confirm plays it (M97; no re-grant)
+        ResetStory,        // action: clear seen scenes + recorded choices (M97)
     };
     struct RowDef {
         Row kind;
@@ -67,6 +75,7 @@ private:
     ui::ScrollWindow scroll_;
     std::vector<RowDef> rows_;
     std::string message_;
+    int cutsceneIndex_ = 0;  // M97: which kCutsceneIds entry the play row shows
 };
 
 }  // namespace cd

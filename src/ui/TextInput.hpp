@@ -17,9 +17,13 @@ bool isAllowedNameChar(int codepoint);
 // writer's job; this only keeps control characters out of the buffer.
 bool isAllowedPrintableChar(int codepoint);
 
+// M88: decimal digits only — the Guild's manual seed entry.
+bool isAllowedDigitChar(int codepoint);
+
 // Which characters a TextInput accepts. Name is the game's original behavior
-// (hero naming); Printable is the editor's free-text variant.
-enum class TextFilter { Name, Printable };
+// (hero naming); Printable is the editor's free-text variant; Digits is the
+// Guild's numeric seed entry (M88).
+enum class TextFilter { Name, Printable, Digits };
 
 class TextInput {
 public:

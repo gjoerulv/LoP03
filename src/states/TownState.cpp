@@ -10,7 +10,9 @@
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
 #include "game/Achievements.hpp"
+#include "game/Cutscenes.hpp"  // M97: first-arrival scenes + the finale NPC
 #include "game/Party.hpp"
+#include "game/Profile.hpp"    // M97: the finale NPC waits on kingDefeated
 #include "game/Story.hpp"
 #include "game/WorldLadder.hpp"
 #include "input/Input.hpp"
@@ -23,6 +25,7 @@
 #include "states/MilestoneChoiceState.hpp"  // M63
 #include "states/TreasureFightState.hpp"    // M65
 #include "states/CastleState.hpp"
+#include "states/CutsceneState.hpp"  // M97
 #include "states/EquipShopState.hpp"
 #include "states/RoadForkState.hpp"
 #include "states/GuildState.hpp"
@@ -48,11 +51,9 @@ namespace {
 constexpr float kPlayerSpeed = 72.0f;
 constexpr float kPlayerSize = 12.0f;
 
-// M41: the wandering storyteller stands at a fixed open-plaza tile in every town
-// (Ground; clear of buildings, doors, road exits, the spawn, and every
-// black-market tile). M50: re-placed for the compact 24x12 layout.
-constexpr int kBardTileX = 3;
-constexpr int kBardTileY = 5;
+// M41: the wandering storyteller's tile lives in town/TownData.hpp since M88
+// (town::kBardTileX/Y) — the layout header is the single authority the bard,
+// the market tiles, and the tests all read.
 
 Color tileColor(town::Tile tile) {
     switch (tile) {
@@ -172,6 +173,16 @@ void TownState::travelTo(int destTown, town::TownEntry entry) {
     context_.fade.start();
     applyTownAudio();
     maybeTutorialPrompt(stack(), context_, tutorial::kFirstTravel);
+    // M97: the hooded stranger meets the party on their FIRST arrival at each
+    // new town (2..7). Marked seen before the push, so a save written after
+    // the scene can never replay it; a reload from the entry stands here too.
+    const std::string sceneId = game::townCutsceneId(clampTown(context_.party.currentTown));
+    if (!sceneId.empty() && context_.content.findCutscene(sceneId) != nullptr &&
+        !game::cutsceneSeen(context_.party, sceneId)) {
+        game::markCutsceneSeen(context_.party, sceneId);
+        stack().pushState(
+            std::make_unique<CutsceneState>(stack(), context_, sceneId, /*replay=*/false));
+    }
 }
 
 void TownState::onEnter() {
@@ -210,6 +221,14 @@ void TownState::onResume() {
     // Fires once, after the player has seen their first run's reckoning.
     if (context_.tutorial.state.seen.count(tutorial::kResultFirst) > 0) {
         maybeTutorialPrompt(stack(), context_, tutorial::kTownReturn);
+    }
+    // M89: arriving with fallen members (the dungeon carry-out replaced the
+    // old free full heal) teaches the new defeat price exactly once.
+    for (const Character& m : context_.party.members) {
+        if (m.hp <= 0) {
+            maybeTutorialPrompt(stack(), context_, tutorial::kCarriedOut);
+            break;
+        }
     }
     // M42: catch achievements earned by a town action (e.g. equipping a passive or
     // training to level 50); the check is cheap and only toasts newly-unlocked ones.
@@ -264,7 +283,23 @@ bool TownState::onBardTile() const {
     const int ts = town::Tilemap::kTileSize;
     const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
     const int ty = static_cast<int>((player_.y + player_.h * 0.5f) / ts);
-    return tx == kBardTileX && ty == kBardTileY;
+    return tx == town::kBardTileX && ty == town::kBardTileY;
+}
+
+bool TownState::gooseNpcHere() const {  // M97
+    // Town 7's eastern roadside, once the King has ever fallen (the profile
+    // flag, like the class unlocks — the stranger waits for anyone who knows).
+    return clampTown(context_.party.currentTown) == 7 && context_.profile.data.kingDefeated;
+}
+
+bool TownState::onGooseNpcTile() const {  // M97
+    if (!gooseNpcHere()) {
+        return false;
+    }
+    const int ts = town::Tilemap::kTileSize;
+    const int tx = static_cast<int>((player_.x + player_.w * 0.5f) / ts);
+    const int ty = static_cast<int>((player_.y + player_.h * 0.5f) / ts);
+    return tx == town::kGooseNpcTileX && ty == town::kGooseNpcTileY;
 }
 
 bool TownState::digHere() const {  // M65
@@ -288,6 +323,14 @@ const town::Building* TownState::buildingAtPlayerTile() const {
     const int ty = static_cast<int>((player_.y + player_.h * 0.5f) / ts);
     for (const town::Building& b : town_.buildings) {
         if (b.doorX == tx && b.doorY == ty) {
+            return &b;
+        }
+    }
+    // M88: the monuments (Scoreboard, Save Point) answer from any orthogonally
+    // adjacent tile, not just the marked doorstep. Doors keep priority above so
+    // a tile that is somehow both resolves to the exact door first.
+    for (const town::Building& b : town_.buildings) {
+        if (town::monumentInteractsFromAllSides(b.id) && town::tileAdjacentToBuilding(b, tx, ty)) {
             return &b;
         }
     }
@@ -347,6 +390,17 @@ void TownState::handleInput(const Input& input) {
                 stack().pushState(std::make_unique<StoryDialogState>(
                     stack(), context_, beat->speaker, beat->title, beat->body));
             }
+        } else if (nearGoose_) {
+            // M97: the finale, where the Town-8 road would begin. The NPC
+            // stays for replays; the grant guards itself on the recorded
+            // choice, so replay=false keeps a quit-mid-scene first play
+            // able to earn its keepsake.
+            if (context_.content.findCutscene("finale") != nullptr) {
+                context_.audio.play(Sfx::Confirm);
+                game::markCutsceneSeen(context_.party, "finale");
+                stack().pushState(std::make_unique<CutsceneState>(stack(), context_, "finale",
+                                                                  /*replay=*/false));
+            }
         }
         // M50: town exits are walk-through triggers now — no Confirm here. Travel
         // is resolved in update() when the player walks onto an armed road tile.
@@ -379,6 +433,9 @@ void TownState::update(float dt) {
     nearDig_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_) && onDigTile();
     nearBard_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_ && !nearDig_) &&
                 onBardTile();
+    nearGoose_ = (nearDoor_ == nullptr && nearExit_ == nullptr && !nearMarket_ && !nearDig_ &&
+                  !nearBard_) &&
+                 onGooseNpcTile();  // M97
 
     // M50: walk-through travel. The latch arms once the player is off every
     // trigger, so arriving beside an edge (or resuming onto the castle road)
@@ -522,14 +579,28 @@ void TownState::render() {
 
     // Wandering storyteller (M41): always present at a fixed plaza tile in every town.
     {
-        const float bcx = ox + kBardTileX * ts + ts * 0.5f;
-        const float bcy = oy + kBardTileY * ts + ts * 0.5f;
+        const float bcx = ox + town::kBardTileX * ts + ts * 0.5f;
+        const float bcy = oy + town::kBardTileY * ts + ts * 0.5f;
         if (!render::drawTextureCentered(context_.resources, "actor.bard.overworld", bcx, bcy)) {
-            DrawRectangle(ox + kBardTileX * ts + 3, oy + kBardTileY * ts + 2, ts - 6, ts - 4,
-                          Color{150, 120, 60, 255});
+            DrawRectangle(ox + town::kBardTileX * ts + 3, oy + town::kBardTileY * ts + 2, ts - 6,
+                          ts - 4, Color{150, 120, 60, 255});
         }
-        ui::drawTextCentered("Storyteller", ox + kBardTileX * ts + ts / 2, oy + kBardTileY * ts - 9,
-                             8, pal.gold);
+        ui::drawTextCentered("Storyteller", ox + town::kBardTileX * ts + ts / 2,
+                             oy + town::kBardTileY * ts - 9, 8, pal.gold);
+    }
+
+    // M97: the hooded stranger at the would-be Town-8 roadside (town 7,
+    // after the King has fallen) — the finale's door.
+    if (gooseNpcHere()) {
+        const float gcx = ox + town::kGooseNpcTileX * ts + ts * 0.5f;
+        const float gcy = oy + town::kGooseNpcTileY * ts + ts * 0.5f;
+        if (!render::drawTextureCentered(context_.resources, "actor.hooded_goose.overworld", gcx,
+                                         gcy)) {
+            DrawRectangle(ox + town::kGooseNpcTileX * ts + 3, oy + town::kGooseNpcTileY * ts + 2,
+                          ts - 6, ts - 4, Color{120, 100, 150, 255});
+        }
+        ui::drawTextCentered("Stranger", ox + town::kGooseNpcTileX * ts + ts / 2,
+                             oy + town::kGooseNpcTileY * ts - 9, 8, pal.gold);
     }
 
     // Player: directional walk animation, then static sprite, then rectangle
@@ -591,6 +662,13 @@ void TownState::render() {
         const std::string text =
             input::prompt(bindings, InputAction::Confirm, device, "Hear the storyteller") + "   " +
             input::prompt(bindings, InputAction::Menu, device, "Pause");
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.gold);
+    } else if (nearGoose_) {
+        // M97: the finale invitation — quiet gold, like the storyteller's.
+        ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
+        const std::string text =
+            input::prompt(bindings, InputAction::Confirm, device, "Speak with the stranger") +
+            "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
         ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.gold);
     } else if (nearExit_ != nullptr) {
         // M50: walk-through roads. A locked one explains why and does not travel;

@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstdint>
+
+#include "core/SeedParse.hpp"
 #include "ui/TextInput.hpp"
 
 using namespace cd::ui;
@@ -43,4 +46,31 @@ TEST_CASE("text input: trimmed removes surrounding spaces", "[ui]") {
 
     TextInput blank(4, "    ");
     REQUIRE(blank.trimmed().empty());
+}
+
+TEST_CASE("text input: the Digits filter admits digits alone (M88)", "[ui]") {
+    TextInput t(20, "", TextFilter::Digits);
+    for (int c : {'0', '5', '9'}) {
+        t.appendCodepoint(c);
+    }
+    for (int c : {'a', 'Z', ' ', '-', '\'', '!', '.'}) {
+        t.appendCodepoint(c);  // all refused
+    }
+    REQUIRE(t.value() == "059");
+
+    // setValue applies the same filter — a pasted/prefilled mixed string keeps
+    // only its digits.
+    TextInput pre(20, "12ab34", TextFilter::Digits);
+    REQUIRE(pre.value() == "1234");
+}
+
+TEST_CASE("seed parse: empty and zero keep the old seed; overflow clamps (M88)", "[ui]") {
+    CHECK(cd::parseSeedDigits("") == 0);       // empty -> caller keeps the old seed
+    CHECK(cd::parseSeedDigits("0") == 0);      // zero is reserved the same way
+    CHECK(cd::parseSeedDigits("1") == 1ull);
+    CHECK(cd::parseSeedDigits("15113529870800074004") == 15113529870800074004ull);
+    CHECK(cd::parseSeedDigits("18446744073709551615") == UINT64_MAX);  // exactly max
+    CHECK(cd::parseSeedDigits("18446744073709551616") == UINT64_MAX);  // one past: clamps
+    CHECK(cd::parseSeedDigits("99999999999999999999") == UINT64_MAX);  // 20 nines: clamps
+    CHECK(cd::parseSeedDigits("007") == 7ull);  // leading zeros are harmless
 }

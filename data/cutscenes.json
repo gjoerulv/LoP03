@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "cutscenes": [
+    {
+      "id": "new_game",
+      "question": "The stranger holds out two keepsakes. Take one.",
+      "beats": [
+        { "speaker": "The Stranger", "text": "Stop. Yes, you four. You have the look of people about to walk into a hole in the ground on purpose." },
+        { "speaker": "The Stranger", "text": "I am a scholar of migrations. Hooded, because scholarship is cold. Do not read anything into the hood." },
+        { "speaker": "{member1}", "text": "You were standing very still in the road." },
+        { "speaker": "The Stranger", "text": "Standing still is the first science. Listen. This realm runs on kept things. Crystals keep light. Towns keep roads. Once, the wild flocks kept the ways between them - seed, spark, and rumor, carried by wing.", "emote": "waddle" },
+        { "speaker": "The Stranger", "text": "Then a king grew hollow, a dragon grew tired, and a certain waterfowl grew ambitious. The flights stopped. The deep places began to rot. You will be going down into the rot. Professionally, I gather." },
+        { "speaker": "{member2}", "text": "We were going to charge admission at the door, actually." },
+        { "speaker": "The Stranger", "text": "Good. Greed is a durable motive. Take this, then. A kept thing keeps back - that is the whole of the old law, and the only part worth carrying downstairs.", "emote": "jump" },
+        { "speaker": "The Stranger", "text": "Choose carefully. Or quickly. Both work on me." }
+      ],
+      "options": [
+        { "label": "The warm one", "heirloom": "heirloom_emberwake", "responseSpeaker": "The Stranger", "responseText": "The Emberwake Locket. It remembers a hearth that outlived its house. When its keeper first stumbles, it mends them. Sentimental engineering - the best kind. Now go. I have standing to do." },
+        { "label": "The stubborn one", "heirloom": "heirloom_lastlight", "responseSpeaker": "The Stranger", "responseText": "The Lastlight Band. It only wakes when its keeper is nearly out of light, and then it bites. Defiance, ring-shaped. Wear it and fall carefully. Now go. I have standing to do." }
+      ]
+    },
+    {
+      "id": "town_2",
+      "question": "Two promises, says the stranger. Keep one.",
+      "beats": [
+        { "speaker": "The Stranger", "text": "You again. Statistically remarkable. I happened to be migrating - that is, TRAVELING - this way myself." },
+        { "speaker": "{member3}", "text": "You got here before us. On foot. Over the mountain road." },
+        { "speaker": "The Stranger", "text": "I walk briskly. Moving on: this town sits on the second of the old flightways. The flocks rested here, once, between the long hauls. You can still see the shape of it if you squint at the rooftops.", "emote": "waddle" },
+        { "speaker": "The Stranger", "text": "The people here made promises to the flocks. Grain for news. Shelter for seed. A promise, properly kept, is just an heirloom that has not hardened yet." },
+        { "speaker": "The Stranger", "text": "The hollow king ended all that. A promise you cannot command is a threat, to a certain kind of crown. He was that kind. He is worse now." },
+        { "speaker": "The Stranger", "text": "I keep two of the old promises with me. They have hardened nicely. One should travel with you.", "emote": "jump" }
+      ],
+      "options": [
+        { "label": "The promise to others", "heirloom": "heirloom_vowknot", "responseSpeaker": "The Stranger", "responseText": "The Vowknot Cord. When a companion falls, it pulls tight, and its keeper hits like a debt come due. Grief with a work ethic. Mind the knots - they are load-bearing." },
+        { "label": "The promise to yourself", "heirloom": "heirloom_stonepromise", "responseSpeaker": "The Stranger", "responseText": "The Stonepromise Ring. First time you are truly hurt, it sets like mortar and holds you together. The promise is 'not today'. Renew it daily." }
+      ]
+    },
+    {
+      "id": "town_3",
+      "question": "How should a memory sit - soft or sharp? Choose.",
+      "beats": [
+        { "speaker": "The Stranger", "text": "Before you ask: no, I am not following you. We simply share an itinerary. It happens to flocks. GROUPS. It happens to groups." },
+        { "speaker": "The Stranger", "text": "This town was the flightways' listening post. Every rumor in the realm landed here twice - once arriving, once leaving, slightly improved." },
+        { "speaker": "{member4}", "text": "And what do the rumors say now?" },
+        { "speaker": "The Stranger", "text": "That a party of four is clearing the deep rot, floor by floor, and counting their turns while they do it. The flocks would have liked you. Efficient wings, no wasted beats.", "emote": "waddle" },
+        { "speaker": "The Stranger", "text": "They also say the dragon under the last town has stopped snoring. I would not read too much into that. I would read exactly the right amount into that." },
+        { "speaker": "The Stranger", "text": "Memory is this town's trade, so take a memory. I carry two kinds. Soft ones soothe. Sharp ones instruct.", "emote": "jump" }
+      ],
+      "options": [
+        { "label": "The soft memory", "heirloom": "heirloom_quietbell", "responseSpeaker": "The Stranger", "responseText": "The Quietbell Charm. Every so often, mid-fight, it hums an old rest-note and hurts fade a little. The flocks used it to sleep on the wing. Do not sleep on the wing." },
+        { "label": "The sharp memory", "heirloom": "heirloom_thornmemory", "responseSpeaker": "The Stranger", "responseText": "The Thornmemory Sprig. Every third blow its keeper takes, it pricks back, and the next strikes come sharper. Some memories are best kept pointed outward." }
+      ]
+    },
+    {
+      "id": "town_4",
+      "question": "What does grief owe the living? Pick your answer.",
+      "beats": [
+        { "speaker": "The Stranger", "text": "Halfway up the ladder. This is where the old flights turned hard - headwinds from here to the summit. The flocks called this town the Long Middle." },
+        { "speaker": "The Stranger", "text": "It is also where they buried their dead. Do not look like that. Everything that flies eventually files a landing." },
+        { "speaker": "{member1}", "text": "You speak about the flocks like you were there." },
+        { "speaker": "The Stranger", "text": "I am a THOROUGH scholar. Footnotes. Interviews. Regrettable field work.", "emote": "panic" },
+        { "speaker": "The Stranger", "text": "Ahem. The point stands: the Long Middle teaches one lesson, which is that grief is heavy and you must carry it anyway. The flocks carried it two ways, and so I carry two keepsakes." },
+        { "speaker": "The Stranger", "text": "One steadies the mourner. One arms the mourning. I have never decided which is wiser, and I have had a long time to decide.", "emote": "jump" }
+      ],
+      "options": [
+        { "label": "Steady the mourner", "heirloom": "heirloom_griefward", "responseSpeaker": "The Stranger", "responseText": "The Griefward Locket. When a companion first falls, it steadies whoever holds it - mends them enough to finish what the fallen started. That is what grief owes the living: a finished job." },
+        { "label": "Arm the mourning", "heirloom": "heirloom_oathspark", "responseSpeaker": "The Stranger", "responseText": "The Oathspark Pin. While its keeper stands at half light or less, everything they swing lands harder. Grief as fuel. Burn it - do not store it." }
+      ]
+    },
+    {
+      "id": "town_5",
+      "question": "For the dark hours: hope, or endurance?",
+      "beats": [
+        { "speaker": "The Stranger", "text": "High country. Thin air. The flocks flew this stretch at night, when the cold air holds a wing better. Also, fewer arrows." },
+        { "speaker": "The Stranger", "text": "Night flying is a discipline. You cannot see the ground, so you must be very sure about the sky. The flocks had a saying: the dark is just the day, kept.", "emote": "waddle" },
+        { "speaker": "{member2}", "text": "That saying does not entirely hold together." },
+        { "speaker": "The Stranger", "text": "Most load-bearing sayings do not. Speaking of load-bearing: the dragon under the last town flew this route once. Biggest wingspan the flightways ever logged. Filed under 'honorary'." },
+        { "speaker": "The Stranger", "text": "It stopped flying the day the king hollowed. Someone had to stay low and hold the deep fire while the ways were shut. It chose to be that someone. Sleep was the cheapest way to wait." },
+        { "speaker": "The Stranger", "text": "For your own dark hours, then - two instruments. The flocks never flew without one of each.", "emote": "jump" }
+      ],
+      "options": [
+        { "label": "Hope, at the bottom", "heirloom": "heirloom_dawnknot", "responseSpeaker": "The Stranger", "responseText": "The Dawnknot Braid. It does nothing, and keeps doing nothing, until its keeper is nearly gone - and then it unravels all its light at once. Hope is not a plan, but it is excellent rigging." },
+        { "label": "Endurance, throughout", "heirloom": "heirloom_ironlullaby", "responseSpeaker": "The Stranger", "responseText": "The Iron Lullaby. Every fourth blow its keeper takes, it answers with a verse, and their guard braces. It was sung to fledglings in storms. It scans terribly. It works." }
+      ]
+    },
+    {
+      "id": "town_6",
+      "question": "What carries farther - a song or an oath?",
+      "beats": [
+        { "speaker": "The Stranger", "text": "One town from the summit. I can smell the castle from here. Cold stone, old fear, and - hm. Bread? No. Surely not bread.", "emote": "panic" },
+        { "speaker": "The Stranger", "text": "Ignore that. This town was the flightways' last waystation. Everything the flocks still carried, they set down here or carried to the end." },
+        { "speaker": "{member3}", "text": "And what did they carry to the end?" },
+        { "speaker": "The Stranger", "text": "Two things travel light enough to finish any journey: a song, which weighs nothing, and an oath, which weighs everything but pretends otherwise." },
+        { "speaker": "The Stranger", "text": "The king outlawed both, of course. Songs remember, and oaths bind, and a hollow thing can bear neither. You have felt how quiet his dungeons are. That quiet was a decree." },
+        { "speaker": "The Stranger", "text": "Break it for me. Take one of these the rest of the way up.", "emote": "jump" }
+      ],
+      "options": [
+        { "label": "The song", "heirloom": "heirloom_wandersong", "responseSpeaker": "The Stranger", "responseText": "The Wandersong Shell. Hold it to your ear mid-fight and every fifth turn the old road-tune swells, and your next strike keeps its beat. The flocks wrote it. I merely hum along. Beautifully." },
+        { "label": "The oath", "heirloom": "heirloom_emberoath", "responseSpeaker": "The Stranger", "responseText": "The Emberoath Clasp. First time its keeper is truly hurt, the oath ignites and their attacks burn brighter for a while. The wording of the oath is private. The results are not." }
+      ]
+    },
+    {
+      "id": "town_7",
+      "question": "At the end of the road: mercy, or patience?",
+      "beats": [
+        { "speaker": "The Stranger", "text": "The last town. Above you, a castle with a hollow thing on its throne. Below you, reportedly, a very large sleeper. Between them, seven towns of people who kept going anyway. Good ratio." },
+        { "speaker": "The Stranger", "text": "I will tell you the one thing every scholar of migrations agrees on: the hollow king is afraid of geese.", "emote": "waddle" },
+        { "speaker": "{member4}", "text": "Geese. The waddling kind." },
+        { "speaker": "The Stranger", "text": "The MAGNIFICENT kind. But yes. Because a goose remembers everything done to it, and forgives at its own pace, and the king has done a great deal and is in no position to wait." },
+        { "speaker": "The Stranger", "text": "Fear of memory. That is the whole crown, from the inside. Whatever you meet up there - it is smaller than what it did." },
+        { "speaker": "The Stranger", "text": "So. The end-of-road keepsakes. The flocks minted one and wound the other, and argued about them all the way down the years.", "emote": "jump" }
+      ],
+      "options": [
+        { "label": "Mercy, priced", "heirloom": "heirloom_gravemercy", "responseSpeaker": "The Stranger", "responseText": "The Gravemercy Coin. While its keeper stands near their own grave, it pays out - every blow lands heavier. Mercy for yourself, priced in someone else's trouble. The flocks were not sentimental about arithmetic." },
+        { "label": "Patience, wound", "heirloom": "heirloom_smallhours", "responseSpeaker": "The Stranger", "responseText": "The Small Hours Watch. Every third turn it ticks, and a little hurt closes. It keeps terrible time and excellent company. Patience is just mercy spread thin enough to last." }
+      ]
+    },
+    {
+      "id": "finale",
+      "question": "The story is over. What should it leave you?",
+      "beats": [
+        { "speaker": "The Stranger", "text": "So. The throne is empty, the crown is quiet, and you came looking for the road to an eighth town. There is no eighth town. There is only me, standing where it would have started. Poetic, if you squint." },
+        { "speaker": "The Stranger", "text": "You have earned the ending, so here it is, with the principals present. In memory, at least. Hold still, everyone.", "kingOnStage": true, "dragonOnStage": true },
+        { "speaker": "The Stranger", "text": "The king, first. He was not always hollow. He commanded everything in the realm except the flights, and could not bear the exception. So he ended them - and found that a realm with nothing moving through it goes still, then hollow, king first.", "kingOnStage": true, "dragonOnStage": true },
+        { "speaker": "The Stranger", "text": "He feared geese because geese remember. He was right to. We rem - THEY remember. The flocks. Remembered. Grammar is a migration all its own.", "emote": "panic", "kingOnStage": true, "dragonOnStage": true },
+        { "speaker": "The Stranger", "text": "The dragon, second. When the ways closed, it took the deep fire under the last town and slept on it, so the rot could not have that too. Your climbing woke it gently. Your winning let it stop holding its breath. It is not your enemy. It is your landlord.", "kingOnStage": true, "dragonOnStage": true },
+        { "speaker": "{member1}", "text": "And the duck?" },
+        { "speaker": "The Stranger", "text": "We do not discuss the duck. Some birds, given a pond, choose empire. The flocks voted it out of the migration in a meeting I definitely only read about.", "emote": "waddle", "kingOnStage": true, "dragonOnStage": true },
+        { "speaker": "The Stranger", "text": "Which brings us to the confession. I have carried sixteen keepsakes down the years, and handed them out two at a time to anyone still willing to climb. You were the last climb. This hood has been - hhk - HONK.", "emote": "panic", "kingOnStage": true, "dragonOnStage": true },
+        { "speaker": "The Stranger", "text": "...We will proceed as though that was a cough. The flightways are open. The realm will fill with moving things again, and I have a great deal of magnificent waddling to catch up on. One keepsake remains. Well. Two. Choose, keeper.", "emote": "jump" }
+      ],
+      "options": [
+        { "label": "The blade that guards", "heirloom": "heirloom_keepsakeknife", "responseSpeaker": "The Stranger", "responseText": "The Keepsake Knife. It has never cut anything but rope and bread, and when a companion falls it turns guard-side, and its keeper closes ranks. The flocks made exactly one weapon. This is it, and it is a promise. Goodbye, climbers. Keep things." },
+        { "label": "The stone that remembers", "heirloom": "heirloom_hearthstone", "responseSpeaker": "The Stranger", "responseText": "The Hearthstone Chip. A corner of the first hearth the flocks ever circled. It mends its keeper when they first falter, and kindles them when a companion first falls. Home, in pocket form. Goodbye, climbers. Keep things." }
+      ]
+    }
+  ]
+}

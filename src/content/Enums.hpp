@@ -37,9 +37,12 @@ enum class EnemyTier { Normal, Elite };
 // (capped per team); Bruiser/Sniper count as "damage" (required per team).
 enum class EnemyRole { Bruiser, Sniper, Healer, Buffer, Protector, Attrition, Disruptor };
 
-enum class ItemType { Consumable, Equipment, Relic, Scroll };
+// M96 adds Heirloom: cutscene-granted EQUIPMENT with triggered battle effects
+// (never the M44 Royal Relics, which stay single-use battle items).
+enum class ItemType { Consumable, Equipment, Relic, Scroll, Heirloom };
 
-enum class EquipSlot { None, Weapon, Armor, Accessory };
+// M96 adds Heirloom: the fourth worn slot, one per character.
+enum class EquipSlot { None, Weapon, Armor, Accessory, Heirloom };
 
 enum class Rarity { Common, Uncommon, Rare, Epic, Legendary };
 
@@ -165,6 +168,8 @@ enum class TriggerWhen {
 // bearer's prebuilt clone slot (built dead at buildBattle, cloneHpPct of the
 // bearer's max HP); DrainFoeMp drains mpDrainPct of every living foe's MP.
 // StatusAttacker is only meaningful with EveryNthHitTaken (validated).
+// M96 (rules v18) adds HealSelfPct: the bearer heals `magnitude` percent of
+// its max HP — the heirlooms' "+15% HP the first time below 50%" shape.
 enum class TriggerDo {
     None,
     StatusSelf,
@@ -173,7 +178,8 @@ enum class TriggerDo {
     StatusBoss,        // the boss on the bearer's own side (a minion aiding its king)
     ScaleStatsSelf,
     SummonCloneSelf,
-    DrainFoeMp
+    DrainFoeMp,
+    HealSelfPct        // M96: heirlooms (party-side triggers)
 };
 
 // parse* return std::nullopt for unrecognized strings (the caller reports the

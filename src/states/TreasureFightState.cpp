@@ -30,6 +30,7 @@ void TreasureFightState::onEnter() {
     if (done_) {
         return;  // a capture preset set the overlay; no fight
     }
+    context_.party.usedSummons.clear();  // M95: the dig is its own challenge
     const TreasureReveal& t = context_.party.treasure;
     const content::BossDef* boss = context_.content.findBoss(t.bossId);
     if (!t.active || boss == nullptr) {

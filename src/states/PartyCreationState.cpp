@@ -9,11 +9,13 @@
 #include "content/Definitions.hpp"
 #include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
+#include "game/Cutscenes.hpp"  // M97: the new-game prologue trigger
 #include "game/Profile.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "states/CutsceneState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TownState.hpp"
 #include "ui/UiDraw.hpp"
@@ -112,6 +114,8 @@ void PartyCreationState::begin() {
     context_.party.stakes = StakesState{};
     context_.party.legendaryTokens = 0;
     context_.party.blackMarket = BlackMarketOffer{};
+    context_.party.seenCutscenes.clear();     // M97: a new game restarts the story
+    context_.party.heirloomChoices.clear();
     for (std::size_t i = 0; i < slots_.size(); ++i) {
         std::string name = slots_[i].name.trimmed();
         if (name.empty()) {
@@ -130,6 +134,15 @@ void PartyCreationState::begin() {
 
     stack().clearStates();
     stack().pushState(std::make_unique<TownState>(stack(), context_));
+    // M97: the prologue — the hooded stranger meets the new party before the
+    // first town breathes. Marked seen before the push (the storyMet idiom);
+    // an unauthored scene simply never plays.
+    if (context_.content.findCutscene("new_game") != nullptr &&
+        !game::cutsceneSeen(context_.party, "new_game")) {
+        game::markCutsceneSeen(context_.party, "new_game");
+        stack().pushState(
+            std::make_unique<CutsceneState>(stack(), context_, "new_game", /*replay=*/false));
+    }
 }
 
 void PartyCreationState::handleInput(const Input& input) {

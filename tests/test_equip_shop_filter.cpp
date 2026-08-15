@@ -60,13 +60,17 @@ TEST_CASE("equipshop: shipped roster partitions cleanly into the three categorie
     std::size_t stocked = 0;
     for (const auto& [id, def] : db.items()) {
         (void)id;
-        if (isEquippableItem(def) && def.rarity != Rarity::Legendary) {
+        // M96: heirlooms are equippable but NEVER stocked — story-granted
+        // (M97 choices), value 0, sold nowhere; like legendaries they sit
+        // outside the shop's three buy categories by design.
+        if (isEquippableItem(def) && def.rarity != Rarity::Legendary &&
+            def.type != ItemType::Heirloom) {
             ++stocked;
         }
     }
     CHECK(weapons.size() + armor.size() + accessories.size() == stocked);
 
-    // No consumable, scroll, or legendary ever reaches a buy category.
+    // No consumable, scroll, legendary, or heirloom ever reaches a buy category.
     for (const std::vector<std::string>* list : {&weapons, &armor, &accessories}) {
         for (const std::string& id : *list) {
             const ItemDef* it = db.findItem(id);
@@ -74,6 +78,7 @@ TEST_CASE("equipshop: shipped roster partitions cleanly into the three categorie
             CHECK(isEquippableItem(*it));
             CHECK(it->type != ItemType::Consumable);
             CHECK(it->type != ItemType::Scroll);
+            CHECK(it->type != ItemType::Heirloom);  // M96
             CHECK(it->rarity != Rarity::Legendary);
         }
     }
@@ -245,9 +250,11 @@ TEST_CASE("itemshop: consumables are stocked inside their town window (M43)", "[
     granted.value = 0;
     db.addItem(granted);
 
+    // M88: the shelf orders by category rank then value (was alphabetical), so
+    // the cheap effect-less potion leads the effect-less elixir.
     CHECK(cd::itemShopBuyIds(db, 1) == std::vector<std::string>{"potion", "royal_snacks"});
     CHECK(cd::itemShopBuyIds(db, 2) == std::vector<std::string>{"potion"});
-    CHECK(cd::itemShopBuyIds(db, 5) == std::vector<std::string>{"elixir", "potion"});
+    CHECK(cd::itemShopBuyIds(db, 5) == std::vector<std::string>{"potion", "elixir"});
 }
 
 TEST_CASE("itemshop: the shipped Royal Snacks are sold in town 1 and nowhere else (M43)",
@@ -257,10 +264,11 @@ TEST_CASE("itemshop: the shipped Royal Snacks are sold in town 1 and nowhere els
     for (int town = 2; town <= 7; ++town) {
         CHECK_FALSE(contains(cd::itemShopBuyIds(db, town), "royal_snacks"));
     }
-    // Every other consumable is unaffected by the new window.
+    // Every other consumable is unaffected by the new window. (The shelf sorts
+    // by category since M88 — the ordering contract itself is tested in
+    // test_item_caps.cpp, not here.)
     for (int town = 1; town <= 7; ++town) {
         CHECK(contains(cd::itemShopBuyIds(db, town), "potion"));
-        CHECK(isSorted(cd::itemShopBuyIds(db, town)));
     }
 }
 

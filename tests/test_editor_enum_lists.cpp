@@ -52,8 +52,8 @@ TEST_CASE("editor: enum lists are complete", "[editor]") {
     REQUIRE(enemyTagIds().size() == 4);
     REQUIRE(enemyTierIds().size() == 2);
     REQUIRE(enemyRoleIds().size() == 7);
-    REQUIRE(itemTypeIds().size() == 4);
-    REQUIRE(equipSlotIds().size() == 4);      // none + 3
+    REQUIRE(itemTypeIds().size() == 5);       // +1 M96 (heirloom)
+    REQUIRE(equipSlotIds().size() == 5);      // none + 4 (M96: heirloom)
     REQUIRE(rarityIds().size() == 5);
     REQUIRE(consumableEffectIds().size() == 5);  // none + 4
     REQUIRE(statusTypeIds().size() == 14);       // none + 13 (M75: reflect/sleep/curse)
@@ -61,7 +61,7 @@ TEST_CASE("editor: enum lists are complete", "[editor]") {
     REQUIRE(bossArchetypeIds().size() == 4);
     REQUIRE(passiveHookIds().size() == 10);      // "none" deliberately absent
     REQUIRE(triggerWhenIds().size() == 4);       // M75; "none" deliberately absent
-    REQUIRE(triggerDoIds().size() == 7);         // M75; "none" deliberately absent
+    REQUIRE(triggerDoIds().size() == 8);         // M75; "none" absent; +1 M96 (heal_self_pct)
     // toString round-trips through the same table for a spot value.
     REQUIRE(parseElement(toString(Element::Fire)).value() == Element::Fire);
 }

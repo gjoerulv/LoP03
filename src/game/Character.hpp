@@ -24,6 +24,9 @@ struct Character {
     int maxMp = 0;
 
     // Equipped item ids (empty = nothing in that slot).
+    // M96: the fourth worn slot — a cutscene-granted heirloom (empty = none;
+    // optional save field, unknown ids dropped on load like the other gear).
+    std::string equippedHeirloom;
     std::string weapon;
     std::string armor;
     std::string accessory;

@@ -26,9 +26,14 @@ enum class RoomType { Start, Normal, Treasure, Boss, Event };
 // byte-identical, so generation stays v14; see dungeon/ThemeEvents.hpp). The
 // peddler sells the Evil Duckling for flat gold and will not deal while the
 // party already owns one.
+// M93 (generation v17) adds two more pure-hash replacements of plain rolled
+// events: the Surveyor (multi-floor runs only — pays the fog away for 20 gold)
+// and Dragonform (any run — the party fights its NEXT battle as Dragons for a
+// flat -100 score, stated up front). Same contract as the DuckPeddler: never
+// an rng draw, never a rite/relic slot.
 enum class RoomEventKind {
     None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken, RoyalRelic,
-    ArmoryGhost, MinersCache, ElderRoot, DuckPeddler
+    ArmoryGhost, MinersCache, ElderRoot, DuckPeddler, Surveyor, Dragonform
 };
 
 struct RoomEvent {
@@ -55,6 +60,9 @@ struct EnemyTeam {
     // when combatants are built and when danger is assessed, so displayed
     // danger always matches what the player will fight.
     int statScalePct = 100;
+    // M93: a danger-counter patrol (owner decisions 5/7). Pays XP but no gold
+    // (game/Spoils.hpp reads this) and earns no danger-defeated credit.
+    bool patrol = false;
 
     int count() const { return static_cast<int>(enemyIds.size()) + (bossId.empty() ? 0 : 1); }
 };

@@ -286,6 +286,18 @@ TEST_CASE("dragon: the Pale Jester's beat is authored", "[dragon]") {
 TEST_CASE("dragon: the gauntlet is clearable by the maxed party", "[dragon]") {
     const content::ContentDatabase db = loadContent();
     Party party = maxedParty(db);
+    // M89: with the sustained breath pool (the owner-requested MP fix), the
+    // Dragon finally DEMANDS the elemental defense layer the design always
+    // named as its counter ("six party-wide elemental breaths — one per
+    // element, met by the M81 ward charms"). The clearability bar therefore
+    // carries the designed counterplay — the Motley Aegis (−50% all six
+    // elements) — exactly as the King's bar carries relics and snacks. The
+    // plain-accessory loadout that cleared the pre-M89 dry-dragon now loses
+    // (verified while tuning), which is the fight working as intended.
+    for (Character& m : party.members) {
+        m.accessory = "motley_aegis";
+        refreshCharacter(m, db);
+    }
     int totalRounds = 0;
     bool cleared = true;
     std::vector<dungeon::EnemyTeam> teams;
@@ -309,4 +321,61 @@ TEST_CASE("dragon: the gauntlet is clearable by the maxed party", "[dragon]") {
     std::cout << "[dragon] gauntlet: " << (cleared ? "CLEARED" : "LOST") << " in "
               << totalRounds << " rounds at " << kDragonScalePct << "%\n";
     CHECK(cleared);
+}
+
+// --- M89 (rules v16): the sustained pool & the lunge -------------------------
+
+TEST_CASE("dragon: the authored MP pool scales like magic and sustains the breaths (M89)",
+          "[dragon]") {
+    const content::ContentDatabase db = loadContent();
+    const content::BossDef* d = db.findBoss(kDragonBossId);
+    REQUIRE(d != nullptr);
+    CHECK(d->maxMp == 80);
+    CHECK(d->basicAttackEveryNth == 4);
+    CHECK_FALSE(d->basicAttackText.empty());
+
+    battle::Battle b = battle::buildBattle(maxedParty(db), dragonTeam(db), db);
+    const battle::Combatant* dragon = nullptr;
+    for (const battle::Combatant& u : b.units) {
+        if (u.isBoss) {
+            dragon = &u;
+        }
+    }
+    REQUIRE(dragon != nullptr);
+    // The override replaces the derived pool (500%-scaled magic gave ~130 —
+    // six breaths, then a dry dragon: the owner-reported defect) and scales
+    // exactly as magic would: 80 × 500% = 400.
+    CHECK(dragon->maxMp == deriveMaxMp(80 * kDragonScalePct / 100));
+    CHECK(dragon->maxMp >= 12 * 20);  // at least a dozen 20-MP breaths
+    CHECK(dragon->basicAttackEveryNth == 4);
+    CHECK_FALSE(dragon->basicAttackText.empty());
+}
+
+TEST_CASE("dragon: every 4th own turn is a lunge, not a cast (M89)", "[dragon]") {
+    const content::ContentDatabase db = loadContent();
+    battle::Battle b = battle::buildBattle(maxedParty(db), dragonTeam(db), db);
+    int actor = -1;
+    for (std::size_t i = 0; i < b.units.size(); ++i) {
+        if (b.units[i].isBoss) {
+            actor = static_cast<int>(i);
+        }
+    }
+    REQUIRE(actor >= 0);
+    // Walk twelve of the Dragon's own turns through the real per-turn seam:
+    // turns 4/8/12 are lunges (plain swings), every other turn a breath —
+    // MP never runs out because chooseEnemyAction only decides here.
+    for (int turn = 1; turn <= 12; ++turn) {
+        b.beginUnitTurn(actor);
+        const battle::Combatant& self = b.units[static_cast<std::size_t>(actor)];
+        CHECK(self.ownTurnsTaken == turn);
+        const bool lunge = battle::basicAttackTurn(self);
+        CHECK(lunge == (turn % 4 == 0));
+        const battle::EnemyChoice c = battle::chooseEnemyAction(b, actor, db);
+        CHECK(c.useSkill == !lunge);
+        CHECK(c.target >= 0);
+    }
+    // The rule is off for every pre-M89 unit (basicAttackEveryNth == 0).
+    battle::Combatant plain;
+    plain.ownTurnsTaken = 8;
+    CHECK_FALSE(battle::basicAttackTurn(plain));
 }

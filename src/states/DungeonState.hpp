@@ -7,6 +7,7 @@
 #include "battle/Battle.hpp"
 #include "core/Geometry.hpp"
 #include "danger/DangerRating.hpp"
+#include "game/Dragonform.hpp"  // M93
 #include "game/RunStats.hpp"
 #include "game/Spoils.hpp"
 #include "dungeon/DungeonModel.hpp"
@@ -71,7 +72,7 @@ private:
     };
     // M82: StairGate is the boss-slot fight on floors before the last — its
     // victory opens the stairs instead of completing the run.
-    enum class EncounterKind { None, Gate, Guard, Boss, Challenge, StairGate };
+    enum class EncounterKind { None, Gate, Guard, Boss, Challenge, StairGate, Patrol };
     struct Marker {
         int x = 0;
         int y = 0;
@@ -144,6 +145,21 @@ private:
     bool onChart_ = false;     // M66: standing on the dungeon treasure map
     bool onBuried_ = false;    // M66: standing on the (revealed) buried spot
     bool chartFound_ = false;  // M66: the map was read this run
+    // M93: the Surveyor's paid reveal — lifts the multi-floor fog for the
+    // CURRENT floor only (reset on descent, like the chart).
+    bool floorRevealed_ = false;
+    // M93: Dragonform — armed by the event, spent on the next battle start
+    // (the party fights it as Dragons; the reckoning docks a flat 100).
+    bool dragonformArmed_ = false;
+    int dragonformFights_ = 0;  // battles actually fought in dragonform (score line)
+    DragonformStash dragonformStash_;  // the real members while a fight runs borrowed
+    // M93: the danger counter (owner decisions 5/7): a visible 100-step
+    // countdown; at 0 a seeded patrol attacks immediately, the counter
+    // resets, and the patrol pays XP but no gold, items, or danger credit.
+    int dangerSteps_ = 100;
+    int patrolIndex_ = 0;  // how many patrols this run has rolled (seeds the next)
+    int lastTileX_ = -1;   // the tile whose leaving ticked the counter last
+    int lastTileY_ = -1;
     // M80: the centered event-flavor panel is open (movement and the other
     // dungeon inputs pause; Confirm accepts, Cancel steps away).
     bool eventPanelOpen_ = false;

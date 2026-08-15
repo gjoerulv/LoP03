@@ -216,8 +216,9 @@ are the authority).
   `SettingsState::volumeLabel` idiom) or rendered as an M46 stepper row
   (label + arrows + framed value capsule, the Guild/party-creation idiom).
   `ui::MenuItem` carries `label` + `enabled` + the optional right-aligned
-  `suffix` column (M42). Non-adjustable readouts (e.g. the Guild seed chip)
-  stay separate.
+  `suffix` column (M42). Non-adjustable readouts (e.g. the dungeon HUD's
+  theme/depth/floor chip) stay separate. (The Guild seed, once such a
+  readout chip, became an adjustable stepper row in M88.)
 - **Developer diagnostics** (e.g. the title-screen content-count line) are
   gated out of Release with `CRYSTAL_SHIPPING_BUILD`; the version stamp stays
   in Release so bug reports can cite a build.

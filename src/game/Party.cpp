@@ -154,6 +154,13 @@ bool canEquipSlot(const Character& character, content::EquipSlot slot,
     if (slot == content::EquipSlot::None) {
         return false;
     }
+    // M96: an heirloom is a carried memory, not equipment — every class keeps
+    // one, including the classes whose joke is refusing gear (the Goose's
+    // "equips nothing at all" is about arms and armor; the M97 story would
+    // otherwise hand a Goose party rewards it could never wear).
+    if (slot == content::EquipSlot::Heirloom) {
+        return true;
+    }
     const content::ClassDef* cls = db.findClass(character.classId);
     return cls == nullptr || cls->canEquip(slot);
 }

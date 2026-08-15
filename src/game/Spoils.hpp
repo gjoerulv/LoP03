@@ -39,6 +39,12 @@ inline BattleSpoils teamSpoils(const dungeon::EnemyTeam& team,
         s.xp += boss->xpReward;
         s.gold += boss->goldReward;
     }
+    // M93 (owner decision 7): a danger-counter patrol pays XP but never gold —
+    // circling for step-triggered fights must not become a gold farm. One
+    // shared rule here, so the victory panel and the award agree.
+    if (team.patrol) {
+        s.gold = 0;
+    }
     return s;
 }
 

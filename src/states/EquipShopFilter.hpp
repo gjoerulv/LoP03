@@ -18,10 +18,13 @@ namespace cd {
 
 // A shop item can be bought and equipped when it is Equipment or a Relic.
 // Relics carry slot == Accessory, so the slot filter below files them under
-// Accessories with no special case.
+// Accessories with no special case. M96: Heirlooms are equippable too (the
+// fourth slot) — but no Buy category ever offers them (story-granted, value
+// 0), so only the equip flow's slot filter sees the type.
 inline bool isEquippableItem(const content::ItemDef& item) {
     return item.type == content::ItemType::Equipment ||
-           item.type == content::ItemType::Relic;
+           item.type == content::ItemType::Relic ||
+           item.type == content::ItemType::Heirloom;
 }
 
 // Ids of every equippable item in `slot` the shop STOCKS at `town`, sorted for a

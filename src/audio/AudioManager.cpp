@@ -139,6 +139,14 @@ void AudioManager::play(Sfx id) {
     if (!ready_ || !enabled_) {
         return;
     }
+    // M91: an elemental impact whose file is missing falls back to the classic
+    // magic hit (M14 rule: a missing optional asset degrades, never silences a
+    // battle beat). The remap happens before the rate limit so the fallback
+    // shares HitMagic's own limiter.
+    if (id >= Sfx::HitFire && id <= Sfx::HitDark &&
+        !fileSfx_[static_cast<std::size_t>(id)].valid()) {
+        id = Sfx::HitMagic;
+    }
     const std::size_t i = static_cast<std::size_t>(id);
     const double now = GetTime();
     if (!audio::sfxAllowed(id, now, lastSfxTime_[i])) {

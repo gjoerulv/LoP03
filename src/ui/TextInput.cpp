@@ -13,14 +13,20 @@ bool isAllowedNameChar(int codepoint) {
 
 bool isAllowedPrintableChar(int codepoint) { return codepoint >= 32 && codepoint <= 126; }
 
+bool isAllowedDigitChar(int codepoint) { return codepoint >= '0' && codepoint <= '9'; }
+
 TextInput::TextInput(std::size_t maxLength, std::string initial, TextFilter filter)
     : maxLength_(maxLength), filter_(filter) {
     setValue(std::move(initial));
 }
 
 bool TextInput::allowed(int codepoint) const {
-    return filter_ == TextFilter::Printable ? isAllowedPrintableChar(codepoint)
-                                            : isAllowedNameChar(codepoint);
+    switch (filter_) {
+        case TextFilter::Printable: return isAllowedPrintableChar(codepoint);
+        case TextFilter::Digits: return isAllowedDigitChar(codepoint);
+        case TextFilter::Name: break;
+    }
+    return isAllowedNameChar(codepoint);
 }
 
 void TextInput::setValue(std::string value) {

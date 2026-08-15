@@ -44,4 +44,14 @@ std::vector<Dungeon> generateFloors(std::uint64_t seed, int depth,
                                     std::string themeId = "", int town = 1,
                                     int floorCount = 1);
 
+// M93: the danger counter's roused patrol — a normal team for this dungeon
+// (same theme pool, composition rules, and depth/town scaling as generation),
+// drawn from a fresh pure-hash Rng off (runSeed, patrolIndex) so the Nth
+// patrol of a run is deterministic and reload-honest, and the floor's own
+// generation stream is never touched. The team is flagged `patrol`: it pays
+// XP but no gold (game/Spoils.hpp) and earns no danger credit (owner
+// decision 7).
+EnemyTeam patrolTeam(const content::ContentDatabase& db, const std::string& themeId,
+                     int town, int depth, std::uint64_t runSeed, int patrolIndex);
+
 }  // namespace cd::dungeon

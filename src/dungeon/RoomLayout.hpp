@@ -54,8 +54,18 @@ namespace cd::dungeon {
 // stair-gate via a fresh pure-hash Rng, and the boss waits on floor 4 at the
 // same depth (owner decision: flat). The bump tags comparability because a
 // seed now also means a 4-floor shape the board must distinguish
-// (ScoreEntry::floors; owner-approved, the program's single generation bump).
-inline constexpr int kGenerationVersion = 15;
+// (ScoreEntry::floors; owner-approved, the program's single generation bump);
+// version 16 (M92, owner-approved) adds the 20-FLOOR long descent on the
+// same machinery (wardens on floors 1-19, the boss on 20; floorSeed
+// unchanged, so 1F and 4F output is byte-identical to v15). The bump tags
+// comparability because a seed now also means a 20-floor shape with its own
+// board — and its raised-stakes clears pay the Guild's scroll trove;
+// version 17 (M93, owner-approved) adds two pure-hash event replacements on
+// the DuckPeddler contract — the Surveyor (multi-floor only: 20 gold lifts
+// the new fog of war for the floor) and Dragonform (any run: the next battle
+// fought as Dragons at a flat -100 score) — so seeds' event rolls change
+// where the hashes land; everything else is byte-identical to v16.
+inline constexpr int kGenerationVersion = 17;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

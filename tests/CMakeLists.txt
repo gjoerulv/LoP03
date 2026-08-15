@@ -92,6 +92,11 @@ add_executable(crystal_tests
     test_map_economy.cpp
     test_guild.cpp
     test_dragon.cpp
+    test_team_inspect.cpp
+    test_spar.cpp
+    test_summons.cpp
+    test_heirlooms.cpp
+    test_cutscenes.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

@@ -12,6 +12,7 @@
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
 #include "states/MilestoneChoiceState.hpp"  // M63
+#include "states/SparState.hpp"             // M94
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -50,6 +51,10 @@ void TrainingHallState::rebuildMembers() {
         items.push_back(
             {TextFormat("%s  Lv.%d  [%s]", c.name.c_str(), c.level, eq.c_str()), true});
     }
+    // M94: the sparring mirror rides below the roster — two rows, one per
+    // mode. Confirm on either pushes SparState (see the Members phase).
+    items.push_back({"Spar: face your echoes", !context_.party.empty()});
+    items.push_back({"Spar: manual control (both sides)", !context_.party.empty()});
     const int prev = memberMenu_.cursor();
     memberMenu_.setItems(std::move(items));
     memberMenu_.setCursor(prev);
@@ -187,13 +192,23 @@ void TrainingHallState::handleInput(const Input& input) {
             if (up) memberMenu_.moveUp();
             if (down) memberMenu_.moveDown();
             if (up || down) context_.audio.play(Sfx::Move);
-            if (input.pressed(InputAction::Confirm)) {
-                selectedMember_ = memberMenu_.cursor();
-                phase_ = Phase::CharMenu;
-                charMenu_.setCursor(0);
-                rebuildCharMenu();
-                message_.clear();
-                context_.audio.play(Sfx::Confirm);
+            if (input.pressed(InputAction::Confirm) && memberMenu_.currentEnabled()) {
+                const int cursor = memberMenu_.cursor();
+                const int memberCount = static_cast<int>(context_.party.members.size());
+                if (cursor >= memberCount) {
+                    // M94: the two spar rows below the roster — AI echoes, or
+                    // manual control of both sides.
+                    context_.audio.play(Sfx::Confirm);
+                    stack().pushState(std::make_unique<SparState>(
+                        stack(), context_, /*manual=*/cursor == memberCount + 1));
+                } else {
+                    selectedMember_ = cursor;
+                    phase_ = Phase::CharMenu;
+                    charMenu_.setCursor(0);
+                    rebuildCharMenu();
+                    message_.clear();
+                    context_.audio.play(Sfx::Confirm);
+                }
             }
             if (input.pressed(InputAction::Cancel)) {
                 context_.audio.play(Sfx::Cancel);

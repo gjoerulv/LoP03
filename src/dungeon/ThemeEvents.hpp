@@ -81,6 +81,19 @@ inline constexpr int kDuckPeddlerPriceGold = 300;
 // this seed, or -1 for none (the common case). Pure.
 int duckPeddlerSlot(std::uint64_t seed, int eligibleCount);
 
+// M93 (generation v17): two more pure-hash plain-event replacements on the
+// peddler's exact contract (never a rite, the relic, or an elite challenge;
+// no rng draw consumed). Dragonform rolls per DUNGEON inside generate();
+// the Surveyor rolls per FLOOR inside generateFloors (multi-floor runs
+// only — a 1-floor map has no fog to sell away).
+inline constexpr int kDragonformChancePct = 8;
+inline constexpr int kSurveyorChancePct = 25;
+inline constexpr int kSurveyorPriceGold = 20;  // the owner's number, flat
+
+// Slot picks (or -1 for none). Pure; each rides its own salt.
+int dragonformSlot(std::uint64_t seed, int eligibleCount);
+int surveyorSlot(std::uint64_t seed, int floorIndex, int eligibleCount);
+
 // M80: the content-layer flavor id for an event kind (data/event_flavor.json,
 // content::kEventFlavorIds). Empty for None. A test holds this mapping and
 // the content-side vocabulary in lockstep.
@@ -97,6 +110,8 @@ inline const char* eventFlavorId(RoomEventKind kind) {
         case RoomEventKind::MinersCache: return "miners_cache";
         case RoomEventKind::ElderRoot: return "elder_root";
         case RoomEventKind::DuckPeddler: return "duck_peddler";
+        case RoomEventKind::Surveyor: return "surveyor";      // M93
+        case RoomEventKind::Dragonform: return "dragonform";  // M93
         case RoomEventKind::None: break;
     }
     return "";

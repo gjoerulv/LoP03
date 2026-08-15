@@ -189,7 +189,29 @@ TEST_CASE("every shipped audio file is a valid PCM16 mono 22050 Hz WAV", "[audio
         CHECK(info.dataBytes > 0);
         CHECK(info.dataBytes + 44 == std::filesystem::file_size(entry.path()));
     }
-    CHECK(files == 39);  // 11 music + 6 town-ladder (M32) + 2 castle/king (M40) + 1 duck (M62) + 4 ambience + 15 sfx
+    CHECK(files == 45);  // 11 music + 6 town-ladder (M32) + 2 castle/king (M40) + 1 duck (M62) + 4 ambience + 21 sfx (15 + the M91 elemental impacts)
+}
+
+TEST_CASE("audio: every element speaks with its own impact role (M91)", "[audio]") {
+    using Element = cd::content::Element;
+    using cd::Sfx;
+    namespace audio = cd::audio;
+    CHECK(audio::elementHitSfx(Element::Fire) == Sfx::HitFire);
+    CHECK(audio::elementHitSfx(Element::Ice) == Sfx::HitIce);
+    CHECK(audio::elementHitSfx(Element::Lightning) == Sfx::HitLightning);
+    CHECK(audio::elementHitSfx(Element::Earth) == Sfx::HitEarth);
+    CHECK(audio::elementHitSfx(Element::Holy) == Sfx::HitHoly);
+    CHECK(audio::elementHitSfx(Element::Dark) == Sfx::HitDark);
+    // None keeps the classic magic hit, so an unmapped strike is never silent.
+    CHECK(audio::elementHitSfx(Element::None) == Sfx::HitMagic);
+    // The role tables carried the append without disturbing older indices.
+    CHECK(std::string(audio::kSfxIds[static_cast<std::size_t>(Sfx::HitFire)]) ==
+          "sfx.battle.hit_fire");
+    CHECK(std::string(audio::kSfxIds[static_cast<std::size_t>(Sfx::HitDark)]) ==
+          "sfx.battle.hit_dark");
+    CHECK(std::string(audio::kSfxIds[static_cast<std::size_t>(Sfx::Interact)]) ==
+          "sfx.world.interact");
+    CHECK(audio::kSfxMinInterval[static_cast<std::size_t>(Sfx::HitHoly)] > 0.0f);
 }
 
 TEST_CASE("every shipped audio family has a provenance record in credits.md", "[audio]") {

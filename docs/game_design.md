@@ -84,6 +84,17 @@ marked); since M67 every member row carries its class sprite and the
 equipped passive and chosen milestones show their descriptions in place.
 The M65 treasure maps pay exclusive scrolls into this same system.
 
+**The sparring mirror (M94, owner request).** The Training Hall offers a
+fight against **exact echoes of the current party** — same stats, gear
+share, skills, passives, and elements, driven by the enemy AI — or, in
+**manual mode**, commanded by the player on both sides (echo turns use the
+same Attack/Skill/Guard phases; echoes carry no bag and cannot Escape —
+that verb ends the spar from the player's side). A spar is **zero-stakes by
+construction**: the whole party ledger (HP, MP, items, gold, records,
+bestiary) is snapshotted before the fight and restored afterwards
+regardless of outcome — it can never pay, cost, or record anything, so it
+is practice, a testbed, and a mirror, never a farm.
+
 **Passive skills (M36).** Beyond skills, each character can carry a **passive** —
 an always-on battle trait bought at the Training Hall for gold. The economy is
 **own many, equip one**: purchased passives stay owned, and the single equipped
@@ -104,6 +115,26 @@ battle, so play and the simulator agree exactly).
 
 Inn/rest · Item shop · Equipment shop · Guild/dungeon selection · Training
 hall/class info · Score board · Save/load point · minimal NPC dialogue.
+
+**The monuments answer from any side (M88).** The Scoreboard stele and the
+Save crystal are freestanding (M69), so Confirm works from every tile around
+them, not just the marked front step. The item shop's shelf lists by purpose
+since M88 — HP restoratives first (Potion on top), then MP, cures, revives,
+and the oddities — cheapest first within each group.
+
+**Equip and heal anywhere (M90, owner decision 2026-08-14).** Both pause
+menus gain two entries. **Equip Party** is the Equip Shop's own equip flow
+without the shop — same member/slot/item phases, stat-diff colours, and
+party cycling, headed "Equip Party" — so re-gearing for an inspected team
+(M88) is a mid-run decision, not a retreat. **Items** opens the whole bag:
+consumables are usable outside battle under the same M43 gating (heals and
+MP only the living with room, revives only the fallen, refused with a
+reason — nothing is ever spent on "No effect"; cures are battle-only since
+afflictions never leave battle); gear and scrolls are inspect-only rows
+pointing at their homes; map pieces and curios stay on the Maps screen.
+This is a deliberate softening the owner chose knowingly: potions sipped
+between fights spend gold, not battle turns — the inn remains the full
+restore, and the M23 playtests judge the economy.
 
 **The inn is a paid rest (M30).** A full HP/MP restore costs gold that scales
 with the highest party level (so it stays a real decision as income grows), or
@@ -144,10 +175,49 @@ dungeons).
 Deterministically generated from a **seed**, using a **room graph/grid** (not
 cave noise). Each dungeon has: start room, boss room, main path, side rooms,
 chests, **visible** enemy teams, **≥3 mandatory gate battles before the boss**,
-optional guarded chests, and an exit/retreat option. **No random encounters.**
+optional guarded chests, and an exit/retreat option. **No hidden random
+encounters** — amended by the owner in **M93**: the one step-driven fight is
+the **danger counter's patrol** (below), and it is always forewarned by a
+visible HUD countdown, never a surprise. The original spirit — nothing
+ambushes you unannounced — stands.
+
+**The danger counter (M93, owner decision).** A visible **"Patrol N"**
+countdown starts every run at **100**; each tile walked ticks it down, and at
+**0 the roused patrol attacks immediately** — a normal team for this dungeon
+(same theme pool, composition rules, and depth/town scaling), drawn from a
+seeded per-run stream so the Nth patrol of a seed is deterministic and
+reload-honest. The counter resets to 100 after the fight and keeps counting
+across floors. **Patrols pay XP but no gold, drop nothing, and earn no
+danger-defeated credit** (owner decision: circling for step-triggered fights
+must never become a farm) — and their battle turns count against the score
+like any other, so lingering actively costs. Fleeing one counts as an escape
+and still resets the counter.
+
+**Fog on the descents (M93).** Multi-floor runs (4F/20F) no longer show the
+whole minimap: unvisited rooms are absent, a visited room's door to the
+unknown shows as a stub, and the picture fills in as you walk. The classic
+1-floor map stays complete (the M82 "classic unchanged" rule), the M66
+chart's X still burns through the fog, and the **Surveyor** — a new
+multi-floor-only room event — sells the current floor's full map for a flat
+**20 gold**. Fog invites exploring; the patrol counter taxes it — that
+tension is the point.
+
+**Dragonform (M93, owner decision).** A rare room event (any run) offers a
+pact stated in full on its panel: the party fights its **NEXT battle as
+Dragons** — the M45 class kit at each member's own level, no skills, no
+gear, the all-target bite — for a **flat −100 score**, itemized on the
+result screen as "Dragonform pact". HP and MP carry over by percentage in
+both directions and the fallen stay fallen, so the transformation is never
+a heal and never an execution. The M45 per-class score modifier does NOT
+additionally apply; the pact is the whole price.
 
 Visible enemy team shows: team name, danger level, enemy count, optional tags
-(Fast, Magic, Armored, Poison, …).
+(Fast, Magic, Armored, Poison, …). **Since M88 a faced team can be inspected
+in full** (the Details action): every member with the stats the battle will
+actually field (town/depth scaling included), its elemental weaknesses and
+immunities, and its passives — the same disclosure the in-battle target panel
+gives while aiming, moved BEFORE the commitment, so sizing a fight and
+re-gearing for it is a real pre-battle decision.
 
 **Encounters are composed, not rolled blind (M20).** Every enemy has a
 tactical **role** — bruiser, sniper, healer, buffer, protector, attrition,
@@ -187,8 +257,8 @@ more exists) while the title, the gold trade-off line, and the control
 hints hold their fixed places — authored or translated flavor of any
 length never hides the cost of a decision.
 
-**Runs come in two shapes (M82).** The Guild picker's **Floors** row
-chooses **1 or 4**. A 1-floor run is the classic dungeon, unchanged — the
+**Runs come in three shapes (M82; the third M92).** The Guild picker's
+**Floors** row chooses **1, 4, or 20**. A 1-floor run is the classic dungeon, unchanged — the
 same seed still means the same run it always did. A **4-floor run**
 descends through four full levels of the chosen theme at the chosen depth
 (flat — owner decision; the elite gates and 4× length ARE the added
@@ -201,10 +271,29 @@ run autosaves once at entry as always, and retreating or falling anywhere
 scores 0 exactly as today. The HUD chip reads the position outright
 (`Keep  D6  F2/4`). Each floor generates from a derived sub-seed of the
 run seed (floor 1 IS the run seed), so published seeds mean the same four
-floors for everyone. On the **scoreboard, the two shapes rank on separate
+floors for everyone. On the **scoreboard, the shapes rank on separate
 boards** — cycled with the party-cycle keys (Q/E, LB/RB) — because a
-four-floor turn count compared against a one-floor sprint would make both
+multi-floor turn count compared against a one-floor sprint would make both
 numbers meaningless; every pre-M82 entry sits on the 1-floor board.
+
+**The long descent (M92, owner request; generation v16).** Floors: **20**
+is the endurance shape on the same machinery — Stairway Wardens on floors
+1–19, the real boss at the bottom, one continuous run with the entry-only
+autosave (a deliberate single sitting; know what you are starting). It
+ranks on its own third board, feeds the M83 map economy like the 4-floor
+descent, and pays the program's headline prize: **a scoring, stakes-raising
+20-floor clear opens the Guild's trove** — a pick-one choice of three
+seeded skill scrolls from the "normal" learnset pool (Fireball, Bulwark,
+Frost Lance, Group Mend, …) that M64 could teach but nothing could drop.
+Offers are a pure hash of the run seed (reload-proof), never include a
+scroll the whole party already knows, and the chosen scroll lands in the
+bag for the Party panel to teach. Declining is a real row, not a Cancel.
+
+**The seed is hands-on (M88).** The Guild's Seed row shows the run seed on
+the row that changes it: Left/Right rolls a fresh one (the old "New Seed"),
+Confirm opens a digit editor for typing a seed by hand — sharing and replaying
+exact runs is a first-class move, not a screenshot exercise. An empty entry
+keeps the old seed; the value caps at the 20-digit seed ceiling.
 
 **Bosses are mechanically distinct (M20).** Each archetype has one
 deterministic mechanic, stated in its telegraph: the Brute's damage swells
@@ -473,6 +562,23 @@ else**, its skill **learned on the spot** by a chosen member (the M64
 scroll system); once all six are dug up, further treasures pay a legendary
 token and gold. The map then resets — the cycle repeats forever.
 
+**Summons (M95, owner request; battle rules v17).** The treasure digs'
+scroll pool grows past the six Lost Scrolls: the next three digs pay the
+**summon scrolls** — teaching, through the same M64 learn-on-the-spot flow,
+the game's three legends. **Mighty G. Goose** (a massive all-foe strike;
+everything it looks at cowers — Terrified), **the Starfall Sentinel** (a
+holy all-foe descent, likewise terrifying), and **the Radiant Spring** (the
+whole party mended). Each costs a fortune in MP (70–100) and answers
+**once per dungeon or challenge run** — the battle menu shows a spent
+summon as USED, the refusal is one shared rule across live play and the
+Simulator, and the ledger resets at every run's door (the spar restores
+itself wholesale). The terror rides the existing immunity chokepoint, so
+the Deadly Duck and the Last Dragon shrug it off exactly as they shrug
+everything else — and the **Hollow King deliberately does not**: M44's
+"the King is not immune to any of them" is owner-approved design (the
+Evil Goose relic is his counterplay puzzle), so a summoned goose scares
+him just as the pocket one does. Enemies never answer a call.
+
 **The map economy (M83).** The 4-floor descent feeds the puzzle:
 completing a **4-floor** run in **town 2 or later** rolls a map-piece drop
 whose chance climbs the ladder — **15 % at town 2, +12 points per town, 75
@@ -545,6 +651,18 @@ breaths** — one per element, met by the M81 ward charms. Below half HP
 it **inhales the party's entire MP once**; below 10 % its attack and
 speed **double**; at the brink it **clones itself** at 5 % of its full
 HP. Felling it earns the **Wyrmbane** achievement.
+
+**The breaths no longer run dry (M89, owner-reported).** The Dragon's MP
+pool derived from its Magic and afforded exactly six breaths at the arena
+scale — after which the game's largest fight devolved into plain swipes. It
+now carries an **authored MP pool** (rules v16: an optional per-foe
+`maxMp` that scales like Magic) sized to sustain breaths for the whole
+fight, and on **every 4th of its own turns it lunges** — a deliberate
+basic attack with its own announcement — so the fight breathes without
+ever emptying. Consequence (sim-verified): the plain-accessory endgame
+loadout that beat the dry Dragon now loses; the **elemental defense layer
+is the real counter**, exactly as §9 always claimed — the clearability
+bar carries the Motley Aegis.
 
 **Story & lore (M41).** A light-hearted running serial threads the climb: a
 **wandering storyteller** stands in every town and, town by town, spins the
@@ -650,6 +768,40 @@ you out-level and becomes a fight you answer with absurd objects.
   under **The King's Court** and **The castle floor** below, which supersede
   the numbers this paragraph originally carried.)
 
+**Heirlooms (M96, owner concept; battle rules v18).** A **fourth worn
+slot**: keepsakes whose worth is what they DO, never a stat line. An
+heirloom carries **triggered battle effects** on the same engine the bosses
+use — the Emberwake Locket mends its keeper 15% of max HP the first time
+they drop below half; the Lastlight Band bites 25% harder **while** its
+keeper stands at a quarter health or less (a genuinely conditional edge on
+the Brute-enrage pattern — heal back over the line and it sheathes). Every
+firing announces itself in the battle message and the log, never silently.
+Sixteen are authored (two per M97 story choice, which is how they are
+earned — value 0, sold nowhere; the debug menu grants them for testing
+until the story ships). Anyone may keep one — even the Goose, whose "equips
+nothing" joke is about arms, not memories. Heirlooms are equipment for
+scoreboard purposes: like all gear, they are not tagged (M19 reasoning).
+
+**The Hooded Goose (M97, owner concept; Claude-authored story).** How
+heirlooms are earned: a **red thread in eight scenes**, told by a hooded
+stranger who is very obviously a goose and will not admit it. The
+prologue plays once after party creation; one scene meets the party on
+its **first arrival** at each of towns 2–7; and after the King falls, the
+stranger stands at town 7's eastern roadside — exactly where the road to
+a Town 8 would begin — with the finale, King and Dragon staged behind it.
+Every scene ends in a **mandatory pick-one-of-two** keepsake choice (the
+sixteen M96 heirlooms, two per scene); beats may be skipped, the choice
+never. The story is original and dry: the realm ran on "kept things"
+carried between towns by the wild flocks; the King hollowed himself
+outlawing what he could not command; the Dragon slept on the deep fire to
+keep it from the rot; the Duck, given a pond, chose empire (we do not
+discuss the Duck). The narrator acts goose-like throughout — waddles,
+hops, panics near bread, honks exactly once, mid-confession. Party
+members speak via name tokens, so the party the player named carries the
+dialogue. Replays (the finale NPC stays; the debug menu can play any
+scene) retell but never re-grant. Editable in CrystalForge like any
+content.
+
 **The King's classes (M45).** Beating the Hollow King unlocks three more classes
 **for the player, not for that save** — they are offered on every future New
 Game, and a save that already beat him unlocks them retroactively. Until then
@@ -695,8 +847,17 @@ edges of the interface, at one battle-rules bump (v7).
   leaves **exactly one member** on their feet so an Inn is always reachable. Still
   **no gold penalty** and still no run to forfeit: the King takes your strength,
   not your purse. Fleeing keeps whatever HP/MP the fight ended with, minus the
-  heal that used to follow. Dungeon defeat is unchanged (half your gold, full
-  heal).
+  heal that used to follow. (Dungeon defeat kept its half-gold-plus-full-heal
+  shape until **M89** — see below — which brought the carry-out to the dungeons
+  too, keeping the gold price.)
+
+**The carry-out reaches the dungeons (M89, owner decision 2026-08-14).** A
+dungeon wipe no longer mends the party for free: **one member** staggers back
+to town at **1 HP**, the **fallen stay fallen**, **MP keeps whatever
+remained** — the castle's carry-out rule, applied by the same shared code —
+and the dungeon's own price stays: **half your gold** is still gone. The Inn
+(or a Phoenix Tear on the road) rebuilds the party; a one-time prompt teaches
+the new price on the first carried-out arrival.
 - **Pause closes with the same key it opens with.** Tab / Start now closes the
   town and dungeon pause menus, alongside Cancel.
 - **You can quit the game from inside the game.** Both pause menus offer **Quit**
@@ -720,6 +881,16 @@ Mace** to the legendary **Dawnforged Blade**, so the system is met early and
 still matters late. Enemies carry no weapons, so their own basic attacks stay
 unelemented, and the party has no affinities — the layer only ever describes
 foes.
+
+**Elements are seen and heard (M91).** Every elemental strike — a tagged
+spell, a wielded weapon's basic attack, an intrinsic bite, an enemy breath —
+lands with a small per-element accent on each hit unit (stepped-pixel flame,
+shard, bolt, rubble, radiance, or wisp motifs at the impact beat) and its own
+impact sound, one voice per element. Both directions: the party's fire and
+the Dragon's breaths read the same way. The accents ride the Battle Flash
+setting (off = none; floats still carry the information), simplify in high
+contrast, and a missing sound file falls back to the classic magic hit —
+presentation only, never a rules change.
 
 **Affinities are shown, never guessed at.** A foe the party has fought lists
 `Weak: Fire` / `Immune: Ice` in the **bestiary**; the **battle target panel**

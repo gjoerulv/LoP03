@@ -17,9 +17,15 @@ struct AppContext;
 // phase machine: top menu -> pick a buy category -> filtered buy list, or equip
 // (character -> slot -> item). "Buy Gear" splits into Weapons / Armor /
 // Accessories (relics file under Accessories) so each list stays browsable (M31).
+//
+// M90: the same state also serves the pause menus' "Equip Party" (owner item
+// 10) via `partyMode` — it opens straight in the equip flow (EquipChar), the
+// shop's top menu and Buy phases are unreachable, Cancel from EquipChar
+// leaves, and the header reads "Equip Party" with no shop dressing. One phase
+// machine, zero duplication.
 class EquipShopState : public GameState {
 public:
-    EquipShopState(StateStack& stack, AppContext& context);
+    EquipShopState(StateStack& stack, AppContext& context, bool partyMode = false);
 
     void handleInput(const Input& input) override;
     void render() override;
@@ -47,6 +53,7 @@ private:
     void openItemDetails();  // M22: item stats + per-member equip deltas
 
     AppContext& context_;
+    bool partyMode_ = false;  // M90: pause-menu equip flow (no shop phases)
     Phase phase_ = Phase::Menu;
     ui::Menu menu_;
     ui::ScrollWindow scroll_;

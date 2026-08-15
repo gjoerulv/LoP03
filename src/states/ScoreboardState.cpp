@@ -70,9 +70,12 @@ void ScoreboardState::handleInput(const Input& input) {
     if (input.navPressed(InputAction::MoveDown)) {
         scroll_.scrollBy(total, kVisibleRows, 1);
     }
-    // M82: the M79 cycle pair flips between the 1-floor and 4-floor boards.
-    if (input.pressed(InputAction::CyclePrev) || input.pressed(InputAction::CycleNext)) {
-        boardFloors_ = boardFloors_ == 1 ? 4 : 1;
+    // M82/M92: the M79 cycle pair walks the three boards (1 -> 4 -> 20).
+    if (input.pressed(InputAction::CycleNext)) {
+        boardFloors_ = boardFloors_ == 1 ? 4 : (boardFloors_ == 4 ? 20 : 1);
+        rebuildBoard();
+    } else if (input.pressed(InputAction::CyclePrev)) {
+        boardFloors_ = boardFloors_ == 1 ? 20 : (boardFloors_ == 20 ? 4 : 1);
         rebuildBoard();
     }
     if (input.pressed(InputAction::Details)) {
@@ -95,17 +98,24 @@ void ScoreboardState::render() {
     // M82: which board is showing, as a centered chip under the band. Both
     // boards always exist; the cycle hint lives in the footer.
     {
-        const char* label = boardFloors_ == 1 ? "1-Floor Runs" : "4-Floor Runs";
+        const char* label = boardFloors_ == 1
+                                ? "1-Floor Runs"
+                                : (boardFloors_ == 4 ? "4-Floor Runs" : "20-Floor Runs");
         const int chipW = ui::measureText(label, 8) + 12;
-        ui::drawChip(label, w / 2 - chipW / 2, 26, boardFloors_ == 1 ? pal.gold : pal.crystal);
+        ui::drawChip(label, w / 2 - chipW / 2, 26,
+                     boardFloors_ == 1 ? pal.gold
+                                       : (boardFloors_ == 4 ? pal.crystal : pal.danger));
     }
 
     const auto& entries = context_.scoreboard.entries();
     if (visible_.empty()) {
-        const char* empty = boardFloors_ == 1
-                                ? "No runs recorded yet. Clear a dungeon to set a score!"
-                                : "No 4-floor runs yet. Choose Floors: 4 at the Guild and "
-                                  "descend!";
+        const char* empty =
+            boardFloors_ == 1
+                ? "No runs recorded yet. Clear a dungeon to set a score!"
+                : (boardFloors_ == 4
+                       ? "No 4-floor runs yet. Choose Floors: 4 at the Guild and descend!"
+                       : "No 20-floor runs yet. Choose Floors: 20 at the Guild and "
+                         "brave the long descent!");
         ui::drawTextWrapped(empty, 60, h / 2, w - 120, style::kFontBody, pal.textDim,
                             "scoreboard.empty", 2);
         const InputMap& emap = context_.input.map();

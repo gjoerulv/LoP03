@@ -36,13 +36,16 @@ struct TreasureReveal {
 inline constexpr int kDigTileX = 9;
 inline constexpr int kDigTileY = 10;
 
-// The six exclusive treasure scrolls, in award order (drawn without
-// repetition — deterministic, no roll needed). value 0 keeps them out of
-// every shop/chest/drop pool (the M44 valueless rule).
-inline const std::array<const char*, 6>& treasureScrollPool() {
-    static const std::array<const char*, 6> kPool = {
+// The exclusive treasure scrolls, in award order (drawn without repetition —
+// deterministic, no roll needed). value 0 keeps them out of every
+// shop/chest/drop pool (the M44 valueless rule). M95 (owner: "new Map
+// scrolls should include Summons"): after the six Lost Scrolls, the digs pay
+// the three summon scrolls — then the token+gold fallback as before.
+inline const std::array<const char*, 9>& treasureScrollPool() {
+    static const std::array<const char*, 9> kPool = {
         "treasure_scroll_meteor",   "treasure_scroll_chain",  "treasure_scroll_mending",
         "treasure_scroll_wardrums", "treasure_scroll_doom",   "treasure_scroll_vanish",
+        "summon_scroll_goose",      "summon_scroll_sentinel", "summon_scroll_spring",
     };
     return kPool;
 }

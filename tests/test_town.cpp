@@ -162,3 +162,102 @@ TEST_CASE("town: entrance spawns land one tile inside the matching edge, never o
     CHECK(ex == kTownWidth - 2);
     CHECK(ey == kExitRow);
 }
+
+TEST_CASE("town: monuments answer from every orthogonal side, buildings from their door (M88)",
+          "[town]") {
+    const TownLayout t = buildTown();
+    const Building* board = nullptr;
+    const Building* crystal = nullptr;
+    const Building* inn = nullptr;
+    for (const Building& b : t.buildings) {
+        if (b.id == LocationId::Scoreboard) board = &b;
+        if (b.id == LocationId::SavePoint) crystal = &b;
+        if (b.id == LocationId::Inn) inn = &b;
+    }
+    REQUIRE(board != nullptr);
+    REQUIRE(crystal != nullptr);
+    REQUIRE(inn != nullptr);
+
+    // Only the two monuments opt in; facaded buildings keep their single door.
+    CHECK(monumentInteractsFromAllSides(LocationId::Scoreboard));
+    CHECK(monumentInteractsFromAllSides(LocationId::SavePoint));
+    CHECK_FALSE(monumentInteractsFromAllSides(LocationId::Inn));
+    CHECK_FALSE(monumentInteractsFromAllSides(LocationId::Guild));
+
+    // The 1x1 crystal answers from its four orthogonal neighbours — never a
+    // diagonal, never its own (solid) tile, never a tile one further out.
+    CHECK(tileAdjacentToBuilding(*crystal, crystal->x - 1, crystal->y));
+    CHECK(tileAdjacentToBuilding(*crystal, crystal->x + 1, crystal->y));
+    CHECK(tileAdjacentToBuilding(*crystal, crystal->x, crystal->y - 1));
+    CHECK(tileAdjacentToBuilding(*crystal, crystal->x, crystal->y + 1));
+    CHECK_FALSE(tileAdjacentToBuilding(*crystal, crystal->x - 1, crystal->y - 1));
+    CHECK_FALSE(tileAdjacentToBuilding(*crystal, crystal->x, crystal->y));
+    CHECK_FALSE(tileAdjacentToBuilding(*crystal, crystal->x + 2, crystal->y));
+
+    // The 2x2 scoreboard's answer rim is exactly its orthogonal surround.
+    int rim = 0;
+    for (int y = board->y - 2; y <= board->y + board->h + 1; ++y) {
+        for (int x = board->x - 2; x <= board->x + board->w + 1; ++x) {
+            if (tileAdjacentToBuilding(*board, x, y)) {
+                ++rim;
+            }
+        }
+    }
+    CHECK(rim == 2 * (board->w + board->h));  // 8 for a 2x2 body
+
+    // Every rim tile of both monuments is walkable and reachable from spawn,
+    // so "walk up from any side and press Confirm" genuinely works.
+    const int sx = static_cast<int>(t.spawnPixel.x) / Tilemap::kTileSize;
+    const int sy = static_cast<int>(t.spawnPixel.y) / Tilemap::kTileSize;
+    const auto seen = reachableFrom(t.map, sx, sy);
+    for (const Building* m : {board, crystal}) {
+        for (int y = m->y - 1; y <= m->y + m->h; ++y) {
+            for (int x = m->x - 1; x <= m->x + m->w; ++x) {
+                if (!tileAdjacentToBuilding(*m, x, y)) {
+                    continue;
+                }
+                INFO("monument " << m->name << " rim tile " << x << "," << y);
+                CHECK_FALSE(t.map.solidAt(x, y));
+                CHECK(seen[static_cast<std::size_t>(x)][static_cast<std::size_t>(y)]);
+            }
+        }
+    }
+
+    // The rim never swallows another interaction: no door of any OTHER
+    // building, no exit trigger, not the bard, not the spawn.
+    const TownLayout busy = buildTown(7, true, true, true, true, true);
+    for (const Building& m : busy.buildings) {
+        if (!monumentInteractsFromAllSides(m.id)) {
+            continue;
+        }
+        for (const Building& other : busy.buildings) {
+            if (other.id != m.id) {
+                CHECK_FALSE(tileAdjacentToBuilding(m, other.doorX, other.doorY));
+            }
+        }
+        for (const TownExit& e : busy.exits) {
+            CHECK_FALSE(tileAdjacentToBuilding(m, e.tileX, e.tileY));
+        }
+        CHECK_FALSE(tileAdjacentToBuilding(m, kBardTileX, kBardTileY));
+        CHECK_FALSE(tileAdjacentToBuilding(m, kSpawnTileX, kSpawnTileY));
+    }
+}
+
+TEST_CASE("town: the bard's plaza tile is open, reachable, and clear of everything (M88)",
+          "[town]") {
+    const TownLayout t = buildTown(7, true, true, true, true, true);  // busiest layout
+    REQUIRE(t.map.inBounds(kBardTileX, kBardTileY));
+    CHECK_FALSE(t.map.solidAt(kBardTileX, kBardTileY));
+    CHECK(t.map.at(kBardTileX, kBardTileY) == Tile::Ground);
+    CHECK_FALSE((kBardTileX == kSpawnTileX && kBardTileY == kSpawnTileY));
+    for (const Building& b : t.buildings) {
+        CHECK_FALSE((b.doorX == kBardTileX && b.doorY == kBardTileY));
+    }
+    for (const TownExit& e : t.exits) {
+        CHECK_FALSE((e.tileX == kBardTileX && e.tileY == kBardTileY));
+    }
+    const int sx = static_cast<int>(t.spawnPixel.x) / Tilemap::kTileSize;
+    const int sy = static_cast<int>(t.spawnPixel.y) / Tilemap::kTileSize;
+    const auto seen = reachableFrom(t.map, sx, sy);
+    CHECK(seen[kBardTileX][kBardTileY]);
+}

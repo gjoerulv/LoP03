@@ -266,6 +266,12 @@ void parseSkills(const Json& root, const std::string& source, ContentDatabase& d
         d.reviveHpPct = r.optIntMin("reviveHpPct", 0, 0);  // M43 (default 0 = cannot revive)
         d.alsoBuffsEnemies = r.optBool("alsoBuffsEnemies", false);  // M45 (Goose tradeoff)
         d.mpDamagePct = r.optIntMin("mpDamagePct", 0, 0);  // M75 (MP damage rider)
+        // M95: summons — once per run, announced by the creature's name.
+        d.oncePerRun = r.optBool("oncePerRun", false);
+        d.summonName = r.optString("summonName");
+        if (!d.summonName.empty() && !d.oncePerRun) {
+            rep.add(source, ctx, "'summonName' requires 'oncePerRun' (a summon is once per run)");
+        }
         d.description = r.optString("description");
 
         // Semantic rules tying fields together (M43): a revive-capable skill is a
@@ -402,6 +408,7 @@ void parseEnemies(const Json& root, const std::string& source, ContentDatabase& 
         d.statusImmunities = readStatusImmunities(r, source, ctx, rep);
         d.avoidSleepingTargets = r.optBool("avoidSleepingTargets", false);
         d.noStunWhileAllFoesSleep = r.optBool("noStunWhileAllFoesSleep", false);
+        d.maxMp = r.optIntMin("maxMp", 0, 0);  // M89 (0 = derive from magic)
         d.xpReward = r.optIntMin("xpReward", 0, 0);
         d.goldReward = r.optIntMin("goldReward", 0, 0);
         // M61 semantic rules: the chance is a percentage, and the flavour line
@@ -462,6 +469,24 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         d.iconCategory = r.optString("iconCategory");  // M81 (gear icons)
         d.useLine = r.optString("useLine");  // M76 (the duckling's punchline)
         d.grantsSkill = r.optString("grantsSkill");
+        // M96 (rules v18): heirloom battle effects — the M75 trigger reader
+        // (no clones on a worn keepsake) plus the conditional low-HP edge.
+        readTriggers(el, source, ctx, rep, d.triggers, /*allowClone=*/false);
+        d.lowHpThresholdPct = r.optIntMin("lowHpThresholdPct", 0, 0);
+        d.lowHpAttackPct = r.optIntMin("lowHpAttackPct", 0, 0);
+        if (d.type != ItemType::Heirloom &&
+            (!d.triggers.empty() || d.lowHpThresholdPct > 0 || d.lowHpAttackPct > 0)) {
+            rep.add(source, ctx, "trigger/lowHp fields are heirloom-only (M96)");
+        }
+        if ((d.lowHpThresholdPct > 0) != (d.lowHpAttackPct > 0)) {
+            rep.add(source, ctx, "'lowHpThresholdPct' and 'lowHpAttackPct' come together");
+        }
+        if (d.lowHpThresholdPct > 100 || d.lowHpAttackPct > 100) {
+            rep.add(source, ctx, "lowHp percents must be 0..100");
+        }
+        if (d.type == ItemType::Heirloom && d.slot != EquipSlot::Heirloom) {
+            rep.add(source, ctx, "an heirloom's 'slot' must be 'heirloom'");
+        }
         d.description = r.optString("description");
         // M44: enemy-targetable battle items, applied statuses, a boss
         // restriction, and a battle-long stat scale (the Royal Relics).
@@ -596,6 +621,14 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         d.avoidSleepingTargets = r.optBool("avoidSleepingTargets", false);
         d.noStunWhileAllFoesSleep = r.optBool("noStunWhileAllFoesSleep", false);
         d.immuneToStatScale = r.optBool("immuneToStatScale", false);
+        // M89: the optional MP pool override and the every-Nth-own-turn basic
+        // attack (0 = off for both; the flavour line needs the rule on).
+        d.maxMp = r.optIntMin("maxMp", 0, 0);
+        d.basicAttackEveryNth = r.optIntMin("basicAttackEveryNth", 0, 0);
+        d.basicAttackText = r.optString("basicAttackText");
+        if (!d.basicAttackText.empty() && d.basicAttackEveryNth <= 0) {
+            rep.add(source, ctx, "'basicAttackText' requires 'basicAttackEveryNth' > 0");
+        }
         // M84: 0 = ordinary boss; 1..7 = that town's Guild Master. The upper
         // bound is the seven-town ladder (kTownCount; the story parser's 1..9
         // literal precedent).
@@ -713,6 +746,100 @@ void parseCurioLore(const Json& root, const std::string& source, ContentDatabase
         }
         if (!db.addCurioLore(d)) {
             rep.add(source, ctx, "duplicate curio id '" + d.id + "'");
+        }
+    });
+}
+
+void parseCutscenes(const Json& root, const std::string& source, ContentDatabase& db,
+                    LoadReport& rep) {
+    // M97: the Hooded Goose story scenes. Shape and vocabulary live here;
+    // heirloom references are cross-file rules and live in validateReferences.
+    forEachEntry(root, source, "cutscenes", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        CutsceneDef d;
+        d.id = r.reqString("id");
+        bool known = false;
+        for (std::size_t i = 0; i < kCutsceneIdCount; ++i) {
+            if (d.id == kCutsceneIds[i]) {
+                known = true;
+                break;
+            }
+        }
+        if (!d.id.empty() && !known) {
+            rep.add(source, ctx, "unknown cutscene id '" + d.id + "'");
+        }
+        d.question = r.reqString("question");
+
+        const auto emoteKnown = [](const std::string& e) {
+            for (std::size_t i = 0; i < kGooseEmoteCount; ++i) {
+                if (e == kGooseEmotes[i]) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        if (const auto beats = el.find("beats"); beats != el.end() && beats->is_array()) {
+            int bi = 0;
+            for (const auto& be : *beats) {
+                const std::string bctx = ctx + ".beats[" + std::to_string(bi) + "]";
+                ++bi;
+                if (!be.is_object()) {
+                    rep.add(source, bctx, "expected object");
+                    continue;
+                }
+                ObjectReader br(be, bctx, source, rep);
+                CutsceneBeat b;
+                b.speaker = br.reqString("speaker");
+                b.text = br.reqString("text");
+                b.emote = br.optString("emote");
+                if (b.emote.empty()) {
+                    b.emote = "idle";
+                } else if (!emoteKnown(b.emote)) {
+                    rep.add(source, bctx, "unknown emote '" + b.emote + "'");
+                }
+                b.kingOnStage = br.optBool("kingOnStage", false);
+                b.dragonOnStage = br.optBool("dragonOnStage", false);
+                d.beats.push_back(std::move(b));
+            }
+        } else {
+            rep.add(source, ctx, "'beats' array is required");
+        }
+        if (d.beats.empty()) {
+            rep.add(source, ctx, "a cutscene needs at least one beat");
+        }
+
+        if (const auto opts = el.find("options"); opts != el.end() && opts->is_array()) {
+            int oi = 0;
+            for (const auto& oe : *opts) {
+                const std::string octx = ctx + ".options[" + std::to_string(oi) + "]";
+                ++oi;
+                if (!oe.is_object()) {
+                    rep.add(source, octx, "expected object");
+                    continue;
+                }
+                ObjectReader orr(oe, octx, source, rep);
+                CutsceneOption o;
+                o.label = orr.reqString("label");
+                o.heirloomId = orr.reqString("heirloom");
+                o.responseSpeaker = orr.reqString("responseSpeaker");
+                o.responseText = orr.reqString("responseText");
+                d.options.push_back(std::move(o));
+            }
+        } else {
+            rep.add(source, ctx, "'options' array is required");
+        }
+        // Exactly two: the choice UI, the heirloom set (8 scenes x 2 = 16),
+        // and the skip rule ("the choice is never skippable") all assume it.
+        if (d.options.size() != 2) {
+            rep.add(source, ctx, "a cutscene needs exactly 2 options");
+        }
+
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addCutscene(d)) {
+            rep.add(source, ctx, "duplicate cutscene id '" + d.id + "'");
         }
     });
 }
@@ -880,6 +1007,33 @@ void validateReferences(const ContentDatabase& db, LoadReport& rep) {
             }
         }
     }
+    // M97: cutscene options grant real heirlooms, and each heirloom belongs
+    // to exactly one option anywhere — a keepsake granted twice would make
+    // the story's 8x2 = 16 promise (and the replay no-re-grant rule) drift.
+    {
+        std::unordered_map<std::string, std::string> owners;  // heirloom -> scene
+        for (const auto& [id, scene] : db.cutscenes()) {
+            for (const auto& opt : scene.options) {
+                const ItemDef* item = db.findItem(opt.heirloomId);
+                if (item == nullptr) {
+                    rep.add(source, "cutscene '" + id + "'.options",
+                            "references unknown item '" + opt.heirloomId + "'");
+                    continue;
+                }
+                if (item->type != ItemType::Heirloom) {
+                    rep.add(source, "cutscene '" + id + "'.options",
+                            "item '" + opt.heirloomId + "' is not an heirloom");
+                    continue;
+                }
+                const auto [it, inserted] = owners.emplace(opt.heirloomId, id);
+                if (!inserted) {
+                    rep.add(source, "cutscene '" + id + "'.options",
+                            "heirloom '" + opt.heirloomId + "' already granted by cutscene '" +
+                                it->second + "'");
+                }
+            }
+        }
+    }
 }
 
 bool readJsonFile(const fs::path& file, Json& out, LoadReport& rep) {
@@ -988,6 +1142,11 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
     }
     if (readJsonFile(dataRoot / "story.json", json, rep)) {
         parseStory(json, "story.json", db, rep);
+    }
+    // M97: the Hooded Goose cutscenes are REQUIRED (they grant heirlooms —
+    // gameplay content, not the optional pure-presentation tier below).
+    if (readJsonFile(dataRoot / "cutscenes.json", json, rep)) {
+        parseCutscenes(json, "cutscenes.json", db, rep);
     }
     // M80: event flavor is an OPTIONAL content file — pure presentation
     // with a footer-prompt fallback per event, so its absence is not an error

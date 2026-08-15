@@ -241,7 +241,10 @@ TEST_CASE("arms: the coverage recipients can afford their new casts", "[arms]") 
 
 TEST_CASE("arms: icon categories resolve for every piece of shipped gear", "[arms]") {
     for (const auto& [id, def] : db().items()) {
-        if (def.type != content::ItemType::Equipment && def.type != content::ItemType::Relic) {
+        // M96: heirlooms are worn gear too — they draw the relic keepsake
+        // glyph (the dedicated icon is deferred; the milestone note records it).
+        if (def.type != content::ItemType::Equipment && def.type != content::ItemType::Relic &&
+            def.type != content::ItemType::Heirloom) {
             CHECK(content::iconCategoryFor(def).empty());  // non-gear never has one
             continue;
         }
@@ -258,6 +261,8 @@ TEST_CASE("arms: icon categories resolve for every piece of shipped gear", "[arm
     CHECK(content::iconCategoryFor(*db().findItem("chain_mail")) == "armor");
     CHECK(content::iconCategoryFor(*db().findItem("swift_boots")) == "accessory");
     CHECK(content::iconCategoryFor(*db().findItem("ember_charm")) == "relic");
+    // M96: the heirloom slot rides the relic glyph.
+    CHECK(content::iconCategoryFor(*db().findItem("heirloom_emberwake")) == "relic");
 }
 
 TEST_CASE("arms: the loader guards the icon field", "[arms]") {

@@ -24,6 +24,12 @@ struct Party {
     Inventory inventory;
     int gold = 0;
     int restTokens = 0;  // free-rest tokens from dungeon events (M30)
+    // M95 (rules v17): summons cast this run — RUNTIME ONLY, never saved
+    // (the entry autosave restarts a reload with a fresh ledger, like every
+    // other run-runtime state). Reset at dungeon/challenge/treasure entry;
+    // the spar's whole-party restore covers itself. Copied into each Battle
+    // at build, appended by the shared cast rule, written back with HP/MP.
+    std::vector<std::string> usedSummons;
     // Town ladder (M32). currentTown is where the party stands (1..kTownCount);
     // highestUnlockedTown is the furthest reachable town. Both saved as optional
     // fields, old saves load as 1/1. Rules live in game/WorldLadder.hpp.
@@ -69,6 +75,13 @@ struct Party {
     // Story serial (M41): a 7-bit mask of which town installments have been heard
     // (see game/Story.hpp). Optional save field; old saves -> 0 (nothing heard).
     int storyMet = 0;
+    // M97: the Hooded Goose cutscenes — scene ids already played (marked
+    // BEFORE the scene pushes, so a later save can never replay it) and the
+    // recorded heirloom choices as "scene:heirloom" strings (one per scene;
+    // the grant fires only while a scene has no recorded choice). Both
+    // optional save fields; old saves -> fresh story. See game/Cutscenes.hpp.
+    std::vector<std::string> seenCutscenes;
+    std::vector<std::string> heirloomChoices;
     // Enrichment (M42), all optional save fields (old saves -> empty / 0):
     // the set of enemy/boss ids this party has fought (the bestiary), and the
     // party's personal victory records (display-only, never ranked).

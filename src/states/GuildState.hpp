@@ -6,6 +6,7 @@
 
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
+#include "ui/TextInput.hpp"
 
 namespace cd {
 
@@ -28,6 +29,9 @@ public:
     // banner (locked/undefeated/defeated) is overflow-checked. The record
     // itself is capture fixture state on the party.
     void captureFocusGuildBoss();
+    // Capture-only (M88): open the manual seed editor with a 20-digit buffer
+    // so the modal text and the Seed row capsule are overflow-checked.
+    void captureOpenSeedEditor();
 #endif
 
 private:
@@ -42,6 +46,10 @@ private:
     std::uint64_t seed_ = 1;
     int depth_ = 1;
     int floors_ = 1;  // M82: 1 or 4 — the run's floor count
+    // M88: the Seed row's manual entry — a small modal digit editor over the
+    // panel. Left/Right on the row rerolls (the old "New Seed"); Confirm types.
+    bool seedEditing_ = false;
+    ui::TextInput seedInput_{20, "", ui::TextFilter::Digits};  // uint64 max is 20 digits
 };
 
 }  // namespace cd

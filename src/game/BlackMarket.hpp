@@ -42,15 +42,19 @@ struct BlackMarketOffer {
 };
 
 // Seeded free plaza tiles in the compact 24x12 town layout (M50): all open
-// Ground, clear of buildings, their doors, the road-trigger tiles, the bard
-// spot, and the player spawn (11,5).
+// Ground, clear of buildings, their doors, the monuments' M88 surround tiles,
+// the road-trigger tiles, the bard spot, the dig site, and the player spawn
+// (11,5). M88: the bard moved east onto the old {5,5} tile, so that entry
+// left the list — and a spacing rule is now tested outright (no market tile
+// within 6 tiles horizontally on the bard's row, none within Chebyshev 2
+// anywhere), because two same-row name labels 2 tiles apart overlap.
 struct MarketTile {
     int x;
     int y;
 };
 inline constexpr int kBlackMarketTileCount = 5;
 inline constexpr MarketTile kBlackMarketTiles[kBlackMarketTileCount] = {
-    {5, 5}, {18, 5}, {9, 6}, {14, 6}, {5, 10},
+    {17, 10}, {18, 5}, {9, 6}, {14, 6}, {5, 10},
 };
 
 // SplitMix64-style finalizer for a well-mixed deterministic hash.

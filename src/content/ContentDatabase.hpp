@@ -26,6 +26,7 @@ public:
     bool addStory(const StoryBeat& def);  // M41; false on a duplicate town
     bool addEventFlavor(const EventFlavorDef& def);  // M80
     bool addCurioLore(const CurioLoreDef& def);  // M85
+    bool addCutscene(const CutsceneDef& def);  // M97
 
     const SkillDef* findSkill(const std::string& id) const;
     const ClassDef* findClass(const std::string& id) const;
@@ -47,6 +48,9 @@ public:
     // M85: nullptr when unauthored — the Maps screen falls back to the
     // curio's own name + description, so lore can never block the panel.
     const CurioLoreDef* findCurioLore(const std::string& id) const;
+    // M97: nullptr when the scene is unauthored — every trigger site checks
+    // first, so a missing scene simply never plays (no crash, no block).
+    const CutsceneDef* findCutscene(const std::string& id) const;
 
     bool hasSkill(const std::string& id) const { return findSkill(id) != nullptr; }
     bool hasPassive(const std::string& id) const { return findPassive(id) != nullptr; }
@@ -66,6 +70,9 @@ public:
     const std::unordered_map<std::string, CurioLoreDef>& curioLores() const {
         return curioLores_;  // M85
     }
+    const std::unordered_map<std::string, CutsceneDef>& cutscenes() const {
+        return cutscenes_;  // M97
+    }
 
     // Team-composition constraints (M20). Defaults apply until
     // data/composition.json is loaded.
@@ -83,6 +90,7 @@ public:
     std::size_t storyCount() const { return story_.size(); }
     std::size_t eventFlavorCount() const { return eventFlavors_.size(); }  // M80
     std::size_t curioLoreCount() const { return curioLores_.size(); }  // M85
+    std::size_t cutsceneCount() const { return cutscenes_.size(); }  // M97
 
     bool empty() const;
     void clear();
@@ -99,6 +107,7 @@ private:
     std::vector<StoryBeat> story_;
     std::unordered_map<std::string, EventFlavorDef> eventFlavors_;  // M80
     std::unordered_map<std::string, CurioLoreDef> curioLores_;  // M85
+    std::unordered_map<std::string, CutsceneDef> cutscenes_;  // M97
     CompositionDef composition_;
 };
 

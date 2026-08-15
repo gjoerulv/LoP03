@@ -20,6 +20,7 @@
 #include "core/FadeController.hpp"
 #include "core/GameConfig.hpp"
 #include "dungeon/DungeonGenerator.hpp"
+#include "dungeon/TeamInspect.hpp"  // M88: describeTeam for the inspection scene
 #include "dungeon/ThemeEvents.hpp"  // M87: eventFlavorId for the long-flavor scene
 #include "game/Achievements.hpp"
 #include "game/Profile.hpp"
@@ -61,6 +62,10 @@
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
 #include "states/EquipShopState.hpp"
+#include "states/InventoryState.hpp"  // M90
+#include "states/ScrollChoiceState.hpp"  // M92
+#include "states/SparState.hpp"  // M94
+#include "states/CutsceneState.hpp"  // M97
 #include "states/GuildState.hpp"
 #include "states/HelpState.hpp"
 #include "states/InnState.hpp"
@@ -472,6 +477,95 @@ int run(const char* outDir) {
              [](StateStack& s, AppContext& c) {
                  s.pushState(std::make_unique<GuildState>(s, c));
              }},
+            {"106_guild_seed_edit",
+             [](StateStack& s, AppContext& c) {
+                 // M88: the manual seed editor with a 20-digit buffer — the
+                 // widest text the modal and the Seed row capsule can face.
+                 auto st = std::make_unique<GuildState>(s, c);
+                 st->captureOpenSeedEditor();
+                 s.pushState(std::move(st));
+             }},
+            {"108_items_bag",
+             [](StateStack& s, AppContext& c) {
+                 // M90: the pause menus' Items screen over a representative
+                 // bag — every band (consumables in the M88 order, gear,
+                 // scroll), counts, and the longest detail preview.
+                 c.party.inventory.add("potion", 3);
+                 c.party.inventory.add("ether", 2);
+                 c.party.inventory.add("antidote", 1);
+                 c.party.inventory.add("phoenix_tear", 1);
+                 c.party.inventory.add("holy_taxes", 1);
+                 c.party.inventory.add("worldbreaker_axe", 1);
+                 c.party.inventory.add("scroll_fireball", 1);
+                 auto st = std::make_unique<InventoryState>(s, c);
+                 st->captureCursorToItem("holy_taxes");  // longest description
+                 s.pushState(std::move(st));
+             }},
+            {"109_equip_party",
+             [](StateStack& s, AppContext& c) {
+                 // M90: the shop's equip flow in party mode — "Equip Party"
+                 // header, member list, no shop rows.
+                 s.pushState(std::make_unique<EquipShopState>(s, c, /*partyMode=*/true));
+             }},
+            {"112_cutscene_dialogue",
+             [](StateStack& s, AppContext& c) {
+                 // M97: a prologue beat — party lineup, the hooded goose on
+                 // stage, and the dialogue panel over the longest early beat
+                 // (beat 3 carries the flightways paragraph + waddle emote).
+                 auto st = std::make_unique<CutsceneState>(s, c, "new_game", /*replay=*/true);
+                 st->captureShowBeat(3);
+                 s.pushState(std::move(st));
+             }},
+            {"113_cutscene_choice",
+             [](StateStack& s, AppContext& c) {
+                 // M97: the mandatory choice modal — question preview, two
+                 // option rows, and the highlighted keepsake's description.
+                 auto st = std::make_unique<CutsceneState>(s, c, "new_game", /*replay=*/true);
+                 st->captureShowChoice();
+                 s.pushState(std::move(st));
+             }},
+            {"114_cutscene_finale",
+             [](StateStack& s, AppContext& c) {
+                 // M97: the finale's fullest stage — King AND Dragon staged
+                 // behind the goose (beat 2, the king's telling).
+                 auto st = std::make_unique<CutsceneState>(s, c, "finale", /*replay=*/true);
+                 st->captureShowBeat(2);
+                 s.pushState(std::move(st));
+             }},
+            {"111_spar_closing",
+             [](StateStack& s, AppContext& c) {
+                 // M94: the sparring hall's closing modal, longest line.
+                 auto st = std::make_unique<SparState>(s, c, /*manual=*/false);
+                 st->captureShowClosing();
+                 s.pushState(std::move(st));
+             }},
+            {"110_scroll_trove",
+             [](StateStack& s, AppContext& c) {
+                 // M92: the Guild's trove modal with the longest offer names +
+                 // the two-line description preview under the list.
+                 s.pushState(std::make_unique<ScrollChoiceState>(
+                     s, c,
+                     std::vector<std::string>{"scroll_piercing_arrow", "scroll_group_mend",
+                                              "scroll_battle_cry"}));
+             }},
+            {"107_team_inspect",
+             [](StateStack& s, AppContext& c) {
+                 // M88: the pre-fight inspection body for a generated boss team
+                 // with its court — the fullest roster the overlay renders,
+                 // through the same describeTeam the dungeon Details uses.
+                 const dungeon::Dungeon d =
+                     dungeon::generate(424242, 12, c.content, "ruined_keep", 7);
+                 const dungeon::EnemyTeam* team = nullptr;
+                 for (const dungeon::EnemyTeam& t : d.teams) {
+                     if (t.isBoss) {
+                         team = &t;
+                     }
+                 }
+                 s.pushState(std::make_unique<DetailsOverlayState>(
+                     s, c, "Dungeon Details",
+                     team != nullptr ? dungeon::describeTeam(*team, "Boss", c.content)
+                                     : std::string("generation yielded no boss team")));
+             }},
             {"89_scoreboard_4f",
              [](StateStack& s, AppContext& c) {
                  // M82: the 4-floor board — its chip, rows, and cycle hint.
@@ -626,7 +720,9 @@ int run(const char* outDir) {
                  // so the forewarning shows a penalty. Placed after the town
                  // scenes; the stakes mutation does not leak into earlier scenes.
                  c.party.currentTown = 1;
-                 c.party.stakes = {1, 20, 1};  // prev (town 1, depth 20); 1 prior step -> forewarns -60% (M35: 30/step)
+                 // M88: pinned at the -99% cap (steps at the M35 ceiling) — the
+                 // longest penalty text, now on the raised banner position.
+                 c.party.stakes = {1, 20, 4};
                  s.pushState(std::make_unique<GuildState>(s, c));
              }},
             {"27_black_market",

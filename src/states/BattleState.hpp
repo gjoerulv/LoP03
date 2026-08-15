@@ -40,11 +40,14 @@ public:
     // the Done beat shows the FF-style results panel — XP, gold, and each
     // member's level-up diff — on the same single Confirm that always ended a
     // battle. Must outlive the state (DungeonState owns it, like resultSlot).
+    // M94: `manualEnemies` is the sparring mirror's manual mode — enemy-side
+    // units whose turn is not forced/uncontrolled route through the SAME
+    // player command phases (Attack/Skill/Guard; never Item or Escape).
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                 battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None,
                 RunStats* statsSlot = nullptr, bool castleChallenge = false,
                 render::BackdropStage stage = render::BackdropStage::Plain,
-                const BattleSpoils* spoils = nullptr);
+                const BattleSpoils* spoils = nullptr, bool manualEnemies = false);
 
     void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
@@ -217,6 +220,13 @@ private:
     std::vector<float> koFade_;             // enemy fade-out after a shown KO (1 -> 0)
     int lungeUnit_ = -1;                    // acting unit during the current sequence
     int pendingSfx_ = 0;                    // 0 none, 1 heal, 2 hit, 3 ko
+    // M91: the resolved action's element — set beside each useSkill/attack
+    // call, drawn as a per-element accent on every hit unit during the impact
+    // beat (render::drawElementImpact) and steering the impact SFX toward the
+    // element's own role in commitPresentation. Presentation-only.
+    content::Element fxElement_ = content::Element::None;
+    // M94: the sparring mirror's manual mode (see the ctor note).
+    bool manualEnemies_ = false;
 };
 
 }  // namespace cd

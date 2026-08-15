@@ -31,6 +31,9 @@ struct RunSummary {
     // subtotal like the town bonus. 0 for any party of the six original classes,
     // so nothing changes for them.
     int classModPct = 0;
+    // Dragonform pacts (M93, owner decision 6): battles fought in dragonform,
+    // each a flat -100 stated on the event panel. 0 = no change.
+    int dragonformFights = 0;
 };
 
 struct ScoreBreakdown {
@@ -43,6 +46,7 @@ struct ScoreBreakdown {
     int noDeathBonus = 0;
     int escapePenalty = 0;
     int wager = 0;  // +150 / -100 / 0 (M20 wager event)
+    int dragonformPact = 0;  // -100 per dragonform battle (M93, >= 0 as stored)
     int townBonus = 0;  // town-ladder bonus applied to the subtotal (M32)
     int stakesPenalty = 0;  // stakes penalty subtracted from the subtotal (M33, >= 0)
     int classMod = 0;  // unlockable-class modifier on the subtotal (M45, may be < 0)

@@ -109,8 +109,13 @@ add_library(crystal_core STATIC
     src/states/MainMenuState.cpp
     src/states/PartyCreationState.cpp
     src/states/SlotMenuState.cpp
+    src/render/ElementFx.cpp
     src/states/TownState.cpp
     src/states/TownMenuState.cpp
+    src/states/InventoryState.cpp
+    src/states/ScrollChoiceState.cpp
+    src/states/SparState.cpp
+    src/states/CutsceneState.cpp
     src/states/InnState.cpp
     src/states/ItemShopState.cpp
     src/states/TrainingHallState.cpp

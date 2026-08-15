@@ -83,6 +83,7 @@ void CastleChallengeState::onEnter() {
     if (done_) {
         return;  // a capture preset (captureKingReward) set the overlay; no fight
     }
+    context_.party.usedSummons.clear();  // M95: each challenge is its own run
     // Start the first fight, THEN push the tutorial prompt so it sits on top and is
     // read before the battle begins (dismissing it reveals the fight beneath).
     startNextFight();

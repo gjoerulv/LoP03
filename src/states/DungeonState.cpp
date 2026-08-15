@@ -20,6 +20,10 @@
 #include "game/Party.hpp"
 #include "game/Relics.hpp"  // the M44 relic grant (seeded, reload-proof)
 #include "game/WorldLadder.hpp"
+#include "dungeon/DungeonGenerator.hpp"  // M93 patrolTeam
+#include "dungeon/TeamInspect.hpp"  // M88 pre-fight team inspection
+#include "game/ScrollTrove.hpp"      // M92 the Guild's trove
+#include "states/ScrollChoiceState.hpp"
 #include "dungeon/ThemeEvents.hpp"  // M55 per-theme rites
 #include "states/ArmoryGhostState.hpp"
 #include "input/Input.hpp"
@@ -53,6 +57,9 @@ namespace {
 
 constexpr int kTile = town::Tilemap::kTileSize;
 constexpr float kSpeed = 78.0f;
+// M93: the danger counter's fuse — 100 tiles between roused patrols (owner
+// decision 5: visible countdown, immediate fight at 0, reset after).
+constexpr int kDangerStepsPerPatrol = 100;
 constexpr float kPlayerSize = 12.0f;
 
 // M87: the two centered panels (event flavor / outcome) share one geometry
@@ -141,6 +148,7 @@ DungeonState::DungeonState(StateStack& stack, AppContext& context,
       dungeon_(std::move(floors_.front())),
       layouts_(dungeon::realizeAllRooms(dungeon_)), roomMap_(1, 1) {
     rebuildTiers();
+    context_.party.usedSummons.clear();  // M95: a fresh run, a fresh ledger
     context_.fade.start();
     // Theme music + ambience are applied in onEnter(), not here: entering the
     // dungeon pops the Guild, which fires TownState::onResume and re-asserts
@@ -177,6 +185,7 @@ void DungeonState::descendFloor() {
     layouts_ = dungeon::realizeAllRooms(dungeon_);
     rebuildTiers();
     chartFound_ = false;  // M66 state is per floor (each floor rolls its own chart)
+    floorRevealed_ = false;  // M93: the Surveyor's reveal is per floor too
     context_.audio.play(Sfx::Door);
     context_.fade.start();
     enterRoom(dungeon_.startRoom, std::nullopt);
@@ -757,6 +766,42 @@ void DungeonState::resolveEvent() {
                             ". It looks... pleased.");
             break;
         }
+        case dungeon::RoomEventKind::Surveyor: {
+            // M93: 20 gold charts the CURRENT floor — the fog lifts, the map
+            // completes. A floor somehow already charted is a free courtesy.
+            if (floorRevealed_) {
+                context_.audio.play(Sfx::Confirm);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The surveyor squints at your map. \"Nothing left to "
+                            "chart here.\" No charge.");
+                break;
+            }
+            if (context_.party.gold < ev.goldCost) {
+                context_.audio.play(Sfx::Error);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The survey costs " + std::to_string(ev.goldCost) +
+                                "g - you cannot pay.");
+                return;
+            }
+            context_.party.gold -= ev.goldCost;
+            floorRevealed_ = true;
+            context_.audio.play(Sfx::Interact);
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "Ink scratches, corners unfold - the floor's map is yours. "
+                        "The fog on the minimap lifts.");
+            break;
+        }
+        case dungeon::RoomEventKind::Dragonform: {
+            // M93 (owner decision 6): the next battle this run is fought as
+            // Dragons, for a flat -100 score stated on the panel. Arming is
+            // run-scoped and spends on the next battle start.
+            dragonformArmed_ = true;
+            context_.audio.play(Sfx::Status);
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "Scales itch under your skin. The NEXT battle is fought in "
+                        "dragonform - and the reckoning docks 100 score.");
+            break;
+        }
         case dungeon::RoomEventKind::EliteChallenge:
         case dungeon::RoomEventKind::None:
             return;  // challenges resolve through battle, not here
@@ -968,6 +1013,23 @@ std::string DungeonState::eventPromptText() const {
             return input::prompt(map, InputAction::Confirm, device, "Buy the Evil Duckling") +
                    " for " + std::to_string(ev.goldCost) +
                    "g - a single-use curse for one foe";
+        case dungeon::RoomEventKind::Surveyor:  // M93
+            if (floorRevealed_) {
+                return "The surveyor has nothing left to chart on this floor.";
+            }
+            if (context_.party.gold < ev.goldCost) {
+                return "The survey costs " + std::to_string(ev.goldCost) +
+                       "g - you cannot pay.";
+            }
+            return input::prompt(map, InputAction::Confirm, device,
+                                 "Buy the survey for " + std::to_string(ev.goldCost) + "g") +
+                   " - reveals this floor's whole map";
+        case dungeon::RoomEventKind::Dragonform:  // M93 (owner: flat -100 score)
+            if (dragonformArmed_) {
+                return "The scales already itch - the next battle is spoken for.";
+            }
+            return input::prompt(map, InputAction::Confirm, device, "Accept dragonform") +
+                   " - fight the NEXT battle as Dragons, -100 score";
         case dungeon::RoomEventKind::None:
             break;
     }
@@ -987,6 +1049,14 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     // M68: the battle itself pays the team's spoils on Victory and shows the
     // results panel; onResume no longer grants (it would double-pay).
     pendingSpoils_ = teamSpoils(team, context_.content);
+    // M93: an armed dragonform spends itself on THIS battle — the members are
+    // swapped for Dragons (HP/MP by percentage, no gear, the M45 kit) before
+    // buildBattle reads them, and onResume restores the stash afterwards. The
+    // battle itself needs no special cases, so the Simulator agrees.
+    if (dragonformArmed_) {
+        dragonformArmed_ = false;
+        dragonformStash_ = enterDragonform(context_.party, context_.content);
+    }
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
     // M56: every battle wears the theme backdrop; a boss-team fight (bossId set)
     // opens with the Crystal Shatter intro, which then launches the same battle.
@@ -1042,6 +1112,15 @@ void DungeonState::onResume() {
     pendingKind_ = EncounterKind::None;
     const battle::Outcome outcome = battleResult_.outcome;
 
+    // M93: a dragonform battle ended — restore the real party FIRST, with the
+    // fight's outcome carried back by percentage (KO stays KO), so every path
+    // below (carry-out, spoils already paid, completion) sees real members.
+    if (!dragonformStash_.original.empty()) {
+        leaveDragonform(context_.party, dragonformStash_);
+        dragonformStash_.original.clear();
+        ++dragonformFights_;
+    }
+
     // Returning from a battle: fade in and restore the dungeon music *and*
     // ambience (town states override them again if we end up leaving).
     context_.fade.start();
@@ -1056,10 +1135,21 @@ void DungeonState::onResume() {
 
     if (outcome == battle::Outcome::Escaped) {
         ++run_.escapes;
+        // M93: fleeing a patrol still resets the counter — the fight happened
+        // (and the escape penalty stands like any other).
+        if (kind == EncounterKind::Patrol) {
+            dangerSteps_ = kDangerStepsPerPatrol;
+            ++patrolIndex_;
+        }
         return;  // gate intact; resume in the dungeon
     }
     if (outcome == battle::Outcome::Defeat) {
-        healFull(context_.party);
+        // M89: the castle carry-out (M47) reaches the dungeons — one member
+        // staggers back at 1 HP, the fallen stay fallen, MP is untouched. The
+        // half-gold price stays (owner decision: only the free full heal
+        // goes). TownState teaches the new rule once, on arrival with fallen
+        // members (tutorial::kCarriedOut).
+        clampCastleDefeat(context_.party);
         context_.party.gold /= 2;
         stack().popState();  // game over -> back to town
         return;
@@ -1070,6 +1160,17 @@ void DungeonState::onResume() {
 
     if (kind != EncounterKind::Boss) {
         maybeTutorialPrompt(stack(), context_, tutorial::kVictoryFirst);
+    }
+
+    // M93: a beaten patrol resolves nothing in the dungeon — no danger
+    // credit, no gate or chest (owner decision 7: XP only, which the spoils
+    // already paid, gold-free). The counter simply rewinds.
+    if (kind == EncounterKind::Patrol) {
+        dangerSteps_ = kDangerStepsPerPatrol;
+        ++patrolIndex_;
+        message_ = "The patrol scatters. The dungeon quiets - for now.";
+        messageTimer_ = scaledMessageTime(context_, 2.0f);
+        return;
     }
 
     // Credit the danger defeated.
@@ -1150,6 +1251,8 @@ void DungeonState::completeDungeon() {
     // M45: the party's additive unlockable-class modifier (0 for any party of the
     // six original classes). Derived from the classes, never hand-set.
     summary.classModPct = partyClassModPct(context_.party, context_.content);
+    // M93: dragonform pacts fought this run (a flat -100 each, owner decision 6).
+    summary.dragonformFights = dragonformFights_;
     // M34: whether this run raises the stakes (the black-market spawn trigger),
     // read from the PRE-run state before it advances below.
     const bool raisedStakes =
@@ -1297,6 +1400,18 @@ void DungeonState::completeDungeon() {
     if (victoryStats_.totalDamage > context_.party.recordRunDamage) {
         context_.party.recordRunDamage = victoryStats_.totalDamage;
     }
+    // M92: a scoring, stakes-raising 20-floor clear earns the Guild's trove —
+    // a pick-one skill scroll (game/ScrollTrove.hpp: pool, seeded offers, and
+    // the trigger in one tested place). Pushed BEFORE the result so it
+    // surfaces on the way back to town (the M67 unwind order), like the M63
+    // milestone modal.
+    if (scrollTroveEarned(dungeon_.floorCount, raisedStakes, total)) {
+        const std::vector<std::string> offers =
+            scrollTroveOffers(context_.party, context_.content, dungeon_.runSeed);
+        if (!offers.empty()) {
+            stack().pushState(std::make_unique<ScrollChoiceState>(stack(), context_, offers));
+        }
+    }
     stack().pushState(std::make_unique<DungeonResultState>(stack(), context_, summary, total, drops,
                                                            victoryStats_, mapLine));  // M83
 
@@ -1376,7 +1491,11 @@ void DungeonState::handleInput(const Input& input) {
     }
 }
 
-// M22: danger-tier reference plus whatever is currently faced.
+// M22: danger-tier reference plus whatever is currently faced. M88: a faced
+// team now discloses its full roster — per member the scaled stats battle will
+// actually build (content::scaledStats, the buildBattle multiply), affinities
+// and passives (the same set the in-battle target panel shows while aiming) —
+// so the player can size a fight and re-gear BEFORE engaging (owner item 5).
 void DungeonState::openDetails() {
     std::string body;
     if (facingMarker_ != nullptr && facingMarker_->teamIndex >= 0 &&
@@ -1384,9 +1503,7 @@ void DungeonState::openDetails() {
         const dungeon::EnemyTeam& team =
             dungeon_.teams[static_cast<std::size_t>(facingMarker_->teamIndex)];
         const danger::Tier tier = teamTier_[static_cast<std::size_t>(facingMarker_->teamIndex)];
-        body += "Facing: " + team.name + " - " + std::string(danger::tierName(tier)) + ", " +
-                std::to_string(team.enemyIds.size() + (team.bossId.empty() ? 0 : 1)) +
-                " enemies.\n\n";
+        body += dungeon::describeTeam(team, danger::tierName(tier), context_.content) + "\n\n";
     }
     body +=
         "Danger is computed from the actual enemies' stats, skills, and team "
@@ -1412,6 +1529,15 @@ void DungeonState::update(float dt) {
         context_.cheats.requestDungeonClear = false;
         completeDungeon();
         return;
+    }
+    // M93 debug one-shots: burn the fuse / arm the form via the REAL paths.
+    if (context_.cheats.requestPatrolNow) {
+        context_.cheats.requestPatrolNow = false;
+        dangerSteps_ = 1;
+    }
+    if (context_.cheats.requestArmDragonform) {
+        context_.cheats.requestArmDragonform = false;
+        dragonformArmed_ = true;
     }
 #endif
     worldTime_ += dt;
@@ -1442,6 +1568,28 @@ void DungeonState::update(float dt) {
     }
 
     recomputeInteraction(tx, ty);
+
+    // M93: the danger counter (owner decisions 5/7). A step is a tile: every
+    // tile the party walks onto ticks the visible countdown, and at 0 the
+    // roused patrol attacks IMMEDIATELY — composed by the dungeon's own
+    // rules, seeded from (runSeed, patrolIndex), so the Nth patrol of a run
+    // is deterministic and reload-honest. The counter resets after the
+    // fight (see onResume) and keeps counting across floors.
+    if (tx != lastTileX_ || ty != lastTileY_) {
+        const bool counted = lastTileX_ >= 0;  // the spawn tile itself is free
+        lastTileX_ = tx;
+        lastTileY_ = ty;
+        if (counted && --dangerSteps_ <= 0) {
+            dungeon_.teams.push_back(dungeon::patrolTeam(context_.content, dungeon_.themeId,
+                                                         dungeon_.town, dungeon_.depth,
+                                                         dungeon_.runSeed, patrolIndex_));
+            teamTier_.push_back(danger::assess(dungeon_.teams.back(), context_.content,
+                                               danger::partyThreat(context_.party.members)));
+            startBattle(static_cast<int>(dungeon_.teams.size()) - 1, EncounterKind::Patrol,
+                        dungeon::Dir::North);
+            return;
+        }
+    }
 
     // First-encounter beats fire when the relevant thing is faced (the
     // footer is already explaining it), never mid-walk.
@@ -1474,11 +1622,30 @@ void DungeonState::renderMinimap() const {
     const int ox = context_.virtualWidth - dungeon_.gridW * step - 10;
     const int oy = 10;
 
+    // M93: fog of war on the multi-floor shapes (owner item; the classic
+    // 1-floor map stays complete per the M82 "classic unchanged" rule).
+    // Unvisited rooms are absent, not dimmed; a visited room's door to the
+    // unknown shows as a half-length stub; the Surveyor's paid reveal (or a
+    // 1-floor run) lifts the fog for the current floor. The M66 chart's X
+    // still burns through — revealing the buried room is the chart's job.
+    const bool fog = dungeon_.floorCount > 1 && !floorRevealed_;
+    const auto roomShown = [&](int index) {
+        if (!fog) {
+            return true;
+        }
+        const dungeon::Room& room = dungeon_.rooms[static_cast<std::size_t>(index)];
+        return room.visited || (chartFound_ && index == dungeon_.buriedRoom);
+    };
+
     // Framed map well (M46) with the shared Inset construction.
     ui::drawFrame(ox - 6, oy - 6, dungeon_.gridW * step + 12, dungeon_.gridH * step + 12,
                   ui::FrameStyle::Inset);
 
-    for (const dungeon::Room& r : dungeon_.rooms) {
+    for (std::size_t ri = 0; ri < dungeon_.rooms.size(); ++ri) {
+        const dungeon::Room& r = dungeon_.rooms[ri];
+        if (!roomShown(static_cast<int>(ri))) {
+            continue;
+        }
         const int cx = ox + r.gridX * step;
         const int cy = oy + r.gridY * step;
         // Door links to neighbors with a higher room... draw from each room's center.
@@ -1488,12 +1655,32 @@ void DungeonState::renderMinimap() const {
                 continue;
             }
             const Color line = door.gated ? Color{210, 90, 90, 255} : Color{120, 120, 140, 255};
-            DrawLine(cx + cell / 2, cy + cell / 2, cx + cell / 2 + dungeon::dirDx(dir) * step,
-                     cy + cell / 2 + dungeon::dirDy(dir) * step, line);
+            const bool full = roomShown(door.neighbor);
+            const int len = full ? step : step / 2;  // M93: a stub hints the unknown
+            DrawLine(cx + cell / 2, cy + cell / 2, cx + cell / 2 + dungeon::dirDx(dir) * len,
+                     cy + cell / 2 + dungeon::dirDy(dir) * len, line);
+        }
+        // M93: west/north stubs out of a shown room toward a hidden one (the
+        // full link is otherwise drawn by the neighbor, who is hidden).
+        if (fog) {
+            for (dungeon::Dir dir : {dungeon::Dir::West, dungeon::Dir::North}) {
+                const dungeon::Door& door = r.door(dir);
+                if (door.neighbor < 0 || roomShown(door.neighbor)) {
+                    continue;
+                }
+                const Color line =
+                    door.gated ? Color{210, 90, 90, 255} : Color{120, 120, 140, 255};
+                DrawLine(cx + cell / 2, cy + cell / 2,
+                         cx + cell / 2 + dungeon::dirDx(dir) * (step / 2),
+                         cy + cell / 2 + dungeon::dirDy(dir) * (step / 2), line);
+            }
         }
     }
     for (std::size_t i = 0; i < dungeon_.rooms.size(); ++i) {
         const dungeon::Room& r = dungeon_.rooms[i];
+        if (!roomShown(static_cast<int>(i))) {
+            continue;
+        }
         const int cx = ox + r.gridX * step;
         const int cy = oy + r.gridY * step;
         Color c{120, 120, 130, 255};
@@ -1699,6 +1886,14 @@ void DungeonState::render() {
                         c = Color{110, 190, 120, 255};
                         glyph = "T";
                         break;
+                    case dungeon::RoomEventKind::Surveyor:  // M93: parchment
+                        c = Color{225, 205, 150, 255};
+                        glyph = "S";
+                        break;
+                    case dungeon::RoomEventKind::Dragonform:  // M93: scale-red
+                        c = Color{220, 120, 90, 255};
+                        glyph = "W";
+                        break;
                     case dungeon::RoomEventKind::None:
                         break;
                 }
@@ -1783,6 +1978,14 @@ void DungeonState::render() {
                            cx, 4, themeAccent) + 4;
         cx += ui::drawChip(TextFormat("Gates %d", dungeon_.mandatoryGates), cx, 4, pal.danger) + 4;
         cx += ui::drawChip(TextFormat("%dg", context_.party.gold), cx, 4, pal.gold) + 4;
+        // M93: the danger counter, always visible (owner: "the player is
+        // aware of the countdown") — urgent color inside the last stretch.
+        cx += ui::drawChip(TextFormat("Patrol %d", dangerSteps_), cx, 4,
+                           dangerSteps_ <= 20 ? pal.danger : pal.borderMid) + 4;
+        // M93: the armed dragonform, until its battle spends it.
+        if (dragonformArmed_) {
+            cx += ui::drawChip("Dragonform: next battle", cx, 4, pal.danger) + 4;
+        }
         if (chartFound_) {
             ui::drawChip("Treasure!", cx, 4, pal.gold);  // M66: the X awaits
         }

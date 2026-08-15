@@ -58,7 +58,8 @@ TEST_CASE("flavor: the dungeon mapping and the content vocabulary agree", "[flav
         RoomEventKind::ScoreWager,   RoomEventKind::RestToken,
         RoomEventKind::RoyalRelic,   RoomEventKind::ArmoryGhost,
         RoomEventKind::MinersCache,  RoomEventKind::ElderRoot,
-        RoomEventKind::DuckPeddler,
+        RoomEventKind::DuckPeddler,  RoomEventKind::Surveyor,    // M93
+        RoomEventKind::Dragonform,                               // M93
     };
     static_assert(sizeof(kinds) / sizeof(kinds[0]) == content::kEventFlavorIdCount,
                   "a new RoomEventKind needs a flavor id (or an explicit exemption here)");
