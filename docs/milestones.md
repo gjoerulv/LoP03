@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the M75–M86 program** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M88–M97)** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -94,6 +94,17 @@
 | 84 | Guild Masters & town milestones | ☑ complete (approved) |
 | 85 | The Dragon & curio lore | ☑ complete (approved) |
 | 86 | CrystalForge catch-up & version 0.6.0 | ◑ implemented, awaiting manual approval |
+| 87 | Translation-ready text containers & scrollable prose | ◑ implemented, awaiting manual approval |
+| 88 | Town, Guild & dungeon UX fixes | ◑ implemented, awaiting manual approval |
+| 89 | Battle flow: the Dragon & the carry-out | ◑ implemented, awaiting manual approval |
+| 90 | Party menu: Equip Party & Items | ◑ implemented, awaiting manual approval |
+| 91 | Elemental impact presentation | ◑ implemented, awaiting manual approval |
+| 92 | The long descent: 20 floors & the scroll trove | ◑ implemented, awaiting manual approval |
+| 93 | Dungeon dynamics: fog, Surveyor, patrols & dragonform | ◑ implemented, awaiting manual approval |
+| 94 | The sparring mirror | ◑ implemented, awaiting manual approval |
+| 95 | Summons | ◑ implemented, awaiting manual approval |
+| 96 | Heirlooms | ◑ implemented, awaiting manual approval |
+| 97 | The Hooded Goose: cutscene story | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -139,6 +150,27 @@ caps, input QoL, event flavor text, elemental gear + equipment icons, the
 with town-milestone perks, the Dragon, and the CrystalForge catch-up with
 the deliberate 0.6.0 renumber — see the program section below. **Execution:
 M75 → M86 in order, then M23 → M24.**
+**On 2026-08-14 the owner authorized the M88–M97 program** (one plan, one
+authorization; branch `oyb08`): M88 town/guild/dungeon UX fixes (incl.
+enemy-team inspection) → M89 the Dragon's MP + the dungeon carry-out
+(battle rules v16) → M90 party-menu Equip Party & Items → M91 per-element
+impact presentation → M92 20-floor runs + the raised-stakes skill-scroll
+choice (generation v16) → M93 dungeon dynamics: fog-of-war minimap, the
+Surveyor event, the 100-step patrol counter, the Dragonform event
+(generation v17) → M94 the Training Hall sparring mirror → M95 summons
+(battle rules v17) → M96 Heirlooms, a fourth equipment slot with triggered
+effects (battle rules v18) → M97 the Hooded Goose cutscene story that
+grants them. Key owner decisions recorded in the plan and the notes: the
+new equipment is named **Heirloom** (M44 Royal Relics untouched); the
+scroll choice fires only on raised-stakes 20F completions; dungeon wipes
+keep the half-gold loss but adopt the castle carry-out; patrols pay XP but
+no gold/items/danger credit (turns still count against score); the
+Dragonform event costs a flat −100 score; game_design.md §6's "no random
+encounters" is owner-amended by the forewarned patrol counter (documented
+in M93). Execution continues milestone by milestone to
+`implemented, awaiting manual approval` without pausing between them;
+M23 → M24 follow after the program.
+
 When M75–M86 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**85
 scenes** since M71), the balance batteries have grown (`[economy-report]`,
@@ -3249,7 +3281,37 @@ derives from committed seeds or pure hashes — no new RNG streams.
   consistency sweep.
 - **Milestone note:** `docs/milestone_notes/M86_crystalforge_060.md`
 
+### M87 — Translation-ready text containers & scrollable prose
+
+- **Status:** ◑ implemented, awaiting manual approval — authorized and
+  implemented 2026-08-11 on the post-M86 checkout (owner brief, full
+  implementation authorized in the same message). Prose-heavy UI moves
+  from English-sized budgets to bounded, scrollable text containers so
+  translations can expand naturally: a pure `ui::TextViewport` model
+  (composing the M12 `ScrollWindow`) + scissored `drawTextViewport` /
+  explicit-`hasMore` `drawTextPreview` adapters; the Details overlay,
+  storyteller, tutorial prompts, bestiary flavor (Details = read focus),
+  dungeon event flavor/outcome panels, curio lore, and treasure/castle
+  result bodies all scroll inside capped panels with fixed titles,
+  trade-off lines, and control hints; battle skill/item previews keep
+  their compact 2-line budget but mark truncation explicitly and route
+  Details to the full skill/item sheet; the party panel gains a full
+  member sheet behind Details. `[ui-overflow]` now means an actual
+  layout defect — intentional preview truncation and scrollable
+  remainder no longer count. The bitmap font grows from printable ASCII
+  to the full Latin-1 letter set (+ `¡ ¿ « »`), deterministic pipeline
+  intact, with `ui::GlyphCoverage` + tests binding font/content coverage
+  and a capture-only pseudo-localization stress path. The M80 "flavor
+  fits 4 English lines" test rule is repealed in favor of container-
+  behavior tests. Full record: the milestone note.
+- **Goal:** prose containers behave like proper bounded text areas
+  (wrap to width, cap height, scroll the rest) so future Latin-script
+  translations need no authored layout newlines and cannot silently
+  clip; the font and validation are structurally ready for them.
+- **Milestone note:** `docs/milestone_notes/M87_text_containers.md`
+
 **Execution order:** M75 → M76 → M77 → M78 → M79 → M80 → M81 → M82 →
-M83 → M84 → M85 → M86, then M23 → M24 (re-audited against the
-then-current checkout). Approval of one milestone is not authorization to
+M83 → M84 → M85 → M86, then the owner-directed **M87** (authorized
+2026-08-11), then M23 → M24 (re-audited against the then-current
+checkout). Approval of one milestone is not authorization to
 start the next.

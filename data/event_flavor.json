@@ -11,6 +11,8 @@
     { "id": "armory_ghost", "title": "The Armory Ghost", "body": "The ghost of a quartermaster polishes gear that nobody requisitioned. Death has not improved his patience. His stock, however, remains impeccable." },
     { "id": "miners_cache", "title": "The Miner's Cache", "body": "A tin lunchbox, a bent pickaxe, and a cache packed by someone who meant to come back for it. The mine disagrees with unattended property." },
     { "id": "elder_root", "title": "The Elder Root", "body": "The oldest tree in the wood has opinions, and rings to prove them. Tuition is payable in gold. Wisdom is dispensed by weight." },
-    { "id": "duck_peddler", "title": "The Duckling Peddler", "body": "A cloaked figure opens one side of its coat. Inside sits a single duckling, radiating malice. 'Finest quality,' the peddler whispers. 'One per customer.'" }
+    { "id": "duck_peddler", "title": "The Duckling Peddler", "body": "A cloaked figure opens one side of its coat. Inside sits a single duckling, radiating malice. 'Finest quality,' the peddler whispers. 'One per customer.'" },
+    { "id": "surveyor", "title": "The Surveyor", "body": "A dusty clerk sits behind a folding desk, surrounded by charts of everywhere but here. 'Twenty gold,' they say, not looking up. 'I already walked this floor. Twice. My knees are done subsidizing your curiosity.'" },
+    { "id": "dragonform", "title": "The Molting Stone", "body": "A cracked stone radiates a heat that gets under your skin - and keeps going. Scales prickle along your arms. For one battle you could be what the King fears most. The scoreboard, of course, has opinions about shortcuts." }
   ]
 }

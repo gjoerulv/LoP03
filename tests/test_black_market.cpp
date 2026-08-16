@@ -69,6 +69,44 @@ TEST_CASE("black market: candidate tiles are interior plaza cells, not the spawn
     }
 }
 
+TEST_CASE("black market: tiles keep their distance from the storyteller (M88)",
+          "[blackmarket]") {
+    // The owner-reported defect: the dealer could spawn 2 tiles from the bard
+    // on the same row, and the two floating name labels (both drawn at
+    // tileTop-9, "Black Market" ~72px, "Storyteller" ~60px wide) mingled.
+    // Labels can only collide horizontally on the SAME row, so the rule is:
+    // never within 6 tiles horizontally on the bard's row, and never within
+    // Chebyshev 2 anywhere (one-tile neighbours read as one crowd).
+    const auto absInt = [](int v) { return v < 0 ? -v : v; };
+    for (const MarketTile& t : kBlackMarketTiles) {
+        INFO("market tile " << t.x << "," << t.y);
+        const int dx = absInt(t.x - town::kBardTileX);
+        const int dy = absInt(t.y - town::kBardTileY);
+        CHECK_FALSE((dx == 0 && dy == 0));  // never the bard's own tile
+        CHECK((dx > 2 || dy > 2));          // never a close neighbour
+        if (t.y == town::kBardTileY) {
+            CHECK(dx > 6);  // same row: outside label-overlap range
+        }
+    }
+
+    // Every candidate tile is open walkable ground on the busiest layout, and
+    // clear of doors, exits, and the monuments' M88 answer rims.
+    const town::TownLayout busy = town::buildTown(7, true, true, true, true, true);
+    for (const MarketTile& t : kBlackMarketTiles) {
+        INFO("market tile " << t.x << "," << t.y);
+        CHECK_FALSE(busy.map.solidAt(t.x, t.y));
+        for (const town::Building& b : busy.buildings) {
+            CHECK_FALSE((b.doorX == t.x && b.doorY == t.y));
+            if (town::monumentInteractsFromAllSides(b.id)) {
+                CHECK_FALSE(town::tileAdjacentToBuilding(b, t.x, t.y));
+            }
+        }
+        for (const town::TownExit& e : busy.exits) {
+            CHECK_FALSE((e.tileX == t.x && e.tileY == t.y));
+        }
+    }
+}
+
 TEST_CASE("black market: the shipped roster has legendary gear to sell", "[blackmarket]") {
     content::ContentDatabase db;
     content::LoadReport rep;

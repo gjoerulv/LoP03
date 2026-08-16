@@ -3555,6 +3555,41 @@ Pennant $b $PAL.violet
 P $b 33 14 $PAL.gold; P $b 32 15 $PAL.gold; P $b 34 15 $PAL.gold; P $b 33 16 $PAL.gold  # star
 SaveImg $b 'environments/town_facade_guild.png'
 
+# ============================ M97 the Hooded Goose ============================
+# The story's narrator: a hooded stranger whose disguise is one goose wide.
+# Two sprites, appended after every earlier section and using no speckle RNG,
+# so all prior files stay byte-identical.
+Write-Output 'Generating M97 hooded goose...'
+
+# Overworld NPC (12x12, the finale's roadside stranger). Same silhouette
+# family as the market dealer, but the hood shadow holds a white head and an
+# unmistakable gold bill.
+$b = New-Img 12 12
+FR $b 4 1 4 3 $PAL.night3; FR $b 4 3 4 1 $PAL.night1              # hood + shadow
+FR $b 5 2 2 2 $PAL.clsCleric                                       # white head in the hood
+P $b 7 3 $PAL.gold; P $b 8 3 $PAL.gold                             # the bill pokes out
+FR $b 3 4 6 5 $PAL.night3                                          # cloak
+FR $b 3 4 6 1 $PAL.earth4                                          # weathered trim
+P $b 8 8 $PAL.clsCleric                                            # a tail feather escapes
+FR $b 4 9 2 2 $PAL.gold; FR $b 6 9 2 2 $PAL.gold                  # webbed feet, plainly
+Outline $b; SaveImg $b 'actors/hooded_goose_npc.png'
+
+# Stage actor (18x26, the cutscene's center): taller hood, draped cloak to the
+# floor, the same honest bill and feet — mystery from the knees up only.
+$b = New-Img 18 26
+FR $b 6 1 6 6 $PAL.night3; P $b 8 0 $PAL.night3                    # peaked hood
+FR $b 6 6 6 1 $PAL.night1                                          # hood shadow
+FR $b 7 3 3 3 $PAL.clsCleric                                       # white head
+P $b 10 4 $PAL.gold; P $b 11 4 $PAL.gold; P $b 12 4 $PAL.gold      # the bill, prominent
+P $b 8 4 $PAL.night1                                               # one dark eye
+FR $b 4 7 10 16 $PAL.night3                                        # cloak
+FR $b 4 7 10 1 $PAL.earth4                                         # trim
+FR $b 4 22 10 1 $PAL.night1                                        # hem shadow
+FR $b 3 12 1 6 $PAL.night3; FR $b 14 12 1 6 $PAL.night3            # drape
+FR $b 14 17 3 2 $PAL.clsCleric; P $b 16 16 $PAL.clsCleric          # tail feathers, escaping
+FR $b 5 23 3 2 $PAL.gold; FR $b 10 23 3 2 $PAL.gold                # webbed feet
+Outline $b; SaveImg $b 'actors/hooded_goose_stage.png'
+
 $b = New-Facade $PAL.earth2 $PAL.earth1 $PAL.stone3 $PAL.clsGuardian  # Training Hall
 Pennant $b $PAL.clsGuardian
 FR $b 32 14 1 2 $PAL.night1; FR $b 34 14 1 2 $PAL.night1; FR $b 32 15 3 1 $PAL.night1  # dumbbell

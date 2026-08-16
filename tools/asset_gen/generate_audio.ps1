@@ -335,5 +335,17 @@ WriteSfx 'step.wav'      (,@('noise', 0, 0, 0.028, 0.3, 6.0)) 0.3
 WriteSfx 'door.wav'      @(@('sine', 180, 120, 0.08, 0.6, 3.0), @('noise', 0, 0, 0.03, 0.2, 6.0)) 0.55
 WriteSfx 'interact.wav'  (,@('sine', 659, 880, 0.09, 0.5, 3.0)) 0.55
 
+# ============================ M91 elemental impacts ============================
+# Six distinct voices, one per element, each still reading as a "hit":
+# fire crackles and roars down, ice rings glassy and high, lightning cracks,
+# earth thuds low, holy blooms upward in pure fifths, dark breathes a detuned
+# descent. Deterministic like everything above; reruns are byte-identical.
+WriteSfx 'hit_fire.wav'      @(@('noise', 0, 0, 0.05, 0.5, 2.5), @('sine', 420, 140, 0.11, 0.6, 4.0), @('noise', 0, 0, 0.04, 0.25, 6.0)) 0.65
+WriteSfx 'hit_ice.wav'       @(@('sine', 2200, 1400, 0.07, 0.45, 4.0), @('tri', 1760, 1320, 0.06, 0.4, 5.0), @('sine', 2637, 2637, 0.05, 0.3, 6.0)) 0.55
+WriteSfx 'hit_lightning.wav' @(@('noise', 0, 0, 0.03, 0.6, 5.0), @('square', 1800, 300, 0.07, 0.45, 5.0), @('sine', 240, 120, 0.06, 0.4, 5.0)) 0.6
+WriteSfx 'hit_earth.wav'     @(@('noise', 0, 0, 0.06, 0.5, 3.0), @('sine', 110, 55, 0.16, 0.7, 4.0)) 0.65
+WriteSfx 'hit_holy.wav'      @(@('sine', 660, 660, 0.06, 0.4, 2.0), @('sine', 990, 990, 0.07, 0.45, 2.5), @('sine', 1320, 1320, 0.10, 0.5, 3.5)) 0.6
+WriteSfx 'hit_dark.wav'      @(@('tri', 300, 150, 0.10, 0.5, 3.0), @('sine', 233, 110, 0.10, 0.45, 3.5), @('noise', 0, 0, 0.05, 0.15, 6.0)) 0.55
+
 # ============================ M32 town-ladder music ============================
 Write-Output 'Audio generation complete.'

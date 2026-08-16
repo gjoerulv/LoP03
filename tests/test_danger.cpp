@@ -72,11 +72,11 @@ Character member(int maxHp, int atk, int mag, int def, int spd) {
 
 }  // namespace
 
-// The exact generation pin rides the newest bump — v15 (M82) tags the
-// 1-or-4-floor run shape for scoreboard comparability (1-floor output stays
-// byte-identical to v14; the pin moves with each owner-approved bump).
+// The exact generation pin rides the newest bump — v17 (M93) tags the two
+// new pure-hash event replacements (Surveyor, Dragonform) alongside v16's
+// 20-floor shape (the pin moves with each owner-approved bump).
 TEST_CASE("danger: generation version rides the newest bump", "[danger]") {
-    CHECK(dungeon::kGenerationVersion == 15);
+    CHECK(dungeon::kGenerationVersion == 17);
 }
 
 TEST_CASE("danger: threat grows with stronger and more numerous enemies", "[danger]") {

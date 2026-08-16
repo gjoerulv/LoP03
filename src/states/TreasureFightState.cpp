@@ -30,6 +30,7 @@ void TreasureFightState::onEnter() {
     if (done_) {
         return;  // a capture preset set the overlay; no fight
     }
+    context_.party.usedSummons.clear();  // M95: the dig is its own challenge
     const TreasureReveal& t = context_.party.treasure;
     const content::BossDef* boss = context_.content.findBoss(t.bossId);
     if (!t.active || boss == nullptr) {
@@ -163,6 +164,13 @@ void TreasureFightState::handleInput(const Input& input) {
         }
         return;  // no Cancel: the words fade fast — someone must learn it
     }
+    // M87: Up/Down scrolls a long result body while reading.
+    if (input.navPressed(InputAction::MoveUp) && resultView_.scrollBy(-1)) {
+        context_.audio.play(Sfx::Move);
+    }
+    if (input.navPressed(InputAction::MoveDown) && resultView_.scrollBy(1)) {
+        context_.audio.play(Sfx::Move);
+    }
     if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel)) {
         stack().popState();  // back to town
     }
@@ -183,8 +191,16 @@ void TreasureFightState::render() {
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
     ui::drawTextCentered("The Buried Treasure", w / 2, boxY + 12, 16, p.gold);
     ui::drawDivider(boxX + 14, boxY + 34, boxW - 28);
-    ui::drawTextWrapped(resultText_, boxX + 16, boxY + 42, boxW - 32, 10, p.text,
-                        "treasure.result", 5);
+    // M87: while the member list owns Up/Down the body is a compact marked
+    // preview (its opening carries the decision); otherwise it scrolls.
+    if (pickingMember_) {
+        ui::drawTextPreview(resultText_, boxX + 16, boxY + 42, boxW - 32, 10, p.text, 4);
+    } else {
+        resultView_.setContent(resultText_, boxW - 32 - ui::kScrollGutterW, 10,
+                               ui::raylibMeasure());
+        resultView_.setVisibleLines(std::clamp(resultView_.lineCount(), 1, 7));
+        ui::drawTextViewport(resultView_, boxX + 16, boxY + 42, p.text);
+    }
     if (pickingMember_) {
         const auto& members = context_.party.members;
         const int listY = boxY + 96;

@@ -3,6 +3,8 @@
 #include <array>
 #include <cstddef>
 
+#include "content/Enums.hpp"  // M91: Element -> impact-role mapping
+
 // Logical audio roles and pure audio policy (M21). This header is
 // raylib-free so headless tests can validate the role tables, the shipped
 // manifest coverage, and the rate-limit policy without an audio device.
@@ -28,8 +30,16 @@ enum class Sfx {
     Step,
     Door,
     Interact,
+    // M91: per-element battle impacts, appended so every earlier role keeps
+    // its table index. One per content::Element (None keeps HitMagic).
+    HitFire,
+    HitIce,
+    HitLightning,
+    HitEarth,
+    HitHoly,
+    HitDark,
 };
-inline constexpr std::size_t kSfxCount = 15;
+inline constexpr std::size_t kSfxCount = 21;
 
 enum class MusicTrack {
     None,
@@ -66,6 +76,9 @@ inline constexpr std::array<const char*, kSfxCount> kSfxIds = {
     "sfx.battle.hit",    "sfx.battle.hit_magic", "sfx.battle.heal", "sfx.battle.status",
     "sfx.battle.ko",     "sfx.battle.victory",   "sfx.battle.defeat",
     "sfx.world.chest",   "sfx.world.step",       "sfx.world.door",  "sfx.world.interact",
+    // M91: the six elemental impacts.
+    "sfx.battle.hit_fire",  "sfx.battle.hit_ice",  "sfx.battle.hit_lightning",
+    "sfx.battle.hit_earth", "sfx.battle.hit_holy", "sfx.battle.hit_dark",
 };
 
 inline constexpr std::array<const char*, kMusicCount> kMusicIds = {
@@ -114,7 +127,23 @@ inline constexpr std::array<float, kSfxCount> kSfxMinInterval = {
     0.05f, 0.05f, 0.05f, 0.05f,  // hit, hit_magic, heal, status
     0.05f, 0.25f, 0.25f,         // ko, victory, defeat
     0.10f, 0.16f, 0.12f, 0.10f,  // chest, step, door, interact
+    0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f,  // M91: the elemental impacts
 };
+
+// M91: the impact role for an elemental hit. None (and any future value)
+// keeps the generic magic hit, so an unmapped element can never go silent.
+inline Sfx elementHitSfx(content::Element e) {
+    switch (e) {
+        case content::Element::Fire: return Sfx::HitFire;
+        case content::Element::Ice: return Sfx::HitIce;
+        case content::Element::Lightning: return Sfx::HitLightning;
+        case content::Element::Earth: return Sfx::HitEarth;
+        case content::Element::Holy: return Sfx::HitHoly;
+        case content::Element::Dark: return Sfx::HitDark;
+        case content::Element::None: break;
+    }
+    return Sfx::HitMagic;
+}
 
 // Pure rate-limit decision; `last` is the time of the previous accepted play
 // (negative = never played). Callers record `now` on accept.

@@ -18,6 +18,7 @@
 #include "content/LoadReport.hpp"
 #include "dungeon/DungeonGenerator.hpp"
 #include "dungeon/RoomLayout.hpp"
+#include "dungeon/ThemeEvents.hpp"  // M93: the Surveyor's expected mutation
 #include "score/Scoreboard.hpp"
 #include "score/ScoreEntry.hpp"
 
@@ -152,11 +153,38 @@ TEST_CASE("floors: a 4-floor run swaps exactly the stair floors' boss teams", "[
         CHECK(f.floorCount == 4);
         CHECK(f.seed == dungeon::floorSeed(seed, i));
 
-        // Sub-seed independence: except the swapped team, the floor is what
-        // its sub-seed generates standalone — editing floor 3 can never move
-        // floor 1.
-        const dungeon::Dungeon standalone =
+        // Sub-seed independence: except the swapped team (and, since M93, the
+        // Surveyor's pure-hash event replacement), the floor is what its
+        // sub-seed generates standalone — editing floor 3 can never move
+        // floor 1. The expected Surveyor mutation is reproduced here exactly
+        // as generateFloors applies it, so the comparison stays byte-exact.
+        dungeon::Dungeon standalone =
             dungeon::generate(dungeon::floorSeed(seed, i), 8, db(), "crystal_mine", 4);
+        {
+            std::vector<int> plain;
+            for (std::size_t ri = 0; ri < standalone.rooms.size(); ++ri) {
+                const dungeon::RoomEventKind k = standalone.rooms[ri].event.kind;
+                if (standalone.rooms[ri].type != dungeon::RoomType::Event) {
+                    continue;
+                }
+                if (k == dungeon::RoomEventKind::Shrine ||
+                    k == dungeon::RoomEventKind::HealingSpring ||
+                    k == dungeon::RoomEventKind::Merchant ||
+                    k == dungeon::RoomEventKind::ScoreWager ||
+                    k == dungeon::RoomEventKind::RestToken) {
+                    plain.push_back(static_cast<int>(ri));
+                }
+            }
+            const int slot = dungeon::surveyorSlot(seed, i, static_cast<int>(plain.size()));
+            if (slot >= 0) {
+                dungeon::RoomEvent& ev =
+                    standalone.rooms[static_cast<std::size_t>(
+                                         plain[static_cast<std::size_t>(slot)])]
+                        .event;
+                ev.kind = dungeon::RoomEventKind::Surveyor;
+                ev.goldCost = dungeon::kSurveyorPriceGold;
+            }
+        }
         const bool stairFloor = i < 3;
         CHECK(sameDungeon(standalone, f, /*skipBossTeam=*/stairFloor));
 
@@ -274,4 +302,107 @@ TEST_CASE("floors: score entries carry the shape and split onto boards", "[floor
         CHECK(board.entries()[0].floors == 1);
     }
     fs::remove_all(dir);
+}
+
+// --- M92: the 20-floor long descent & the Guild's trove ----------------------
+
+#include "game/ScrollTrove.hpp"
+
+TEST_CASE("floors: a 20-floor run holds wardens on 1-19 and the boss on 20 (M92)",
+          "[floors]") {
+    const std::uint64_t seed = 20260814ull;
+    const std::vector<dungeon::Dungeon> run =
+        dungeon::generateFloors(seed, 6, db(), "ruined_keep", 3, 20);
+    REQUIRE(run.size() == 20);
+    for (int i = 0; i < 20; ++i) {
+        INFO("floor " << i);
+        const dungeon::Dungeon& f = run[static_cast<std::size_t>(i)];
+        CHECK(f.runSeed == seed);
+        CHECK(f.floorIndex == i);
+        CHECK(f.floorCount == 20);
+        CHECK(f.seed == dungeon::floorSeed(seed, i));
+        const int bt = f.rooms[static_cast<std::size_t>(f.bossRoom)].teamIndex;
+        REQUIRE(bt >= 0);
+        const dungeon::EnemyTeam& team = f.teams[static_cast<std::size_t>(bt)];
+        if (i < 19) {
+            CHECK(team.name == "Stairway Wardens");
+            CHECK_FALSE(team.isBoss);
+        } else {
+            CHECK(team.isBoss);  // the real boss waits at the bottom of 20
+        }
+    }
+    // Determinism across calls.
+    const std::vector<dungeon::Dungeon> again =
+        dungeon::generateFloors(seed, 6, db(), "ruined_keep", 3, 20);
+    REQUIRE(again.size() == 20);
+    CHECK(again[19].teams.size() == run[19].teams.size());
+    CHECK(again[7].seed == run[7].seed);
+}
+
+TEST_CASE("floors: three boards split 1/4/20 cleanly (M92)", "[floors]") {
+    score::ScoreEntry one;
+    one.floors = 1;
+    score::ScoreEntry four;
+    four.floors = 4;
+    score::ScoreEntry twenty;
+    twenty.floors = 20;
+    CHECK(score::onFloorsBoard(one, 1));
+    CHECK_FALSE(score::onFloorsBoard(one, 4));
+    CHECK_FALSE(score::onFloorsBoard(one, 20));
+    CHECK(score::onFloorsBoard(four, 4));
+    CHECK_FALSE(score::onFloorsBoard(four, 1));
+    CHECK_FALSE(score::onFloorsBoard(four, 20));
+    CHECK(score::onFloorsBoard(twenty, 20));
+    CHECK_FALSE(score::onFloorsBoard(twenty, 1));
+    CHECK_FALSE(score::onFloorsBoard(twenty, 4));
+}
+
+TEST_CASE("trove: the pool is the teachable scrolls, never the Lost ones (M92)",
+          "[floors][trove]") {
+    const std::vector<std::string> pool = cd::scrollTrovePool(db());
+    CHECK(pool.size() >= 10);  // 3 shipped + the 7 M92 additions
+    for (const std::string& id : pool) {
+        INFO(id);
+        const content::ItemDef* def = db().findItem(id);
+        REQUIRE(def != nullptr);
+        CHECK(def->type == content::ItemType::Scroll);
+        CHECK_FALSE(def->grantsSkill.empty());
+        CHECK(db().findSkill(def->grantsSkill) != nullptr);
+        CHECK(id.rfind("treasure_scroll_", 0) != 0);  // the Lost Scrolls stay exclusive
+    }
+}
+
+TEST_CASE("trove: offers are seeded, distinct, learnable, and gated (M92)",
+          "[floors][trove]") {
+    Party party;
+    party.members.push_back(createCharacter(*db().findClass("knight"), "Rolan", 5));
+    party.members.push_back(createCharacter(*db().findClass("mage"), "Mira", 5));
+
+    const std::uint64_t runSeed = 777ull;
+    const std::vector<std::string> a = cd::scrollTroveOffers(party, db(), runSeed);
+    const std::vector<std::string> b = cd::scrollTroveOffers(party, db(), runSeed);
+    CHECK(a == b);  // reload-proof
+    REQUIRE(static_cast<int>(a.size()) == cd::kScrollTroveOffers);
+    CHECK(a[0] != a[1]);
+    CHECK(a[1] != a[2]);
+    CHECK(a[0] != a[2]);
+    for (const std::string& id : a) {
+        INFO(id);
+        const content::ItemDef* def = db().findItem(id);
+        REQUIRE(def != nullptr);
+        CHECK(cd::anyoneCanLearn(party, *def, db()));
+    }
+    // A different seed may draw differently (not guaranteed per seed, but the
+    // stream is live: over a few seeds SOME draw differs).
+    bool anyDiff = false;
+    for (std::uint64_t s = 1; s <= 8 && !anyDiff; ++s) {
+        anyDiff = cd::scrollTroveOffers(party, db(), s) != a;
+    }
+    CHECK(anyDiff);
+
+    // The trigger: 20 floors AND raised stakes AND a scoring run.
+    CHECK(cd::scrollTroveEarned(20, true, 100));
+    CHECK_FALSE(cd::scrollTroveEarned(4, true, 100));
+    CHECK_FALSE(cd::scrollTroveEarned(20, false, 100));
+    CHECK_FALSE(cd::scrollTroveEarned(20, true, 0));
 }

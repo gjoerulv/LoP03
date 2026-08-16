@@ -63,6 +63,8 @@ scroll-learned skill), docs. Nothing else.
 - A milestone/passive description longer than two wrapped lines (~110
   chars) would still elide; the current longest is 50 chars, and
   CrystalForge authors should keep descriptions within two lines.
+  *(Resolved by M87: the two lines are now an explicit marked preview and
+  the full text is reachable through the party panel's Details sheet.)*
 
 ## G. Final status
 

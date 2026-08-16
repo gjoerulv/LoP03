@@ -14,6 +14,7 @@
 #include "dungeon/DungeonModel.hpp"
 #include "dungeon/ThemeEvents.hpp"
 #include "ui/TextLayout.hpp"
+#include "ui/TextViewport.hpp"
 
 using namespace cd;
 namespace fs = std::filesystem;
@@ -57,7 +58,8 @@ TEST_CASE("flavor: the dungeon mapping and the content vocabulary agree", "[flav
         RoomEventKind::ScoreWager,   RoomEventKind::RestToken,
         RoomEventKind::RoyalRelic,   RoomEventKind::ArmoryGhost,
         RoomEventKind::MinersCache,  RoomEventKind::ElderRoot,
-        RoomEventKind::DuckPeddler,
+        RoomEventKind::DuckPeddler,  RoomEventKind::Surveyor,    // M93
+        RoomEventKind::Dragonform,                               // M93
     };
     static_assert(sizeof(kinds) / sizeof(kinds[0]) == content::kEventFlavorIdCount,
                   "a new RoomEventKind needs a flavor id (or an explicit exemption here)");
@@ -74,17 +76,32 @@ TEST_CASE("flavor: the dungeon mapping and the content vocabulary agree", "[flav
     CHECK(std::string(dungeon::eventFlavorId(RoomEventKind::None)).empty());
 }
 
-TEST_CASE("flavor: every authored entry fits the centered panel", "[flavor]") {
-    // The panel: 360 wide, 14px side padding -> 332 of text; title one line,
-    // body at most 4 wrapped lines, at the body font (the conservative
-    // 7px-per-char measure the presentation lint uses).
+TEST_CASE("flavor: the panel CONTAINS every authored body (M87)", "[flavor]") {
+    // M87 repealed the "body must fit 4 English lines" rule: the panel's body
+    // is a bounded scrollable viewport (4 visible lines at 322px), so an
+    // authored or translated body of ANY length must be fully reachable by
+    // scrolling — that containment is what this test now referees. The TITLE
+    // stays a fixed single line (policy A), so its width check remains.
     const cd::ui::TextMeasure measure = [](const std::string& text, int fontSize) {
         return static_cast<int>(text.size()) * (fontSize * 7) / 10;
     };
+    constexpr int kPanelTextW = 322;   // 360 - 28 padding - 10 indicator gutter
+    constexpr int kVisibleLines = 4;   // the panel's fixed body budget
     for (const auto& [id, def] : shipped().eventFlavors()) {
         INFO(id);
         CHECK(measure(def.title, 11) <= 332);
-        CHECK(cd::ui::wrapText(def.body, 332, 10, measure).size() <= 4);
+        cd::ui::TextViewport vp;
+        vp.setContent(def.body, kPanelTextW, 10, measure);
+        vp.setVisibleLines(kVisibleLines);
+        REQUIRE(vp.lineCount() >= 1);
+        // No line escapes the rectangle's width...
+        for (int i = 0; i < vp.lineCount(); ++i) {
+            CHECK(measure(vp.line(i), 10) <= kPanelTextW);
+        }
+        // ...and scrolling reaches the last line, then clamps.
+        vp.scrollBy(vp.lineCount() * 2);
+        CHECK_FALSE(vp.moreBelow());
+        CHECK(vp.top() + vp.visibleCount() == vp.lineCount());
     }
 }
 

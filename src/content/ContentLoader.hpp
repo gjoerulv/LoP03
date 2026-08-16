@@ -41,6 +41,8 @@ void parseEventFlavor(const Json& root, const std::string& source, ContentDataba
                       LoadReport& rep);  // M80
 void parseCurioLore(const Json& root, const std::string& source, ContentDatabase& db,
                     LoadReport& rep);  // M85 (declared in M86 for the editor, the M59 precedent)
+void parseCutscenes(const Json& root, const std::string& source, ContentDatabase& db,
+                    LoadReport& rep);  // M97
 
 // Cross-reference checks: skill ids referenced by classes, enemies, and scrolls
 // must exist in `db`.

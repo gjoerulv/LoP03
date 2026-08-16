@@ -246,8 +246,8 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; **97 scenes as of M85**,
-`97_dragon_jester` last) — all
+list lives in `src/capture/CaptureRunner.cpp`; **114 scenes as of M97**,
+`98`–`105` the pseudo-localized long-prose set) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
@@ -1001,10 +1001,13 @@ Pure content + presentation; no battle/generation/scoring surface.
 - **Presentation.** `StoryDialogState` — a near-clone of `TutorialPromptState`
   (dims the frozen scene, titled wrapped panel via the M12 helpers, speaker footer,
   Confirm/Cancel dismiss).
-- **Storyteller.** A `TownState` overlay at the fixed plaza tile `(6,9)` in every
-  town (the black-market NPC pattern: sprite + `onBardTile()` + prompt); talking
-  pushes `StoryDialogState` with `findStoryBeat(currentTown)` and sets the town's bit
-  in `Party.storyMet`.
+- **Storyteller.** A `TownState` overlay at the fixed plaza tile
+  `town::kBardTileX/Y` — the layout authority in `town/TownData.hpp` since M88,
+  which also moved the bard two tiles east and retired the neighbouring
+  black-market tile (label overlap; a spacing rule is tested in
+  `test_black_market.cpp`) — (the black-market NPC pattern: sprite +
+  `onBardTile()` + prompt); talking pushes `StoryDialogState` with
+  `findStoryBeat(currentTown)` and sets the town's bit in `Party.storyMet`.
 - **Jester.** A `CastleState` menu entry: the Jester beat (`findStoryBeat(kCastleTown)`)
   once `storyAllHeard(storyMet)`, else a teaser. Pure mask helpers live in
   `game/Story.hpp` (`kStoryTownCount`, `storyBit`, `storyHeard`, `storyAllHeard`).
@@ -1303,6 +1306,75 @@ tested; raylib adapters live in `ui/UiDraw`.
 - **Migration is complete:** every screen renders through the measured
   helpers, and control prompts are binding-derived (M13). The M46 kit below
   is the visual layer on top of these guarantees.
+
+### Translation-ready text containers (Milestone 87)
+
+Prose-heavy UI moved from English-sized budgets to bounded, scrollable
+containers so Latin-script translations can expand without authored layout
+newlines or silent clipping. Four policies bind every text element
+(`docs/ui_style_guide.md` §7/§12 is the authoring contract; this section is
+the architecture):
+
+- **`ui/TextViewport`** (pure, header-only): the scrollable wrapped-prose
+  model — `setContent` wraps once per (text, width, font) change via the M12
+  `wrapText` and caches (states may call it every frame; render never
+  re-wraps), `setVisibleLines` caps the widget-owned height, `scrollBy`
+  clamps and reports movement, `moreAbove`/`moreBelow`/`scrollable` drive
+  indicators and hints. Scrolling composes the pure `ScrollWindow`, so prose
+  viewports and row lists share one clamping model. Tested headlessly in
+  `tests/test_text_viewport.cpp`.
+- **`ui/TextLayout::previewText`** (pure): the first N wrapped lines plus an
+  explicit `hasMore` — the policy-B core.
+- **`ui/UiDraw` adapters:** `drawTextViewport` draws only the visible window,
+  scissored to the content rect (the final safety boundary), with the
+  stepped more-above/below arrows in a reserved `kScrollGutterW` (10px)
+  right of the wrap width; `drawTextPreview` draws a capped preview and
+  marks intentional truncation with the stepped down-arrow. **Neither
+  touches the `[ui-overflow]` counter** — after M87 that diagnostic means an
+  actual layout defect, never "more text below a scroll viewport" or "a
+  preview intentionally summarized". `drawTextFitted`/`drawTextWrapped` keep
+  their hard-budget contract (report + clip) for policy-A lines and the few
+  deliberate fixed budgets (boss telegraph 2 lines, the event trade-off
+  line 2 lines, choice-modal descriptions).
+- **Converted screens (policy C):** `DetailsOverlayState` (the canonical
+  reading overlay — capped panel, scrolling body, Up/Down + close, used by
+  every Details context), `StoryDialogState` and `TutorialPromptState`
+  (height caps inside the safe area instead of growing with the body),
+  `BestiaryState` flavor (body font in a bounded viewport; the Details
+  action toggles **read focus** — brackets mark the prose region, Up/Down
+  scrolls it, roster browsing untouched otherwise), the `DungeonState`
+  event-flavor and outcome panels (bodies scroll; title, gold trade-off
+  line, and hints fixed), `MapsState` curio lore, and the
+  `TreasureFightState`/`CastleChallengeState` result bodies.
+- **Battle stays fast (policy B):** skill/item descriptions during selection
+  remain a 2-line preview (no scrolling in the bottom panel) with the
+  more-arrow when truncated; **Details is context-sensitive** — the
+  highlighted skill/item's full sheet (name, MP cost/held count, block
+  reason, complete description) in the reading overlay during selection,
+  the unit sheet otherwise. `PartyState` likewise previews passive/
+  milestone/skill texts compactly and puts the full member sheet (every
+  known skill WITH its description) behind Details.
+- **Glyph coverage:** the bitmap font covers printable ASCII plus every
+  Latin-1 Supplement letter and `¡ ¿ « »` (161 glyphs; generator
+  `tools/asset_gen/generate_font.ps1`, same 7-row cell — ASCII rendering is
+  byte-identical). `src/ui/GlyphCoverage.hpp` (pure) is the contract:
+  `isSupportedCodepoint`/`isAllowedInContent` (newline yes — paragraph
+  semantics; tabs/controls no) plus a UTF-8 decoder;
+  `tests/test_glyph_coverage.cpp` binds the three layers (contract ↔
+  shipped `.fnt` char ids ↔ every string in the shipped `data/*.json`), so
+  a translation using an unsupported character fails the suite instead of
+  rendering the `?` fallback. `wrapText` remains a deliberate Latin-script
+  wrapper: spaces break, runs collapse, `\n` is a paragraph, NBSP glues —
+  no general Unicode line-breaking engine.
+- **Capture:** scenes `98`–`105` (the set was **105** at M87; **114** as
+  of M97) exercise long
+  storyteller/details/bestiary/party/event/outcome prose and the battle
+  preview + full-sheet pair, driven by a deterministic capture-only
+  `pseudoLocalize` transform (~1.3× expansion using the new glyphs) and one
+  capture-only long-description skill parsed into the capture db (unused by
+  any class/pool, so every other scene is unaffected). Scenes with visible
+  scroll remainder pass the zero-overflow check by construction — genuine
+  overflow still fails the run.
 
 ### Procedural UI kit (Milestone 46)
 
@@ -2649,4 +2721,335 @@ the M59 completeness sweep, and the enum pickers read the live
   the old "0.9.0 until M23" claim. 1.0.0 still waits on the M23
   playtests. Save/score/content schema versions are independent and
   unchanged.
+
+## 41. M88 — town, guild & dungeon UX fixes
+
+Five owner-directed UX fixes, no battle/generation/save-version changes
+(the black-market tile-list change is presentation-only: the seeded tile
+INDEX is unchanged, and the save loader's existing tile validation snaps a
+pre-M88 offer stored on the retired tile to the new list).
+
+- **Guild seed row** (`GuildState`): "New Seed" and the seed chip merged
+  into one Seed stepper row — Left/Right rerolls, Confirm opens a modal
+  digit editor (`ui::TextFilter::Digits`, new; 20-char cap) whose commit
+  goes through the pure `core/SeedParse.hpp` (`parseSeedDigits`: empty/zero
+  keep the old seed, past-max clamps to uint64 max). The freed strip lets
+  the M33 stakes banner sit at panel+8 where a two-line wrap ends well
+  above the footer (the owner-reported clip). The editor consumes
+  TextBackspace before Cancel (the PartyCreation precedent), so its footer
+  advertises OK/Erase only. Capture scenes: `26_guild_penalty` pinned at
+  the −99% cap; `106_guild_seed_edit` at the 20-digit maximum.
+- **Monument adjacency** (`town/TownData.hpp`): the Scoreboard and Save
+  Point answer Confirm from every orthogonally adjacent body tile
+  (`monumentInteractsFromAllSides` + `tileAdjacentToBuilding`, pure and
+  tested); facaded buildings keep their single door, exact door matches
+  keep priority. The bard tile moved into the same header
+  (`kBardTileX/Y`, now (5,5)) as the single layout authority.
+- **Item-shop shelf order** (`ItemShopFilter.hpp`): category rank
+  (heal → MP → cure → revive → oddities) then value then id;
+  rider-flagged items (`curesDebuffs`/`curesCurse`/`kingEffectAmount`)
+  are oddities regardless of their token `effect`. Potion leads town 1.
+- **Team inspection** (`dungeon/TeamInspect.hpp`, pure): the dungeon
+  Details overlay now opens a faced team's full roster — per member the
+  stats battle will field (the shared `content::scaledStats` ×
+  `team.statScalePct` multiply), affinities and passives exactly as the
+  in-battle target panel discloses them (never bestiary-gated), duplicates
+  collapsed to `xN`, boss first. Scene `107_team_inspect` renders a
+  generated boss court through the same helper.
+
+## 42. M89 — battle flow: the Dragon & the carry-out (rules v16)
+
+Battle rules **15 → 16** (see the `Battle.hpp` history comment, the
+authority). Two owner items.
+
+- **The authored MP pool.** EnemyDef and BossDef gain an optional `maxMp`
+  (0 = derive from Magic, every pre-M89 foe). A positive value replaces the
+  BASE and scales exactly as Magic does (`maxMp * statScalePct / 100`
+  through `deriveMaxMp`), so the pool follows the fight context. Shipped
+  content: the Dragon (`maxMp: 80` → 400 at its 500 % arena, twenty 20-MP
+  breaths — the derived pool was ~130 and dried after six).
+- **The every-Nth lunge.** BossDef gains `basicAttackEveryNth` (+ an
+  optional `basicAttackText` flavour line, loader-validated to require the
+  rule). `Combatant.ownTurnsTaken` advances in `beginUnitTurn` — the same
+  per-turn seam as the M49 revive clock, so both drivers agree by
+  construction — and the pure `battle::basicAttackTurn()` feeds
+  `chooseEnemyAction` (the swing replaces the cast above every skill loop)
+  and BattleState's flavour-line detection (the doNothingText pattern:
+  presentation reads the same shared predicate the AI used). Counter-based,
+  no hash, no rollCursor movement.
+- **The dungeon carry-out.** `DungeonState`'s defeat path swaps `healFull`
+  for the M47 `clampCastleDefeat` (reused as-is; one member at 1 HP, fallen
+  stay fallen, MP untouched) and keeps `gold /= 2` (owner decision). A new
+  tutorial beat (`kCarriedOut`) fires once from `TownState::onResume` when
+  the party arrives with fallen members.
+- **Balance consequence (sim-verified, deliberate):** the sustained breaths
+  make the Dragon strictly harder; the clearability battery now equips the
+  designed counter (the Motley Aegis) and clears the gauntlet in 22 rounds,
+  while the pre-M89 plain-accessory loadout loses — recorded in
+  `test_dragon.cpp` and flagged for the owner's manual pass.
+- **CrystalForge**: Enemies gained `maxMp`; Bosses gained `maxMp`,
+  `basicAttackEveryNth`, `basicAttackText` descriptors.
+
+## 43. M90 — party menu: Equip Party & Items
+
+No version bumps; no save/schema changes.
+
+- **Equip Party** = `EquipShopState` with a `partyMode` ctor flag (M31's
+  phase machine reused whole, zero duplication): opens in `EquipChar`, the
+  Menu/Buy phases are unreachable, Cancel from EquipChar leaves, plain
+  canvas + "Equip Party" header instead of the shop dressing. Reached from
+  both pause menus (Town/Dungeon), whose row tables grew by two (row
+  heights tightened 20→18px in town so the taller box still clears the
+  frame with its debug row).
+- **Items** = new `InventoryState` (`src/states/InventoryState.*`): the
+  bag in three bands — consumables in the M88 shelf order, then
+  gear, then scrolls — icons and counts per row, a two-line
+  `drawTextPreview` detail, and a member picker with live HP/MP columns.
+  Use rules live in the pure `game/ItemUse.hpp`
+  (`itemUseRefusal`/`applyItemUse`, unit-tested): M43 gating outside
+  battle; cures refuse outright (statuses are battle-scoped; Characters
+  carry none). Consumption spends on success only; the row falls back to
+  the list at zero stock. Gear/scroll/Royal-Relic rows refuse with a
+  pointer to their real homes.
+- Capture scenes `108_items_bag` (seeded representative bag, longest
+  description) and `109_equip_party`.
+
+## 44. M91 — elemental impact presentation
+
+Presentation-only (no rules/generation bumps; the Simulator never sees any
+of it).
+
+- **The accent** (`src/render/ElementFx.*`): `drawElementImpact(element,
+  cx, cy, strength, highContrast)` — six procedural stepped-pixel motifs
+  (M46 language, no textures, no RNG; the one growth step derives from
+  strength, so captures are stable). `strength` is
+  `BattleSequencer::flashStrength()`, so the Battle Flash gate is
+  inherited — off draws nothing; high contrast collapses to the palette
+  text color.
+- **The wiring** (`BattleState`): a `fxElement_` member is set beside every
+  `useSkill`/`attack` call (skill → its element; basic attack → the
+  actor's `weaponElement`, which carries wielded AND intrinsic elements;
+  items/ticks → None) across all five action paths (player, enemy,
+  confused, uncontrolled, the capture scene). The accent draws on exactly
+  the units `hitFlags_` brightens during the impact beat, in both the
+  sprite and fallback-rectangle branches.
+- **The voice**: six new Sfx roles appended to the tables
+  (`HitFire..HitDark`, ids `sfx.battle.hit_*`, 0.05s limits) + the pure
+  `audio::elementHitSfx()` mapper (None → HitMagic).
+  `commitPresentation` routes damage beats through it.
+  `AudioManager::play` remaps an element role whose FILE is missing to
+  HitMagic before the rate limit (the M14 degrade rule). Six new
+  deterministic WAVs in `generate_audio.ps1` (fire crackle, glassy ice,
+  lightning crack, earth thud, holy bloom, dark breath), manifest
+  entries, credits row updated to 21 files.
+
+## 45. M92 — the long descent & the Guild's trove (generation v16)
+
+Generation **15 → 16** (`RoomLayout.hpp` history comment, the authority):
+the 20-floor shape is new seed output; 1F/4F stay byte-identical to v15.
+
+- **Floors {1,4,20}**: the Guild's Floors row cycles three shapes in both
+  directions ("20 (boss below)"); `generateFloors` was already
+  count-generic — wardens hold every non-final floor, the boss the last —
+  so 20 needed no generator change, only the new invariants test.
+- **Third board**: `score::onFloorsBoard` splits 1 / 4 / 20 (legacy
+  `floors<=1` stays classic); `ScoreboardState` cycles all three with the
+  M79 pair, each with its own chip and empty-board line.
+- **The trove** (`game/ScrollTrove.hpp`, pure): pool = every Scroll item
+  minus the treasure-dig exclusives (data/items.json gained 7 scroll items
+  wrapping existing normal skills — bulwark, frost_lance, spark,
+  group_mend, guard_aura, battle_cry, piercing_arrow — alongside the 3
+  shipped ones); `scrollTroveOffers` draws 3 distinct learnable offers by
+  pure hash of the RUN seed (blackMarketHash idiom, own salt);
+  `scrollTroveEarned(floorCount, raisedStakes, total)` is the trigger
+  (scoring + stakes-raising + 20F). `ScrollChoiceState` (modal, pushed
+  UNDER the result in `completeDungeon` — the M67 unwind order) adds the
+  chosen scroll ITEM to the bag; teaching stays the Party panel's M64
+  moment. Deviation from the plan's "immediate learn flow", recorded in
+  the note: the bag route makes the owner-observed panel flow the one
+  teaching path.
+- **Debug**: "Grant 1x each skill scroll" (the trove pool). Capture:
+  `110_scroll_trove`. The M83 map-drop gate already read
+  `floorCount >= 4`, so the long descent feeds the map economy unchanged.
+
+## 46. M93 — dungeon dynamics (generation v17)
+
+Generation **16 → 17**: two pure-hash plain-event replacements on the
+DuckPeddler contract (`ThemeEvents`: `dragonformSlot` ~8 %/dungeon inside
+`generate()`, `surveyorSlot` ~25 %/floor inside `generateFloors`,
+multi-floor only — own salts, no rng draws). game_design §6's "no random
+encounters" carries the owner's amendment (the forewarned patrol).
+
+- **Fog of war** (`DungeonState::renderMinimap`): on multi-floor runs
+  unvisited rooms are absent (the per-room `visited` flag existed since
+  M4), door stubs hint the unknown, the M66 chart's X burns through, and
+  `floorRevealed_` (the Surveyor's purchase; reset per floor like the
+  chart) lifts it. 1-floor maps stay complete.
+- **The Surveyor**: resolveEvent pays `kSurveyorPriceGold` (20, the
+  owner's number) → `floorRevealed_ = true`; an already-charted floor is
+  a free courtesy. Flavor ids "surveyor"/"dragonform" joined
+  `kEventFlavorIds` (now 13) and `data/event_flavor.json`.
+- **The danger counter**: `dangerSteps_` (100, `kDangerStepsPerPatrol`)
+  ticks on tile change in `update()`; at 0 → `dungeon::patrolTeam(db,
+  themeId, town, depth, runSeed, patrolIndex)` (the stair-gate recipe:
+  fresh pure-hash Rng, real pools, real composer — deterministic per
+  (runSeed, N)) is appended to the run's teams and fought IMMEDIATELY via
+  `EncounterKind::Patrol`. `EnemyTeam.patrol` zeroes gold in
+  `teamSpoils` (owner decision 7: XP only); the victory path skips danger
+  credit and room resolution and rewinds the counter; fleeing counts as
+  an escape and also rewinds. HUD chip "Patrol N" (danger color ≤ 20).
+- **Dragonform** (`game/Dragonform.hpp`, pure): `enterDragonform` swaps
+  each member for a Dragon of the same name/level (HP/MP mapped by
+  percentage, bare gear) and stashes the originals;
+  `leaveDragonform` maps the outcome back (KO stays KO, survivors never
+  round to 0). Armed by the event (`dragonformArmed_` + HUD chip), spent
+  in `startBattle` before `buildBattle` reads the members — so the battle
+  engine needs no special cases — and restored FIRST in `onResume`.
+  Scoring: `RunSummary.dragonformFights` → `ScoreBreakdown.dragonformPact`
+  (flat 100 each, subtracted in the subtotal; result-screen line
+  "Dragonform pact (N)"). The M45 class modifier is not additionally
+  applied (owner decision 6).
+- **Debug**: "Patrol on next step", "Arm dragonform" (cheat one-shots
+  consumed by DungeonState, the InstantClear pattern).
+
+## 47. M94 — the sparring mirror
+
+No version bumps: the mirror is battle CONSTRUCTION (a new builder), the
+manual mode is a driver-side routing flag, and the zero-stakes rule is a
+state-side snapshot — the engine's rules are untouched.
+
+- **`battle::buildSparBattle(party, db)`** (shared, sim-testable): builds
+  the party side through the one real path, mirrors every unit as an
+  enemy-side echo ("Echo <name>", `partyIndex -1` so the writeback can
+  never reach the real party, `uncontrolled` cleared), then re-derives the
+  threat table and battle seed over the FULL roster (kept in lockstep with
+  buildBattle's finalization) — a spar is as deterministic as any fight.
+- **Manual mode**: `BattleState` ctor flag `manualEnemies` — an
+  enemy-side turn that is not forced routes through the SAME command
+  phases. The targeting sites became actor-relative (for a party actor
+  they degenerate to the historical values, so normal play is
+  byte-identical); echo turns disable Item (no bag) and Escape (the
+  player-side end-spar verb).
+- **`SparState`**: snapshots the WHOLE `Party` object, pushes the battle
+  (plain backdrop, its own discarded `RunStats` sink, null spoils),
+  restores everything in `onResume` regardless of outcome, and closes on
+  a one-line modal ("… no harm done."). Reached from two rows under the
+  Training Hall roster (AI echoes / manual control).
+- Capture `111_spar_closing`; `10_training_hall` lints the new rows.
+  Tests (`test_spar.cpp`): mirror fidelity + severed writeback +
+  deterministic seed + both-sides-AI resolvability + the reward belt.
+
+## 48. M95 — summons (rules v17)
+
+Battle rules **16 → 17** (`Battle.hpp` history, the authority).
+
+- **Schema**: `SkillDef.oncePerRun` + `summonName` (loader-validated:
+  summonName requires oncePerRun; editor descriptors updated). Three
+  authored summons (`summon_goose` phys/all/42/80MP + Terrified d1;
+  `summon_sentinel` holy magic/all/38/70MP + Terrified d1;
+  `summon_spring` heal/all-allies/90/100MP) and three valueless scroll
+  items appended to `treasureScrollPool()` (now 9; award order after the
+  six Lost Scrolls, the M65 flow unchanged, token+gold fallback after).
+- **The one shared gate**: `Party.usedSummons` (RUNTIME only, never
+  saved — the entry autosave restarts a reload fresh, like every run
+  state) copies into `Battle.usedSummons` at build;
+  `battle::summonSpent()` feeds the menu ("USED" suffix + grey), all
+  three enemy-AI loops (a belt — no foe learns one anyway), and
+  `useSkill`'s refusal (the silence pattern: refuse before any
+  mutation; append the id the moment a cast is real). The battle
+  screen's writeback carries the ledger with HP/MP. Resets:
+  DungeonState ctor, CastleChallengeState/TreasureFightState onEnter;
+  the spar's whole-party restore covers itself.
+- **Presentation**: "<summonName> answers the call!" on the quip channel
+  + the M51 all-target tint + M91 element accents. The planned creature
+  silhouette is DEFERRED (deviation, recorded in the note).
+- **Re-audit (owner-veto flag)**: the plan's Hollow-King terrify
+  immunity was DROPPED — M44's owner-approved design says outright the
+  King is immune to none of the relics (the Evil Goose IS his
+  counterplay), and a summon's terror rides the same status. Duck
+  (blanket) and Dragon (listed) remain immune. Debug: grant summon
+  scrolls / reset the ledger.
+
+## 49. M96 — heirlooms (rules v18)
+
+Battle rules **17 → 18**. The fourth worn slot, whose effects are the M75
+trigger engine attached PARTY-side for the first time.
+
+- **Schema**: `ItemType::Heirloom` + `EquipSlot::Heirloom` (tables
+  extended; an heirloom's slot is validated to heirloom);
+  `ItemDef.triggers` (the M75 reader, clones disallowed) +
+  `lowHpThresholdPct`/`lowHpAttackPct` (paired, heirloom-only,
+  0..100); `TriggerDo::HealSelfPct` (heals `magnitude`% of max HP,
+  alive-only, capped, "+N HP" logged). `Character.equippedHeirloom`
+  saved as optional gear (unknown ids dropped on load).
+- **Battle**: buildBattle attaches the worn heirloom's triggers to the
+  wearer (`resolveTriggers`), absorbs its element resists, and compiles
+  the conditional edge into Combatant fields read by ONE public rule —
+  `battle::lowHpEdgeActive` — applied in the damage path exactly like
+  the Brute enrage and announced once at the three enrage-announce
+  sites (`lowHpText`). A party wearing nothing resolves byte-identically
+  to v17. Trigger firings surface through the existing M75 text flow
+  (message + log) — the plan's separate floating quip was simplified
+  away, recorded as a deviation.
+- **UI**: the equip flow (shop + M90 party mode) walks four slots;
+  heirlooms never appear in a Buy category (story-granted, value 0);
+  `canEquipSlot` returns true for the slot for EVERY class (a memory is
+  not equipment — the Goose's "equips nothing" reads as arms/armor, so
+  M97's rewards are never dead on a Goose party; documented reading).
+  Icons reuse the "relic" keepsake glyph (a dedicated heirloom glyph is
+  deferred).
+- **Content**: 16 heirlooms (two per M97 cutscene choice), spanning
+  first-time-below-HP heals/braces, ally-felled surges, every-Nth
+  rhythms, and three conditional edges — including the owner's two
+  named examples (Emberwake Locket, Lastlight Band). Debug: "Grant 1x
+  each heirloom". Forge: item descriptors gained triggers + the lowHp
+  pair; the type/slot pickers follow the content tables.
+
+## 50. M97 — the Hooded Goose cutscenes
+
+No rules/generation/save-version bump (two additive optional save
+fields). The story layer that hands out the M96 heirlooms.
+
+- **Content**: `data/cutscenes.json` — a REQUIRED file (it grants
+  gameplay items, unlike the two optional presentation files). One
+  scene per `kCutsceneIds` entry (new_game, town_2..town_7, finale):
+  dialogue beats {speaker, text, emote ∈ kGooseEmotes, kingOnStage,
+  dragonOnStage} plus a mandatory two-option choice {label, heirloom,
+  responseSpeaker, responseText}. `parseCutscenes` owns shape and
+  vocabulary; `validateReferences` owns the heirloom rules (exists, IS
+  an heirloom, granted by exactly one option anywhere). Text may carry
+  `{member1}..{member4}` name tokens; the canonical writer and the
+  glyph lint cover the file like any other.
+- **Progress model** (`game/Cutscenes.hpp`, pure): `Party.seenCutscenes`
+  (scene ids, marked BEFORE the push — the M41 storyMet idiom) and
+  `Party.heirloomChoices` ("scene:heirloom" strings, one per scene).
+  The grant fires only while a scene has no recorded choice, which is
+  what makes finale replays and debug plays safe. Save reader drops
+  unknown/malformed entries; old saves load a fresh story; a New Game
+  clears both.
+- **CutsceneState**: full-screen stage (night fills, floor band) —
+  party battle sprites left, the hooded goose center on
+  `actor.hooded_goose.stage`, King/Dragon staged dimmed when a beat
+  asks. Emotes are micro-offsets on the sanctioned motion clocks
+  (`motionPhase`/`motionPhase3`) — capture-stable, kit-conform. Bottom
+  panel: speaker line + 3-line M87 TextViewport. Cancel → "Skip
+  scene?" which jumps TO the choice (never past it); the choice modal
+  is the M63/M92 pattern with the keepsake's own description under the
+  list.
+- **Triggers**: new game (PartyCreationState::begin, pushed over the
+  fresh town), first arrival at towns 2–7 (TownState::travelTo), and
+  the finale NPC — the hooded goose standing at town 7's would-be
+  Town-8 roadside (`kGooseNpcTileX/Y`, gated on profile
+  `kingDefeated`), who stays for replays.
+- **Assets**: two RNG-free generated sprites
+  (`actor.hooded_goose.overworld` 12×12, `.stage` 18×26) + manifest +
+  credits; every prior texture byte-identical.
+- **Forge**: `Category::Cutscenes` (count 12 → 13) with beats/options
+  as ObjectArray descriptors; the option's response is one authored
+  line (not a beat list) — a deliberate flattening to the editor's
+  one-level nesting, recorded as a deviation.
+- **Captures**: `112_cutscene_dialogue`, `113_cutscene_choice`,
+  `114_cutscene_finale` (set now 114). Debug rows: "Play cutscene"
+  (cycles the eight, replay-only, no re-grant, no seen-mark) and
+  "Reset story progress".
 

@@ -27,7 +27,10 @@ namespace cd {
 namespace style = ui::style;
 
 namespace {
-const char* const kSlotNames[3] = {"Weapon", "Armor", "Accessory"};
+// M96: the Heirloom joins as the fourth WORN slot — but never a BUY category
+// (heirlooms are story-granted, value 0, sold nowhere), so kCategoryNames
+// stays three wide while the equip flow walks all four.
+const char* const kSlotNames[4] = {"Weapon", "Armor", "Accessory", "Heirloom"};
 // Buy-list categories (M31), parallel to slotEnum(0..2): Weapon/Armor/Accessory.
 const char* const kCategoryNames[3] = {"Weapons", "Armor", "Accessories"};
 
@@ -43,6 +46,7 @@ std::string equipDetail(const content::ItemDef& it) {
         case content::EquipSlot::Weapon: out = "Weapon"; break;
         case content::EquipSlot::Armor: out = "Armor"; break;
         case content::EquipSlot::Accessory: out = "Accessory"; break;
+        case content::EquipSlot::Heirloom: out = "Heirloom"; break;  // M96
         case content::EquipSlot::None: break;
     }
     const std::string stats = equip::statBonusSummary(it.statBonus);
@@ -66,6 +70,7 @@ const char* slotLabel(content::EquipSlot s) {
         case content::EquipSlot::Weapon: return "Weapon";
         case content::EquipSlot::Armor: return "Armor";
         case content::EquipSlot::Accessory: return "Accessory";
+        case content::EquipSlot::Heirloom: return "Heirloom";  // M96
         case content::EquipSlot::None: break;
     }
     return "Item";
@@ -75,7 +80,8 @@ content::EquipSlot slotEnum(int slot) {
     switch (slot) {
         case 0: return content::EquipSlot::Weapon;
         case 1: return content::EquipSlot::Armor;
-        default: return content::EquipSlot::Accessory;
+        case 2: return content::EquipSlot::Accessory;
+        default: return content::EquipSlot::Heirloom;  // M96: the fourth slot
     }
 }
 
@@ -83,7 +89,8 @@ std::string& slotRef(Character& c, int slot) {
     switch (slot) {
         case 0: return c.weapon;
         case 1: return c.armor;
-        default: return c.accessory;
+        case 2: return c.accessory;
+        default: return c.equippedHeirloom;  // M96
     }
 }
 
@@ -99,11 +106,16 @@ const char* categoryLabel(content::EquipSlot s) {
 }
 }  // namespace
 
-EquipShopState::EquipShopState(StateStack& stack, AppContext& context)
-    : GameState(stack), context_(context) {
+EquipShopState::EquipShopState(StateStack& stack, AppContext& context, bool partyMode)
+    : GameState(stack), context_(context), partyMode_(partyMode) {
     // Populate the top menu at construction (phase_ defaults to Menu). Doing it
     // here rather than in onEnter lets the capture hook force a phase that
     // onEnter would otherwise reset, matching BattleState's capture pattern.
+    // M90: party mode opens straight in the equip flow — the shop phases are
+    // unreachable (Cancel from EquipChar leaves, see handleInput).
+    if (partyMode_) {
+        phase_ = Phase::EquipChar;
+    }
     rebuild();
 }
 
@@ -181,8 +193,9 @@ void EquipShopState::rebuild() {
             break;
         case Phase::EquipSlot: {
             const Character& c = context_.party.members[static_cast<std::size_t>(selectedChar_)];
-            const std::string eq[3] = {c.weapon, c.armor, c.accessory};
-            for (int i = 0; i < 3; ++i) {
+            const std::string eq[4] = {c.weapon, c.armor, c.accessory,
+                                       c.equippedHeirloom};  // M96
+            for (int i = 0; i < 4; ++i) {
                 std::string label = std::string(kSlotNames[i]) + ": ";
                 std::string icon;  // M81: the equipped piece's icon leads its row
                 if (eq[i].empty()) {
@@ -381,8 +394,16 @@ void EquipShopState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Cancel)) {
         switch (phase_) {
             case Phase::Menu: stack().popState(); break;
-            case Phase::BuyCategory:
-            case Phase::EquipChar: phase_ = Phase::Menu; rebuild(); break;
+            case Phase::BuyCategory: phase_ = Phase::Menu; rebuild(); break;
+            case Phase::EquipChar:
+                // M90: in party mode EquipChar IS the top — Cancel leaves.
+                if (partyMode_) {
+                    stack().popState();
+                } else {
+                    phase_ = Phase::Menu;
+                    rebuild();
+                }
+                break;
             case Phase::Buy: phase_ = Phase::BuyCategory; rebuild(); break;
             case Phase::EquipSlot: phase_ = Phase::EquipChar; rebuild(); break;
             case Phase::EquipItem: phase_ = Phase::EquipSlot; rebuild(); break;
@@ -394,9 +415,17 @@ void EquipShopState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     const style::Palette& p = style::palette();
-    ui::drawSceneBackground(context_.resources, "bg.equip_shop", p.canvas,
-                            context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
-    ui::drawHeaderBand("Equipment Shop", w, p.gold, context_.party.gold);
+    // M90: party mode carries no shop dressing — a plain canvas (it opens from
+    // the pause menus, possibly inside a dungeon) and its own header.
+    if (partyMode_) {
+        ClearBackground(p.canvas);
+        ui::drawHeaderBand("Equip Party", w, p.gold, context_.party.gold);
+    } else {
+        ui::drawSceneBackground(context_.resources, "bg.equip_shop", p.canvas,
+                                context_.virtualWidth, context_.virtualHeight,
+                                context_.party.currentTown);
+        ui::drawHeaderBand("Equipment Shop", w, p.gold, context_.party.gold);
+    }
 
     std::string buyHint;
     const char* hint = "Confirm: Select   Cancel: Back";
@@ -465,7 +494,11 @@ void EquipShopState::render() {
         // candidate, so the equip decision is legible without opening Details.
         const Character& c = context_.party.members[static_cast<std::size_t>(selectedChar_)];
         const std::string& curId =
-            selectedSlot_ == 0 ? c.weapon : (selectedSlot_ == 1 ? c.armor : c.accessory);
+            selectedSlot_ == 0
+                ? c.weapon
+                : (selectedSlot_ == 1 ? c.armor
+                                      : (selectedSlot_ == 2 ? c.accessory
+                                                            : c.equippedHeirloom));  // M96
         content::StatBlock curBonus{};
         std::string curName = "(none)";
         if (const content::ItemDef* curItem = context_.content.findItem(curId)) {

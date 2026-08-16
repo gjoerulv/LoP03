@@ -203,6 +203,8 @@ std::vector<FieldDesc> skillDescs() {
         num("reviveHpPct", "Revive HP %", 0, 100),
         bl("alsoBuffsEnemies", "Also Buffs Enemies"),
         num("mpDamagePct", "MP Damage % (M75)", 0, 100),
+        bl("oncePerRun", "Once Per Run (M95 summon)"),
+        str("summonName", "Summon Name (M95)"),
         txt("description", "Description"),
     };
 }
@@ -250,6 +252,7 @@ std::vector<FieldDesc> enemyDescs() {
         enList("statusImmunities", "Status Immunities", ids(content::statusTypeIds())),
         bl("avoidSleepingTargets", "Avoid Sleeping Targets"),
         bl("noStunWhileAllFoesSleep", "No Stun While All Sleep"),
+        num("maxMp", "Max MP Override (M89)", 0, 9999),
         num("xpReward", "XP Reward", 0, 99999),
         num("goldReward", "Gold Reward", 0, 99999),
     };
@@ -282,6 +285,9 @@ std::vector<FieldDesc> bossDescs() {
         bl("avoidSleepingTargets", "Avoid Sleeping Targets"),
         bl("noStunWhileAllFoesSleep", "No Stun While All Sleep"),
         bl("immuneToStatScale", "Immune To Stat Scale (Spoon)"),
+        num("maxMp", "Max MP Override (M89)", 0, 9999),
+        num("basicAttackEveryNth", "Basic Attack Every Nth (M89)", 0, 99),
+        str("basicAttackText", "Basic Attack Line (M89)"),
         txt("telegraph", "Telegraph"),
         num("xpReward", "XP Reward", 0, 99999),
         num("goldReward", "Gold Reward", 0, 99999),
@@ -320,6 +326,9 @@ std::vector<FieldDesc> itemDescs() {
         en("iconCategory", "Icon Category (M81)", ids(content::iconCategoryIds()), ""),
         str("useLine", "Use Line (M76)"),
         ref("grantsSkill", "Grants Skill (scroll)", Category::Skills),
+        objArr("triggers", "Triggers (M96 heirloom)", triggerChildren()),
+        num("lowHpThresholdPct", "Low-HP Threshold % (M96)", 0, 100),
+        num("lowHpAttackPct", "Low-HP Attack Bonus % (M96)", 0, 100),
         txt("description", "Description"),
     };
 }
@@ -425,6 +434,29 @@ std::vector<FieldDesc> curioLoreDescs() {
     };
 }
 
+// M97: one scene = dialogue beats (modal-edited rows) + the mandatory
+// two-option choice. Emotes follow content::kGooseEmotes; each option's
+// heirloom is an Items reference (existence, heirloom-ness, and one-owner
+// uniqueness are validateReferences rules, reported on save).
+std::vector<FieldDesc> cutsceneDescs() {
+    std::vector<std::string> emotes;
+    for (std::size_t i = 0; i < content::kGooseEmoteCount; ++i) {
+        emotes.emplace_back(content::kGooseEmotes[i]);
+    }
+    return {
+        idField(),
+        str("question", "Choice Question", true),
+        objArr("beats", "Beats",
+               {str("speaker", "Speaker", true), txt("text", "Text", true),
+                en("emote", "Goose Emote", emotes, "idle"),
+                bl("kingOnStage", "King On Stage"), bl("dragonOnStage", "Dragon On Stage")}),
+        objArr("options", "Choice Options (exactly 2)",
+               {str("label", "Label", true), ref("heirloom", "Heirloom", Category::Items),
+                str("responseSpeaker", "Response Speaker", true),
+                txt("responseText", "Response Text", true)}),
+    };
+}
+
 }  // namespace
 
 const std::vector<CategoryInfo>& categories() {
@@ -441,6 +473,7 @@ const std::vector<CategoryInfo>& categories() {
         {Category::Story, "story.json", "story", "Story", false},
         {Category::EventFlavor, "event_flavor.json", "events", "Event Flavor", true},
         {Category::CurioLore, "curio_lore.json", "curios", "Curio Lore", true},
+        {Category::Cutscenes, "cutscenes.json", "cutscenes", "Cutscenes", true},  // M97
     };
     return kInfos;
 }
@@ -467,6 +500,7 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
     static const std::vector<FieldDesc> kStory = storyDescs();
     static const std::vector<FieldDesc> kEventFlavor = eventFlavorDescs();
     static const std::vector<FieldDesc> kCurioLore = curioLoreDescs();
+    static const std::vector<FieldDesc> kCutscenes = cutsceneDescs();
     switch (category) {
         case Category::Skills: return kSkills;
         case Category::Classes: return kClasses;
@@ -480,6 +514,7 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
         case Category::Story: return kStory;
         case Category::EventFlavor: return kEventFlavor;
         case Category::CurioLore: return kCurioLore;
+        case Category::Cutscenes: return kCutscenes;
     }
     return kSkills;
 }

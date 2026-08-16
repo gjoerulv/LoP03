@@ -85,18 +85,20 @@ constexpr std::array<std::pair<std::string_view, EnemyRole>, 7> kEnemyRoles{{
     {"disruptor", EnemyRole::Disruptor},
 }};
 
-constexpr std::array<std::pair<std::string_view, ItemType>, 4> kItemTypes{{
+constexpr std::array<std::pair<std::string_view, ItemType>, 5> kItemTypes{{
     {"consumable", ItemType::Consumable},
     {"equipment", ItemType::Equipment},
     {"relic", ItemType::Relic},
     {"scroll", ItemType::Scroll},
+    {"heirloom", ItemType::Heirloom},  // M96
 }};
 
-constexpr std::array<std::pair<std::string_view, EquipSlot>, 4> kEquipSlots{{
+constexpr std::array<std::pair<std::string_view, EquipSlot>, 5> kEquipSlots{{
     {"none", EquipSlot::None},
     {"weapon", EquipSlot::Weapon},
     {"armor", EquipSlot::Armor},
     {"accessory", EquipSlot::Accessory},
+    {"heirloom", EquipSlot::Heirloom},  // M96: the fourth worn slot
 }};
 
 constexpr std::array<std::pair<std::string_view, Rarity>, 5> kRarities{{
@@ -211,7 +213,7 @@ constexpr std::array<std::pair<std::string_view, TriggerWhen>, 4> kTriggerWhens{
     {"first_time_ally_felled", TriggerWhen::FirstTimeAllyFelled},
 }};
 
-constexpr std::array<std::pair<std::string_view, TriggerDo>, 7> kTriggerDos{{
+constexpr std::array<std::pair<std::string_view, TriggerDo>, 8> kTriggerDos{{
     {"status_self", TriggerDo::StatusSelf},
     {"status_attacker", TriggerDo::StatusAttacker},
     {"status_all_foes", TriggerDo::StatusAllFoes},
@@ -219,6 +221,7 @@ constexpr std::array<std::pair<std::string_view, TriggerDo>, 7> kTriggerDos{{
     {"scale_stats_self", TriggerDo::ScaleStatsSelf},
     {"summon_clone", TriggerDo::SummonCloneSelf},
     {"drain_foe_mp", TriggerDo::DrainFoeMp},
+    {"heal_self_pct", TriggerDo::HealSelfPct},  // M96: heirlooms (rules v18)
 }};
 
 }  // namespace

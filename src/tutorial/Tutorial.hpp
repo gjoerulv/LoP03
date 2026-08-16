@@ -35,6 +35,7 @@ inline constexpr const char* kFirstMarket = "first_market";    // M34 black mark
 inline constexpr const char* kFirstCastle = "first_castle";        // M40 castle
 inline constexpr const char* kFirstChallenge = "first_challenge";  // M40 challenges
 inline constexpr const char* kFirstRelic = "first_relic";          // M44 royal relics
+inline constexpr const char* kCarriedOut = "carried_out";          // M89 defeat rework
 
 struct Beat {
     const char* id;
@@ -115,6 +116,11 @@ inline constexpr Beat kBeats[] = {
      "once, on one enemy, in battle - beyond that, all anyone has is the "
      "storytellers' ballad. Listen to every verse. And mind the spoon. "
      "Everyone says to mind the spoon. Nobody says why."},
+    {kCarriedOut, "Carried out",
+     "Defeat in a dungeon no longer mends the party. One member staggers back "
+     "to town at 1 HP, the fallen stay fallen, MP keeps whatever remained - "
+     "and half your gold is gone. The Inn restores everyone, and a Phoenix "
+     "Tear can raise the fallen on the road."},
 };
 inline constexpr std::size_t kBeatCount = sizeof(kBeats) / sizeof(kBeats[0]);
 

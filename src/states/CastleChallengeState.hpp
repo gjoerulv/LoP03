@@ -6,6 +6,7 @@
 #include "game/Castle.hpp"
 #include "game/RunStats.hpp"
 #include "states/GameState.hpp"
+#include "ui/TextViewport.hpp"
 
 namespace cd {
 
@@ -56,6 +57,9 @@ private:
     int wavesWon_ = 0;
     bool done_ = false;     // the result overlay is showing
     std::string resultText_;
+    // M87: the result body scrolls past its visible budget instead of
+    // truncating (long localized results stay fully readable).
+    ui::TextViewport resultView_;
     battle::BattleResult result_;
     RunStats stats_;  // M71: per-challenge damage tallies, for the MVP pedestal
 };

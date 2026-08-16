@@ -17,6 +17,7 @@ constexpr int kNoDeathBonus = 300;
 constexpr int kEscapePenalty = 40;   // per escaped battle
 constexpr int kWagerWin = 150;       // M20 wager event: completed, no deaths
 constexpr int kWagerLoss = 100;      // completed with deaths
+constexpr int kDragonformPact = 100;  // M93: per dragonform battle (owner: flat -100)
 }  // namespace
 
 ScoreBreakdown scoreBreakdown(const RunSummary& run) {
@@ -35,13 +36,17 @@ ScoreBreakdown scoreBreakdown(const RunSummary& run) {
     if (run.wagerAccepted) {
         b.wager = run.noDeath ? kWagerWin : -kWagerLoss;
     }
+    // M93 (owner decision 6): each dragonform battle costs a flat 100, stated
+    // on the event panel before accepting. Stored positive, subtracted below.
+    b.dragonformPact = kDragonformPact * std::max(0, run.dragonformFights);
 
     // Town-ladder bonus (M32) and stakes penalty (M33): both are percentages of
     // the (non-negative) subtotal; the bonus is added and the penalty subtracted,
     // penalty after the bonus. pct 0 on both (town 1 / legacy / a stakes-raising
     // run) => total identical to pre-M32/M33.
     const int subtotal = b.base + b.bossBonus - b.turnPenalty + b.chestBonus + b.dangerBonus +
-                         b.treasureBonus + b.noDeathBonus - b.escapePenalty + b.wager;
+                         b.treasureBonus + b.noDeathBonus - b.escapePenalty + b.wager -
+                         b.dragonformPact;
     const int posSubtotal = std::max(0, subtotal);
     b.townBonus = posSubtotal * std::max(0, run.townBonusPct) / 100;
     b.stakesPenalty = posSubtotal * std::max(0, run.stakesPenaltyPct) / 100;

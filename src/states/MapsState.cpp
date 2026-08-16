@@ -1,5 +1,6 @@
 #include "states/MapsState.hpp"
 
+#include <algorithm>
 #include <string>
 
 #include "audio/AudioManager.hpp"
@@ -84,7 +85,14 @@ void MapsState::captureInspect(int index) {
 
 void MapsState::handleInput(const Input& input) {
     // M85: the lore panel is a modal — any confirm/cancel closes it.
+    // M87: Up/Down scrolls a long body first.
     if (loreOpen_) {
+        if (input.navPressed(InputAction::MoveUp) && loreView_.scrollBy(-1)) {
+            context_.audio.play(Sfx::Move);
+        }
+        if (input.navPressed(InputAction::MoveDown) && loreView_.scrollBy(1)) {
+            context_.audio.play(Sfx::Move);
+        }
         if (input.pressed(InputAction::Cancel) || input.pressed(InputAction::Confirm)) {
             context_.audio.play(Sfx::Cancel);
             loreOpen_ = false;
@@ -208,7 +216,8 @@ void MapsState::render() {
     }
 
     // M85: the lore panel — the curio speaks (curio_lore.json), or falls back
-    // to its own M66 description when the optional file is absent.
+    // to its own M66 description when the optional file is absent. M87: the
+    // body is a bounded scrollable viewport (up to 7 visible lines).
     if (loreOpen_) {
         const CurioDef& cd = kCurios[static_cast<std::size_t>(cursor_)];
         const content::CurioLoreDef* lore = context_.content.findCurioLore(cd.id);
@@ -221,12 +230,20 @@ void MapsState::render() {
         ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
         ui::drawTextCentered(cd.name, w / 2, boxY + 10, 14, p.gold);
         ui::drawDivider(boxX + 14, boxY + 28, boxW - 28);
-        ui::drawTextWrapped(body, boxX + 16, boxY + 36, boxW - 32, 9, p.text,
-                            "maps.lore", 7);
-        ui::drawTextCentered(input::prompt(context_.input.map(), InputAction::Confirm,
-                                           context_.input.activeDevice(), "Close")
-                                 .c_str(),
-                             w / 2, boxY + boxH - 14, 9, p.textDim);
+        loreView_.setContent(body, boxW - 32 - ui::kScrollGutterW, 9, ui::raylibMeasure());
+        loreView_.setVisibleLines(std::clamp(loreView_.lineCount(), 1, 7));
+        ui::drawTextViewport(loreView_, boxX + 16, boxY + 36, p.text);
+        std::string hint = input::prompt(context_.input.map(), InputAction::Confirm,
+                                         context_.input.activeDevice(), "Close");
+        if (loreView_.scrollable()) {
+            hint = input::primaryLabel(context_.input.map(), InputAction::MoveUp,
+                                       context_.input.activeDevice()) +
+                   "/" +
+                   input::primaryLabel(context_.input.map(), InputAction::MoveDown,
+                                       context_.input.activeDevice()) +
+                   " Scroll   " + hint;
+        }
+        ui::drawTextCentered(hint.c_str(), w / 2, boxY + boxH - 14, 9, p.textDim);
     }
 
     ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Confirm,

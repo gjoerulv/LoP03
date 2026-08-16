@@ -92,6 +92,12 @@ int effectiveAttack(const Combatant& a) {
     if (a.enrages && a.hp * 2 < a.maxHp) {
         value = value * 3 / 2;  // Brute enrage
     }
+    // M96 (rules v18): a worn heirloom's conditional edge — genuinely
+    // conditional like the enrage above it, so healing back over the
+    // threshold sheathes it again.
+    if (lowHpEdgeActive(a)) {
+        value += value * a.lowHpAttackPct / 100;
+    }
     return value;
 }
 
@@ -978,6 +984,10 @@ std::string Battle::beginUnitTurn(int actor) {
     if (actor < 0 || actor >= static_cast<int>(units.size())) {
         return "";
     }
+    // M89: the own-turn ordinal every counter-based rule reads (the revive
+    // clock keeps its own counter for its reset semantics; this one never
+    // resets). Advanced here so both drivers agree by construction.
+    ++units[static_cast<std::size_t>(actor)].ownTurnsTaken;
     // M49 revive clock + M75 turn-start triggers, composed in the one per-turn
     // seam both drivers already call. Triggers fire even on a turn a status
     // then takes away (a sleeping dragon still rages at half HP) — simple,
@@ -1213,6 +1223,20 @@ std::string Battle::applyTriggerAction(int owner, TriggerRule& tr, int attacker)
             }
             break;
         }
+        case content::TriggerDo::HealSelfPct: {
+            // M96 (rules v18): the bearer mends `magnitude` percent of its max
+            // HP — the heirlooms' one-shot lifeline (a fallen bearer stays
+            // fallen; triggers never revive).
+            if (o.alive()) {
+                const int heal = o.maxHp * std::clamp(tr.magnitude, 0, 100) / 100;
+                const int before = o.hp;
+                o.hp = std::min(o.maxHp, o.hp + heal);
+                if (o.hp > before) {
+                    log += " (+" + std::to_string(o.hp - before) + " HP)";
+                }
+            }
+            break;
+        }
         case content::TriggerDo::None:
             break;
     }
@@ -1373,6 +1397,11 @@ std::string Battle::attackOne(int actor, int target, int scalePct) {
             a.enrageAnnounced = true;
             miss = a.name + " flies into a rage! " + miss;
         }
+        // M96: the heirloom's edge announces once, even on a miss.
+        if (!a.lowHpAnnounced && lowHpEdgeActive(a)) {
+            a.lowHpAnnounced = true;
+            miss = a.lowHpText + " " + miss;
+        }
         return miss;
     }
     // M48: a basic attack carries the attacker's weapon element (None for every
@@ -1424,6 +1453,11 @@ std::string Battle::attackOne(int actor, int target, int scalePct) {
     if (a.enrages && !a.enrageAnnounced && a.hp * 2 < a.maxHp) {
         a.enrageAnnounced = true;
         log = a.name + " flies into a rage! " + log;
+    }
+    // M96: the heirloom's conditional edge announces once (the enrage shape).
+    if (!a.lowHpAnnounced && lowHpEdgeActive(a)) {
+        a.lowHpAnnounced = true;
+        log = a.lowHpText + " " + log;
     }
     return log;
 }
@@ -1510,6 +1544,15 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
     if (isSilenced(units[static_cast<std::size_t>(actor)]) && skill.mpCost > 0) {
         return units[static_cast<std::size_t>(actor)].name + " is silenced and cannot use " +
                skill.name + "!";
+    }
+    // M95 (rules v17): a spent summon refuses here too — the silence pattern —
+    // so no driver can desync from the menu/AI gate. A fresh cast is recorded
+    // the moment it is real (below), before any effect resolves.
+    if (summonSpent(*this, skill)) {
+        return skill.name + " has already answered this run!";
+    }
+    if (skill.oncePerRun) {
+        usedSummons.push_back(skill.id);
     }
     primaryTarget = redirectTarget(units, actor, primaryTarget);  // M28 intercept
     // M60 telemetry: the cast is real from here on (silence already returned).
@@ -1833,6 +1876,11 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
         a.enrageAnnounced = true;
         log = a.name + " flies into a rage! " + log;
     }
+    // M96: the heirloom's conditional edge announces once here too.
+    if (!a.lowHpAnnounced && lowHpEdgeActive(a)) {
+        a.lowHpAnnounced = true;
+        log = a.lowHpText + " " + log;
+    }
     return log;
 }
 
@@ -2028,6 +2076,20 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         absorbResists(c.weapon);
         absorbResists(c.armor);
         absorbResists(c.accessory);
+        absorbResists(c.equippedHeirloom);  // M96: the fourth slot may resist too
+        // M96 (rules v18): the worn heirloom's triggers attach to the wearer —
+        // the M75 machinery, party-side — and its conditional low-HP edge
+        // compiles into the enrage-pattern fields the damage path reads.
+        if (!c.equippedHeirloom.empty()) {
+            if (const content::ItemDef* h = db.findItem(c.equippedHeirloom)) {
+                if (h->type == content::ItemType::Heirloom) {
+                    resolveTriggers(u, h->triggers);
+                    u.lowHpThresholdPct = h->lowHpThresholdPct;
+                    u.lowHpAttackPct = h->lowHpAttackPct;
+                    u.lowHpText = h->name + " sharpens " + c.name + "'s desperation!";
+                }
+            }
+        }
         // M36: own many, equip one - resolve the single equipped passive.
         if (!c.equippedPassive.empty()) {
             applyPassives(u, {c.equippedPassive}, db);
@@ -2049,6 +2111,8 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
     // M43: is this the King's fight? Read once, from content, so item behavior
     // that keys on it is deterministic and sim-identical.
     b.kingBattle = team.bossId == kKingBossId;
+    // M95: the run's summon ledger rides the battle (see Battle.usedSummons).
+    b.usedSummons = party.usedSummons;
 
     // M75 (summon_clone): the clone is prepared inside the boss block and
     // appended AFTER the minions, prebuilt dead, so the unit roster never has
@@ -2065,7 +2129,13 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
             u.name = boss->name;
             u.stats = scaled(boss->stats);
             u.hp = u.maxHp = u.stats.maxHp < 1 ? 1 : u.stats.maxHp;
-            u.mp = u.maxMp = deriveMaxMp(u.stats.magic);
+            // M89 (rules v16): an authored maxMp replaces the from-magic BASE
+            // and scales exactly as magic would, so the pool follows the fight
+            // context. 0 (every pre-M89 boss) keeps the derived pool.
+            u.mp = u.maxMp = deriveMaxMp(
+                boss->maxMp > 0 ? boss->maxMp * team.statScalePct / 100 : u.stats.magic);
+            u.basicAttackEveryNth = boss->basicAttackEveryNth;  // M89 (0 = off)
+            u.basicAttackText = boss->basicAttackText;
             u.skillIds = boss->skills;
             u.isBoss = true;
             u.enrages = boss->archetype == content::BossArchetype::Brute;
@@ -2141,7 +2211,9 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
         u.sourceId = id;
         u.stats = scaled(def->stats);
         u.hp = u.maxHp = u.stats.maxHp < 1 ? 1 : u.stats.maxHp;
-        u.mp = u.maxMp = deriveMaxMp(u.stats.magic);
+        // M89: the same authored-pool rule as the boss block (0 = derived).
+        u.mp = u.maxMp = deriveMaxMp(
+            def->maxMp > 0 ? def->maxMp * team.statScalePct / 100 : u.stats.magic);
         u.skillIds = def->skills;
         u.isBoss = false;  // minions are not the boss
         u.name = def->name;
@@ -2183,6 +2255,40 @@ Battle buildBattle(const Party& party, const dungeon::EnemyTeam& team,
     }
     b.rngSeed = seed;
 
+    return b;
+}
+
+Battle buildSparBattle(const Party& party, const content::ContentDatabase& db) {
+    dungeon::EnemyTeam mirror;
+    mirror.name = "The Echoes";  // empty roster: buildBattle yields party-only
+    Battle b = buildBattle(party, mirror, db);
+
+    // Mirror every party unit as an enemy-side echo. partyIndex -1 severs the
+    // writeback; `uncontrolled` is cleared (the enemy driver already decides
+    // for the echo — a Jester echo simply fights like the rest).
+    const std::size_t partyCount = b.units.size();
+    for (std::size_t i = 0; i < partyCount; ++i) {
+        Combatant echo = b.units[i];
+        echo.side = Side::Enemy;
+        echo.partyIndex = -1;
+        echo.name = "Echo " + echo.name;
+        echo.uncontrolled = false;
+        b.units.push_back(std::move(echo));
+    }
+
+    // Re-derive the threat table and the battle seed over the FULL roster —
+    // kept in lockstep with buildBattle's own finalization (the seed feeds
+    // every deterministic per-turn hash, so it must cover the echoes).
+    b.threat.assign(b.units.size(), 0);
+    std::uint64_t seed = 0xC0FFEE1234567890ull;
+    for (const Combatant& u : b.units) {
+        for (char ch : u.name) {
+            seed = seed * 131 + static_cast<unsigned char>(ch);
+        }
+        seed = seed * 131 + static_cast<std::uint64_t>(u.maxHp);
+        seed = seed * 131 + static_cast<std::uint64_t>(u.stats.speed);
+    }
+    b.rngSeed = seed;
     return b;
 }
 
@@ -2333,6 +2439,30 @@ bool doesNothingThisTurn(const Battle& b, int actor) {
     // and BattleState derive the same answer, and rollCursor never moves.
     const long roll = targetJitter(b.rngSeed ^ kSaltDoNothing, b.turnsTaken, actor, 4, 10000);
     return (roll % 100) < std::min(self.doNothingPct, 100);
+}
+
+bool lowHpEdgeActive(const Combatant& c) {
+    return c.lowHpAttackPct > 0 && c.hp > 0 && c.hp * 100 <= c.lowHpThresholdPct * c.maxHp;
+}
+
+bool summonSpent(const Battle& b, const content::SkillDef& skill) {
+    if (!skill.oncePerRun) {
+        return false;
+    }
+    for (const std::string& id : b.usedSummons) {
+        if (id == skill.id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool basicAttackTurn(const Combatant& c) {
+    // M89 (rules v16): counter-based, not hash-based — beginUnitTurn advanced
+    // `ownTurnsTaken` before any decision is made, so turn N of the unit's own
+    // turns answers identically in every driver. 0 = the rule is off.
+    return c.basicAttackEveryNth > 0 && c.ownTurnsTaken > 0 &&
+           c.ownTurnsTaken % c.basicAttackEveryNth == 0;
 }
 
 ForcedAction forcedActionFor(const Combatant& c) {
@@ -2493,9 +2623,19 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
                skill.statusEffect == content::StatusType::Stunned;
     };
 
+    // M89 (rules v16): the authored every-Nth-own-turn basic attack — the boss
+    // swings instead of casting (the Dragon's lunge), deterministically. Sits
+    // above every skill loop so the turn is a plain swing regardless of MP.
+    if (basicAttackTurn(self) && targetParty >= 0) {
+        choice.useSkill = false;
+        choice.target = targetParty;
+        return choice;
+    }
+
     for (const std::string& sid : self.skillIds) {
         const content::SkillDef* skill = db.findSkill(sid);
-        if (skill == nullptr || mpCostFor(self, *skill) > self.mp || !canCast(self, *skill)) {
+        if (skill == nullptr || mpCostFor(self, *skill) > self.mp || !canCast(self, *skill) ||
+            skill->oncePerRun) {  // M95: no foe ever casts a summon (belt over the content rule)
             continue;  // M75: a cursed caster pays double, so it must afford double
         }
         if (skill->category == content::SkillCategory::Heal && hurtAlly >= 0) {
@@ -2511,6 +2651,7 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
     for (const std::string& sid : self.skillIds) {
         const content::SkillDef* skill = db.findSkill(sid);
         if (skill == nullptr || mpCostFor(self, *skill) > self.mp || !canCast(self, *skill) ||
+            skill->oncePerRun ||  // M95
             skill->category != content::SkillCategory::Support ||
             skill->statusEffect == content::StatusType::None || stunShelved(*skill)) {
             continue;
@@ -2541,6 +2682,7 @@ EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::Content
     for (const std::string& sid : self.skillIds) {
         const content::SkillDef* skill = db.findSkill(sid);
         if (skill == nullptr || mpCostFor(self, *skill) > self.mp || !canCast(self, *skill) ||
+            skill->oncePerRun ||  // M95
             stunShelved(*skill)) {
             continue;
         }

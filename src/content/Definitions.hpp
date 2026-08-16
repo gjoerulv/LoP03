@@ -40,6 +40,14 @@ struct SkillDef {
     // a buff, so healing the party cheers the enemy up too.
     bool alsoBuffsEnemies = false;
 
+    // M95 (rules v17): a summon — castable once per dungeon/challenge run
+    // (`oncePerRun`; the shared battle gate refuses a second cast and the run
+    // resets the ledger at entry), announced by its creature's name
+    // (`summonName`, presentation-only). Both inert by default, so every
+    // pre-M95 skill is untouched.
+    bool oncePerRun = false;
+    std::string summonName;
+
     // M75 (rules v15): a damaging skill may also drain MP — the target loses
     // this percent of the HP damage it just took as MP (the owner's rule:
     // MP damage is about a quarter of the HP damage, so the authored value is
@@ -201,6 +209,9 @@ struct EnemyDef {
     std::vector<StatusType> statusImmunities;
     bool avoidSleepingTargets = false;
     bool noStunWhileAllFoesSleep = false;
+    // M89 (rules v16): optional MP pool override. 0 = derive from magic (every
+    // pre-M89 foe); a positive value replaces the base and scales like magic.
+    int maxMp = 0;
     int xpReward = 0;
     int goldReward = 0;
 };
@@ -349,6 +360,17 @@ struct ItemDef {
     std::vector<Element> resistElements;
     int resistPct = 0;
 
+    // M96 (rules v18) — Heirlooms: worn keepsakes whose effects are BATTLE
+    // triggers, not stat bonuses. `triggers` reuses the M75 TriggerDef
+    // verbatim (attached to the wearer's Combatant at buildBattle); the
+    // lowHp* pair is a CONDITIONAL modifier on the Brute-enrage pattern —
+    // while the wearer's HP is at or under `lowHpThresholdPct` percent, its
+    // attacks hit `lowHpAttackPct` percent harder (announced once). All
+    // inert by default; validated to heirlooms only.
+    std::vector<TriggerDef> triggers;
+    int lowHpThresholdPct = 0;
+    int lowHpAttackPct = 0;
+
     // M81: which hand-authored gear icon this piece renders with in every
     // equipment list ("ui.icon.<category>"). Optional where the slot makes it
     // obvious (armor and accessory pieces and relics default to their slot's
@@ -381,13 +403,16 @@ struct ItemDef {
 // lint both catch it); render code treats empty as "draw no icon". Non-gear
 // items never have an icon.
 inline std::string iconCategoryFor(const ItemDef& d) {
-    if (d.type != ItemType::Equipment && d.type != ItemType::Relic) {
+    if (d.type != ItemType::Equipment && d.type != ItemType::Relic &&
+        d.type != ItemType::Heirloom) {
         return "";
     }
     if (!d.iconCategory.empty()) {
         return d.iconCategory;
     }
-    if (d.type == ItemType::Relic) {
+    // M96: heirlooms lead with the relic keepsake icon (a dedicated 10x10
+    // heirloom glyph is deferred — recorded in the M96 note).
+    if (d.type == ItemType::Relic || d.type == ItemType::Heirloom) {
         return "relic";
     }
     if (d.slot == EquipSlot::Armor) {
@@ -443,6 +468,14 @@ struct BossDef {
     bool avoidSleepingTargets = false;
     bool noStunWhileAllFoesSleep = false;
     bool immuneToStatScale = false;
+    // M89 (rules v16): optional MP pool override (0 = derive from magic;
+    // scales like magic), and the every-Nth-own-turn basic attack — N > 0
+    // makes the boss swing instead of casting on every Nth of its own turns
+    // (the Dragon's lunge), with an optional authored flavour line shown by
+    // the battle screen when it fires.
+    int maxMp = 0;
+    int basicAttackEveryNth = 0;
+    std::string basicAttackText;
     // M84: 0 for every ordinary boss. 1..7 marks this boss as that town's
     // GUILD MASTER: fought only in the town's guild gauntlet, excluded from
     // the dungeon boss pools and the Boss Rush (the kKingBossId exclusion
@@ -493,8 +526,9 @@ inline constexpr const char* kEventFlavorIds[] = {
     "shrine",       "healing_spring", "merchant",    "elite_challenge",
     "score_wager",  "rest_token",     "royal_relic", "armory_ghost",
     "miners_cache", "elder_root",     "duck_peddler",
+    "surveyor",     "dragonform",  // M93 (generation v17)
 };
-inline constexpr std::size_t kEventFlavorIdCount = 11;
+inline constexpr std::size_t kEventFlavorIdCount = 13;
 
 // M85: authored inspect-lore for one dungeon curio (data/curio_lore.json,
 // the second OPTIONAL content file) — the Maps screen's lore panel. Pure
@@ -505,5 +539,44 @@ struct CurioLoreDef {
     std::string id;    // a curio id
     std::string body;  // the dry Duck-mythology lore (wrapped in the panel)
 };
+
+// M97: the Hooded Goose story cutscenes (data/cutscenes.json — REQUIRED, it
+// grants heirlooms, so unlike the two optional flavor files its absence is a
+// content error). One scene per kCutsceneIds entry: dialogue beats, then a
+// mandatory pick-one-of-two choice whose options each carry an heirloom and
+// one response line. Beat text may use the {member1}..{member4} name tokens
+// (resolved at display time, game/Cutscenes.hpp).
+struct CutsceneBeat {
+    std::string speaker;         // display name for the dialogue panel title
+    std::string text;            // the beat's prose (tokens allowed)
+    std::string emote = "idle";  // one of kGooseEmotes — the goose's stage act
+    bool kingOnStage = false;    // stage the Hollow King behind the goose
+    bool dragonOnStage = false;  // stage the Last Dragon behind the goose
+};
+
+struct CutsceneOption {
+    std::string label;            // the choice row (short, one line)
+    std::string heirloomId;       // item granted on first pick (type heirloom)
+    std::string responseSpeaker;  // who answers the pick
+    std::string responseText;     // the one closing line (tokens allowed)
+};
+
+struct CutsceneDef {
+    std::string id;        // one of kCutsceneIds
+    std::string question;  // the choice prompt (never skippable)
+    std::vector<CutsceneBeat> beats;      // at least one
+    std::vector<CutsceneOption> options;  // exactly two
+};
+
+// The scene vocabulary: the new-game prologue, the first arrival at each of
+// towns 2..7, and the post-King finale at town 7's would-be eastern road.
+inline constexpr const char* kCutsceneIds[] = {
+    "new_game", "town_2", "town_3", "town_4", "town_5", "town_6", "town_7", "finale",
+};
+inline constexpr std::size_t kCutsceneIdCount = 8;
+
+// The goose's stage vocabulary (presentation only; unknown never loads).
+inline constexpr const char* kGooseEmotes[] = {"idle", "waddle", "jump", "panic"};
+inline constexpr std::size_t kGooseEmoteCount = 4;
 
 }  // namespace cd::content

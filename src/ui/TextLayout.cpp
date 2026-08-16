@@ -102,4 +102,15 @@ std::vector<std::string> wrapText(const std::string& text, int maxWidth, int fon
     return out;
 }
 
+TextPreview previewText(const std::string& text, int maxWidth, int fontSize, int maxLines,
+                        const TextMeasure& measure) {
+    TextPreview preview;
+    preview.lines = wrapText(text, maxWidth, fontSize, measure);
+    if (maxLines > 0 && static_cast<int>(preview.lines.size()) > maxLines) {
+        preview.hasMore = true;
+        preview.lines.resize(static_cast<std::size_t>(maxLines));
+    }
+    return preview;
+}
+
 }  // namespace cd::ui

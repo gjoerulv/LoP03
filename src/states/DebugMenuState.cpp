@@ -6,6 +6,7 @@
 #ifdef CRYSTAL_DEBUG_OVERLAY
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -18,11 +19,13 @@
 #include "game/Curios.hpp"       // M85 debug: grant curios toward the Dragon gate
 #include "game/Party.hpp"
 #include "game/Profile.hpp"
+#include "game/ScrollTrove.hpp"  // M92 debug: grant the trove scrolls
 #include "game/TreasureMap.hpp"  // M85 debug: grant map pieces via the real rule
 #include "game/WorldLadder.hpp"  // clampTown, kTownCount
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "states/CutsceneState.hpp"  // M97: the play-cutscene row
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -82,12 +85,19 @@ void DebugMenuState::rebuild() {
     add("Unlock castle", Row::UnlockCastle, p.castleUnlocked ? "done" : "");
     add("Grant 5x each consumable", Row::GrantConsumables);
     add("Grant 1x each legendary", Row::GrantLegendaries);
+    add("Grant 1x each skill scroll", Row::GrantScrolls);  // M92
+    add("Grant summon scrolls", Row::GrantSummons);        // M95
+    add("Reset used summons", Row::ResetSummons,           // M95
+        p.usedSummons.empty() ? "" : std::to_string(p.usedSummons.size()) + " used");
+    add("Grant 1x each heirloom", Row::GrantHeirlooms);    // M96
     if (!inDungeon_) {
         add("Spawn black market", Row::SpawnMarket, p.blackMarket.present ? "present" : "");
     }
     add("God mode", Row::GodMode, context_.cheats.godMode ? "ON" : "off");
     if (inDungeon_) {
         add("Instant dungeon clear", Row::InstantClear);
+        add("Patrol on next step", Row::PatrolNow);        // M93
+        add("Arm dragonform", Row::ArmDragonform);         // M93
     }
     add("Unlock reward classes", Row::UnlockClasses,
         context_.profile.classesUnlocked() ? "done" : "");
@@ -100,6 +110,14 @@ void DebugMenuState::rebuild() {
                                 std::to_string(kMapPiecesNeeded));
     add("Grant next curio", Row::GrantCurio,
         std::to_string(p.ownedCurios.size()) + "/" + std::to_string(kCurioCount));
+    // M97: cycle a scene with Left/Right, Confirm plays it. Debug plays never
+    // grant (the CutsceneState replay flag) and never mark scenes seen.
+    cutsceneIndex_ = std::clamp(cutsceneIndex_, 0,
+                                static_cast<int>(content::kCutsceneIdCount) - 1);
+    add("Play cutscene", Row::PlayCutscene,
+        stepper(content::kCutsceneIds[static_cast<std::size_t>(cutsceneIndex_)]));
+    add("Reset story progress", Row::ResetStory,
+        std::to_string(p.seenCutscenes.size()) + " seen");
 
     const int previous = menu_.cursor();
     menu_.setItems(std::move(items));
@@ -126,6 +144,11 @@ void DebugMenuState::adjust(const RowDef& row, int dir) {
             // Keep the current town inside the unlocked range (defensive).
             p.currentTown = std::min(p.currentTown, p.highestUnlockedTown);
             break;
+        case Row::PlayCutscene: {  // M97: cycle the scene list
+            const int n = static_cast<int>(content::kCutsceneIdCount);
+            cutsceneIndex_ = ((cutsceneIndex_ + dir) % n + n) % n;
+            break;
+        }
         default:
             return;  // not a stepper
     }
@@ -147,6 +170,33 @@ void DebugMenuState::activate(const RowDef& row) {
                 }
             }
             message_ = "Granted 5x of every consumable.";
+            break;
+        case Row::GrantScrolls:  // M92: the trove pool (teachable normal scrolls)
+            for (const std::string& id : scrollTrovePool(context_.content)) {
+                p.inventory.add(id, 1);
+            }
+            message_ = "Granted 1x of every skill scroll.";
+            break;
+        case Row::GrantSummons:  // M95: the three summon scrolls, teach via Party
+            for (const char* id :
+                 {"summon_scroll_goose", "summon_scroll_sentinel", "summon_scroll_spring"}) {
+                if (context_.content.findItem(id) != nullptr) {
+                    p.inventory.add(id, 1);
+                }
+            }
+            message_ = "Granted the summon scrolls.";
+            break;
+        case Row::ResetSummons:  // M95: refill the run's once-per-run ledger
+            p.usedSummons.clear();
+            message_ = "The summons stand ready again.";
+            break;
+        case Row::GrantHeirlooms:  // M96: every heirloom, equip via Equip Party
+            for (const auto& [id, def] : context_.content.items()) {
+                if (def.type == content::ItemType::Heirloom) {
+                    p.inventory.add(id, 1);
+                }
+            }
+            message_ = "Granted every heirloom.";
             break;
         case Row::GrantLegendaries: {
             const std::vector<std::string> ids = legendaryDropPool(context_.content);
@@ -188,6 +238,18 @@ void DebugMenuState::activate(const RowDef& row) {
             context_.audio.play(Sfx::Confirm);
             stack().popState();  // this debug menu
             stack().popState();  // the dungeon pause menu -> back in the dungeon
+            return;
+        case Row::PatrolNow:  // M93: burn the fuse; the real trigger path fires
+            context_.cheats.requestPatrolNow = true;
+            context_.audio.play(Sfx::Confirm);
+            stack().popState();
+            stack().popState();
+            return;
+        case Row::ArmDragonform:  // M93: exactly what the event does
+            context_.cheats.requestArmDragonform = true;
+            context_.audio.play(Sfx::Confirm);
+            stack().popState();
+            stack().popState();
             return;
         case Row::UnlockClasses:
             context_.profile.recordKingDefeated();
@@ -233,6 +295,24 @@ void DebugMenuState::activate(const RowDef& row) {
             }
             break;
         }
+        case Row::PlayCutscene: {  // M97: replay=true -> retold, never re-granted
+            const std::string id =
+                content::kCutsceneIds[static_cast<std::size_t>(std::clamp(
+                    cutsceneIndex_, 0, static_cast<int>(content::kCutsceneIdCount) - 1))];
+            if (context_.content.findCutscene(id) != nullptr) {
+                context_.audio.play(Sfx::Confirm);
+                stack().pushState(
+                    std::make_unique<CutsceneState>(stack(), context_, id, /*replay=*/true));
+                return;  // the scene draws over this menu; nothing to rebuild
+            }
+            message_ = "Cutscene '" + id + "' is not authored.";
+            break;
+        }
+        case Row::ResetStory:  // M97
+            p.seenCutscenes.clear();
+            p.heirloomChoices.clear();
+            message_ = "Story progress reset (granted keepsakes stay in the bag).";
+            break;
         case Row::FillBestiary: {
             const auto record = [&p](const std::string& id) {
                 if (std::find(p.encountered.begin(), p.encountered.end(), id) ==

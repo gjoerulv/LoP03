@@ -41,7 +41,7 @@ TEST_CASE("scrolls: every shipped scroll teaches a real skill", "[scroll][conten
         REQUIRE_FALSE(item.grantsSkill.empty());
         CHECK(db.hasSkill(item.grantsSkill));
     }
-    CHECK(scrolls == 9);  // 3 shop scrolls + the 6 M65 treasure-only Lost Scrolls
+    CHECK(scrolls == 19);  // 3 base + 6 M65 Lost Scrolls + 7 M92 trove + 3 M95 summon scrolls
 }
 
 TEST_CASE("scrolls: refusal rules and the learn", "[scroll]") {

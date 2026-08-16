@@ -79,7 +79,7 @@ int statusMagnitude(const battle::Combatant& c, content::StatusType t) {
 }  // namespace
 
 TEST_CASE("v15: the rules version reached 15", "[v15]") {
-    CHECK(battle::kBattleRulesVersion == 15);
+    CHECK(battle::kBattleRulesVersion >= 15);  // M89 moved it to 16
 }
 
 // --- the rebalanced buffs -----------------------------------------------------

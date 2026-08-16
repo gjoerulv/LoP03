@@ -25,6 +25,8 @@ add_executable(crystal_tests
     test_ui_kit.cpp
     test_text_input.cpp
     test_text_layout.cpp
+    test_text_viewport.cpp
+    test_glyph_coverage.cpp
     test_scroll_window.cpp
     test_party.cpp
     test_save_system.cpp
@@ -90,6 +92,11 @@ add_executable(crystal_tests
     test_map_economy.cpp
     test_guild.cpp
     test_dragon.cpp
+    test_team_inspect.cpp
+    test_spar.cpp
+    test_summons.cpp
+    test_heirlooms.cpp
+    test_cutscenes.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

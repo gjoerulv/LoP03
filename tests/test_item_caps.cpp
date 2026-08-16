@@ -191,3 +191,42 @@ TEST_CASE("caps: the premium tonics left the town shelves, and only they did", "
         CHECK(contains(ids, "ether"));   // the small tonic still sells
     }
 }
+
+// --- the M88 shelf order ------------------------------------------------------
+
+TEST_CASE("shop: the shelf reads by purpose - heals, MP, cures, revives, oddities (M88)",
+          "[caps][shop]") {
+    // Category ranks are the owner's order, Potion first.
+    CHECK(itemShopCategoryRank(*shipped().findItem("potion")) == 0);
+    CHECK(itemShopCategoryRank(*shipped().findItem("ether")) == 1);
+    CHECK(itemShopCategoryRank(*shipped().findItem("antidote")) == 2);
+    CHECK(itemShopCategoryRank(*shipped().findItem("phoenix_tear")) == 3);
+    CHECK(itemShopCategoryRank(*shipped().findItem("royal_snacks")) == 4);
+
+    // The whole shelf is monotone in (rank, value, id) at every town, and the
+    // shipped town-1 shelf comes out in exactly the intended reading order.
+    for (int town = 1; town <= 7; ++town) {
+        const std::vector<std::string> ids = itemShopBuyIds(shipped(), town);
+        INFO("town " << town);
+        for (std::size_t i = 1; i < ids.size(); ++i) {
+            const content::ItemDef* a = shipped().findItem(ids[i - 1]);
+            const content::ItemDef* b = shipped().findItem(ids[i]);
+            REQUIRE(a != nullptr);
+            REQUIRE(b != nullptr);
+            const int ra = itemShopCategoryRank(*a);
+            const int rb = itemShopCategoryRank(*b);
+            INFO(ids[i - 1] << " before " << ids[i]);
+            CHECK(ra <= rb);
+            if (ra == rb) {
+                CHECK((a->value < b->value || (a->value == b->value && a->id < b->id)));
+            }
+        }
+    }
+    const std::vector<std::string> town1 = itemShopBuyIds(shipped(), 1);
+    const std::vector<std::string> expected = {"potion",       "hi_potion", "mega_potion",
+                                               "ether",        "antidote",  "phoenix_tear",
+                                               "royal_snacks"};
+    CHECK(town1 == expected);
+    REQUIRE_FALSE(town1.empty());
+    CHECK(town1.front() == "potion");  // the owner's headline requirement
+}

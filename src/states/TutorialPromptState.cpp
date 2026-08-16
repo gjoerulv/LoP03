@@ -1,8 +1,8 @@
 #include "states/TutorialPromptState.hpp"
 
+#include <algorithm>
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
@@ -19,7 +19,7 @@ namespace style = ui::style;
 
 namespace {
 constexpr int kPanelW = 320;
-constexpr int kTextW = kPanelW - 2 * style::kPad;
+constexpr int kTextW = kPanelW - 2 * style::kPad - ui::kScrollGutterW;
 }  // namespace
 
 TutorialPromptState::TutorialPromptState(StateStack& stack, AppContext& context,
@@ -27,6 +27,12 @@ TutorialPromptState::TutorialPromptState(StateStack& stack, AppContext& context,
     : GameState(stack), context_(context), title_(std::move(title)), body_(std::move(body)) {}
 
 void TutorialPromptState::handleInput(const Input& input) {
+    if (input.navPressed(InputAction::MoveUp) && bodyView_.scrollBy(-1)) {
+        context_.audio.play(Sfx::Move);
+    }
+    if (input.navPressed(InputAction::MoveDown) && bodyView_.scrollBy(1)) {
+        context_.audio.play(Sfx::Move);
+    }
     if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel)) {
         context_.audio.play(Sfx::Confirm);
         stack().popState();
@@ -38,12 +44,17 @@ void TutorialPromptState::render() {
     const int h = context_.virtualHeight;
     ui::drawModalDim(w, h);  // dim the frozen scene
 
-    // Measured height: title + wrapped body + footer hint, then center.
-    const std::vector<std::string> lines =
-        ui::wrapText(body_, kTextW, style::kFontBody, ui::raylibMeasure());
-    const int bodyH = static_cast<int>(lines.size()) * ui::lineHeight(style::kFontBody);
-    const int panelH = style::kPad + style::kFontHeading + 6 + bodyH + 4 +
-                       style::kFontSmall + style::kPad;
+    // M87: measured height caps inside the safe area; a body longer than the
+    // cap scrolls (authored beats fit without scrolling — the container is
+    // for translations, not an invitation to write longer beats).
+    bodyView_.setContent(body_, kTextW, style::kFontBody, ui::raylibMeasure());
+    const int chromeH = style::kPad + style::kFontHeading + 6 + 4 + style::kFontSmall +
+                        style::kPad;
+    const int maxBodyH = h - 2 * style::kSafeMargin - chromeH;
+    const int capLines = std::max(1, maxBodyH / ui::lineHeight(style::kFontBody));
+    bodyView_.setVisibleLines(std::clamp(bodyView_.lineCount(), 1, capLines));
+    const int bodyH = bodyView_.visibleLines() * ui::lineHeight(style::kFontBody);
+    const int panelH = chromeH + bodyH;
     const int x = (w - kPanelW) / 2;
     const int y = (h - panelH) / 2;
 
@@ -53,9 +64,8 @@ void TutorialPromptState::render() {
     ui::drawTextCentered(title_.c_str(), x + kPanelW / 2, ty, style::kFontHeading,
                          style::palette().cursor);
     ty += style::kFontHeading + 6;
-    ui::drawTextWrapped(body_, x + style::kPad, ty, kTextW, style::kFontBody,
-                        style::palette().text, "tutorial.body");
-    ty += bodyH + 4;
+    ty = ui::drawTextViewport(bodyView_, x + style::kPad, ty, style::palette().text);
+    ty += 4;
     ui::drawTextCentered("Confirm - continue   (Tutorial prompts: Settings)",
                          x + kPanelW / 2, ty, style::kFontSmall, style::palette().textHint);
 }

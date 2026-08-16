@@ -13,6 +13,7 @@
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "input/PromptLabels.hpp"
+#include "render/ElementFx.hpp"  // M91
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
 #include "states/BattleLogState.hpp"
@@ -152,7 +153,7 @@ std::vector<std::string> statusLines(const battle::Combatant& c, int maxWidth, i
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                          battle::BattleResult* resultSlot, MusicTrack musicOverride,
                          RunStats* statsSlot, bool castleChallenge, render::BackdropStage stage,
-                         const BattleSpoils* spoils)
+                         const BattleSpoils* spoils, bool manualEnemies)
     : GameState(stack),
       context_(context),
       battle_(std::move(battle)),
@@ -161,7 +162,8 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
       stats_(statsSlot),
       castleChallenge_(castleChallenge),
       stage_(stage),
-      spoils_(spoils) {
+      spoils_(spoils),
+      manualEnemies_(manualEnemies) {
 #ifndef CRYSTAL_SHIPPING_BUILD
     // M53 debug god mode: seed the battle's party-unkillable flag from the debug
     // cheat. Off in every normal/shipping/sim path (the cheat can only be set by
@@ -354,6 +356,7 @@ void BattleState::captureElementHit(const content::SkillDef& skill) {
         a.mp = a.maxMp;
         message_ = battle_.useSkill(actor, foes.front(), skill);
     }
+    fxElement_ = skill.element;  // M91
     stageNumbers(hpBefore, 4);
     commitPresentation();
     for (FloatNumber& f : floats_) {
@@ -363,12 +366,11 @@ void BattleState::captureElementHit(const content::SkillDef& skill) {
 }
 
 void BattleState::captureOpenDetails() {
-    // Stages the fullest unit body the panel's line budget admits: guard line
-    // plus a four-chip status row. KNOWN GAP: a Passive line on a unit this
-    // decorated is 1-2 wrapped lines over budget (so its tail would clip) —
-    // true since the M75 legend growth, before TRF/STN joined. Fitting that
-    // case needs an owner decision (shorter legend, or a contextual one), so
-    // this scene pins the budget at the passing envelope until then.
+    // Stages the fullest unit body: guard line, a four-chip status row, AND a
+    // Passive line. Before M87 that combination ran 1-2 wrapped lines over
+    // the overlay's hard budget (the known gap the matrix carried since the
+    // M75 legend growth); the overlay now scrolls, so the fullest case is
+    // finally the captured case — the scene shows the more-below indicator.
     captureEnterTargeting();  // reuse: puts a living party member on turn
     phase_ = Phase::Command;  // details must show the ACTOR (MP row), not a target
     battle::Combatant& self = battle_.units[static_cast<std::size_t>(currentActor())];
@@ -379,7 +381,17 @@ void BattleState::captureOpenDetails() {
     self.statuses.push_back({content::StatusType::AttackDown, 25, 2});
     self.statuses.push_back({content::StatusType::DefenseDown, 25, 2});
     self.statuses.push_back({content::StatusType::Curse, 0, 2});
+    if (context_.content.findPassive("iron_will") != nullptr) {
+        self.passiveIds.push_back("iron_will");
+    }
     openDetails();
+}
+
+void BattleState::captureOpenSkillDetails(std::vector<std::string> skills) {
+    // M87: the context-sensitive Details on the highlighted skill — the full
+    // sheet in the scrollable overlay.
+    captureEnterSkillMenu(std::move(skills));
+    openSkillDetails();
 }
 #endif
 
@@ -489,9 +501,16 @@ void BattleState::commitPresentation() {
     }
     switch (pendingSfx_) {
         case 5: context_.audio.play(Sfx::Status); break;
-        case 4: context_.audio.play(Sfx::HitMagic); break;
+        // M91: an elemental action strikes with its own voice; None keeps the
+        // classic hit pair (audio::elementHitSfx maps None -> HitMagic, so the
+        // magic case routes through it unconditionally).
+        case 4: context_.audio.play(audio::elementHitSfx(fxElement_)); break;
         case 3: context_.audio.play(Sfx::Ko); break;
-        case 2: context_.audio.play(Sfx::Hit); break;
+        case 2:
+            context_.audio.play(fxElement_ != content::Element::None
+                                    ? audio::elementHitSfx(fxElement_)
+                                    : Sfx::Hit);
+            break;
         case 1: context_.audio.play(Sfx::Heal); break;
         default: break;
     }
@@ -526,6 +545,7 @@ void BattleState::startActorTurn() {
         hpBefore.push_back(u.hp);
     }
     const std::string tick = battle_.tickStatuses(actor);
+    fxElement_ = content::Element::None;  // M91: ticks carry no element
     stageNumbers(hpBefore);
     commitPresentation();  // status ticks are not action-staged; show at once
     if (!battle_.units[static_cast<std::size_t>(actor)].alive()) {
@@ -557,6 +577,14 @@ void BattleState::startActorTurn() {
             phase_ = Phase::Command;
             buildCommandMenu();
         }
+    } else if (manualEnemies_ &&
+               battle::forcedActionFor(battle_.units[static_cast<std::size_t>(actor)]) ==
+                   battle::ForcedAction::None) {
+        // M94: the sparring mirror's manual mode — the player commands the
+        // echo side through the SAME phases (forced turns still auto-resolve,
+        // exactly as they do for the party).
+        phase_ = Phase::Command;
+        buildCommandMenu();
     } else {
         executeEnemy(actor);
     }
@@ -599,12 +627,16 @@ std::vector<std::string> BattleState::consumableIds() const {
 void BattleState::buildCommandMenu() {
     const battle::Combatant& a = battle_.units[static_cast<std::size_t>(currentActor())];
     const bool hasSkills = !a.skillIds.empty();
-    const bool hasItems = !consumableIds().empty();
+    // M94: an echo turn (the sparring mirror's manual mode) commands
+    // Attack/Skill/Guard only — the echoes carry no bag, and Escape is the
+    // PLAYER side's end-the-spar verb, so both rows sit disabled.
+    const bool echoTurn = a.side == battle::Side::Enemy;
+    const bool hasItems = !echoTurn && !consumableIds().empty();
     commandMenu_.setItems({{"Attack", true},
                            {"Skill", hasSkills},
                            {"Item", hasItems},
                            {"Guard", true},
-                           {"Escape", true}});
+                           {"Escape", !echoTurn}});
 }
 
 void BattleState::buildSkillMenu() {
@@ -620,14 +652,19 @@ void BattleState::buildSkillMenu() {
         // Silence (M35): MP-cost skills are blocked and labelled so the player
         // sees *why* they are greyed (non-color-alone, M22).
         const bool silencedBlocked = !battle::canCast(a, *s);
+        // M95: a spent summon greys with its own reason (the same shared query
+        // useSkill refuses by, so the row can never lie).
+        const bool summonSpent = battle::summonSpent(battle_, *s);
         // M75: a cursed caster pays double — the shown cost IS the real cost,
         // through the same shared rule useSkill deducts by.
         const int cost = battle::mpCostFor(a, *s);
-        const bool enabled = a.mp >= cost && !silencedBlocked;
+        const bool enabled = a.mp >= cost && !silencedBlocked && !summonSpent;
         // The cost lives in its own right-aligned column so a long skill name can
         // never push it out of view; a blocked skill shows the reason instead.
         std::string suffix;
-        if (silencedBlocked) {
+        if (summonSpent) {
+            suffix = "USED";
+        } else if (silencedBlocked) {
             suffix = "SIL";
         } else if (cost > 0) {
             suffix = "MP " + std::to_string(cost);
@@ -674,12 +711,18 @@ void BattleState::onCommand() {
         return;
     }
     switch (commandMenu_.cursor()) {
-        case 0:  // Attack
+        case 0: {  // Attack
             pendingKind_ = PendingKind::Attack;
-            targetCandidates_ = battle_.aliveIndices(battle::Side::Enemy);
+            // M94: actor-relative — a party turn targets the enemies exactly
+            // as before; an echo turn (manual spar) targets the party.
+            const battle::Side actorSide =
+                battle_.units[static_cast<std::size_t>(currentActor())].side;
+            targetCandidates_ = battle_.aliveIndices(
+                actorSide == battle::Side::Party ? battle::Side::Enemy : battle::Side::Party);
             targetCursor_ = 0;
             phase_ = Phase::ChooseTarget;
             break;
+        }
         case 1:  // Skill
             buildSkillMenu();
             phase_ = Phase::ChooseSkill;
@@ -716,8 +759,14 @@ void BattleState::onSkillChosen() {
     if (skillNeedsTarget(s->target)) {
         const bool ally = s->target == content::SkillTarget::SingleAlly;
         // M43: a revive-capable ally skill (Renew) may be aimed at the fallen.
-        targetCandidates_ = ally ? battle::skillAllyTargets(battle_, battle::Side::Party, *s)
-                                 : battle_.aliveIndices(battle::Side::Enemy);
+        // M94: actor-relative sides, so a manual echo turn aims correctly —
+        // for a party turn these are exactly the historical values.
+        const battle::Side actorSide =
+            battle_.units[static_cast<std::size_t>(currentActor())].side;
+        const battle::Side foeSide =
+            actorSide == battle::Side::Party ? battle::Side::Enemy : battle::Side::Party;
+        targetCandidates_ = ally ? battle::skillAllyTargets(battle_, actorSide, *s)
+                                 : battle_.aliveIndices(foeSide);
         targetCursor_ = 0;
         phase_ = Phase::ChooseTarget;
     } else {
@@ -761,18 +810,28 @@ void BattleState::executePending(int targetUnit) {
     bool statusAction = false;
     bool offensiveStatus = false;  // M42: a status-carrying skill aimed at enemies
     aoeTint_ = AoeTint::None;      // M51: set below when an all-target action resolves
+    fxElement_ = content::Element::None;  // M91: set per resolved action below
     switch (pendingKind_) {
         case PendingKind::Attack: {
             const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
             if (self.attackHitsAll && !battle::isConfused(self)) {
                 aoeTint_ = AoeTint::Damage;  // the Dragon's sweep
             }
+            fxElement_ = self.weaponElement;  // M91: the wielded/intrinsic element
             message_ = battle_.attack(actor, targetUnit);
             break;
         }
         case PendingKind::Skill:
             if (const content::SkillDef* s = context_.content.findSkill(pendingSkillId_)) {
                 message_ = battle_.useSkill(actor, targetUnit, *s);
+                fxElement_ = s->element;  // M91
+                // M95: the creature's name rides the quip channel over the
+                // resolution — the summon's one theatrical beat.
+                if (s->oncePerRun && !s->summonName.empty()) {
+                    jestLine_ = s->summonName + " answers the call!";
+                    jestTimer_ = 2.5f * settings::messageDurationScale(
+                                            context_.settings.values.messageSpeed);
+                }
                 damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
                 statusAction = s->statusEffect != content::StatusType::None;
                 offensiveStatus = statusAction &&
@@ -852,7 +911,8 @@ void BattleState::executeEnemy(int actor) {
     const battle::EnemyChoice choice = battle::chooseEnemyAction(battle_, actor, context_.content);
     int damageSfx = 2;
     bool statusAction = false;
-    aoeTint_ = AoeTint::None;  // M51
+    aoeTint_ = AoeTint::None;               // M51
+    fxElement_ = content::Element::None;    // M91: set per resolved action below
     const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
     if (choice.forced == battle::ForcedAction::Guard) {
         // M44 (Evil Goose): the foe is too frightened to do anything but guard.
@@ -888,6 +948,7 @@ void BattleState::executeEnemy(int actor) {
     } else if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);
+            fxElement_ = s->element;  // M91 (the Dragon's breaths, party-side)
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
             statusAction = s->statusEffect != content::StatusType::None;
             aoeTint_ = aoeTintForSkill(*s);
@@ -896,7 +957,15 @@ void BattleState::executeEnemy(int actor) {
         if (self.attackHitsAll && !battle::isConfused(self)) {
             aoeTint_ = AoeTint::Damage;
         }
-        message_ = battle_.attack(actor, choice.target);
+        fxElement_ = self.weaponElement;  // M91
+        // M89: when the every-Nth lunge chose this swing, the authored flavour
+        // line leads the attack line — same detection the AI used, so the
+        // flavour can never appear on an ordinary out-of-MP swing.
+        const std::string lungeLine =
+            battle::basicAttackTurn(self) && !self.basicAttackText.empty()
+                ? self.basicAttackText + " "
+                : std::string();
+        message_ = lungeLine + battle_.attack(actor, choice.target);
     } else {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " hesitates.";
     }
@@ -922,6 +991,7 @@ void BattleState::executeConfused(int actor) {
     const battle::ForcedAction forced = battle::forcedActionFor(a);
     const battle::EnemyChoice choice = battle::forcedChoice(battle_, actor, forced);
     aoeTint_ = AoeTint::None;  // M51: a confused unit only ever makes a single-target swing
+    fxElement_ = content::Element::None;  // M91
     switch (forced) {
         case battle::ForcedAction::Guard:
             message_ = a.name + " is terrified and can only cower behind its guard!";
@@ -937,6 +1007,7 @@ void BattleState::executeConfused(int actor) {
             break;
         case battle::ForcedAction::BasicAttack:
         case battle::ForcedAction::None:
+            fxElement_ = a.weaponElement;  // M91
             message_ = battle_.attack(actor, choice.target);
             break;
     }
@@ -956,12 +1027,14 @@ void BattleState::executeUncontrolled(int actor) {
         battle::uncontrolledChoice(battle_, actor, context_.content);
     int damageSfx = 2;
     bool statusAction = false;
-    aoeTint_ = AoeTint::None;  // M51
+    aoeTint_ = AoeTint::None;             // M51
+    fxElement_ = content::Element::None;  // M91
     if (choice.target < 0) {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " capers pointlessly.";
     } else if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);
+            fxElement_ = s->element;  // M91
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
             statusAction = s->statusEffect != content::StatusType::None;
             aoeTint_ = aoeTintForSkill(*s);
@@ -971,6 +1044,7 @@ void BattleState::executeUncontrolled(int actor) {
         if (self.attackHitsAll && !battle::isConfused(self)) {
             aoeTint_ = AoeTint::Damage;
         }
+        fxElement_ = self.weaponElement;  // M91
         message_ = battle_.attack(actor, choice.target);
     }
     // The quip rides on top of the resolved action and never changes it: a pure
@@ -1023,6 +1097,10 @@ void BattleState::writeBackParty() {
             m.mp = c.mp;
         }
     }
+    // M95: the run's summon ledger travels with HP/MP — a summon cast in this
+    // battle stays spent for the rest of the run. (The spar's whole-party
+    // restore deliberately unwinds this like everything else.)
+    context_.party.usedSummons = battle_.usedSummons;
 }
 
 void BattleState::maybeApplySpoils() {
@@ -1122,6 +1200,55 @@ void BattleState::openDetails() {
         std::make_unique<DetailsOverlayState>(stack(), context_, "Battle Details", body));
 }
 
+// M87: Details is context-sensitive — while a skill is highlighted it opens
+// that skill's FULL sheet (the bottom panel shows only a 2-line preview),
+// in the scrollable Details overlay. Presentation only; no battle change.
+void BattleState::openSkillDetails() {
+    if (skillIds_.empty()) {
+        openDetails();
+        return;
+    }
+    const std::string& sid = skillIds_[static_cast<std::size_t>(skillMenu_.cursor())];
+    const content::SkillDef* s = context_.content.findSkill(sid);
+    if (s == nullptr) {
+        return;
+    }
+    std::string body = "MP cost " + std::to_string(s->mpCost) + ".";
+    if (s->element != content::Element::None) {
+        body += "  Element: " + std::string(content::elementDisplayName(s->element)) + ".";
+    }
+    const battle::Combatant& a = battle_.units[static_cast<std::size_t>(currentActor())];
+    if (!battle::canCast(a, *s)) {
+        body += "\nSilenced: MP skills are blocked until it wears off.";
+    }
+    if (!s->description.empty()) {
+        body += "\n\n" + s->description;
+    }
+    stack().pushState(std::make_unique<DetailsOverlayState>(stack(), context_, s->name, body));
+}
+
+// M87: the same for the highlighted item during item selection.
+void BattleState::openItemDetails() {
+    if (itemIds_.empty()) {
+        openDetails();
+        return;
+    }
+    const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
+    const content::ItemDef* it = context_.content.findItem(iid);
+    if (it == nullptr) {
+        return;
+    }
+    std::string body = "Held x" + std::to_string(context_.party.inventory.count(iid)) + ".";
+    const std::string blocked = itemBlockReason(*it);
+    if (!blocked.empty()) {
+        body += "\n" + blocked;
+    }
+    if (!it->description.empty()) {
+        body += "\n\n" + it->description;
+    }
+    stack().pushState(std::make_unique<DetailsOverlayState>(stack(), context_, it->name, body));
+}
+
 void BattleState::handleInput(const Input& input) {
     // Up/Down only: Left/Right are reserved for future columns/adjust
     // (control standard; M13 dropped the old Left/Right aliases).
@@ -1140,11 +1267,19 @@ void BattleState::handleInput(const Input& input) {
         context_.audio.play(Sfx::Cancel);
     }
 
-    // Contextual Details (M22): explain the focused unit and the status
-    // shorthand whenever the player is choosing, never mid-resolve.
+    // Contextual Details (M22; context-sensitive since M87): during skill/item
+    // selection it opens the highlighted skill/item's full sheet; everywhere
+    // else it explains the focused unit and the status shorthand. Never
+    // mid-resolve.
     if (phase_ != Phase::Resolve && phase_ != Phase::Done &&
         input.pressed(InputAction::Details)) {
-        openDetails();
+        if (phase_ == Phase::ChooseSkill) {
+            openSkillDetails();
+        } else if (phase_ == Phase::ChooseItem) {
+            openItemDetails();
+        } else {
+            openDetails();
+        }
         return;
     }
 
@@ -1330,6 +1465,10 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         DrawTexture(tex, sx, sy, tint);
         if (flash > 0.0f) {
             DrawRectangle(sx, sy, tex.width, tex.height, Fade(WHITE, 0.55f * flash));
+            // M91: the element's own accent over the hit — inherits the Battle
+            // Flash gate through flashStrength (0 draws nothing).
+            render::drawElementImpact(fxElement_, sx + tex.width / 2, sy + tex.height / 2,
+                                      flash, context_.settings.values.highContrast);
         }
         if (targeted) {
             // Corner brackets (M46): shape-first focus that survives grayscale,
@@ -1342,6 +1481,8 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         DrawRectangle(x, y, 40, 16, Fade(shownAlive ? body : Color{60, 60, 70, 255}, fade));
         if (flash > 0.0f) {
             DrawRectangle(x, y, 40, 16, Fade(WHITE, 0.55f * flash));
+            render::drawElementImpact(fxElement_, x + 20, y + 8, flash,  // M91
+                                      context_.settings.values.highContrast);
         }
         if (targeted) {
             ui::drawFocusBrackets(x - 1, y - 1, 42, 18, p.cursor);
@@ -1574,16 +1715,18 @@ void BattleState::render() {
                 if (const content::SkillDef* s = context_.content.findSkill(sid)) {
                     // The row's "SIL" tag is terse by necessity; spell the block
                     // out here rather than leaving the player to decode it.
+                    // M87: a 2-line POLICY-B preview — intentional truncation
+                    // marked by the arrow (never an overflow event); Details
+                    // opens the full sheet.
                     const battle::Combatant& a =
                         battle_.units[static_cast<std::size_t>(actor)];
                     if (!battle::canCast(a, *s)) {
-                        ui::drawTextWrapped("SIL: silenced - MP skills are blocked.", kInfoX,
+                        ui::drawTextPreview("SIL: silenced - MP skills are blocked.", kInfoX,
                                             panelY + 20, infoW, style::kFontBody,
-                                            style::palette().textDim, "battle.skillblocked", 2);
+                                            style::palette().textDim, 2);
                     } else if (!s->description.empty()) {
-                        ui::drawTextWrapped(s->description, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().success,
-                                            "battle.skilldesc", 2);
+                        ui::drawTextPreview(s->description, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::palette().success, 2);
                     }
                 }
             }
@@ -1600,14 +1743,14 @@ void BattleState::render() {
                 const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
                 if (const content::ItemDef* it = context_.content.findItem(iid)) {
                     // M43: a greyed item says why before it says what it does.
+                    // M87: policy-B preview; Details opens the full sheet.
                     const std::string blocked = itemBlockReason(*it);
                     if (!blocked.empty()) {
-                        ui::drawTextWrapped(blocked, kInfoX, panelY + 20, infoW, style::kFontBody,
-                                            style::palette().textDim, "battle.itemblocked", 2);
+                        ui::drawTextPreview(blocked, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::palette().textDim, 2);
                     } else if (!it->description.empty()) {
-                        ui::drawTextWrapped(it->description, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().success,
-                                            "battle.itemdesc", 2);
+                        ui::drawTextPreview(it->description, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::palette().success, 2);
                     }
                 }
             }

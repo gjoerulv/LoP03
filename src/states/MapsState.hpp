@@ -1,6 +1,7 @@
 #pragma once
 
 #include "states/GameState.hpp"
+#include "ui/TextViewport.hpp"
 
 // M65: the "Maps" screen (town pause menu) — the HoMM2-style puzzle map.
 // Four quadrants of an original hand-sketch fill in as Secret Map Pieces are
@@ -32,6 +33,9 @@ private:
     AppContext& context_;
     int cursor_ = 0;       // M85: the curio grid cursor (4 cols x 3 rows)
     bool loreOpen_ = false;  // M85: the inspect panel is showing
+    // M87: the lore body is a bounded scrollable viewport — long (e.g.
+    // translated) lore scrolls instead of hitting a hard line budget.
+    ui::TextViewport loreView_;
 };
 
 }  // namespace cd

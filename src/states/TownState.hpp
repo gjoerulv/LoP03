@@ -45,6 +45,8 @@ private:
     bool onBardTile() const;  // M41: standing on the wandering storyteller's tile
     bool digHere() const;     // M65: the revealed treasure belongs to this town
     bool onDigTile() const;   // M65: standing on the dig spot
+    bool gooseNpcHere() const;   // M97: town 7, King fallen — the hooded stranger waits
+    bool onGooseNpcTile() const;  // M97: standing on the stranger's roadside tile
 
     AppContext& context_;
     town::TownLayout town_;
@@ -60,6 +62,7 @@ private:
     bool nearMarket_ = false;  // M34: standing on the black-market NPC tile
     bool nearDig_ = false;     // M65: standing on the treasure dig spot
     bool nearBard_ = false;    // M41: standing on the storyteller's tile
+    bool nearGoose_ = false;   // M97: standing by the hooded stranger (finale NPC)
     // M50 anti-bounce latch: a walk-through exit fires only once the player has
     // stood on a non-trigger tile since the last spawn/resume, so arriving next
     // to an edge (or returning from the castle onto the north trigger) cannot

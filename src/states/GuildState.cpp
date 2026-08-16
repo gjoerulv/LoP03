@@ -8,6 +8,7 @@
 #include "content/ContentDatabase.hpp"
 #include "content/LoadReport.hpp"
 #include "core/AppContext.hpp"
+#include "core/SeedParse.hpp"
 #include "dungeon/DungeonGenerator.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
@@ -30,7 +31,10 @@ constexpr int kTheme = 1;
 constexpr int kDepth = 2;
 constexpr int kFloors = 3;    // M82: 1-or-4-floor runs
 constexpr int kGuildBoss = 4;  // M84: the town's Guild Master gauntlet
-constexpr int kReroll = 5;
+// M88: "New Seed" and the seed readout merged into one Seed row — the value
+// sits in a capsule on the row that changes it (the M25 stepper idiom):
+// Left/Right rerolls, Confirm opens the manual digit editor.
+constexpr int kSeed = 5;
 constexpr int kBack = 6;
 constexpr int kMaxDepth = 20;
 
@@ -60,7 +64,7 @@ void GuildState::rebuild() {
     // banner under the panel explains the lock, and Confirm refuses politely
     // (ui::Menu skips disabled rows entirely, which would hide the goal).
     items.push_back({"Fight the Guild Boss", true});
-    items.push_back({"New Seed", true});
+    items.push_back({"Seed", true});  // M88: reroll with Left/Right, type with Confirm
     items.push_back({"Back", true});
     menu_.setItems(std::move(items));
     menu_.setCursor(previous);
@@ -90,6 +94,12 @@ void GuildState::onResume() {
 
 #ifdef CRYSTAL_CAPTURE
 void GuildState::captureFocusGuildBoss() { menu_.setCursor(kGuildBoss); }
+
+void GuildState::captureOpenSeedEditor() {
+    menu_.setCursor(kSeed);
+    seedInput_.setValue("18446744073709551615");  // the 20-digit uint64 ceiling
+    seedEditing_ = true;
+}
 #endif
 
 std::string GuildState::currentThemeName() const {
@@ -121,6 +131,30 @@ void GuildState::enterDungeon() {
 }
 
 void GuildState::handleInput(const Input& input) {
+    // M88: the seed editor swallows everything while open. Same input contract
+    // as party naming (M13): typed chars via nextChar, TextBackspace erases,
+    // Confirm commits, Cancel abandons. An empty (or zero) buffer keeps the
+    // old seed, so a stray Confirm can never produce a surprise run.
+    if (seedEditing_) {
+        for (int c = input.nextChar(); c > 0; c = input.nextChar()) {
+            seedInput_.appendCodepoint(c);
+        }
+        if (input.navPressed(InputAction::TextBackspace)) {
+            seedInput_.backspace();
+        } else if (input.pressed(InputAction::Confirm)) {
+            const std::uint64_t typed = parseSeedDigits(seedInput_.value());
+            if (typed != 0) {
+                seed_ = typed;
+            }
+            seedEditing_ = false;
+            context_.audio.play(Sfx::Confirm);
+        } else if (input.pressed(InputAction::Cancel)) {
+            seedEditing_ = false;
+            context_.audio.play(Sfx::Cancel);
+        }
+        return;
+    }
+
     if (input.navPressed(InputAction::MoveUp)) {
         menu_.moveUp();
     }
@@ -139,8 +173,16 @@ void GuildState::handleInput(const Input& input) {
             depth_ = std::clamp(depth_ + dir, 1, kMaxDepth);
             rebuild();
         } else if (menu_.cursor() == kFloors) {
-            floors_ = floors_ == 1 ? 4 : 1;  // M82: the two shapes, either arrow
+            // M92: three shapes — the classic level, the descent, and the long
+            // descent. Left/Right walk the cycle in either direction.
+            if (dir > 0) {
+                floors_ = floors_ == 1 ? 4 : (floors_ == 4 ? 20 : 1);
+            } else {
+                floors_ = floors_ == 1 ? 20 : (floors_ == 20 ? 4 : 1);
+            }
             rebuild();
+        } else if (menu_.cursor() == kSeed) {
+            seed_ = randomSeed();  // M88: the old "New Seed", now the row's Adjust
         }
     }
 
@@ -168,7 +210,12 @@ void GuildState::handleInput(const Input& input) {
                     context_.audio.play(Sfx::Cancel);
                 }
                 break;
-            case kReroll: seed_ = randomSeed(); break;
+            case kSeed:
+                // M88: type a seed by hand. Prefilled with the current one so
+                // small edits (share a friend's seed, tweak a digit) are cheap.
+                seedInput_.setValue(std::to_string(static_cast<unsigned long long>(seed_)));
+                seedEditing_ = true;
+                break;
             case kBack: stack().popState(); break;
             default: break;  // Theme/Depth are adjusted with Left/Right
         }
@@ -233,9 +280,11 @@ void GuildState::render() {
     };
     stepperRow(kTheme, "Theme", currentThemeName(), py + 38);
     stepperRow(kDepth, "Depth", std::to_string(depth_), py + 56);
-    // M82: the run's shape — one classic level, or four flat floors with
-    // elite stair-gates and the boss at the bottom.
-    stepperRow(kFloors, "Floors", floors_ == 1 ? "1" : "4 (boss below)", py + 74);
+    // M82/M92: the run's shape — one classic level, or four (or twenty) flat
+    // floors with elite stair-gates and the boss at the bottom.
+    stepperRow(kFloors, "Floors",
+               floors_ == 1 ? "1" : (floors_ == 4 ? "4 (boss below)" : "20 (boss below)"),
+               py + 74);
 
     // Plain rows.
     const auto plainRow = [&](int index, const char* label, int y, bool dim = false) {
@@ -259,12 +308,33 @@ void GuildState::render() {
         ui::drawText(best.c_str(), px + pw - 22 - ui::measureText(best, style::kFontBody),
                      py + 93, style::kFontBody, p.gold);
     }
-    plainRow(kReroll, "New Seed", py + 108);
+    // M88: the Seed row — value capsule on the row that changes it, like Theme
+    // and Depth, but wider (a uint64 runs to 20 digits). Left/Right rerolls
+    // (the retired "New Seed" row's job), Confirm opens the digit editor.
+    {
+        const int y = py + 108;
+        const bool focused = menu_.cursor() == kSeed;
+        if (focused) {
+            ui::drawSelectionSlab(rowX - 12, y - 2, pw - 40, 15);
+            ui::drawChevron(rowX - 9, y + 1, p.cursor, ui::motionPhase());
+        }
+        ui::drawText("Seed", rowX, y, style::kFontMenu, focused ? p.cursor : p.text);
+        const int capW = 140;
+        const int capX = px + pw - 22 - capW;
+        ui::drawStepArrow(capX - 11, y + 2, -1, focused);
+        ui::drawStepArrow(capX + capW + 6, y + 2, +1, focused);
+        DrawRectangle(capX, y - 1, capW, 13, p.ink);
+        DrawRectangle(capX + 1, y, capW - 2, 11, p.chipFill);
+        if (focused) {
+            DrawRectangleLines(capX, y - 1, capW, 13, p.rowBorder);
+        }
+        const std::string seedText = std::to_string(static_cast<unsigned long long>(seed_));
+        const int vw = ui::measureText(seedText, style::kFontBody);
+        const int tx = capX + (vw < capW - 6 ? (capW - vw) / 2 : 3);
+        ui::drawTextFitted(seedText, tx, y + 1, capW - 6, style::kFontBody,
+                           focused ? p.cursor : p.text, "guild.seed");
+    }
     plainRow(kBack, "Back", py + 124);
-
-    // Seed: a subdued information chip (non-adjustable readout).
-    ui::drawChip("Seed " + std::to_string(static_cast<unsigned long long>(seed_)), px,
-                 py + ph + 6, p.borderMid);
 
     // M33 stakes forewarning: the penalty this run (currentTown + chosen depth)
     // will incur, updating live as Depth changes; matches what completeDungeon
@@ -272,10 +342,11 @@ void GuildState::render() {
     // Boss row is focused this line speaks for the gauntlet instead — the
     // stakes belong to the run being configured, not to that fight.
     const int pen = stakesPenaltyPct(context_.party.stakes, context_.party.currentTown, depth_);
-    const int bannerY = py + ph + 24;
-    // One line each, <= ~38 chars: drawBanner wraps at 260px here and GROWS
-    // DOWNWARD, and a second line lands under the footer (caught by the
-    // 92/93 capture review).
+    // M88: the seed chip merged into the Seed row, freeing this strip — the
+    // banner moved up to py+ph+8 (was +24), so even a two-line wrap ends well
+    // above the footer at h-16 (the owner-reported clip). The capture scene
+    // pins the worst case (-99% text) against the overflow lint.
+    const int bannerY = py + ph + 8;
     if (menu_.cursor() == kGuildBoss) {
         if (!guildRec.unlocked) {
             ui::drawBanner(ui::BannerKind::Danger,
@@ -304,15 +375,49 @@ void GuildState::render() {
         ui::drawText(okText, tx, bannerY + 2, style::kFontBody, p.success);
     }
 
+    // M88: the manual seed editor — a small modal over the panel. Digits only
+    // (ui::TextFilter::Digits, 20 chars — the uint64 ceiling); Confirm keeps a
+    // non-empty value, Cancel or an empty buffer keeps the old seed.
+    if (seedEditing_) {
+        const int mw = 208;
+        const int mh = 56;
+        const int mx = w / 2 - mw / 2;
+        const int my = 88;
+        ui::drawFrame(mx, my, mw, mh, ui::FrameStyle::Reward);
+        ui::drawTextCentered("Enter Seed", mx + mw / 2, my + 6, style::kFontMenu, p.gold);
+        DrawRectangle(mx + 10, my + 22, mw - 20, 14, p.ink);
+        DrawRectangle(mx + 11, my + 23, mw - 22, 12, p.chipFill);
+        const std::string& buf = seedInput_.value();
+        ui::drawTextFitted(buf, mx + 14, my + 25, mw - 28, style::kFontBody, p.text,
+                           "guild.seed.edit");
+        if (ui::motionPhase() == 0 && !seedInput_.full()) {
+            const int bw = std::min(ui::measureText(buf, style::kFontBody), mw - 28);
+            DrawRectangle(mx + 14 + bw + 1, my + 25, 4, 9, p.cursor);
+        }
+        ui::drawTextCentered("Empty keeps the old seed.", mx + mw / 2, my + 42, style::kFontBody,
+                             p.textDim);
+    }
+
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
-    ui::drawFooterHints(
-        {{input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
-              input::primaryLabel(map, InputAction::MoveRight, device),
-          "Adjust"},
-         {input::primaryLabel(map, InputAction::Confirm, device), "Select"},
-         {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
-        w, h, "guild.footer");
+    if (seedEditing_) {
+        // No Cancel hint: the default Cancel key IS Backspace, which the
+        // editor consumes as Erase (the PartyCreation precedent) — showing
+        // both would advertise a key that erases instead of cancelling. The
+        // modal's own "Empty keeps the old seed." line covers backing out.
+        ui::drawFooterHints(
+            {{input::primaryLabel(map, InputAction::Confirm, device), "OK"},
+             {input::primaryLabel(map, InputAction::TextBackspace, device), "Erase"}},
+            w, h, "guild.footer");
+    } else {
+        ui::drawFooterHints(
+            {{input::primaryLabel(map, InputAction::MoveLeft, device) + "/" +
+                  input::primaryLabel(map, InputAction::MoveRight, device),
+              "Adjust"},
+             {input::primaryLabel(map, InputAction::Confirm, device), "Select"},
+             {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
+            w, h, "guild.footer");
+    }
 }
 
 }  // namespace cd

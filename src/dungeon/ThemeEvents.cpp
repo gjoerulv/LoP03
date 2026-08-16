@@ -96,4 +96,38 @@ int duckPeddlerSlot(std::uint64_t seed, int eligibleCount) {
     return static_cast<int>(pick % static_cast<std::uint64_t>(eligibleCount));
 }
 
+namespace {
+// M93: fresh salts per event, same discipline (appearance and slot separate).
+constexpr std::uint64_t kSaltDragonformAppears = 0xD12A60F0124D9300ull;
+constexpr std::uint64_t kSaltDragonformSlot = 0xD12A60F0124D9301ull;
+constexpr std::uint64_t kSaltSurveyorAppears = 0x50124E70212AB500ull;
+constexpr std::uint64_t kSaltSurveyorSlot = 0x50124E70212AB501ull;
+}  // namespace
+
+int dragonformSlot(std::uint64_t seed, int eligibleCount) {
+    if (eligibleCount <= 0) {
+        return -1;
+    }
+    const std::uint64_t roll = themeEventHash(seed, 0, kSaltDragonformAppears);
+    if (static_cast<int>(roll % 100) >= kDragonformChancePct) {
+        return -1;
+    }
+    const std::uint64_t pick = themeEventHash(seed, 1, kSaltDragonformSlot);
+    return static_cast<int>(pick % static_cast<std::uint64_t>(eligibleCount));
+}
+
+int surveyorSlot(std::uint64_t seed, int floorIndex, int eligibleCount) {
+    if (eligibleCount <= 0) {
+        return -1;
+    }
+    // Per-floor: the floor index folds into the room-index channel so every
+    // floor of a run rolls its own independent chance from the RUN seed.
+    const std::uint64_t roll = themeEventHash(seed, floorIndex, kSaltSurveyorAppears);
+    if (static_cast<int>(roll % 100) >= kSurveyorChancePct) {
+        return -1;
+    }
+    const std::uint64_t pick = themeEventHash(seed, floorIndex + 1000, kSaltSurveyorSlot);
+    return static_cast<int>(pick % static_cast<std::uint64_t>(eligibleCount));
+}
+
 }  // namespace cd::dungeon

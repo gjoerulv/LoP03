@@ -7,6 +7,8 @@
 #include "raylib.h"
 #include "states/AchievementsState.hpp"
 #include "states/BestiaryState.hpp"
+#include "states/EquipShopState.hpp"   // M90: partyMode equip flow
+#include "states/InventoryState.hpp"   // M90: the Items screen
 #include "states/MapsState.hpp"   // M65
 #include "states/PartyState.hpp"  // M64
 #include "states/QuitFlow.hpp"
@@ -24,11 +26,13 @@ namespace cd {
 namespace {
 constexpr int kResume = 0;
 constexpr int kParty = 1;    // M64
-constexpr int kMaps = 2;     // M65
-constexpr int kBestiary = 3;
-constexpr int kAchievements = 4;
-constexpr int kSettings = 5;
-constexpr int kQuit = 6;
+constexpr int kEquip = 2;    // M90: equip anywhere (the shop's flow, no shop)
+constexpr int kItems = 3;    // M90: inspect the bag, use consumables
+constexpr int kMaps = 4;     // M65
+constexpr int kBestiary = 5;
+constexpr int kAchievements = 6;
+constexpr int kSettings = 7;
+constexpr int kQuit = 8;
 #ifdef CRYSTAL_DEBUG_OVERLAY
 constexpr int kDebug = kQuit + 1;  // appended after Quit in debug builds only
 #endif
@@ -38,6 +42,8 @@ TownMenuState::TownMenuState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {
     menu_.setItems({{"Resume", true},
                     {"Party", true},
+                    {"Equip Party", true},  // M90
+                    {"Items", true},        // M90
                     {"Maps", true},
                     {"Bestiary", true},
                     {"Achievements", true},
@@ -68,6 +74,13 @@ void TownMenuState::handleInput(const Input& input) {
                 break;
             case kParty:
                 stack().pushState(std::make_unique<PartyState>(stack(), context_));
+                break;
+            case kEquip:  // M90
+                stack().pushState(
+                    std::make_unique<EquipShopState>(stack(), context_, /*partyMode=*/true));
+                break;
+            case kItems:  // M90
+                stack().pushState(std::make_unique<InventoryState>(stack(), context_));
                 break;
             case kMaps:
                 stack().pushState(std::make_unique<MapsState>(stack(), context_));
@@ -108,7 +121,10 @@ void TownMenuState::render() {
     ui::drawModalDim(w, h);
 
     const int boxW = 220;
-    int boxH = 168;  // fits the 7 pause entries (M42; +Party M64, +Maps M65)
+    // M90: nine entries (+Equip Party, +Items) — the rows tightened from 20px
+    // to 18px so the box (plus its debug row and the floating title plaque)
+    // still clears the 240px frame with room over the plaque.
+    int boxH = 190;
 #ifdef CRYSTAL_DEBUG_OVERLAY
     boxH += 18;  // M53: the extra "Debug" row
 #endif
@@ -116,7 +132,7 @@ void TownMenuState::render() {
     const int boxY = h / 2 - boxH / 2;
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
     ui::drawTitlePlaque("Paused", w / 2, boxY - 10, 12);
-    ui::drawMenu(menu_, boxX + 44, boxY + 26, 20, 12, p.text, p.disabled, p.cursor);
+    ui::drawMenu(menu_, boxX + 44, boxY + 26, 18, 12, p.text, p.disabled, p.cursor);
 }
 
 }  // namespace cd

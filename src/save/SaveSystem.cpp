@@ -11,6 +11,7 @@
 #include "content/ContentLoader.hpp"
 #include "content/JsonValidation.hpp"
 #include "game/Curios.hpp"  // M66: curio-id validation on load
+#include "game/Cutscenes.hpp"  // M97: story-progress validation on load
 #include "game/Party.hpp"
 #include "game/WorldLadder.hpp"
 
@@ -106,6 +107,8 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
     root["guildUnlocked"] = guildMask;
   }
   root["storyMet"] = party.storyMet;  // M41 (optional; old -> 0)
+  root["seenCutscenes"] = party.seenCutscenes;      // M97 (optional; old -> fresh story)
+  root["heirloomChoices"] = party.heirloomChoices;  // M97 ("scene:heirloom" entries)
   root["encountered"] = party.encountered;             // M42 (optional; old -> empty)
   root["recordBiggestHit"] = party.recordBiggestHit;   // M42 (optional; old -> 0)
   root["recordRunDamage"] = party.recordRunDamage;     // M42 (optional; old -> 0)
@@ -122,6 +125,7 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
     m["weapon"] = c.weapon;
     m["armor"] = c.armor;
     m["accessory"] = c.accessory;
+    m["equippedHeirloom"] = c.equippedHeirloom;  // M96 (optional; old saves -> none)
     m["ownedPassives"] = c.ownedPassives;      // M36 (optional; old saves -> empty)
     m["equippedPassive"] = c.equippedPassive;  // M36
     m["milestone10"] = c.milestone10;          // M63 (optional; old -> unchosen)
@@ -283,6 +287,23 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
     }
   }
   loaded.storyMet = rootReader.optIntMin("storyMet", 0, 0);  // M41 (optional; old -> 0)
+  // M97: story progress. Only known scene ids survive (deduplicated), and a
+  // choice entry must decode AND name a known scene whose id is not already
+  // recorded — a hand-edited save degrades to "not seen yet", never a crash.
+  for (const std::string& sid : rootReader.optStringArray("seenCutscenes")) {
+    if (db_.findCutscene(sid) != nullptr && !game::cutsceneSeen(loaded, sid)) {
+      loaded.seenCutscenes.push_back(sid);
+    }
+  }
+  for (const std::string& entry : rootReader.optStringArray("heirloomChoices")) {
+    std::string scene;
+    std::string heirloom;
+    if (game::decodeCutsceneChoice(entry, scene, heirloom) &&
+        db_.findCutscene(scene) != nullptr && db_.findItem(heirloom) != nullptr &&
+        game::cutsceneChoiceFor(loaded, scene).empty()) {
+      loaded.heirloomChoices.push_back(entry);
+    }
+  }
   loaded.encountered = rootReader.optStringArray("encountered");  // M42 (optional; old -> empty)
   loaded.recordBiggestHit = rootReader.optIntMin("recordBiggestHit", 0, 0);  // M42
   loaded.recordRunDamage = rootReader.optIntMin("recordRunDamage", 0, 0);    // M42
@@ -312,6 +333,7 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
     const std::string weapon = m.optString("weapon");
     const std::string armor = m.optString("armor");
     const std::string accessory = m.optString("accessory");
+    const std::string heirloom = m.optString("equippedHeirloom");  // M96
     const std::vector<std::string> ownedPassives = m.optStringArray("ownedPassives");  // M36
     const std::string equippedPassive = m.optString("equippedPassive");                // M36
     if (report.errorCount() != elementBefore) {
@@ -328,6 +350,9 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
     c.armor = (armor.empty() || db_.findItem(armor) != nullptr) ? armor : "";
     c.accessory =
         (accessory.empty() || db_.findItem(accessory) != nullptr) ? accessory : "";
+    // M96: same unknown-id drop as the other gear.
+    c.equippedHeirloom =
+        (heirloom.empty() || db_.findItem(heirloom) != nullptr) ? heirloom : "";
     // M36 passives: keep only owned ids the content still knows; an equipped id
     // is honored only if it is known and owned (dropped otherwise).
     for (const std::string& pid : ownedPassives) {

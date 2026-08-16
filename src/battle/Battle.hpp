@@ -104,7 +104,22 @@ struct BattleObserver;  // M60 record-only telemetry hook (battle/BattleObserver
 // `noStunWhileAllFoesSleep` — both provably unreachable by pre-M77 content
 // (no such skill in any earlier kit; no earlier foe carries a trigger), so no
 // recorded battle changes and the version holds at 15 (see the M77 note §E).
-inline constexpr int kBattleRulesVersion = 15;
+// 16 = M89 (an authored `maxMp` override replaces the derived from-magic MP
+// pool on any enemy/boss that carries it, scaled like magic; a boss authored
+// `basicAttackEveryNth` swings instead of casting on every Nth of its OWN
+// turns — deterministic, counter-based like the M49 revive clock. Shipped
+// content: the Last Dragon, whose 500%-scaled ~130 MP dried after six of its
+// 20-MP breaths; it now sustains breaths for the whole fight and lunges every
+// 4th turn); 17 = M95 (summons: a skill authored `oncePerRun` is castable
+// once per dungeon/challenge run — the ledger rides the Battle, copied from
+// the party at build, appended by useSkill's shared refusal rule, written
+// back with HP/MP — so the menu, both AIs, and the Simulator refuse a spent
+// summon identically); 18 = M96 (heirlooms: the worn fourth slot attaches
+// its M75 triggers to the wearer — the first PARTY-side trigger source —
+// TriggerDo gains heal_self_pct, and the item's lowHp* pair is a conditional
+// attack edge on the Brute-enrage pattern, announced once. A party wearing
+// no heirloom resolves byte-identically to v17).
+inline constexpr int kBattleRulesVersion = 18;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -184,6 +199,14 @@ struct Combatant {
     // Boss archetype mechanics (M20, owner-approved; all deterministic).
     bool enrages = false;             // Brute: deals more damage below half HP
     bool enrageAnnounced = false;     // Brute: the rage line is shown once
+    // M96 (rules v18): a worn heirloom's conditional edge — the enrage
+    // pattern, authored: while hp <= lowHpThresholdPct% of max, attacks hit
+    // lowHpAttackPct% harder. Announced once via lowHpText. 0/0 = no heirloom
+    // edge, which is every unit whose wearer carries none.
+    int lowHpThresholdPct = 0;
+    int lowHpAttackPct = 0;
+    bool lowHpAnnounced = false;
+    std::string lowHpText;
     bool empowersOnAllyFall = false;  // Sorcerer: magic +25% per fallen ally
     bool ralliesMinions = false;      // Commander: one rally below half HP
     bool rallied = false;
@@ -286,6 +309,17 @@ struct Combatant {
     int reviveMinionTurns = 0;
     int reviveMinionCounter = 0;
 
+    // M89 (rules v16): own-turn ordinal, advanced for EVERY unit in
+    // beginUnitTurn (the same seam as the revive clock, so it cannot drift
+    // with speed or turn order). Read by `basicAttackTurn` below: a boss
+    // authored `basicAttackEveryNth` = N swings instead of casting on every
+    // Nth of its own turns (the Dragon's lunge). 0 = the rule is off, which
+    // is every pre-M89 unit. `basicAttackText` is the authored flavour line
+    // (presentation-only, shown by BattleState like doNothingText).
+    int ownTurnsTaken = 0;
+    int basicAttackEveryNth = 0;
+    std::string basicAttackText;
+
     // M75 (rules v15), every field inert by default so pre-M75 content is
     // untouched. `statusImmunities` extends the bespoke immunity flags with a
     // per-status list (the Dragon's matrix); `statScaleImmune` shrugs off a
@@ -342,6 +376,11 @@ public:
     // same flag from the same construction path. Items may carry King-specific
     // amounts (Royal Snacks).
     bool kingBattle = false;
+
+    // M95 (rules v17): summons cast THIS RUN — copied from Party at build,
+    // appended by useSkill's shared once-per-run rule, written back by the
+    // battle screen with HP/MP. The Simulator sees and honors the same list.
+    std::vector<std::string> usedSummons;
 
 #ifndef CRYSTAL_SHIPPING_BUILD
     // M53 debug god mode: while set, no PARTY unit can be reduced below 1 HP by
@@ -564,6 +603,27 @@ struct EnemyChoice {
 };
 EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::ContentDatabase& db);
 
+// M95 (rules v17): has this run already spent the summon? False for every
+// non-summon skill. One shared query for the battle menu ("USED"), both AIs,
+// and useSkill's refusal, so a spent summon is refused identically everywhere.
+bool summonSpent(const Battle& b, const content::SkillDef& skill);
+
+// M96 (rules v18): is the wearer's heirloom edge biting right now (HP at or
+// under the authored threshold)? Pure — the damage path applies
+// lowHpAttackPct exactly when this is true, so tests and panels read the
+// same rule the formula does.
+bool lowHpEdgeActive(const Combatant& c);
+
+// M94: the Training Hall's sparring mirror — the party against exact echoes
+// of itself. The party side builds through the one real path; each member is
+// then mirrored as an enemy-side unit ("Echo <name>", partyIndex -1 so
+// nothing ever writes back to the real party) BEFORE the threat table and
+// battle seed derive, so a spar is as deterministic as any fight. Echoes keep
+// skills, passives, gear share, and elements; the enemy AI (or the M94 manual
+// mode) drives them. Pays nothing anywhere — the caller restores all party
+// state afterwards regardless of outcome.
+Battle buildSparBattle(const Party& party, const content::ContentDatabase& db);
+
 // M44: does a status take this unit's turn away, and how? The single source of
 // truth for every imposed action — Confusion (M35/M43) forces a basic attack,
 // Terrified forces a Guard, Stunned skips the turn entirely. Immunities are
@@ -610,6 +670,13 @@ bool kingScaredThisTurn(const Battle& b, int actor);
 // Feeds `chooseEnemyAction` (part of rules v12); BattleState also calls it to
 // show the authored `doNothingText` over the ordinary skip line.
 bool doesNothingThisTurn(const Battle& b, int actor);
+
+// M89 (rules v16): is this one of the unit's authored every-Nth basic-attack
+// turns? Counter-based, not hash-based — `ownTurnsTaken` advances in
+// beginUnitTurn, so the rule is deterministic and driver-identical by
+// construction. Feeds `chooseEnemyAction` (the boss swings instead of
+// casting); BattleState also calls it to show the authored flavour line.
+bool basicAttackTurn(const Combatant& c);
 
 // M43: the forced action of a confused unit — a basic attack, never a skill.
 // `attack()` then performs the seeded same-side redirect, so the returned target

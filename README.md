@@ -9,9 +9,9 @@ Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
 > **Status: feature-complete, polished playable build** (milestones M1–M85
-> delivered and owner-approved; M86 — the CrystalForge catch-up and the
-> deliberate version renumber to **0.6.0** — implemented, awaiting
-> approval). In the box: a seven-town difficulty ladder
+> delivered and owner-approved; M86–M97 — from the CrystalForge catch-up
+> and the deliberate version renumber to **0.6.0** through the newest
+> expansion program — implemented, awaiting approval). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
 > dungeons with room events including the rare Royal Relics and per-theme
@@ -65,9 +65,22 @@ music, or text. Built in **C++20** with **raylib**.
 > **gear icons**, **1-or-4-floor dungeons** with split scoreboards, a
 > map-piece economy, per-town **Guild Masters** paying permanent town
 > perks, the curio-gated **Last Dragon** at the castle, and the
-> CrystalForge catch-up with the version renumbered to 0.6.0. Only the
-> deferred **validation playtesting (M23)** and **release sign-off (M24)**
-> remain. Current status always lives in `docs/milestones.md`.
+> CrystalForge catch-up with the version renumbered to 0.6.0. **M87**
+> then made every text container translation-ready (bounded scrollable
+> prose, a Latin-1 bitmap font). The newest work, the **M88–M97 program**
+> (2026-08-14, awaiting approval): town/Guild/shop UX fixes with a
+> hand-editable seed and pre-fight **team inspection**, the Dragon's
+> fixed breath economy and a no-free-heal dungeon **carry-out**, Equip
+> Party + usable Items on both pause menus, per-element hit effects and
+> sounds, **20-floor descents** with a skill-scroll prize, fog-of-war
+> minimaps with a paid Surveyor reveal, a visible 100-step **patrol
+> countdown**, a dragonform pact, a Training Hall **sparring mirror** (AI
+> or manual control of the echoes), three once-per-run **summons** dug
+> from treasure maps, sixteen worn **heirlooms** with triggered effects,
+> and an eight-scene **cutscene story** told by a hooded goose. After its
+> approval only the deferred **validation playtesting (M23)** and
+> **release sign-off (M24)** remain. Current status always lives in
+> `docs/milestones.md`.
 
 ## Requirements
 
@@ -217,10 +230,11 @@ letterbox/pillarbox bars.
    west/east roads** to move between the **seven towns** (no button — just walk
    into the road); each later town raises enemy stats (up to +200 %) and score
    bonus (up to +100 %); clearing a dungeon in a town unlocks the road onward.
-3. At the **Guild**, pick a theme, a depth, and **1 or 4 floors** (M82 —
-   a 4-floor run keeps the boss on the last floor behind Stairway Warden
-   gates, posts to its own scoreboard, and in town 2+ can drop **Secret
-   Map Pieces**), then enter a seeded dungeon. Entering
+3. At the **Guild**, pick a theme, a depth, and **1, 4, or 20 floors**
+   (M82/M92 — a multi-floor run keeps the boss on the last floor behind
+   Stairway Warden gates, posts to its own scoreboard, and in town 2+ can
+   drop **Secret Map Pieces**; a stakes-raising 20-floor clear also opens
+   a pick-one **skill-scroll trove**), then enter a seeded dungeon. Entering
    autosaves. The Guild also hosts **"Fight the Guild Boss"** (M84):
    clear a 4-floor dungeon in that town to unlock its unique Master —
    the first victory pays a pick-1-of-2 **permanent town perk**.
@@ -288,9 +302,9 @@ src/
   states/    game states (menu, town, dungeon, battle, shops, ...)
   capture/   deterministic screenshot scenes (dev builds only)
   editor/    CrystalForge content editor (separate dev tool; never shipped)
-data/        JSON content (12 files: skills, classes, enemies, items, bosses,
+data/        JSON content (13 files: skills, classes, enemies, items, bosses,
              themes, composition, passives, milestones, story,
-             event_flavor + curio_lore)
+             event_flavor + curio_lore + cutscenes)
 assets/      manifest.json + generated textures/audio/font + credits.md
 tools/       package.ps1 + deterministic asset generators (asset_gen/)
 tests/       Catch2 unit/integration tests (headless)
@@ -347,7 +361,7 @@ save round-trips via the Save Point + Continue.
 
 - **Generated assets.** All art (16-bit-style pixel tiles/sprites), the UI
   **bitmap font** (an original pixel typeface + BMFont descriptors), and all
-  audio (20 chiptune music tracks, 4 ambience beds, 15 SFX) are original and
+  audio (20 chiptune music tracks, 4 ambience beds, 21 SFX) are original and
   produced by deterministic in-repo generators (`tools/asset_gen/`). Every
   sound and visual role is replaceable without code via
   `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload
@@ -369,7 +383,8 @@ save round-trips via the Save Point + Continue.
   mid-fight reinforcements are still not implemented (the endgame
   gauntlets run their waves as separate battles).
 - The six starting classes share all equipment (no per-class
-  restrictions); each reward class bans slots (the Goose wears nothing).
+  restrictions); each reward class bans slots (the Goose wears no arms or
+  armor — an M96 heirloom is the one keepsake anyone may hold).
   The economy is lightly tuned.
 - The seven towns share one fixed layout (exterior palette, service interiors,
   and music vary per town); no per-character portraits.

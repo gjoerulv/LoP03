@@ -20,6 +20,13 @@ struct DebugCheats {
     // consumed by DungeonState on its next update, which routes it through the
     // real completeDungeon() path so scoring/unlocks/market rolls stay honest.
     bool requestDungeonClear = false;
+
+    // M93 one-shots, same contract: set by the debug menu, consumed by
+    // DungeonState. PatrolNow burns the danger counter to one step (the next
+    // tile walked rouses the patrol through the REAL trigger path);
+    // ArmDragonform arms the next battle exactly as the event would.
+    bool requestPatrolNow = false;
+    bool requestArmDragonform = false;
 };
 
 }  // namespace cd

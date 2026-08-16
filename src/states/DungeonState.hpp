@@ -7,16 +7,21 @@
 #include "battle/Battle.hpp"
 #include "core/Geometry.hpp"
 #include "danger/DangerRating.hpp"
+#include "game/Dragonform.hpp"  // M93
 #include "game/RunStats.hpp"
 #include "game/Spoils.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "dungeon/RoomLayout.hpp"
 #include "states/GameState.hpp"
 #include "town/Tilemap.hpp"
+#include "ui/TextViewport.hpp"
 
 namespace cd {
 
 struct AppContext;
+namespace content {
+struct EventFlavorDef;
+}
 
 // Walkable dungeon explorer. Each room is a compact archetype layout realized
 // from a derived room-local seed (M16), drawn centered in the exploration
@@ -46,8 +51,10 @@ public:
     // present in shipping builds.
     bool captureFaceEvent(dungeon::RoomEventKind kind);
     // M80: face the event AND open its flavor panel (false when the dungeon
-    // lacks the event or the kind has no authored flavor).
-    bool captureOpenEventPanel(dungeon::RoomEventKind kind);
+    // lacks the event or the kind has no authored flavor). M87: an optional
+    // pseudo-translated body override stresses the scrolling viewport.
+    bool captureOpenEventPanel(dungeon::RoomEventKind kind,
+                               const std::string& bodyOverride = "");
     // M80 addendum: show the outcome panel with a representative result.
     void captureShowOutcome(const std::string& title, const std::string& body);
     // M82: clear the current floor's stair-gate, open the stairway, and stand
@@ -65,7 +72,7 @@ private:
     };
     // M82: StairGate is the boss-slot fight on floors before the last — its
     // victory opens the stairs instead of completing the run.
-    enum class EncounterKind { None, Gate, Guard, Boss, Challenge, StairGate };
+    enum class EncounterKind { None, Gate, Guard, Boss, Challenge, StairGate, Patrol };
     struct Marker {
         int x = 0;
         int y = 0;
@@ -101,6 +108,8 @@ private:
     void resolveEvent();  // applies a non-battle event's stated trade-off
     std::string eventPromptText() const;  // the pre-confirmation trade-off line
     void confirmEventPanel();       // M80: the panel's Confirm — resolve or fight
+    // M87: fills the flavor viewport and raises the panel (render stays const).
+    void openEventPanel(const content::EventFlavorDef& flavor);
     void renderEventPanel() const;  // M80: the centered flavor + trade-off modal
     // M80 addendum (owner, 2026-08-06): event and chest OUTCOMES ride the same
     // centered treatment instead of the footer line.
@@ -136,6 +145,21 @@ private:
     bool onChart_ = false;     // M66: standing on the dungeon treasure map
     bool onBuried_ = false;    // M66: standing on the (revealed) buried spot
     bool chartFound_ = false;  // M66: the map was read this run
+    // M93: the Surveyor's paid reveal — lifts the multi-floor fog for the
+    // CURRENT floor only (reset on descent, like the chart).
+    bool floorRevealed_ = false;
+    // M93: Dragonform — armed by the event, spent on the next battle start
+    // (the party fights it as Dragons; the reckoning docks a flat 100).
+    bool dragonformArmed_ = false;
+    int dragonformFights_ = 0;  // battles actually fought in dragonform (score line)
+    DragonformStash dragonformStash_;  // the real members while a fight runs borrowed
+    // M93: the danger counter (owner decisions 5/7): a visible 100-step
+    // countdown; at 0 a seeded patrol attacks immediately, the counter
+    // resets, and the patrol pays XP but no gold, items, or danger credit.
+    int dangerSteps_ = 100;
+    int patrolIndex_ = 0;  // how many patrols this run has rolled (seeds the next)
+    int lastTileX_ = -1;   // the tile whose leaving ticked the counter last
+    int lastTileY_ = -1;
     // M80: the centered event-flavor panel is open (movement and the other
     // dungeon inputs pause; Confirm accepts, Cancel steps away).
     bool eventPanelOpen_ = false;
@@ -144,6 +168,12 @@ private:
     bool outcomePanelOpen_ = false;
     std::string outcomeTitle_;
     std::string outcomeBody_;
+    // M87: both panels' bodies are bounded scrollable viewports — the panel
+    // (not the text) owns the height and Up/Down reaches the rest, so an
+    // authored/translated body of any length works. The fixed trade-off line
+    // and the control hints never scroll away.
+    ui::TextViewport eventFlavorView_;
+    ui::TextViewport outcomeView_;
 
     std::vector<danger::Tier> teamTier_;  // precomputed danger per team
     RunStats run_;

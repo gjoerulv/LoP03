@@ -40,11 +40,14 @@ public:
     // the Done beat shows the FF-style results panel — XP, gold, and each
     // member's level-up diff — on the same single Confirm that always ended a
     // battle. Must outlive the state (DungeonState owns it, like resultSlot).
+    // M94: `manualEnemies` is the sparring mirror's manual mode — enemy-side
+    // units whose turn is not forced/uncontrolled route through the SAME
+    // player command phases (Attack/Skill/Guard; never Item or Escape).
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                 battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None,
                 RunStats* statsSlot = nullptr, bool castleChallenge = false,
                 render::BackdropStage stage = render::BackdropStage::Plain,
-                const BattleSpoils* spoils = nullptr);
+                const BattleSpoils* spoils = nullptr, bool manualEnemies = false);
 
     void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
@@ -80,9 +83,12 @@ public:
     // overflow-checked.
     void captureShowSpoils();
     // Capture-only: open the unit Details overlay on a party actor staged at the
-    // fullest layout the panel admits (guard line + four status chips), so the
-    // wrapped status legend is overflow-checked against the panel's line budget.
+    // fullest layout (guard line + four status chips + a Passive line — the
+    // combination that overran the pre-M87 hard budget; it scrolls now).
     void captureOpenDetails();
+    // Capture-only (M87): open the skill list and the highlighted skill's full
+    // sheet in the scrollable Details overlay.
+    void captureOpenSkillDetails(std::vector<std::string> skills = {});
 #endif
 
 private:
@@ -139,6 +145,10 @@ private:
                       bool statusAction = false);
     // M22: pushes the contextual Details overlay for the focused unit.
     void openDetails();
+    // M87: full skill/item sheets for the selection phases — the bottom-panel
+    // preview stays 2 lines; Details reaches the whole text.
+    void openSkillDetails();
+    void openItemDetails();
     void commitPresentation();
 
     void drawUnit(const battle::Combatant& c, int index, int x, int y, bool current,
@@ -210,6 +220,13 @@ private:
     std::vector<float> koFade_;             // enemy fade-out after a shown KO (1 -> 0)
     int lungeUnit_ = -1;                    // acting unit during the current sequence
     int pendingSfx_ = 0;                    // 0 none, 1 heal, 2 hit, 3 ko
+    // M91: the resolved action's element — set beside each useSkill/attack
+    // call, drawn as a per-element accent on every hit unit during the impact
+    // beat (render::drawElementImpact) and steering the impact SFX toward the
+    // element's own role in commitPresentation. Presentation-only.
+    content::Element fxElement_ = content::Element::None;
+    // M94: the sparring mirror's manual mode (see the ctor note).
+    bool manualEnemies_ = false;
 };
 
 }  // namespace cd

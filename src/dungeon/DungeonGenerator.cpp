@@ -604,6 +604,31 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
             ev.goldCost = kDuckPeddlerPriceGold;
             ev.itemId = kEvilDucklingItemId;
         }
+
+        // M93 (generation v17): Dragonform — the same pure-hash replacement
+        // contract on its own salts. The eligible list is re-collected so a
+        // slot the peddler just took is never taken twice.
+        plainEventRooms.clear();
+        for (std::size_t ri = 0; ri < d.rooms.size(); ++ri) {
+            const RoomEventKind k = d.rooms[ri].event.kind;
+            if (d.rooms[ri].type != RoomType::Event) {
+                continue;
+            }
+            if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
+                k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
+                k == RoomEventKind::RestToken) {
+                plainEventRooms.push_back(static_cast<int>(ri));
+            }
+        }
+        const int dfSlot = dragonformSlot(seed, static_cast<int>(plainEventRooms.size()));
+        if (dfSlot >= 0) {
+            RoomEvent& ev =
+                d.rooms[static_cast<std::size_t>(
+                            plainEventRooms[static_cast<std::size_t>(dfSlot)])]
+                    .event;
+            ev.kind = RoomEventKind::Dragonform;
+            ev.goldCost = 0;  // its price is score, stated at the panel (-100)
+        }
     }
 
     // --- Trapped chests (M20): some unguarded chests carry a visible
@@ -724,9 +749,54 @@ std::vector<Dungeon> generateFloors(std::uint64_t seed, int depth,
                 f.teams[static_cast<std::size_t>(bossTeamIdx)] = std::move(gate);
             }
         }
+
+        // M93 (generation v17): the Surveyor — multi-floor runs only (a
+        // 1-floor map has no fog to sell away). The same pure-hash plain-
+        // event replacement contract as the DuckPeddler, rolled per floor
+        // from the RUN seed so every floor answers independently and the
+        // floor's own generation stream is never touched.
+        if (floorCount > 1) {
+            std::vector<int> plainEventRooms;
+            for (std::size_t ri = 0; ri < f.rooms.size(); ++ri) {
+                const RoomEventKind k = f.rooms[ri].event.kind;
+                if (f.rooms[ri].type != RoomType::Event) {
+                    continue;
+                }
+                if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
+                    k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
+                    k == RoomEventKind::RestToken) {
+                    plainEventRooms.push_back(static_cast<int>(ri));
+                }
+            }
+            const int slot =
+                surveyorSlot(seed, i, static_cast<int>(plainEventRooms.size()));
+            if (slot >= 0) {
+                RoomEvent& ev =
+                    f.rooms[static_cast<std::size_t>(
+                                plainEventRooms[static_cast<std::size_t>(slot)])]
+                        .event;
+                ev.kind = RoomEventKind::Surveyor;
+                ev.goldCost = kSurveyorPriceGold;
+            }
+        }
         floors.push_back(std::move(f));
     }
     return floors;
+}
+
+EnemyTeam patrolTeam(const content::ContentDatabase& db, const std::string& themeId,
+                     int town, int depth, std::uint64_t runSeed, int patrolIndex) {
+    // M93: the stair-gate recipe (fresh pure-hash Rng, the real pools, the
+    // real composer) at the run's own depth/town — "follows the same rules
+    // as depth + town + dungeon type" (owner decision 5), verbatim.
+    constexpr std::uint64_t kSaltPatrol = 0x9A7201CCA11ull;
+    Rng rng(blackMarketHash(runSeed, kSaltPatrol + static_cast<std::uint64_t>(patrolIndex)));
+    const content::DungeonThemeDef* theme = themeId.empty() ? nullptr : db.findTheme(themeId);
+    const Pools pools = buildPools(db, theme, clampTown(town));
+    EnemyTeam team = makeTeam(rng, pools, depth, /*boss=*/false, db, clampTown(town));
+    team.name = "Roused Patrol";
+    team.patrol = true;  // XP only, no gold, no danger credit (owner decision 7)
+    return team;
 }
 
 }  // namespace cd::dungeon
