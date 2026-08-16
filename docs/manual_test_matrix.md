@@ -32,9 +32,10 @@ The older rows below are retained as historical baseline evidence and are **not*
 > Latin-1 letters + `¡ ¿ « »` (set a party name with `æøå ÄÖÜ ß é` to
 > spot-check). New checks: scroll every listed panel to its last line and
 > back (clamped, no dead keys); confirm `[ui-overflow]` stays absent from
-> the log while scrolling/previews are on screen. Capture set is now
-> **105 scenes** (`98_story_long`–`105_event_outcome_long`, pseudo-
-> localized long-prose stress). The M87 note §G is the checklist.
+> the log while scrolling/previews are on screen. The capture set grew to
+> **105 scenes** at M87 (`98_story_long`–`105_event_outcome_long`, pseudo-
+> localized long-prose stress; **114** as of M97). The M87 note §G is the
+> checklist.
 >
 > **Details-legend fix (post-M75, 2026-08-05):** the battle Details legend
 > now also explains the M44 turn-control statuses (TRF: forced to Guard

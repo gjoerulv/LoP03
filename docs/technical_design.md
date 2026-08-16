@@ -1366,7 +1366,8 @@ the architecture):
   rendering the `?` fallback. `wrapText` remains a deliberate Latin-script
   wrapper: spaces break, runs collapse, `\n` is a paragraph, NBSP glues —
   no general Unicode line-breaking engine.
-- **Capture:** scenes `98`–`105` (the set is **105**) exercise long
+- **Capture:** scenes `98`–`105` (the set was **105** at M87; **114** as
+  of M97) exercise long
   storyteller/details/bestiary/party/event/outcome prose and the battle
   preview + full-sheet pair, driven by a deterministic capture-only
   `pseudoLocalize` transform (~1.3× expansion using the new glyphs) and one

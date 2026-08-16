@@ -126,8 +126,8 @@ M87 policies:
 | Policy | Use for | Overflow means |
 |---|---|---|
 | **A. Single-line bounded** (`drawTextFitted`, menu rows, chips) | menu/stat rows, prices, labels, editor rows — one line is part of the design; authored short labels where needed | a DEFECT: logged `[ui-overflow]`, clipped, fails the capture lint |
-| **B. Fixed wrapped preview** (`drawTextPreview`) | compact decision-time summaries: battle skill/item descriptions during selection, the party panel's passive/milestone/skill lines | INTENTIONAL: explicit `hasMore`, stepped down-arrow marks it, full text one Details press away — never counted as overflow |
-| **C. Scrollable wrapped prose** (`ui::TextViewport` + `drawTextViewport`) | reading surfaces: Details overlay, storyteller, tutorial prompts, bestiary flavor, event flavor/outcomes, curio lore, treasure/castle results | EXPECTED: Up/Down reaches every line, clamped; more-above/below arrows; scissor-clipped; titles, trade-off/consequence lines, and control hints stay OUTSIDE the scrolling body |
+| **B. Fixed wrapped preview** (`drawTextPreview`) | compact decision-time summaries: battle skill/item descriptions during selection, the party panel's passive/milestone/skill lines, the Items screen's detail lines (M90), and the choice modals' offer descriptions (M92 trove, M97 keepsakes) | INTENTIONAL: explicit `hasMore`, stepped down-arrow marks it, full text one Details press away — never counted as overflow |
+| **C. Scrollable wrapped prose** (`ui::TextViewport` + `drawTextViewport`) | reading surfaces: Details overlay, storyteller, tutorial prompts, bestiary flavor, event flavor/outcomes, curio lore, treasure/castle results, the M97 cutscene dialogue panel | EXPECTED: Up/Down reaches every line, clamped; more-above/below arrows; scissor-clipped; titles, trade-off/consequence lines, and control hints stay OUTSIDE the scrolling body |
 | **D. Scrollable row lists** (`ScrollWindow` + `drawMenuScrolled`) | shops, inventories, rosters, save slots, scoreboard, battle skill/item lists | EXPECTED: selection stays visible; arrows indicate more |
 
 A few deliberate fixed wrap budgets remain under policy A discipline (the

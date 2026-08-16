@@ -13,7 +13,9 @@ skill concise and operational — do not let it become a copy of the docs.
 
 A legally-original, 16-bit-inspired **turn-based JRPG roguelite**. A 4-character
 party repeatedly enters seeded, procedurally generated dungeons from a town hub.
-Dungeons have **visible** enemy teams (no random encounters), guarded chests, at
+Dungeons have **visible** enemy teams (no hidden random encounters — M93's
+danger-counter patrol is the one step-driven fight, always forewarned by a
+visible countdown), guarded chests, at
 least 3 mandatory gate battles, and a boss. The hook is **efficiency**: score is
 driven mainly by **fewest battle turns**. Audience: **fans of 16-bit JRPGs and
 roguelites who want real tactical depth with a readable UI** (medium difficulty;
@@ -166,7 +168,7 @@ needs a row in `assets/credits.md`.
 12. **Generation changes need a version bump.** Anything that alters what a
     seed produces (generator code OR composition/data curves — including item
     prices, which the dungeon merchant derives its offer from) bumps
-    `dungeon::kGenerationVersion` (currently 15; battle rules are at 15 —
+    `dungeon::kGenerationVersion` (currently 17; battle rules are at 18 —
     the history comments in `src/dungeon/RoomLayout.hpp` and
     `src/battle/Battle.hpp` are the authorities) — the scoreboard tags it
     for comparability. Owner-gated.
@@ -235,12 +237,19 @@ town perks, and M85's Last Dragon + curio lore) was approved milestone by
 milestone through 2026-08-07. **M86** (CrystalForge catch-up + the
 deliberate 0.9.0 → 0.6.0 version renumber) and **M87** (owner-directed
 2026-08-11: translation-ready text containers & scrollable prose — the
-text policies in gotcha 14, the Latin-1 font extension, the capture set
-now **105 scenes**) are both `implemented, awaiting
-manual approval`. The M46 UI kit (`docs/ui_style_guide.md`) binds all UI
+text policies in gotcha 14, the Latin-1 font extension, 105 capture
+scenes at the time) are both `implemented, awaiting
+manual approval` — as is the whole **M88–M97 program** (owner-authorized
+2026-08-14, implemented the same day: town/Guild UX + team inspection,
+the Dragon breath fix + dungeon carry-out (rules v16), party-menu
+Equip/Items, elemental impact FX, 20-floor descents + the scroll trove
+(gen v16), fog/Surveyor/patrols/dragonform (gen v17), the sparring
+mirror, summons (rules v17), heirlooms (rules v18), and the Hooded Goose
+cutscene story; capture set now **114 scenes**; manual matrix rows
+167–184). The M46 UI kit (`docs/ui_style_guide.md`) binds all UI
 work; the M49 castle retune (Boss Rush 580 % / King 500 % / Endless
 +10 %pts per wave, level cap 99) plus the M54 equipment rebalance are the
-balance baseline. After M86/M87's approval only the deliberately deferred
+balance baseline. After these approvals only the deliberately deferred
 **M23** (validation/playtesting/balance) and **M24** (release packaging)
 remain, in that order: their tooling and packaging are built (v0.6.0 RC
 flow), awaiting owner-run external playtests (`docs/playtest_protocol.md`)

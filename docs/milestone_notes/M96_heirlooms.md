@@ -46,7 +46,8 @@ menu grants them.
 - **Anyone may wear one**: `canEquipSlot` returns true for the slot for
   every class. The Goose's "equips nothing" joke reads as arms and
   armor — a memory is not equipment — so no M97 reward is ever dead on a
-  Goose party (documented reading, easy to veto).
+  Goose party (**owner-approved 2026-08-16**; game_design's Goose entry
+  carries the carve-out).
 - **Debug**: "Grant 1x each heirloom". **Forge**: item descriptors
   gained `triggers` and the lowHp pair; type/slot pickers follow the
   extended content tables.
@@ -63,6 +64,10 @@ menu grants them.
 - **DEF/SPD conditional variants** (plan's "optionally") were not
   authored — attack-only keeps the first sixteen legible; the schema
   extends later without a rules bump only if a new field stays additive.
+- **CrystalForge's Sim Lab party spec has no heirloom column** (recorded
+  in the 2026-08-16 doc audit): trigger effects are not quick-simmable
+  from the Forge. Never in this milestone's scope; the `[heirloom]`
+  battery covers them headlessly.
 
 ## Compatibility
 

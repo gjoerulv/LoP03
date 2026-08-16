@@ -17,7 +17,7 @@ exceptions since M13 — text entry flows through the input layer):
 | Cancel | Esc, Backspace, X | B | back, close, (opens pause in town/dungeon) |
 | Menu | Tab | Start | opens **and closes** (M47) pause in town/dungeon; opens/closes the battle log in battle (M52) |
 | Details | C | Y | M22: contextual help panels (battle stats/statuses, dungeon danger, score components, gear comparison); M87: the full skill/item sheet during battle selection, the full party-member sheet, bestiary read focus |
-| CyclePrev / CycleNext | Q / E (alt Left Ctrl / Left Alt) | L1 / R1 | M79: party-member cycling in the Equip Shop member phases and Training Hall; M82: 1F/4F scoreboard switch |
+| CyclePrev / CycleNext | Q / E (alt Left Ctrl / Left Alt) | L1 / R1 | M79: party-member cycling in the Equip Shop member phases (including M90's Equip Party mode) and Training Hall; M82/M92: scoreboard board cycling (1F / 4F / 20F) |
 | TextBackspace | Backspace (fixed) | X (fixed) | delete-one-char in text editing |
 | ToggleDebug | F1 (fixed) | — | debug overlay |
 | ReloadAssets | F5 (fixed, debug builds) | — | live manifest reload (see `docs/asset_pipeline.md`) |
@@ -132,5 +132,6 @@ characters still require a keyboard (labeled in-game).
 - Explicit `Quit` — the action stays reserved and unbound; the quit
   *affordance* was resolved in M47 (both pause menus offer Quit → Quit to
   Title / Quit Game / Keep Playing).
-- Seed text entry at the Guild (DATA-023) — can now reuse the text-entry
-  path; owner decision on wanting it.
+- Seed text entry at the Guild (DATA-023) — **resolved in M88** (owner
+  request): the Guild's Seed row opens a digits-only modal editor on the
+  shared text-entry path; empty or Cancel keeps the old seed.

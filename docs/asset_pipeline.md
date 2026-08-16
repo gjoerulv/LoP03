@@ -71,9 +71,10 @@ pass 0 to show the first (stand) frame.
 ## 3. Audio roles (M21: full soundscape shipped)
 
 The stable role tables live in `src/audio/AudioRoles.hpp` (raylib-free;
-tests validate the shipped manifest against them). All **39** shipped WAVs
-(20 music, 4 ambience, 15 SFX — 30 at M21, grown by the per-town, castle,
-King and Duck tracks; the mine bed rebuilt in M74) are original, produced by
+tests validate the shipped manifest against them). All **45** shipped WAVs
+(20 music, 4 ambience, 21 SFX — 30 at M21, grown by the per-town, castle,
+King and Duck tracks and the six M91 elemental hits; the mine bed rebuilt
+in M74) are original, produced by
 `tools/asset_gen/generate_audio.ps1` (deterministic — reruns are
 byte-identical). Since the owner-directed 2026-08-08 extension the music
 note tables live in `tools/asset_gen/music_data.ps1` (sectioned 24–46s
@@ -86,6 +87,7 @@ Standard MIDI File into the git-ignored `docs/music/` for DAW editing
 |---|---|
 | `sfx.ui.{move,confirm,cancel,error}` | menus; `error` = refusals (can't pay/afford) |
 | `sfx.battle.{hit,hit_magic,heal,status,ko,victory,defeat}` | combat feedback by action type |
+| `sfx.battle.hit_{fire,ice,lightning,earth,holy,dark}` | M91 per-element impact accents (`audio::elementHitSfx`; a missing file remaps to `hit_magic` — see fallbacks) |
 | `sfx.world.{chest,step,door,interact}` | exploration (steps are rate-limit cadenced) |
 | `music.title` / `music.town` / `music.guild` | scene music (streamed loops) |
 | `music.dungeon.{keep,mine,forest}` | per-theme dungeon music (owner decision) |
@@ -99,8 +101,9 @@ Standard MIDI File into the git-ignored `docs/music/` for DAW editing
 **Fallback order (owner-approved):** manifest file → synthesized placeholder
 tone → silence; every miss logs a warning, nothing crashes. New M21 music
 roles map to the nearest M8 synth loop (`kSynthMusicIndex`); a missing
-victory/defeat jingle falls back to the matching stinger SFX; ambience has no
-synth tier (silence). File-backed music uses raylib music streams with the
+victory/defeat jingle falls back to the matching stinger SFX; a missing M91
+elemental hit remaps to `hit_magic` before any other tier (M14 rule, applied
+in `AudioManager::play`); ambience has no synth tier (silence). File-backed music uses raylib music streams with the
 manifest `loop` flag; track changes crossfade over 0.25 s; rapid SFX are
 rate-limited per role (`kSfxMinInterval`). Volumes combine group settings
 (M13 Settings screen) × per-asset `volume`; since **M52** ambience has its

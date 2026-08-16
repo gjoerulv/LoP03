@@ -816,7 +816,9 @@ long before it is earned. All three are jokes that are also real classes:
   one of its own skills (any it can afford and cast) or a swing, at a foe of its
   choosing. It carries no weapon, quips one of twelve dry lines about 15 % of the
   time, and pays **+5 % score per Jester** for the indignity.
-- **Goose** — dreadful stats, **equips nothing at all**. Its heals and cures work
+- **Goose** — dreadful stats, **equips no arms or armor at all** (an M96
+  heirloom is the one exception — a memory is not equipment; owner-approved
+  2026-08-16). Its heals and cures work
   — and cheerfully buff **every enemy** at the same time. At level 30 it learns
   one ultimate that lays every debuff on every foe for 30 MP. **+5 % per Goose.**
   Against the **Hollow King** it has a hidden edge (M58): each of the King's own
