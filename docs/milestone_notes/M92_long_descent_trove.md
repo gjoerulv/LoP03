@@ -1,6 +1,6 @@
 # M92 — The long descent: 20 floors & the Guild's trove (generation v16)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). Generation **15 → 16**
 (new 20-floor seed output; 1F/4F byte-identical to v15). No battle-rules
 or save-schema change.

@@ -10,6 +10,7 @@
 
 #include "battle/Battle.hpp"
 #include "battle/Simulator.hpp"
+#include "render/SummonFx.hpp"  // M107: the apparition mapping
 #include "content/ContentDatabase.hpp"
 #include "content/ContentLoader.hpp"
 #include "content/LoadReport.hpp"
@@ -176,4 +177,18 @@ TEST_CASE("summons: no enemy AI ever answers a call", "[summons]") {
     b.beginUnitTurn(foe);
     const battle::EnemyChoice c = battle::chooseEnemyAction(b, foe, db());
     CHECK(c.skillId != "summon_goose");
+}
+
+TEST_CASE("summons: each legend maps to its apparition, nothing else does (M107)",
+          "[summon][m107]") {
+    using cd::render::SummonKind;
+    using cd::render::summonKindFor;
+    REQUIRE(summonKindFor("summon_goose").has_value());
+    CHECK(*summonKindFor("summon_goose") == SummonKind::Goose);
+    REQUIRE(summonKindFor("summon_sentinel").has_value());
+    CHECK(*summonKindFor("summon_sentinel") == SummonKind::Sentinel);
+    REQUIRE(summonKindFor("summon_spring").has_value());
+    CHECK(*summonKindFor("summon_spring") == SummonKind::Spring);
+    CHECK_FALSE(summonKindFor("fireball").has_value());
+    CHECK_FALSE(summonKindFor("").has_value());
 }

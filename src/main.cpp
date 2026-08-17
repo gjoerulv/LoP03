@@ -8,6 +8,7 @@
 #include "core/Log.hpp"
 #include "core/Version.hpp"
 #include "platform/FatalDialog.hpp"
+#include "platform/Migration.hpp"  // M108: the one-time save migration
 #include "platform/Paths.hpp"
 
 #if defined(CRYSTAL_SHIPPING_BUILD) && \
@@ -22,7 +23,7 @@ namespace {
 // player can find the diagnostics.
 void showFatalError(std::string_view message) noexcept {
     try {
-        std::string text = "Crystal Dungeons could not continue.\n\n";
+        std::string text = "Are P Geese could not continue.\n\n";
         text.append(message);
         const std::filesystem::path logPath = cd::log::currentLogPath();
         if (!logPath.empty()) {
@@ -49,14 +50,19 @@ int main(int argc, char** argv) {
         (void)argv;
 #endif
 
+        // M108: the rebrand's save-folder migration runs BEFORE anything
+        // touches the user-data dir — a legacy CrystalDungeons folder is
+        // copied across exactly once, and never modified or deleted.
+        cd::platform::migrateLegacyUserData();
+
         const std::filesystem::path logDirectory = cd::paths::userDataDir() / "logs";
         cd::log::initialize(logDirectory);
-        cd::log::info(std::string("Crystal Dungeons ") + cd::version::kString + " starting");
+        cd::log::info(std::string("Are P Geese ") + cd::version::kString + " starting");
 
         cd::Application app;
         app.run();
 
-        cd::log::info("Crystal Dungeons shutdown complete");
+        cd::log::info("Are P Geese shutdown complete");
         cd::log::shutdown();
         return 0;
     } catch (const std::exception& e) {

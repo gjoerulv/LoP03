@@ -12,6 +12,7 @@ RoomEventKind themeEventKind(const std::string& themeId) {
     if (themeId == "ruined_keep") return RoomEventKind::ArmoryGhost;
     if (themeId == "crystal_mine") return RoomEventKind::MinersCache;
     if (themeId == "hollow_forest") return RoomEventKind::ElderRoot;
+    if (themeId == "goosy_gauntlet") return RoomEventKind::GoosyFlock;  // M106
     return RoomEventKind::None;
 }
 
@@ -128,6 +129,78 @@ int surveyorSlot(std::uint64_t seed, int floorIndex, int eligibleCount) {
     }
     const std::uint64_t pick = themeEventHash(seed, floorIndex + 1000, kSaltSurveyorSlot);
     return static_cast<int>(pick % static_cast<std::uint64_t>(eligibleCount));
+}
+
+namespace {
+// M103: fresh salt pairs per event (appearance and slot separate — the M35
+// salt discipline), and one shared per-dungeon shape behind the six names.
+constexpr std::uint64_t kSaltGoosePolyAppears = 0x6005EF0270CA0900ull;
+constexpr std::uint64_t kSaltGoosePolySlot = 0x6005EF0270CA0901ull;
+constexpr std::uint64_t kSaltSacrificeAppears = 0x5AC21F1CE0FFE200ull;
+constexpr std::uint64_t kSaltSacrificeSlot = 0x5AC21F1CE0FFE201ull;
+constexpr std::uint64_t kSaltLevelAltarAppears = 0x1E7E1A17A2000300ull;
+constexpr std::uint64_t kSaltLevelAltarSlot = 0x1E7E1A17A2000301ull;
+constexpr std::uint64_t kSaltStoryAppears = 0x57012A9E20050400ull;
+constexpr std::uint64_t kSaltStorySlot = 0x57012A9E20050401ull;
+constexpr std::uint64_t kSaltExchangeAppears = 0xE8C4A26E70000500ull;
+constexpr std::uint64_t kSaltExchangeSlot = 0xE8C4A26E70000501ull;
+constexpr std::uint64_t kSaltPatrolAppears = 0x9A7201F0E5E70600ull;
+constexpr std::uint64_t kSaltPatrolSlot = 0x9A7201F0E5E70601ull;
+
+int perDungeonSlot(std::uint64_t seed, int eligibleCount, int chancePct,
+                   std::uint64_t saltAppears, std::uint64_t saltSlot) {
+    if (eligibleCount <= 0) {
+        return -1;
+    }
+    const std::uint64_t roll = themeEventHash(seed, 0, saltAppears);
+    if (static_cast<int>(roll % 100) >= chancePct) {
+        return -1;
+    }
+    const std::uint64_t pick = themeEventHash(seed, 1, saltSlot);
+    return static_cast<int>(pick % static_cast<std::uint64_t>(eligibleCount));
+}
+}  // namespace
+
+int goosePolymorphSlot(std::uint64_t seed, int eligibleCount) {
+    return perDungeonSlot(seed, eligibleCount, kGoosePolymorphChancePct, kSaltGoosePolyAppears,
+                          kSaltGoosePolySlot);
+}
+int sacrificeSlot(std::uint64_t seed, int eligibleCount) {
+    return perDungeonSlot(seed, eligibleCount, kSacrificeChancePct, kSaltSacrificeAppears,
+                          kSaltSacrificeSlot);
+}
+int levelAltarSlot(std::uint64_t seed, int eligibleCount) {
+    return perDungeonSlot(seed, eligibleCount, kLevelAltarChancePct, kSaltLevelAltarAppears,
+                          kSaltLevelAltarSlot);
+}
+int strangerStorySlot(std::uint64_t seed, int eligibleCount) {
+    return perDungeonSlot(seed, eligibleCount, kStrangerStoryChancePct, kSaltStoryAppears,
+                          kSaltStorySlot);
+}
+int tokenExchangeSlot(std::uint64_t seed, int eligibleCount) {
+    return perDungeonSlot(seed, eligibleCount, kTokenExchangeChancePct, kSaltExchangeAppears,
+                          kSaltExchangeSlot);
+}
+int patrolResetSlot(std::uint64_t seed, int eligibleCount) {
+    return perDungeonSlot(seed, eligibleCount, kPatrolResetChancePct, kSaltPatrolAppears,
+                          kSaltPatrolSlot);
+}
+
+namespace {
+// M104: the gambling dens' salt pairs.
+constexpr std::uint64_t kSaltReelsAppears = 0x2EE150DA7A000700ull;
+constexpr std::uint64_t kSaltReelsSlot = 0x2EE150DA7A000701ull;
+constexpr std::uint64_t kSaltBlackjackAppears = 0xB1AC7AC4A2D50800ull;
+constexpr std::uint64_t kSaltBlackjackSlot = 0xB1AC7AC4A2D50801ull;
+}  // namespace
+
+int reelsSlot(std::uint64_t seed, int eligibleCount) {
+    return perDungeonSlot(seed, eligibleCount, kReelsChancePct, kSaltReelsAppears,
+                          kSaltReelsSlot);
+}
+int blackjackSlot(std::uint64_t seed, int eligibleCount) {
+    return perDungeonSlot(seed, eligibleCount, kBlackjackChancePct, kSaltBlackjackAppears,
+                          kSaltBlackjackSlot);
 }
 
 }  // namespace cd::dungeon

@@ -80,6 +80,12 @@ inline SpoilsResult applySpoils(Party& party, const BattleSpoils& spoils,
     // Clause raises battle gold — additive with the M63 standing-member
     // bonuses, and applied HERE so the victory panel shows what was granted.
     out.xp = spoils.xp + spoils.xp * guildExpBonusPct(party.guild) / 100;
+    // M103 (Sacrifice event): the offered gear buys ONE doubled award — read
+    // and cleared here so the victory panel shows exactly what was granted.
+    if (party.doubleXpNext) {
+        out.xp *= 2;
+        party.doubleXpNext = false;
+    }
     out.gold = spoils.gold +
                spoils.gold *
                    (partyGoldBonusPct(party.members, db) + guildEnemyGoldPct(party.guild)) / 100;
@@ -96,7 +102,18 @@ inline SpoilsResult applySpoils(Party& party, const BattleSpoils& spoils,
                           c.stats.defense, c.stats.speed, allKnownSkills(c, db)});
     }
 
-    grantPartyXp(party, out.xp, db);  // the perk-adjusted amount (M84)
+    // M102 (owner decision): the fallen earn nothing at the end of a fight —
+    // only members still standing receive the XP. This also removes the old
+    // silent "auto-revive": a KO'd member can no longer level up mid-award and
+    // come back on the level-up heal (Party.cpp's HP-delta rule). Sanctioned
+    // revives remain the Phoenix Tear (field or battle), Renew (battle), and
+    // the Inn. Elder Root / Training Hall XP is deliberately NOT filtered —
+    // paid tuition is not a fight.
+    for (Character& c : party.members) {
+        if (c.hp > 0) {
+            grantXp(c, out.xp, db);  // the perk-adjusted amount (M84)
+        }
+    }
 
     for (std::size_t i = 0; i < party.members.size(); ++i) {
         const Character& c = party.members[i];

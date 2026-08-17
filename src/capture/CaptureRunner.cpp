@@ -264,7 +264,7 @@ int run(const char* outDir) {
 
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_HIDDEN);
-    InitWindow(config::kVirtualWidth, config::kVirtualHeight, "CrystalDungeons capture");
+    InitWindow(config::kVirtualWidth, config::kVirtualHeight, "ArePGeese capture");
     SetExitKey(KEY_NULL);
     SetRandomSeed(123456789u);  // GuildState's seed roll etc. stay fixed
 
@@ -389,12 +389,26 @@ int run(const char* outDir) {
 
         battle::BattleResult battleSlot;  // outlives the battle scenes
 
-        const tutorial::Beat* longestBeat = &tutorial::kBeats[0];
-        for (const tutorial::Beat& b : tutorial::kBeats) {
-            if (std::string(b.body).size() > std::string(longestBeat->body).size()) {
-                longestBeat = &b;
+        // M99: prompts show the forge-authored text (data/tutorials.json) with
+        // the constexpr beat as fallback — so the capture referees the longest
+        // RESOLVED body, exactly what a player can be shown.
+        const auto longestResolvedBeat = [](const AppContext& c) {
+            std::string title = tutorial::kBeats[0].title;
+            std::string body = tutorial::kBeats[0].body;
+            for (const tutorial::Beat& b : tutorial::kBeats) {
+                std::string t = b.title;
+                std::string bd = b.body;
+                if (const content::TutorialTextDef* d = c.content.findTutorialText(b.id)) {
+                    t = d->title;
+                    bd = d->body;
+                }
+                if (bd.size() > body.size()) {
+                    title = std::move(t);
+                    body = std::move(bd);
+                }
             }
-        }
+            return std::pair<std::string, std::string>(std::move(title), std::move(body));
+        };
 
         const std::vector<Scenario> scenarios = {
             {"01_title",
@@ -655,6 +669,16 @@ int run(const char* outDir) {
                      battle::buildBattle(c.party, makeBossTeam(c.content), c.content);
                  s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot));
              }},
+            {"117_summon_goose",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M107: the Mighty G. Goose's apparition frozen mid-beat over a
+                 // five-enemy field — the stagecraft's composition check.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureShowSummon("summon_goose");
+                 s.pushState(std::move(state));
+             }},
             {"23_battle_targeting",
              [&battleSlot](StateStack& s, AppContext& c) {
                  // Drive the battle into target selection so the M25 target-info
@@ -674,10 +698,11 @@ int run(const char* outDir) {
                      s, c, run, score::computeScore(run)));
              }},
             {"20_tutorial_prompt",
-             [longestBeat](StateStack& s, AppContext& c) {
+             [longestResolvedBeat](StateStack& s, AppContext& c) {
+                 auto [title, body] = longestResolvedBeat(c);  // M99
                  s.pushState(std::make_unique<TownState>(s, c));
                  s.pushState(std::make_unique<TutorialPromptState>(
-                     s, c, longestBeat->title, longestBeat->body));
+                     s, c, std::move(title), std::move(body)));
              }},
             {"21_details_scoring",
              [](StateStack& s, AppContext& c) {
@@ -1252,6 +1277,29 @@ int run(const char* outDir) {
                  auto state = std::make_unique<EquipShopState>(s, c);
                  state->captureEnterEquipItem(0, content::EquipSlot::Weapon);
                  s.pushState(std::move(state));
+             }},
+            {"115_equip_heirloom_text",
+             [](StateStack& s, AppContext& c) {
+                 // M98: the equip-item band for an HEIRLOOM candidate shows the
+                 // piece's effect text where the stat diff sits (heirlooms have
+                 // no stats to diff — the old zero row said nothing). Staged on
+                 // the longest shipped composition (Hearthstone Chip) so the
+                 // two-line "equipshop.heirloom" wrap is refereed at maximum
+                 // authored length.
+                 c.party.members[0].equippedHeirloom = "heirloom_lastlight";
+                 c.party.inventory.add("heirloom_hearthstone", 1);
+                 refreshCharacter(c.party.members[0], c.content);
+                 auto state = std::make_unique<EquipShopState>(s, c);
+                 state->captureEnterEquipItem(0, content::EquipSlot::Heirloom);
+                 s.pushState(std::move(state));
+             }},
+            {"116_stranger_joke",
+             [](StateStack& s, AppContext& c) {
+                 // M100: the optionless joke flow on the raised stage — the
+                 // six-line panel budget and THE STRANGER "P" caption in one
+                 // frame (joke_1 carries the owner's own line).
+                 s.pushState(
+                     std::make_unique<CutsceneState>(s, c, "joke_1", /*replay=*/true));
              }},
             {"64_settings_audio",
              [](StateStack& s, AppContext& c) {

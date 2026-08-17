@@ -1,6 +1,8 @@
 #include "states/BattleState.hpp"
 
 #include <algorithm>
+
+#include "states/BattleFormation.hpp"  // M101: center-out enemy rows
 #include <memory>
 #include <utility>
 
@@ -223,8 +225,22 @@ void BattleState::captureEnterTargeting() {
     }
     pendingKind_ = PendingKind::Attack;
     targetCandidates_ = battle_.aliveIndices(battle::Side::Enemy);
+    sortTargetsByScreenY();  // M101: captures cycle visually, like live play
     targetCursor_ = 0;
     phase_ = Phase::ChooseTarget;
+}
+
+void BattleState::captureShowSummon(const std::string& skillId) {
+    // M107: mid-beat pose — burst extended, creature bright, quip pinned.
+    if (const auto kind = render::summonKindFor(skillId)) {
+        summonFxKind_ = *kind;
+        summonFxDuration_ = 2.0f;
+        summonFxTimer_ = 1.1f;
+    }
+    if (const content::SkillDef* s = context_.content.findSkill(skillId)) {
+        jestLine_ = s->summonName + " answers the call!";
+        jestTimer_ = 999.0f;
+    }
 }
 
 void BattleState::captureEnterSkillMenu(std::vector<std::string> skills) {
@@ -395,6 +411,23 @@ void BattleState::captureOpenSkillDetails(std::vector<std::string> skills) {
 }
 #endif
 
+void BattleState::sortTargetsByScreenY() {
+    // M101: target cycling walks the VISIBLE column top-to-bottom. With the
+    // center-out rows, unit order no longer matches screen order, so cursor
+    // movement would hop rows without this. Party columns keep their order
+    // (their rows are still sequential) — the sort is a stable no-op there.
+    std::stable_sort(targetCandidates_.begin(), targetCandidates_.end(),
+                     [this](int a, int b) {
+                         int ax = 0;
+                         int ay = 0;
+                         int bx = 0;
+                         int by = 0;
+                         unitScreenPos(a, ax, ay);
+                         unitScreenPos(b, bx, by);
+                         return ay != by ? ay < by : ax < bx;
+                     });
+}
+
 int BattleState::enemyBaseY() const {
     int enemies = 0;
     for (const battle::Combatant& c : battle_.units) {
@@ -419,7 +452,7 @@ void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     }
     if (battle_.units[static_cast<std::size_t>(index)].side == battle::Side::Enemy) {
         outX = 36;
-        outY = enemyBaseY() + enemyRow * 34;
+        outY = enemyBaseY() + battle_ui::enemyRowSlot(enemyRow) * 34;  // M101: center-out
     } else {
         outX = context_.virtualWidth - 110;
         outY = 36 + partyRow * 34;
@@ -719,6 +752,7 @@ void BattleState::onCommand() {
                 battle_.units[static_cast<std::size_t>(currentActor())].side;
             targetCandidates_ = battle_.aliveIndices(
                 actorSide == battle::Side::Party ? battle::Side::Enemy : battle::Side::Party);
+            sortTargetsByScreenY();  // M101
             targetCursor_ = 0;
             phase_ = Phase::ChooseTarget;
             break;
@@ -767,6 +801,7 @@ void BattleState::onSkillChosen() {
             actorSide == battle::Side::Party ? battle::Side::Enemy : battle::Side::Party;
         targetCandidates_ = ally ? battle::skillAllyTargets(battle_, actorSide, *s)
                                  : battle_.aliveIndices(foeSide);
+        sortTargetsByScreenY();  // M101
         targetCursor_ = 0;
         phase_ = Phase::ChooseTarget;
     } else {
@@ -794,6 +829,7 @@ void BattleState::onItemChosen() {
     if (targetCandidates_.empty()) {
         return;
     }
+    sortTargetsByScreenY();  // M101
     pendingKind_ = PendingKind::Item;
     targetCursor_ = 0;
     phase_ = Phase::ChooseTarget;
@@ -826,11 +862,22 @@ void BattleState::executePending(int targetUnit) {
                 message_ = battle_.useSkill(actor, targetUnit, *s);
                 fxElement_ = s->element;  // M91
                 // M95: the creature's name rides the quip channel over the
-                // resolution — the summon's one theatrical beat.
+                // resolution — and since M107 the creature itself appears,
+                // LARGE at the battlefield's center, for the same beat, with
+                // its arrival fanfare (owner: "show the summoned creature at
+                // the center, and play an epic animation").
                 if (s->oncePerRun && !s->summonName.empty()) {
                     jestLine_ = s->summonName + " answers the call!";
                     jestTimer_ = 2.5f * settings::messageDurationScale(
                                             context_.settings.values.messageSpeed);
+                    if (const auto kind = render::summonKindFor(s->id)) {
+                        summonFxKind_ = *kind;
+                        summonFxDuration_ =
+                            2.0f * settings::messageDurationScale(
+                                       context_.settings.values.messageSpeed);
+                        summonFxTimer_ = summonFxDuration_;
+                        context_.audio.play(Sfx::Summon);
+                    }
                 }
                 damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
                 statusAction = s->statusEffect != content::StatusType::None;
@@ -1360,6 +1407,9 @@ void BattleState::handleInput(const Input& input) {
 }
 
 void BattleState::update(float dt) {
+    if (summonFxTimer_ > 0.0f) {  // M107: the apparition lives for its beat
+        summonFxTimer_ -= dt;
+    }
     if (jestTimer_ > 0.0f) {  // M45: the Jester's quip fades on its own
         jestTimer_ -= dt;
         if (jestTimer_ <= 0.0f) {
@@ -1590,8 +1640,10 @@ void BattleState::render() {
         const bool isCurrent = partyTurn && static_cast<int>(i) == actor;
         const bool isTarget = static_cast<int>(i) == targetUnit;
         if (c.side == battle::Side::Enemy) {
-            drawUnit(c, static_cast<int>(i), 36 + shakeX, enemyY0 + enemyRow * 34, isCurrent,
-                     isTarget);
+            // M101: center-out rows — the boss (first enemy unit) holds the
+            // middle; unitScreenPos applies the same mapping for the floats.
+            drawUnit(c, static_cast<int>(i), 36 + shakeX,
+                     enemyY0 + battle_ui::enemyRowSlot(enemyRow) * 34, isCurrent, isTarget);
             ++enemyRow;
         } else {
             // The party column leaves room to its right for the HP/MP numerals
@@ -1605,6 +1657,15 @@ void BattleState::render() {
     // Turn counter as a compact badge top-right: the top-left is needed by
     // tall enemy columns; the badge stays quieter than the acting unit.
     ui::drawChipRight(TextFormat("Turns %d", battle_.turnsTaken), w - 4, 4, pal.gold);
+
+    // M107: the summoned legend, LARGE at the battlefield's center, for the
+    // resolution beat — over the combatants, under the panels and quip.
+    if (summonFxTimer_ > 0.0f && summonFxDuration_ > 0.0f) {
+        render::drawSummonApparition(
+            context_.resources, summonFxKind_, w / 2, (h - kPanelH) / 2,
+            summonFxTimer_ / summonFxDuration_,
+            context_.settings.values.effectFlash != settings::EffectLevel::Off);
+    }
 
     // M45: the Jester's quip, mid-screen above the panel — decorative, dismissed
     // by its own timer, and fitted so a long line can never spill.

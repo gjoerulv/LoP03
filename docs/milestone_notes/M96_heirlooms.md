@@ -1,6 +1,6 @@
 # M96 — Heirlooms: worn memories (battle rules v18)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). Battle rules **17 → 18**.
 Save schema additive-only (`equippedHeirloom` optional gear field; old
 saves load with the slot empty; unknown ids are dropped on load, never a

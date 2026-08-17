@@ -161,3 +161,42 @@ TEST_CASE("spoils: a capped member never reports a level-up", "[spoils]") {
 }
 
 #endif  // CRYSTAL_TEST_DATA_DIR
+
+TEST_CASE("spoils: the fallen earn nothing at the end of a fight (M102)", "[spoils]") {
+    const content::ContentDatabase db = loadContent();
+    Party p;
+    p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan", 5));
+    p.members.push_back(createCharacter(*db.findClass("mage"), "Mira", 5));
+    p.members[1].hp = 0;  // Mira fell during the fight
+
+    BattleSpoils s;
+    s.xp = 400;  // enough to level the living
+    s.gold = 40;
+    const SpoilsResult r = applySpoils(p, s, db);
+    CHECK(p.members[0].xp + p.members[0].level > 5);  // Rolan was paid (and leveled)
+    CHECK(p.members[1].xp == 0);                      // Mira was not
+    CHECK(p.members[1].level == 5);
+    // The old silent auto-revive is gone: no XP means no level, no level means
+    // no level-up heal — the fallen STAY fallen until a sanctioned revive.
+    CHECK(p.members[1].hp == 0);
+    // The victory panel agrees: only the living member's diff is reported.
+    REQUIRE(r.levelUps.size() == 1);
+    CHECK(r.levelUps[0].name == "Rolan");
+    // Gold is unaffected by the KO rule (only the M63 standing bonuses care).
+    CHECK(p.gold == 40);
+}
+
+TEST_CASE("spoils: the sacrifice doubles exactly one award (M103)", "[spoils]") {
+    const content::ContentDatabase db = loadContent();
+    Party p;
+    p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan", 5));
+    p.doubleXpNext = true;
+
+    BattleSpoils s;
+    s.xp = 6;
+    const SpoilsResult first = applySpoils(p, s, db);
+    CHECK(first.xp == 12);              // doubled, and the panel shows it
+    CHECK_FALSE(p.doubleXpNext);        // spent
+    const SpoilsResult second = applySpoils(p, s, db);
+    CHECK(second.xp == 6);              // once means once
+}

@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "audio/AudioManager.hpp"
+#include "content/ContentDatabase.hpp"  // M99: forge-authored text overlay
 #include "core/AppContext.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -78,8 +79,16 @@ void maybeTutorialPrompt(StateStack& stack, AppContext& context, const char* bea
     if (beat == nullptr) {
         return;
     }
+    // M99: forge-authored text (data/tutorials.json) wins; the constexpr beat
+    // is the fallback, so a missing file or entry can never silence a prompt.
+    std::string title = beat->title;
+    std::string body = beat->body;
+    if (const content::TutorialTextDef* t = context.content.findTutorialText(beatId)) {
+        title = t->title;
+        body = t->body;
+    }
     stack.pushState(
-        std::make_unique<TutorialPromptState>(stack, context, beat->title, beat->body));
+        std::make_unique<TutorialPromptState>(stack, context, std::move(title), std::move(body)));
 }
 
 }  // namespace cd

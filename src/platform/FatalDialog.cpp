@@ -47,14 +47,14 @@ void showFatalDialog(std::string_view message) noexcept {
 #ifdef _WIN32
         const std::wstring wide = widen(message);
         if (!wide.empty()) {
-            MessageBoxW(nullptr, wide.c_str(), L"Crystal Dungeons - Fatal Error",
+            MessageBoxW(nullptr, wide.c_str(), L"Are P Geese - Fatal Error",
                         kDialogFlags);
             return;
         }
         // Conversion failed (or the message was empty): a narrow copy still
         // gets something in front of the player.
         const std::string narrow(message);
-        MessageBoxA(nullptr, narrow.c_str(), "Crystal Dungeons - Fatal Error",
+        MessageBoxA(nullptr, narrow.c_str(), "Are P Geese - Fatal Error",
                     kDialogFlags);
 #else
         std::fprintf(stderr, "%.*s\n", static_cast<int>(message.size()),

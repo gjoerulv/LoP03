@@ -6,6 +6,7 @@
 /dist/
 /docs/screenshots/*
 /docs/music/*
+/out/*
 *.o
 *.obj
 *.exe

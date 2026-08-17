@@ -1,17 +1,19 @@
-# Crystal Dungeons
+﻿# Are P Geese
+
+> Formerly *Crystal Dungeons* - renamed in M108 (the old name was taken, and the stranger may be a goose; we ask, politely: Are P Geese?).
 
 A 16-bit-inspired, turn-based **JRPG roguelite** about clearing seeded dungeons
 **efficiently**. Take a party of four from a town hub into procedurally generated
 dungeons full of *visible* enemy teams and guarded chests, beat the boss, and
-score on how few battle turns you spent — then upgrade and dive again, forever.
+score on how few battle turns you spent â€” then upgrade and dive again, forever.
 
-Original work — not a clone of any existing game; no copyrighted names, art,
+Original work â€” not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M85
-> delivered and owner-approved; M86–M97 — from the CrystalForge catch-up
+> **Status: feature-complete, polished playable build** (milestones M1â€“M85
+> delivered and owner-approved; M86â€“M97 â€” from the CrystalForge catch-up
 > and the deliberate version renumber to **0.6.0** through the newest
-> expansion program — implemented, awaiting approval). In the box: a seven-town difficulty ladder
+> expansion program â€” implemented, awaiting approval). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
 > dungeons with room events including the rare Royal Relics and per-theme
@@ -23,20 +25,20 @@ music, or text. Built in **C++20** with **raylib**.
 > light-hearted story serial, three unlockable reward classes (Dragon /
 > Jester / Goose), learnsets, shops, a paid inn, compact walk-through towns,
 > five save slots + autosave, a debug toolbelt in dev builds, onboarding,
-> accessibility options, categorized settings (a 0–10 CRT Strength filter,
+> accessibility options, categorized settings (a 0â€“10 CRT Strength filter,
 > background audio, an independent ambience slider), an in-battle action
 > log, a bestiary (with each foe's strongest-context stats), victory
 > records, achievements, boss battle backdrops with a Crystal Shatter
 > intro, and a fully procedural "8-bit-plus" UI.
-> The newest additions (M59–M74, approved 2026-08-05): the **CrystalForge content editor**
-> (M59–M60, see *Development tools*), **Goose Town & the Deadly Duck**
-> (M61 — fell the King with a Goose in the party and the ultimate gauntlet
+> The newest additions (M59â€“M74, approved 2026-08-05): the **CrystalForge content editor**
+> (M59â€“M60, see *Development tools*), **Goose Town & the Deadly Duck**
+> (M61 â€” fell the King with a Goose in the party and the ultimate gauntlet
 > opens), the **M62 polish** (Purify truly heals nothing, bespoke
 > goose/duck art, the Duck's own battle theme), and the **M63 class level
-> milestones** (pick 1 of 2 permanent class bonuses at levels 10/20/30 —
+> milestones** (pick 1 of 2 permanent class bonuses at levels 10/20/30 â€”
 > all nine classes), **M64 scroll learning + the Party panel** (skill
 > scrolls finally teach; a detailed party ledger on both pause menus), and
-> the two treasure-map systems: **M65's town puzzle map** (a HoMM2 homage —
+> the two treasure-map systems: **M65's town puzzle map** (a HoMM2 homage â€”
 > four Secret Map Pieces reveal a boss-guarded dig paying exclusive Lost
 > Scrolls) and **M66's single-use dungeon charts** (a minimap X, twelve
 > collectable curios, the Curator achievement), plus the **M67 polish
@@ -47,15 +49,15 @@ music, or text. Built in **C++20** with **raylib**.
 > recalibrated to be relative to YOUR party), and **M69** (real town
 > facades with integrated doors; the Scoreboard as a stone monument and
 > the Save Point as a crystal), **M70** (CRT Strength and CRT
-> Curvature as separate 0–10 sliders — the screen only bends as much as
+> Curvature as separate 0â€“10 sliders â€” the screen only bends as much as
 > you ask), and **M71** (a victory celebration after flawless-stakes
-> clears and the great challenge wins — the team jumping, the MVP on a
+> clears and the great challenge wins â€” the team jumping, the MVP on a
 > pedestal), and **M72** (the party panel reflowed so a maxed member's
 > milestones and skills all stay visible), **M73** (every enemy and boss
-> sprite redrawn as hand-authored pixel grids — bosses on a larger 36×36
+> sprite redrawn as hand-authored pixel grids â€” bosses on a larger 36Ã—36
 > canvas with real silhouettes), and **M74** (the Crystal Mine ambience
-> rebuilt around rockfall and crystal-shard echoes — the old "drips" were
-> synthesised as bird whistles). The **M75–M86 expansion program**
+> rebuilt around rockfall and crystal-shard echoes â€” the old "drips" were
+> synthesised as bird whistles). The **M75â€“M86 expansion program**
 > (approved milestone by milestone through 2026-08-07) then added: three
 > new statuses (**Reflect / Sleep / Curse**) with authored counterplay
 > skills and items, a deterministic **boss trigger system**, an enemy &
@@ -67,7 +69,7 @@ music, or text. Built in **C++20** with **raylib**.
 > perks, the curio-gated **Last Dragon** at the castle, and the
 > CrystalForge catch-up with the version renumbered to 0.6.0. **M87**
 > then made every text container translation-ready (bounded scrollable
-> prose, a Latin-1 bitmap font). The newest work, the **M88–M97 program**
+> prose, a Latin-1 bitmap font). The newest work, the **M88â€“M97 program**
 > (2026-08-14, awaiting approval): town/Guild/shop UX fixes with a
 > hand-editable seed and pre-fight **team inspection**, the Dragon's
 > fixed breath economy and a no-free-heal dungeon **carry-out**, Equip
@@ -88,8 +90,8 @@ music, or text. Built in **C++20** with **raylib**.
   workload (provides the MSVC compiler plus a bundled CMake and Ninja). This
   project is built with **MSVC / C++20**; MinGW and other GCC toolchains are not
   supported.
-- **CMake ≥ 3.20** (the Visual Studio–bundled CMake is fine).
-- **Internet access on the first configure only** — raylib `6.0`, nlohmann/json
+- **CMake â‰¥ 3.20** (the Visual Studioâ€“bundled CMake is fine).
+- **Internet access on the first configure only** â€” raylib `6.0`, nlohmann/json
   `v3.12.0`, and Catch2 `v3.15.1` are fetched and pinned by CMake (nothing to
   install manually), then cached under `build-msvc/_deps`.
 
@@ -101,7 +103,7 @@ that `cl` and the bundled Ninja are on `PATH`.
 **Recommended:** open **Developer PowerShell for VS 2022** from the Start menu
 and run the build commands there.
 
-Verify the environment before configuring — all three must resolve:
+Verify the environment before configuring â€” all three must resolve:
 
 ```powershell
 where.exe cl
@@ -113,10 +115,10 @@ cmake --version          # 3.20 or newer
 <summary>Alternatives if you are not using the Developer PowerShell shortcut</summary>
 
 **Bootstrap an existing PowerShell session.** `vcvars64.bat` cannot configure a
-PowerShell session — it sets variables in a child `cmd` process that are
+PowerShell session â€” it sets variables in a child `cmd` process that are
 discarded when it exits, so `& "...\vcvars64.bat"` leaves your shell unchanged.
 Use Visual Studio's PowerShell entry point instead, which sets the variables in
-the *current* session (substitute your edition — `Community`, `Professional`, or
+the *current* session (substitute your edition â€” `Community`, `Professional`, or
 `Enterprise`):
 
 ```powershell
@@ -138,7 +140,7 @@ cmd /c "call ""C:\Program Files\Microsoft Visual Studio\2022\<edition>\VC\Auxili
 ```powershell
 cmake --preset msvc-debug      # development: debug overlay + capture CLI
 cmake --build --preset debug
-.\build-msvc\CrystalDungeons.exe
+.\build-msvc\ArePGeese.exe
 
 cmake --preset msvc-release    # shipping: static CRT, no capture CLI
 cmake --build --preset release
@@ -148,7 +150,7 @@ The **development** build also carries a **debug menu** (M53), opened from the
 **Debug** row on either pause menu (town or dungeon): set levels/gold/tokens/town,
 grant items, toggle a party **god mode**, instantly clear a dungeon, unlock the
 reward classes, and fill the bestiary. It is gated on the debug overlay and is
-structurally absent from the Release preset — no shipping build can reach it.
+structurally absent from the Release preset â€” no shipping build can reach it.
 
 The release preset links the **static MSVC runtime**, so the packaged exe
 runs on a Windows machine without Visual Studio or the VC++ redistributable.
@@ -156,7 +158,7 @@ To build the full distribution zip (stage + validate + archive):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\package.ps1
-# -> dist\CrystalDungeons-<version>-win64.zip
+# -> dist\ArePGeese-<version>-win64.zip
 ```
 
 The version is set once in `CMakeLists.txt` `project(VERSION ...)` and flows
@@ -167,7 +169,7 @@ into the exe metadata, the title screen, and the package name.
 ```powershell
 cmake -S . -B build-msvc -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 cmake --build build-msvc
-.\build-msvc\CrystalDungeons.exe
+.\build-msvc\ArePGeese.exe
 ```
 
 `-DCMAKE_*_COMPILER=cl` forces MSVC so no other compiler on `PATH` is picked
@@ -179,21 +181,21 @@ by mistake. CMake copies `data/` and `assets/` next to the executable; the
 ```powershell
 cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
 cmake --build build-msvc --config Release
-.\build-msvc\Release\CrystalDungeons.exe
+.\build-msvc\Release\ArePGeese.exe
 ```
 
 ## Controls
 
-Default bindings — everything except a few fixed keys (text-delete, the
+Default bindings â€” everything except a few fixed keys (text-delete, the
 debug toggle, the debug-build F5 asset reload) is
-**remappable in-game** under **Main Menu → Settings** (also reachable from the
+**remappable in-game** under **Main Menu â†’ Settings** (also reachable from the
 pause menus); since M79 every keyboard action offers **three slots**
 (Primary / Alt 1 / Alt 2), with a steal-with-confirm warning when a key is
 already in use. Settings are organized into **Audio / Display / Gameplay /
 Controls** submenus (M51): master/music/SFX volumes, a separate **Ambience
 Volume** slider (M52; default 3 since M79) and a **Background Audio**
 toggle; window
-mode, **CRT Strength** and **CRT Curvature** sliders (M57/M70, each 0–10),
+mode, **CRT Strength** and **CRT Curvature** sliders (M57/M70, each 0â€“10),
 battle flash/shake,
 and high-contrast; battle/message speed and tutorial prompts; and per-device
 remapping. All of it persists in `settings.json` in the user data folder;
@@ -211,69 +213,69 @@ to keep it playing).
 | Prev / Next member    | Q / E (or Ctrl / Alt)  | L1 / R1            |
 | Adjust (Guild, Settings) | Left / Right        | D-Pad L/R / Stick  |
 | Delete (name entry)   | Backspace              | X                  |
-| Toggle debug overlay  | F1                     | —                  |
+| Toggle debug overlay  | F1                     | â€”                  |
 
-The in-game list (**Main Menu → Controls**) always shows your *current*
-bindings. The window is resizable; the 426×240 image always scales to fit with
+The in-game list (**Main Menu â†’ Controls**) always shows your *current*
+bindings. The window is resizable; the 426Ã—240 image always scales to fit with
 letterbox/pillarbox bars.
 
 ## How to play
 
-1. **New Game** → pick 4 classes (Knight, Ranger, Mage, Cleric, Rogue, Guardian)
+1. **New Game** â†’ pick 4 classes (Knight, Ranger, Mage, Cleric, Rogue, Guardian)
    and name them. You start with a little gold.
 2. In the **town**, walk to buildings: **Inn** (rest to full HP/MP for gold, or
-   free with a rest token), **Item Shop** (buy consumables — held
+   free with a rest token), **Item Shop** (buy consumables â€” held
    quantities are capped per item since M78), **Equip Shop**
-   (buy by category + equip gear — each town unlocks stronger gear as you climb),
-   **Training Hall** (level up, and buy passive skills — own many, equip one),
+   (buy by category + equip gear â€” each town unlocks stronger gear as you climb),
+   **Training Hall** (level up, and buy passive skills â€” own many, equip one),
    **Scoreboard**, **Save Point** (5 slots), and the **Guild**. **Walk out the
-   west/east roads** to move between the **seven towns** (no button — just walk
+   west/east roads** to move between the **seven towns** (no button â€” just walk
    into the road); each later town raises enemy stats (up to +200 %) and score
    bonus (up to +100 %); clearing a dungeon in a town unlocks the road onward.
 3. At the **Guild**, pick a theme, a depth, and **1, 4, or 20 floors**
-   (M82/M92 — a multi-floor run keeps the boss on the last floor behind
+   (M82/M92 â€” a multi-floor run keeps the boss on the last floor behind
    Stairway Warden gates, posts to its own scoreboard, and in town 2+ can
    drop **Secret Map Pieces**; a stakes-raising 20-floor clear also opens
    a pick-one **skill-scroll trove**), then enter a seeded dungeon. Entering
    autosaves. The Guild also hosts **"Fight the Guild Boss"** (M84):
-   clear a 4-floor dungeon in that town to unlock its unique Master —
+   clear a 4-floor dungeon in that town to unlock its unique Master â€”
    the first victory pays a pick-1-of-2 **permanent town perk**.
 4. Walk the dungeon: enemy teams show a **danger tier**; fight them to clear
-   **gates** (≥3 before the boss) and chest guards. Win battles to earn **XP and
+   **gates** (â‰¥3 before the boss) and chest guards. Win battles to earn **XP and
    gold**; open chests for loot.
 5. Beat the **boss** to clear the dungeon and post a **score** (driven mainly by
    *fewest battle turns*, plus danger defeated, treasure, a no-death bonus, and
-   the town's score bonus). Runs that fail to raise your **stakes** — (town,
-   depth) vs your last completed run — lose 30 % per repeat (to a −99 % cap);
+   the town's score bonus). Runs that fail to raise your **stakes** â€” (town,
+   depth) vs your last completed run â€” lose 30 % per repeat (to a âˆ’99 % cap);
    the Guild shows the exact penalty before you enter. Beating a boss in **town 3+
-   at depth 4+** can also **drop legendary tokens and/or a legendary piece** —
+   at depth 4+** can also **drop legendary tokens and/or a legendary piece** â€”
    chances rise with town and depth (up to 75 %/30 % at town 7 depth 20, with
    double tokens in town 7), seeded so a reload can't reroll them; drops show on
    the result screen and never change the score.
 6. **Retreat** any time (you keep XP/gold but score 0). **Defeat** returns you to
-   town with half your gold. Upgrade, then dive deeper — runs scale with depth,
+   town with half your gold. Upgrade, then dive deeper â€” runs scale with depth,
    town, and seed, endlessly. A stakes-raising clear in town 2+ can (20 %,
    seeded) spawn a **black market** selling one legendary piece for gold or
-   **legendary tokens** won in optional elite challenges — and any boss kill at
+   **legendary tokens** won in optional elite challenges â€” and any boss kill at
    **town 7, depth 20+** rolls a second, independent **34 %** chance of the
    dealer, regardless of score or stakes (M52). During any battle, **Menu/Pause**
    opens a scrollable **battle log** of the last actions.
-7. Clear any **town-7 dungeon** to open the northern road to the **castle** — a
+7. Clear any **town-7 dungeon** to open the northern road to the **castle** â€” a
    place above the ladder with **four challenges**: the **Boss Rush**
    (all 12 dungeon bosses back-to-back **with their minions**, no free
    healing), the
-   **Endless Rush** (escalating waves — every 10th fields a boss and its
+   **Endless Rush** (escalating waves â€” every 10th fields a boss and its
    court), **the
    Hollow King** himself (immune to blind/silence/confusion,
    flanked by **two Royal Guards he calls back from the dead every five turns**;
-   beat him for a unique legendary and a title), and — for collectors of
-   all **twelve curios** — **the Last Dragon** (M85): three elite waves,
+   beat him for a unique legendary and a title), and â€” for collectors of
+   all **twelve curios** â€” **the Last Dragon** (M85): three elite waves,
    then the game's largest single fight. The castle keeps its **own records**, separate from your dungeon scores.
-   Failing (or fleeing) a challenge costs **no gold** — but nobody is healed:
+   Failing (or fleeing) a challenge costs **no gold** â€” but nobody is healed:
    survivors are carried to the gates at **1 HP**, the fallen stay fallen, and a
    full wipe leaves exactly one member standing so an inn is always reachable.
 8. One secret remains beyond the castle: defeat the King with **at least one
-   Goose in the party** and the north road forks to **Goose Town** — a pond-side
+   Goose in the party** and the north road forks to **Goose Town** â€” a pond-side
    hub with the game's true final fight, a two-stage no-heal gauntlet (five Evil
    Geese, then the **Deadly Duck**) with its own best-turns Pond Record.
 
@@ -329,16 +331,16 @@ saves through an atomic canonical writer and re-validates everything (errors
 jump to the offending entity); `F5` re-validates on demand and runs a
 three-battle quick-sim sanity battery. `N`/`D`/`Del` add, duplicate, and
 delete entries (deletes warn about dangling references). The game reads its
-content at startup — restart it (or rebuild, which recopies `data/`) to see
+content at startup â€” restart it (or rebuild, which recopies `data/`) to see
 edits in play. `CrystalForge --canonicalize` reformats every data file through
-the canonical writer headlessly (used once at M59; safe to re-run — it proves
+the canonical writer headlessly (used once at M59; safe to re-run â€” it proves
 values unchanged by re-validating through the real loader).
 
 See `docs/editor_guide.md` for the full designer workflow.
 
 ## Testing / smoke test
 
-The headless test suite doubles as a smoke test — it loads the shipped content,
+The headless test suite doubles as a smoke test â€” it loads the shipped content,
 generates dungeons, and simulates a full clear:
 
 ```powershell
@@ -370,21 +372,21 @@ save round-trips via the Save Point + Continue.
   (physical attacks usually miss), Silence (no MP-cost skills), and
   Confusion (forces a basic attack at its own side, on both sides equally since
   M43), (M44) Terrified and Stunned, and (M75) **Reflect, Sleep, and
-  Curse** — all deterministic and seeded; Curse is the one status ordinary
+  Curse** â€” all deterministic and seeded; Curse is the one status ordinary
   cures never lift (a dedicated skill or item does). **Elements
   (M48/M81)** are a deliberately
-  sparse layer: a handful of foes are weak (×150 %) or immune (0 damage, and no
+  sparse layer: a handful of foes are weak (Ã—150 %) or immune (0 damage, and no
   status rider) to one element, carried by elemental spells and **ten**
   elemental weapons and answered by seven resist accessories; affinities
   are shown in the bestiary and the battle target
   panel for foes you have met. Bosses use
   stats, skills, minions, telegraph text, archetype mechanics, and (M75)
-  deterministic triggers — one can even raise a clone of itself; true
+  deterministic triggers â€” one can even raise a clone of itself; true
   mid-fight reinforcements are still not implemented (the endgame
   gauntlets run their waves as separate battles).
 - The six starting classes share all equipment (no per-class
   restrictions); each reward class bans slots (the Goose wears no arms or
-  armor — an M96 heirloom is the one keepsake anyone may hold).
+  armor â€” an M96 heirloom is the one keepsake anyone may hold).
   The economy is lightly tuned.
 - The seven towns share one fixed layout (exterior palette, service interiors,
   and music vary per town); no per-character portraits.
@@ -399,10 +401,10 @@ generators in `tools/asset_gen/`; provenance is recorded in
 
 ## Documentation
 
-- [`docs/game_design.md`](docs/game_design.md) — what the game is and why.
-- [`docs/technical_design.md`](docs/technical_design.md) — architecture & conventions.
-- [`docs/milestones.md`](docs/milestones.md) — milestone ledger and status.
-- [`docs/completion_roadmap.md`](docs/completion_roadmap.md) — post-M10
-  completion (M11–M24) and polish (M25–M30) program direction and quality
+- [`docs/game_design.md`](docs/game_design.md) â€” what the game is and why.
+- [`docs/technical_design.md`](docs/technical_design.md) â€” architecture & conventions.
+- [`docs/milestones.md`](docs/milestones.md) â€” milestone ledger and status.
+- [`docs/completion_roadmap.md`](docs/completion_roadmap.md) â€” post-M10
+  completion (M11â€“M24) and polish (M25â€“M30) program direction and quality
   targets.
-- `CLAUDE.md` — the project's operating contract.
+- `CLAUDE.md` â€” the project's operating contract.

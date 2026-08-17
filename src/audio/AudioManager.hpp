@@ -116,6 +116,11 @@ private:
     // rate-limit policy in AudioRoles.hpp.
     std::array<double, kSfxCount> lastSfxTime_{};
 
+    // M98: one-shot fallback telemetry — the first time a requested role plays
+    // through a substitute (or silence) it is logged, so "the elemental sounds
+    // never play" is diagnosable from a session log instead of by ear.
+    std::array<bool, kSfxCount> fallbackLogged_{};
+
     float masterVolume_ = 1.0f;
     float musicVolume_ = 1.0f;
     float sfxVolume_ = 1.0f;

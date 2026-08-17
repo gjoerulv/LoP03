@@ -6,8 +6,8 @@ program (see the program section in `docs/milestones.md`). Implemented
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — implemented 2026-08-07.
-Evidence in §F.
+**☑ complete (approved 2026-08-16)** — implemented 2026-08-07; owner
+batch-approved M86–M97 on 2026-08-16. Evidence in §F.
 
 ## B. Goal (owner brief)
 

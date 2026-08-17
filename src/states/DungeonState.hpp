@@ -8,6 +8,7 @@
 #include "core/Geometry.hpp"
 #include "danger/DangerRating.hpp"
 #include "game/Dragonform.hpp"  // M93
+#include "game/Gooseform.hpp"   // M103
 #include "game/RunStats.hpp"
 #include "game/Spoils.hpp"
 #include "dungeon/DungeonModel.hpp"
@@ -38,6 +39,7 @@ public:
     DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon);
 
     void onEnter() override;   // first-dungeon tutorial beat
+    void onExit() override;    // M103: the run's one exit choke (gooseform restore)
     void onResume() override;  // applies a battle outcome
     void handleInput(const Input& input) override;
     void openDetails();  // M22 contextual Details overlay
@@ -95,6 +97,7 @@ private:
         bool noDeath = true;
         int escapes = 0;
         bool wagerAccepted = false;  // M20 score-wager event
+        int goosePolymorphs = 0;     // M103: accepted goose pacts (+100 each)
     };
 
     void enterRoom(int index, std::optional<dungeon::Dir> entrySide);
@@ -106,6 +109,9 @@ private:
     void readChart();     // M66: the single-use map reveals the buried spot
     void digBuried();     // M66: claim the buried treasure (a curio / a token)
     void resolveEvent();  // applies a non-battle event's stated trade-off
+    // M104: applies one reels three-of-a-kind prize (by gamble::ReelSymbol
+    // index) and returns the outcome line; every cap and banking rule holds.
+    std::string applyReelPrize(int symbolIndex);
     std::string eventPromptText() const;  // the pre-confirmation trade-off line
     void confirmEventPanel();       // M80: the panel's Confirm — resolve or fight
     // M87: fills the flavor viewport and raises the panel (render stays const).
@@ -153,10 +159,21 @@ private:
     bool dragonformArmed_ = false;
     int dragonformFights_ = 0;  // battles actually fought in dragonform (score line)
     DragonformStash dragonformStash_;  // the real members while a fight runs borrowed
+    // M106: the Goosy rite — the WHOLE party's next battle as Geese, +300
+    // each (the Dragonform machinery verbatim, stash struct included).
+    bool gooseFlockArmed_ = false;
+    int gooseFlockFights_ = 0;
+    DragonformStash gooseFlockStash_;
+    // M103: the goose polymorph's single stash — one member, the rest of the
+    // run; restored (with XP carried back) at onExit, every ending alike.
+    GooseformStash gooseformStash_;
     // M93: the danger counter (owner decisions 5/7): a visible 100-step
     // countdown; at 0 a seeded patrol attacks immediately, the counter
     // resets, and the patrol pays XP but no gold, items, or danger credit.
     int dangerSteps_ = 100;
+    // M105: floors fully beaten this Eternal run (the record unit — a felled
+    // floor-boss); mirrors into party.eternalBestFloors as it grows.
+    int eternalFloorsCleared_ = 0;
     int patrolIndex_ = 0;  // how many patrols this run has rolled (seeds the next)
     int lastTileX_ = -1;   // the tile whose leaving ticked the counter last
     int lastTileY_ = -1;

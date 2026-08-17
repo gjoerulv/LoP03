@@ -6,7 +6,8 @@ checkout (branch `oyb08`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — see §F for evidence.
+**☑ complete (approved 2026-08-16)** — owner batch-approved M86–M97 on
+2026-08-16; see §F for evidence.
 
 ## B. Goal (owner brief)
 

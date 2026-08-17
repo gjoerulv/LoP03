@@ -174,7 +174,7 @@ TEST_CASE("castle: the boss-rush order is the 12 bosses, King-excluded, sorted",
           "[castle]") {
     const content::ContentDatabase db = loadContent();
     const std::vector<std::string> order = bossRushOrder(db);
-    CHECK(order.size() == 12);  // full roster minus the King
+    CHECK(order.size() == 15);  // 12 + the 3 M106 Goosy bosses (owner: they join the rush)
     CHECK(std::is_sorted(order.begin(), order.end()));
     CHECK(std::find(order.begin(), order.end(), std::string(kKingBossId)) == order.end());
     // Every rush entry resolves a boss and carries the rush scale; past the end is

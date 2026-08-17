@@ -145,6 +145,14 @@ void AudioManager::play(Sfx id) {
     // shares HitMagic's own limiter.
     if (id >= Sfx::HitFire && id <= Sfx::HitDark &&
         !fileSfx_[static_cast<std::size_t>(id)].valid()) {
+        // M98: the remap is silent by design, which made "the elemental sounds
+        // never play" undiagnosable from a session log — say it once per role.
+        const std::size_t requested = static_cast<std::size_t>(id);
+        if (!fallbackLogged_[requested]) {
+            fallbackLogged_[requested] = true;
+            log::warn(std::string("AudioManager: role ") + audio::kSfxIds[requested] +
+                      " has no loaded file; remapping to hit_magic");
+        }
         id = Sfx::HitMagic;
     }
     const std::size_t i = static_cast<std::size_t>(id);
@@ -454,6 +462,20 @@ void AudioManager::applyManifest(const assets::AssetManifest& manifest,
                       audio::kSfxIds[i] + "; using synthesized fallback");
         }
     }
+    // M98: a manifest (re)load resets the one-shot fallback telemetry, and the
+    // elemental-impact roles' load state is stated outright — they are the ones
+    // play() silently remaps when missing (M91), so this line is the first
+    // thing to check against an "elemental sounds never play" report.
+    fallbackLogged_.fill(false);
+    int elementalLoaded = 0;
+    for (std::size_t i = static_cast<std::size_t>(Sfx::HitFire);
+         i <= static_cast<std::size_t>(Sfx::HitDark); ++i) {
+        if (fileSfx_[i].valid()) {
+            ++elementalLoaded;
+        }
+    }
+    log::info("AudioManager: elemental impact SFX loaded from files: " +
+              std::to_string(elementalLoaded) + "/6");
 
     for (std::size_t i = 0; i < kMusicCount; ++i) {
         fileMusic_[i].reset();

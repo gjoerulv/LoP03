@@ -11,6 +11,9 @@
 #include "core/SeedParse.hpp"
 #include "dungeon/DungeonGenerator.hpp"
 #include "game/Party.hpp"
+#include "game/StakesLadder.hpp"  // M105: the Eternal entry raises the baseline
+#include "game/WorldLadder.hpp"   // kTownCount
+#include "states/ConfirmPromptState.hpp"  // M105: the Eternal warning
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -37,6 +40,9 @@ constexpr int kGuildBoss = 4;  // M84: the town's Guild Master gauntlet
 constexpr int kSeed = 5;
 constexpr int kBack = 6;
 constexpr int kMaxDepth = 20;
+// M105: the Floors stepper's fourth value — town 7's Eternal endless descent
+// (a sentinel outside the real shapes 1/4/20).
+constexpr int kEternalFloors = 0;
 
 std::uint64_t randomSeed() {
     const std::uint64_t hi = static_cast<std::uint64_t>(GetRandomValue(1, 2000000000));
@@ -75,8 +81,11 @@ void GuildState::onEnter() {
     maybeTutorialPrompt(stack(), context_, tutorial::kGuildPrepare);
     themeIds_.clear();
     for (const auto& [id, def] : context_.content.themes()) {
-        (void)def;
-        themeIds_.push_back(id);
+        // M106: a theme is offered only from its minTown on (the Goosy
+        // Gauntlet belongs to town 7 alone; every classic theme is 1).
+        if (def.minTown <= context_.party.currentTown) {
+            themeIds_.push_back(id);
+        }
     }
     std::sort(themeIds_.begin(), themeIds_.end());
     if (themeIndex_ >= static_cast<int>(themeIds_.size())) {
@@ -114,6 +123,38 @@ std::string GuildState::currentThemeName() const {
 }
 
 void GuildState::enterDungeon() {
+    const std::string eternalTheme =
+        themeIds_.empty() ? "" : themeIds_[static_cast<std::size_t>(themeIndex_)];
+    if (floors_ == kEternalFloors) {
+        // M105: the warning states the WHOLE price before anything commits;
+        // the descent itself then raises the stakes baseline to (town 7,
+        // depth 20) — immediately, whatever happens below (owner decision) —
+        // and the autosave carries it, so no reload can shed it.
+        stack().pushState(std::make_unique<ConfirmPromptState>(
+            stack(), context_, "The Eternal Descent",
+            "No score - only the record of how deep you stood. Endless floors, "
+            "a REAL boss guarding every stairway, each floor harder than the "
+            "last. Entering raises your stakes to town 7, depth 20 - "
+            "immediately, regardless of what happens down there.",
+            "Descend", "Not today", [this, eternalTheme]() {
+                Party& p = context_.party;
+                if (stakesRaised(p.stakes, kTownCount, kMaxDepth)) {
+                    p.stakes.penaltySteps = 0;  // a genuine raise, as M33 defines one
+                }
+                p.stakes.prevTown = kTownCount;
+                p.stakes.prevDepth = kMaxDepth;
+                content::LoadReport report;
+                context_.saves.autosave(p, report);
+                std::vector<dungeon::Dungeon> floors;
+                floors.push_back(dungeon::generateEternalFloor(
+                    seed_, 0, context_.content, eternalTheme, p.currentTown));
+                stack().popState();  // leave the Guild
+                stack().pushState(std::make_unique<DungeonState>(stack(), context_,
+                                                                 std::move(floors)));
+            }));
+        return;
+    }
+
     content::LoadReport report;
     context_.saves.autosave(context_.party, report);
 
@@ -170,15 +211,24 @@ void GuildState::handleInput(const Input& input) {
             themeIndex_ = ((themeIndex_ + dir) % n + n) % n;
             rebuild();  // reflect the new value inline immediately
         } else if (menu_.cursor() == kDepth) {
-            depth_ = std::clamp(depth_ + dir, 1, kMaxDepth);
-            rebuild();
+            if (floors_ == kEternalFloors) {
+                context_.audio.play(Sfx::Cancel);  // M105: Eternal fixes depth at 20
+            } else {
+                depth_ = std::clamp(depth_ + dir, 1, kMaxDepth);
+                rebuild();
+            }
         } else if (menu_.cursor() == kFloors) {
             // M92: three shapes — the classic level, the descent, and the long
-            // descent. Left/Right walk the cycle in either direction.
+            // descent. M105: town 7 adds a fourth, the Eternal endless descent.
+            // Left/Right walk the cycle in either direction.
+            const bool eternalHere = context_.party.currentTown >= kTownCount;
             if (dir > 0) {
-                floors_ = floors_ == 1 ? 4 : (floors_ == 4 ? 20 : 1);
+                floors_ = floors_ == 1 ? 4
+                          : (floors_ == 4 ? 20
+                                          : (floors_ == 20 && eternalHere ? kEternalFloors : 1));
             } else {
-                floors_ = floors_ == 1 ? 20 : (floors_ == 20 ? 4 : 1);
+                floors_ = floors_ == 1 ? (eternalHere ? kEternalFloors : 20)
+                          : (floors_ == kEternalFloors ? 20 : (floors_ == 20 ? 4 : 1));
             }
             rebuild();
         } else if (menu_.cursor() == kSeed) {
@@ -279,12 +329,23 @@ void GuildState::render() {
                            focused ? p.cursor : p.text, "guild.capsule");
     };
     stepperRow(kTheme, "Theme", currentThemeName(), py + 38);
-    stepperRow(kDepth, "Depth", std::to_string(depth_), py + 56);
+    stepperRow(kDepth, "Depth",
+               floors_ == kEternalFloors ? "20 (fixed)" : std::to_string(depth_), py + 56);
     // M82/M92: the run's shape — one classic level, or four (or twenty) flat
-    // floors with elite stair-gates and the boss at the bottom.
+    // floors with elite stair-gates and the boss at the bottom. M105: town 7
+    // adds the Eternal endless descent (no score; a boss on every floor).
     stepperRow(kFloors, "Floors",
-               floors_ == 1 ? "1" : (floors_ == 4 ? "4 (boss below)" : "20 (boss below)"),
+               floors_ == 1
+                   ? "1"
+                   : (floors_ == 4 ? "4 (boss below)"
+                                   : (floors_ == kEternalFloors ? "Eternal" : "20 (boss below)")),
                py + 74);
+    // M105: the endless record rides under the panel at its home town.
+    if (context_.party.currentTown >= kTownCount && context_.party.eternalBestFloors > 0) {
+        ui::drawTextCentered(TextFormat("Eternal best: %d floors",
+                                        context_.party.eternalBestFloors),
+                             px + pw / 2, py + ph + 4, style::kFontSmall, p.gold);
+    }
 
     // Plain rows.
     const auto plainRow = [&](int index, const char* label, int y, bool dim = false) {

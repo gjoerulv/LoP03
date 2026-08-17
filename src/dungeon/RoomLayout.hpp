@@ -64,8 +64,22 @@ namespace cd::dungeon {
 // the DuckPeddler contract — the Surveyor (multi-floor only: 20 gold lifts
 // the new fog of war for the floor) and Dragonform (any run: the next battle
 // fought as Dragons at a flat -100 score) — so seeds' event rolls change
-// where the hashes land; everything else is byte-identical to v16.
-inline constexpr int kGenerationVersion = 17;
+// where the hashes land; everything else is byte-identical to v16;
+// version 18 (M102, owner-approved) removes skill scrolls from the dungeon
+// item pools (chests and the peddler; scrolls remain at the Guild's trove,
+// the town digs, and later the M104 reels) — seeds' chest and merchant
+// rolls change where a scroll used to land;
+// version 19 (M103, owner-approved) adds six pure-hash event replacements
+// on the peddler contract, all towns and themes — GoosePolymorph,
+// Sacrifice, LevelAltar, StrangerStory, TokenExchange, PatrolReset — so
+// seeds' event rolls change where the new hashes land;
+// version 20 (M104, owner-approved) adds the two gambling dens (Reels,
+// Blackjack) on the same contract — event rolls move again;
+// version 21 (M106, owner-approved) adds the town-7 Goosy Gauntlet theme
+// (its GoosyFlock rite on the M55 slot, three town-7 bosses joining the
+// rush/endless/treasure rosters — the guard roster grew, so guard picks
+// move where it did) — classic-theme generation is otherwise untouched.
+inline constexpr int kGenerationVersion = 21;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

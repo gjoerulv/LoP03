@@ -1,6 +1,6 @@
 # M93 — Dungeon dynamics: fog, the Surveyor, patrols & dragonform (generation v17)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). Generation **16 → 17** (two
 new pure-hash event replacements move seeds' event rolls; everything else
 byte-identical to v16 — the M55/M76 precedent). No battle-rules bump (the

@@ -44,6 +44,23 @@ std::vector<Dungeon> generateFloors(std::uint64_t seed, int depth,
                                     std::string themeId = "", int town = 1,
                                     int floorCount = 1);
 
+// M105 (owner request): ONE floor of the town-7 Eternal descent — the
+// standalone generation of floorSeed(runSeed, floorIndex) at the fixed
+// Eternal depth, which therefore carries its REAL theme boss (no warden
+// swap: in Eternal every boss guards the stairs). Difficulty escalates a
+// flat +10 %pts on every team per floor past the first (the M49 Endless
+// Rush curve shape); the map-piece room is cleared (an endless run feeds
+// no economy) and the floor bookkeeping is stamped for the endless shape.
+// Deterministic per (runSeed, floorIndex) — reload-honest at any depth of
+// the descent. No score ever flows from these floors (they cannot
+// complete), so no generation bump: existing modes are byte-identical.
+inline constexpr int kEternalDepth = 20;
+inline constexpr int kEternalEscalationPctPts = 10;
+inline constexpr int kEternalFloorCountSentinel = 1000000;  // never the last
+Dungeon generateEternalFloor(std::uint64_t runSeed, int floorIndex,
+                             const content::ContentDatabase& db,
+                             const std::string& themeId, int town);
+
 // M93: the danger counter's roused patrol — a normal team for this dungeon
 // (same theme pool, composition rules, and depth/town scaling as generation),
 // drawn from a fresh pure-hash Rng off (runSeed, patrolIndex) so the Nth

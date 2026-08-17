@@ -27,6 +27,7 @@ public:
     bool addEventFlavor(const EventFlavorDef& def);  // M80
     bool addCurioLore(const CurioLoreDef& def);  // M85
     bool addCutscene(const CutsceneDef& def);  // M97
+    bool addTutorialText(const TutorialTextDef& def);  // M99
 
     const SkillDef* findSkill(const std::string& id) const;
     const ClassDef* findClass(const std::string& id) const;
@@ -51,6 +52,9 @@ public:
     // M97: nullptr when the scene is unauthored — every trigger site checks
     // first, so a missing scene simply never plays (no crash, no block).
     const CutsceneDef* findCutscene(const std::string& id) const;
+    // M99: nullptr when the beat is unauthored — the prompt falls back to the
+    // constexpr text, so forge edits can never silence onboarding.
+    const TutorialTextDef* findTutorialText(const std::string& id) const;
 
     bool hasSkill(const std::string& id) const { return findSkill(id) != nullptr; }
     bool hasPassive(const std::string& id) const { return findPassive(id) != nullptr; }
@@ -73,6 +77,9 @@ public:
     const std::unordered_map<std::string, CutsceneDef>& cutscenes() const {
         return cutscenes_;  // M97
     }
+    const std::unordered_map<std::string, TutorialTextDef>& tutorialTexts() const {
+        return tutorialTexts_;  // M99
+    }
 
     // Team-composition constraints (M20). Defaults apply until
     // data/composition.json is loaded.
@@ -91,6 +98,7 @@ public:
     std::size_t eventFlavorCount() const { return eventFlavors_.size(); }  // M80
     std::size_t curioLoreCount() const { return curioLores_.size(); }  // M85
     std::size_t cutsceneCount() const { return cutscenes_.size(); }  // M97
+    std::size_t tutorialTextCount() const { return tutorialTexts_.size(); }  // M99
 
     bool empty() const;
     void clear();
@@ -108,6 +116,7 @@ private:
     std::unordered_map<std::string, EventFlavorDef> eventFlavors_;  // M80
     std::unordered_map<std::string, CurioLoreDef> curioLores_;  // M85
     std::unordered_map<std::string, CutsceneDef> cutscenes_;  // M97
+    std::unordered_map<std::string, TutorialTextDef> tutorialTexts_;  // M99
     CompositionDef composition_;
 };
 

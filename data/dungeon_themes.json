@@ -24,6 +24,15 @@
       "eliteEnemies": ["shadow_stalker", "plague_bearer", "troll_berserker", "grave_chanter", "void_weaver", "ironclad_reaver", "blight_chanter", "war_caller", "void_stalker", "dread_knight", "soul_render", "titan_guard", "archon_of_ruin"],
       "bosses": ["hollow_commander", "rush_tyrant", "blight_matron", "sand_warlord", "frost_monarch", "obsidian_colossus", "hollow_sovereign", "abyssal_tyrant", "dread_sovereign"],
       "description": "A poisoned wood prowled by beasts and shadows."
+    },
+    {
+      "id": "goosy_gauntlet",
+      "name": "Goosy Gauntlet",
+      "normalEnemies": ["pond_drake", "reed_honker", "mallard_marauder", "downfeather_witch", "puddle_imp", "mire_imp", "bog_shaman"],
+      "eliteEnemies": ["gander_grenadier", "cob_knight", "migration_herald", "blight_chanter", "war_caller"],
+      "bosses": ["the_gray_gander", "mother_of_ponds", "the_pondlord"],
+      "description": "Reeds, ponds, and an unreasonable number of geese.",
+      "minTown": 7
     }
   ]
 }

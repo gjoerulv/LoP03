@@ -347,5 +347,10 @@ WriteSfx 'hit_earth.wav'     @(@('noise', 0, 0, 0.06, 0.5, 3.0), @('sine', 110, 
 WriteSfx 'hit_holy.wav'      @(@('sine', 660, 660, 0.06, 0.4, 2.0), @('sine', 990, 990, 0.07, 0.45, 2.5), @('sine', 1320, 1320, 0.10, 0.5, 3.5)) 0.6
 WriteSfx 'hit_dark.wav'      @(@('tri', 300, 150, 0.10, 0.5, 3.0), @('sine', 233, 110, 0.10, 0.45, 3.5), @('noise', 0, 0, 0.05, 0.15, 6.0)) 0.55
 
+# ============================ M107 summon arrival ==============================
+# One shared fanfare for the three legends: a rising major stack that blooms
+# and lingers - "epic relative to the game's feel", deterministic like all.
+WriteSfx 'summon.wav'        @(@('sine', 392, 392, 0.10, 0.5, 2.0), @('sine', 523, 523, 0.12, 0.5, 2.0), @('sine', 659, 784, 0.26, 0.55, 3.0), @('tri', 1046, 1046, 0.14, 0.35, 4.0)) 0.65
+
 # ============================ M32 town-ladder music ============================
 Write-Output 'Audio generation complete.'

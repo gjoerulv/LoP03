@@ -123,7 +123,7 @@ Application::Application()
   }
   stack_.pushState(std::make_unique<MainMenuState>(stack_, context_));
   stack_.applyPending();
-  log::info("Crystal Dungeons initialized");
+  log::info("Are P Geese initialized");
 }
 
 void Application::loadContent() {

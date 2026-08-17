@@ -1,19 +1,19 @@
----
+﻿---
 name: crystal-dungeons
 description: Operational workflow for building "Crystal Dungeons", a 16-bit-inspired turn-based JRPG roguelite in C++20 / raylib / CMake. Use when implementing any milestone, building, testing, validating, or making design/architecture decisions for this project.
 ---
 
-# Crystal Dungeons — Build Workflow Skill
+# Crystal Dungeons â€” Build Workflow Skill
 
 This is the **repeatable workflow helper**, not the contract. The contract is
 `CLAUDE.md` at the repo root. When they disagree, `CLAUDE.md` wins. Keep this
-skill concise and operational — do not let it become a copy of the docs.
+skill concise and operational â€” do not let it become a copy of the docs.
 
 ## Vision (one paragraph)
 
 A legally-original, 16-bit-inspired **turn-based JRPG roguelite**. A 4-character
 party repeatedly enters seeded, procedurally generated dungeons from a town hub.
-Dungeons have **visible** enemy teams (no hidden random encounters — M93's
+Dungeons have **visible** enemy teams (no hidden random encounters â€” M93's
 danger-counter patrol is the one step-driven fight, always forewarned by a
 visible countdown), guarded chests, at
 least 3 mandatory gate battles, and a boss. The hook is **efficiency**: score is
@@ -23,15 +23,15 @@ score-chasing is rewarding but not mandatory). Not a story JRPG, not an FF clone
 
 ## Source-of-truth map (authority order, highest first)
 
-1. `CLAUDE.md` — operating contract (authoritative).
-2. Approved active `docs/milestone_notes/MXX_*.md` — current milestone scope.
-3. `docs/milestones.md` — milestone ledger + status (update every milestone).
-4. `docs/game_design.md` — what the game is and why.
-5. `docs/technical_design.md` — architecture, conventions, build.
-6. `docs/completion_roadmap.md` — long-term direction; **never** authorization
+1. `CLAUDE.md` â€” operating contract (authoritative).
+2. Approved active `docs/milestone_notes/MXX_*.md` â€” current milestone scope.
+3. `docs/milestones.md` â€” milestone ledger + status (update every milestone).
+4. `docs/game_design.md` â€” what the game is and why.
+5. `docs/technical_design.md` â€” architecture, conventions, build.
+6. `docs/completion_roadmap.md` â€” long-term direction; **never** authorization
    to work ahead.
 7. Supporting docs (`README.md`, style/control/asset/test docs,
-   `docs/milestone_completion_template.md`). This skill — workflow, gotchas.
+   `docs/milestone_completion_template.md`). This skill â€” workflow, gotchas.
 
 At session start: read `CLAUDE.md`, then the docs above, then inspect the repo
 (current HEAD + working tree), then identify the current milestone and whether
@@ -58,11 +58,11 @@ Adding/removing/bumping any dependency requires human approval (see CLAUDE.md).
 
 ## Build & test commands
 
-`README.md` owns the authoritative build instructions — read it rather than
+`README.md` owns the authoritative build instructions â€” read it rather than
 trusting a copy. The operational essentials:
 
 Build with **MSVC** from a Visual Studio developer environment. **Open
-"Developer PowerShell for VS 2022"** — `& "...\vcvars64.bat"` does *not*
+"Developer PowerShell for VS 2022"** â€” `& "...\vcvars64.bat"` does *not*
 configure a PowerShell session (the batch file sets variables in a child `cmd`
 that exits immediately). To build from an already-open PowerShell, either run
 `Common7\Tools\Launch-VsDevShell.ps1 -Arch amd64`, or wrap each command:
@@ -74,7 +74,7 @@ Presets (M24, preferred):
 cmake --preset msvc-debug          # -> build-msvc (overlay + capture CLI)
 cmake --build --preset debug
 ctest --preset debug               # or: build-msvc\crystal_tests.exe
-.\build-msvc\CrystalDungeons.exe
+.\build-msvc\ArePGeese.exe
 
 cmake --preset msvc-release        # -> build-msvc-rel (static CRT, no capture)
 cmake --build --preset release
@@ -90,7 +90,7 @@ ctest --test-dir build-msvc --output-on-failure
 
 `-DCMAKE_*_COMPILER=cl` forces MSVC so a stray compiler on `PATH` can't be picked
 up by mistake (that is what broke the first build attempt). First configure
-downloads + compiles raylib/Catch2 — slow once, then cached per build dir.
+downloads + compiles raylib/Catch2 â€” slow once, then cached per build dir.
 Network is required for the **first** configure only.
 
 CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
@@ -100,7 +100,7 @@ CMake options: `-DCRYSTAL_BUILD_TESTS=ON` (default ON),
 Validation & release tooling (M23/M24):
 
 ```powershell
-.\build-msvc\CrystalDungeons.exe --capture out\dir   # all registered native-res scenes; fails on text overflow
+.\build-msvc\ArePGeese.exe --capture out\dir   # all registered native-res scenes; fails on text overflow
 build-msvc\crystal_tests.exe "[economy-report]" -s   # balance battery table
 build-msvc\crystal_tests.exe "[sim-report]" -s       # machine-readable JSON report
 powershell -ExecutionPolicy Bypass -File tools\package.ps1  # stage+validate+zip -> dist\
@@ -109,15 +109,15 @@ powershell -ExecutionPolicy Bypass -File tools\package.ps1  # stage+validate+zip
 Asset generators (deterministic; reruns byte-identical):
 `tools\asset_gen\generate_textures.ps1`, `generate_audio.ps1` (music note
 tables in `music_data.ps1`, shared with the `generate_midi.ps1` MIDI
-export → git-ignored `docs/music/`), `generate_font.ps1`,
+export â†’ git-ignored `docs/music/`), `generate_font.ps1`,
 `generate_icon.ps1`, plus `preview.ps1` (the M73
-sprite-review harness — the gate for accepting sprite work). Every asset
+sprite-review harness â€” the gate for accepting sprite work). Every asset
 needs a row in `assets/credits.md`.
 
 ## Gotchas (read these before you waste an hour)
 
 1. **MSVC only, and initialize the VS environment first.** `cl` and the bundled
-   Ninja are not on a normal shell's `PATH` — without a developer environment,
+   Ninja are not on a normal shell's `PATH` â€” without a developer environment,
    configure fails with *"CMake was unable to find a build program corresponding
    to Ninja"*. Verify with `where.exe cl` / `where.exe ninja` before configuring.
    Always pass `-DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl` so a stray MinGW
@@ -129,22 +129,22 @@ needs a row in `assets/credits.md`.
    which collide with raylib's, and the `min`/`max` macros break `std::max`
    (e.g. in `core/FadeController.hpp`). `WIN32_LEAN_AND_MEAN` does **not** help.
    Put Win32 code in its own `.cpp` under `src/platform/` behind a header that
-   exposes only standard types — see `platform/FatalDialog.*` and
+   exposes only standard types â€” see `platform/FatalDialog.*` and
    `platform/AtomicFile.cpp`. Also **do not** add an explicit `user32` link:
    that puts `user32.lib` ahead of `raylib.lib` and yields
    `LNK2005: CloseWindow already defined`; MSVC's default libs already cover it,
    in the right order.
 3. **raylib + window required for GPU calls.** `LoadTexture`, `LoadFont`,
    `LoadRenderTexture`, audio init etc. need an initialized window/device. Keep
-   that logic out of unit tests — tests must run headless. Put pure logic
+   that logic out of unit tests â€” tests must run headless. Put pure logic
    (scaling math, state-stack ordering, input resolution, path sanitizing,
    later: danger/score/generation) where it can be tested without raylib.
 4. **RAII for every raylib resource.** Never `LoadX` without an owning wrapper
    (`src/render/RaylibRAII.hpp`). No `UnloadX` scattered in game code.
-5. **Render path:** draw the world into the 426×240 `RenderTexture2D`, then blit
+5. **Render path:** draw the world into the 426Ã—240 `RenderTexture2D`, then blit
    that scaled to the window. The source rect height must be **negative**
    (`-240`) because render textures are y-flipped. Easy to get upside-down.
-6. **`SetExitKey(KEY_NULL)`** — otherwise raylib quits on ESC behind your back.
+6. **`SetExitKey(KEY_NULL)`** â€” otherwise raylib quits on ESC behind your back.
    Handle ESC through the input map.
 7. **Don't mutate the state stack mid-iteration.** State transitions are queued
    and applied between frames (`StateStack` pending commands). A state that pops
@@ -153,43 +153,43 @@ needs a row in `assets/credits.md`.
    `update`/`render`. `std::function` in the input layer is fine (called a few
    times per frame, not a hot loop).
 9. **Data/saves are JSON with a version field, validated, never trusted.**
-   Malformed input → readable error + safe fallback, never a crash. No path
+   Malformed input â†’ readable error + safe fallback, never a crash. No path
    traversal: sanitize all relative paths (`paths::sanitizeRelative`).
 10. **High warnings on project code only**, not on `_deps`. Don't "fix" warnings
     inside dependencies.
 11. **Screenshots: use the capture tool, not window automation.**
-    `CrystalDungeons.exe --capture <dir>` (debug builds) renders every
-    registered deterministic scene at native 426×240 and fails on text
-    overflow —
+    `ArePGeese.exe --capture <dir>` (debug builds) renders every
+    registered deterministic scene at native 426Ã—240 and fails on text
+    overflow â€”
     always prefer it. If live input driving is unavoidable, never use
-    focus-dependent `SendKeys` (it leaks keystrokes — it happened); use
+    focus-dependent `SendKeys` (it leaks keystrokes â€” it happened); use
     `PostMessage` WM_KEYDOWN/UP to the game's HWND (extended-key bit for
     arrows, ~70ms between down/up) + `SetWindowPos` topmost+NOACTIVATE.
 12. **Generation changes need a version bump.** Anything that alters what a
-    seed produces (generator code OR composition/data curves — including item
+    seed produces (generator code OR composition/data curves â€” including item
     prices, which the dungeon merchant derives its offer from) bumps
-    `dungeon::kGenerationVersion` (currently 17; battle rules are at 18 —
+    `dungeon::kGenerationVersion` (currently 17; battle rules are at 18 â€”
     the history comments in `src/dungeon/RoomLayout.hpp` and
-    `src/battle/Battle.hpp` are the authorities) — the scoreboard tags it
+    `src/battle/Battle.hpp` are the authorities) â€” the scoreboard tags it
     for comparability. Owner-gated.
 13. **A forced/automatic action rule lives in shared `battle::` code**, called by
     `BattleState`, the `Simulator`, AND `chooseEnemyAction` (see
     `battle::forcedActionFor` / `forcedChoice`, which carry confusion, the M44
-    Terrified guard, and the M44 Stunned skip). Enforcing one in a state only — as
-    M35 did with confusion — silently desynchronizes live play from the simulator;
+    Terrified guard, and the M44 Stunned skip). Enforcing one in a state only â€” as
+    M35 did with confusion â€” silently desynchronizes live play from the simulator;
     M43 exists partly to fix that.
-14. **Prose lives in bounded containers (M87) — pick the right text policy.**
+14. **Prose lives in bounded containers (M87) â€” pick the right text policy.**
     Reading surfaces use `ui::TextViewport` + `ui::drawTextViewport` (capped
     height, Up/Down scroll, indicators; wrap width reserves
     `ui::kScrollGutterW`); compact decision-time summaries use
     `ui::drawTextPreview` (explicit `hasMore`, marked truncation); one-line UI
     uses `drawTextFitted` with authored short labels. `[ui-overflow]` means an
-    actual defect — never route scrollable prose or an intentional preview
+    actual defect â€” never route scrollable prose or an intentional preview
     through `drawTextWrapped(maxLines)`, which logs and fails the capture
     lint. Authored `\n` is paragraph semantics only (never layout), and
-    content may use only the glyphs `src/ui/GlyphCoverage.hpp` allows —
+    content may use only the glyphs `src/ui/GlyphCoverage.hpp` allows â€”
     `tests/test_glyph_coverage.cpp` fails on anything else. The full contract:
-    `docs/ui_style_guide.md` §7/§11.
+    `docs/ui_style_guide.md` Â§7/Â§11.
 
 ## Architecture rules (enforce in review)
 
@@ -202,8 +202,8 @@ needs a row in `assets/credits.md`.
 
 ## Milestone workflow
 
-Statuses (only these): `planned` · `in progress` · `implemented, awaiting
-manual approval` · `complete (approved)` · `blocked`. **Only the owner sets
+Statuses (only these): `planned` Â· `in progress` Â· `implemented, awaiting
+manual approval` Â· `complete (approved)` Â· `blocked`. **Only the owner sets
 `complete (approved)`**, after manual testing; Claude's terminal state is
 `implemented, awaiting manual approval`. Approval of one milestone is not
 authorization to start the next.
@@ -216,37 +216,37 @@ authorization to start the next.
 3. Implement **only** the approved slices. Routine engineering decisions are
    autonomous; escalate per the CLAUDE.md mandatory-escalation list.
 4. Build + run tests (or give exact unverified commands + expected output).
-5. Update all affected docs — documentation is part of the implementation.
+5. Update all affected docs â€” documentation is part of the implementation.
 6. Report using `docs/milestone_completion_template.md`, set the status to
    `implemented, awaiting manual approval`, and **stop** for owner approval.
 
-**Git:** never commit, push, amend, rebase, merge, tag, or force-update —
+**Git:** never commit, push, amend, rebase, merge, tag, or force-update â€”
 inspection only. The owner handles all commits and pushes.
 
-Milestones: `docs/milestones.md` is the single source for statuses — trust it
+Milestones: `docs/milestones.md` is the single source for statuses â€” trust it
 over any restatement, including this one. Everything through **M85** is
-`complete (approved)`: the expansion programs M35–M42, M43–M45, M46, M47–M51,
-M52, M53–M56, M57 and M58 closed 2026-07-24; **M59–M74** (the CrystalForge
-editor, Goose Town & the Deadly Duck, the M62–M66 program, the M67–M74
+`complete (approved)`: the expansion programs M35â€“M42, M43â€“M45, M46, M47â€“M51,
+M52, M53â€“M56, M57 and M58 closed 2026-07-24; **M59â€“M74** (the CrystalForge
+editor, Goose Town & the Deadly Duck, the M62â€“M66 program, the M67â€“M74
 polish/art/audio batch) were batch-approved 2026-08-05; and the
-**M75–M86 expansion program** (battle rules v15 — Reflect/Sleep/Curse +
-the trigger framework — counterplay content, the enemy offensive pass,
+**M75â€“M86 expansion program** (battle rules v15 â€” Reflect/Sleep/Curse +
+the trigger framework â€” counterplay content, the enemy offensive pass,
 inventory caps, input QoL, event flavor, arms & icons, 1-or-4-floor
 dungeons on generation v15, the map economy, the M84 Guild Masters with
 town perks, and M85's Last Dragon + curio lore) was approved milestone by
 milestone through 2026-08-07. **M86** (CrystalForge catch-up + the
-deliberate 0.9.0 → 0.6.0 version renumber) and **M87** (owner-directed
-2026-08-11: translation-ready text containers & scrollable prose — the
+deliberate 0.9.0 â†’ 0.6.0 version renumber) and **M87** (owner-directed
+2026-08-11: translation-ready text containers & scrollable prose â€” the
 text policies in gotcha 14, the Latin-1 font extension, 105 capture
 scenes at the time) are both `implemented, awaiting
-manual approval` — as is the whole **M88–M97 program** (owner-authorized
+manual approval` â€” as is the whole **M88â€“M97 program** (owner-authorized
 2026-08-14, implemented the same day: town/Guild UX + team inspection,
 the Dragon breath fix + dungeon carry-out (rules v16), party-menu
 Equip/Items, elemental impact FX, 20-floor descents + the scroll trove
 (gen v16), fog/Surveyor/patrols/dragonform (gen v17), the sparring
 mirror, summons (rules v17), heirlooms (rules v18), and the Hooded Goose
 cutscene story; capture set now **114 scenes**; manual matrix rows
-167–184). The M46 UI kit (`docs/ui_style_guide.md`) binds all UI
+167â€“184). The M46 UI kit (`docs/ui_style_guide.md`) binds all UI
 work; the M49 castle retune (Boss Rush 580 % / King 500 % / Endless
 +10 %pts per wave, level cap 99) plus the M54 equipment rebalance are the
 balance baseline. After these approvals only the deliberately deferred
@@ -264,8 +264,8 @@ Both must be re-audited against the then-current checkout first. Details:
       error.
 - [ ] `cmake --build --preset debug` compiled the **executable and the tests**
       with no project warnings (deps may warn). Building only `crystal_tests`
-      hides link and `main.cpp` breakage — see gotcha 2.
-- [ ] `ctest --preset debug` — all green.
+      hides link and `main.cpp` breakage â€” see gotcha 2.
+- [ ] `ctest --preset debug` â€” all green.
 - [ ] Release still builds: `cmake --preset msvc-release` +
       `cmake --build --preset release`. Multi-config gating (`CRYSTAL_CAPTURE`,
       `CRYSTAL_DEBUG_OVERLAY` excluded from Release) only breaks here.

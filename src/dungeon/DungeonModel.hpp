@@ -31,9 +31,27 @@ enum class RoomType { Start, Normal, Treasure, Boss, Event };
 // and Dragonform (any run — the party fights its NEXT battle as Dragons for a
 // flat -100 score, stated up front). Same contract as the DuckPeddler: never
 // an rng draw, never a rite/relic slot.
+// M103 (generation v19) adds six more on the same contract, all towns and
+// themes: GoosePolymorph (one random non-goose member becomes a Goose for the
+// REST of the run, +100 score), Sacrifice (give up one bag equipment piece for
+// double XP in the next battle), LevelAltar (level one member up, their MP
+// drops to 0; at the cap only a dry line), StrangerStory (a tale from THE
+// STRANGER "P" and 20 MP for a chosen member), TokenExchange (1 legendary
+// token for 3 rest tokens or 1 map piece), PatrolReset (the fuse rewinds to
+// 100). Party-state gates (all geese, no token, empty bag) are checked at
+// interaction, never at generation.
+// M104 (generation v20) adds the two gambling dens, same contract: Reels (a
+// ONE-SHOT machine — 1 spin for 10g or 3 for 70g, the bad bundle being the
+// owner's joke; three-of-a-kind pays the symbol's prize) and Blackjack (bet
+// gold, dealer stands 17, a win pays the bet back doubled).
 enum class RoomEventKind {
     None, Shrine, HealingSpring, Merchant, EliteChallenge, ScoreWager, RestToken, RoyalRelic,
-    ArmoryGhost, MinersCache, ElderRoot, DuckPeddler, Surveyor, Dragonform
+    ArmoryGhost, MinersCache, ElderRoot, DuckPeddler, Surveyor, Dragonform,
+    GoosePolymorph, Sacrifice, LevelAltar, StrangerStory, TokenExchange, PatrolReset,
+    Reels, Blackjack,
+    // M106 (generation v21): the Goosy Gauntlet's guaranteed rite — the WHOLE
+    // party fights the next battle as Geese, +300 score (the M55 rite slot).
+    GoosyFlock
 };
 
 struct RoomEvent {
@@ -111,6 +129,11 @@ struct Dungeon {
     int floorIndex = 0;
     int floorCount = 1;
     bool stairsOpen = false;
+    // M105: an Eternal floor (town 7's endless descent). floorCount holds an
+    // unreachable sentinel so finalFloor() never fires — every boss guards
+    // stairs, nothing completes, nothing scores; the next floor is generated
+    // on demand from floorSeed(runSeed, floorIndex + 1).
+    bool eternal = false;
     int depth = 1;
     int town = 1;  // town ladder index (M32); scales enemy stats + score bonus
     std::string themeName;

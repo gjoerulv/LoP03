@@ -34,6 +34,11 @@ struct RunSummary {
     // Dragonform pacts (M93, owner decision 6): battles fought in dragonform,
     // each a flat -100 stated on the event panel. 0 = no change.
     int dragonformFights = 0;
+    // Goose polymorphs accepted (M103, owner event 1): each a flat +100
+    // stated on the event panel (at most one fires per dungeon today).
+    int goosePolymorphs = 0;
+    // Goosy flock battles fought (M106 rite): each a flat +300, stated.
+    int gooseFlockFights = 0;
 };
 
 struct ScoreBreakdown {
@@ -47,6 +52,8 @@ struct ScoreBreakdown {
     int escapePenalty = 0;
     int wager = 0;  // +150 / -100 / 0 (M20 wager event)
     int dragonformPact = 0;  // -100 per dragonform battle (M93, >= 0 as stored)
+    int gooseBonus = 0;  // +100 per accepted goose polymorph (M103)
+    int gooseFlock = 0;  // +300 per flock battle (M106 rite)
     int townBonus = 0;  // town-ladder bonus applied to the subtotal (M32)
     int stakesPenalty = 0;  // stakes penalty subtracted from the subtotal (M33, >= 0)
     int classMod = 0;  // unlockable-class modifier on the subtotal (M45, may be < 0)

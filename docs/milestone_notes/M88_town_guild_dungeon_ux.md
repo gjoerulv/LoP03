@@ -1,6 +1,6 @@
 # M88 — Town, Guild & dungeon UX fixes
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (owner-authorized 2026-08-14; one plan, one
 authorization; plan file with the exploration record and owner Q&A decisions
 lives outside the repo in the owner's Claude plans directory).

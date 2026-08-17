@@ -6,8 +6,9 @@
 #include <string>
 #include <vector>
 
+#include "content/ContentDatabase.hpp"  // M106: findBoss for the town-gated guard
 #include "game/BlackMarket.hpp"  // blackMarketMix (the shared SplitMix64 primitive)
-#include "game/Castle.hpp"       // bossRushOrder (the 12 dungeon bosses, sorted)
+#include "game/Castle.hpp"       // bossRushOrder (the dungeon bosses, sorted)
 
 // M65 — the town puzzle map (a Heroes of Might and Magic 2 homage). Secret
 // Map Pieces hide in ~10% of dungeons (one per dungeon, generation v12);
@@ -64,12 +65,22 @@ inline std::string nextTreasureScroll(const std::vector<std::string>& awarded) {
 inline constexpr int kTreasureTokenFallback = 1;
 inline constexpr int kTreasureGoldFallback = 2500;
 
-// The seeded treasure guard: a dungeon-roster boss (bossRushOrder — the 12
+// The seeded treasure guard: a dungeon-roster boss (bossRushOrder — the
 // sorted dungeon bosses; the King and the Duck keep their own arenas),
 // picked by a pure hash of the dungeon seed that yielded the fourth piece.
+// M106: ONLY the top-town roster (minTown 7 — the Goosy geese) is gated, so
+// they never guard a dig below town 7. Every historical guard (mixed
+// minTowns, scaled to the dig as always) keeps its pre-M106 eligibility, so
+// low-town picks only move where the roster itself grew.
 inline std::string treasureGuardBossId(const content::ContentDatabase& content,
-                                       std::uint64_t seed) {
-    const std::vector<std::string> roster = bossRushOrder(content);
+                                       std::uint64_t seed, int town) {
+    std::vector<std::string> roster;
+    for (const std::string& id : bossRushOrder(content)) {
+        const content::BossDef* b = content.findBoss(id);
+        if (b != nullptr && (b->minTown < 7 || town >= 7)) {
+            roster.push_back(id);
+        }
+    }
     if (roster.empty()) {
         return "";
     }
@@ -92,7 +103,7 @@ inline bool grantMapPiece(int& mapPieces, TreasureReveal& treasure, int town,
     mapPieces = 0;
     treasure.active = true;
     treasure.town = town;
-    treasure.bossId = treasureGuardBossId(content, guardSeed);
+    treasure.bossId = treasureGuardBossId(content, guardSeed, town);  // M106: town-gated
     treasure.scalePct = scalePct;
     return true;
 }

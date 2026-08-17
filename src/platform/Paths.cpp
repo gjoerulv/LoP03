@@ -32,7 +32,27 @@ std::optional<std::string> envVar(const char* name) {
 #endif
 }
 
-constexpr const char* kAppFolderName = "CrystalDungeons";
+// M108 (owner decision, full rebrand): the save home is ArePGeese; the old
+// CrystalDungeons folder remains readable as the migration's source only.
+constexpr const char* kAppFolderName = "ArePGeese";
+constexpr const char* kLegacyFolderName = "CrystalDungeons";
+
+// The shared derivation both dir functions use (env-only, never created here).
+fs::path dataDirFor(const char* folderName) {
+#if defined(_WIN32)
+    if (auto appdata = envVar("APPDATA")) {
+        return fs::path(*appdata) / folderName;
+    }
+#else
+    if (auto xdg = envVar("XDG_DATA_HOME")) {
+        return fs::path(*xdg) / folderName;
+    }
+    if (auto home = envVar("HOME")) {
+        return fs::path(*home) / ".local" / "share" / folderName;
+    }
+#endif
+    return fs::path(".") / folderName;
+}
 
 }  // namespace
 
@@ -63,20 +83,8 @@ std::optional<fs::path> sanitizeRelative(std::string_view relative) {
     return p;
 }
 
-fs::path userDataDir() {
-#if defined(_WIN32)
-    if (auto appdata = envVar("APPDATA")) {
-        return fs::path(*appdata) / kAppFolderName;
-    }
-#else
-    if (auto xdg = envVar("XDG_DATA_HOME")) {
-        return fs::path(*xdg) / kAppFolderName;
-    }
-    if (auto home = envVar("HOME")) {
-        return fs::path(*home) / ".local" / "share" / kAppFolderName;
-    }
-#endif
-    return fs::path(".") / kAppFolderName;
-}
+fs::path userDataDir() { return dataDirFor(kAppFolderName); }
+
+fs::path legacyUserDataDir() { return dataDirFor(kLegacyFolderName); }  // M108
 
 }  // namespace cd::paths

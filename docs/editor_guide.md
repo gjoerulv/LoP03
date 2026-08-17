@@ -107,7 +107,7 @@ The full balance batteries (`ctest`) remain the real referee.
 
 Saves always go through one canonical writer (2-space indent; one line per
 entry in `skills`/`enemies`/`items`/`passives`/`milestones`/`event_flavor`/
-`curio_lore`, block entries elsewhere), so
+`curio_lore`/`tutorials`, block entries elsewhere), so
 formatting can never drift between saves and diffs stay minimal. The one-time
 normalization of the shipped files happened at M59. If a file is ever
 hand-edited into a different shape, `CrystalForge --canonicalize` restores

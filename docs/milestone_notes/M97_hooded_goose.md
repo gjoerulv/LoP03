@@ -1,6 +1,6 @@
 # M97 — The Hooded Goose: a red thread in eight scenes
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14) — the program's final
 milestone. No battle-rules, generation, or save-version bump: the two
 story fields (`seenCutscenes`, `heirloomChoices`) are additive optional

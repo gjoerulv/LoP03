@@ -63,6 +63,11 @@ TEST_CASE("heirlooms: the shipped set is heirloom-shaped", "[heirloom][content]"
         CHECK(def.value == 0);  // story-granted, sold nowhere
         // An heirloom DOES something: triggers or the conditional edge.
         CHECK((!def.triggers.empty() || def.lowHpAttackPct > 0));
+        // M98: the equip panel shows an heirloom's effect text where the stat
+        // diff would sit (it has no stats to diff), so a shipped heirloom must
+        // describe itself. Length is refereed by the capture lint on the
+        // "equipshop.heirloom" wrap, not by a brittle char cap here.
+        CHECK(!def.description.empty());
         // Never a stat stick — the balance bar (effects, not numbers).
         CHECK(def.statBonus.maxHp == 0);
         CHECK(def.statBonus.attack == 0);

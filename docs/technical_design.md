@@ -412,12 +412,15 @@ Each file is a versioned wrapper around a named array:
 ```
 
 `version` must equal the supported schema version (currently `1`). Files
-(**twelve** as of M85): `skills.json`, `classes.json`, `enemies.json`,
+(**fourteen** as of M99): `skills.json`, `classes.json`, `enemies.json`,
 `items.json`, `bosses.json`, `dungeon_themes.json`, `composition.json`
 (M20), `passives.json` (M36), `story.json` (M41), `milestones.json` (M63),
-and the two **optional** files `event_flavor.json` (M80) and
-`curio_lore.json` (M85) — `loadAll` skips an optional file when absent
-(§34/§39); all twelve are CrystalForge categories since M86 (§40). Bosses
+`cutscenes.json` (M97, required — its scenes grant heirlooms), and the
+three **optional** files `event_flavor.json` (M80), `curio_lore.json`
+(M85) and `tutorials.json` (M99, tutorial-prompt text with a constexpr
+fallback in `src/tutorial/Tutorial.hpp`) — `loadAll` skips an optional
+file when absent (§34/§39); all fourteen are CrystalForge categories
+(twelve since M86, cutscenes M97, tutorials M99). Bosses
 carry an `archetype`, `skills`, `minions`, and a
 `telegraph`; themes list `normalEnemies`/`eliteEnemies`/`bosses` id pools; skills
 may carry an optional `statusEffect`/`statusMagnitude`/`statusDuration`. All ids

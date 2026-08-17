@@ -1,6 +1,6 @@
 # M91 — Elemental impact presentation
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). Presentation-only — no
 battle-rules, generation, save, or schema change; the Simulator never sees
 any of it.

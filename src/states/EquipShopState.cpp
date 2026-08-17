@@ -141,7 +141,8 @@ void EquipShopState::captureCursorToItem(const std::string& itemId) {
 void EquipShopState::captureEnterEquipItem(int charIndex, content::EquipSlot slot) {
     selectedChar_ = charIndex;
     selectedSlot_ = slot == content::EquipSlot::Weapon ? 0
-                    : (slot == content::EquipSlot::Armor ? 1 : 2);
+                    : (slot == content::EquipSlot::Armor ? 1
+                       : (slot == content::EquipSlot::Accessory ? 2 : 3));  // M98: heirlooms too
     phase_ = Phase::EquipItem;
     rebuild();
     menu_.setCursor(1);  // highlight a real candidate (row 0 is Unequip)
@@ -266,6 +267,16 @@ void EquipShopState::confirm() {
                 context_.party.gold -= it->value;
                 context_.party.inventory.add(it->id, 1);
                 context_.audio.play(Sfx::Confirm);
+                // M98: refresh the shelf in place so the owned ("x N") column
+                // counts the purchase immediately — it used to stay stale until
+                // the shop was re-entered. rebuild() clears transient feedback
+                // and re-derives the cursor, so both are restored around it;
+                // the M58 message contract (set-without-rebuild) stays honored
+                // by setting the message after the rebuild.
+                const int keepCursor = menu_.cursor();
+                rebuild();
+                menu_.setCursor(keepCursor);
+                scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
                 message_ = "Bought " + it->name;
                 messageIsError_ = false;
             } else {
@@ -505,13 +516,6 @@ void EquipShopState::render() {
             curBonus = curItem->statBonus;
             curName = curItem->name;
         }
-        std::string curLine = "Current: " + curName;
-        const std::string cs = equip::statBonusSummary(curBonus);
-        if (!cs.empty()) {
-            curLine += "  " + cs;
-        }
-        ui::drawTextFitted(curLine, kListX - 14, infoY + 6, 332, style::kFontBody, p.textDim,
-                           "equipshop.current");
 
         // Unequip (cursor 0) diffs an empty bonus; a candidate diffs its own.
         content::StatBlock cand{};
@@ -523,34 +527,59 @@ void EquipShopState::render() {
                 cand = candItem->statBonus;
             }
         }
-        // M52: each stat coloured by its own change — a gain green, a loss coral,
-        // no change in normal text — so a mixed swap (ATK up, SPD down) reads
-        // truthfully instead of the whole line taking one colour.
-        const int dy = infoY + 6 + ui::lineHeight(style::kFontBody);
-        int dx = kListX - 14;
-        ui::drawText("Diff:", dx, dy, style::kFontBody, p.textDim);
-        dx += ui::measureText("Diff:", style::kFontBody) + 6;
-        for (const equip::StatDelta& sd : equip::statDeltas(cand, curBonus)) {
-            const Color segColor =
-                sd.value > 0 ? p.success : (sd.value < 0 ? p.dangerText : p.text);
-            const std::string seg =
-                std::string(sd.tag) + " " + (sd.value > 0 ? "+" : "") + std::to_string(sd.value);
-            ui::drawText(seg, dx, dy, style::kFontBody, segColor);
-            dx += ui::measureText(seg, style::kFontBody) + 8;
-        }
-        // M53: a weapon candidate's element rides a right-aligned chip on the
-        // diff row, where the short stat segments leave the right side free.
-        if (candItem != nullptr && candItem->element != content::Element::None) {
-            ui::drawChipRight(content::elementDisplayName(candItem->element),
-                              kListX - 24 + 352 - 8, dy - 1,
-                              ui::elementAccent(candItem->element, p));
-        } else if (candItem != nullptr) {
-            // M81: a ward charm's whole identity is its resistance, which the
-            // stat diff cannot show — say it where the element chip would sit.
+        // M98 (owner report): an heirloom candidate carries no stat bonus by
+        // design, so the diff row read "HP 0 ATK 0 ..." and said nothing. Its
+        // triggered effect IS the equip decision — show the effect text in the
+        // band instead (the Buy panel's two-line budget; resistance rides the
+        // same text). The worn piece stays visible one step back on the slot
+        // row, so no information is lost.
+        if (candItem != nullptr && candItem->type == content::ItemType::Heirloom) {
+            std::string body = candItem->name + " - " + candItem->description;
             const std::string resist = equip::resistSummary(*candItem);
             if (!resist.empty()) {
-                ui::drawTextRight(resist, kListX - 24 + 352 - 8, dy, style::kFontBody,
-                                  p.textDim);
+                body += "  " + resist;
+            }
+            ui::drawTextWrapped(body, kListX - 14, infoY + 6, 332, style::kFontBody,
+                                p.textDim, "equipshop.heirloom", 2);
+        } else {
+            std::string curLine = "Current: " + curName;
+            const std::string cs = equip::statBonusSummary(curBonus);
+            if (!cs.empty()) {
+                curLine += "  " + cs;
+            }
+            ui::drawTextFitted(curLine, kListX - 14, infoY + 6, 332, style::kFontBody,
+                               p.textDim, "equipshop.current");
+
+            // M52: each stat coloured by its own change — a gain green, a loss
+            // coral, no change in normal text — so a mixed swap (ATK up, SPD
+            // down) reads truthfully instead of the whole line taking one
+            // colour.
+            const int dy = infoY + 6 + ui::lineHeight(style::kFontBody);
+            int dx = kListX - 14;
+            ui::drawText("Diff:", dx, dy, style::kFontBody, p.textDim);
+            dx += ui::measureText("Diff:", style::kFontBody) + 6;
+            for (const equip::StatDelta& sd : equip::statDeltas(cand, curBonus)) {
+                const Color segColor =
+                    sd.value > 0 ? p.success : (sd.value < 0 ? p.dangerText : p.text);
+                const std::string seg = std::string(sd.tag) + " " + (sd.value > 0 ? "+" : "") +
+                                        std::to_string(sd.value);
+                ui::drawText(seg, dx, dy, style::kFontBody, segColor);
+                dx += ui::measureText(seg, style::kFontBody) + 8;
+            }
+            // M53: a weapon candidate's element rides a right-aligned chip on the
+            // diff row, where the short stat segments leave the right side free.
+            if (candItem != nullptr && candItem->element != content::Element::None) {
+                ui::drawChipRight(content::elementDisplayName(candItem->element),
+                                  kListX - 24 + 352 - 8, dy - 1,
+                                  ui::elementAccent(candItem->element, p));
+            } else if (candItem != nullptr) {
+                // M81: a ward charm's whole identity is its resistance, which the
+                // stat diff cannot show — say it where the element chip would sit.
+                const std::string resist = equip::resistSummary(*candItem);
+                if (!resist.empty()) {
+                    ui::drawTextRight(resist, kListX - 24 + 352 - 8, dy, style::kFontBody,
+                                      p.textDim);
+                }
             }
         }
     }

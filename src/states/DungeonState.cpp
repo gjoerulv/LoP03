@@ -21,6 +21,13 @@
 #include "game/Relics.hpp"  // the M44 relic grant (seeded, reload-proof)
 #include "game/WorldLadder.hpp"
 #include "dungeon/DungeonGenerator.hpp"  // M93 patrolTeam
+#include "dungeon/ThemeEvents.hpp"       // M103: resolution-time hashes
+#include "game/Cutscenes.hpp"            // M103: the stranger-story pool
+#include "game/Gamble.hpp"               // M104: the reels + blackjack rules
+#include "game/ScrollTrove.hpp"          // M104: the bald head's scroll pool
+#include "states/BlackjackEventState.hpp"  // M104
+#include "states/CutsceneState.hpp"      // M103: stories play mid-run
+#include "states/EventChoiceState.hpp"   // M103: the events' pick modal
 #include "dungeon/TeamInspect.hpp"  // M88 pre-fight team inspection
 #include "game/ScrollTrove.hpp"      // M92 the Guild's trove
 #include "states/ScrollChoiceState.hpp"
@@ -124,7 +131,9 @@ MusicTrack themeMusic(const std::string& themeId) {
     if (themeId == "crystal_mine") {
         return MusicTrack::DungeonMine;
     }
-    if (themeId == "hollow_forest") {
+    // M106: the Goosy Gauntlet borrows the forest pair (pond-adjacent) until
+    // an owner-directed track of its own lands — noted in the M106 checklist.
+    if (themeId == "hollow_forest" || themeId == "goosy_gauntlet") {
         return MusicTrack::DungeonForest;
     }
     return MusicTrack::DungeonKeep;
@@ -134,8 +143,8 @@ AmbienceTrack themeAmbience(const std::string& themeId) {
     if (themeId == "crystal_mine") {
         return AmbienceTrack::Mine;
     }
-    if (themeId == "hollow_forest") {
-        return AmbienceTrack::Forest;
+    if (themeId == "hollow_forest" || themeId == "goosy_gauntlet") {
+        return AmbienceTrack::Forest;  // M106: pond-adjacent, until its own bed
     }
     return AmbienceTrack::Keep;
 }
@@ -178,10 +187,21 @@ void DungeonState::descendFloor() {
     // M82: one continuous run — run_ and victoryStats_ keep accumulating; only
     // the floor swaps. Descent is one-way (the spent floor is left moved-from).
     const int next = dungeon_.floorIndex + 1;
-    if (next >= static_cast<int>(floors_.size())) {
-        return;  // defensive: the last floor has no stairway
+    if (dungeon_.eternal) {
+        // M105: the endless descent generates its next floor ON DEMAND from
+        // the same per-floor sub-seed rule — deterministic at any depth, so a
+        // reload-from-entry replays the identical staircase of floors.
+        floors_.clear();
+        floors_.push_back(dungeon::generateEternalFloor(
+            dungeon_.runSeed, next, context_.content, dungeon_.themeId, dungeon_.town));
+        dungeon_ = std::move(floors_.front());
+        floors_.clear();
+    } else {
+        if (next >= static_cast<int>(floors_.size())) {
+            return;  // defensive: the last floor has no stairway
+        }
+        dungeon_ = std::move(floors_[static_cast<std::size_t>(next)]);
     }
-    dungeon_ = std::move(floors_[static_cast<std::size_t>(next)]);
     layouts_ = dungeon::realizeAllRooms(dungeon_);
     rebuildTiers();
     chartFound_ = false;  // M66 state is per floor (each floor rolls its own chart)
@@ -189,7 +209,9 @@ void DungeonState::descendFloor() {
     context_.audio.play(Sfx::Door);
     context_.fade.start();
     enterRoom(dungeon_.startRoom, std::nullopt);
-    message_ = TextFormat("Floor %d of %d", dungeon_.floorIndex + 1, dungeon_.floorCount);
+    message_ = dungeon_.eternal
+                   ? TextFormat("Eternal - Floor %d", dungeon_.floorIndex + 1)
+                   : TextFormat("Floor %d of %d", dungeon_.floorIndex + 1, dungeon_.floorCount);
     messageTimer_ = scaledMessageTime(context_, 2.5f);
 }
 
@@ -667,6 +689,300 @@ void DungeonState::resolveEvent() {
             showOutcome(outcomeTitleFor(context_, ev.kind),
                         "You pocket a free-rest token - redeem it at the inn.");
             break;
+        case dungeon::RoomEventKind::GoosePolymorph: {
+            // M103 (owner event 1): ONE random non-goose member waddles for the
+            // rest of the run, +100 score stated up front. Party-state gates
+            // live here at interaction (never at generation): all geese means
+            // the pact cannot complete, and the event is not spent.
+            if (!anyNonGoose(context_.party)) {
+                context_.audio.play(Sfx::Error);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The pond spirit looks the party over: geese, geese, geese, "
+                            "and a goose. It seems professionally embarrassed.");
+                return;
+            }
+            std::vector<int> eligible;
+            for (int i = 0; i < static_cast<int>(context_.party.members.size()); ++i) {
+                if (!isGoose(context_.party.members[static_cast<std::size_t>(i)])) {
+                    eligible.push_back(i);
+                }
+            }
+            constexpr std::uint64_t kSaltGooseMemberPick = 0x6005EF0270CA0902ull;
+            const std::uint64_t pick =
+                dungeon::themeEventHash(dungeon_.seed, currentRoom_, kSaltGooseMemberPick);
+            const int idx = eligible[static_cast<std::size_t>(pick % eligible.size())];
+            gooseformStash_ = enterGooseform(context_.party, idx, context_.content);
+            if (gooseformStash_.memberIndex < 0) {
+                context_.audio.play(Sfx::Error);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The pact fizzles - the realm has misplaced its geese.");
+                return;  // malformed content: never spend the event
+            }
+            run_.goosePolymorphs += 1;
+            context_.audio.play(Sfx::Status);
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        context_.party.members[static_cast<std::size_t>(idx)].name +
+                            " is a goose now. For the rest of the descent. +100 score, "
+                            "as promised. Honk.");
+            break;
+        }
+        case dungeon::RoomEventKind::Sacrifice: {
+            // M103 (owner event 4): one BAG equipment piece burns for double XP
+            // in the NEXT battle. Worn gear and heirlooms are out of reach; an
+            // empty offering or a still-glowing forge refuses without spending.
+            if (context_.party.doubleXpNext) {
+                context_.audio.play(Sfx::Error);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The forge still glows with your last offering.");
+                return;
+            }
+            std::vector<std::string> ids;
+            for (const ItemStack& s : context_.party.inventory.stacks) {
+                const content::ItemDef* it = context_.content.findItem(s.itemId);
+                if (it != nullptr && it->type == content::ItemType::Equipment && s.count > 0) {
+                    ids.push_back(s.itemId);
+                }
+            }
+            std::sort(ids.begin(), ids.end());
+            if (ids.empty()) {
+                context_.audio.play(Sfx::Error);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The forge wants unworn gear from the bag - you carry none.");
+                return;
+            }
+            std::vector<std::string> rows;
+            for (const std::string& id : ids) {
+                const content::ItemDef* it = context_.content.findItem(id);
+                rows.push_back((it != nullptr ? it->name : id) + "  x" +
+                               std::to_string(context_.party.inventory.count(id)));
+            }
+            stack().pushState(std::make_unique<EventChoiceState>(
+                stack(), context_, "Offer which piece? It will be gone.", std::move(rows),
+                [this, &ev, ids](int i) {
+                    if (i < 0 || i >= static_cast<int>(ids.size())) {
+                        return;
+                    }
+                    const content::ItemDef* it = context_.content.findItem(ids[static_cast<std::size_t>(i)]);
+                    context_.party.inventory.remove(ids[static_cast<std::size_t>(i)], 1);
+                    context_.party.doubleXpNext = true;
+                    ev.resolved = true;
+                    context_.audio.play(Sfx::Interact);
+                    showOutcome(
+                        outcomeTitleFor(context_, dungeon::RoomEventKind::Sacrifice),
+                        (it != nullptr ? it->name : std::string("The offering")) +
+                            " melts to nothing. The NEXT battle pays DOUBLE XP.");
+                }));
+            return;  // the modal owns resolution
+        }
+        case dungeon::RoomEventKind::LevelAltar: {
+            // M103 (owner event 5): one member levels up on the spot; the altar
+            // drinks their MP to zero. At the cap it does nothing but talk.
+            std::vector<std::string> rows;
+            for (const Character& m : context_.party.members) {
+                rows.push_back(m.name + "  (Lv " + std::to_string(m.level) + ")");
+            }
+            stack().pushState(std::make_unique<EventChoiceState>(
+                stack(), context_, "Who steps onto the altar?", std::move(rows),
+                [this, &ev](int i) {
+                    if (i < 0 || i >= static_cast<int>(context_.party.members.size())) {
+                        return;
+                    }
+                    Character& c = context_.party.members[static_cast<std::size_t>(i)];
+                    if (c.level >= kMaxLevel) {
+                        ev.resolved = true;  // spent either way (owner: a dry line)
+                        context_.audio.play(Sfx::Cancel);
+                        showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::LevelAltar),
+                                    c.name + " is already everything they can be. The altar "
+                                             "hums a while, then pretends it was testing you.");
+                        return;
+                    }
+                    grantXp(c, xpToNext(c.level) - c.xp, context_.content);  // exactly one level
+                    c.mp = 0;
+                    ev.resolved = true;
+                    context_.audio.play(Sfx::Interact);
+                    showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::LevelAltar),
+                                c.name + " rises to Lv " + std::to_string(c.level) +
+                                    " - and every drop of their MP is the price.");
+                }));
+            return;  // the modal owns resolution
+        }
+        case dungeon::RoomEventKind::StrangerStory: {
+            // M103 (owner event 6): a tale from THE STRANGER "P" (a seeded pick
+            // from the story pool), then 20 MP for a chosen member. The choice
+            // is pushed FIRST so the story plays above it and pops back onto it.
+            std::vector<std::string> rows;
+            for (const Character& m : context_.party.members) {
+                rows.push_back(m.name + "  (MP " + std::to_string(m.mp) + "/" +
+                               std::to_string(m.maxMp) + ")");
+            }
+            stack().pushState(std::make_unique<EventChoiceState>(
+                stack(), context_, "The stranger offers 20 MP. To whom?", std::move(rows),
+                [this, &ev](int i) {
+                    if (i < 0 || i >= static_cast<int>(context_.party.members.size())) {
+                        return;
+                    }
+                    Character& c = context_.party.members[static_cast<std::size_t>(i)];
+                    c.mp = std::min(c.maxMp, c.mp + 20);
+                    ev.resolved = true;
+                    context_.audio.play(Sfx::Heal);
+                    showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::StrangerStory),
+                                c.name + " feels 20 MP wiser. When you look up, the "
+                                         "stranger was never here.");
+                }));
+            const std::vector<std::string> stories = game::strangerStoryIds(context_.content);
+            if (!stories.empty()) {
+                constexpr std::uint64_t kSaltStoryPick = 0x57012A9E20050402ull;
+                const std::uint64_t pick =
+                    dungeon::themeEventHash(dungeon_.seed, currentRoom_, kSaltStoryPick);
+                stack().pushState(std::make_unique<CutsceneState>(
+                    stack(), context_, stories[static_cast<std::size_t>(pick % stories.size())],
+                    /*replay=*/true));
+            }
+            return;  // the modal owns resolution
+        }
+        case dungeon::RoomEventKind::TokenExchange: {
+            // M103 (owner event 7): 1 legendary token for 3 rest tokens or 1 map
+            // piece. No token, no trade - and nothing is spent.
+            if (context_.party.legendaryTokens < 1) {
+                context_.audio.play(Sfx::Error);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The changer wants a legendary token. You have none. The "
+                            "changer already knew that, and says nothing kindly.");
+                return;
+            }
+            stack().pushState(std::make_unique<EventChoiceState>(
+                stack(), context_, "One legendary token buys...",
+                std::vector<std::string>{"3 rest tokens", "1 map piece"},
+                [this, &ev](int i) {
+                    context_.party.legendaryTokens -= 1;
+                    ev.resolved = true;
+                    context_.audio.play(Sfx::Interact);
+                    if (i == 0) {
+                        context_.party.restTokens += 3;
+                        showOutcome(
+                            outcomeTitleFor(context_, dungeon::RoomEventKind::TokenExchange),
+                            "Three free-rest tokens, minted and pocketed. The inn will "
+                            "be thrilled.");
+                        return;
+                    }
+                    // The map-piece grant rides the shared M83 rule, at THIS
+                    // dungeon's own boss scale (the pickup path's precedent).
+                    int bossScale = 100;
+                    for (const dungeon::EnemyTeam& t : dungeon_.teams) {
+                        if (t.isBoss) {
+                            bossScale = t.statScalePct;
+                            break;
+                        }
+                    }
+                    if (grantMapPiece(context_.party.mapPieces, context_.party.treasure,
+                                      dungeon_.town, context_.content, dungeon_.seed,
+                                      bossScale)) {
+                        showOutcome(
+                            outcomeTitleFor(context_, dungeon::RoomEventKind::TokenExchange),
+                            TextFormat("The final map piece! The treasure lies buried in "
+                                       "Town %d - and something guards it.",
+                                       context_.party.treasure.town));
+                    } else {
+                        showOutcome(
+                            outcomeTitleFor(context_, dungeon::RoomEventKind::TokenExchange),
+                            TextFormat("A map piece changes hands (%d/%d).",
+                                       context_.party.mapPieces, kMapPiecesNeeded));
+                    }
+                }));
+            return;  // the modal owns resolution
+        }
+        case dungeon::RoomEventKind::PatrolReset: {
+            // M103 (owner event 8): the fuse rewinds to its full 100 steps.
+            dangerSteps_ = kDangerStepsPerPatrol;
+            context_.audio.play(Sfx::Interact);
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "The patrols lose your scent entirely. The counter stands at "
+                        "100 again - walk softly anyway.");
+            break;
+        }
+        case dungeon::RoomEventKind::Reels: {
+            // M104 (owner event 2): a ONE-SHOT machine — 1 spin for 10g or 3
+            // for 70g (the bundle IS the joke, verbatim prices), then it is
+            // gone however the reels land. Spins are pure hashes; prizes hold
+            // every cap and banking rule they touch.
+            if (context_.party.gold < gamble::kReelOneSpinGold) {
+                context_.audio.play(Sfx::Error);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The machine wants 10g for a spin. It does not do credit.");
+                return;
+            }
+            stack().pushState(std::make_unique<EventChoiceState>(
+                stack(), context_, "The reels take gold and give... something.",
+                std::vector<std::string>{"1 spin  -  10g",
+                                         "3 spins - 70g (the deal of a lifetime)"},
+                [this, &ev](int i) {
+                    const int cost =
+                        i == 0 ? gamble::kReelOneSpinGold : gamble::kReelThreeSpinGold;
+                    const int spins = i == 0 ? 1 : 3;
+                    if (context_.party.gold < cost) {
+                        context_.audio.play(Sfx::Error);
+                        showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::Reels),
+                                    "Not enough for that one. The machine looks unsurprised.");
+                        return;  // nothing spent; the machine waits
+                    }
+                    context_.party.gold -= cost;
+                    ev.resolved = true;  // one play, win or lose (owner rule)
+                    std::string body;
+                    bool anyMatch = false;
+                    for (int s = 0; s < spins; ++s) {
+                        const std::array<gamble::ReelSymbol, 3> reel =
+                            gamble::reelSpin(dungeon_.seed, currentRoom_, s);
+                        body += std::string("[ ") + gamble::reelSymbolName(reel[0]) + " | " +
+                                gamble::reelSymbolName(reel[1]) + " | " +
+                                gamble::reelSymbolName(reel[2]) + " ]\n";
+                        const int m = gamble::reelMatch(reel);
+                        if (m >= 0) {
+                            anyMatch = true;
+                            body += applyReelPrize(m) + "\n";
+                        }
+                    }
+                    if (!anyMatch) {
+                        body += "No match. The machine hums, deeply satisfied with itself.";
+                    }
+                    context_.audio.play(Sfx::Chest);
+                    showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::Reels),
+                                std::move(body));
+                }));
+            return;  // the modal owns resolution
+        }
+        case dungeon::RoomEventKind::Blackjack: {
+            // M104 (owner event 3): bet gold on one seeded hand — a win pays
+            // the bet back doubled, a push returns it, a loss keeps it.
+            if (context_.party.gold < gamble::kBlackjackBets[0]) {
+                context_.audio.play(Sfx::Error);
+                showOutcome(outcomeTitleFor(context_, ev.kind),
+                            "The table minimum is " +
+                                std::to_string(gamble::kBlackjackBets[0]) +
+                                "g. The dealer looks through you.");
+                return;
+            }
+            std::vector<int> bets;
+            std::vector<std::string> rows;
+            for (int b : gamble::kBlackjackBets) {
+                if (context_.party.gold >= b) {
+                    bets.push_back(b);
+                    rows.push_back("Bet " + std::to_string(b) + "g");
+                }
+            }
+            stack().pushState(std::make_unique<EventChoiceState>(
+                stack(), context_, "The dealer waits. Your bet?", std::move(rows),
+                [this, &ev, bets](int i) {
+                    if (i < 0 || i >= static_cast<int>(bets.size()) ||
+                        context_.party.gold < bets[static_cast<std::size_t>(i)]) {
+                        return;
+                    }
+                    const int bet = bets[static_cast<std::size_t>(i)];
+                    context_.party.gold -= bet;  // the stake rides
+                    stack().pushState(std::make_unique<BlackjackEventState>(
+                        stack(), context_, bet, dungeon_.seed, currentRoom_, &ev));
+                }));
+            return;  // the hand owns resolution
+        }
         case dungeon::RoomEventKind::RoyalRelic: {
             // M44: which relic is granted is decided HERE, at resolution, from a
             // pure hash of (dungeon seed, room index) and what the party already
@@ -800,6 +1116,17 @@ void DungeonState::resolveEvent() {
             showOutcome(outcomeTitleFor(context_, ev.kind),
                         "Scales itch under your skin. The NEXT battle is fought in "
                         "dragonform - and the reckoning docks 100 score.");
+            break;
+        }
+        case dungeon::RoomEventKind::GoosyFlock: {
+            // M106 (owner rite): the WHOLE party fights the next battle as
+            // Geese, +300 score stated up front — the dragonform contract with
+            // the sign flipped and feathers on.
+            gooseFlockArmed_ = true;
+            context_.audio.play(Sfx::Status);
+            showOutcome(outcomeTitleFor(context_, ev.kind),
+                        "Feathers. Everywhere. The NEXT battle is fought as one "
+                        "flock of geese - and the reckoning pays 300 score.");
             break;
         }
         case dungeon::RoomEventKind::EliteChallenge:
@@ -1000,6 +1327,44 @@ std::string DungeonState::eventPromptText() const {
             return input::prompt(map, InputAction::Confirm, device,
                                  "Feed the Elder Root " + std::to_string(ev.goldCost) + "g") +
                    " - the whole party gains XP (no fight)";
+        case dungeon::RoomEventKind::GoosePolymorph:
+            if (!anyNonGoose(context_.party)) {
+                return "A pond spirit sizes up the party - but every one of you is "
+                       "already a goose. It cannot help.";
+            }
+            return input::prompt(map, InputAction::Confirm, device, "Accept the pact") +
+                   " - a RANDOM member is a goose for the rest of the run, +100 score";
+        case dungeon::RoomEventKind::Sacrifice:
+            return input::prompt(map, InputAction::Confirm, device, "Approach the forge") +
+                   " - burn one bag equipment piece: the NEXT battle pays double XP";
+        case dungeon::RoomEventKind::LevelAltar:
+            return input::prompt(map, InputAction::Confirm, device, "Step to the altar") +
+                   " - one member gains a level, and their MP drops to zero";
+        case dungeon::RoomEventKind::StrangerStory:
+            return input::prompt(map, InputAction::Confirm, device, "Hear the stranger out") +
+                   " - a story, then 20 MP for a member of your choosing";
+        case dungeon::RoomEventKind::TokenExchange:
+            if (context_.party.legendaryTokens < 1) {
+                return "The changer trades 1 legendary token for 3 rest tokens or a map "
+                       "piece - you have no token.";
+            }
+            return input::prompt(map, InputAction::Confirm, device, "Trade a legendary token") +
+                   " - for 3 rest tokens, or 1 map piece";
+        case dungeon::RoomEventKind::PatrolReset:
+            return input::prompt(map, InputAction::Confirm, device, "Scatter your trail") +
+                   " - the patrol counter resets to 100";
+        case dungeon::RoomEventKind::Reels:
+            if (context_.party.gold < gamble::kReelOneSpinGold) {
+                return "A gaudy machine offers spins - 10g each, and you cannot pay.";
+            }
+            return input::prompt(map, InputAction::Confirm, device, "Try the reels") +
+                   " - 1 spin for 10g, or 3 for 70g; three of a kind pays";
+        case dungeon::RoomEventKind::Blackjack:
+            if (context_.party.gold < gamble::kBlackjackBets[0]) {
+                return "A card table stands here - the 10g minimum is beyond you.";
+            }
+            return input::prompt(map, InputAction::Confirm, device, "Sit at the table") +
+                   " - bet gold on one hand; a win pays it back doubled";
         case dungeon::RoomEventKind::DuckPeddler:
             // M76: the decline is stated up front — the trade-off bar (M20)
             // covers refusals too.
@@ -1030,6 +1395,12 @@ std::string DungeonState::eventPromptText() const {
             }
             return input::prompt(map, InputAction::Confirm, device, "Accept dragonform") +
                    " - fight the NEXT battle as Dragons, -100 score";
+        case dungeon::RoomEventKind::GoosyFlock:  // M106 (owner: flat +300 score)
+            if (gooseFlockArmed_) {
+                return "The feathers are already sprouting - the next battle honks.";
+            }
+            return input::prompt(map, InputAction::Confirm, device, "Join the flock") +
+                   " - the WHOLE party fights the NEXT battle as Geese, +300 score";
         case dungeon::RoomEventKind::None:
             break;
     }
@@ -1056,6 +1427,12 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     if (dragonformArmed_) {
         dragonformArmed_ = false;
         dragonformStash_ = enterDragonform(context_.party, context_.content);
+    } else if (gooseFlockArmed_) {
+        // M106: the flock waddles into THIS battle on the same contract. When
+        // both transforms are armed, the scales take the first fight and the
+        // feathers wait for the next — one transformation per battle.
+        gooseFlockArmed_ = false;
+        gooseFlockStash_ = enterFlockGooseform(context_.party, context_.content);
     }
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
     // M56: every battle wears the theme backdrop; a boss-team fight (bossId set)
@@ -1119,6 +1496,13 @@ void DungeonState::onResume() {
         leaveDragonform(context_.party, dragonformStash_);
         dragonformStash_.original.clear();
         ++dragonformFights_;
+    }
+    // M106: a flock battle ended — the same restore, the same rules (KO stays
+    // KO), the +300 counted for the reckoning.
+    if (!gooseFlockStash_.original.empty()) {
+        leaveDragonform(context_.party, gooseFlockStash_);
+        gooseFlockStash_.original.clear();
+        ++gooseFlockFights_;
     }
 
     // Returning from a battle: fade in and restore the dungeon music *and*
@@ -1223,11 +1607,136 @@ void DungeonState::onResume() {
         room.teamIndex = -1;
         dungeon_.stairsOpen = true;
         buildRoom();
-        message_ = "The Stairway Wardens fall - the way down stands open.";
+        if (dungeon_.eternal) {
+            // M105: a felled floor-boss IS the record unit; the best sticks to
+            // the party immediately (it persists with the next town save).
+            ++eternalFloorsCleared_;
+            context_.party.eternalBestFloors =
+                std::max(context_.party.eternalBestFloors, eternalFloorsCleared_);
+            message_ = TextFormat("Floor %d falls. The way down stands open. It always does.",
+                                  eternalFloorsCleared_);
+        } else {
+            message_ = "The Stairway Wardens fall - the way down stands open.";
+        }
         messageTimer_ = scaledMessageTime(context_, 2.5f);
     } else if (kind == EncounterKind::Boss) {
         completeDungeon();
     }
+}
+
+std::string DungeonState::applyReelPrize(int symbolIndex) {
+    // M104: one three-of-a-kind, applied per the owner's table. Gold from the
+    // machine is plain gold (never score treasure — a gamble is not a chest).
+    using gamble::ReelSymbol;
+    Party& p = context_.party;
+    switch (static_cast<ReelSymbol>(symbolIndex)) {
+        case ReelSymbol::TaxPapers: {
+            const int owed = std::min(100, p.gold);
+            p.gold -= owed;
+            return "Three tax papers. You owe 100g, effective immediately. Collected: " +
+                   std::to_string(owed) + "g.";
+        }
+        case ReelSymbol::GooseHead: {
+            // A goose joke, then equipment TIERED TO THIS TOWN (owner: what is
+            // NEW at this town's shelves), never legendary.
+            constexpr const char* kGooseJokes[] = {
+                "Why did the goose cross the dungeon? Audit season.",
+                "A goose walks into an armory. The armorer leaves. Everybody wins.",
+                "What do you call a goose with a map? Lost, but with conviction.",
+            };
+            const std::uint64_t jh = dungeon::themeEventHash(dungeon_.seed, currentRoom_,
+                                                             0x600553C4113C0801ull);
+            std::string line = std::string(kGooseJokes[jh % 3]) + " ";
+            std::vector<std::string> pool;
+            for (const auto& [id, def] : context_.content.items()) {
+                if (def.type == content::ItemType::Equipment &&
+                    def.rarity != content::Rarity::Legendary && def.minTown == dungeon_.town) {
+                    pool.push_back(id);
+                }
+            }
+            if (pool.empty()) {  // town 1 fallback: anything this town stocks
+                for (const auto& [id, def] : context_.content.items()) {
+                    if (def.type == content::ItemType::Equipment &&
+                        def.rarity != content::Rarity::Legendary &&
+                        def.availableAtTown(dungeon_.town)) {
+                        pool.push_back(id);
+                    }
+                }
+            }
+            if (pool.empty()) {
+                p.gold += 200;
+                return line + "The prize tray is empty; 200g rolls out instead.";
+            }
+            std::sort(pool.begin(), pool.end());
+            const std::uint64_t ph = dungeon::themeEventHash(dungeon_.seed, currentRoom_,
+                                                             0x600553C4113C0802ull);
+            const std::string& id = pool[static_cast<std::size_t>(ph % pool.size())];
+            p.inventory.add(id, 1);
+            const content::ItemDef* it = context_.content.findItem(id);
+            return line + "Also: " + (it != nullptr ? it->name : id) + ".";
+        }
+        case ReelSymbol::Spoon:
+        case ReelSymbol::Crown: {
+            const char* id = static_cast<ReelSymbol>(symbolIndex) == ReelSymbol::Spoon
+                                 ? "deadly_spoon"
+                                 : "dragon_crown";
+            const content::ItemDef* it = context_.content.findItem(id);
+            const int capBonus = guildCapBonus(p.guild);
+            if (it == nullptr || !canBuyMore(p.inventory, *it, capBonus)) {
+                return std::string("Three of the ") +
+                       (it != nullptr ? it->name : std::string(id)) +
+                       " - but you hold the maximum. The machine keeps it, smugly.";
+            }
+            p.inventory.add(id, 1);
+            return std::string("A ") + it->name + " drops into the tray. Mind it.";
+        }
+        case ReelSymbol::RedX: {
+            int bossScale = 100;
+            for (const dungeon::EnemyTeam& t : dungeon_.teams) {
+                if (t.isBoss) {
+                    bossScale = t.statScalePct;
+                    break;
+                }
+            }
+            if (grantMapPiece(p.mapPieces, p.treasure, dungeon_.town, context_.content,
+                              dungeon_.seed, bossScale)) {
+                return TextFormat("A map piece - the FINAL one! The treasure lies in Town %d.",
+                                  p.treasure.town);
+            }
+            return TextFormat("A map piece slides out (%d/%d).", p.mapPieces, kMapPiecesNeeded);
+        }
+        case ReelSymbol::BaldHead: {
+            // The one sanctioned in-dungeon scroll source (owner interview) —
+            // drawn from the trove's own "normal" pool.
+            const std::vector<std::string> pool = scrollTrovePool(context_.content);
+            if (pool.empty()) {
+                p.gold += 200;
+                return "The bald stranger has run out of scrolls; 200g of apology instead.";
+            }
+            const std::uint64_t h = dungeon::themeEventHash(dungeon_.seed, currentRoom_,
+                                                            0x600553C4113C0803ull);
+            const std::string& id = pool[static_cast<std::size_t>(h % pool.size())];
+            p.inventory.add(id, 1);
+            const content::ItemDef* it = context_.content.findItem(id);
+            return std::string("The bald stranger nods once: ") +
+                   (it != nullptr ? it->name : id) + ". Teach it from the Party panel.";
+        }
+        case ReelSymbol::Seven: {
+            p.gold += 1000;
+            return "SEVEN SEVEN SEVEN. One thousand gold, and the machine's grudging respect.";
+        }
+    }
+    return "";
+}
+
+void DungeonState::onExit() {
+    // M103: every way out of a run — boss victory, retreat, wipe, quit —
+    // removes this state, so the goosed member is restored exactly once (XP
+    // and levels waddled for carried back) and an unspent double-XP pact can
+    // never leak into town.
+    leaveGooseform(context_.party, gooseformStash_, context_.content);
+    gooseformStash_ = GooseformStash{};
+    context_.party.doubleXpNext = false;
 }
 
 void DungeonState::completeDungeon() {
@@ -1241,6 +1750,7 @@ void DungeonState::completeDungeon() {
     summary.noDeath = run_.noDeath;
     summary.escapes = run_.escapes;
     summary.wagerAccepted = run_.wagerAccepted;
+    summary.goosePolymorphs = run_.goosePolymorphs;  // M103: +100 each, itemized
     summary.townBonusPct = townScoreBonusPct(dungeon_.town);  // M32 town ladder
     // M33: the stakes penalty this run incurs is a function of the PRE-run stakes
     // state (unchanged since the Guild forewarned it), so compute it before the
@@ -1253,6 +1763,7 @@ void DungeonState::completeDungeon() {
     summary.classModPct = partyClassModPct(context_.party, context_.content);
     // M93: dragonform pacts fought this run (a flat -100 each, owner decision 6).
     summary.dragonformFights = dragonformFights_;
+    summary.gooseFlockFights = gooseFlockFights_;  // M106: +300 each, itemized
     // M34: whether this run raises the stakes (the black-market spawn trigger),
     // read from the PRE-run state before it advances below.
     const bool raisedStakes =
@@ -1982,6 +2493,11 @@ void DungeonState::render() {
         // aware of the countdown") — urgent color inside the last stretch.
         cx += ui::drawChip(TextFormat("Patrol %d", dangerSteps_), cx, 4,
                            dangerSteps_ <= 20 ? pal.danger : pal.borderMid) + 4;
+        // M105: the endless descent wears its floor on its sleeve.
+        if (dungeon_.eternal) {
+            cx += ui::drawChip(TextFormat("Eternal %d", dungeon_.floorIndex + 1), cx, 4,
+                               pal.crystal) + 4;
+        }
         // M93: the armed dragonform, until its battle spends it.
         if (dragonformArmed_) {
             cx += ui::drawChip("Dragonform: next battle", cx, 4, pal.danger) + 4;

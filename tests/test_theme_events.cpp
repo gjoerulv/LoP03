@@ -12,6 +12,10 @@
 #include "dungeon/DungeonModel.hpp"
 #include "dungeon/RoomLayout.hpp"
 #include "dungeon/ThemeEvents.hpp"
+#include "game/Castle.hpp"     // M106: bossRushOrder — the rush inclusion pin
+#include "game/Gooseform.hpp"  // M106: the flock transform
+#include "game/Party.hpp"
+#include "score/Scoring.hpp"   // M106: the +300 itemization
 
 // M55 per-theme rites: the generator guarantees exactly one theme rite per themed
 // dungeon and never a cross-theme one; the pure helpers (tier-up, cache, root)
@@ -219,3 +223,86 @@ TEST_CASE("theme rites: Elder Root price is affordable and its XP is elite-battl
 }
 
 #endif  // CRYSTAL_TEST_DATA_DIR
+
+// ============================ M106: the Goosy Gauntlet ========================
+
+TEST_CASE("goosy: the theme ships town-gated with its own roster", "[goosy][m106]") {
+    const content::ContentDatabase db = loadContent();
+    const content::DungeonThemeDef* goosy = db.findTheme("goosy_gauntlet");
+    REQUIRE(goosy != nullptr);
+    CHECK(goosy->minTown == 7);
+    // Every classic theme stays everywhere (the loader default).
+    CHECK(db.findTheme("ruined_keep")->minTown == 1);
+    CHECK(db.findTheme("crystal_mine")->minTown == 1);
+    CHECK(db.findTheme("hollow_forest")->minTown == 1);
+    // The three new bosses are town-7-gated, never Guild Masters, and join
+    // the rush roster (the owner's ask).
+    const std::vector<std::string> rush = bossRushOrder(db);
+    for (const char* id : {"the_gray_gander", "mother_of_ponds", "the_pondlord"}) {
+        INFO(id);
+        const content::BossDef* b = db.findBoss(id);
+        REQUIRE(b != nullptr);
+        CHECK(b->minTown == 7);
+        CHECK(b->guildTown == 0);
+        CHECK(std::find(rush.begin(), rush.end(), std::string(id)) != rush.end());
+    }
+}
+
+TEST_CASE("goosy: a goosy dungeon opens with the Flock rite and goosy bosses",
+          "[goosy][m106]") {
+    const content::ContentDatabase db = loadContent();
+    const content::DungeonThemeDef* goosy = db.findTheme("goosy_gauntlet");
+    REQUIRE(goosy != nullptr);
+    int rites = 0;
+    for (std::uint64_t seed : {3ull, 33ull, 333ull, 3333ull}) {
+        const dungeon::Dungeon d = dungeon::generate(seed, 8, db, "goosy_gauntlet", 7);
+        // The boss comes from the goosy list.
+        bool bossListed = false;
+        for (const dungeon::EnemyTeam& t : d.teams) {
+            if (t.isBoss) {
+                bossListed = std::find(goosy->bosses.begin(), goosy->bosses.end(), t.bossId) !=
+                             goosy->bosses.end();
+            }
+        }
+        CHECK(bossListed);
+        for (const dungeon::Room& r : d.rooms) {
+            if (r.event.kind == dungeon::RoomEventKind::GoosyFlock) {
+                ++rites;
+            }
+        }
+    }
+    CHECK(rites == 4);  // the guaranteed M55 first-slot rite, every dungeon
+}
+
+TEST_CASE("goosy: the flock turns everyone and turns everyone back", "[goosy][m106]") {
+    const content::ContentDatabase db = loadContent();
+    Party p;
+    p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan", 20));
+    p.members.push_back(createCharacter(*db.findClass("mage"), "Mira", 20));
+    p.members[0].equippedHeirloom = "heirloom_hearthstone";
+    refreshCharacter(p.members[0], db);
+    const int mageMaxBefore = p.members[1].maxHp;
+
+    const DragonformStash stash = enterFlockGooseform(p, db);
+    REQUIRE(stash.original.size() == 2);
+    for (const Character& m : p.members) {
+        CHECK(m.classId == "goose");
+    }
+    CHECK(p.members[0].equippedHeirloom == "heirloom_hearthstone");  // memories stay
+    p.members[1].hp = 0;  // the mage-goose falls
+    leaveDragonform(p, stash);
+    CHECK(p.members[0].classId == "knight");
+    CHECK(p.members[1].classId == "mage");
+    CHECK(p.members[1].hp == 0);              // KO maps to KO
+    CHECK(p.members[1].maxHp == mageMaxBefore);
+}
+
+TEST_CASE("goosy: flock battles pay +300 each, itemized", "[goosy][m106]") {
+    score::RunSummary run;
+    run.completed = true;
+    run.battleTurns = 20;
+    const int base = score::computeScore(run);
+    run.gooseFlockFights = 1;
+    CHECK(score::computeScore(run) == base + 300);
+    CHECK(score::scoreBreakdown(run).gooseFlock == 300);
+}

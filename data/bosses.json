@@ -186,6 +186,48 @@
       "description": "The seventh town's dread ruler, master of every affliction."
     },
     {
+      "id": "the_gray_gander",
+      "name": "The Gray Gander",
+      "archetype": "brute",
+      "stats": { "hp": 380, "attack": 28, "magic": 0, "defense": 16, "speed": 11 },
+      "skills": ["power_smash", "battle_cry", "whirlwind"],
+      "minions": ["evil_goose_vanguard", "evil_goose_bogfeather"],
+      "passives": ["iron_will"],
+      "minTown": 7,
+      "telegraph": "The Gander unfolds to its full height. The pond goes very quiet.",
+      "xpReward": 280,
+      "goldReward": 190,
+      "description": "The oldest goose on the water, and the angriest."
+    },
+    {
+      "id": "mother_of_ponds",
+      "name": "The Mother of Ponds",
+      "archetype": "sorcerer",
+      "stats": { "hp": 360, "attack": 12, "magic": 28, "defense": 15, "speed": 12 },
+      "skills": ["frost_lance", "group_mend", "blizzard", "silence"],
+      "minions": ["evil_goose_mender", "evil_goose_hexwing"],
+      "passives": ["spell_ward"],
+      "minTown": 7,
+      "telegraph": "The Mother counts her goslings. You are not one of them.",
+      "xpReward": 280,
+      "goldReward": 190,
+      "description": "Every pond answers to somebody. They answer to her."
+    },
+    {
+      "id": "the_pondlord",
+      "name": "The Pondlord",
+      "archetype": "commander",
+      "stats": { "hp": 420, "attack": 24, "magic": 10, "defense": 17, "speed": 10 },
+      "skills": ["power_smash", "battle_cry", "guard_aura"],
+      "minions": ["evil_goose_trickster", "evil_goose_vanguard"],
+      "passives": ["counter_attack"],
+      "minTown": 7,
+      "telegraph": "The Pondlord surveys its reeds like a general. The reeds salute.",
+      "xpReward": 290,
+      "goldReward": 200,
+      "description": "A waterfowl with territorial ambitions and the beak to back them."
+    },
+    {
       "id": "the_hollow_king",
       "name": "The Hollow King",
       "archetype": "brute",

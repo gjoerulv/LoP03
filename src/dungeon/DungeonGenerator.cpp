@@ -86,6 +86,13 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
         if (def.value <= 0) {
             continue;
         }
+        // M102 (owner decision, generation v18): skill scrolls left the dungeon
+        // shelves — no chest and no peddler offers one. Scrolls now come from
+        // the Guild's trove (M92), the town treasure digs (M65/M83), and the
+        // one sanctioned gamble (the M104 reels event). Nothing else.
+        if (def.type == content::ItemType::Scroll) {
+            continue;
+        }
         p.items.push_back(id);
         if (def.type == content::ItemType::Consumable) {
             p.consumables.push_back(id);
@@ -607,28 +614,61 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
 
         // M93 (generation v17): Dragonform — the same pure-hash replacement
         // contract on its own salts. The eligible list is re-collected so a
-        // slot the peddler just took is never taken twice.
-        plainEventRooms.clear();
-        for (std::size_t ri = 0; ri < d.rooms.size(); ++ri) {
-            const RoomEventKind k = d.rooms[ri].event.kind;
-            if (d.rooms[ri].type != RoomType::Event) {
-                continue;
+        // slot the peddler just took is never taken twice. M103 (generation
+        // v19) draws six more kinds sequentially on the exact same rule, so
+        // no two replacements can ever share a room.
+        const auto recollectPlain = [&]() {
+            plainEventRooms.clear();
+            for (std::size_t ri = 0; ri < d.rooms.size(); ++ri) {
+                const RoomEventKind k = d.rooms[ri].event.kind;
+                if (d.rooms[ri].type != RoomType::Event) {
+                    continue;
+                }
+                if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
+                    k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
+                    k == RoomEventKind::RestToken) {
+                    plainEventRooms.push_back(static_cast<int>(ri));
+                }
             }
-            if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
-                k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
-                k == RoomEventKind::RestToken) {
-                plainEventRooms.push_back(static_cast<int>(ri));
+        };
+        const auto applyReplacement = [&](int slot, RoomEventKind kind) {
+            if (slot >= 0) {
+                RoomEvent& ev =
+                    d.rooms[static_cast<std::size_t>(
+                                plainEventRooms[static_cast<std::size_t>(slot)])]
+                        .event;
+                ev.kind = kind;
+                ev.goldCost = 0;
             }
-        }
-        const int dfSlot = dragonformSlot(seed, static_cast<int>(plainEventRooms.size()));
-        if (dfSlot >= 0) {
-            RoomEvent& ev =
-                d.rooms[static_cast<std::size_t>(
-                            plainEventRooms[static_cast<std::size_t>(dfSlot)])]
-                    .event;
-            ev.kind = RoomEventKind::Dragonform;
-            ev.goldCost = 0;  // its price is score, stated at the panel (-100)
-        }
+        };
+        recollectPlain();
+        applyReplacement(dragonformSlot(seed, static_cast<int>(plainEventRooms.size())),
+                         RoomEventKind::Dragonform);
+        recollectPlain();
+        applyReplacement(goosePolymorphSlot(seed, static_cast<int>(plainEventRooms.size())),
+                         RoomEventKind::GoosePolymorph);
+        recollectPlain();
+        applyReplacement(sacrificeSlot(seed, static_cast<int>(plainEventRooms.size())),
+                         RoomEventKind::Sacrifice);
+        recollectPlain();
+        applyReplacement(levelAltarSlot(seed, static_cast<int>(plainEventRooms.size())),
+                         RoomEventKind::LevelAltar);
+        recollectPlain();
+        applyReplacement(strangerStorySlot(seed, static_cast<int>(plainEventRooms.size())),
+                         RoomEventKind::StrangerStory);
+        recollectPlain();
+        applyReplacement(tokenExchangeSlot(seed, static_cast<int>(plainEventRooms.size())),
+                         RoomEventKind::TokenExchange);
+        recollectPlain();
+        applyReplacement(patrolResetSlot(seed, static_cast<int>(plainEventRooms.size())),
+                         RoomEventKind::PatrolReset);
+        // M104 (generation v20): the gambling dens draw last.
+        recollectPlain();
+        applyReplacement(reelsSlot(seed, static_cast<int>(plainEventRooms.size())),
+                         RoomEventKind::Reels);
+        recollectPlain();
+        applyReplacement(blackjackSlot(seed, static_cast<int>(plainEventRooms.size())),
+                         RoomEventKind::Blackjack);
     }
 
     // --- Trapped chests (M20): some unguarded chests carry a visible
@@ -782,6 +822,53 @@ std::vector<Dungeon> generateFloors(std::uint64_t seed, int depth,
         floors.push_back(std::move(f));
     }
     return floors;
+}
+
+Dungeon generateEternalFloor(std::uint64_t runSeed, int floorIndex,
+                             const content::ContentDatabase& db,
+                             const std::string& themeId, int town) {
+    // M105: the standalone generation of this floor's sub-seed at the fixed
+    // Eternal depth — which already carries its REAL theme boss, exactly what
+    // Eternal wants on every floor (no warden swap ever). The Surveyor rides
+    // its usual multi-floor contract so the fog stays sellable.
+    Dungeon f = generate(floorSeed(runSeed, floorIndex), kEternalDepth, db, themeId, town);
+    f.runSeed = runSeed;
+    f.floorIndex = floorIndex;
+    f.floorCount = kEternalFloorCountSentinel;
+    f.eternal = true;
+    f.mapPieceRoom = -1;  // an endless run feeds no map economy (owner rule)
+    {
+        std::vector<int> plainEventRooms;
+        for (std::size_t ri = 0; ri < f.rooms.size(); ++ri) {
+            const RoomEventKind k = f.rooms[ri].event.kind;
+            if (f.rooms[ri].type != RoomType::Event) {
+                continue;
+            }
+            if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
+                k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
+                k == RoomEventKind::RestToken) {
+                plainEventRooms.push_back(static_cast<int>(ri));
+            }
+        }
+        const int slot =
+            surveyorSlot(runSeed, floorIndex, static_cast<int>(plainEventRooms.size()));
+        if (slot >= 0) {
+            RoomEvent& ev = f.rooms[static_cast<std::size_t>(
+                                        plainEventRooms[static_cast<std::size_t>(slot)])]
+                                .event;
+            ev.kind = RoomEventKind::Surveyor;
+            ev.goldCost = kSurveyorPriceGold;
+        }
+    }
+    // The escalation: a flat +10 %pts on every team per floor past the first
+    // (the M49 Endless Rush curve shape). Danger tiers recompute from these
+    // scaled stats, so the labels never lie about what stands there.
+    if (floorIndex > 0) {
+        for (EnemyTeam& t : f.teams) {
+            t.statScalePct += kEternalEscalationPctPts * floorIndex;
+        }
+    }
+    return f;
 }
 
 EnemyTeam patrolTeam(const content::ContentDatabase& db, const std::string& themeId,

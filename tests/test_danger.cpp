@@ -72,11 +72,11 @@ Character member(int maxHp, int atk, int mag, int def, int spd) {
 
 }  // namespace
 
-// The exact generation pin rides the newest bump — v17 (M93) tags the two
-// new pure-hash event replacements (Surveyor, Dragonform) alongside v16's
-// 20-floor shape (the pin moves with each owner-approved bump).
+// The exact generation pin rides the newest bump — v21 (M106) tags the Goosy
+// Gauntlet alongside v20's gambling dens, v19's events and v18's scroll-free
+// pools (the pin moves with each owner-approved bump).
 TEST_CASE("danger: generation version rides the newest bump", "[danger]") {
-    CHECK(dungeon::kGenerationVersion == 17);
+    CHECK(dungeon::kGenerationVersion == 21);
 }
 
 TEST_CASE("danger: threat grows with stronger and more numerous enemies", "[danger]") {

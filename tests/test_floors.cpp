@@ -19,6 +19,8 @@
 #include "dungeon/DungeonGenerator.hpp"
 #include "dungeon/RoomLayout.hpp"
 #include "dungeon/ThemeEvents.hpp"  // M93: the Surveyor's expected mutation
+#include "game/StakesLadder.hpp"    // M105: the Eternal stakes rule
+#include "game/WorldLadder.hpp"     // kTownCount
 #include "score/Scoreboard.hpp"
 #include "score/ScoreEntry.hpp"
 
@@ -405,4 +407,88 @@ TEST_CASE("trove: offers are seeded, distinct, learnable, and gated (M92)",
     CHECK_FALSE(cd::scrollTroveEarned(4, true, 100));
     CHECK_FALSE(cd::scrollTroveEarned(20, false, 100));
     CHECK_FALSE(cd::scrollTroveEarned(20, true, 0));
+}
+
+TEST_CASE("floors: no chest or peddler ever offers a skill scroll (M102, gen v18)",
+          "[floors][generation]") {
+    // The owner's rule: scrolls come from the Guild's trove, the town digs,
+    // and (later) the one sanctioned reels gamble — never dungeon loot. Sweep
+    // seeds across themes, towns and depths and prove the pools stay clean.
+    const std::vector<std::string> themes = {"ruined_keep", "crystal_mine", "hollow_forest"};
+    int inspected = 0;
+    for (std::uint64_t seed = 1; seed <= 60; ++seed) {
+        const std::string& theme = themes[static_cast<std::size_t>(seed % themes.size())];
+        const int town = 1 + static_cast<int>(seed % 7);
+        const int depth = 1 + static_cast<int>(seed % 20);
+        const dungeon::Dungeon d = dungeon::generate(seed, depth, db(), theme, town);
+        for (const dungeon::Room& room : d.rooms) {
+            const auto checkItem = [&](const std::string& id) {
+                if (id.empty()) {
+                    return;
+                }
+                ++inspected;
+                const content::ItemDef* def = db().findItem(id);
+                INFO("seed " << seed << " item " << id);
+                REQUIRE(def != nullptr);
+                CHECK(def->type != content::ItemType::Scroll);
+            };
+            checkItem(room.chest.itemId);
+            checkItem(room.event.itemId);
+        }
+    }
+    CHECK(inspected > 50);  // the sweep actually saw rewards
+}
+
+TEST_CASE("floors: the Eternal descent generates real bosses, escalating (M105)",
+          "[floors][eternal]") {
+    // Floor k is the standalone generation of its sub-seed at depth 20 — with
+    // its REAL boss (never wardens), +10 %pts on every team per floor past
+    // the first, no map-piece room, and full determinism at any index.
+    for (const int k : {0, 1, 7, 42}) {
+        const dungeon::Dungeon a =
+            dungeon::generateEternalFloor(9001ull, k, db(), "crystal_mine", 7);
+        const dungeon::Dungeon b =
+            dungeon::generateEternalFloor(9001ull, k, db(), "crystal_mine", 7);
+        REQUIRE(a.rooms.size() == b.rooms.size());
+        REQUIRE(a.teams.size() == b.teams.size());
+        for (std::size_t t = 0; t < a.teams.size(); ++t) {
+            CHECK(a.teams[t].enemyIds == b.teams[t].enemyIds);
+            CHECK(a.teams[t].statScalePct == b.teams[t].statScalePct);
+        }
+        CHECK(a.eternal);
+        CHECK(a.depth == dungeon::kEternalDepth);
+        CHECK(a.floorIndex == k);
+        CHECK(a.floorCount == dungeon::kEternalFloorCountSentinel);
+        CHECK(a.mapPieceRoom == -1);
+        // The boss slot holds a REAL boss (bossId set), never "Stairway Wardens".
+        const int bossTeam = a.rooms[static_cast<std::size_t>(a.bossRoom)].teamIndex;
+        REQUIRE(bossTeam >= 0);
+        CHECK(a.teams[static_cast<std::size_t>(bossTeam)].isBoss);
+        CHECK_FALSE(a.teams[static_cast<std::size_t>(bossTeam)].bossId.empty());
+        // Escalation: exactly the standalone generation, +10 %pts per floor.
+        const dungeon::Dungeon plain = dungeon::generate(
+            dungeon::floorSeed(9001ull, k), dungeon::kEternalDepth, db(), "crystal_mine", 7);
+        REQUIRE(plain.teams.size() == a.teams.size());
+        for (std::size_t t = 0; t < a.teams.size(); ++t) {
+            CHECK(a.teams[t].statScalePct ==
+                  plain.teams[t].statScalePct + dungeon::kEternalEscalationPctPts * k);
+        }
+    }
+}
+
+TEST_CASE("floors: the Eternal stakes rule is a genuine M33 raise (M105)",
+          "[floors][eternal]") {
+    // Entering writes the baseline to (town 7, depth 20); if that was a raise,
+    // the penalty ladder resets like any raise. Already at the ceiling: the
+    // steps stand (nothing was raised).
+    StakesState s;
+    s.prevTown = 4;
+    s.prevDepth = 9;
+    s.penaltySteps = 2;
+    CHECK(stakesRaised(s, kTownCount, 20));
+    // (the GuildState entry applies: raise -> steps 0, then baseline write)
+    s.penaltySteps = 0;
+    s.prevTown = kTownCount;
+    s.prevDepth = 20;
+    CHECK_FALSE(stakesRaised(s, kTownCount, 20));  // the ceiling cannot re-raise
 }

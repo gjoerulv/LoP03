@@ -194,7 +194,7 @@ TEST_CASE("dragon: he appears in no roster that is not his", "[dragon]") {
     const content::ContentDatabase db = loadContent();
     // Not in the Boss Rush.
     const std::vector<std::string> order = bossRushOrder(db);
-    CHECK(order.size() == 12);  // unchanged by M85
+    CHECK(order.size() == 15);  // unchanged by M85; +3 M106 Goosy bosses
     CHECK(std::find(order.begin(), order.end(), std::string(kDragonBossId)) == order.end());
     // Not in any dungeon theme.
     for (const auto& [themeId, theme] : db.themes()) {

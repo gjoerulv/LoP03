@@ -1,5 +1,7 @@
 // Windows executable resources (M24) — configured from CMake; do not edit
 // the generated copy. Icon + VERSIONINFO shown in Explorer/file properties.
+// M108: rebranded to "Are P Geese" (the icon art itself is the interim
+// crystal until an owner-directed icon pass).
 
 #include <winver.h>
 
@@ -18,12 +20,12 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "ProductName", "Crystal Dungeons"
-            VALUE "FileDescription", "Crystal Dungeons - 16-bit-inspired dungeon roguelite"
+            VALUE "ProductName", "Are P Geese"
+            VALUE "FileDescription", "Are P Geese - 16-bit-inspired dungeon roguelite"
             VALUE "FileVersion", "@PROJECT_VERSION@"
             VALUE "ProductVersion", "@PROJECT_VERSION@"
-            VALUE "OriginalFilename", "CrystalDungeons.exe"
-            VALUE "InternalName", "CrystalDungeons"
+            VALUE "OriginalFilename", "ArePGeese.exe"
+            VALUE "InternalName", "ArePGeese"
             VALUE "LegalCopyright", "Original project content; see LICENSES.txt"
         END
     END

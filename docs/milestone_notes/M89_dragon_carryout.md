@@ -1,6 +1,6 @@
 # M89 — Battle flow: the Dragon & the carry-out (rules v16)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). Battle rules **15 → 16**.
 
 ## Scope (owner items 11 and 7)

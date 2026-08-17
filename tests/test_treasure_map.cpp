@@ -78,9 +78,14 @@ TEST_CASE("treasure: the guard is a seeded dungeon-roster boss", "[treasure]") {
     const content::ContentDatabase db = loadContent();
     const std::vector<std::string> roster = bossRushOrder(db);
     for (std::uint64_t seed : {1ull, 42ull, 0xFEEDull, 0xB16B00B5ull}) {
-        const std::string id = treasureGuardBossId(db, seed);
-        CHECK(id == treasureGuardBossId(db, seed));  // deterministic
+        const std::string id = treasureGuardBossId(db, seed, 7);
+        CHECK(id == treasureGuardBossId(db, seed, 7));  // deterministic
         CHECK(std::find(roster.begin(), roster.end(), id) != roster.end());
+        // M106: a low-town dig never meets a town-7-gated boss (the geese).
+        const std::string lowTown = treasureGuardBossId(db, seed, 1);
+        const content::BossDef* guard = db.findBoss(lowTown);
+        REQUIRE(guard != nullptr);
+        CHECK(guard->minTown < 7);
     }
 }
 

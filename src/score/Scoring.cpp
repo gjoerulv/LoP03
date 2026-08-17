@@ -18,6 +18,8 @@ constexpr int kEscapePenalty = 40;   // per escaped battle
 constexpr int kWagerWin = 150;       // M20 wager event: completed, no deaths
 constexpr int kWagerLoss = 100;      // completed with deaths
 constexpr int kDragonformPact = 100;  // M93: per dragonform battle (owner: flat -100)
+constexpr int kGooseBonus = 100;      // M103: per accepted goose polymorph (owner: flat +100)
+constexpr int kGooseFlockBonus = 300;  // M106: per flock battle (owner: flat +300)
 }  // namespace
 
 ScoreBreakdown scoreBreakdown(const RunSummary& run) {
@@ -39,6 +41,10 @@ ScoreBreakdown scoreBreakdown(const RunSummary& run) {
     // M93 (owner decision 6): each dragonform battle costs a flat 100, stated
     // on the event panel before accepting. Stored positive, subtracted below.
     b.dragonformPact = kDragonformPact * std::max(0, run.dragonformFights);
+    // M103 (owner event 1): each accepted goose polymorph pays a flat +100.
+    b.gooseBonus = kGooseBonus * std::max(0, run.goosePolymorphs);
+    // M106 (the Goosy rite): each flock battle pays a flat +300.
+    b.gooseFlock = kGooseFlockBonus * std::max(0, run.gooseFlockFights);
 
     // Town-ladder bonus (M32) and stakes penalty (M33): both are percentages of
     // the (non-negative) subtotal; the bonus is added and the penalty subtracted,
@@ -46,7 +52,7 @@ ScoreBreakdown scoreBreakdown(const RunSummary& run) {
     // run) => total identical to pre-M32/M33.
     const int subtotal = b.base + b.bossBonus - b.turnPenalty + b.chestBonus + b.dangerBonus +
                          b.treasureBonus + b.noDeathBonus - b.escapePenalty + b.wager -
-                         b.dragonformPact;
+                         b.dragonformPact + b.gooseBonus + b.gooseFlock;
     const int posSubtotal = std::max(0, subtotal);
     b.townBonus = posSubtotal * std::max(0, run.townBonusPct) / 100;
     b.stakesPenalty = posSubtotal * std::max(0, run.stakesPenaltyPct) / 100;

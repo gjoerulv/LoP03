@@ -6,7 +6,9 @@ not a substitute for this file.
 
 ## Project identity
 
-`Crystal Dungeons` — a 16-bit-inspired turn-based JRPG roguelite in C++20 with
+`Are P Geese` (formerly `Crystal Dungeons`; renamed at the owner's direction
+in M108 — the old name was taken, and the title is the game's own dry joke on
+the RPG acronym) — a 16-bit-inspired turn-based JRPG roguelite in C++20 with
 raylib. A focused dungeon-score game, not a broad story JRPG.
 
 Core loop: town hub → prepare party → seeded dungeon → visible enemy teams

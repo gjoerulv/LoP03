@@ -1,6 +1,6 @@
 # M94 — The sparring mirror
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). No version bumps — a new
 battle CONSTRUCTION (shared builder), a driver-side routing flag, and a
 state-side snapshot; the engine's rules are untouched and normal play is

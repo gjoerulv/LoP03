@@ -94,6 +94,28 @@ inline constexpr int kSurveyorPriceGold = 20;  // the owner's number, flat
 int dragonformSlot(std::uint64_t seed, int eligibleCount);
 int surveyorSlot(std::uint64_t seed, int floorIndex, int eligibleCount);
 
+// M103 (generation v19): six more per-dungeon replacements on the exact same
+// contract, drawn sequentially after the peddler and dragonform (each from
+// the plain slots the earlier draws left standing).
+inline constexpr int kGoosePolymorphChancePct = 6;
+inline constexpr int kSacrificeChancePct = 8;
+inline constexpr int kLevelAltarChancePct = 6;
+inline constexpr int kStrangerStoryChancePct = 8;
+inline constexpr int kTokenExchangeChancePct = 8;
+inline constexpr int kPatrolResetChancePct = 6;
+int goosePolymorphSlot(std::uint64_t seed, int eligibleCount);
+int sacrificeSlot(std::uint64_t seed, int eligibleCount);
+int levelAltarSlot(std::uint64_t seed, int eligibleCount);
+int strangerStorySlot(std::uint64_t seed, int eligibleCount);
+int tokenExchangeSlot(std::uint64_t seed, int eligibleCount);
+int patrolResetSlot(std::uint64_t seed, int eligibleCount);
+
+// M104 (generation v20): the two gambling dens, same contract again.
+inline constexpr int kReelsChancePct = 7;
+inline constexpr int kBlackjackChancePct = 7;
+int reelsSlot(std::uint64_t seed, int eligibleCount);
+int blackjackSlot(std::uint64_t seed, int eligibleCount);
+
 // M80: the content-layer flavor id for an event kind (data/event_flavor.json,
 // content::kEventFlavorIds). Empty for None. A test holds this mapping and
 // the content-side vocabulary in lockstep.
@@ -112,6 +134,15 @@ inline const char* eventFlavorId(RoomEventKind kind) {
         case RoomEventKind::DuckPeddler: return "duck_peddler";
         case RoomEventKind::Surveyor: return "surveyor";      // M93
         case RoomEventKind::Dragonform: return "dragonform";  // M93
+        case RoomEventKind::GoosePolymorph: return "goose_polymorph";  // M103
+        case RoomEventKind::Sacrifice: return "sacrifice";             // M103
+        case RoomEventKind::LevelAltar: return "level_altar";          // M103
+        case RoomEventKind::StrangerStory: return "stranger_story";    // M103
+        case RoomEventKind::TokenExchange: return "token_exchange";    // M103
+        case RoomEventKind::PatrolReset: return "patrol_reset";        // M103
+        case RoomEventKind::Reels: return "reels";                     // M104
+        case RoomEventKind::Blackjack: return "blackjack";             // M104
+        case RoomEventKind::GoosyFlock: return "goosy_flock";          // M106
         case RoomEventKind::None: break;
     }
     return "";

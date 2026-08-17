@@ -160,7 +160,8 @@ std::string canonicalize(const OrderedJson& root, FileStyle style) {
 FileStyle styleForFile(const std::string& filename) {
     if (filename == "skills.json" || filename == "enemies.json" || filename == "items.json" ||
         filename == "passives.json" || filename == "milestones.json" ||
-        filename == "event_flavor.json" || filename == "curio_lore.json") {
+        filename == "event_flavor.json" || filename == "curio_lore.json" ||
+        filename == "tutorials.json") {  // M99: id/title/body rows, the flavor shape
         return FileStyle::InlineEntities;
     }
     return FileStyle::BlockEntities;

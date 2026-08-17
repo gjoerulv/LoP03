@@ -160,6 +160,7 @@ bool buildDatabase(const EditorDocs& docs, content::ContentDatabase& db,
         {Category::EventFlavor, &content::parseEventFlavor},  // M86
         {Category::CurioLore, &content::parseCurioLore},      // M86
         {Category::Cutscenes, &content::parseCutscenes},      // M97
+        {Category::Tutorials, &content::parseTutorialTexts},  // M99
     };
     for (const Entry& entry : kEntries) {
         const DocFile& doc = docs.file(entry.category);
