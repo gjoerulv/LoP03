@@ -1,4 +1,4 @@
-﻿# Are P Geese â€” validated Windows x64 release packaging.
+﻿# Are P Geese — validated Windows x64 release packaging.
 # Run from an x64 Visual Studio developer shell:
 #   powershell -ExecutionPolicy Bypass -File tools\package.ps1
 

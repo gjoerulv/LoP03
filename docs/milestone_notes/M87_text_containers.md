@@ -298,7 +298,9 @@ strings), so no prose was rewritten.
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-16)` — the header (§A) and the ledger are
+authoritative; this line lagged at the approval flip and was corrected
+2026-08-18.
 
 ## Policy adjustment (2026-08-17, owner direction)
 

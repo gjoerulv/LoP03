@@ -1,6 +1,6 @@
 # CrystalForge — the content editor (designer guide)
 
-CrystalForge is Crystal Dungeons' content editor: a separate desktop tool for
+CrystalForge is the Are P Geese content editor: a separate desktop tool for
 balancing and authoring the JSON content in `data/` — skills, classes,
 enemies, bosses, items and equipment, passives, dungeon themes, the team
 composition rules, the class level milestones (M63), the story beats, the

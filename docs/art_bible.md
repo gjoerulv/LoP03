@@ -1,4 +1,4 @@
-# Crystal Dungeons — Art Bible
+# Are P Geese — Art Bible
 
 > Status: **current owner-approved living visual specification.** The M15
 > vertical slice was approved 2026-07-19 (the art-direction gate); the M46

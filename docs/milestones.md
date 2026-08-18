@@ -1,4 +1,4 @@
-# Crystal Dungeons — Milestones
+# Are P Geese — Milestones
 
 > Work in order. **Stop after each milestone and wait for owner approval.**
 > Status legend: ☐ planned · ◐ in progress · ◑ implemented, awaiting manual

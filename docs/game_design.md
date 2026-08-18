@@ -1,4 +1,4 @@
-# Crystal Dungeons — Game Design
+# Are P Geese — Game Design
 
 > Living document. Update whenever player-facing design changes. Authoritative
 > contract is `CLAUDE.md`; this explains *what the game is and why*.

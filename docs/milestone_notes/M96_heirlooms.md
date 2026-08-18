@@ -107,7 +107,9 @@ paragraph before the King's classes) · `docs/technical_design.md` (§49)
 
 ## Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-16)` — the header and the ledger are
+authoritative; this line lagged at the approval flip and was corrected
+2026-08-18.
 
 ## Post-implementation fixes (2026-08-17, owner manual-pass feedback)
 

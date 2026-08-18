@@ -1,4 +1,4 @@
-# Crystal Dungeons — Technical Design
+# Are P Geese — Technical Design
 
 > Living document. Update when architecture, conventions, or build change.
 
@@ -191,7 +191,7 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` is currently **15** (bump history: M29 enlarged the theme
+  `kGenerationVersion` is currently **22** (bump history: M29 enlarged the theme
   enemy/boss pools; M30 added the RestToken event; M37 gave the merchant a 75 %
   bargain and gated chest gear by town; **M38 gates the per-town enemy/boss pools
   by `minTown`**; **M43 reprices the consumables a merchant offers and windows
@@ -199,9 +199,13 @@ carry the information without color.
   from the event stream**; **M55 guarantees each theme's rite event once per
   dungeon** (v11); **M65/M66 add the seed-hashed treasure maps** (v12/v13);
   **M68 tags the party-relative danger recalibration** (v14, generated output
-  byte-identical); **M82 adds the 1-or-4-floor system** (v15, §36) — each
-  owner-approved. The version-history comment in
-  `src/dungeon/RoomLayout.hpp` is the authority).
+  byte-identical); **M82 adds the 1-or-4-floor system** (v15, §36); **the
+  M88–M97 and M98–M108 programs take it to v21** (20-floor descents, the
+  scroll ban, the eight new events, the Goosy Gauntlet) and **the
+  2026-08-17 rite leveling to v22** (each theme's rite now rolls at 8 %
+  per floor, superseding the M55 guarantee) — each owner-approved. The
+  version-history comment in `src/dungeon/RoomLayout.hpp` is the
+  authority).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
   (shrine/spring/merchant/challenge/wager/rest-token) realized as an
@@ -237,16 +241,17 @@ from the goose emblem by `tools/asset_gen/generate_icon.ps1`).
 stage exe + `data/` + `assets/` + player README + LICENSES → validate
 (required files, every manifest path resolves inside the package, no
 debug artifacts, capture strings absent from the exe, exe
-ProductVersion matches) → zip `dist/CrystalDungeons-<version>-win64.zip`.
+ProductVersion matches) → zip `dist/ArePGeese-<version>-win64.zip`.
 Release builds cap raylib's log level at warnings (`NDEBUG`). User data
 stays in `paths::userDataDir()` for dev and packaged builds alike.
 
 ### Validation tooling (M23)
 
-Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
+Three layers, all deterministic. **Capture:** `ArePGeese --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; **114 scenes as of M97**,
+list lives in `src/capture/CaptureRunner.cpp`; **124 scenes as of the
+M98–M108 fix rounds (2026-08-17)**,
 `98`–`105` the pseudo-localized long-prose set) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
@@ -561,7 +566,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 15 — the history comment in
+  `kGenerationVersion` (currently 22 — the history comment in
   `RoomLayout.hpp` is the authority; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
