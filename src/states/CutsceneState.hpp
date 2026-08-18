@@ -48,6 +48,10 @@ private:
     Phase phase_ = Phase::Beats;
     int beatIndex_ = 0;
     int chosen_ = -1;  // options index once committed
+    // Wrapped lines the offer box reserves for the highlighted keepsake's
+    // description — the max over all options, measured in enterChoice, so
+    // every heirloom's own words fit (owner fix 2026-08-17).
+    int choiceDetailLines_ = 2;
     ui::TextViewport bodyView_;
     ui::Menu choiceMenu_;
     std::string panelSpeaker_;  // resolved speaker of the shown line

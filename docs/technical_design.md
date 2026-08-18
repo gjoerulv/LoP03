@@ -28,7 +28,7 @@ README.md                 # human build/run instructions
 CMakeLists.txt            # root build
 CMakePresets.json         # msvc-debug / msvc-release + build/test presets (M24)
 cmake/                    # Dependencies.cmake, CompilerWarnings.cmake
-packaging/                # Version.hpp.in, CrystalDungeons.rc.in, crystal.ico (M24)
+packaging/                # Version.hpp.in, ArePGeese.rc.in, arepgeese.ico (M24; renamed M108)
 docs/                     # design + technical + milestones (source of truth)
 data/                     # JSON content (populated M2+)
 assets/                   # manifest.json + generated textures/audio + credits.md
@@ -230,9 +230,9 @@ MultiThreaded` with `CMP0091` forced NEW so raylib matches — the exe's
 import table carries only OS DLLs and runs without the VC++
 redistributable; verified via dumpbin). The version lives once in
 `project(VERSION)` and is configured into `generated/core/Version.hpp`
-(title-screen stamp) and `packaging/CrystalDungeons.rc.in` (Windows
-VERSIONINFO + icon; the multi-size `packaging/crystal.ico` is generated
-from the approved emblem by `tools/asset_gen/generate_icon.ps1`).
+(title-screen stamp) and `packaging/ArePGeese.rc.in` (Windows
+VERSIONINFO + icon; the multi-size `packaging/arepgeese.ico` is generated
+from the goose emblem by `tools/asset_gen/generate_icon.ps1`).
 `tools/package.ps1` is the one-command release path: preset build →
 stage exe + `data/` + `assets/` + player README + LICENSES → validate
 (required files, every manifest path resolves inside the package, no

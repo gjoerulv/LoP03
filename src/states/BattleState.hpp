@@ -139,6 +139,9 @@ private:
         FloatKind kind = FloatKind::Damage;
     };
     int enemyBaseY() const;
+    // True when any unit on the field is a boss — the enemy rows above the
+    // center slot lift by kBossHeadroom so the 36px crown stays clear.
+    bool bossOnField() const;
     void unitScreenPos(int index, int& outX, int& outY) const;
     // M101: reorder targetCandidates_ to visual top-to-bottom (the center-out
     // rows broke the old unit-order == screen-order equivalence).

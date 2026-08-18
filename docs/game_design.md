@@ -252,11 +252,13 @@ elites (all with a 5 % chance to just "Honk."), and three new bosses —
 Pondlord** (commander) — whose courts are the M61 Evil Geese, and who
 **join the Boss Rush and the Endless pool** like any dungeon boss (the
 rush now runs fifteen). Treasure digs below town 7 never meet them. The
-theme's guaranteed rite is **The Flock**: the WHOLE party fights its next
+theme's rite (an 8% roll per floor since the 2026-08-17 leveling, like
+every rite) is **The Flock**: the WHOLE party fights its next
 battle as Geese (heirlooms worn, arms shed, HP/MP by percentage both
-ways) for a flat **+300 score**, itemized. Its look and music borrow the
-Hollow Forest set as an interim (real reused art, no placeholders) until
-an owner-directed Goosy art pass.
+ways) for a flat **+300 score**, itemized. Since 2026-08-17 the theme has
+its **own presentation**: reed-and-water tiles, eleven bespoke pond-fowl
+sprites, a reed battle backdrop, the "waddling strut" dungeon track, and
+an occupied-wetland ambience bed (art_bible §8b/§9b).
 
 **The gambling den (M104, owner request; generation v20).** Two more, same
 placement, both **seeded** (a reload replays the same reels and the same
@@ -1398,11 +1400,15 @@ party still loses, but a modest snack/relic loadout that used to lose now wins) 
 a balance shift reported for review, with King winnability remaining an owner
 manual item.
 
-**Theme rites (M55).** Each of the three dungeon themes now hides **one signature
-room event, guaranteed exactly once per dungeon** and never appearing in another
-theme (this is the only generation change in the program: **generation version
-10 → 11**). Each states its full trade-off in the footer before you Confirm, like
-every event:
+**Theme rites (M55; leveled 2026-08-17, generation v22).** Each dungeon theme
+hides **one signature room event** that never appears in another theme. As
+shipped in M55 the rite was guaranteed once per dungeon — and after M82's
+floors, once per FLOOR, which over-represented it badly (a 20-floor run met
+its rite twenty times). By owner direction it now **rolls at 8% per floor on
+the same replacement contract as every other special event** (the top of the
+6–8% band, befitting a signature), at most once per floor; the Royal Relic's
+own chance table is untouched. Each rite states its full trade-off in the
+footer before you Confirm, like every event:
 - **The Armory Ghost** (Ruined Keep) — trade one piece of gear from your bag for
   a random piece **one rarity finer, same slot, sight unseen**. An epic can even
   yield a legendary (a third way to find one); the offered piece is consumed and

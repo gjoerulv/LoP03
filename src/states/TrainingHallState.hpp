@@ -24,6 +24,9 @@ public:
 #ifdef CRYSTAL_CAPTURE
     // Deterministic entry into the passive-management screen for capture scenes.
     void captureEnterPassives();
+    // Puts the member-list cursor on the first M94 spar row — the hover frame
+    // that used to index members[] out of range (2026-08-17 crash fix).
+    void captureHoverSparRow();
 #endif
 
 private:

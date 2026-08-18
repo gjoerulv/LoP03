@@ -234,24 +234,21 @@ the trigger framework â€” counterplay content, the enemy offensive pass,
 inventory caps, input QoL, event flavor, arms & icons, 1-or-4-floor
 dungeons on generation v15, the map economy, the M84 Guild Masters with
 town perks, and M85's Last Dragon + curio lore) was approved milestone by
-milestone through 2026-08-07. **M86** (CrystalForge catch-up + the
-deliberate 0.9.0 â†’ 0.6.0 version renumber) and **M87** (owner-directed
-2026-08-11: translation-ready text containers & scrollable prose â€” the
-text policies in gotcha 14, the Latin-1 font extension, 105 capture
-scenes at the time) are both `implemented, awaiting
-manual approval` â€” as is the whole **M88â€“M97 program** (owner-authorized
-2026-08-14, implemented the same day: town/Guild UX + team inspection,
-the Dragon breath fix + dungeon carry-out (rules v16), party-menu
-Equip/Items, elemental impact FX, 20-floor descents + the scroll trove
-(gen v16), fog/Surveyor/patrols/dragonform (gen v17), the sparring
-mirror, summons (rules v17), heirlooms (rules v18), and the Hooded Goose
-cutscene story; capture set now **114 scenes**; manual matrix rows
-167â€“184). The M46 UI kit (`docs/ui_style_guide.md`) binds all UI
+milestone through 2026-08-07. **M86â€“M97** (CrystalForge catch-up, the
+0.9.0 â†’ 0.6.0 renumber, the M87 text containers, and the M88â€“M97
+program) were all owner-approved 2026-08-16. The **M98â€“M108 "Are P
+Geese" program** (post-M97 fixes through the full rebrand; generation
+v21, battle rules v18, version **0.7.0**, capture set **121 scenes**,
+matrix rows 185â€“204; a 2026-08-17 fix round added the real Goosy
+art/audio, reel icons, and the true title-screen rebrand) is
+`implemented, awaiting manual approval` â€” the ledger in
+`docs/milestones.md` is always the authority, not this paragraph. The
+M46 UI kit (`docs/ui_style_guide.md`) binds all UI
 work; the M49 castle retune (Boss Rush 580 % / King 500 % / Endless
 +10 %pts per wave, level cap 99) plus the M54 equipment rebalance are the
 balance baseline. After these approvals only the deliberately deferred
 **M23** (validation/playtesting/balance) and **M24** (release packaging)
-remain, in that order: their tooling and packaging are built (v0.6.0 RC
+remain, in that order: their tooling and packaging are built (the RC
 flow), awaiting owner-run external playtests (`docs/playtest_protocol.md`)
 and a clean-machine sign-off; version bumps to 1.0.0 after playtests pass.
 Both must be re-audited against the then-current checkout first. Details:

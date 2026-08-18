@@ -12,7 +12,8 @@ namespace cd::render {
 
 // Named BackdropStage (not BackdropStage) to avoid colliding with the
 // BattleSequencer's own render::BackdropStage animation-phase enum.
-enum class BackdropStage { Plain, Keep, Mine, Forest, Castle };
+// Goosy appended 2026-08-17: the Goosy Gauntlet's reed-and-pond dressing.
+enum class BackdropStage { Plain, Keep, Mine, Forest, Castle, Goosy };
 
 // Theme id -> stage. Unknown/empty -> Plain (fail-soft). Pure.
 BackdropStage stageForTheme(const std::string& themeId);

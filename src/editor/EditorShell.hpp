@@ -161,7 +161,11 @@ private:
     std::string status_;  // one-line result of the last save/validate/action
 
     // --- modal state ---
-    ui::TextInput textEdit_{240, "", ui::TextFilter::Printable};
+    // Owner fix 2026-08-17: 240 chars silently TRUNCATED longer shipped prose
+    // on open (story/cutscene/tutorial bodies run past 300) and Enter would
+    // have written the loss back. The game imposes no length rule on body
+    // text (viewports scroll), so the editor's ceiling is a defensive 4000.
+    ui::TextInput textEdit_{4000, "", ui::TextFilter::Printable};
     FormRow modalRow_;                  // the row a modal is editing
     ui::Menu pickMenu_;
     ui::ScrollWindow pickWindow_;

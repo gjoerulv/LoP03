@@ -56,3 +56,18 @@ keeping their rows.
 
 game_design §8 (Formation paragraph), ledger row, matrix row 194, this
 note.
+
+## Post-implementation defect fixed (2026-08-17)
+
+Owner-reported overlap: with the boss seated CENTER, the minion in the
+row above (center-top) reached into the boss's 36px crown — its sprite
+bottom and HP meter cut across the boss's head (rows sit on a 34px pitch;
+a 36px boss rises 12px higher into its cell than a 24px enemy; before
+M101 the boss held the TOP row, so nothing sat above it and the tight
+pitch never showed). Fixed in `BattleFormation.hpp`: `enemyRowOffset`
+lifts the two visual rows above the center seat by 10px whenever a boss
+is on the field (`kBossHeadroom`), keeping their own 34px spacing; the
+render loop and `unitScreenPos` share the mapping so floats and targeting
+stay anchored. The geometric contract (the cell above ends above the
+boss's crown) is pinned in `test_battle_formation.cpp`; capture
+`121_battle_goosy_boss` shows the cleared crown.

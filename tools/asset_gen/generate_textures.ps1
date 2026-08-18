@@ -3626,8 +3626,9 @@ Outline $b; SaveImg $b 'props/save_crystal.png'
 # shared $GRIDC palette key, hand-placed pixels only.
 #
 # DETERMINISM: like the enemy section above, this section calls NO random
-# helper, so it cannot shift any other generated file's bytes. It also runs
-# LAST, so nothing after it exists to shift.
+# helper, so it cannot shift any other generated file's bytes. (The Goosy
+# Gauntlet section appended after it reseeds $script:rng before its own
+# Speckle calls, so these icons stay byte-identical too.)
 #
 # 10x10 is the size the UI actually renders: menu rows are 14px tall at font
 # 10 (equip shop, armory ghost) and the party panel's gear lines sit on a
@@ -3785,6 +3786,551 @@ Save-IconGrid 'relic' @(     # violet void-diamond with a glint core
   '....m.....'
   '..........'
   '..........'
+)
+
+
+# ================= Rebrand follow-up + the Goosy Gauntlet's own art =========
+# Owner direction 2026-08-17 (the M104/M106/M108 manual-pass fixes): the goose
+# emblem that fronts the title screen and the exe icon, the Goosy Gauntlet's
+# own tiles and its eleven battle sprites, and the seven reel icons. Appended
+# after every earlier section; the grid sprites place every pixel by hand, and
+# $script:rng is reseeded below before this section's only Speckle calls, so
+# every previously shipped file stays byte-identical.
+$script:rng = 20260817
+Write-Output 'Generating rebrand + Goosy Gauntlet art...'
+
+# --- Goose emblem (32x32): the title-screen mark and the .ico source. A
+# --- proud right-facing goose riding still water; one cyan glint keeps the
+# --- crystal-as-light thread. Silhouette-first so it survives 16px.
+$b = Draw-Grid @(
+  '................................'
+  '...............WWWWWWWW.........'
+  '..............WWWWWWWWWW........'
+  '..............WWWWWWKWWW........'
+  '..............WWWWWWWWWWYYYYYYY.'
+  '..............WWWWWWWWWWYYYYY...'
+  '..............WWWWWWWWW.........'
+  '..............WWWWWW............'
+  '.............WWWWWW.............'
+  '.............WWWWWS.............'
+  '.............WWWWSS.............'
+  '............WWWWSS..............'
+  '............WWWWSS..............'
+  '............WWWWSS..............'
+  '......WWWWWWWWWWSS..............'
+  '.....WWWWWWWWWWWWSSS......v.....'
+  '....WWWWWWWWWWWWWWSSS.....c.....'
+  '...WWWWWWWWWWWWWWWSSSS....c.....'
+  '...WWWWWWWWWWWWWWWSSSSS..vc.....'
+  '..WWWWWWWWWWWWWWWWSSSSSS..c.....'
+  '..WWWWWWWWWWWWWWWWSSSSSSS.c.....'
+  '.WWWWWWWWWWWWWWWWWSSSSSSS.c.....'
+  '.ZWWWWWWWWWWWWWWSSSSSSSS..c.....'
+  '..ZZZSSSSSSSSSSSSSSSZZ....c.....'
+  '..iiiiiiiiiiiiiiiiiiiiiiiiciii..'
+  '..iioiiioiiiioiiiiioiiiioiiiii..'
+  '...iiiiiiiCiiiiiiiiiiiiiiiiii...'
+  '....uuuuuuuuuuuuuuuuuuuuuuuu....'
+  '......uuuuuuuuuuuuuuuuuu........'
+  '................................'
+  '................................'
+  '................................'
+)
+Outline $b; SaveImg $b 'ui/emblem_goose.png'
+
+# --- Goosy Gauntlet tiles (16x16, opaque, no outer outline). Identity per
+# --- art_bible SS8b: a FLOODED PEN - still dark water underfoot, woven reed
+# --- palisade walls, parted-reed doorways, and a nest shrine accent. Shape
+# --- language (thin verticals + horizontal water banding) separates it from
+# --- the Hollow Forest's trunk masses in grayscale.
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.wat0
+Speckle $b 0 0 16 16 $PAL.veg0 0.20; Speckle $b 0 0 16 16 $PAL.wat1 0.16
+FR $b 2 5 5 1 $PAL.wat2; FR $b 9 11 5 1 $PAL.wat2
+P $b 12 3 $PAL.wat3; P $b 5 13 $PAL.wat3
+P $b 7 8 $PAL.white1
+SaveImg $b 'environments/goosy_floor.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.veg0
+foreach ($x in 0, 3, 6, 9, 12, 15) { FR $b $x 0 2 16 $PAL.veg1; FR $b $x 0 1 16 $PAL.veg2 }
+FR $b 0 3 16 2 $PAL.earth2; FR $b 0 4 16 1 $PAL.earth1
+FR $b 0 10 16 2 $PAL.earth2; FR $b 0 11 16 1 $PAL.earth1
+Speckle $b 0 0 16 16 $PAL.veg2 0.05
+SaveImg $b 'environments/goosy_wall.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.veg0
+FR $b 0 0 3 16 $PAL.veg1; FR $b 13 0 3 16 $PAL.veg1
+FR $b 2 0 1 16 $PAL.veg2; FR $b 13 0 1 16 $PAL.veg2
+FR $b 4 0 8 16 $PAL.night1
+for ($j = 0; $j -lt 4; $j++) { P $b (4+$j) $j $PAL.veg2; P $b (11-$j) $j $PAL.veg2 }
+FR $b 4 13 8 2 $PAL.wat1; FR $b 4 13 8 1 $PAL.wat2
+SaveImg $b 'environments/goosy_door.png'
+
+$b = New-Img 16 16; FR $b 0 0 16 16 $PAL.wat0
+Speckle $b 0 0 16 16 $PAL.veg0 0.20
+FR $b 3 6 10 7 $PAL.earth2
+FR $b 4 7 8 5 $PAL.earth1
+FR $b 3 6 10 1 $PAL.earth3
+P $b 4 8 $PAL.earth3; P $b 11 10 $PAL.earth3
+FR $b 6 8 2 3 $PAL.white1; FR $b 9 9 2 2 $PAL.white1
+P $b 6 8 $PAL.white2; P $b 9 9 $PAL.white2
+P $b 7 9 $PAL.cyan
+FR $b 1 12 2 3 $PAL.veg1; P $b 1 11 $PAL.veg2
+SaveImg $b 'environments/goosy_accent.png'
+
+# --- The Goosy Gauntlet flock (24x24 normals/elites). A DIFFERENT flock from
+# --- the five Evil Geese: pond fowl. Same family language (white bodies, gold
+# --- feet), identity carried above the neck and at the wing, never by hue.
+
+Save-EnemyGrid 'pond_drake' @(       # chunky drake: shovel bill, tail curl, speculum
+  '........................'
+  '........................'
+  '........................'
+  '.............ooooo......'
+  '............opooooo.....'
+  '............opoKooo.....'
+  '............ooooooYYYYYY'
+  '............ooooo.dddddd'
+  '............ooooo.......'
+  '..ii........WWWWW.......'
+  '.i..i......WWWWWW.......'
+  '.i.iWWWWWWWWWWWWWW......'
+  '.iiWWWWWWWWWWWWWWWW.....'
+  '..WWWppooWWWWWWWWWW.....'
+  '.WWpooooiWWWWWWWWWWW....'
+  '.WWpooooiWWWWWWWWWS.....'
+  '.WWooooiiWWWWWWWWSS.....'
+  '.WWWooiiWWWWWWWWWS......'
+  '.WWWWWWWWWWWWWWWSS......'
+  '..WSSSSSSSSSSSWWS.......'
+  '..SSSSSSSSSSSSSS........'
+  '...ZZZZZZZZZZZZ.........'
+  '......YY...YY...........'
+  '......YY...YY...........'
+)
+
+Save-EnemyGrid 'reed_honker' @(      # periscope neck above a reed blind
+  '........................'
+  '............WWWWW.......'
+  '............WWWKWYYY....'
+  '............WWWWW.......'
+  '.............WW.........'
+  '.............WW.........'
+  '.............WW.........'
+  '.............WW.aa......'
+  '......aa.....WW.aa......'
+  '......aa.....WW.cc......'
+  '......cc.....WW.cc......'
+  '......cc..cc.WW.cc.cc...'
+  '..cc..cc..cc.WWScc.cc...'
+  '..cc..cc..cc.cc.cc.cc...'
+  '..cc..xc..cc.cc.cc.xc...'
+  '..xc..xc..xc.cc.cc.xc...'
+  '..xc..xx..xc.xc.xc.xx...'
+  '..xc..xx..xc.xc.xc.xx...'
+  '..xx..xx..xx.xc.xx.xx...'
+  '..xx..xz..xx.xx.xx.xz...'
+  '..xz..zz..xz.xx.zz.zz...'
+  '..zz..zz..zz.zz.zz.zz...'
+  '..zz..zz..zz.zz.zz.zz...'
+  '........................'
+)
+
+Save-EnemyGrid 'mallard_marauder' @( # raider: red bandana, comically big oar
+  '........................'
+  '..ff....................'
+  '..fff...................'
+  '..dfff..................'
+  '...dff..................'
+  '....dd......WWWWW.......'
+  '.....dd.....DDDDW.......'
+  '......dd...DWWKWWYYYY...'
+  '.......dd...WWWWWYYYY...'
+  '........dd..WWWWW.......'
+  '.........dd.WWWWDD......'
+  '..........ddWWWW.D......'
+  '...WWWWW..WdWWWWW.......'
+  '..WWWWWWWWWdWWWWS.......'
+  '.WWWWWWWWWWWWWWWS.......'
+  '.WWWWWWWWWWWWWWSS.......'
+  '.WWWWWWWWWWWWWWS........'
+  '.WWWWWWWWWWWWWSS........'
+  '.WWWSSSSSSSWWWS.........'
+  '.SWWSSSSSSSSWWS.........'
+  '.SSSSSSSSSSSSS..........'
+  '..ZZZZZZZZZZZ...........'
+  '.....YY...YY............'
+  '.....YY...YY............'
+)
+
+Save-EnemyGrid 'downfeather_witch' @( # the Hag: ragged shawl, crooked frost wand
+  '........................'
+  '........................'
+  '..........mm............'
+  '.........mmmm...........'
+  '..........mmmm..........'
+  '..........mmmmm.........'
+  '..........mWWmmm........'
+  '..........mWKWmmYYY.....'
+  '..........mmWWmYYY.W....'
+  '.........mmmWWm...pp....'
+  '.........mmmWWmm.s......'
+  '........mmmWWWmm.s......'
+  '........mmWWWWm.s.......'
+  '..WWWWmmmWWWWWm.s.......'
+  '.WWWWWmmWWWWWWWWs.......'
+  '.WWWWWWWWWWWWWWWS.......'
+  '.WWWWWWWWWWWWWWS........'
+  '.WWWWWWWWWWWWWSS........'
+  '.WWWSSSSSSSWWWS.........'
+  '.SWWSSSSSSSSWWS.........'
+  '.SSSSSSSSSSSSS..........'
+  '..ZZZZZZZZZZZ...........'
+  '.....YY...YY............'
+  '.....YY...YY............'
+)
+
+Save-EnemyGrid 'puddle_imp' @(       # a splash that got opinions
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '.........p....p.........'
+  '....p....p...pp....p....'
+  '....pp...pp..pp...pp....'
+  '.....ppooppoopppoopp....'
+  '.....ooooooooooooooo....'
+  '....oooKKoooooKKooooo...'
+  '....ooooooooooooooooo...'
+  '...oioooooWWooooooooi...'
+  '...iioooooooooooooiii...'
+  '...iiioooooooooooiiii...'
+  '....iiiiiiiiiiiiiiii....'
+  '.....iiiuuuuuuuuiii.....'
+  '......uuuuuuuuuuuu......'
+  '....u..uu..uu..uu..u....'
+  '........................'
+)
+
+Save-EnemyGrid 'gander_grenadier' @( # elite: bandolier and a bomb of pure hubris
+  '........................'
+  '........................'
+  '........................'
+  '...........WWWWW........'
+  '..........WWWWWWW.......'
+  '..........WWWKWWYYYY....'
+  '..........WWWWWWYYYY....'
+  '..........WWWWWW........'
+  '..........WWWWS.........'
+  '..........WWWS..........'
+  '..WWWWW...WWWS.G........'
+  '.WWWWWWWWWWWWWW.Y.......'
+  '.WWWWaaWWWWWWWWWs.......'
+  'WWWWWWaaWWWW22222.......'
+  'WWWWWWWaaWW2233322......'
+  'WWWWWWWWaaW2233322......'
+  'WWWWWWWWWaW2223222......'
+  'WWWWSSSSSaSS22222S......'
+  'WWWSSSSSSSSSSWWSS.......'
+  'SWWSSSSSSSSSSSWS........'
+  'SSSSSSSSSSSSSSSS........'
+  '.ZZZZZZZZZZZZZZ.........'
+  '....YY....YY............'
+  '....YY....YY............'
+)
+
+Save-EnemyGrid 'cob_knight' @(       # elite: a swan in a helm; shield on the wing
+  '...........LLLL.........'
+  '..........LLLLLL........'
+  '..........LWWKLWYYY.....'
+  '..........LLWWWW........'
+  '...........WWW..........'
+  '...........WW...........'
+  '..........WW............'
+  '.........WW.............'
+  '.........WW.............'
+  '..........WW............'
+  '..........WWW...........'
+  '...........WWWW.........'
+  '..WWWWWW..LLLLL.........'
+  '.WWWWWWWWWLqwwqL........'
+  '.WWWWWWWWWLqwYwqL.......'
+  '.WWWWWWWWWLqwwqL........'
+  '.WWWWWWWWWLLqqL.........'
+  '.WWWWWWWWWSLLL..........'
+  '.WWWSSSSSSSWWWS.........'
+  '.SWWSSSSSSSSWWS.........'
+  '.SSSSSSSSSSSSS..........'
+  '..ZZZZZZZZZZZ...........'
+  '.....11...11............'
+  '.....11...11............'
+)
+
+Save-EnemyGrid 'migration_herald' @( # elite: the war-horn and the V-banner
+  '.....................Y..'
+  '....................YY..'
+  '...................dYY..'
+  '............WWWW..ddY...'
+  '...........WWWWWWYdd....'
+  '...........WWWKWWd......'
+  '...........WWWWWW.......'
+  '...........WWWWS........'
+  '....xx.....WWWS.........'
+  '....xxx....WWWS.........'
+  '....xWx....WWWS.........'
+  '....xxx..WWWWWW.........'
+  '....xx.WWWWWWWWW........'
+  '....s.WWWWWWWWWWW.......'
+  '....sWWWWWWWWWWWWW......'
+  '....sWWWWWWWWWWWWS......'
+  '....sWWWWWWWWWWWS.......'
+  '....sWWWWWWWWWWSS.......'
+  '....sWWSSSSSSSWWS.......'
+  '....sSSSSSSSSSSSS.......'
+  '.....SSSSSSSSSSS........'
+  '......ZZZZZZZZZ.........'
+  '.......YY...YY..........'
+  '.......YY...YY..........'
+)
+
+# --- The three Goosy bosses (36x36, art_bible SS5b). Each is 2-3 readable
+# --- masses, one motif from its bosses.json entry, one asymmetry, and a
+# --- slit/void face - never a crowned toy.
+
+Save-EnemyGrid 'boss_the_gray_gander' @(  # brute: unfolded to its full height
+  '....................................'
+  '..........................eee.......'
+  '.........................eeeee......'
+  '........................eeeeeee.....'
+  '........................eeeeqqe.....'
+  '........................eeeqKKeddd..'
+  '........................eeeeeeeddddd'
+  '.........................eeeeeddddd.'
+  '..........................eeeee.....'
+  '.........................eeeeee.....'
+  '........................eeeeee..ww..'
+  '.......................eeeeee..www..'
+  '.......................eeeee..wwww..'
+  '......................eeeeee.wwww...'
+  '......................eeeee.wwww....'
+  '....ee.......wwwwwwwwwwwwww.........'
+  '...eee.....wwwwwwwwwwwwwwww.........'
+  '...eeee...wwwwwwwwwwwwwwwww.........'
+  '..eeeee..wwwwwwwwwwwwwwwwwww........'
+  '..eee.e.wwwwwwwwwwwwwwwwwwww........'
+  '..ee..ewwwwwwwwwwwwwwwwwwwww........'
+  '..e..wwwwwwwwwwwwwwwwwwwwwww........'
+  '....wwwwwwwwwwwwwwwwwwwwwwww........'
+  '....wwwwwwwwwwwwwwwwwwwwwww.........'
+  '.....wwwwwwwwwwwwwwwwwwwwww.........'
+  '.....ZwwwwwwwwwwwwwwwwwwwwZ.........'
+  '.....ZZwwwwwwwwwwwwwwwwwZZ..........'
+  '......ZZZZZZZZZZZZZZZZZZ............'
+  '.......ZSSSSSSSSSSSSSSZ.............'
+  '.........dd........dd...............'
+  '.........dd........dd...............'
+  '........ddd.......ddd...............'
+  '.......ddddd.....ddddd..............'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_mother_of_ponds' @(  # sorcerer: veil, nest, orbiting cold
+  '....................................'
+  '....................................'
+  '..................WW................'
+  '.................WWWW...............'
+  '................WWWWWW.....pp.......'
+  '................WWWWWW....poop......'
+  '...pp...........WSSSSWW...poop......'
+  '..poop..........WSbbbSW....pp.......'
+  '..poop..........WSbbbbSW............'
+  '...pp...........WSbbbbYYY...........'
+  '................WWSbbSWW............'
+  '................WWSSSSWW............'
+  '.................WWSSWW.............'
+  '.................WWSSW..............'
+  '..................WSSW..............'
+  '..................WSSW..............'
+  '..ppp.............WSSSW.............'
+  '..pWp............WWSSSW.............'
+  '..ppp...........WWSSSSWW............'
+  '................WWSSSSWWWW..........'
+  '...............WWSSSSSWWWWWW........'
+  '...............WSSSSSSSWWWWWWW......'
+  '..............WWSSSSSSSSWWWWWWW.....'
+  '..............WSSSSSSSSSS.WWWWWW....'
+  '..............WSSSSSSSSSS..WWWW.....'
+  '..............SSSSSSSSSS............'
+  '........aassWWSSSSSSSSWWssaa........'
+  '.......asddssaddssaddssaddsa........'
+  '......assddssddssddssddssddsa.......'
+  '......asddssddssddssddssddssa.......'
+  '.......aasssssssssssssssssaa........'
+  '.........dddddddddddddddd...........'
+  '....................................'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+Save-EnemyGrid 'boss_the_pondlord' @(     # commander: reed diadem, cattail standard
+  '....................................'
+  '............cv..c.............aa....'
+  '............cc..c..c..........aa....'
+  '...........cWWWWWWWc..........aa....'
+  '...........WWWWWWWWW..........aa....'
+  '...........WWWWWWWWW..........aa....'
+  '...........WSKKSWWWWYYY.......ss....'
+  '...........WWWWWWWWWYY........ss....'
+  '............WWWWWW............ss....'
+  '.............WWWW.......xxxxxxss....'
+  '.............WWWW.......xWWxxxss....'
+  '.............WWWW.......xxWWxxss....'
+  '.............WWWW.......xxxWWxss....'
+  '............WWWWWW......xxxxxxss....'
+  '..........ZWWWWWWWWZ......xxx.ss....'
+  '........ZZWWWWWWWWWWZZ.....xx.ss....'
+  '.......ZWWWWWWWWWWWWWWZ......Sss....'
+  '.......WWWWWWWWWWWWWWWWSSSSSSSss....'
+  '......WWWWWSWWWWWWSWWWWW......ss....'
+  '......WWWWWSWWWWWWSWWWWW......ss....'
+  '......WWWWWSWWWWWWSWWWWW......ss....'
+  '......WWWWWSWWWWWWSWWWWW......ss....'
+  '......WWWWWSWWWWWWSWWWWW......ss....'
+  '.......WWWWSWWWWWWSWWWW.......ss....'
+  '.......WWWWSWWWWWWSWWWW.......ss....'
+  '.......WWWSSWWWWWWSSWWW.......ss....'
+  '........WWSSWWWWWWSSWW........ss....'
+  '........ZZSSSWWWWSSSZZ........ss....'
+  '.........ZZZZZZZZZZZZ.........ss....'
+  '..........dd......dd..........ss....'
+  '..........dd......dd..........ss....'
+  '........dddd......dddd........dd....'
+  '......xxxxxxxxxxxxxxxxxx......dd....'
+  '....................................'
+  '....................................'
+  '....................................'
+)
+
+# --- Reel icons (12x12, no outline - they sit inside the dark outcome panel
+# --- like the M81 gear icons). One per gamble::ReelSymbol, in enum order.
+function Save-ReelGrid([string]$name, [string[]]$rows) {
+  $b = Draw-Grid $rows
+  if ($b.Width -ne 12 -or $b.Height -ne 12) {
+    throw "Save-ReelGrid: icon '$name' is $($b.Width)x$($b.Height); must be 12x12."
+  }
+  SaveImg $b "ui/icons/reel_$name.png"
+}
+
+Save-ReelGrid 'tax_papers' @(  # the stack, the stamp
+  '............'
+  '...SSSSSS...'
+  '..SSSSSSS...'
+  '..SWWWWWW...'
+  '..SW1111W...'
+  '..SWWWWWW...'
+  '..SW1111W...'
+  '..SWWWDDW...'
+  '..SWWWDDW...'
+  '..WWWWWWW...'
+  '............'
+  '............'
+)
+
+Save-ReelGrid 'goose_head' @(  # the bird itself
+  '............'
+  '...WWWW.....'
+  '..WWWWWW....'
+  '..WWKWWWYYY.'
+  '..WWWWWWYYY.'
+  '..WWWWWW....'
+  '...WWWW.....'
+  '...WWW......'
+  '...WWWS.....'
+  '...WWWS.....'
+  '..SWWWWS....'
+  '............'
+)
+
+Save-ReelGrid 'spoon' @(       # the P-Spoon; mind the spoon
+  '............'
+  '....LLLL....'
+  '...LSSSSL...'
+  '...LSWWSL...'
+  '...LSVWSL...'
+  '...LSSSSL...'
+  '....LLLL....'
+  '.....LL.....'
+  '.....LL.....'
+  '.....LL.....'
+  '....LLLL....'
+  '............'
+)
+
+Save-ReelGrid 'crown' @(       # the Dragon Crown
+  '............'
+  '............'
+  '..Y...Y...Y.'
+  '..YY.YYY.YY.'
+  '..YYYYYYYYY.'
+  '..YGYYCYYGY.'
+  '..YYYYYYYYY.'
+  '...YYYYYYY..'
+  '............'
+  '............'
+  '............'
+  '............'
+)
+
+Save-ReelGrid 'red_x' @(       # the polite refusal
+  '............'
+  '..DD.....DD.'
+  '...DD...DD..'
+  '....DD.DD...'
+  '.....DDD....'
+  '.....DDD....'
+  '....DD.DD...'
+  '...DD...DD..'
+  '..DD.....DD.'
+  '............'
+  '............'
+  '............'
+)
+
+Save-ReelGrid 'bald_head' @(   # the bald-red-beard gentleman
+  '............'
+  '....hhhh....'
+  '...hhhhhh...'
+  '...hghhgh...'
+  '...hKhhKh...'
+  '...hhhhhh...'
+  '..OhhhhhhO..'
+  '..OOhhhhOO..'
+  '..OOOOOOOO..'
+  '...OOOOOO...'
+  '....OOOO....'
+  '............'
+)
+
+Save-ReelGrid 'seven' @(       # the one everyone is here for
+  '............'
+  '..YYYYYYYY..'
+  '..YGGGGGYY..'
+  '........YY..'
+  '.......YY...'
+  '......YY....'
+  '.....YYY....'
+  '.....YY.....'
+  '....YYY.....'
+  '....YY......'
+  '............'
+  '............'
 )
 
 Write-Output 'Texture generation complete.'

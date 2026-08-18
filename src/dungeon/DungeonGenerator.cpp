@@ -495,24 +495,15 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
 
             RoomEvent ev;
             ev.kind = kinds[static_cast<std::size_t>(made)];
-            // M55: the FIRST event slot of a themed dungeon is the theme's
-            // guaranteed rite (Armory Ghost / Miner's Cache / Elder Root). It
-            // replaces the rolled kind, and the relic draw below SKIPS this slot,
-            // so a relic never displaces the rite. Empty/unknown themes force
-            // nothing (themeSlot stays false) and generate exactly as before.
-            bool themeSlot = false;
-            if (made == 0) {
-                const RoomEventKind rite = themeEventKind(d.themeId);
-                if (rite != RoomEventKind::None) {
-                    ev.kind = rite;
-                    themeSlot = true;
-                }
-            }
+            // The M55 rite used to be FORCED onto the first slot here — every
+            // floor of a themed run opened with its rite. Owner direction
+            // 2026-08-17 (generation v22): the rite now rolls in the pure-hash
+            // replacement pass below at the same level as every other special
+            // event, so the base roll and the relic draw run on every slot.
             // Royal Relic (M44): a rare replacement of the rolled event, at most
             // one per dungeon. The draw is taken only where the event is eligible
-            // (town >= 2, depth >= 2), from this same seeded stream — never on the
-            // theme-rite slot (M55).
-            if (!relicPlaced && !themeSlot) {
+            // (town >= 2, depth >= 2), from this same seeded stream.
+            if (!relicPlaced) {
                 const int relicPct = relicEventChancePct(townIdx, d.depth);
                 if (relicPct > 0 && rng.chance(relicPct)) {
                     ev.kind = RoomEventKind::RoyalRelic;
@@ -591,32 +582,6 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
     // dungeon a seed generates never depends on the party's bag.
     {
         std::vector<int> plainEventRooms;
-        for (std::size_t ri = 0; ri < d.rooms.size(); ++ri) {
-            const RoomEventKind k = d.rooms[ri].event.kind;
-            if (d.rooms[ri].type != RoomType::Event) {
-                continue;
-            }
-            if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
-                k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
-                k == RoomEventKind::RestToken) {
-                plainEventRooms.push_back(static_cast<int>(ri));
-            }
-        }
-        const int slot = duckPeddlerSlot(seed, static_cast<int>(plainEventRooms.size()));
-        if (slot >= 0) {
-            RoomEvent& ev =
-                d.rooms[static_cast<std::size_t>(plainEventRooms[static_cast<std::size_t>(slot)])]
-                    .event;
-            ev.kind = RoomEventKind::DuckPeddler;
-            ev.goldCost = kDuckPeddlerPriceGold;
-            ev.itemId = kEvilDucklingItemId;
-        }
-
-        // M93 (generation v17): Dragonform — the same pure-hash replacement
-        // contract on its own salts. The eligible list is re-collected so a
-        // slot the peddler just took is never taken twice. M103 (generation
-        // v19) draws six more kinds sequentially on the exact same rule, so
-        // no two replacements can ever share a room.
         const auto recollectPlain = [&]() {
             plainEventRooms.clear();
             for (std::size_t ri = 0; ri < d.rooms.size(); ++ri) {
@@ -631,6 +596,53 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
                 }
             }
         };
+
+        // The theme rite draws FIRST (owner direction 2026-08-17, generation
+        // v22): the theme's signature event gets first pick of the plain
+        // slots, at the top of the replacement band instead of a guarantee.
+        // Its payload fields are set here exactly as the old forced path did —
+        // except the Miner's Cache item, which now comes from a pure hash
+        // (the forced path drew it from the generator stream).
+        recollectPlain();
+        {
+            const RoomEventKind rite = themeEventKind(d.themeId);
+            const int riteSlot =
+                rite != RoomEventKind::None
+                    ? themeRiteSlot(seed, static_cast<int>(plainEventRooms.size()))
+                    : -1;
+            if (riteSlot >= 0) {
+                const int roomIdx = plainEventRooms[static_cast<std::size_t>(riteSlot)];
+                RoomEvent& ev = d.rooms[static_cast<std::size_t>(roomIdx)].event;
+                ev.kind = rite;
+                ev.goldCost = 0;
+                ev.itemId.clear();
+                if (rite == RoomEventKind::ElderRoot) {
+                    ev.goldCost = elderRootPrice(townIdx, d.depth);
+                } else if (rite == RoomEventKind::MinersCache && !pools.items.empty()) {
+                    constexpr std::uint64_t kSaltRiteItem = 0x217E5E77E0090902ull;
+                    ev.itemId = pools.items[static_cast<std::size_t>(
+                        themeEventHash(seed, roomIdx, kSaltRiteItem) % pools.items.size())];
+                }
+            }
+        }
+
+        // The Duckling Peddler (M76) and everything after it keep their order.
+        recollectPlain();
+        const int slot = duckPeddlerSlot(seed, static_cast<int>(plainEventRooms.size()));
+        if (slot >= 0) {
+            RoomEvent& ev =
+                d.rooms[static_cast<std::size_t>(plainEventRooms[static_cast<std::size_t>(slot)])]
+                    .event;
+            ev.kind = RoomEventKind::DuckPeddler;
+            ev.goldCost = kDuckPeddlerPriceGold;
+            ev.itemId = kEvilDucklingItemId;
+        }
+
+        // M93 (generation v17): Dragonform — the same pure-hash replacement
+        // contract on its own salts. The eligible list is re-collected so a
+        // slot an earlier draw just took is never taken twice. M103 (generation
+        // v19) draws six more kinds sequentially on the exact same rule, so
+        // no two replacements can ever share a room.
         const auto applyReplacement = [&](int slot, RoomEventKind kind) {
             if (slot >= 0) {
                 RoomEvent& ev =

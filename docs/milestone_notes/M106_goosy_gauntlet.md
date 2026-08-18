@@ -31,8 +31,9 @@ ENTIRE team turns to Geese for one fight, +300 score.
   owner's ask; the rush is now 15 fights and its records note it). The
   **treasure-guard roster is gated**: only minTown-7 bosses are excluded
   below town 7, so every historical guard pick keeps its eligibility.
-- **The rite** (`RoomEventKind::GoosyFlock`, the guaranteed M55 first
-  event slot of a goosy dungeon): the WHOLE party fights its next battle
+- **The rite** (`RoomEventKind::GoosyFlock`, on the M55 first event slot
+  as built; since the 2026-08-17 leveling it rolls at 8% per floor like
+  every rite — see the M55 note's adjustment): the WHOLE party fights its next battle
   as Geese — the Dragonform machinery verbatim (same stash, same vital
   mapping, same restore; heirlooms ride along) with the sign flipped:
   **+300 score**, itemized as "Flock battles". When dragonform and the
@@ -56,24 +57,60 @@ ENTIRE team turns to Geese for one fight, +300 score.
   updated [castle]/[treasure] tags). Suite + capture in the completion
   report.
 
+## Fix round (2026-08-17 — owner manual-pass verdict: interim art REJECTED)
+
+The owner ruled the theme must have its own graphics, music, ambience and
+tiles. Delivered:
+
+- **Palette reconciliation first** (the owed art-bible §2 debt): all 68
+  generator hex literals censused and attributed; §2 now records the 25
+  survivors as sanctioned groups. Nothing retinted; debt closed.
+- **11 hand-authored sprites** (`generate_textures.ps1`, ASCII grids,
+  RNG-free): 5 normals (shovel-billed Pond Drake, Reed Honker as a
+  periscope neck in a reed blind, oar-armed Mallard Marauder, the shawled
+  Downfeather Hag, the Puddle Imp splash), 3 elites (bomb-cradling Gander
+  Grenadier, helmed swan Cob Knight, horn-and-banner Migration Herald),
+  and 3 bosses per §5b (the Gray Gander unfolded to full height, the
+  veiled Mother of Ponds on her nest with orbiting frost eggs, the
+  Pondlord with reed diadem and cattail standard). Reviewed via contact +
+  silhouette sheets before acceptance; every previously shipped PNG
+  byte-identical (git-verified).
+- **Own tile set** (`goosy_{floor,wall,door,accent}.png`): still-water
+  floor, woven reed-palisade walls, parted-reed doorway, nest shrine —
+  the "flooded pen" identity recorded in art_bible §8b.
+- **Own battle backdrop**: `BackdropStage::Goosy` (reed-top skyline,
+  cattail clumps, the pond line with a phase-stepped ripple glint) —
+  goosy battles no longer fall to Plain.
+- **Own music**: `dungeon_goosy.wav` — the waddling strut, G dorian
+  116 BPM, sectioned A/B/breakdown/A (~29 s), from `music_data.ps1`
+  (MIDI exported too); `MusicTrack::DungeonGoosy` appended.
+- **Own ambience**: `goosy.wav` — the occupied-wetland bed (reed rustle,
+  still-water swell, distant double honks kept below the birdcall band
+  per the M74 rule, water plops, one wing flap);
+  `AmbienceTrack::Goosy` appended. Existing WAVs byte-identical.
+- Manifest retargeted (11 enemy/boss ids + 4 tiles to their own files;
+  music + ambience entries added); capture scenes `118_dungeon_goosy`,
+  `120_battle_goosy`, `121_battle_goosy_boss` added; backdrop/audio test
+  pins extended.
+
 ## Deviations from the plan
 
-- Interim reused art instead of newly generated sprites/tiles/music (see
-  above) — flagged as the milestone's biggest judgment call.
-- Palette reconciliation deferred WITH the real art pass (see above).
+- ~~Interim reused art~~ — resolved 2026-08-17 (fix round above).
+- ~~Palette reconciliation deferred~~ — discharged 2026-08-17.
 - Roster: 5+3 new enemies (plan said "6–8") plus the five reused geese as
   boss courts.
 
 ## Manual owner checklist
 
-Matrix row **202**: the theme appears only at town 7; runs feel pond-y
-despite borrowed tiles; the rite arms and pays +300 with the whole party
+Matrix row **202** (re-test after the fix round): the theme appears only at
+town 7; the dungeon shows the reed/water tiles; battles stage on the reed
+backdrop with the NEW sprites (no evil-goose repeats); the strut plays and
+the wetland bed honks; the rite arms and pays +300 with the whole party
 honking; the three bosses fight distinctly (brute/sorcerer/commander) with
 goose courts; Boss Rush now runs 15; a town-1 dig never meets a goose
-guard. **Judge: is the interim art acceptable, or should a Goosy art+audio
-milestone follow?**
+guard. Row 202 carries the full art/audio expectations.
 
 ## Documentation updated
 
-game_design §5/§6 (the fourth theme + rite), ledger row, matrix row 202,
-this note.
+game_design §5/§6 (the fourth theme + rite), art_bible §2/§5/§7/§8b/§9b,
+assets/credits.md, ledger row, matrix row 202, this note.

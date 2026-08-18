@@ -62,11 +62,11 @@
 | 52 | Comforts & secrets | ☑ complete (approved) |
 | 53 | Toolbelt & trims (debug menu, 5 save slots, Champion, element chips) | ☑ complete (approved) |
 | 54 | Arms of the ladder (equipment rebalance) | ☑ complete (approved) |
-| 55 | Theme rites (per-theme dungeon events) | ☑ complete (approved) |
+| 55 | Theme rites (per-theme dungeon events) | ☑ complete (approved) (post-approval adjustment 2026-08-17: rites leveled to an 8% roll, gen v22 - see the note) |
 | 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ☑ complete (approved) |
 | 57 | Advanced CRT post-process (0–10 CRT Strength) | ☑ complete (approved) |
 | 58 | Fixes: equip message, Deadly Spoon once, geese scare the King | ☑ complete (approved) |
-| 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ☑ complete (approved) |
+| 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ☑ complete (approved) (post-approval fix 2026-08-17: text-edit capacity/data-loss, see the note) |
 | 60 | CrystalForge sim lab, battle observer, test runner | ☑ complete (approved) |
 | 61 | Goose Town & the Deadly Duck (rules v12) | ☑ complete (approved) |
 | 62 | Fixes & Duck stagecraft (Purify no-heal rules v13, goose/duck art, Duck theme) | ☑ complete (approved) |
@@ -101,21 +101,21 @@
 | 91 | Elemental impact presentation | ☑ complete (approved) |
 | 92 | The long descent: 20 floors & the scroll trove | ☑ complete (approved) |
 | 93 | Dungeon dynamics: fog, Surveyor, patrols & dragonform | ☑ complete (approved) |
-| 94 | The sparring mirror | ☑ complete (approved) |
+| 94 | The sparring mirror | ☑ complete (approved) (post-approval crash fix 2026-08-17: spar-row hover, see the note) |
 | 95 | Summons | ☑ complete (approved) |
-| 96 | Heirlooms | ☑ complete (approved) |
+| 96 | Heirlooms | ☑ complete (approved) (post-approval UI fixes 2026-08-17: full offer text + party visibility, see the note) |
 | 97 | The Hooded Goose: cutscene story | ☑ complete (approved) |
 | 98 | Post-program approvals & the six-fix batch | ◑ implemented, awaiting manual approval |
 | 99 | Tutorial truth & the Forge tutorial editor | ◑ implemented, awaiting manual approval |
 | 100 | Cutscene stagecraft & THE STRANGER "P" | ◑ implemented, awaiting manual approval |
-| 101 | Center-out battle formation | ◑ implemented, awaiting manual approval |
+| 101 | Center-out battle formation | ◑ implemented, awaiting manual approval (fix 2026-08-17: boss-crown headroom) |
 | 102 | Rules: the fallen & the shelf (KO XP + scroll ban) | ◑ implemented, awaiting manual approval |
 | 103 | Six new events | ◑ implemented, awaiting manual approval |
-| 104 | The gambling den: reels & blackjack | ◑ implemented, awaiting manual approval |
+| 104 | The gambling den: reels & blackjack | ◑ implemented, awaiting manual approval (fix round 2026-08-17: reel icons) |
 | 105 | Eternal (town-7 endless descent) | ◑ implemented, awaiting manual approval |
-| 106 | The Goosy Gauntlet (town-7 theme) | ◑ implemented, awaiting manual approval |
+| 106 | The Goosy Gauntlet (town-7 theme) | ◑ implemented, awaiting manual approval (fix round 2026-08-17: own art, tiles, backdrop, music, ambience) |
 | 107 | Summon stagecraft | ◑ implemented, awaiting manual approval |
-| 108 | Rebrand: "Are P Geese" | ◑ implemented, awaiting manual approval |
+| 108 | Rebrand: "Are P Geese" | ◑ implemented, awaiting manual approval (fix round 2026-08-17: title plaque, goose emblem + icon, v0.7.0) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <optional>
 #include <string>
 #include <vector>
@@ -59,6 +60,8 @@ public:
                                const std::string& bodyOverride = "");
     // M80 addendum: show the outcome panel with a representative result.
     void captureShowOutcome(const std::string& title, const std::string& body);
+    // Reel-icon rows over the outcome panel (owner direction 2026-08-17).
+    void captureShowReels();
     // M82: clear the current floor's stair-gate, open the stairway, and stand
     // facing it, so the descend prompt + floor chip render deterministically.
     // False on a final floor (no stairway exists there).
@@ -185,6 +188,11 @@ private:
     bool outcomePanelOpen_ = false;
     std::string outcomeTitle_;
     std::string outcomeBody_;
+    // Reel icons (owner direction 2026-08-17): when the outcome being shown is
+    // a reels result, each spin's three symbols render as an icon row above
+    // the text (values are gamble::ReelSymbol indices; empty for every other
+    // outcome). showOutcome() clears it; the reels resolver fills it after.
+    std::vector<std::array<int, 3>> outcomeReels_;
     // M87: both panels' bodies are bounded scrollable viewports — the panel
     // (not the text) owns the height and Up/Down reaches the rest, so an
     // authored/translated body of any length works. The fixed trade-off line

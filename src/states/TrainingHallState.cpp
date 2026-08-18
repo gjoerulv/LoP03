@@ -31,6 +31,11 @@ void TrainingHallState::captureEnterPassives() {
     passiveMenu_.setCursor(0);
     rebuildPassives();
 }
+
+void TrainingHallState::captureHoverSparRow() {
+    rebuildMembers();
+    memberMenu_.setCursor(static_cast<int>(context_.party.members.size()));
+}
 #endif
 
 int TrainingHallState::trainingCost(int level) const { return 40 + level * 30; }
@@ -282,13 +287,17 @@ void TrainingHallState::render() {
             ui::drawFrame(28, 50, w - 56, frameH, ui::FrameStyle::Inset);
             ui::drawMenu(memberMenu_, 48, 60, 16, style::kFontMenu, p.text, p.disabled, p.cursor);
             // M67: the highlighted member's portrait rides the frame's free
-            // right side and follows the cursor.
-            if (!context_.party.members.empty()) {
-                const std::size_t cur = static_cast<std::size_t>(memberMenu_.cursor());
+            // right side and follows the cursor. The M94 spar rows sit BELOW
+            // the roster, so the cursor can exceed the member count — no
+            // member is highlighted there, so no portrait is drawn (indexing
+            // members[cursor] on a spar row was an out-of-range crash).
+            const int cursor = memberMenu_.cursor();
+            if (cursor < static_cast<int>(context_.party.members.size())) {
                 const int box = ui::portraitBox(2);
                 ui::drawActorPortrait(context_.resources,
-                                      context_.party.members[cur].classId, w - 28 - box - 6,
-                                      50 + std::max(4, (frameH - box) / 2), 2);
+                                      context_.party.members[static_cast<std::size_t>(cursor)]
+                                          .classId,
+                                      w - 28 - box - 6, 50 + std::max(4, (frameH - box) / 2), 2);
             }
             break;
         }

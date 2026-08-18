@@ -108,3 +108,16 @@ paragraph before the King's classes) · `docs/technical_design.md` (§49)
 ## Final status
 
 `implemented, awaiting manual approval`
+
+## Post-implementation fixes (2026-08-17, owner manual-pass feedback)
+
+- **The Stranger's offer box** cut long keepsake descriptions to a
+  two-line preview (the Hearthstone Chip wraps to three). `enterChoice`
+  now measures the longest option's wrapped lines (capped at six) and the
+  box grows to fit, so every heirloom's own words are read in full before
+  the choice. Capture `113_cutscene_choice` covers the sized box.
+- **The Party screen** now shows the keepsake like every other worn
+  piece: a "Heirloom: <name>" gear line (relic icon) under Armor/Acc, and
+  the member Details body carries the heirloom's name + full effect text.
+  The skills preview absorbs the one-line shift (it was already a
+  bounded preview).

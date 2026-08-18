@@ -49,8 +49,9 @@ enum class RoomEventKind {
     ArmoryGhost, MinersCache, ElderRoot, DuckPeddler, Surveyor, Dragonform,
     GoosePolymorph, Sacrifice, LevelAltar, StrangerStory, TokenExchange, PatrolReset,
     Reels, Blackjack,
-    // M106 (generation v21): the Goosy Gauntlet's guaranteed rite — the WHOLE
-    // party fights the next battle as Geese, +300 score (the M55 rite slot).
+    // M106 (generation v21): the Goosy Gauntlet's rite — the WHOLE party
+    // fights the next battle as Geese, +300 score. Like every rite it rolls
+    // at kThemeRiteChancePct since the 2026-08-17 leveling (gen v22).
     GoosyFlock
 };
 

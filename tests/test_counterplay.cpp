@@ -207,24 +207,24 @@ TEST_CASE("counterplay: a generated peddler sells the duckling at the flat price
     CHECK(found >= 1);  // the sweep met the peddler at least once
 }
 
-TEST_CASE("counterplay: the peddler never displaces a rite and the rite still leads",
-          "[counterplay]") {
-    // Themed dungeons keep their guaranteed rite in every seed that places
-    // event rooms at all — the peddler only ever takes a PLAIN slot
-    // (Shrine/Spring/Merchant/Wager/Rest), never the rite's.
+TEST_CASE("counterplay: the peddler never displaces a rite", "[counterplay]") {
+    // Since the 2026-08-17 leveling (generation v22) the rite is a rare roll,
+    // not a guarantee — but where it lands, the peddler (which draws AFTER
+    // it and only ever takes a PLAIN Shrine/Spring/Merchant/Wager/Rest slot)
+    // can never take its room: a floor never holds more than one rite, and
+    // both never share a room by construction.
+    int riteFloors = 0;
     for (std::uint64_t seed = 1; seed <= 200; ++seed) {
         const dungeon::Dungeon d = dungeon::generate(seed, 4, db(), "ruined_keep", 3);
-        int eventRooms = 0;
-        bool riteSeen = false;
+        int rites = 0;
         for (const dungeon::Room& r : d.rooms) {
-            if (r.type == dungeon::RoomType::Event) {
-                ++eventRooms;
-            }
             if (r.event.kind == dungeon::RoomEventKind::ArmoryGhost) {
-                riteSeen = true;
+                ++rites;
             }
         }
         INFO(seed);
-        CHECK((eventRooms == 0 || riteSeen));
+        CHECK(rites <= 1);
+        riteFloors += rites;
     }
+    CHECK(riteFloors >= 1);  // the sweep met the leveled rite at least once
 }

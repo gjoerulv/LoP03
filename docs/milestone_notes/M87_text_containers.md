@@ -299,3 +299,13 @@ strings), so no prose was rewritten.
 ## I. Final status
 
 `implemented, awaiting manual approval`
+
+## Policy adjustment (2026-08-17, owner direction)
+
+The battle command panel's skill/item description preview grew from two
+policy-B lines to THREE (the panel's remaining height holds them exactly;
+the box did not grow), and its more-arrow is gone: there is no scroll in
+that panel, the header already advertises [Details] for the full sheet,
+and the owner read the arrow as a scroll affordance that doesn't exist.
+Policy B elsewhere is unchanged (the arrow stays wherever Details is the
+only hint that more exists).

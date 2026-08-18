@@ -85,3 +85,15 @@ reset the patrol fuse. **Judge the flavor's dryness and the rates.**
 
 game_design §6 (the six-event passage), ledger row, matrix rows 197–199,
 this note.
+
+## Post-implementation fix (2026-08-17, owner screenshot)
+
+The Sacrifice's pick modal (`EventChoiceState`) listed one row per bag
+piece and GREW with the list — a deep bag pushed the box past the 240px
+screen with no way to see (or reach visibly) the rest. The modal's rows
+now show through a fixed nine-row window that follows the cursor
+(`ui::ScrollWindow` + `drawMenuScrolled`, whose arrows mark the hidden
+remainder), and the title wraps to two lines so long flavor prompts stop
+squeezing into one. Every M103/M104 modal shares the state, so the
+Token Changer, Level Altar, blackjack bets and reels menus inherit the
+same bounds. Capture `124_event_choice_scroll` pins a 20-row list.

@@ -72,11 +72,12 @@ Character member(int maxHp, int atk, int mag, int def, int spd) {
 
 }  // namespace
 
-// The exact generation pin rides the newest bump — v21 (M106) tags the Goosy
-// Gauntlet alongside v20's gambling dens, v19's events and v18's scroll-free
-// pools (the pin moves with each owner-approved bump).
+// The exact generation pin rides the newest bump — v22 (owner direction
+// 2026-08-17) levels the theme rites to a pure-hash roll, after v21's Goosy
+// Gauntlet, v20's gambling dens, v19's events and v18's scroll-free pools
+// (the pin moves with each owner-approved bump).
 TEST_CASE("danger: generation version rides the newest bump", "[danger]") {
-    CHECK(dungeon::kGenerationVersion == 21);
+    CHECK(dungeon::kGenerationVersion == 22);
 }
 
 TEST_CASE("danger: threat grows with stronger and more numerous enemies", "[danger]") {

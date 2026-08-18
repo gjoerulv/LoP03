@@ -60,8 +60,11 @@ enum class MusicTrack {
     Castle,       // M40: the castle place
     KingBattle,   // M40: the King fight
     DuckBattle,   // M62: the Deadly Duck fight (his pond, his own anthem)
+    // Appended (owner direction 2026-08-17) so every earlier role keeps its
+    // table index: the Goosy Gauntlet's own tune.
+    DungeonGoosy,
 };
-inline constexpr std::size_t kMusicCount = 14;  // excludes None
+inline constexpr std::size_t kMusicCount = 15;  // excludes None
 
 enum class AmbienceTrack {
     None,
@@ -69,8 +72,9 @@ enum class AmbienceTrack {
     Keep,
     Mine,
     Forest,
+    Goosy,  // owner direction 2026-08-17: the wetland bed
 };
-inline constexpr std::size_t kAmbienceCount = 4;  // excludes None
+inline constexpr std::size_t kAmbienceCount = 5;  // excludes None
 
 namespace audio {
 
@@ -91,7 +95,7 @@ inline constexpr std::array<const char*, kMusicCount> kMusicIds = {
     "music.dungeon.keep",  "music.dungeon.mine", "music.dungeon.forest",
     "music.battle",        "music.boss",         "music.victory",
     "music.defeat",        "music.result",       "music.castle",
-    "music.king",          "music.duck",
+    "music.king",          "music.duck",         "music.dungeon.goosy",
 };
 
 inline constexpr std::array<const char*, kAmbienceCount> kAmbienceIds = {
@@ -99,6 +103,7 @@ inline constexpr std::array<const char*, kAmbienceCount> kAmbienceIds = {
     "ambience.keep",
     "ambience.mine",
     "ambience.forest",
+    "ambience.goosy",
 };
 
 // Victory/defeat are one-shot jingles: the music channel plays them once and
@@ -123,6 +128,7 @@ inline constexpr std::array<int, kMusicCount> kSynthMusicIndex = {
     0,          // Castle (town-tier synth fallback)
     2,          // KingBattle (battle-tier synth fallback)
     2,          // DuckBattle (battle-tier synth fallback)
+    1,          // DungeonGoosy (dungeon-tier synth fallback)
 };
 
 // Minimum seconds between accepted plays of the same SFX role. Guards rapid

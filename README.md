@@ -10,10 +10,10 @@ score on how few battle turns you spent â€” then upgrade and dive again, fo
 Original work â€” not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1â€“M85
-> delivered and owner-approved; M86â€“M97 â€” from the CrystalForge catch-up
-> and the deliberate version renumber to **0.6.0** through the newest
-> expansion program â€” implemented, awaiting approval). In the box: a seven-town difficulty ladder
+> **Status: feature-complete, polished playable build** (milestones M1â€“M97
+> delivered and owner-approved; M98â€“M108 â€” the "Are P Geese" program, from
+> the post-M97 fix batch through the full rebrand at **v0.7.0** â€”
+> implemented, awaiting approval). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
 > dungeons with room events including the rare Royal Relics and per-theme

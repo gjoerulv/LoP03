@@ -61,6 +61,7 @@
 #include "states/DungeonMenuState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
+#include "states/EventChoiceState.hpp"
 #include "states/EquipShopState.hpp"
 #include "states/InventoryState.hpp"  // M90
 #include "states/ScrollChoiceState.hpp"  // M92
@@ -164,6 +165,33 @@ dungeon::EnemyTeam makeBossTeam(const content::ContentDatabase& db) {
             for (int i = 0; i < 2 && i < static_cast<int>(boss->minions.size()); ++i) {
                 team.enemyIds.push_back(boss->minions[static_cast<std::size_t>(i)]);
             }
+        }
+    }
+    return team;
+}
+
+// The Goosy Gauntlet's five new normals on their own stage (2026-08-17).
+dungeon::EnemyTeam makeGoosyTeam(const content::ContentDatabase& db) {
+    (void)db;
+    dungeon::EnemyTeam team;
+    team.name = "The Pond Patrol";
+    team.enemyIds = {"pond_drake", "reed_honker", "mallard_marauder", "downfeather_witch",
+                     "puddle_imp"};
+    team.tags = {"Fast", "Magic"};
+    team.statScalePct = 130;
+    return team;
+}
+
+// One of the three new Goosy bosses with its authored court (2026-08-17).
+dungeon::EnemyTeam makeGoosyBossTeam(const content::ContentDatabase& db) {
+    dungeon::EnemyTeam team;
+    team.isBoss = true;
+    team.bossId = "the_pondlord";
+    const content::BossDef* boss = db.findBoss(team.bossId);
+    team.name = boss != nullptr ? boss->name : "Boss";
+    if (boss != nullptr) {
+        for (const std::string& minion : boss->minions) {
+            team.enemyIds.push_back(minion);
         }
     }
     return team;
@@ -470,6 +498,39 @@ int run(const char* outDir) {
              [](StateStack& s, AppContext& c) {
                  s.pushState(std::make_unique<TrainingHallState>(s, c));
              }},
+            {"122_training_spar_row",
+             [](StateStack& s, AppContext& c) {
+                 // Regression (2026-08-17): the cursor on the first spar row —
+                 // this exact hover frame indexed members[] out of range and
+                 // crashed debug builds before the fix.
+                 auto state = std::make_unique<TrainingHallState>(s, c);
+                 state->captureHoverSparRow();
+                 s.pushState(std::move(state));
+             }},
+            {"123_spar_battle",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // Owner fix 2026-08-17: the echoes wear the party's own class
+                 // sprites (flipped to face their originals), not the generic
+                 // enemy beast.
+                 s.pushState(std::make_unique<BattleState>(
+                     s, c, battle::buildSparBattle(c.party, c.content), &battleSlot));
+             }},
+            {"124_event_choice_scroll",
+             [](StateStack& s, AppContext& c) {
+                 // Owner fix 2026-08-17: a deep-bag Sacrifice list once grew
+                 // the modal past the screen — the rows now scroll in a fixed
+                 // window under a two-line title.
+                 s.pushState(std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine")));
+                 std::vector<std::string> rows;
+                 for (int i = 1; i <= 20; ++i) {
+                     rows.push_back(TextFormat("Dawnforged Blade  x%d", i));
+                 }
+                 s.pushState(std::make_unique<EventChoiceState>(
+                     s, c,
+                     "Feed the forge one piece - the next battle pays double experience.",
+                     std::move(rows), [](int) {}));
+             }},
             {"11_slot_menu_save",
              [](StateStack& s, AppContext& c) {
                  // Write one occupied slot carrying the King title, the widest
@@ -678,6 +739,38 @@ int run(const char* outDir) {
                  auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
                  state->captureShowSummon("summon_goose");
                  s.pushState(std::move(state));
+             }},
+            {"118_dungeon_goosy",
+             [](StateStack& s, AppContext& c) {
+                 // Owner direction 2026-08-17: the Goosy Gauntlet's own tiles.
+                 s.pushState(std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 20, c.content, "goosy_gauntlet", 7)));
+             }},
+            {"119_reels_icons",
+             [](StateStack& s, AppContext& c) {
+                 // The reels outcome with its icon rows over the panel text.
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine"));
+                 state->captureShowReels();
+                 s.pushState(std::move(state));
+             }},
+            {"120_battle_goosy",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // The five new pond-fowl normals on the Goosy reed stage.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeGoosyTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(
+                     s, c, std::move(b), &battleSlot, MusicTrack::None, nullptr,
+                     /*castleChallenge=*/false, render::BackdropStage::Goosy));
+             }},
+            {"121_battle_goosy_boss",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // The Pondlord and its court — the 36x36 boss canvas proof.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeGoosyBossTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(
+                     s, c, std::move(b), &battleSlot, MusicTrack::None, nullptr,
+                     /*castleChallenge=*/false, render::BackdropStage::Goosy));
              }},
             {"23_battle_targeting",
              [&battleSlot](StateStack& s, AppContext& c) {
@@ -1323,10 +1416,11 @@ int run(const char* outDir) {
 #endif
             {"66_armory_ghost",
              [](StateStack& s, AppContext& c) {
-                 // M55: the Ruined Keep's guaranteed Armory Ghost, faced so its
-                 // footer trade-off is checked in situ. The rite is guaranteed, so
-                 // any themed seed holds it; a tiny loop just picks one whose
-                 // marker the player can stand in front of.
+                 // M55: the Ruined Keep's Armory Ghost, faced so its footer
+                 // trade-off is checked in situ. Since the 2026-08-17 leveling
+                 // the rite rolls at ~8% per floor, so the seed loop sweeps
+                 // until one holds a stand-in-front-able marker (a 200-seed
+                 // sweep misses with probability ~0.92^200 — never in practice).
                  for (std::uint64_t seed = 1; seed < 200; ++seed) {
                      dungeon::Dungeon d =
                          dungeon::generate(seed, 20, c.content, "ruined_keep", 7);
@@ -1339,7 +1433,8 @@ int run(const char* outDir) {
              }},
             {"67_miners_cache",
              [](StateStack& s, AppContext& c) {
-                 // M55: the Crystal Mine's guaranteed Miner's Cache.
+                 // M55: the Crystal Mine's Miner's Cache (leveled 2026-08-17;
+                 // the sweep finds a seed that rolled it).
                  for (std::uint64_t seed = 1; seed < 200; ++seed) {
                      dungeon::Dungeon d =
                          dungeon::generate(seed, 20, c.content, "crystal_mine", 7);
@@ -1352,8 +1447,9 @@ int run(const char* outDir) {
              }},
             {"68_elder_root",
              [](StateStack& s, AppContext& c) {
-                 // M55: the Hollow Forest's guaranteed Elder Root. Gold is set high
-                 // so the affordable "pay for XP" prompt shows (not the refusal).
+                 // M55: the Hollow Forest's Elder Root (leveled 2026-08-17; the
+                 // sweep finds a seed that rolled it). Gold is set high so the
+                 // affordable "pay for XP" prompt shows (not the refusal).
                  c.party.gold = 99999;
                  for (std::uint64_t seed = 1; seed < 200; ++seed) {
                      dungeon::Dungeon d =

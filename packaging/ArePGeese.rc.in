@@ -1,7 +1,7 @@
 // Windows executable resources (M24) — configured from CMake; do not edit
 // the generated copy. Icon + VERSIONINFO shown in Explorer/file properties.
-// M108: rebranded to "Are P Geese" (the icon art itself is the interim
-// crystal until an owner-directed icon pass).
+// M108: rebranded to "Are P Geese"; the icon is the goose emblem since the
+// owner-directed rebrand follow-up (2026-08-17).
 
 #include <winver.h>
 

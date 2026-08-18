@@ -84,6 +84,16 @@ void PartyState::openMemberDetails() {
         }
     }
 
+    // The M96 keepsake, with its own words (owner fix 2026-08-17).
+    const content::ItemDef* heirloom =
+        c.equippedHeirloom.empty() ? nullptr : db.findItem(c.equippedHeirloom);
+    if (heirloom != nullptr) {
+        body += "\n\nHeirloom: " + heirloom->name;
+        if (!heirloom->description.empty()) {
+            body += "\n" + heirloom->description;
+        }
+    }
+
     bool anyMilestone = false;
     for (int tier : kMilestoneTiers) {
         const content::MilestoneDef* m = chosenMilestone(c, tier, db);
@@ -310,6 +320,12 @@ void PartyState::render() {
         ui::drawTextFitted("Acc: " + itemName(db, c.accessory), ax, y, dx + dw - ax, 8,
                            p.textDim, "party.gear");
     }
+    y += 10;
+    // The M96 keepsake slot, visible like every other piece worn (owner fix
+    // 2026-08-17); its full effect text lives in Details.
+    gx = gearIcon(c.equippedHeirloom, dx, y - 1);
+    ui::drawTextFitted("Heirloom: " + itemName(db, c.equippedHeirloom), gx, y, dw - (gx - dx),
+                       8, p.textDim, "party.gear");
     y += 10;
     const content::PassiveDef* passive =
         c.equippedPassive.empty() ? nullptr : db.findPassive(c.equippedPassive);

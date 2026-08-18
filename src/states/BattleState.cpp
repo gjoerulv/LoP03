@@ -440,6 +440,15 @@ int BattleState::enemyBaseY() const {
     return enemies >= 5 ? 20 : 36;
 }
 
+bool BattleState::bossOnField() const {
+    for (const battle::Combatant& c : battle_.units) {
+        if (c.isBoss) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     int enemyRow = 0;
     int partyRow = 0;
@@ -452,7 +461,8 @@ void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     }
     if (battle_.units[static_cast<std::size_t>(index)].side == battle::Side::Enemy) {
         outX = 36;
-        outY = enemyBaseY() + battle_ui::enemyRowSlot(enemyRow) * 34;  // M101: center-out
+        // M101 center-out; the rows above a boss lift for its 36px crown.
+        outY = enemyBaseY() + battle_ui::enemyRowOffset(enemyRow, bossOnField());
     } else {
         outX = context_.virtualWidth - 110;
         outY = 36 + partyRow * 34;
@@ -1488,6 +1498,7 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
     // Sprite lookup: a specific id first (per-enemy art is a manifest
     // drop-in), then the tier-generic sprite, then the pre-asset rectangle.
     std::string spriteId;
+    bool flipX = false;
     if (c.side == battle::Side::Party) {
         spriteId = "actor." + c.sourceId + ".battle";
     } else if (c.isBoss) {
@@ -1498,10 +1509,20 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
     } else {
         spriteId = "enemy." + c.sourceId + ".battle";
         if (!context_.resources.hasTexture(spriteId)) {
-            const content::EnemyDef* def = context_.content.findEnemy(c.sourceId);
-            spriteId = (def != nullptr && def->tier == content::EnemyTier::Elite)
-                           ? "enemy.elite.battle"
-                           : "enemy.normal.battle";
+            // M94 spar echoes mirror party members, so an enemy-side sourceId
+            // can be a CLASS id: the member's own battle sprite is the echo's
+            // face, flipped to face the party like any foe (owner fix
+            // 2026-08-17; the tier-generic beast was wearing their names).
+            const std::string actorId = "actor." + c.sourceId + ".battle";
+            if (context_.resources.hasTexture(actorId)) {
+                spriteId = actorId;
+                flipX = true;
+            } else {
+                const content::EnemyDef* def = context_.content.findEnemy(c.sourceId);
+                spriteId = (def != nullptr && def->tier == content::EnemyTier::Elite)
+                               ? "enemy.elite.battle"
+                               : "enemy.normal.battle";
+            }
         }
     }
 
@@ -1512,7 +1533,15 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         const int sy = y + 16 - tex.height;      // 40x16 footprint
         Color tint = shownAlive ? WHITE : Color{110, 110, 125, 255};
         tint.a = static_cast<unsigned char>(255.0f * fade);
-        DrawTexture(tex, sx, sy, tint);
+        if (flipX) {
+            // Negative source width mirrors horizontally (raylib idiom).
+            const Rectangle src{0.0f, 0.0f, -static_cast<float>(tex.width),
+                                static_cast<float>(tex.height)};
+            DrawTextureRec(tex, src,
+                           Vector2{static_cast<float>(sx), static_cast<float>(sy)}, tint);
+        } else {
+            DrawTexture(tex, sx, sy, tint);
+        }
         if (flash > 0.0f) {
             DrawRectangle(sx, sy, tex.width, tex.height, Fade(WHITE, 0.55f * flash));
             // M91: the element's own accent over the hit — inherits the Battle
@@ -1607,11 +1636,7 @@ void BattleState::render() {
         DrawRectangle(6, gy - 6, 2, 8, pal.borderDark);
         DrawRectangle(w - 16, gy, 10, 2, pal.borderDark);  // party-side bracket
         DrawRectangle(w - 8, gy - 6, 2, 8, pal.borderDark);
-        bool bossOnField = false;
-        for (const battle::Combatant& c : battle_.units) {
-            bossOnField = bossOnField || c.isBoss;
-        }
-        if (bossOnField) {
+        if (bossOnField()) {
             const auto pip = [&pal](int x, int y) {
                 DrawRectangle(x, y + 1, 3, 1, pal.magic);
                 DrawRectangle(x + 1, y, 1, 3, pal.magic);
@@ -1635,6 +1660,7 @@ void BattleState::render() {
     // battlefield, never the UI panel.
     const int shakeX = seq_.shakeOffset();
     const int enemyY0 = enemyBaseY();
+    const bool bossField = bossOnField();
     for (std::size_t i = 0; i < battle_.units.size(); ++i) {
         const battle::Combatant& c = battle_.units[i];
         const bool isCurrent = partyTurn && static_cast<int>(i) == actor;
@@ -1642,8 +1668,10 @@ void BattleState::render() {
         if (c.side == battle::Side::Enemy) {
             // M101: center-out rows — the boss (first enemy unit) holds the
             // middle; unitScreenPos applies the same mapping for the floats.
+            // The two rows above a boss lift clear of its 36px crown.
             drawUnit(c, static_cast<int>(i), 36 + shakeX,
-                     enemyY0 + battle_ui::enemyRowSlot(enemyRow) * 34, isCurrent, isTarget);
+                     enemyY0 + battle_ui::enemyRowOffset(enemyRow, bossField), isCurrent,
+                     isTarget);
             ++enemyRow;
         } else {
             // The party column leaves room to its right for the HP/MP numerals
@@ -1776,18 +1804,21 @@ void BattleState::render() {
                 if (const content::SkillDef* s = context_.content.findSkill(sid)) {
                     // The row's "SIL" tag is terse by necessity; spell the block
                     // out here rather than leaving the player to decode it.
-                    // M87: a 2-line POLICY-B preview — intentional truncation
-                    // marked by the arrow (never an overflow event); Details
-                    // opens the full sheet.
+                    // M87 policy-B preview. Owner fix 2026-08-17: THREE lines
+                    // (the panel's remaining height holds them exactly) and NO
+                    // more-arrow — there is no scroll here, the header already
+                    // advertises [Details] for the full sheet, and the arrow
+                    // read as scrollable.
                     const battle::Combatant& a =
                         battle_.units[static_cast<std::size_t>(actor)];
                     if (!battle::canCast(a, *s)) {
                         ui::drawTextPreview("SIL: silenced - MP skills are blocked.", kInfoX,
                                             panelY + 20, infoW, style::kFontBody,
-                                            style::palette().textDim, 2);
+                                            style::palette().textDim, 3, /*markMore=*/false);
                     } else if (!s->description.empty()) {
                         ui::drawTextPreview(s->description, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().success, 2);
+                                            style::kFontBody, style::palette().success, 3,
+                                            /*markMore=*/false);
                     }
                 }
             }
@@ -1804,14 +1835,17 @@ void BattleState::render() {
                 const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
                 if (const content::ItemDef* it = context_.content.findItem(iid)) {
                     // M43: a greyed item says why before it says what it does.
-                    // M87: policy-B preview; Details opens the full sheet.
+                    // M87 policy-B preview; three lines, no more-arrow (owner
+                    // fix 2026-08-17 — same reasoning as the skill preview).
                     const std::string blocked = itemBlockReason(*it);
                     if (!blocked.empty()) {
                         ui::drawTextPreview(blocked, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().textDim, 2);
+                                            style::kFontBody, style::palette().textDim, 3,
+                                            /*markMore=*/false);
                     } else if (!it->description.empty()) {
                         ui::drawTextPreview(it->description, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().success, 2);
+                                            style::kFontBody, style::palette().success, 3,
+                                            /*markMore=*/false);
                     }
                 }
             }

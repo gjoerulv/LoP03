@@ -203,4 +203,15 @@ int blackjackSlot(std::uint64_t seed, int eligibleCount) {
                           kSaltBlackjackSlot);
 }
 
+namespace {
+// 2026-08-17 (generation v22): the leveled theme rite's salt pair.
+constexpr std::uint64_t kSaltRiteAppears = 0x217E5E77E0090900ull;
+constexpr std::uint64_t kSaltRiteSlot = 0x217E5E77E0090901ull;
+}  // namespace
+
+int themeRiteSlot(std::uint64_t seed, int eligibleCount) {
+    return perDungeonSlot(seed, eligibleCount, kThemeRiteChancePct, kSaltRiteAppears,
+                          kSaltRiteSlot);
+}
+
 }  // namespace cd::dungeon

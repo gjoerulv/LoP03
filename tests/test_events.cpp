@@ -107,20 +107,20 @@ TEST_CASE("events: generated event rooms are well-formed dead ends", "[events]")
         }
     }
     // Events appear regularly and every kind shows up somewhere in the sample.
-    // M55: a ruined_keep dungeon guarantees the Armory Ghost rite on its first
-    // event slot, so the 6 pre-M55 kinds (RestToken since M30) plus ArmoryGhost
-    // all appear across the sample. (Town defaults to 1 here, so no Royal
-    // Relic leaks in.) M76: the Duckling Peddler's pure-hash replacement
-    // (~10% of seeds) joins them; M93 adds Dragonform on the same contract
-    // (~8% of seeds; the Surveyor is multi-floor-only and stays absent here)
-    // — 9 kinds. M103/M104 add eight more rare any-run replacements; FIFTEEN
-    // kinds land in this fixed sample (two of the 6-8% draws happen to miss
-    // it — full all-kind coverage is pinned by the m103/m104 sweeps below,
-    // which run 400 seeds each).
+    // The Armory Ghost rite rolls at kThemeRiteChancePct since the 2026-08-17
+    // leveling (generation v22) — ~7 of these 90 keep floors carry it, so the
+    // KIND still lands in the fixed sample. (Town defaults to 1 here, so no
+    // Royal Relic leaks in.) M76: the Duckling Peddler's pure-hash
+    // replacement (~10% of seeds) joins them; M93 adds Dragonform on the same
+    // contract (~8% of seeds; the Surveyor is multi-floor-only and stays
+    // absent here). M103/M104 add eight more rare any-run replacements;
+    // FIFTEEN kinds land in this fixed sample (two of the 6-8% draws happen
+    // to miss it — full all-kind coverage is pinned by the m103/m104 sweeps
+    // below, which run 400 seeds each).
     REQUIRE(eventRooms > 100);
     REQUIRE(kindsSeen.size() == 15);
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::RestToken) == 1);
-    REQUIRE(kindsSeen.count(dungeon::RoomEventKind::ArmoryGhost) == 1);  // the guaranteed rite
+    REQUIRE(kindsSeen.count(dungeon::RoomEventKind::ArmoryGhost) == 1);  // the leveled rite, seen
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::DuckPeddler) == 1);  // M76: rare, real
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::Dragonform) == 1);   // M93: rare, real
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::Surveyor) == 0);     // M93: never on 1F

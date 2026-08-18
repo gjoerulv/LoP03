@@ -1,9 +1,9 @@
-# Crystal Dungeons — deterministic audio generator (M15 slice music; M21 full
+# Are P Geese — deterministic audio generator (M15 slice music; M21 full
 # soundscape). Synthesizes all music loops and jingles (square lead + triangle
-# bass, art_bible §9), the four ambience beds (layered: noise bed + drones +
-# recurring events, each place with its own identity), and the fifteen
-# SFX roles as 22050 Hz 16-bit mono WAVs under assets/audio/. Fully original;
-# reruns are byte-identical.
+# bass, art_bible §9), the five ambience beds (layered: noise bed + drones +
+# recurring events, each place with its own identity), and every SFX role as
+# 22050 Hz 16-bit mono WAVs under assets/audio/. Fully original; reruns are
+# byte-identical.
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
@@ -232,6 +232,32 @@ function AmbHoot([double[]]$mix, [double]$sec, [double]$amp) {
   AmbTone $mix ($sec + 0.30)  330 315 0.22 ($amp * 0.9) 0.30 0.2
 }
 
+# --- Goosy Gauntlet events (owner direction 2026-08-17) --------------------
+# A distant goose honk: the double tap - a short blat, then the full note.
+# Brassy by construction (strong second harmonic, quick attack) and pitched
+# around 300-340 Hz, far below the 1.5-3 kHz band the M74 rule reserves for
+# birdcall, so it reads as waterfowl, never songbird. Distinct from the
+# forest owl (soft attack, near-pure sine, slow spacing) in attack, timbre
+# and rhythm.
+function AmbHonk([double[]]$mix, [double]$sec, [double]$amp) {
+  AmbTone $mix  $sec          340 330 0.07 ($amp * 0.6) 0.08 0.6
+  AmbTone $mix ($sec + 0.11)  330 305 0.20  $amp        0.08 0.6
+}
+
+# A single water plop: one short LOW downward blip with a fast decay -
+# nothing near the birdcall band.
+function AmbPlop([double[]]$mix, [double]$sec, [double]$amp) {
+  AmbTone $mix $sec 320 170 0.06 $amp 0.05 0.1
+}
+
+# A wing flap: three quick bright unpitched noise bursts (the AmbClack
+# transient, opened up), slowing slightly like a real triple beat.
+function AmbFlap([double[]]$mix, [double]$sec, [double]$amp, [uint32]$seed) {
+  AmbClack $mix  $sec          0.050  $amp        0.55 $seed
+  AmbClack $mix ($sec + 0.13)  0.055 ($amp * 0.9) 0.55 ([uint32](($seed + 7919) -band 0xFFFFFFFF))
+  AmbClack $mix ($sec + 0.28)  0.060 ($amp * 0.8) 0.55 ([uint32](($seed + 104729) -band 0xFFFFFFFF))
+}
+
 Write-Output 'Generating ambience beds...'
 
 # TOWN - airy daytime settlement: a soft bright breeze, defined by frequent
@@ -280,6 +306,23 @@ foreach ($s in 2.1, 5.4, 8.3) { AmbHoot $forest $s 0.6 }
 AmbTone $forest 3.9 3200 3600 0.05 0.28 0.05 0.2
 AmbTone $forest 7.1 3400 3000 0.05 0.24 0.05 0.2
 SaveWav (Join-Path $ambDir 'forest.wav') $forest 0.5
+
+# GOOSY GAUNTLET (owner direction 2026-08-17) - an occupied wetland: a soft
+# watery reed rustle (slower flutter than the forest's leaves), a barely
+# beating still-water swell underneath, and the events that name the place -
+# two distant double honks, three water plops, one wing flap. Every event
+# has fully decayed by ~10.4 s, so the 12 s loop seam is silent.
+$gt = [int]($rate * 12.0)
+$goosy = AmbNoise $gt 0x600553E1 0.20 0.75 4 0.35 23 0.35 0.10
+AmbDrone $goosy 55.0 0.10 'sine'
+AmbDrone $goosy 55.8 0.08 'sine'
+AmbPlop  $goosy 1.4 0.30
+AmbHonk  $goosy 3.2 0.50
+AmbPlop  $goosy 5.7 0.26
+AmbFlap  $goosy 6.8 0.34 0x9005E
+AmbHonk  $goosy 8.6 0.42
+AmbPlop  $goosy 9.9 0.28
+SaveWav (Join-Path $ambDir 'goosy.wav') $goosy 0.5
 
 # ============================ M21 SFX ============================
 

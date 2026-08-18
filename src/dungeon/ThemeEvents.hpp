@@ -7,8 +7,10 @@
 #include "dungeon/DungeonModel.hpp"
 
 // M55 per-theme rites: pure, raylib-free helpers shared by the generator, the
-// resolution state, and the tests. One rite is guaranteed per dungeon of its
-// theme (forced onto the first event slot) and never appears elsewhere.
+// resolution state, and the tests. A rite appears only in dungeons of its own
+// theme; since the owner's 2026-08-17 leveling (generation v22) it ROLLS at
+// kThemeRiteChancePct per floor like every other special event, instead of
+// being forced onto the first event slot.
 
 namespace cd {
 namespace content {
@@ -16,8 +18,8 @@ class ContentDatabase;
 }
 namespace dungeon {
 
-// The rite guaranteed for a theme. RoomEventKind::None for an unknown/empty theme
-// id, so the generator forces nothing there and empty-theme generation stays
+// The rite belonging to a theme. RoomEventKind::None for an unknown/empty theme
+// id, so the generator rolls nothing there and empty-theme generation stays
 // byte-identical.
 RoomEventKind themeEventKind(const std::string& themeId);
 
@@ -115,6 +117,16 @@ inline constexpr int kReelsChancePct = 7;
 inline constexpr int kBlackjackChancePct = 7;
 int reelsSlot(std::uint64_t seed, int eligibleCount);
 int blackjackSlot(std::uint64_t seed, int eligibleCount);
+
+// Owner direction 2026-08-17 (generation v22): the theme rites are no longer
+// FORCED onto every floor's first event slot — each floor rolls its theme's
+// rite on the same pure-hash replacement contract as every other special
+// event. 8% is the top of the band (dragonform/sacrifice), befitting a
+// theme's signature, and the rite draws FIRST in the replacement pass so it
+// gets first pick of the plain slots. The Royal Relic's (town, depth) chance
+// table is deliberately untouched.
+inline constexpr int kThemeRiteChancePct = 8;
+int themeRiteSlot(std::uint64_t seed, int eligibleCount);
 
 // M80: the content-layer flavor id for an event kind (data/event_flavor.json,
 // content::kEventFlavorIds). Empty for None. A test holds this mapping and

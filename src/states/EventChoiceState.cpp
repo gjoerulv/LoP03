@@ -1,5 +1,6 @@
 #include "states/EventChoiceState.hpp"
 
+#include <algorithm>
 #include <utility>
 
 #include "audio/AudioManager.hpp"
@@ -13,6 +14,13 @@
 namespace cd {
 
 namespace style = ui::style;
+
+namespace {
+// Owner fix 2026-08-17: the box's row area is a fixed window — nine rows keep
+// the tallest modal (56 + a second title line + 9x16 + margins) on the 240px
+// screen; longer lists (the Sacrifice over a deep bag) scroll behind it.
+constexpr int kMaxVisibleRows = 9;
+}  // namespace
 
 EventChoiceState::EventChoiceState(StateStack& stack, AppContext& context, std::string title,
                                    std::vector<std::string> rows,
@@ -34,6 +42,7 @@ void EventChoiceState::handleInput(const Input& input) {
         menu_.moveDown();
         context_.audio.play(Sfx::Move);
     }
+    scroll_.follow(static_cast<int>(menu_.size()), kMaxVisibleRows, menu_.cursor());
     if (input.pressed(InputAction::Confirm)) {
         const int picked = menu_.cursor();
         // Pop FIRST (queued; applies between frames), then report — the
@@ -56,15 +65,20 @@ void EventChoiceState::render() {
     const style::Palette& p = style::palette();
     ui::drawModalDim(w, h);
 
+    // Owner fix 2026-08-17: the title wraps to two lines (long flavor lines
+    // were squeezed into one) and the rows show through a fixed scrolling
+    // window instead of growing the box past the screen.
     const int rows = static_cast<int>(menu_.size());
+    const int visRows = std::min(rows, kMaxVisibleRows);
+    const int titleH = 2 * ui::lineHeight(style::kFontBody);
     const int boxW = 300;
-    const int boxH = 56 + rows * 16;
+    const int boxH = 43 + titleH + visRows * 16;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
-    ui::drawTextFitted(title_, boxX + 14, boxY + 10, boxW - 28, style::kFontBody, p.gold,
-                       "eventchoice.title");
-    ui::drawMenu(menu_, boxX + 28, boxY + 28, 16, 12, p.text, p.disabled, p.cursor);
+    ui::drawTextPreview(title_, boxX + 14, boxY + 10, boxW - 28, style::kFontBody, p.gold, 2);
+    ui::drawMenuScrolled(menu_, scroll_, visRows, boxX + 28, boxY + 10 + titleH + 4, 16, 12,
+                         boxW - 56, p.text, p.disabled, p.cursor, "eventchoice.list");
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();

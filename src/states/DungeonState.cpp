@@ -131,10 +131,11 @@ MusicTrack themeMusic(const std::string& themeId) {
     if (themeId == "crystal_mine") {
         return MusicTrack::DungeonMine;
     }
-    // M106: the Goosy Gauntlet borrows the forest pair (pond-adjacent) until
-    // an owner-directed track of its own lands — noted in the M106 checklist.
-    if (themeId == "hollow_forest" || themeId == "goosy_gauntlet") {
+    if (themeId == "hollow_forest") {
         return MusicTrack::DungeonForest;
+    }
+    if (themeId == "goosy_gauntlet") {
+        return MusicTrack::DungeonGoosy;  // its own tune since 2026-08-17
     }
     return MusicTrack::DungeonKeep;
 }
@@ -143,8 +144,11 @@ AmbienceTrack themeAmbience(const std::string& themeId) {
     if (themeId == "crystal_mine") {
         return AmbienceTrack::Mine;
     }
-    if (themeId == "hollow_forest" || themeId == "goosy_gauntlet") {
-        return AmbienceTrack::Forest;  // M106: pond-adjacent, until its own bed
+    if (themeId == "hollow_forest") {
+        return AmbienceTrack::Forest;
+    }
+    if (themeId == "goosy_gauntlet") {
+        return AmbienceTrack::Goosy;  // its own wetland bed since 2026-08-17
     }
     return AmbienceTrack::Keep;
 }
@@ -368,6 +372,25 @@ bool DungeonState::captureOpenEventPanel(dungeon::RoomEventKind kind,
 
 void DungeonState::captureShowOutcome(const std::string& title, const std::string& body) {
     showOutcome(title, body);
+}
+
+void DungeonState::captureShowReels() {
+    // A representative three-spin result: two misses around a crown match, so
+    // the icon rows, the separator pips, and the prize text are all covered.
+    const content::EventFlavorDef* flavor = context_.content.findEventFlavor(
+        dungeon::eventFlavorId(dungeon::RoomEventKind::Reels));
+    showOutcome(flavor != nullptr ? flavor->title : "The Event",
+                "3x Crown - the Dragon Crown, no less.\n"
+                "No match. The machine hums, deeply satisfied with itself.");
+    using gamble::ReelSymbol;
+    outcomeReels_ = {
+        {static_cast<int>(ReelSymbol::TaxPapers), static_cast<int>(ReelSymbol::GooseHead),
+         static_cast<int>(ReelSymbol::Seven)},
+        {static_cast<int>(ReelSymbol::Crown), static_cast<int>(ReelSymbol::Crown),
+         static_cast<int>(ReelSymbol::Crown)},
+        {static_cast<int>(ReelSymbol::Spoon), static_cast<int>(ReelSymbol::RedX),
+         static_cast<int>(ReelSymbol::BaldHead)},
+    };
 }
 
 bool DungeonState::captureOpenStairs() {
@@ -927,14 +950,17 @@ void DungeonState::resolveEvent() {
                     }
                     context_.party.gold -= cost;
                     ev.resolved = true;  // one play, win or lose (owner rule)
+                    // The spun symbols render as icon rows above the text
+                    // (owner direction 2026-08-17); the body keeps only the
+                    // prize lines, so nothing is said twice.
+                    std::vector<std::array<int, 3>> rows;
                     std::string body;
                     bool anyMatch = false;
                     for (int s = 0; s < spins; ++s) {
                         const std::array<gamble::ReelSymbol, 3> reel =
                             gamble::reelSpin(dungeon_.seed, currentRoom_, s);
-                        body += std::string("[ ") + gamble::reelSymbolName(reel[0]) + " | " +
-                                gamble::reelSymbolName(reel[1]) + " | " +
-                                gamble::reelSymbolName(reel[2]) + " ]\n";
+                        rows.push_back({static_cast<int>(reel[0]), static_cast<int>(reel[1]),
+                                        static_cast<int>(reel[2])});
                         const int m = gamble::reelMatch(reel);
                         if (m >= 0) {
                             anyMatch = true;
@@ -947,6 +973,7 @@ void DungeonState::resolveEvent() {
                     context_.audio.play(Sfx::Chest);
                     showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::Reels),
                                 std::move(body));
+                    outcomeReels_ = std::move(rows);
                 }));
             return;  // the modal owns resolution
         }
@@ -1146,6 +1173,7 @@ void DungeonState::resolveEvent() {
 void DungeonState::showOutcome(const std::string& title, std::string body) {
     outcomeTitle_ = title;
     outcomeBody_ = std::move(body);
+    outcomeReels_.clear();  // only the reels resolver re-fills this, after
     outcomePanelOpen_ = true;
     outcomeView_.setContent(outcomeBody_, kPanelTextW, ui::style::kFontBody,
                             ui::raylibMeasure());
@@ -1170,15 +1198,54 @@ void DungeonState::renderOutcomePanel() const {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     const ui::style::Palette& pal = ui::style::palette();
-    constexpr int kBoxH = 86;
+    // Reel icon rows (owner direction 2026-08-17): a reels outcome grows the
+    // panel by one 2x icon row per spin, drawn between the title and the text.
+    constexpr int kReelRowH = 28;  // 12px icon at 2x + breathing room
+    const int reelRows = static_cast<int>(outcomeReels_.size());
+    const int boxH = 86 + reelRows * kReelRowH;
     const int boxX = (w - kPanelBoxW) / 2;
-    const int boxY = (h - kBoxH) / 2;
+    const int boxY = (h - boxH) / 2;
     ui::drawModalDim(w, h);
-    ui::drawFrame(boxX, boxY, kPanelBoxW, kBoxH, ui::FrameStyle::Crystal);
+    ui::drawFrame(boxX, boxY, kPanelBoxW, boxH, ui::FrameStyle::Crystal);
     ui::drawTextCentered(outcomeTitle_.c_str(), w / 2, boxY + 8, ui::style::kFontMenu,
                          pal.crystal);
+    if (reelRows > 0) {
+        // Manifest ids in gamble::ReelSymbol order; a missing texture falls
+        // back to the symbol's name, so the result is never unreadable.
+        static constexpr std::array<const char*, gamble::kReelSymbolCount> kReelIconIds = {
+            "ui.icon.reel.tax_papers", "ui.icon.reel.goose_head", "ui.icon.reel.spoon",
+            "ui.icon.reel.crown",      "ui.icon.reel.red_x",      "ui.icon.reel.bald_head",
+            "ui.icon.reel.seven"};
+        int ry = boxY + 24;
+        for (const std::array<int, 3>& row : outcomeReels_) {
+            constexpr int kIconW = 24;  // 12px at 2x
+            constexpr int kGap = 14;
+            const int totalW = 3 * kIconW + 2 * kGap;
+            int ix = w / 2 - totalW / 2;
+            for (int slot = 0; slot < 3; ++slot) {
+                const int sym = row[static_cast<std::size_t>(slot)];
+                const char* id = (sym >= 0 && sym < gamble::kReelSymbolCount)
+                                     ? kReelIconIds[static_cast<std::size_t>(sym)]
+                                     : nullptr;
+                if (id != nullptr && context_.resources.hasTexture(id)) {
+                    DrawTextureEx(context_.resources.texture(id),
+                                  Vector2{static_cast<float>(ix), static_cast<float>(ry)},
+                                  0.0f, 2.0f, WHITE);
+                } else {
+                    ui::drawText(gamble::reelSymbolName(static_cast<gamble::ReelSymbol>(sym)),
+                                 ix, ry + 8, ui::style::kFontSmall, pal.text);
+                }
+                if (slot < 2) {
+                    ui::drawText("|", ix + kIconW + kGap / 2 - 2, ry + 8, ui::style::kFontSmall,
+                                 pal.textHint);
+                }
+                ix += kIconW + kGap;
+            }
+            ry += kReelRowH;
+        }
+    }
     // M87: the body scrolls past the visible budget instead of truncating.
-    ui::drawTextViewport(outcomeView_, boxX + 14, boxY + 26, pal.text);
+    ui::drawTextViewport(outcomeView_, boxX + 14, boxY + 26 + reelRows * kReelRowH, pal.text);
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
     std::string hint = input::prompt(map, InputAction::Confirm, device, "Continue");
@@ -1186,7 +1253,7 @@ void DungeonState::renderOutcomePanel() const {
         hint = input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
                input::primaryLabel(map, InputAction::MoveDown, device) + " Scroll   " + hint;
     }
-    ui::drawTextCentered(hint.c_str(), w / 2, boxY + kBoxH - 13, ui::style::kFontSmall,
+    ui::drawTextCentered(hint.c_str(), w / 2, boxY + boxH - 13, ui::style::kFontSmall,
                          pal.textHint);
 }
 

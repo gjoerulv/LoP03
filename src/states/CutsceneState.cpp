@@ -29,6 +29,7 @@ namespace {
 constexpr int kFloorY = 106;         // feet line for every actor
 constexpr int kPanelX = 8;
 constexpr int kPanelW = 410;
+constexpr int kChoiceBoxW = 300;     // the Stranger's offer box (owner fix 2026-08-17)
 constexpr int kPartyX = 44;          // first member's center
 constexpr int kPartySpacing = 34;
 constexpr int kGooseX = 262;         // the storyteller's spot, right of center
@@ -103,6 +104,21 @@ void CutsceneState::advanceBeat() {
 
 void CutsceneState::enterChoice() {
     phase_ = Phase::Choice;
+    // Owner fix 2026-08-17: the box sizes itself to the LONGEST keepsake
+    // description (measured wrapped lines, capped defensively), so no
+    // heirloom's own words are cut to a two-line preview.
+    choiceDetailLines_ = 2;
+    if (def_ != nullptr) {
+        for (const content::CutsceneOption& o : def_->options) {
+            if (const content::ItemDef* it = context_.content.findItem(o.heirloomId)) {
+                const int lines = static_cast<int>(
+                    ui::wrapText(it->name + " - " + it->description, kChoiceBoxW - 28,
+                                 ui::style::kFontBody, ui::raylibMeasure())
+                        .size());
+                choiceDetailLines_ = std::max(choiceDetailLines_, std::min(lines, 6));
+            }
+        }
+    }
     context_.audio.play(Sfx::Move);
 }
 
@@ -299,8 +315,12 @@ void CutsceneState::render() {
 
     if (phase_ == Phase::Choice && def_ != nullptr) {
         ui::drawModalDim(w, h);
-        const int boxW = 300;
-        const int boxH = 96 + static_cast<int>(choiceMenu_.size()) * 16;
+        const int boxW = kChoiceBoxW;
+        // Owner fix 2026-08-17: the box grows past its old two-line detail
+        // budget to fit the longest keepsake description (enterChoice measures).
+        const int extraDetail =
+            (choiceDetailLines_ - 2) * ui::lineHeight(style::kFontBody);
+        const int boxH = 96 + static_cast<int>(choiceMenu_.size()) * 16 + extraDetail;
         const int boxX = w / 2 - boxW / 2;
         const int boxY = h / 2 - boxH / 2;
         ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
@@ -309,7 +329,7 @@ void CutsceneState::render() {
                             boxX + 14, boxY + 16, boxW - 28, style::kFontBody, p.text, 2);
         ui::drawMenu(choiceMenu_, boxX + 28, boxY + 48, 16, 12, p.text, p.disabled, p.cursor);
 
-        // The highlighted keepsake's own words under the list.
+        // The highlighted keepsake's own words under the list, in full.
         const int cursor = choiceMenu_.cursor();
         const int detailY = boxY + 52 + static_cast<int>(choiceMenu_.size()) * 16;
         if (cursor >= 0 && cursor < static_cast<int>(def_->options.size())) {
@@ -317,7 +337,8 @@ void CutsceneState::render() {
                 def_->options[static_cast<std::size_t>(cursor)];
             if (const content::ItemDef* it = context_.content.findItem(o.heirloomId)) {
                 ui::drawTextPreview(it->name + " - " + it->description, boxX + 14, detailY,
-                                    boxW - 28, style::kFontBody, p.textDim, 2);
+                                    boxW - 28, style::kFontBody, p.textDim,
+                                    choiceDetailLines_);
             }
         }
     }
@@ -335,7 +356,7 @@ void CutsceneState::captureShowBeat(int index) {
 
 void CutsceneState::captureShowChoice() {
     if (def_ != nullptr) {
-        phase_ = Phase::Choice;
+        enterChoice();  // measures the detail budget exactly as play does
     }
 }
 #endif

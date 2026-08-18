@@ -53,24 +53,36 @@ blackjack (bet gold, win pays the bet back doubled).
 - Build clean; canonicalize 0 rewrites; full suite + capture recorded in
   the completion report.
 
+## Fix round (2026-08-17 — owner manual-pass verdict: text-only reels REJECTED)
+
+The owner ruled the reels need real icons. Delivered: seven 12×12
+hand-placed icon grids (`reel_{tax_papers,goose_head,spoon,crown,red_x,
+bald_head,seven}.png`, one per `gamble::ReelSymbol`, M81 gear-icon idiom,
+no outline pass), manifest ids `ui.icon.reel.*`, and the outcome panel now
+renders each spin as a row of three icons at 2× with separator pips above
+the prize text (the panel grows one 28 px row per spin; a missing texture
+falls back to the symbol's name so a result is never unreadable). The
+spin/prize RULES are untouched — presentation only. Capture scene
+`119_reels_icons` covers the three-row panel.
+
 ## Deviations from the plan
 
-- The reels resolve TEXTUALLY on the outcome panel (each spin's symbols
-  named) — no bespoke icon sprites or spin animation. The plan's icon
-  ambition is deferred to the owner's judgment: if wanted, it belongs
-  with M106's art wave. Flagged for the manual pass.
+- ~~The reels resolve TEXTUALLY~~ — resolved 2026-08-17 (fix round above);
+  there is still no spin ANIMATION (the rows appear settled), which stays
+  an owner call.
 - The plan reserved "reels is one-shot" pricing questions — the owner's
   interview answer (verbatim prices, one play) is implemented exactly.
 
 ## Manual owner checklist
 
-Matrix row **200**: meet both dens; spin once and thrice; hit a match
-(debug gold + seed sweeps help); verify every prize row incl. the at-cap
-spoon/crown refusals and the tax clamp; play hands to a win, a loss, a
-push, a dealt 21; confirm both dens vanish after one play/round; judge
-whether text-only reels need M106 icon art.
+Matrix row **200** (re-test after the fix round): meet both dens; spin
+once and thrice; the result shows icon rows (crown = the crown, bald head
+= the bearded gentleman, etc.) with prize text below; verify every prize
+row incl. the at-cap spoon/crown refusals and the tax clamp; play hands to
+a win, a loss, a push, a dealt 21; confirm both dens vanish after one
+play/round; judge whether a spin animation should follow.
 
 ## Documentation updated
 
-game_design §6 (the dens paragraph), ledger row, matrix row 200, this
-note.
+game_design §6 (the dens paragraph), art_bible §3 (reel icons),
+assets/credits.md, ledger row, matrix row 200, this note.

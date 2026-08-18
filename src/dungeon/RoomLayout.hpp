@@ -78,8 +78,12 @@ namespace cd::dungeon {
 // version 21 (M106, owner-approved) adds the town-7 Goosy Gauntlet theme
 // (its GoosyFlock rite on the M55 slot, three town-7 bosses joining the
 // rush/endless/treasure rosters — the guard roster grew, so guard picks
-// move where it did) — classic-theme generation is otherwise untouched.
-inline constexpr int kGenerationVersion = 21;
+// move where it did) — classic-theme generation is otherwise untouched;
+// version 22 (owner direction 2026-08-17) LEVELS the theme rites: no
+// longer forced onto every floor's first event slot, they roll on the
+// pure-hash replacement contract at 8% (drawn first), so themed floors'
+// base events, relic draws, and rite placement all move.
+inline constexpr int kGenerationVersion = 22;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

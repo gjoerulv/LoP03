@@ -6,6 +6,7 @@
 
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
+#include "ui/ScrollWindow.hpp"
 
 namespace cd {
 
@@ -31,6 +32,10 @@ private:
     AppContext& context_;
     std::string title_;
     ui::Menu menu_;
+    // Owner fix 2026-08-17: a long list (the Sacrifice over a deep bag) once
+    // grew the box past the screen — rows now show through a fixed window
+    // that follows the cursor (drawMenuScrolled's arrows mark the rest).
+    ui::ScrollWindow scroll_;
     std::function<void(int)> onPick_;
 };
 
