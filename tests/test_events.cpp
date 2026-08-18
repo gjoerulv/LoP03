@@ -4,7 +4,9 @@
 
 #ifdef CRYSTAL_TEST_DATA_DIR
 #include <filesystem>
+#include <map>
 #include <set>
+#include <string>
 
 #include "content/ContentDatabase.hpp"
 #include "content/ContentLoader.hpp"
@@ -145,6 +147,66 @@ TEST_CASE("events: event rooms never sit on the main path", "[events]") {
 #include "dungeon/ThemeEvents.hpp"
 #include "game/Dragonform.hpp"
 #include "game/Spoils.hpp"
+
+// Owner request 2026-08-17 (after the rite leveling): prove EVERY event kind
+// can still spawn. A representative sweep — every theme at town 7 / depth 20
+// (the relic band's ceiling), plus multi-floor keeps for the Surveyor — must
+// meet all 21 spawnable kinds. If a future change silently strands a kind,
+// this fails naming it.
+TEST_CASE("events: every kind is reachable in a representative sweep", "[events][coverage]") {
+    const content::ContentDatabase db = loadContent();
+    std::map<dungeon::RoomEventKind, int> counts;
+    int floors = 0;
+    for (const char* theme :
+         {"ruined_keep", "crystal_mine", "hollow_forest", "goosy_gauntlet"}) {
+        for (std::uint64_t seed = 1; seed <= 200; ++seed) {
+            const dungeon::Dungeon d = dungeon::generate(seed, 20, db, theme, 7);
+            ++floors;
+            for (const dungeon::Room& r : d.rooms) {
+                if (r.type == dungeon::RoomType::Event) {
+                    ++counts[r.event.kind];
+                }
+            }
+        }
+    }
+    // The Surveyor only spawns on multi-floor runs (floors before the last).
+    for (std::uint64_t seed = 1; seed <= 50; ++seed) {
+        const std::vector<dungeon::Dungeon> run =
+            dungeon::generateFloors(seed, 20, db, "ruined_keep", 7, 4);
+        for (const dungeon::Dungeon& f : run) {
+            ++floors;
+            for (const dungeon::Room& r : f.rooms) {
+                if (r.type == dungeon::RoomType::Event) {
+                    ++counts[r.event.kind];
+                }
+            }
+        }
+    }
+    const dungeon::RoomEventKind kAll[] = {
+        dungeon::RoomEventKind::Shrine,         dungeon::RoomEventKind::HealingSpring,
+        dungeon::RoomEventKind::Merchant,       dungeon::RoomEventKind::EliteChallenge,
+        dungeon::RoomEventKind::ScoreWager,     dungeon::RoomEventKind::RestToken,
+        dungeon::RoomEventKind::RoyalRelic,     dungeon::RoomEventKind::ArmoryGhost,
+        dungeon::RoomEventKind::MinersCache,    dungeon::RoomEventKind::ElderRoot,
+        dungeon::RoomEventKind::GoosyFlock,     dungeon::RoomEventKind::DuckPeddler,
+        dungeon::RoomEventKind::Surveyor,       dungeon::RoomEventKind::Dragonform,
+        dungeon::RoomEventKind::GoosePolymorph, dungeon::RoomEventKind::Sacrifice,
+        dungeon::RoomEventKind::LevelAltar,     dungeon::RoomEventKind::StrangerStory,
+        dungeon::RoomEventKind::TokenExchange,  dungeon::RoomEventKind::PatrolReset,
+        dungeon::RoomEventKind::Reels,          dungeon::RoomEventKind::Blackjack,
+    };
+    std::string table;
+    for (dungeon::RoomEventKind k : kAll) {
+        table += std::string(dungeon::eventFlavorId(k)) + "=" +
+                 std::to_string(counts[k]) + " ";
+    }
+    INFO("floors=" << floors << "  " << table);
+    for (dungeon::RoomEventKind k : kAll) {
+        INFO("missing kind: " << dungeon::eventFlavorId(k) << "  (sweep: " << table << ")");
+        CHECK(counts[k] >= 1);
+    }
+    CHECK(counts[dungeon::RoomEventKind::None] == 0);  // no empty event rooms
+}
 
 TEST_CASE("m93: the new events replace only plain rolled slots, deterministically",
           "[events][m93]") {
