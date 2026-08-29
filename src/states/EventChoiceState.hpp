@@ -21,8 +21,12 @@ struct AppContext;
 // captures into it stay valid (the ArmoryGhost pointer precedent).
 class EventChoiceState : public GameState {
 public:
+    // `icons` (optional, parallel to rows; owner request 2026-08-28) carries a
+    // manifest texture id per row — the Sacrifice's gear list leads each row
+    // with its M81 icon, like every other gear list. Short lists pad empty.
     EventChoiceState(StateStack& stack, AppContext& context, std::string title,
-                     std::vector<std::string> rows, std::function<void(int)> onPick);
+                     std::vector<std::string> rows, std::function<void(int)> onPick,
+                     std::vector<std::string> icons = {});
 
     void handleInput(const Input& input) override;
     void render() override;

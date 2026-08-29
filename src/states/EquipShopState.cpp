@@ -138,6 +138,12 @@ void EquipShopState::captureCursorToItem(const std::string& itemId) {
         }
     }
 }
+void EquipShopState::captureEnterEquipSlot(int charIndex, int slot) {
+    selectedChar_ = charIndex;
+    phase_ = Phase::EquipSlot;
+    rebuild();
+    menu_.setCursor(std::clamp(slot, 0, 3));
+}
 void EquipShopState::captureEnterEquipItem(int charIndex, content::EquipSlot slot) {
     selectedChar_ = charIndex;
     selectedSlot_ = slot == content::EquipSlot::Weapon ? 0
@@ -476,9 +482,10 @@ void EquipShopState::render() {
             kListX - 24 + 352 + 3, kListY - 8, 2);
     }
 
-    // Detail panel for the selected piece of gear (Buy and EquipItem phases).
+    // Detail panel for the selected piece of gear (Buy, EquipSlot and
+    // EquipItem phases — the slot list joined 2026-08-28 by owner request).
     const int infoY = kListY + kVisibleRows * kListItemH + 12;
-    if (phase_ == Phase::Buy || phase_ == Phase::EquipItem) {
+    if (phase_ == Phase::Buy || phase_ == Phase::EquipItem || phase_ == Phase::EquipSlot) {
         ui::drawFrame(kListX - 24, infoY, 352, h - style::kFooterHeight - infoY - 4,
                       ui::FrameStyle::Standard);
     }
@@ -499,6 +506,26 @@ void EquipShopState::render() {
             }
             ui::drawTextWrapped(equipDetail(*detail), kListX - 14, infoY + 6, textW,
                                 style::kFontBody, p.textDim, "equipshop.detail", 2);
+        }
+    } else if (phase_ == Phase::EquipSlot) {
+        // 2026-08-28 (owner request): the slot list answers WHAT the hovered
+        // piece does before you dive in — the same two-line band the Buy
+        // phase uses (slot, stats, resistance, description; an heirloom's
+        // description IS its effect). The row above already carries the M81
+        // icon + name, so the band spends both lines on information.
+        const Character& c = context_.party.members[static_cast<std::size_t>(selectedChar_)];
+        const std::string eq[4] = {c.weapon, c.armor, c.accessory, c.equippedHeirloom};
+        const std::string& hoveredId = eq[static_cast<std::size_t>(
+            std::clamp(menu_.cursor(), 0, 3))];
+        if (hoveredId.empty()) {
+            ui::drawTextFitted("Nothing equipped in this slot.", kListX - 14, infoY + 6, 332,
+                               style::kFontBody, p.textDim, "equipshop.slotinfo");
+        } else if (const content::ItemDef* worn = context_.content.findItem(hoveredId)) {
+            ui::drawTextWrapped(equipDetail(*worn), kListX - 14, infoY + 6, 332,
+                                style::kFontBody, p.textDim, "equipshop.slotinfo", 2);
+        } else {
+            ui::drawTextFitted(hoveredId, kListX - 14, infoY + 6, 332, style::kFontBody,
+                               p.textDim, "equipshop.slotinfo");
         }
     } else if (phase_ == Phase::EquipItem) {
         // M52: the slot's current item + the stat diff for the highlighted

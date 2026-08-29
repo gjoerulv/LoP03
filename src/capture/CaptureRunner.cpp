@@ -61,6 +61,7 @@
 #include "states/DungeonMenuState.hpp"
 #include "states/DungeonResultState.hpp"
 #include "states/DungeonState.hpp"
+#include "states/BlackjackEventState.hpp"  // 2026-08-29: the card-table scene
 #include "states/EventChoiceState.hpp"
 #include "states/EquipShopState.hpp"
 #include "states/InventoryState.hpp"  // M90
@@ -1384,6 +1385,37 @@ int run(const char* outDir) {
                  refreshCharacter(c.party.members[0], c.content);
                  auto state = std::make_unique<EquipShopState>(s, c);
                  state->captureEnterEquipItem(0, content::EquipSlot::Heirloom);
+                 s.pushState(std::move(state));
+             }},
+            {"127_blackjack_cards",
+             [](StateStack& s, AppContext& c) {
+                 // Owner request 2026-08-29: the card table — dealer's row
+                 // with the hole card down, the player's row, values and the
+                 // hit/stand hints (seed picked for a live opening hand).
+                 s.pushState(std::make_unique<BlackjackEventState>(
+                     s, c, 25, /*seed=*/777, /*room=*/3, /*ev=*/nullptr));
+             }},
+            {"126_reels_spin",
+             [](StateStack& s, AppContext& c) {
+                 // Owner request 2026-08-29: the live spin, mid-animation —
+                 // one cell landed, the wheel flicking through the rest, the
+                 // Skip hint below (a fixed spin clock keeps it exact).
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine"));
+                 state->captureShowReelsSpinning();
+                 s.pushState(std::move(state));
+             }},
+            {"125_equip_slot_info",
+             [](StateStack& s, AppContext& c) {
+                 // Owner request 2026-08-28: the slot list's new info band,
+                 // hovered on the worn heirloom — whose effect text is the
+                 // longest thing the two-line "equipshop.slotinfo" wrap
+                 // carries.
+                 c.party.members[0].weapon = "iron_sword";
+                 c.party.members[0].equippedHeirloom = "heirloom_lastlight";
+                 refreshCharacter(c.party.members[0], c.content);
+                 auto state = std::make_unique<EquipShopState>(s, c, /*partyMode=*/true);
+                 state->captureEnterEquipSlot(0, 3);
                  s.pushState(std::move(state));
              }},
             {"116_stranger_joke",

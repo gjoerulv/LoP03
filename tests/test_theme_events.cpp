@@ -17,10 +17,10 @@
 #include "game/Party.hpp"
 #include "score/Scoring.hpp"   // M106: the +300 itemization
 
-// M55 per-theme rites, LEVELED by owner direction 2026-08-17 (generation v22):
-// a themed floor rolls its rite at kThemeRiteChancePct on the pure-hash
-// replacement contract (no more guaranteed first slot), never a cross-theme
-// one; the pure helpers (tier-up, cache, root) behave as designed and
+// M55 per-theme rites, LEVELED 2026-08-17 (v22) and folded into the equal
+// encounter tier 2026-08-28 (v23): a themed floor rolls its rite at
+// kEncounterChancePct like every other encounter, never a cross-theme one;
+// the pure helpers (tier-up, cache, root) behave as designed and
 // deterministically. Content-loading cases need the real data
 // (CRYSTAL_TEST_DATA_DIR); the pure-math cases run anywhere.
 
@@ -92,10 +92,9 @@ int countAnyRite(const Dungeon& d) {
 
 TEST_CASE("theme rites: leveled to a rare roll, at most once, never cross-theme",
           "[theme-events]") {
-    // Owner direction 2026-08-17 (generation v22): the rite is a
-    // kThemeRiteChancePct pure-hash replacement like every other special
-    // event — the sweep pins the band, the at-most-once rule, and that a
-    // theme only ever rolls ITS OWN rite.
+    // Leveled at v22, equal-tier at v23: the rite is a kEncounterChancePct
+    // pure-hash encounter like every other — the sweep pins the band, the
+    // at-most-once rule, and that a theme only ever rolls ITS OWN rite.
     const content::ContentDatabase db = loadContent();
     struct ThemeCase {
         const char* id;
@@ -310,9 +309,9 @@ TEST_CASE("goosy: goosy bosses lead, and the Flock rolls at the leveled rate",
         CHECK(perFloor <= 1);  // leveled: a rare roll, never stacked
         rites += perFloor;
     }
-    // Owner direction 2026-08-17 (generation v22): the Flock rolls at
-    // kThemeRiteChancePct like every other special event — the +300 is a
-    // find, not a per-floor stipend.
+    // Leveled at v22, equal-tier at v23: the Flock rolls at
+    // kEncounterChancePct like every other encounter — the +300 is a find,
+    // not a per-floor stipend.
     INFO("rites=" << rites << "/" << kSeeds);
     CHECK(rites >= 3);
     CHECK(rites <= 45);

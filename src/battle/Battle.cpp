@@ -2264,15 +2264,17 @@ Battle buildSparBattle(const Party& party, const content::ContentDatabase& db) {
     Battle b = buildBattle(party, mirror, db);
 
     // Mirror every party unit as an enemy-side echo. partyIndex -1 severs the
-    // writeback; `uncontrolled` is cleared (the enemy driver already decides
-    // for the echo — a Jester echo simply fights like the rest).
+    // writeback; `uncontrolled` is KEPT (owner rule 2026-08-29: a Jester echo
+    // is never the player's to command — the manual spar routes it through
+    // the same Jester AI the party side uses). The AI spar is untouched: the
+    // enemy driver (chooseEnemyAction) never consults the flag, so a
+    // both-sides-AI mirror resolves exactly as before.
     const std::size_t partyCount = b.units.size();
     for (std::size_t i = 0; i < partyCount; ++i) {
         Combatant echo = b.units[i];
         echo.side = Side::Enemy;
         echo.partyIndex = -1;
         echo.name = "Echo " + echo.name;
-        echo.uncontrolled = false;
         b.units.push_back(std::move(echo));
     }
 

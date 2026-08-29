@@ -27,7 +27,8 @@ enum class RoomType { Start, Normal, Treasure, Boss, Event };
 // peddler sells the Evil Duckling for flat gold and will not deal while the
 // party already owns one.
 // M93 (generation v17) adds two more pure-hash replacements of plain rolled
-// events: the Surveyor (multi-floor runs only — pays the fog away for 20 gold)
+// events: the Surveyor (only where the map starts fogged — pays the fog away
+// for 20 gold; since v23 a utility drawn FIRST, outside the encounter tier)
 // and Dragonform (any run — the party fights its NEXT battle as Dragons for a
 // flat -100 score, stated up front). Same contract as the DuckPeddler: never
 // an rng draw, never a rite/relic slot.
@@ -51,7 +52,7 @@ enum class RoomEventKind {
     Reels, Blackjack,
     // M106 (generation v21): the Goosy Gauntlet's rite — the WHOLE party
     // fights the next battle as Geese, +300 score. Like every rite it rolls
-    // at kThemeRiteChancePct since the 2026-08-17 leveling (gen v22).
+    // in the encounter tier at kEncounterChancePct (v23; leveled v22).
     GoosyFlock
 };
 

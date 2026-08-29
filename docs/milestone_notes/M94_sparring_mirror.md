@@ -102,3 +102,17 @@ paragraph) · `docs/technical_design.md` (§47) ·
 
 `complete (approved 2026-08-16)` — the header is authoritative; this line
 lagged at the approval flip and was corrected 2026-08-17.
+
+## Post-approval defect fixed (2026-08-29, owner report)
+
+Manual mode handed the player the ENEMY Jester: `buildSparBattle` cleared
+`uncontrolled` on every echo (the AI driver decides anyway), so the manual
+driver — which routes every non-forced echo turn to the command menu — saw
+a perfectly commandable unit. The echo now KEEPS its class's flag, and the
+manual driver routes uncontrolled echoes through `executeUncontrolled`: a
+Jester echo acts by the same Jester AI as the party side
+(`uncontrolledChoice` is side-safe — it derives the foe side from the
+actor). The both-sides-AI spar is untouched: the enemy driver never
+consults the flag, so existing mirrors resolve byte-identically. Pinned in
+test_spar ("a Jester echo is never the player's to command"); matrix row
+207.

@@ -208,3 +208,14 @@ and a review contact sheet at `docs/sprite_review/guild_masters_*.png`.
 
 `complete (approved)` — owner approval 2026-08-07, committed as
 `a047590`.
+
+## Post-approval note (2026-08-29 — the New Game leak's loudest symptom)
+
+The owner found the town-1 Guild Boss unlocked (perk bonuses active) in a
+BRAND-NEW game, after loading an old save and quitting to title. The
+defect was never M84's: the New Game path cleared a hand-picked Party
+field list that predated `GuildRecords` — and the castle/goose-town roads,
+the map economy, curios, the bestiary, and the victory records — so every
+newer field leaked from the loaded save. New Game now resets the WHOLE
+Party object (`game/Party.hpp` `resetForNewGame`, pinned by test_party's
+"a New Game resets the WHOLE object"); matrix row 208.

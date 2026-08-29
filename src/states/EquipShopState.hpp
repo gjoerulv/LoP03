@@ -43,6 +43,9 @@ public:
     // Capture-only (M52): open the equip-item list for a member's slot, so the
     // current + diff detail panel is overflow-checked.
     void captureEnterEquipItem(int charIndex, content::EquipSlot slot);
+    // Capture-only (owner request 2026-08-28): the slot list with its new info
+    // band, cursor parked on a chosen slot row (0-3).
+    void captureEnterEquipSlot(int charIndex, int slot);
 #endif
 
 private:

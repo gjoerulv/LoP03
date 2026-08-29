@@ -109,16 +109,13 @@ TEST_CASE("events: generated event rooms are well-formed dead ends", "[events]")
         }
     }
     // Events appear regularly and every kind shows up somewhere in the sample.
-    // The Armory Ghost rite rolls at kThemeRiteChancePct since the 2026-08-17
-    // leveling (generation v22) — ~7 of these 90 keep floors carry it, so the
-    // KIND still lands in the fixed sample. (Town defaults to 1 here, so no
-    // Royal Relic leaks in.) M76: the Duckling Peddler's pure-hash
-    // replacement (~10% of seeds) joins them; M93 adds Dragonform on the same
-    // contract (~8% of seeds; the Surveyor is multi-floor-only and stays
-    // absent here). M103/M104 add eight more rare any-run replacements;
-    // FIFTEEN kinds land in this fixed sample (two of the 6-8% draws happen
-    // to miss it — full all-kind coverage is pinned by the m103/m104 sweeps
-    // below, which run 400 seeds each).
+    // Since the v23 equal weighting every encounter — the rite, the peddler,
+    // Dragonform, and the M103/M104 kinds — rolls the SAME kEncounterChancePct
+    // (~7 of these 90 keep floors each, before contention), so which kinds
+    // land in a FIXED sample is deterministic luck: fifteen do here. (Town
+    // defaults to 1, so no Royal Relic leaks in; the Surveyor needs fog and
+    // stays absent on these 1F maps.) Full all-kind coverage is pinned by the
+    // [coverage] sweeps below, which run the wide seed ranges.
     REQUIRE(eventRooms > 100);
     REQUIRE(kindsSeen.size() == 15);
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::RestToken) == 1);
@@ -206,6 +203,87 @@ TEST_CASE("events: every kind is reachable in a representative sweep", "[events]
         CHECK(counts[k] >= 1);
     }
     CHECK(counts[dungeon::RoomEventKind::None] == 0);  // no empty event rooms
+}
+
+TEST_CASE("events: the encounter tier is weighed equally (v23)", "[events][coverage]") {
+    // Owner direction 2026-08-28: every encounter event — the theme's rite
+    // plus the ten globals — rolls the SAME kEncounterChancePct, and starved
+    // floors pick survivors by a uniform shuffle, never a fixed order. The
+    // sweep uses a DISTINCT seed range per theme (the rolls hash only the
+    // seed, so reusing one range would sample the same draws four times) and
+    // pins every kind's count into one shared band. The pre-v23 chain — the
+    // Duckling Peddler at 10% drawn second vs the dens at 7% drawn last —
+    // fails this hard in both directions.
+    const content::ContentDatabase db = loadContent();
+    std::map<dungeon::RoomEventKind, int> counts;
+    struct Span {
+        const char* theme;
+        std::uint64_t base;
+    };
+    const Span spans[] = {
+        {"ruined_keep", 10000},
+        {"crystal_mine", 20000},
+        {"hollow_forest", 30000},
+        {"goosy_gauntlet", 40000},
+    };
+    constexpr int kSeedsPerTheme = 250;  // 1000 independent themed floors
+    for (const Span& s : spans) {
+        for (std::uint64_t i = 0; i < kSeedsPerTheme; ++i) {
+            const dungeon::Dungeon d = dungeon::generate(s.base + i, 20, db, s.theme, 7);
+            for (const dungeon::Room& r : d.rooms) {
+                if (r.type == dungeon::RoomType::Event) {
+                    ++counts[r.event.kind];
+                }
+            }
+        }
+    }
+    // Each global rolls on all 1000 floors; each rite only in its own 250 —
+    // so the four rites POOL to the same exposure and share the globals'
+    // band. Expected ≈ 8% of 1000 minus a small, UNIFORM contention loss;
+    // the band is ±4σ-generous, but the old spread (duck ~107, blackjack
+    // ~35, goose ~25 per 1000 floors) breaks it in both directions.
+    const int riteTotal = counts[dungeon::RoomEventKind::ArmoryGhost] +
+                          counts[dungeon::RoomEventKind::MinersCache] +
+                          counts[dungeon::RoomEventKind::ElderRoot] +
+                          counts[dungeon::RoomEventKind::GoosyFlock];
+    struct Entry {
+        const char* name;
+        int count;
+    };
+    const Entry tier[] = {
+        {"rites(pooled)", riteTotal},
+        {"duck_peddler", counts[dungeon::RoomEventKind::DuckPeddler]},
+        {"dragonform", counts[dungeon::RoomEventKind::Dragonform]},
+        {"goose_polymorph", counts[dungeon::RoomEventKind::GoosePolymorph]},
+        {"sacrifice", counts[dungeon::RoomEventKind::Sacrifice]},
+        {"level_altar", counts[dungeon::RoomEventKind::LevelAltar]},
+        {"stranger_story", counts[dungeon::RoomEventKind::StrangerStory]},
+        {"token_exchange", counts[dungeon::RoomEventKind::TokenExchange]},
+        {"patrol_reset", counts[dungeon::RoomEventKind::PatrolReset]},
+        {"reels", counts[dungeon::RoomEventKind::Reels]},
+        {"blackjack", counts[dungeon::RoomEventKind::Blackjack]},
+    };
+    std::string table;
+    for (const Entry& e : tier) {
+        table += std::string(e.name) + "=" + std::to_string(e.count) + " ";
+    }
+    int lo = tier[0].count;
+    int hi = tier[0].count;
+    for (const Entry& e : tier) {
+        INFO("tier: " << table);
+        CHECK(e.count >= 40);
+        CHECK(e.count <= 110);
+        if (e.count < lo) {
+            lo = e.count;
+        }
+        if (e.count > hi) {
+            hi = e.count;
+        }
+    }
+    // And the tier is FLAT: the widest pairwise gap stays inside what a fair
+    // shared roll deals (the old chain's gap was ~80 per 1000 floors).
+    INFO("tier: " << table << " spread=" << (hi - lo));
+    CHECK(hi - lo <= 50);
 }
 
 TEST_CASE("m93: the new events replace only plain rolled slots, deterministically",

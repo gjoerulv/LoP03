@@ -15,7 +15,9 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "resource/ResourceManager.hpp"  // 2026-08-29: the class-row sprites
 #include "states/CutsceneState.hpp"
+#include "states/DetailsOverlayState.hpp"  // owner request 2026-08-29: class sheets
 #include "states/StateStack.hpp"
 #include "states/TownState.hpp"
 #include "ui/UiDraw.hpp"
@@ -103,19 +105,11 @@ bool PartyCreationState::anyLockedSelected() const {
 }
 
 void PartyCreationState::begin() {
-    context_.party.members.clear();
-    context_.party.gold = 150;  // a little starting gold for the shops
-    // A New Game is a clean slate: don't inherit session state from a party that
-    // was in memory from a prior Continue/play (M32 town ladder + M30 tokens +
-    // M33 stakes + M34 black market).
-    context_.party.restTokens = 0;
-    context_.party.currentTown = 1;
-    context_.party.highestUnlockedTown = 1;
-    context_.party.stakes = StakesState{};
-    context_.party.legendaryTokens = 0;
-    context_.party.blackMarket = BlackMarketOffer{};
-    context_.party.seenCutscenes.clear();     // M97: a new game restarts the story
-    context_.party.heirloomChoices.clear();
+    // A New Game is a clean slate — the WHOLE Party object (owner bug report
+    // 2026-08-29: the old hand-picked clear list leaked every field added
+    // after it, so a loaded save's Guild unlock survived into a fresh game).
+    // See game/Party.hpp resetForNewGame for the contract.
+    resetForNewGame(context_.party);
     for (std::size_t i = 0; i < slots_.size(); ++i) {
         std::string name = slots_[i].name.trimmed();
         if (name.empty()) {
@@ -126,7 +120,6 @@ void PartyCreationState::begin() {
     }
 
     // Starter supplies so the Item command and revives are usable from the start.
-    context_.party.inventory = Inventory{};
     context_.party.inventory.add("potion", 3);
     context_.party.inventory.add("antidote", 1);
     context_.party.inventory.add("ether", 1);
@@ -185,6 +178,12 @@ void PartyCreationState::handleInput(const Input& input) {
             cycleClass(cursor_, +1);
         }
     }
+    // Owner request 2026-08-29: the Details key opens the highlighted class's
+    // full sheet (locked classes too — the goal is never hidden).
+    if (cursor_ < kBeginRow && input.pressed(InputAction::Details)) {
+        openClassDetails();
+        return;
+    }
     if (input.pressed(InputAction::Confirm)) {
         if (cursor_ < kBeginRow) {
             editing_ = true;
@@ -197,6 +196,61 @@ void PartyCreationState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Cancel)) {
         stack().popState();
     }
+}
+
+void PartyCreationState::openClassDetails() {
+    const content::ClassDef& cls =
+        *classes_[static_cast<std::size_t>(slots_[static_cast<std::size_t>(cursor_)].classIndex)];
+    std::string body = cls.role;
+    body += TextFormat("\n\nBase:  HP %d   ATK %d   MAG %d   DEF %d   SPD %d",
+                       cls.baseStats.maxHp, cls.baseStats.attack, cls.baseStats.magic,
+                       cls.baseStats.defense, cls.baseStats.speed);
+    body += TextFormat("\nPer level:  +%.1f HP   +%.1f ATK   +%.1f MAG   +%.1f DEF   +%.1f SPD",
+                       cls.growth.maxHp, cls.growth.attack, cls.growth.magic,
+                       cls.growth.defense, cls.growth.speed);
+    const auto skillName = [&](const std::string& id) {
+        const content::SkillDef* s = context_.content.findSkill(id);
+        return s != nullptr ? s->name : id;
+    };
+    if (!cls.startingSkills.empty()) {
+        body += "\nStarts with:";
+        for (const std::string& sid : cls.startingSkills) {
+            body += " " + skillName(sid) + ",";
+        }
+        body.pop_back();
+    }
+    if (!cls.learnset.empty()) {
+        body += "\nLearns:";
+        for (const content::LearnEntry& e : cls.learnset) {
+            body += " " + skillName(e.skill) + TextFormat(" (Lv %d),", e.level);
+        }
+        body.pop_back();
+    }
+    // The M45 quirks, stated outright — never color or lore alone.
+    for (content::EquipSlot banned : cls.equipBans) {
+        switch (banned) {
+            case content::EquipSlot::Weapon: body += "\nHolds no weapon."; break;
+            case content::EquipSlot::Armor: body += "\nWears no armor."; break;
+            case content::EquipSlot::Accessory: body += "\nWears no accessory."; break;
+            case content::EquipSlot::Heirloom: body += "\nCarries no heirloom."; break;
+            case content::EquipSlot::None: break;
+        }
+    }
+    if (cls.attackHitsAll) {
+        body += "\nIts basic attack strikes every foe.";
+    }
+    if (cls.uncontrolled) {
+        body += "\nActs entirely on its own - it never takes commands.";
+    }
+    if (cls.scoreModPct != 0) {
+        body += TextFormat("\nScore modifier: %+d%% per member in the party.", cls.scoreModPct);
+    }
+    if (classLocked(cls)) {
+        body += "\n\nLocked: defeat the Hollow King to unlock this class.";
+    }
+    context_.audio.play(Sfx::Confirm);
+    stack().pushState(
+        std::make_unique<DetailsOverlayState>(stack(), context_, cls.name, std::move(body)));
 }
 
 void PartyCreationState::update(float dt) { caretTimer_ += dt; }
@@ -215,25 +269,35 @@ void PartyCreationState::render() {
         return;
     }
 
-    // Roster panel: name column plus a class stepper capsule per member.
+    // Roster panel: class sprite, name column, and a class stepper capsule
+    // per member (the sprite joined 2026-08-29 by owner request — cycling a
+    // class shows its look at once; locked classes grey to a silhouette).
     ui::drawFrame(24, 46, w - 48, 4 * 24 + 14, ui::FrameStyle::Standard);
     const int baseY = 56;
     for (int i = 0; i < 4; ++i) {
         const int y = baseY + i * 24;
         const bool selected = cursor_ == i;
+
+        const content::ClassDef* cls =
+            classes_[static_cast<std::size_t>(slots_[static_cast<std::size_t>(i)].classIndex)];
+        const bool locked = classLocked(*cls);
+
+        const std::string spriteId = "actor." + cls->id + ".battle";
+        if (context_.resources.hasTexture(spriteId)) {
+            const Texture2D& tex = context_.resources.texture(spriteId);
+            DrawTextureEx(tex, Vector2{30.0f, static_cast<float>(y - 6)}, 0.0f, 1.0f,
+                          locked ? p.disabled : WHITE);
+        }
+
         if (selected) {
-            ui::drawSelectionSlab(40, y - 3, 128, 17);
-            ui::drawChevron(43, y + 2, p.cursor, ui::motionPhase());
+            ui::drawSelectionSlab(56, y - 3, 112, 17);
+            ui::drawChevron(59, y + 2, p.cursor, ui::motionPhase());
         }
         std::string nameText = slots_[static_cast<std::size_t>(i)].name.value();
         if (editing_ && selected) {
             nameText += (std::fmod(caretTimer_, 1.0f) < 0.5f) ? "_" : " ";
         }
-        ui::drawText(nameText.c_str(), 54, y, 12, selected ? p.cursor : p.text);
-
-        const content::ClassDef* cls =
-            classes_[static_cast<std::size_t>(slots_[static_cast<std::size_t>(i)].classIndex)];
-        const bool locked = classLocked(*cls);
+        ui::drawText(nameText.c_str(), 70, y, 12, selected ? p.cursor : p.text);
         const Color classColor = locked ? p.disabled : (selected ? p.cursor : p.text);
         const int capW = 156;
         const int capX = w - 60 - capW;
@@ -294,6 +358,9 @@ void PartyCreationState::render() {
               input::primaryLabel(map, InputAction::MoveRight, device),
           "Class"},
          {input::primaryLabel(map, InputAction::Confirm, device), "Edit/Begin"},
+         // "Info", not "Class Info": five hints must share the 418px strip
+         // (the capture lint measures exactly this line).
+         {input::primaryLabel(map, InputAction::Details, device), "Info"},
          {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
         w, h, "partycreate.footer");
 }

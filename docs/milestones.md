@@ -62,7 +62,7 @@
 | 52 | Comforts & secrets | ☑ complete (approved) |
 | 53 | Toolbelt & trims (debug menu, 5 save slots, Champion, element chips) | ☑ complete (approved) |
 | 54 | Arms of the ladder (equipment rebalance) | ☑ complete (approved) |
-| 55 | Theme rites (per-theme dungeon events) | ☑ complete (approved) (post-approval adjustment 2026-08-17: rites leveled to an 8% roll, gen v22 - see the note) |
+| 55 | Theme rites (per-theme dungeon events) | ☑ complete (approved) (post-approval adjustments: 2026-08-17 rites leveled to an 8% roll (gen v22); 2026-08-28 the whole encounter tier equalized at a shared 8% with uniform contention (gen v23) - see the note) |
 | 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ☑ complete (approved) |
 | 57 | Advanced CRT post-process (0–10 CRT Strength) | ☑ complete (approved) |
 | 58 | Fixes: equip message, Deadly Spoon once, geese scare the King | ☑ complete (approved) |

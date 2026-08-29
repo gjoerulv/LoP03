@@ -105,6 +105,22 @@ struct Party {
 
 inline constexpr std::size_t kMaxPartySize = 4;
 
+// A New Game's starting purse.
+inline constexpr int kNewGameGold = 150;
+
+// A New Game's clean slate (owner bug report 2026-08-29): reset the WHOLE
+// object, never a hand-picked field list — the old list silently leaked every
+// field added after it was written (a loaded save's Guild unlocks, perks,
+// castle/goose-town roads, map economy, curios, bestiary and records all
+// survived "quit to title -> New Game"). Cross-game state (reward-class
+// unlocks, achievements, tutorial progress, settings, the scoreboard) lives
+// OUTSIDE Party by design, so nothing in here survives on purpose — and any
+// FUTURE Party field is covered automatically. Pinned by test_party.
+inline void resetForNewGame(Party& party) {
+    party = Party{};
+    party.gold = kNewGameGold;
+}
+
 // Provisional MP pool until the combat milestone refines it: scales with magic.
 int deriveMaxMp(int magic);
 

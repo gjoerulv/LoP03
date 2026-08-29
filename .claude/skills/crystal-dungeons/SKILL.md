@@ -238,10 +238,11 @@ milestone through 2026-08-07. **M86–M97** (CrystalForge catch-up, the
 0.9.0 → 0.6.0 renumber, the M87 text containers, and the M88–M97
 program) were all owner-approved 2026-08-16. The **M98–M108 "Are P
 Geese" program** (post-M97 fixes through the full rebrand; generation
-v22, battle rules v18, version **0.7.0**, capture set **124 scenes**,
-matrix rows 185–204; the 2026-08-17 fix rounds added the real Goosy
+v23, battle rules v18, version **0.7.0**, capture set **127 scenes**,
+matrix rows 185–205; the 2026-08-17 fix rounds added the real Goosy
 art/audio, reel icons, the true title-screen rebrand, and the v22 rite
-leveling) is
+leveling; 2026-08-28 equalized the whole encounter tier at a shared 8%
+— gen v23, the M55 note's adjustments) is
 `implemented, awaiting manual approval` — the ledger in
 `docs/milestones.md` is always the authority, not this paragraph. The
 M46 UI kit (`docs/ui_style_guide.md`) binds all UI

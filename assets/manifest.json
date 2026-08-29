@@ -329,6 +329,13 @@
     { "id": "ui.icon.reel.bald_head", "type": "texture", "path": "textures/ui/icons/reel_bald_head.png" },
     { "id": "ui.icon.reel.seven", "type": "texture", "path": "textures/ui/icons/reel_seven.png" },
 
+    { "id": "ui.card.face", "type": "texture", "path": "textures/ui/cards/card_face.png" },
+    { "id": "ui.card.back", "type": "texture", "path": "textures/ui/cards/card_back.png" },
+    { "id": "ui.card.ace", "type": "texture", "path": "textures/ui/cards/card_ace.png" },
+    { "id": "ui.card.jack", "type": "texture", "path": "textures/ui/cards/card_jack.png" },
+    { "id": "ui.card.queen", "type": "texture", "path": "textures/ui/cards/card_queen.png" },
+    { "id": "ui.card.king", "type": "texture", "path": "textures/ui/cards/card_king.png" },
+
     { "id": "anim.player.walk.down", "type": "animation", "texture": "actor.player.walk",
       "row": 0, "frameCount": 3, "frameWidth": 12, "frameHeight": 12, "frameTime": 0.15 },
     { "id": "anim.player.walk.up", "type": "animation", "texture": "actor.player.walk",

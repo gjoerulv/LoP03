@@ -220,3 +220,20 @@ itemId.
 
 `complete (approved)` — owner approval 2026-08-06, committed as
 `5a8b09b` (implementation) + `f2e32c8` (docs).
+
+## Post-approval extension (2026-08-28, owner request — gear names everywhere)
+
+The M81 icons were a menu-row idiom; the owner extended them into THE
+gear-name convention: wherever a piece of equipment, relic, or heirloom is
+named outside a menu row, it renders via the new `ui::drawGearNameTag` —
+category icon + the name in the palette's reward gold, on its own line
+(ui_style_guide §13 is the binding statement). Applied to: the dungeon
+outcome panel (new centered tag rows on the reels-row pattern — chest
+finds, the Miner's Cache item, the peddler's duckling, the Hungry Forge's
+burned piece, reels prizes), the Stranger's keepsake offer (name tag +
+description below, box measurement adjusted), and the Sacrifice list rows
+(EventChoiceState grew an optional per-row icon column). Equip Party's
+slot list also gained the two-line info band ("equipshop.slotinfo") the
+Buy phase already had. Capture scene `125_equip_slot_info`; matrix row
+206. Consumables still carry no icon by design — as prizes they get the
+gold name alone.

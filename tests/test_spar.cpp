@@ -65,13 +65,51 @@ TEST_CASE("spar: the mirror is exact, enemy-side, and severed from the party",
         CHECK(echo.maxMp == real.maxMp);
         CHECK(echo.skillIds == real.skillIds);
         CHECK(echo.weaponElement == real.weaponElement);
-        CHECK_FALSE(echo.uncontrolled);  // the driver decides for the echo
+        // Owner rule 2026-08-29: the mirror keeps `uncontrolled` too — a
+        // Jester echo is never the player's to command (none in this roster,
+        // so both sides read false here; the Jester case has its own test).
+        CHECK(echo.uncontrolled == real.uncontrolled);
     }
 
     // Deterministic: the same party mirrors to the same battle seed.
     CHECK(battle::buildSparBattle(party, db()).rngSeed == b.rngSeed);
     // The threat table covers the full roster (the finalization lockstep).
     CHECK(b.threat.size() == b.units.size());
+}
+
+TEST_CASE("spar: a Jester echo is never the player's to command", "[spar]") {
+    // Owner report 2026-08-29: the manual spar handed the player the enemy
+    // Jester. The echo now keeps its class's `uncontrolled`, and the manual
+    // driver routes it through the same Jester AI as the party side.
+    Party p;
+    p.members.push_back(createCharacter(*db().findClass("jester"), "Fey", 12));
+    p.members.push_back(createCharacter(*db().findClass("knight"), "Rolan", 12));
+    for (Character& c : p.members) {
+        refreshCharacter(c, db());
+    }
+    battle::Battle b = battle::buildSparBattle(p, db());
+    REQUIRE(b.units.size() == 4);
+    CHECK(b.units[0].uncontrolled);        // the party Jester, as always
+    CHECK(b.units[2].uncontrolled);        // its echo keeps the class rule
+    CHECK_FALSE(b.units[3].uncontrolled);  // a knight echo stays commandable
+    // The Jester's own AI is side-safe for the echo: a basic attack aims at
+    // the PARTY, and an ally-facing skill at the echo's own (enemy) side.
+    for (int fakeTurn = 0; fakeTurn < 24; ++fakeTurn) {
+        b.turnsTaken = fakeTurn;
+        const battle::EnemyChoice c = battle::uncontrolledChoice(b, 2, db());
+        REQUIRE(c.target >= 0);
+        const battle::Combatant& t = b.units[static_cast<std::size_t>(c.target)];
+        if (c.useSkill) {
+            const content::SkillDef* s = db().findSkill(c.skillId);
+            REQUIRE(s != nullptr);
+            const bool allyFacing = s->target == content::SkillTarget::SingleAlly ||
+                                    s->target == content::SkillTarget::AllAllies ||
+                                    s->target == content::SkillTarget::Self;
+            CHECK(t.side == (allyFacing ? battle::Side::Enemy : battle::Side::Party));
+        } else {
+            CHECK(t.side == battle::Side::Party);
+        }
+    }
 }
 
 TEST_CASE("spar: both-sides AI resolves the mirror, and the mirror pays nothing",

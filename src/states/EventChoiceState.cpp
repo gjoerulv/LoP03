@@ -24,11 +24,13 @@ constexpr int kMaxVisibleRows = 9;
 
 EventChoiceState::EventChoiceState(StateStack& stack, AppContext& context, std::string title,
                                    std::vector<std::string> rows,
-                                   std::function<void(int)> onPick)
+                                   std::function<void(int)> onPick,
+                                   std::vector<std::string> icons)
     : GameState(stack), context_(context), title_(std::move(title)), onPick_(std::move(onPick)) {
     std::vector<ui::MenuItem> items;
-    for (std::string& r : rows) {
-        items.push_back({std::move(r), true});
+    for (std::size_t i = 0; i < rows.size(); ++i) {
+        items.push_back({std::move(rows[i]), true, "",
+                         i < icons.size() ? std::move(icons[i]) : std::string()});
     }
     menu_.setItems(std::move(items));
 }
@@ -78,7 +80,8 @@ void EventChoiceState::render() {
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
     ui::drawTextPreview(title_, boxX + 14, boxY + 10, boxW - 28, style::kFontBody, p.gold, 2);
     ui::drawMenuScrolled(menu_, scroll_, visRows, boxX + 28, boxY + 10 + titleH + 4, 16, 12,
-                         boxW - 56, p.text, p.disabled, p.cursor, "eventchoice.list");
+                         boxW - 56, p.text, p.disabled, p.cursor, "eventchoice.list", 0,
+                         p.gold, &context_.resources);  // owner request 2026-08-28: row icons
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();

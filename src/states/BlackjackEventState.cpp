@@ -8,6 +8,7 @@
 #include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
+#include "resource/ResourceManager.hpp"  // 2026-08-29: the card textures
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -17,16 +18,40 @@ namespace cd {
 namespace style = ui::style;
 
 namespace {
-std::string handLine(const char* who, const std::vector<int>& cards, bool hideHole) {
-    std::string s = who;
+// Owner request 2026-08-29: ACTUAL cards. The authored A/J/Q/K faces (the
+// goose, the duck, the dark king), the blank face lettered with the rank for
+// 2..10, and the woven back for the dealer's hole card. A missing texture
+// falls back to the old text label — placeholder discipline, never a crash.
+constexpr int kCardW = 18;
+constexpr int kCardH = 24;
+constexpr int kCardGap = 3;
+
+void drawCard(AppContext& context, int x, int y, int rank, bool faceUp) {
+    const style::Palette& p = style::palette();
+    const char* id = !faceUp      ? "ui.card.back"
+                     : rank == 1  ? "ui.card.ace"
+                     : rank == 11 ? "ui.card.jack"
+                     : rank == 12 ? "ui.card.queen"
+                     : rank == 13 ? "ui.card.king"
+                                  : "ui.card.face";
+    if (!context.resources.hasTexture(id)) {
+        ui::drawText(faceUp ? gamble::cardLabel(rank) : "?", x + 4, y + 8, 10, p.text);
+        return;
+    }
+    DrawTextureEx(context.resources.texture(id),
+                  Vector2{static_cast<float>(x), static_cast<float>(y)}, 0.0f, 1.0f, WHITE);
+    if (faceUp && rank >= 2 && rank <= 10) {
+        const std::string lbl = gamble::cardLabel(rank);
+        const int lw = ui::measureText(lbl, 10);
+        ui::drawText(lbl, x + (kCardW - lw) / 2, y + (kCardH - 10) / 2, 10, p.ink);
+    }
+}
+
+void drawHand(AppContext& context, int x, int y, const std::vector<int>& cards, bool hideHole) {
     for (std::size_t i = 0; i < cards.size(); ++i) {
-        s += " ";
-        s += (hideHole && i == 1) ? "?" : gamble::cardLabel(cards[i]);
+        drawCard(context, x + static_cast<int>(i) * (kCardW + kCardGap), y,
+                 cards[static_cast<std::size_t>(i)], !(hideHole && i == 1));
     }
-    if (!hideHole) {
-        s += "  (" + std::to_string(gamble::handValue(cards)) + ")";
-    }
-    return s;
 }
 }  // namespace
 
@@ -97,19 +122,29 @@ void BlackjackEventState::render() {
     const style::Palette& p = style::palette();
     ui::drawModalDim(w, h);
 
-    const int boxW = 300;
-    const int boxH = 108;
+    // Owner request 2026-08-29: the table deals REAL cards — dealer's row
+    // above (hole card face-down until the hand ends), yours below, values
+    // beside the labels, the result line under both.
+    const int boxW = 320;
+    const int boxH = 158;
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
     ui::drawTextCentered(("Blackjack - " + std::to_string(bet_) + "g rides").c_str(), w / 2,
                          boxY + 8, style::kFontBody, p.gold);
-    ui::drawTextFitted(handLine("You:", player_, false), boxX + 16, boxY + 28, boxW - 32,
-                       style::kFontBody, p.text, "blackjack.player");
-    ui::drawTextFitted(handLine("Dealer:", dealer_, !done_), boxX + 16, boxY + 44, boxW - 32,
-                       style::kFontBody, p.text, "blackjack.dealer");
+    const std::string dealerLabel =
+        std::string("Dealer  (") +
+        (done_ ? std::to_string(gamble::handValue(dealer_)) : std::string("?")) + ")";
+    ui::drawTextFitted(dealerLabel, boxX + 16, boxY + 24, boxW - 32, style::kFontSmall,
+                       p.textDim, "blackjack.dealer");
+    drawHand(context_, boxX + 16, boxY + 33, dealer_, !done_);
+    const std::string youLabel =
+        "You  (" + std::to_string(gamble::handValue(player_)) + ")";
+    ui::drawTextFitted(youLabel, boxX + 16, boxY + 63, boxW - 32, style::kFontSmall,
+                       p.textDim, "blackjack.player");
+    drawHand(context_, boxX + 16, boxY + 72, player_, false);
     if (done_) {
-        ui::drawTextFitted(resultText_, boxX + 16, boxY + 64, boxW - 32, style::kFontBody,
+        ui::drawTextFitted(resultText_, boxX + 16, boxY + 104, boxW - 32, style::kFontBody,
                            p.textDim, "blackjack.result");
     }
 

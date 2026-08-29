@@ -4333,4 +4333,185 @@ Save-ReelGrid 'seven' @(       # the one everyone is here for
   '............'
 )
 
+# ============================================================================
+# 2026-08-29 (owner request) - blackjack card faces. Six 18x24 hand-placed
+# grids, RNG-free like every icon; the section reseed keeps the discipline.
+# The dealer's hole card is the BACK; number ranks draw the blank FACE and
+# the game letters the rank over it in the bitmap font; A/J/Q/K are full
+# authored cards - the Jack a goose, the Queen a duck, the King a dark king
+# (the game's own royalty gag, no real deck imitated). Corners stay
+# transparent so the cards read rounded on any panel.
+$script:rng = 20260829
+Write-Output 'Generating blackjack cards...'
+
+function Save-CardGrid([string]$name, [string[]]$rows) {
+  $b = Draw-Grid $rows
+  if ($b.Width -ne 18 -or $b.Height -ne 24) {
+    throw "Save-CardGrid: card '$name' is $($b.Width)x$($b.Height); must be 18x24."
+  }
+  SaveImg $b "ui/cards/card_$name.png"
+}
+
+Save-CardGrid 'face' @(   # the blank card: cream face, shaded right/bottom edge
+  '.KKKKKKKKKKKKKKKK.'
+  'KWWWWWWWWWWWWWWWWK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KSSSSSSSSSSSSSSSSK'
+  '.KKKKKKKKKKKKKKKK.'
+)
+
+Save-CardGrid 'back' @(   # the hole card: night-blue weave, crystal pips
+  '.KKKKKKKKKKKKKKKK.'
+  'KnnnnnnnnnnnnnnnnK'
+  'KnnCnnnCnnnCnnnCnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KCnnnCnnnCnnnCnnnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KnnCnnnCnnnCnnnCnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KCnnnCnnnCnnnCnnnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KnnCnnnCnnnCnnnCnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KCnnnCnnnCnnnCnnnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KnnCnnnCnnnCnnnCnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KCnnnCnnnCnnnCnnnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KnnCnnnCnnnCnnnCnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KCnnnCnnnCnnnCnnnK'
+  'KnnnnnnnnnnnnnnnnK'
+  'KnnnnnnnnnnnnnnnnK'
+  '.KKKKKKKKKKKKKKKK.'
+)
+
+Save-CardGrid 'ace' @(    # A + the crystal shard (the deck's own suit)
+  '.KKKKKKKKKKKKKKKK.'
+  'KWWWWWWWWWWWWWWWWK'
+  'KWWKWWWWWWWWWWWWSK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWKKKWWWWWWWWWWWSK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWCCWWWWWWSK'
+  'KWWWWWWGCCCWWWWWSK'
+  'KWWWWWGCCCCVWWWWSK'
+  'KWWWWWGCCCCVWWWWSK'
+  'KWWWWWCCCCCVWWWWSK'
+  'KWWWWWCCCCVVWWWWSK'
+  'KWWWWWWCCCVWWWWWSK'
+  'KWWWWWWCCCVWWWWWSK'
+  'KWWWWWWWCVWWWWWWSK'
+  'KWWWWWWWCVWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KSSSSSSSSSSSSSSSSK'
+  '.KKKKKKKKKKKKKKKK.'
+)
+
+Save-CardGrid 'jack' @(   # J - the goose, bill raised, unimpressed
+  '.KKKKKKKKKKKKKKKK.'
+  'KWWWWWWWWWWWWWWWWK'
+  'KWWWKWWWWWWWWWWWSK'
+  'KWWWKWWWWWWWWWWWSK'
+  'KWWWKWWWWWWWWWWWSK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWWKWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWKKKKWWWSK'
+  'KWWWWWWWKZZZZKWWSK'
+  'KWWWWWWWKZKZZKYYSK'
+  'KWWWWWWWKZZZZKYYSK'
+  'KWWWWWWWKZZKWWWWSK'
+  'KWWWWWWKZZKWWWWWSK'
+  'KWWWWWKZZKWWWWWWSK'
+  'KWWWWWKZZKWWWWWWSK'
+  'KWWWWKZZZZKWWWWWSK'
+  'KWWWKZZZZZZKWWWWSK'
+  'KWWWKZZZZZZKWWWWSK'
+  'KWWWKKKKKKKKWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KSSSSSSSSSSSSSSSSK'
+  '.KKKKKKKKKKKKKKKK.'
+)
+
+Save-CardGrid 'queen' @(  # Q - the duck, ring-necked, mid-scheme
+  '.KKKKKKKKKKKKKKKK.'
+  'KWWWWWWWWWWWWWWWWK'
+  'KWWKWWWWWWWWWWWWSK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWWKKWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWKKKKWWWSK'
+  'KWWWWWWWKvvvvKWWSK'
+  'KWWWWWWWKvKvvKYYSK'
+  'KWWWWWWWKvvvvKYYSK'
+  'KWWWWWWWKZZKWWWWSK'
+  'KWWWWWWKssKWWWWWSK'
+  'KWWWWWKssKWWWWWWSK'
+  'KWWWWWKssKWWWWWWSK'
+  'KWWWWKssssKWWWWWSK'
+  'KWWWKssssssKWWWWSK'
+  'KWWWKssssssKWWWWSK'
+  'KWWWKKKKKKKKWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KSSSSSSSSSSSSSSSSK'
+  '.KKKKKKKKKKKKKKKK.'
+)
+
+Save-CardGrid 'king' @(   # K - the dark king, crowned, displeased
+  '.KKKKKKKKKKKKKKKK.'
+  'KWWWWWWWWWWWWWWWWK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWKKWWWWWWWWWWWWSK'
+  'KWKKWWWWWWWWWWWWSK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWKWKWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWYWYWYWWWWWSK'
+  'KWWWWWYYYYYWWWWWSK'
+  'KWWWWKKKKKKKWWWWSK'
+  'KWWWWKnnnnnKWWWWSK'
+  'KWWWKnbbbbbnKWWWSK'
+  'KWWWKnbDbDbnKWWWSK'
+  'KWWWKnbbbbbnKWWWSK'
+  'KWWWKnbbbbbnKWWWSK'
+  'KWWKnnnnnnnnnKWWSK'
+  'KWWKnnbnnnbnnKWWSK'
+  'KWWKnnnnnnnnnKWWSK'
+  'KWWKKKKKKKKKKKWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KWWWWWWWWWWWWWWWSK'
+  'KSSSSSSSSSSSSSSSSK'
+  '.KKKKKKKKKKKKKKKK.'
+)
+
 Write-Output 'Texture generation complete.'

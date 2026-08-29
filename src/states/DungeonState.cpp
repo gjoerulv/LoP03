@@ -103,6 +103,12 @@ float scaledMessageTime(const AppContext& context, float base) {
     return base * settings::messageDurationScale(context.settings.values.messageSpeed);
 }
 
+// 2026-08-29 (owner request): the reels' spin pacing — one cell lands per
+// step (message speed scales it like every presentation beat), and unlanded
+// cells flick through the symbol wheel once per cycle.
+constexpr float kReelStepSeconds = 0.45f;
+constexpr float kReelCycleSeconds = 0.06f;
+
 const char* walkAnimId(render::Facing f) {
     switch (f) {
         case render::Facing::Down: return "anim.player.walk.down";
@@ -380,8 +386,13 @@ void DungeonState::captureShowReels() {
     const content::EventFlavorDef* flavor = context_.content.findEventFlavor(
         dungeon::eventFlavorId(dungeon::RoomEventKind::Reels));
     showOutcome(flavor != nullptr ? flavor->title : "The Event",
-                "3x Crown - the Dragon Crown, no less.\n"
+                "3x Crown. It drops into the tray. Mind it.\n"
                 "No match. The machine hums, deeply satisfied with itself.");
+    // Owner request 2026-08-28: the prize also rides a gear tag row, so the
+    // scene covers the icon+gold-name convention.
+    if (const content::ItemDef* crown = context_.content.findItem("dragon_crown")) {
+        outcomeItems_.push_back({content::gearIconTextureId(*crown), crown->name});
+    }
     using gamble::ReelSymbol;
     outcomeReels_ = {
         {static_cast<int>(ReelSymbol::TaxPapers), static_cast<int>(ReelSymbol::GooseHead),
@@ -391,6 +402,14 @@ void DungeonState::captureShowReels() {
         {static_cast<int>(ReelSymbol::Spoon), static_cast<int>(ReelSymbol::RedX),
          static_cast<int>(ReelSymbol::BaldHead)},
     };
+}
+
+void DungeonState::captureShowReelsSpinning() {
+    captureShowReels();
+    // A fixed clock 1.5 steps in: the first cell has landed, the second is
+    // mid-flick — the frame update() would show, without ever ticking it.
+    reelSpinT_ = scaledMessageTime(context_, kReelStepSeconds) * 1.5f;
+    reelLocksTicked_ = 1;
 }
 
 bool DungeonState::captureOpenStairs() {
@@ -473,13 +492,18 @@ void DungeonState::openChest() {
     ++run_.chestsOpened;
     run_.treasureGold += room.chest.gold;
     std::string msg = TextFormat("Found %d gold", chestGold);
+    // Owner request 2026-08-28: a found item rides the outcome panel's gear
+    // tag row (icon + gold name) instead of hiding in the sentence.
+    std::string foundIcon;
+    std::string foundName;
     if (!room.chest.itemId.empty()) {
         context_.party.inventory.add(room.chest.itemId, 1);
-        const char* name = room.chest.itemId.c_str();
+        foundName = room.chest.itemId;
         if (const content::ItemDef* it = context_.content.findItem(room.chest.itemId)) {
-            name = it->name.c_str();
+            foundName = it->name;
+            foundIcon = content::gearIconTextureId(*it);
         }
-        msg += std::string(" + ") + name;
+        msg += " - and:";
     }
     if (room.chest.trapped) {
         // Exactly the wound the prompt warned about: 25% max HP, never fatal.
@@ -494,6 +518,9 @@ void DungeonState::openChest() {
     }
     // M80 addendum: chest results ride the outcome panel.
     showOutcome("The Chest", msg);
+    if (!foundName.empty()) {
+        outcomeItems_.push_back({foundIcon, foundName});
+    }
 }
 
 void DungeonState::interact() {
@@ -774,10 +801,13 @@ void DungeonState::resolveEvent() {
                 return;
             }
             std::vector<std::string> rows;
+            std::vector<std::string> icons;  // owner request 2026-08-28: M81 icons
             for (const std::string& id : ids) {
                 const content::ItemDef* it = context_.content.findItem(id);
                 rows.push_back((it != nullptr ? it->name : id) + "  x" +
                                std::to_string(context_.party.inventory.count(id)));
+                icons.push_back(it != nullptr ? content::gearIconTextureId(*it)
+                                              : std::string());
             }
             stack().pushState(std::make_unique<EventChoiceState>(
                 stack(), context_, "Offer which piece? It will be gone.", std::move(rows),
@@ -790,11 +820,16 @@ void DungeonState::resolveEvent() {
                     context_.party.doubleXpNext = true;
                     ev.resolved = true;
                     context_.audio.play(Sfx::Interact);
+                    // Owner request 2026-08-28: the burned piece rides the
+                    // gear tag row over a body that no longer restates it.
                     showOutcome(
                         outcomeTitleFor(context_, dungeon::RoomEventKind::Sacrifice),
-                        (it != nullptr ? it->name : std::string("The offering")) +
-                            " melts to nothing. The NEXT battle pays DOUBLE XP.");
-                }));
+                        "It melts to nothing. The NEXT battle pays DOUBLE XP.");
+                    if (it != nullptr) {
+                        outcomeItems_.push_back({content::gearIconTextureId(*it), it->name});
+                    }
+                },
+                std::move(icons)));
             return;  // the modal owns resolution
         }
         case dungeon::RoomEventKind::LevelAltar: {
@@ -954,6 +989,7 @@ void DungeonState::resolveEvent() {
                     // (owner direction 2026-08-17); the body keeps only the
                     // prize lines, so nothing is said twice.
                     std::vector<std::array<int, 3>> rows;
+                    std::vector<std::pair<std::string, std::string>> itemTags;
                     std::string body;
                     bool anyMatch = false;
                     for (int s = 0; s < spins; ++s) {
@@ -964,7 +1000,7 @@ void DungeonState::resolveEvent() {
                         const int m = gamble::reelMatch(reel);
                         if (m >= 0) {
                             anyMatch = true;
-                            body += applyReelPrize(m) + "\n";
+                            body += applyReelPrize(m, itemTags) + "\n";
                         }
                     }
                     if (!anyMatch) {
@@ -974,6 +1010,8 @@ void DungeonState::resolveEvent() {
                     showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::Reels),
                                 std::move(body));
                     outcomeReels_ = std::move(rows);
+                    outcomeItems_ = std::move(itemTags);  // owner request 2026-08-28
+                    reelSpinT_ = 0.0f;  // owner request 2026-08-29: SPIN first
                 }));
             return;  // the modal owns resolution
         }
@@ -1051,14 +1089,24 @@ void DungeonState::resolveEvent() {
             context_.party.gold += gold;
             run_.treasureGold += gold;
             std::string reward = TextFormat("%d gold", gold);
+            // Owner request 2026-08-28: the cache's item rides the gear tag row.
+            std::string cacheIcon;
+            std::string cacheName;
             if (!ev.itemId.empty()) {
                 context_.party.inventory.add(ev.itemId, 1);
-                const content::ItemDef* it = context_.content.findItem(ev.itemId);
-                reward += std::string(" + ") + (it != nullptr ? it->name : ev.itemId);
+                cacheName = ev.itemId;
+                if (const content::ItemDef* it = context_.content.findItem(ev.itemId)) {
+                    cacheName = it->name;
+                    cacheIcon = content::gearIconTextureId(*it);
+                }
+                reward += " and a find";
             }
             context_.audio.play(Sfx::Chest);
             showOutcome(outcomeTitleFor(context_, ev.kind),
                         "You clear the rockfall - battered, but richer: " + reward + ".");
+            if (!cacheName.empty()) {
+                outcomeItems_.push_back({cacheIcon, cacheName});
+            }
             break;
         }
         case dungeon::RoomEventKind::ElderRoot: {
@@ -1103,10 +1151,13 @@ void DungeonState::resolveEvent() {
             context_.party.inventory.add(dungeon::kEvilDucklingItemId, 1);
             const content::ItemDef* it = context_.content.findItem(ev.itemId);
             context_.audio.play(Sfx::Interact);
+            // Owner request 2026-08-28: the purchase rides the gear tag row
+            // (name in gold; consumables carry no M81 icon, and that is fine).
             showOutcome(outcomeTitleFor(context_, ev.kind),
-                        "The peddler hands over the " +
-                            (it != nullptr ? it->name : std::string("Evil Duckling")) +
-                            ". It looks... pleased.");
+                        "The peddler hands it over. It looks... pleased.");
+            outcomeItems_.push_back(
+                {it != nullptr ? content::gearIconTextureId(*it) : std::string(),
+                 it != nullptr ? it->name : std::string("Evil Duckling")});
             break;
         }
         case dungeon::RoomEventKind::Surveyor: {
@@ -1174,6 +1225,9 @@ void DungeonState::showOutcome(const std::string& title, std::string body) {
     outcomeTitle_ = title;
     outcomeBody_ = std::move(body);
     outcomeReels_.clear();  // only the reels resolver re-fills this, after
+    outcomeItems_.clear();  // granting sites re-fill after (same pattern)
+    reelSpinT_ = -1.0f;     // no spin unless the reels resolver starts one
+    reelLocksTicked_ = 0;
     outcomePanelOpen_ = true;
     outcomeView_.setContent(outcomeBody_, kPanelTextW, ui::style::kFontBody,
                             ui::raylibMeasure());
@@ -1202,13 +1256,27 @@ void DungeonState::renderOutcomePanel() const {
     // panel by one 2x icon row per spin, drawn between the title and the text.
     constexpr int kReelRowH = 28;  // 12px icon at 2x + breathing room
     const int reelRows = static_cast<int>(outcomeReels_.size());
-    const int boxH = 86 + reelRows * kReelRowH;
+    // Gear tag rows (owner request 2026-08-28): one body line per found piece.
+    constexpr int kItemRowH = 13;
+    const int itemRows = static_cast<int>(outcomeItems_.size());
+    const int boxH = 86 + reelRows * kReelRowH + itemRows * kItemRowH;
     const int boxX = (w - kPanelBoxW) / 2;
     const int boxY = (h - boxH) / 2;
     ui::drawModalDim(w, h);
     ui::drawFrame(boxX, boxY, kPanelBoxW, boxH, ui::FrameStyle::Crystal);
     ui::drawTextCentered(outcomeTitle_.c_str(), w / 2, boxY + 8, ui::style::kFontMenu,
                          pal.crystal);
+    // 2026-08-29 (owner request): a live spin. Cells land left to right, row
+    // by row — one per step — and until a cell lands it flicks through the
+    // symbol wheel. The box keeps its FINAL size throughout so nothing jumps;
+    // prizes, gear tags and the Continue hint hold back until the last cell.
+    const bool spinning = reelSpinT_ >= 0.0f && reelRows > 0;
+    const float step = scaledMessageTime(context_, kReelStepSeconds);
+    const int totalLocks = reelRows * 3;
+    const int locked =
+        spinning ? std::min(totalLocks, step > 0.0f ? static_cast<int>(reelSpinT_ / step)
+                                                    : totalLocks)
+                 : totalLocks;
     if (reelRows > 0) {
         // Manifest ids in gamble::ReelSymbol order; a missing texture falls
         // back to the symbol's name, so the result is never unreadable.
@@ -1217,13 +1285,21 @@ void DungeonState::renderOutcomePanel() const {
             "ui.icon.reel.crown",      "ui.icon.reel.red_x",      "ui.icon.reel.bald_head",
             "ui.icon.reel.seven"};
         int ry = boxY + 24;
-        for (const std::array<int, 3>& row : outcomeReels_) {
+        for (int rowIdx = 0; rowIdx < reelRows; ++rowIdx) {
+            const std::array<int, 3>& row = outcomeReels_[static_cast<std::size_t>(rowIdx)];
             constexpr int kIconW = 24;  // 12px at 2x
             constexpr int kGap = 14;
             const int totalW = 3 * kIconW + 2 * kGap;
             int ix = w / 2 - totalW / 2;
             for (int slot = 0; slot < 3; ++slot) {
-                const int sym = row[static_cast<std::size_t>(slot)];
+                int sym = row[static_cast<std::size_t>(slot)];
+                if (spinning && rowIdx * 3 + slot >= locked) {
+                    // Still spinning: a cosmetic flick through the wheel,
+                    // desynced per cell so the columns read as independent.
+                    sym = (static_cast<int>(reelSpinT_ / kReelCycleSeconds) + rowIdx * 3 +
+                           slot * 5) %
+                          gamble::kReelSymbolCount;
+                }
                 const char* id = (sym >= 0 && sym < gamble::kReelSymbolCount)
                                      ? kReelIconIds[static_cast<std::size_t>(sym)]
                                      : nullptr;
@@ -1244,10 +1320,29 @@ void DungeonState::renderOutcomePanel() const {
             ry += kReelRowH;
         }
     }
-    // M87: the body scrolls past the visible budget instead of truncating.
-    ui::drawTextViewport(outcomeView_, boxX + 14, boxY + 26 + reelRows * kReelRowH, pal.text);
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();
+    if (spinning) {
+        ui::drawTextCentered("The reels spin...", w / 2,
+                             boxY + 26 + reelRows * kReelRowH + itemRows * kItemRowH,
+                             ui::style::kFontBody, pal.textDim);
+        const std::string hint = input::prompt(map, InputAction::Confirm, device, "Skip");
+        ui::drawTextCentered(hint.c_str(), w / 2, boxY + boxH - 13, ui::style::kFontSmall,
+                             pal.textHint);
+        return;
+    }
+    // Gear tag rows (owner request 2026-08-28): each found piece as its M81
+    // icon + name in the reward gold, centered between the title (and any
+    // reel rows) and the body.
+    for (int i = 0; i < itemRows; ++i) {
+        const auto& tag = outcomeItems_[static_cast<std::size_t>(i)];
+        ui::drawGearNameTag(context_.resources, tag.first, tag.second, w / 2,
+                            boxY + 24 + reelRows * kReelRowH + i * kItemRowH,
+                            ui::style::kFontBody, pal.gold, /*centered=*/true);
+    }
+    // M87: the body scrolls past the visible budget instead of truncating.
+    ui::drawTextViewport(outcomeView_, boxX + 14,
+                         boxY + 26 + reelRows * kReelRowH + itemRows * kItemRowH, pal.text);
     std::string hint = input::prompt(map, InputAction::Confirm, device, "Continue");
     if (outcomeView_.scrollable()) {
         hint = input::primaryLabel(map, InputAction::MoveUp, device) + "/" +
@@ -1691,7 +1786,8 @@ void DungeonState::onResume() {
     }
 }
 
-std::string DungeonState::applyReelPrize(int symbolIndex) {
+std::string DungeonState::applyReelPrize(
+    int symbolIndex, std::vector<std::pair<std::string, std::string>>& itemTags) {
     // M104: one three-of-a-kind, applied per the owner's table. Gold from the
     // machine is plain gold (never score treasure — a gamble is not a chest).
     using gamble::ReelSymbol;
@@ -1740,7 +1836,9 @@ std::string DungeonState::applyReelPrize(int symbolIndex) {
             const std::string& id = pool[static_cast<std::size_t>(ph % pool.size())];
             p.inventory.add(id, 1);
             const content::ItemDef* it = context_.content.findItem(id);
-            return line + "Also: " + (it != nullptr ? it->name : id) + ".";
+            itemTags.push_back({it != nullptr ? content::gearIconTextureId(*it) : std::string(),
+                                it != nullptr ? it->name : id});
+            return line + "Also, in the tray:";
         }
         case ReelSymbol::Spoon:
         case ReelSymbol::Crown: {
@@ -1755,7 +1853,8 @@ std::string DungeonState::applyReelPrize(int symbolIndex) {
                        " - but you hold the maximum. The machine keeps it, smugly.";
             }
             p.inventory.add(id, 1);
-            return std::string("A ") + it->name + " drops into the tray. Mind it.";
+            itemTags.push_back({content::gearIconTextureId(*it), it->name});
+            return "It drops into the tray. Mind it.";
         }
         case ReelSymbol::RedX: {
             int bossScale = 100;
@@ -1785,8 +1884,8 @@ std::string DungeonState::applyReelPrize(int symbolIndex) {
             const std::string& id = pool[static_cast<std::size_t>(h % pool.size())];
             p.inventory.add(id, 1);
             const content::ItemDef* it = context_.content.findItem(id);
-            return std::string("The bald stranger nods once: ") +
-                   (it != nullptr ? it->name : id) + ". Teach it from the Party panel.";
+            itemTags.push_back({std::string(), it != nullptr ? it->name : id});
+            return "The bald stranger nods once. Teach it from the Party panel.";
         }
         case ReelSymbol::Seven: {
             p.gold += 1000;
@@ -2018,6 +2117,16 @@ void DungeonState::handleInput(const Input& input) {
     if (outcomePanelOpen_) {
         moveX_ = 0.0f;
         moveY_ = 0.0f;
+        // 2026-08-29: while the reels spin, the first affirmative press SKIPS
+        // to the landed result instead of dismissing the panel unread.
+        if (reelSpinT_ >= 0.0f) {
+            if (input.pressed(InputAction::Confirm) || input.pressed(InputAction::Cancel) ||
+                input.pressed(InputAction::Menu)) {
+                reelSpinT_ = -1.0f;
+                context_.audio.play(Sfx::Confirm);
+            }
+            return;
+        }
         if (input.navPressed(InputAction::MoveUp) && outcomeView_.scrollBy(-1)) {
             context_.audio.play(Sfx::Move);
         }
@@ -2118,6 +2227,25 @@ void DungeonState::update(float dt) {
         dragonformArmed_ = true;
     }
 #endif
+    // 2026-08-29 (owner request): the reels' spin clock — advance while the
+    // outcome panel shows a live spin, tick a lock sound as each cell lands,
+    // and mark the animation finished after the last one. The landed symbols
+    // were decided by the pure hash before the panel opened; this only paces
+    // their reveal (message speed scales the pace like every other beat).
+    if (outcomePanelOpen_ && reelSpinT_ >= 0.0f && !outcomeReels_.empty()) {
+        reelSpinT_ += dt;
+        const float step = scaledMessageTime(context_, kReelStepSeconds);
+        const int totalLocks = static_cast<int>(outcomeReels_.size()) * 3;
+        const int locks =
+            std::min(totalLocks, step > 0.0f ? static_cast<int>(reelSpinT_ / step) : totalLocks);
+        for (; reelLocksTicked_ < locks; ++reelLocksTicked_) {
+            context_.audio.play(Sfx::Move);
+        }
+        if (locks >= totalLocks) {
+            reelSpinT_ = -1.0f;  // landed: the panel reveals prizes and tags
+        }
+        return;  // the spin owns the tick — the dungeon holds still beneath it
+    }
     worldTime_ += dt;
     const float length = std::sqrt(moveX_ * moveX_ + moveY_ * moveY_);
     moving_ = length > 0.0001f;
@@ -2647,11 +2775,14 @@ void DungeonState::render() {
             context_.virtualWidth, h, "dungeon.footer");
     } else {
         // Contextual prompt or transient message: strip plus one fitted line.
+        // Owner request 2026-08-29: a prompt too long for the strip ends in
+        // "..." (the event panel one Confirm away carries the full text)
+        // instead of overflowing off screen.
         ui::drawFooterHints({}, context_.virtualWidth, h, "dungeon.footer");
         const int promptW = ui::measureText(text, 8);
         const int promptX = std::max(4, (context_.virtualWidth - promptW) / 2);
-        ui::drawTextFitted(text, promptX, h - 12, context_.virtualWidth - promptX - 4, 8,
-                           pal.text, "dungeon.prompt");
+        ui::drawTextEllipsized(text, promptX, h - 12, context_.virtualWidth - promptX - 4, 8,
+                               pal.text, "dungeon.prompt");
     }
 
     // M80: the flavor and outcome panels sit above everything (modal; they

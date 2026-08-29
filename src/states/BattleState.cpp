@@ -626,8 +626,14 @@ void BattleState::startActorTurn() {
         // M94: the sparring mirror's manual mode — the player commands the
         // echo side through the SAME phases (forced turns still auto-resolve,
         // exactly as they do for the party).
-        phase_ = Phase::Command;
-        buildCommandMenu();
+        if (battle_.units[static_cast<std::size_t>(actor)].uncontrolled) {
+            // Owner rule 2026-08-29: a Jester echo acts the same way it does
+            // in the player's party — its own AI, never a command menu.
+            executeUncontrolled(actor);
+        } else {
+            phase_ = Phase::Command;
+            buildCommandMenu();
+        }
     } else {
         executeEnemy(actor);
     }
@@ -1858,11 +1864,21 @@ void BattleState::render() {
             // with the side-specific status lines. M28 depends on this panel.
             if (targetUnit >= 0) {
                 const battle::Combatant& t = battle_.units[static_cast<std::size_t>(targetUnit)];
-                ui::drawTextFitted("Target: " + t.name, kListX, panelY + 5, w - kListX - 96,
+                // Owner rule 2026-08-29: a long name wins the row — the back
+                // hint hides rather than colliding with it (Cancel still
+                // works; the target list phase re-shows the binding).
+                const std::string targetLine = "Target: " + t.name;
+                const int sharedW = w - kListX - 96;
+                const bool hintFits =
+                    ui::measureText(targetLine, style::kFontHeading) <= sharedW;
+                ui::drawTextFitted(targetLine, kListX, panelY + 5,
+                                   hintFits ? sharedW : w - kListX - 10,
                                    style::kFontHeading, style::palette().cursor,
                                    "battle.target.name");
-                ui::drawTextRight(backHint, w - 10, panelY + 7, style::kFontBody,
-                                  style::palette().textDim);
+                if (hintFits) {
+                    ui::drawTextRight(backHint, w - 10, panelY + 7, style::kFontBody,
+                                      style::palette().textDim);
+                }
                 std::string vitals = "HP " + std::to_string(t.hp < 0 ? 0 : t.hp) + "/" +
                                      std::to_string(t.maxHp);
                 if (t.side == battle::Side::Party) {

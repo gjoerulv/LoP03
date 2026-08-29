@@ -156,6 +156,43 @@ void drawGearIcon(ResourceManager& resources, const std::string& id, int x, int 
                   static_cast<float>(scale), WHITE);
 }
 
+void drawTextEllipsized(const std::string& text, int x, int y, int maxWidth, int fontSize,
+                        Color color, const char* site) {
+    if (measureText(text, fontSize) <= maxWidth) {
+        drawTextFitted(text, x, y, maxWidth, fontSize, color, site);
+        return;
+    }
+    static const std::string kMark = "...";
+    std::string cut = text;
+    while (!cut.empty() && measureText(cut + kMark, fontSize) > maxWidth) {
+        // Trim one CODEPOINT (drop UTF-8 continuation bytes with the lead).
+        while (!cut.empty() && (static_cast<unsigned char>(cut.back()) & 0xC0) == 0x80) {
+            cut.pop_back();
+        }
+        if (!cut.empty()) {
+            cut.pop_back();
+        }
+    }
+    while (!cut.empty() && cut.back() == ' ') {
+        cut.pop_back();  // "word ..." reads worse than "word..."
+    }
+    drawText(cut + kMark, x, y, fontSize, color);
+}
+
+int drawGearNameTag(ResourceManager& resources, const std::string& iconId,
+                    const std::string& name, int x, int y, int fontSize,
+                    Color nameColor, bool centered) {
+    const bool hasIcon = !iconId.empty() && resources.hasTexture(iconId);
+    const int span = hasIcon ? kGearIconSize + 3 : 0;
+    const int total = span + measureText(name, fontSize);
+    const int startX = centered ? x - total / 2 : x;
+    if (hasIcon) {
+        drawGearIcon(resources, iconId, startX, y + (fontSize - kGearIconSize) / 2);
+    }
+    drawText(name, startX + span, y, fontSize, nameColor);
+    return total;
+}
+
 void drawActorPortrait(ResourceManager& resources, const std::string& classId, int x, int y,
                        int scale) {
     const int box = portraitBox(scale);

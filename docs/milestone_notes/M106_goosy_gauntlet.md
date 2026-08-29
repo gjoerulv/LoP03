@@ -32,8 +32,8 @@ ENTIRE team turns to Geese for one fight, +300 score.
   **treasure-guard roster is gated**: only minTown-7 bosses are excluded
   below town 7, so every historical guard pick keeps its eligibility.
 - **The rite** (`RoomEventKind::GoosyFlock`, on the M55 first event slot
-  as built; since the 2026-08-17 leveling it rolls at 8% per floor like
-  every rite — see the M55 note's adjustment): the WHOLE party fights its next battle
+  as built; leveled 2026-08-17 and in the equal 8% encounter tier since
+  v23 — see the M55 note's adjustments): the WHOLE party fights its next battle
   as Geese — the Dragonform machinery verbatim (same stash, same vital
   mapping, same restore; heirlooms ride along) with the sign flipped:
   **+300 score**, itemized as "Flock battles". When dragonform and the

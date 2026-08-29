@@ -24,7 +24,9 @@ blackjack (bet gold, win pays the bet back doubled).
   odds); a seeded rank-only card stream (the bitmap font has no suit
   glyphs, and suits carry no blackjack value) and soft-ace hand values.
   All owner-tunable constants; every outcome headless-tested.
-- **The Reels** (`RoomEventKind::Reels`, 7 %/dungeon): buy-in via the
+- **The Reels** (`RoomEventKind::Reels`, 7 %/dungeon — v23, 2026-08-28:
+  the shared 8 % encounter roll, no longer drawn last; see the M55 note's
+  adjustments): buy-in via the
   M103 choice modal, spins resolved on the outcome panel — each spin's
   three symbols named, matches paying per the owner's table:
   tax = pay min(100, gold) · goose head = one dry goose joke + equipment
@@ -35,7 +37,8 @@ blackjack (bet gold, win pays the bet back doubled).
   one scroll from the trove's normal pool (**the one sanctioned
   in-dungeon scroll source**, per the interview) · 7 = 1000 g. Gamble
   gold is plain gold, never score treasure. One play, win or lose.
-- **Blackjack** (`RoomEventKind::Blackjack`, 7 %/dungeon): bet from the
+- **Blackjack** (`RoomEventKind::Blackjack`, 7 %/dungeon — v23 likewise
+  the shared 8 %): bet from the
   affordable steps (10/25/50/100), then an interactive hand in
   [BlackjackEventState](../../src/states/BlackjackEventState.hpp) —
   Confirm hits, Cancel stands, dealer draws to 17, win pays the bet back
@@ -72,6 +75,25 @@ spin/prize RULES are untouched — presentation only. Capture scene
   an owner call.
 - The plan reserved "reels is one-shot" pricing questions — the owner's
   interview answer (verbatim prices, one play) is implemented exactly.
+
+## Presentation upgrade (2026-08-29, owner request — "rather lackluster")
+
+- **The reels now SPIN.** The outcome panel opens on live reels: every cell
+  flicks through the symbol wheel and lands left to right, row by row (one
+  land per beat, message speed scaling it; a lock tick per landed cell),
+  and the prize lines + gear tags + Continue hint hold back until the last
+  cell sits. Confirm skips straight to the landed result. The landed
+  symbols were decided by the pure `gamble::reelSpin` hash before the
+  panel opened — the animation is presentation only, and a reload still
+  replays the identical spin. Captures `126_reels_spin` (mid-animation, a
+  fixed spin clock) and `119_reels_icons` (landed).
+- **Blackjack deals REAL cards** (`textures/ui/cards/`, six 18x24 grids):
+  the dealer's row with the woven-back hole card face-down until the hand
+  ends, the player's row below, hand values beside the labels. Ranks 2-10
+  letter the blank face at runtime; the royalty is the game's own — the
+  Ace's crystal shard, the goose Jack, the duck Queen, and the dark-king
+  King (no real deck imitated). Rules, stream, and payouts untouched.
+  Capture `127_blackjack_cards`.
 
 ## Manual owner checklist
 

@@ -129,6 +129,7 @@ M87 policies:
 | **B. Fixed wrapped preview** (`drawTextPreview`) | compact decision-time summaries: battle skill/item descriptions during selection, the party panel's passive/milestone/skill lines, the Items screen's detail lines (M90), and the choice modals' offer descriptions (M92 trove, M97 keepsakes) | INTENTIONAL: explicit `hasMore`, stepped down-arrow marks it, full text one Details press away — never counted as overflow |
 | **C. Scrollable wrapped prose** (`ui::TextViewport` + `drawTextViewport`) | reading surfaces: Details overlay, storyteller, tutorial prompts, bestiary flavor, event flavor/outcomes, curio lore, treasure/castle results, the M97 cutscene dialogue panel | EXPECTED: Up/Down reaches every line, clamped; more-above/below arrows; scissor-clipped; titles, trade-off/consequence lines, and control hints stay OUTSIDE the scrolling body |
 | **D. Scrollable row lists** (`ScrollWindow` + `drawMenuScrolled`) | shops, inventories, rosters, save slots, scoreboard, battle skill/item lists | EXPECTED: selection stays visible; arrows indicate more |
+| **E. Ellipsized single line** (`drawTextEllipsized`; owner request 2026-08-29) | a one-line strip that can neither wrap nor scroll AND whose full text is guaranteed one press away — today only the dungeon footer prompt (the event panel repeats the whole trade-off) | INTENTIONAL: the line ends in `...` at a codepoint boundary; by construction it can never raise `[ui-overflow]`. Never use it where the ellipsized words are the only copy of the information |
 
 A few deliberate fixed wrap budgets remain under policy A discipline (the
 boss telegraph's 2 lines, the event panel's trade-off line, choice-modal
@@ -222,3 +223,18 @@ are the authority).
 - **Developer diagnostics** (e.g. the title-screen content-count line) are
   gated out of Release with `CRYSTAL_SHIPPING_BUILD`; the version stamp stays
   in Release so bug reports can cite a build.
+
+## 13. Gear names (owner convention 2026-08-28)
+
+Wherever a piece of equipment, a relic, or an heirloom is NAMED outside a
+menu row — an outcome panel announcing a find, the Stranger's keepsake
+offer, any future prose surface — it renders through
+`ui::drawGearNameTag`: the item's M81 category icon (when it has one; only
+gear/relics/heirlooms carry icons by design) leading the name in the
+palette's **reward gold**, on its own line rather than buried in the
+sentence. The sentence around it stops restating the name. Menu rows keep
+the M81 row-icon idiom (`ui::MenuItem.icon`) — every list that names gear
+leads each row with its icon (the Sacrifice's offering list joined
+2026-08-28). Consumables have no icon and still get the gold name where
+they are prizes (e.g. the reels' scroll). This is the single convention;
+do not invent per-screen treatments.

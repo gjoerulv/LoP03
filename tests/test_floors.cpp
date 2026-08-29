@@ -155,38 +155,14 @@ TEST_CASE("floors: a 4-floor run swaps exactly the stair floors' boss teams", "[
         CHECK(f.floorCount == 4);
         CHECK(f.seed == dungeon::floorSeed(seed, i));
 
-        // Sub-seed independence: except the swapped team (and, since M93, the
-        // Surveyor's pure-hash event replacement), the floor is what its
-        // sub-seed generates standalone — editing floor 3 can never move
-        // floor 1. The expected Surveyor mutation is reproduced here exactly
-        // as generateFloors applies it, so the comparison stays byte-exact.
-        dungeon::Dungeon standalone =
-            dungeon::generate(dungeon::floorSeed(seed, i), 8, db(), "crystal_mine", 4);
-        {
-            std::vector<int> plain;
-            for (std::size_t ri = 0; ri < standalone.rooms.size(); ++ri) {
-                const dungeon::RoomEventKind k = standalone.rooms[ri].event.kind;
-                if (standalone.rooms[ri].type != dungeon::RoomType::Event) {
-                    continue;
-                }
-                if (k == dungeon::RoomEventKind::Shrine ||
-                    k == dungeon::RoomEventKind::HealingSpring ||
-                    k == dungeon::RoomEventKind::Merchant ||
-                    k == dungeon::RoomEventKind::ScoreWager ||
-                    k == dungeon::RoomEventKind::RestToken) {
-                    plain.push_back(static_cast<int>(ri));
-                }
-            }
-            const int slot = dungeon::surveyorSlot(seed, i, static_cast<int>(plain.size()));
-            if (slot >= 0) {
-                dungeon::RoomEvent& ev =
-                    standalone.rooms[static_cast<std::size_t>(
-                                         plain[static_cast<std::size_t>(slot)])]
-                        .event;
-                ev.kind = dungeon::RoomEventKind::Surveyor;
-                ev.goldCost = dungeon::kSurveyorPriceGold;
-            }
-        }
+        // Sub-seed independence: except the swapped stair-gate team, the
+        // floor is what its sub-seed generates standalone under the SAME
+        // FloorContext (v23: the fogged context carries the Surveyor roll
+        // into the event pass itself, before the encounter tier) — editing
+        // floor 3 can never move floor 1.
+        const dungeon::Dungeon standalone =
+            dungeon::generate(dungeon::floorSeed(seed, i), 8, db(), "crystal_mine", 4,
+                              dungeon::FloorContext{seed, i, /*fogged=*/true});
         const bool stairFloor = i < 3;
         CHECK(sameDungeon(standalone, f, /*skipBossTeam=*/stairFloor));
 

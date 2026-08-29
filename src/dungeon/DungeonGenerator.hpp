@@ -28,6 +28,22 @@ namespace cd::dungeon {
 Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& db,
                  std::string themeId = "", int town = 1);
 
+// v23 (owner direction 2026-08-28): the caller's floor context for the event
+// pass. `fogged` MEANS "the minimap starts fogged" — the owner's rule for
+// when the Surveyor is possible. Today only multi-floor descents fog the
+// map, but any future mode answers by that meaning, never by its floor
+// count. The Surveyor rolls from (runSeed, floorIndex) so every floor of a
+// run answers independently while the floor's own stream stays untouched.
+// The default context (standalone single floor, no fog) makes the short
+// overload above byte-identical to calling this one.
+struct FloorContext {
+    std::uint64_t runSeed = 0;
+    int floorIndex = 0;
+    bool fogged = false;
+};
+Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& db,
+                 std::string themeId, int town, const FloorContext& ctx);
+
 // M82: the derived per-floor generation seed. Floor 0 IS the run seed (so a
 // 1-floor run generates byte-identically to pre-M82); deeper floors get an
 // independent pure-hash stream. Exposed so tests can prove floor independence.

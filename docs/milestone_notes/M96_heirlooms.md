@@ -118,6 +118,9 @@ authoritative; this line lagged at the approval flip and was corrected
   now measures the longest option's wrapped lines (capped at six) and the
   box grows to fit, so every heirloom's own words are read in full before
   the choice. Capture `113_cutscene_choice` covers the sized box.
+  (2026-08-28: the keepsake now leads with its icon + gold-name tag line
+  and only the description wraps below — the M81 note's gear-name
+  extension; the measurement counts 1 + description lines.)
 - **The Party screen** now shows the keepsake like every other worn
   piece: a "Heirloom: <name>" gear line (relic icon) under Armor/Acc, and
   the member Details body carries the heirloom's name + full effect text.

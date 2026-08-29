@@ -96,7 +96,9 @@ The M65 treasure maps pay exclusive scrolls into this same system.
 fight against **exact echoes of the current party** — same stats, gear
 share, skills, passives, and elements, driven by the enemy AI — or, in
 **manual mode**, commanded by the player on both sides (echo turns use the
-same Attack/Skill/Guard phases; echoes carry no bag and cannot Escape —
+same Attack/Skill/Guard phases; a **Jester echo still acts on its own**,
+exactly as a Jester does in your party — it is never yours to command;
+echoes carry no bag and cannot Escape —
 that verb ends the spar from the player's side). A spar is **zero-stakes by
 construction**: the whole party ledger (HP, MP, items, gold, records,
 bestiary) is snapshotted before the fight and restored afterwards
@@ -205,10 +207,13 @@ and still resets the counter.
 whole minimap: unvisited rooms are absent, a visited room's door to the
 unknown shows as a stub, and the picture fills in as you walk. The classic
 1-floor map stays complete (the M82 "classic unchanged" rule), the M66
-chart's X still burns through the fog, and the **Surveyor** — a new
-multi-floor-only room event — sells the current floor's full map for a flat
-**20 gold**. Fog invites exploring; the patrol counter taxes it — that
-tension is the point.
+chart's X still burns through the fog, and the **Surveyor** — a room event
+that exists only where the map starts fogged (the owner's rule; today that
+is exactly the multi-floor descents) — sells the current floor's full map
+for a flat **20 gold**. The Surveyor is a utility, not an encounter: it
+keeps its own **25% per floor** and draws ahead of the encounter tier
+(v23), so fog management stays reliably purchasable. Fog invites exploring;
+the patrol counter taxes it — that tension is the point.
 
 **Dragonform (M93, owner decision).** A rare room event (any run) offers a
 pact stated in full on its panel: the party fights its **NEXT battle as
@@ -220,9 +225,9 @@ a heal and never an execution. The M45 per-class score modifier does NOT
 additionally apply; the pact is the whole price.
 
 **Six more events (M103, owner request; generation v19).** All towns and
-themes, on the same rare pure-hash placement (at most one of each per
-dungeon), every trade-off stated before Confirm and party-state gates
-checked at interaction, never at generation:
+themes, encounter-tier placement (at most one of each per floor), every
+trade-off stated before Confirm and party-state gates checked at
+interaction, never at generation:
 
 - **The Pond Spirit** — accept, and one **RANDOM** non-goose member is a
   **Goose** (the M45 class, bare but for their heirloom) for the **rest of
@@ -252,19 +257,23 @@ elites (all with a 5 % chance to just "Honk."), and three new bosses —
 Pondlord** (commander) — whose courts are the M61 Evil Geese, and who
 **join the Boss Rush and the Endless pool** like any dungeon boss (the
 rush now runs fifteen). Treasure digs below town 7 never meet them. The
-theme's rite (an 8% roll per floor since the 2026-08-17 leveling, like
-every rite) is **The Flock**: the WHOLE party fights its next
+theme's rite (an encounter-tier roll per floor — leveled 2026-08-17,
+equal-tier since v23 — like every rite) is **The Flock**: the WHOLE party fights its next
 battle as Geese (heirlooms worn, arms shed, HP/MP by percentage both
 ways) for a flat **+300 score**, itemized. Since 2026-08-17 the theme has
 its **own presentation**: reed-and-water tiles, eleven bespoke pond-fowl
 sprites, a reed battle backdrop, the "waddling strut" dungeon track, and
 an occupied-wetland ambience bed (art_bible §8b/§9b).
 
-**The gambling den (M104, owner request; generation v20).** Two more, same
-placement, both **seeded** (a reload replays the same reels and the same
-shoe): **The Reels** — a ONE-SHOT machine: 1 spin for 10 g or 3 for 70 g
+**The gambling den (M104, owner request; generation v20; presentation
+upgraded 2026-08-29).** Two more, same placement, both **seeded** (a
+reload replays the same reels and the same shoe — the animations below are
+presentation only): **The Reels** — a ONE-SHOT machine: 1 spin for 10 g or 3 for 70 g
 (the bundle's arithmetic is the owner's joke, priced verbatim), then it is
-gone however the reels land. Three of a kind pays: tax papers COST 100 g;
+gone however the reels land. Since 2026-08-29 the reels visibly **spin**:
+cells flick through the symbol wheel and land left to right, row by row,
+with the prize held back until the last cell sits (Confirm skips ahead;
+message speed paces it). Three of a kind pays: tax papers COST 100 g;
 the goose head tells a goose joke and pays equipment **new at this town**
 (never legendary); the P-Spoon pays a Deadly Spoon and the crown the
 **Dragon Crown** (both refuse politely at their caps); the red X a map
@@ -272,7 +281,11 @@ piece; the bald red-bearded head **one normal skill scroll — the single
 sanctioned in-dungeon scroll source**; and 7-7-7 pays 1000 g. **Blackjack**
 — bet 10/25/50/100 g on one interactive hand (hit/stand, dealer stands on
 17): a win pays the bet back **doubled**, a push returns it, a loss feeds
-the candle. Gamble gold is plain gold, never score treasure.
+the candle. Since 2026-08-29 the table deals **real cards** — the dealer's
+hole card face-down on a woven back until the hand ends, ranks lettered on
+the cream face, and the game's own royalty: the Ace's crystal shard, the
+**goose Jack**, the **duck Queen**, and the **dark-king King** (no real
+deck imitated). Gamble gold is plain gold, never score treasure.
 
 Visible enemy team shows: team name, danger level, enemy count, optional tags
 (Fast, Magic, Armored, Poison, …). **Since M88 a faced team can be inspected
@@ -1203,9 +1216,10 @@ bar, honoured in order:
 - **The Evil Duckling** — a small, deeply unpleasant consumable that
   **curses one foe** (half damage out, double MP costs). It cannot be
   bought, found or dropped; it is sold by exactly one merchant: the
-  **Duckling Peddler**, a rare dungeon event (~10% of dungeons, decided by
-  a pure hash of the seed so a reload changes nothing) asking a flat
-  **300 gold**. Strictly **one per customer** — while the party owns a
+  **Duckling Peddler**, a rare dungeon event (an encounter-tier roll —
+  8% per floor since the v23 equal weighting, ~10% and the tier's most
+  common before it — decided by a pure hash of the seed so a reload
+  changes nothing) asking a flat **300 gold**. Strictly **one per customer** — while the party owns a
   duckling the peddler refuses to deal, and the offer stands unresolved
   until the duck is spent. Using it delivers a **Hilarious Punchline** on
   the battle's quip channel. ("What do you call a duck that steals? A
@@ -1400,15 +1414,36 @@ party still loses, but a modest snack/relic loadout that used to lose now wins) 
 a balance shift reported for review, with King winnability remaining an owner
 manual item.
 
-**Theme rites (M55; leveled 2026-08-17, generation v22).** Each dungeon theme
-hides **one signature room event** that never appears in another theme. As
-shipped in M55 the rite was guaranteed once per dungeon — and after M82's
-floors, once per FLOOR, which over-represented it badly (a 20-floor run met
-its rite twenty times). By owner direction it now **rolls at 8% per floor on
-the same replacement contract as every other special event** (the top of the
-6–8% band, befitting a signature), at most once per floor; the Royal Relic's
-own chance table is untouched. Each rite states its full trade-off in the
-footer before you Confirm, like every event:
+**The two event tiers (owner ruling 2026-08-28, generation v23).** Room
+events are decided in exactly two tiers, and the split is deliberate:
+
+- **Staples** — Shrine, Healing Spring, Merchant, Elite Challenge, Score
+  Wager, Rest Token. Each floor's 2–3 event rooms draw distinct staples
+  uniformly; they are the run's bread and butter (healing, shopping, score,
+  danger) and stay common so sustain and scoring hold up across a descent.
+- **Encounters** — the theme's rite plus every later event kind (the
+  Duckling Peddler, Dragonform, the six M103 events, the two gambling
+  dens). Every encounter rolls the **same 8% per floor** from its own seed
+  hash, at most one of each per floor, replacing only a staple slot; when
+  more fire than slots remain, the survivors are chosen by a **uniform
+  seeded shuffle** — no kind outranks another. (Before v23 each carried its
+  own accreted percent in a fixed draw order, which quietly made the
+  Duckling Peddler ~3x as likely as a gambling den; that ladder was never
+  designed, and the owner leveled it.) A future event lands in the
+  encounter tier by default — one registry row, equal weight, no tuning.
+
+Outside the tiers: the **Royal Relic** keeps its own (town, depth) chance
+table (the owner's standing exception), and the **Surveyor** is a fog-gated
+utility at its own 25% (see the M93 fog passage).
+
+**Theme rites (M55; leveled 2026-08-17, equal-tier since v23).** Each
+dungeon theme hides **one signature room event** that never appears in
+another theme. As shipped in M55 the rite was guaranteed once per dungeon —
+and after M82's floors, once per FLOOR, which over-represented it badly (a
+20-floor run met its rite twenty times); the 2026-08-17 leveling made it an
+8% roll, and v23 folded it into the equal encounter tier above. Each rite
+states its full trade-off in the footer before you Confirm, like every
+event:
 - **The Armory Ghost** (Ruined Keep) — trade one piece of gear from your bag for
   a random piece **one rarity finer, same slot, sight unseen**. An epic can even
   yield a legendary (a third way to find one); the offered piece is consumed and

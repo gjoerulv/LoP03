@@ -282,6 +282,13 @@ void connect(Dungeon& d, int a, int b) {
 
 Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& db,
                  std::string themeId, int town) {
+    // Standalone single floor: no fog, so no Surveyor (the owner's rule —
+    // the event exists only where the map starts fogged).
+    return generate(seed, depth, db, std::move(themeId), town, FloorContext{});
+}
+
+Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& db,
+                 std::string themeId, int town, const FloorContext& ctx) {
     Rng rng(seed);
     const content::DungeonThemeDef* theme = themeId.empty() ? nullptr : db.findTheme(themeId);
     const int townIdx = clampTown(town);
@@ -572,14 +579,20 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
         }
     }
 
-    // --- The Duckling Peddler (M76): a rare replacement of ONE plain rolled
-    // event, decided by a PURE hash of the seed — no rng draw is consumed, so
-    // every other roll of this seed is byte-identical and generation stays
-    // v14 (the M52 additive precedent; the program's one generation bump is
-    // reserved for M82). Never a theme rite, the relic, or an elite challenge
-    // (whose team would be orphaned). Whether the peddler DEALS is a separate,
-    // interaction-time question (one per customer — see DungeonState), so the
-    // dungeon a seed generates never depends on the party's bag.
+    // --- The encounter tier (owner direction 2026-08-28, generation v23).
+    // Every encounter event — the theme's rite plus the ten global kinds in
+    // encounterRegistry() — rolls the SAME kEncounterChancePct from its own
+    // salt pair: a PURE hash of the floor seed, so no rng draw is consumed
+    // and reloads can never reroll (the M76 peddler contract, now the tier's
+    // contract). When more encounters fire than plain slots remain, the
+    // survivors are a uniform hash-shuffle of the fired list — no fixed
+    // order, no kind outranking another (the pre-v23 chain gave the Duckling
+    // Peddler ~3x a gambling den's effective rate). Encounters replace only
+    // plain STAPLE events: never the relic, an elite challenge (whose team
+    // would be orphaned), the Surveyor, or each other. Whether the peddler
+    // DEALS stays an interaction-time question (one per customer — see
+    // DungeonState), so the dungeon a seed generates never depends on the
+    // party's bag.
     {
         std::vector<int> plainEventRooms;
         const auto recollectPlain = [&]() {
@@ -597,90 +610,64 @@ Dungeon generate(std::uint64_t seed, int depth, const content::ContentDatabase& 
             }
         };
 
-        // The theme rite draws FIRST (owner direction 2026-08-17, generation
-        // v22): the theme's signature event gets first pick of the plain
-        // slots, at the top of the replacement band instead of a guarantee.
-        // Its payload fields are set here exactly as the old forced path did —
-        // except the Miner's Cache item, which now comes from a pure hash
-        // (the forced path drew it from the generator stream).
-        recollectPlain();
-        {
-            const RoomEventKind rite = themeEventKind(d.themeId);
-            const int riteSlot =
-                rite != RoomEventKind::None
-                    ? themeRiteSlot(seed, static_cast<int>(plainEventRooms.size()))
-                    : -1;
-            if (riteSlot >= 0) {
-                const int roomIdx = plainEventRooms[static_cast<std::size_t>(riteSlot)];
-                RoomEvent& ev = d.rooms[static_cast<std::size_t>(roomIdx)].event;
-                ev.kind = rite;
-                ev.goldCost = 0;
-                ev.itemId.clear();
-                if (rite == RoomEventKind::ElderRoot) {
-                    ev.goldCost = elderRootPrice(townIdx, d.depth);
-                } else if (rite == RoomEventKind::MinersCache && !pools.items.empty()) {
-                    constexpr std::uint64_t kSaltRiteItem = 0x217E5E77E0090902ull;
-                    ev.itemId = pools.items[static_cast<std::size_t>(
-                        themeEventHash(seed, roomIdx, kSaltRiteItem) % pools.items.size())];
-                }
-            }
-        }
-
-        // The Duckling Peddler (M76) and everything after it keep their order.
-        recollectPlain();
-        const int slot = duckPeddlerSlot(seed, static_cast<int>(plainEventRooms.size()));
-        if (slot >= 0) {
-            RoomEvent& ev =
-                d.rooms[static_cast<std::size_t>(plainEventRooms[static_cast<std::size_t>(slot)])]
-                    .event;
-            ev.kind = RoomEventKind::DuckPeddler;
-            ev.goldCost = kDuckPeddlerPriceGold;
-            ev.itemId = kEvilDucklingItemId;
-        }
-
-        // M93 (generation v17): Dragonform — the same pure-hash replacement
-        // contract on its own salts. The eligible list is re-collected so a
-        // slot an earlier draw just took is never taken twice. M103 (generation
-        // v19) draws six more kinds sequentially on the exact same rule, so
-        // no two replacements can ever share a room.
-        const auto applyReplacement = [&](int slot, RoomEventKind kind) {
+        // The Surveyor first (M93; fog-gated per the owner's 2026-08-28
+        // ruling): a utility purchase outside the tier, drawn BEFORE it so
+        // its 25% no longer starves at the back of the old chain. It rolls
+        // from the RUN seed + floor index, so every floor of a run answers
+        // independently and the floor's own stream stays untouched.
+        if (ctx.fogged) {
+            recollectPlain();
+            const int slot = surveyorSlot(ctx.runSeed, ctx.floorIndex,
+                                          static_cast<int>(plainEventRooms.size()));
             if (slot >= 0) {
                 RoomEvent& ev =
                     d.rooms[static_cast<std::size_t>(
                                 plainEventRooms[static_cast<std::size_t>(slot)])]
                         .event;
-                ev.kind = kind;
-                ev.goldCost = 0;
+                ev.kind = RoomEventKind::Surveyor;
+                ev.goldCost = kSurveyorPriceGold;
+                ev.itemId.clear();
             }
-        };
-        recollectPlain();
-        applyReplacement(dragonformSlot(seed, static_cast<int>(plainEventRooms.size())),
-                         RoomEventKind::Dragonform);
-        recollectPlain();
-        applyReplacement(goosePolymorphSlot(seed, static_cast<int>(plainEventRooms.size())),
-                         RoomEventKind::GoosePolymorph);
-        recollectPlain();
-        applyReplacement(sacrificeSlot(seed, static_cast<int>(plainEventRooms.size())),
-                         RoomEventKind::Sacrifice);
-        recollectPlain();
-        applyReplacement(levelAltarSlot(seed, static_cast<int>(plainEventRooms.size())),
-                         RoomEventKind::LevelAltar);
-        recollectPlain();
-        applyReplacement(strangerStorySlot(seed, static_cast<int>(plainEventRooms.size())),
-                         RoomEventKind::StrangerStory);
-        recollectPlain();
-        applyReplacement(tokenExchangeSlot(seed, static_cast<int>(plainEventRooms.size())),
-                         RoomEventKind::TokenExchange);
-        recollectPlain();
-        applyReplacement(patrolResetSlot(seed, static_cast<int>(plainEventRooms.size())),
-                         RoomEventKind::PatrolReset);
-        // M104 (generation v20): the gambling dens draw last.
-        recollectPlain();
-        applyReplacement(reelsSlot(seed, static_cast<int>(plainEventRooms.size())),
-                         RoomEventKind::Reels);
-        recollectPlain();
-        applyReplacement(blackjackSlot(seed, static_cast<int>(plainEventRooms.size())),
-                         RoomEventKind::Blackjack);
+        }
+
+        // Roll every encounter, shuffle the fired list, then hand out the
+        // surviving plain slots from the front.
+        std::vector<EncounterDef> fired;
+        const EncounterDef rite = themeRiteEncounter(d.themeId);
+        if (encounterFires(seed, rite)) {
+            fired.push_back(rite);
+        }
+        for (const EncounterDef& e : encounterRegistry()) {
+            if (encounterFires(seed, e)) {
+                fired.push_back(e);
+            }
+        }
+        encounterContentionShuffle(seed, fired);
+        for (const EncounterDef& e : fired) {
+            recollectPlain();
+            if (plainEventRooms.empty()) {
+                break;  // starved: the shuffle already made survival uniform,
+                        // so no kind is systematically the one left out
+            }
+            const int slot =
+                encounterPick(seed, e, static_cast<int>(plainEventRooms.size()));
+            const int roomIdx = plainEventRooms[static_cast<std::size_t>(slot)];
+            RoomEvent& ev = d.rooms[static_cast<std::size_t>(roomIdx)].event;
+            ev.kind = e.kind;
+            ev.goldCost = 0;
+            ev.itemId.clear();
+            // Payload baking, per kind — exactly the pre-v23 rules.
+            if (e.kind == RoomEventKind::ElderRoot) {
+                ev.goldCost = elderRootPrice(townIdx, d.depth);
+            } else if (e.kind == RoomEventKind::MinersCache && !pools.items.empty()) {
+                constexpr std::uint64_t kSaltRiteItem = 0x217E5E77E0090902ull;
+                ev.itemId = pools.items[static_cast<std::size_t>(
+                    themeEventHash(seed, roomIdx, kSaltRiteItem) % pools.items.size())];
+            } else if (e.kind == RoomEventKind::DuckPeddler) {
+                ev.goldCost = kDuckPeddlerPriceGold;
+                ev.itemId = kEvilDucklingItemId;
+            }
+        }
     }
 
     // --- Trapped chests (M20): some unguarded chests carry a visible
@@ -769,7 +756,12 @@ std::vector<Dungeon> generateFloors(std::uint64_t seed, int depth,
     std::vector<Dungeon> floors;
     floors.reserve(static_cast<std::size_t>(floorCount));
     for (int i = 0; i < floorCount; ++i) {
-        Dungeon f = generate(floorSeed(seed, i), depth, db, themeId, town);
+        // v23: the context tells the event pass this floor's map starts
+        // fogged (multi-floor descents only today — the owner's rule is the
+        // fog, not the floor count) so the Surveyor can roll, from the RUN
+        // seed so every floor answers independently.
+        const FloorContext ctx{seed, i, /*fogged=*/floorCount > 1};
+        Dungeon f = generate(floorSeed(seed, i), depth, db, themeId, town, ctx);
         f.runSeed = seed;
         f.floorIndex = i;
         f.floorCount = floorCount;
@@ -802,35 +794,6 @@ std::vector<Dungeon> generateFloors(std::uint64_t seed, int depth,
             }
         }
 
-        // M93 (generation v17): the Surveyor — multi-floor runs only (a
-        // 1-floor map has no fog to sell away). The same pure-hash plain-
-        // event replacement contract as the DuckPeddler, rolled per floor
-        // from the RUN seed so every floor answers independently and the
-        // floor's own generation stream is never touched.
-        if (floorCount > 1) {
-            std::vector<int> plainEventRooms;
-            for (std::size_t ri = 0; ri < f.rooms.size(); ++ri) {
-                const RoomEventKind k = f.rooms[ri].event.kind;
-                if (f.rooms[ri].type != RoomType::Event) {
-                    continue;
-                }
-                if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
-                    k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
-                    k == RoomEventKind::RestToken) {
-                    plainEventRooms.push_back(static_cast<int>(ri));
-                }
-            }
-            const int slot =
-                surveyorSlot(seed, i, static_cast<int>(plainEventRooms.size()));
-            if (slot >= 0) {
-                RoomEvent& ev =
-                    f.rooms[static_cast<std::size_t>(
-                                plainEventRooms[static_cast<std::size_t>(slot)])]
-                        .event;
-                ev.kind = RoomEventKind::Surveyor;
-                ev.goldCost = kSurveyorPriceGold;
-            }
-        }
         floors.push_back(std::move(f));
     }
     return floors;
@@ -841,37 +804,16 @@ Dungeon generateEternalFloor(std::uint64_t runSeed, int floorIndex,
                              const std::string& themeId, int town) {
     // M105: the standalone generation of this floor's sub-seed at the fixed
     // Eternal depth — which already carries its REAL theme boss, exactly what
-    // Eternal wants on every floor (no warden swap ever). The Surveyor rides
-    // its usual multi-floor contract so the fog stays sellable.
-    Dungeon f = generate(floorSeed(runSeed, floorIndex), kEternalDepth, db, themeId, town);
+    // Eternal wants on every floor (no warden swap ever). Eternal maps are
+    // always fogged, so the context keeps the Surveyor sellable (v23: it
+    // draws inside the event pass now, before the encounter tier).
+    const FloorContext ctx{runSeed, floorIndex, /*fogged=*/true};
+    Dungeon f = generate(floorSeed(runSeed, floorIndex), kEternalDepth, db, themeId, town, ctx);
     f.runSeed = runSeed;
     f.floorIndex = floorIndex;
     f.floorCount = kEternalFloorCountSentinel;
     f.eternal = true;
     f.mapPieceRoom = -1;  // an endless run feeds no map economy (owner rule)
-    {
-        std::vector<int> plainEventRooms;
-        for (std::size_t ri = 0; ri < f.rooms.size(); ++ri) {
-            const RoomEventKind k = f.rooms[ri].event.kind;
-            if (f.rooms[ri].type != RoomType::Event) {
-                continue;
-            }
-            if (k == RoomEventKind::Shrine || k == RoomEventKind::HealingSpring ||
-                k == RoomEventKind::Merchant || k == RoomEventKind::ScoreWager ||
-                k == RoomEventKind::RestToken) {
-                plainEventRooms.push_back(static_cast<int>(ri));
-            }
-        }
-        const int slot =
-            surveyorSlot(runSeed, floorIndex, static_cast<int>(plainEventRooms.size()));
-        if (slot >= 0) {
-            RoomEvent& ev = f.rooms[static_cast<std::size_t>(
-                                        plainEventRooms[static_cast<std::size_t>(slot)])]
-                                .event;
-            ev.kind = RoomEventKind::Surveyor;
-            ev.goldCost = kSurveyorPriceGold;
-        }
-    }
     // The escalation: a flat +10 %pts on every team per floor past the first
     // (the M49 Endless Rush curve shape). Danger tiers recompute from these
     // scaled stats, so the labels never lie about what stands there.

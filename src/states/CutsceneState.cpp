@@ -111,8 +111,10 @@ void CutsceneState::enterChoice() {
     if (def_ != nullptr) {
         for (const content::CutsceneOption& o : def_->options) {
             if (const content::ItemDef* it = context_.content.findItem(o.heirloomId)) {
-                const int lines = static_cast<int>(
-                    ui::wrapText(it->name + " - " + it->description, kChoiceBoxW - 28,
+                // Owner request 2026-08-28: the keepsake's name rides its own
+                // icon + gold tag line; only the description wraps below it.
+                const int lines = 1 + static_cast<int>(
+                    ui::wrapText(it->description, kChoiceBoxW - 28,
                                  ui::style::kFontBody, ui::raylibMeasure())
                         .size());
                 choiceDetailLines_ = std::max(choiceDetailLines_, std::min(lines, 6));
@@ -336,9 +338,14 @@ void CutsceneState::render() {
             const content::CutsceneOption& o =
                 def_->options[static_cast<std::size_t>(cursor)];
             if (const content::ItemDef* it = context_.content.findItem(o.heirloomId)) {
-                ui::drawTextPreview(it->name + " - " + it->description, boxX + 14, detailY,
-                                    boxW - 28, style::kFontBody, p.textDim,
-                                    choiceDetailLines_);
+                // Owner request 2026-08-28: the keepsake leads with its M81
+                // icon + name in the reward gold — the one gear-name
+                // convention — and the description keeps its own dim lines.
+                ui::drawGearNameTag(context_.resources, content::gearIconTextureId(*it),
+                                    it->name, boxX + 14, detailY, style::kFontBody, p.gold);
+                ui::drawTextPreview(it->description, boxX + 14,
+                                    detailY + ui::lineHeight(style::kFontBody), boxW - 28,
+                                    style::kFontBody, p.textDim, choiceDetailLines_ - 1);
             }
         }
     }

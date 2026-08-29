@@ -22,6 +22,9 @@ Goose polymorph (+100, random member, rest of run) · equipment sacrifice
   the identical pure-hash replacement contract (own salt pairs, plain
   rolled slots only, at most one of each per dungeon; chances 6–8 %).
   A shared `recollect/apply` helper keeps the generator block flat.
+  (v23, 2026-08-28: the sequential chain and the per-event chances are
+  gone — all six roll the shared 8 % with uniform contention via
+  `encounterRegistry()`; see the M55 note's adjustments.)
 - **The Pond Spirit** (`GoosePolymorph`): a RANDOM non-goose member
   (seeded pick, reload-honest) enters **gooseform** —
   [game/Gooseform.hpp](../../src/game/Gooseform.hpp), the Dragonform

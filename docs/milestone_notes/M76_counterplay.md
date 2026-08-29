@@ -63,10 +63,11 @@ stay 15, generation stays 14, save/settings schemas untouched).
 - New `RoomEventKind::DuckPeddler`. A post-pass in `dungeon::generate`
   replaces **one plain rolled event** (Shrine / Spring / Merchant / Wager
   / Rest — never a theme rite, the Royal Relic, or an elite challenge)
-  via `duckPeddlerSlot(seed, eligibleCount)` — a **pure `themeEventHash`
-  under two fresh salts** that consumes no rng draw, so every other roll
-  of a seed is byte-identical. Constants: **10%** of dungeons,
-  **300 gold** flat, `kEvilDucklingItemId`.
+  via a **pure `themeEventHash` under two fresh salts** that consumes no
+  rng draw, so every other roll of a seed is byte-identical. Constants:
+  **10%** of dungeons (v23, 2026-08-28: the shared 8% encounter roll —
+  the salts survive in `encounterRegistry()`; see the M55 note's
+  adjustments), **300 gold** flat, `kEvilDucklingItemId`.
 - **One per customer** (the owner's rule), enforced at **interaction
   time**: while the party owns a duckling both the footer prompt and the
   resolution decline ("One per customer. Duck rules.") and the event
