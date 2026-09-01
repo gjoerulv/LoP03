@@ -309,6 +309,12 @@ the name label to make visual sense. The silhouette sheet from
 - Reel icons (2026-08-17): **12×12**, one per `gamble::ReelSymbol`, drawn
   as hand-placed grids like the gear icons (no outline pass — they sit on
   the dark outcome panel and render at 2×).
+- Blackjack cards (2026-08-29): **18×24**, six hand-placed grids
+  (`ui.card.{face,back,ace,jack,queen,king}`) — a blank cream face the
+  game letters at runtime for ranks 2–10, a night-blue woven back for the
+  dealer's hole card, and authored royalty (crystal-shard Ace, goose Jack,
+  duck Queen, dark-king King; the game's own deck, imitating none). Baked
+  borders, transparent corner pixels, no outline pass, rendered at 1×.
 - Text uses the original pixel bitmap font delivered in **M25**; see
   `docs/ui_style_guide.md` §2.
 

@@ -2300,7 +2300,11 @@ Content on the v15 engine — **no version motion of any kind**
   precedent; the program's one generation bump is reserved for M82's
   floors — recorded for the owner's veto in the M76 note). Constants:
   `kDuckPeddlerChancePct` 10, `kDuckPeddlerPriceGold` 300,
-  `kEvilDucklingItemId`. The one-per-customer rule is enforced at
+  `kEvilDucklingItemId`. (Superseded 2026-08-28, generation v23: the
+  appearance roll and its per-event constant folded into the equal
+  encounter tier — one shared `kEncounterChancePct` and
+  `encounterRegistry()` in `dungeon/ThemeEvents`; the price and item
+  constants survive.) The one-per-customer rule is enforced at
   INTERACTION time in `DungeonState` (prompt + resolution both decline
   while the party owns one, leaving the event unresolved for a duckless
   return), so what a seed generates never depends on the party's bag.

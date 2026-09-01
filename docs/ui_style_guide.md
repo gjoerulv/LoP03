@@ -120,8 +120,8 @@ rules above.
 
 ## 7. Overflow policies (M87 contract)
 
-Every text-bearing element uses measured bounds and exactly one of the four
-M87 policies:
+Every text-bearing element uses measured bounds and exactly one of the five
+policies (A–D are the M87 contract; E joined 2026-08-29):
 
 | Policy | Use for | Overflow means |
 |---|---|---|
