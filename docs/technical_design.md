@@ -57,7 +57,7 @@ src/
   editor/                 # CrystalForge content editor (separate executable)
 tools/                    # package.ps1 + asset_gen/ deterministic generators
 tests/                    # Catch2 unit tests (headless: pure logic + filesystem)
-.claude/skills/crystal-dungeons/SKILL.md
+.claude/skills/are-p-geese/SKILL.md
 ```
 
 One responsibility per file; prefer small cohesive files over monoliths.

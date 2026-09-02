@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Operating contract for this repository — highest authority. The skill at
-`.claude/skills/crystal-dungeons/SKILL.md` is the repeatable workflow helper,
+`.claude/skills/are-p-geese/SKILL.md` is the repeatable workflow helper,
 not a substitute for this file.
 
 ## Project identity

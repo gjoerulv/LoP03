@@ -83,7 +83,10 @@ Delivered:
 - ~~The icon art stayed~~ — resolved 2026-08-17 (fix round above); the
   one-liners remain, per the owner's feedback scope.
 - The rc TEMPLATE was renamed; the skill FOLDER `crystal-dungeons` was
-  not (tooling references it; content updated).
+  not (tooling references it; content updated). (Superseded 2026-08-30,
+  owner direction: the folder is now `.claude/skills/are-p-geese/` and the
+  skill was rewritten as a lean pointer-driven crib — its chronic-drift
+  status paragraph cut in favor of `docs/milestones.md`.)
 
 ## Manual owner checklist
 
