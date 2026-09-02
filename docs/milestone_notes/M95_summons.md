@@ -1,6 +1,6 @@
 # M95 — Summons: the realm's legends answer (battle rules v17)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). Battle rules **16 → 17**.
 No generation or save-schema change (`usedSummons` is runtime-only by
 design — a reload of the entry autosave starts the ledger fresh, like
@@ -38,7 +38,7 @@ support.
 - **Debug**: "Grant summon scrolls", "Reset used summons" (with a
   used-count readout).
 
-## Re-audit decision (FLAGGED FOR OWNER VETO)
+## Re-audit decision (RESOLVED 2026-08-16: the King can cower)
 
 The plan recommended adding Terrified immunity to the **Hollow King**.
 Dropped on re-audit: M44 (owner-approved) states **"The King is NOT
@@ -50,6 +50,11 @@ Duck (blanket affliction immunity) and the Last Dragon (listed), plus
 every already-immune foe. If the owner wants the King summon-proof
 anyway, that needs a distinct mechanism (a summon-specific immunity) and
 an M44 design amendment — a deliberate decision, not a data flag.
+
+**Owner resolution (2026-08-16, recorded in the M98 preamble):** the King
+**can** be Terrified by summons — the implemented behavior stands and no
+summon-specific immunity will be added. M44's counterplay design is
+reaffirmed; game_design's King entry now records it.
 
 ## Deviations
 

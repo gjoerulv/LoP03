@@ -1,4 +1,4 @@
-# Crystal Dungeons — validated Windows x64 release packaging.
+﻿# Are P Geese — validated Windows x64 release packaging.
 # Run from an x64 Visual Studio developer shell:
 #   powershell -ExecutionPolicy Bypass -File tools\package.ps1
 
@@ -35,10 +35,10 @@ cmake --build --preset release
 if ($LASTEXITCODE -ne 0) { throw 'package: build failed' }
 
 # 2. Stage.
-$stage = Join-Path $repo "dist\CrystalDungeons-$version-win64"
+$stage = Join-Path $repo "dist\ArePGeese-$version-win64"
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 New-Item -ItemType Directory -Force $stage | Out-Null
-Copy-Item build-msvc-rel\CrystalDungeons.exe $stage
+Copy-Item build-msvc-rel\ArePGeese.exe $stage
 Copy-Item -Recurse data (Join-Path $stage 'data')
 Copy-Item -Recurse assets (Join-Path $stage 'assets')
 Copy-Item packaging\README-player.txt (Join-Path $stage 'README.txt')
@@ -47,7 +47,7 @@ Copy-Item packaging\LICENSES.txt (Join-Path $stage 'LICENSES.txt')
 # 3. Validate the staged layout.
 $problems = @()
 foreach ($required in @(
-    'CrystalDungeons.exe', 'README.txt', 'LICENSES.txt',
+    'ArePGeese.exe', 'README.txt', 'LICENSES.txt',
     'data\classes.json', 'data\enemies.json', 'data\items.json',
     'data\skills.json', 'data\bosses.json', 'data\dungeon_themes.json',
     'data\composition.json', 'assets\manifest.json', 'assets\credits.md')) {
@@ -69,7 +69,7 @@ foreach ($forbidden in @('*.pdb', '*.ilk', '*.exp', '*.lib')) {
     }
 }
 
-$exe = Join-Path $stage 'CrystalDungeons.exe'
+$exe = Join-Path $stage 'ArePGeese.exe'
 $exeBytes = [System.IO.File]::ReadAllBytes($exe)
 if ($exeBytes.Length -lt 64) {
     $problems += 'executable is too small to be a valid PE image'
@@ -109,7 +109,7 @@ if ($problems.Count -gt 0) {
 }
 
 # 4. Zip.
-$zip = Join-Path $repo "dist\CrystalDungeons-$version-win64.zip"
+$zip = Join-Path $repo "dist\ArePGeese-$version-win64.zip"
 if (Test-Path $zip) { Remove-Item -Force $zip }
 Compress-Archive -Path $stage -DestinationPath $zip
 $size = [math]::Round((Get-Item $zip).Length / 1MB, 1)

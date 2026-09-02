@@ -1,6 +1,6 @@
 # M94 — The sparring mirror
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). No version bumps — a new
 battle CONSTRUCTION (shared builder), a driver-side routing flag, and a
 state-side snapshot; the engine's rules are untouched and normal play is
@@ -65,6 +65,33 @@ equality, and the feel judgment (especially manual mode's echo turns).
 - Echoes fight without the party's item bag by design (their kit is the
   members' own skills).
 
+## Post-approval defects fixed (2026-08-17)
+
+**Echo sprites** (owner screenshot): the echoes fought wearing the
+tier-generic enemy beast. An echo's `sourceId` is its member's CLASS id
+(the mirror copies the party unit), which no `enemy.*.battle` texture
+matches, so the render fell to the generic sprite. `BattleState::drawUnit`
+now falls back to `actor.<classId>.battle` for enemy-side units before
+the tier-generic sprite, drawn horizontally FLIPPED so the echo faces its
+original like any foe. Capture `123_spar_battle` shows the mirrored
+party.
+
+**Spar-row hover crash**: moving the Training Hall cursor DOWN from the last
+member onto "Spar: face your echoes" hit a debug assertion (vector
+subscript out of range) — this milestone appended the two spar rows below
+the roster, but the M67 "portrait follows the cursor" render still indexed
+`party.members[cursor]`, which runs past the end on a spar row (Release
+builds read out-of-bounds memory silently instead of asserting, which is
+why the original manual pass missed it). Fixed with a bounds guard in
+`TrainingHallState::render` — no portrait is drawn while a spar row is
+highlighted. Regression capture `122_training_spar_row` renders that exact
+hover frame under debug assertions. An audit of every other cursor-indexed
+list found no sibling defect: menus with appended rows (Remap
+Reset/Back, Black Market Leave, Guild Back) use literal row indices or
+guards, and every other member-indexed site (equip shop portrait,
+inventory member pick, party screen, milestone modal) is bounds-checked
+or modulo-wrapped.
+
 ## Documentation updated
 
 `docs/milestones.md` (M94 row) · `docs/game_design.md` (§4 sparring
@@ -73,4 +100,19 @@ paragraph) · `docs/technical_design.md` (§47) ·
 
 ## Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-16)` — the header is authoritative; this line
+lagged at the approval flip and was corrected 2026-08-17.
+
+## Post-approval defect fixed (2026-08-29, owner report)
+
+Manual mode handed the player the ENEMY Jester: `buildSparBattle` cleared
+`uncontrolled` on every echo (the AI driver decides anyway), so the manual
+driver — which routes every non-forced echo turn to the command menu — saw
+a perfectly commandable unit. The echo now KEEPS its class's flag, and the
+manual driver routes uncontrolled echoes through `executeUncontrolled`: a
+Jester echo acts by the same Jester AI as the party side
+(`uncontrolledChoice` is side-safe — it derives the foe side from the
+actor). The both-sides-AI spar is untouched: the enemy driver never
+consults the flag, so existing mirrors resolve byte-identically. Pinned in
+test_spar ("a Jester echo is never the player's to command"); matrix row
+207.

@@ -209,3 +209,16 @@ next to the exe as a post-build step, so a **data-only** edit does not refresh
 `build-msvc/data/` until something relinks. Tests read the source `data/`
 directly and were unaffected, but a `--capture` run can use stale content — worth
 a follow-up if it bites again.
+
+## Post-approval extension (2026-08-29, owner request — the creation screen shows its classes)
+
+The party-creation roster now surfaces what this milestone made data:
+every row leads with the class's own battle sprite (updating the instant
+the class cycles; a LOCKED class greys to a silhouette — the M45 rule that
+the goal stays visible, now in pixels too), and the Details key opens the
+class's full sheet in the shared overlay — role blurb, base stats,
+per-level growth, starting skills, the M29 learnset with levels, the M45
+equip bans and quirks (`attackHitsAll`, `uncontrolled`, `scoreModPct`) in
+plain words, and the lock note. The footer advertises "Info" (five hints
+must share the strip — the capture lint enforces it). Matrix row 212;
+capture scenes 05/47/48 re-referee the reflowed rows.

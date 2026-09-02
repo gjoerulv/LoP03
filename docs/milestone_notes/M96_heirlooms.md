@@ -1,6 +1,6 @@
 # M96 — Heirlooms: worn memories (battle rules v18)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). Battle rules **17 → 18**.
 Save schema additive-only (`equippedHeirloom` optional gear field; old
 saves load with the slot empty; unknown ids are dropped on load, never a
@@ -107,4 +107,22 @@ paragraph before the King's classes) · `docs/technical_design.md` (§49)
 
 ## Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-16)` — the header and the ledger are
+authoritative; this line lagged at the approval flip and was corrected
+2026-08-18.
+
+## Post-implementation fixes (2026-08-17, owner manual-pass feedback)
+
+- **The Stranger's offer box** cut long keepsake descriptions to a
+  two-line preview (the Hearthstone Chip wraps to three). `enterChoice`
+  now measures the longest option's wrapped lines (capped at six) and the
+  box grows to fit, so every heirloom's own words are read in full before
+  the choice. Capture `113_cutscene_choice` covers the sized box.
+  (2026-08-28: the keepsake now leads with its icon + gold-name tag line
+  and only the description wraps below — the M81 note's gear-name
+  extension; the measurement counts 1 + description lines.)
+- **The Party screen** now shows the keepsake like every other worn
+  piece: a "Heirloom: <name>" gear line (relic icon) under Armor/Acc, and
+  the member Details body carries the heirloom's name + full effect text.
+  The skills preview absorbs the one-line shift (it was already a
+  bounded preview).

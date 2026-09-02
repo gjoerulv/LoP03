@@ -1,13 +1,16 @@
 #pragma once
 
+#include <array>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "battle/Battle.hpp"
 #include "core/Geometry.hpp"
 #include "danger/DangerRating.hpp"
 #include "game/Dragonform.hpp"  // M93
+#include "game/Gooseform.hpp"   // M103
 #include "game/RunStats.hpp"
 #include "game/Spoils.hpp"
 #include "dungeon/DungeonModel.hpp"
@@ -38,6 +41,7 @@ public:
     DungeonState(StateStack& stack, AppContext& context, dungeon::Dungeon dungeon);
 
     void onEnter() override;   // first-dungeon tutorial beat
+    void onExit() override;    // M103: the run's one exit choke (gooseform restore)
     void onResume() override;  // applies a battle outcome
     void handleInput(const Input& input) override;
     void openDetails();  // M22 contextual Details overlay
@@ -57,6 +61,11 @@ public:
                                const std::string& bodyOverride = "");
     // M80 addendum: show the outcome panel with a representative result.
     void captureShowOutcome(const std::string& title, const std::string& body);
+    // Reel-icon rows over the outcome panel (owner direction 2026-08-17).
+    void captureShowReels();
+    // Mid-spin frame (owner request 2026-08-29): first cell landed, the rest
+    // mid-flick, at a FIXED spin clock — deterministic pixel for pixel.
+    void captureShowReelsSpinning();
     // M82: clear the current floor's stair-gate, open the stairway, and stand
     // facing it, so the descend prompt + floor chip render deterministically.
     // False on a final floor (no stairway exists there).
@@ -95,6 +104,7 @@ private:
         bool noDeath = true;
         int escapes = 0;
         bool wagerAccepted = false;  // M20 score-wager event
+        int goosePolymorphs = 0;     // M103: accepted goose pacts (+100 each)
     };
 
     void enterRoom(int index, std::optional<dungeon::Dir> entrySide);
@@ -106,6 +116,13 @@ private:
     void readChart();     // M66: the single-use map reveals the buried spot
     void digBuried();     // M66: claim the buried treasure (a curio / a token)
     void resolveEvent();  // applies a non-battle event's stated trade-off
+    // M104: applies one reels three-of-a-kind prize (by gamble::ReelSymbol
+    // index) and returns the outcome line; every cap and banking rule holds.
+    // 2026-08-28 (owner request): a prize that lands an ITEM also appends its
+    // {icon id, name} to itemTags, which the resolver hands to the outcome
+    // panel's gear-tag rows.
+    std::string applyReelPrize(int symbolIndex,
+                               std::vector<std::pair<std::string, std::string>>& itemTags);
     std::string eventPromptText() const;  // the pre-confirmation trade-off line
     void confirmEventPanel();       // M80: the panel's Confirm — resolve or fight
     // M87: fills the flavor viewport and raises the panel (render stays const).
@@ -153,10 +170,21 @@ private:
     bool dragonformArmed_ = false;
     int dragonformFights_ = 0;  // battles actually fought in dragonform (score line)
     DragonformStash dragonformStash_;  // the real members while a fight runs borrowed
+    // M106: the Goosy rite — the WHOLE party's next battle as Geese, +300
+    // each (the Dragonform machinery verbatim, stash struct included).
+    bool gooseFlockArmed_ = false;
+    int gooseFlockFights_ = 0;
+    DragonformStash gooseFlockStash_;
+    // M103: the goose polymorph's single stash — one member, the rest of the
+    // run; restored (with XP carried back) at onExit, every ending alike.
+    GooseformStash gooseformStash_;
     // M93: the danger counter (owner decisions 5/7): a visible 100-step
     // countdown; at 0 a seeded patrol attacks immediately, the counter
     // resets, and the patrol pays XP but no gold, items, or danger credit.
     int dangerSteps_ = 100;
+    // M105: floors fully beaten this Eternal run (the record unit — a felled
+    // floor-boss); mirrors into party.eternalBestFloors as it grows.
+    int eternalFloorsCleared_ = 0;
     int patrolIndex_ = 0;  // how many patrols this run has rolled (seeds the next)
     int lastTileX_ = -1;   // the tile whose leaving ticked the counter last
     int lastTileY_ = -1;
@@ -168,6 +196,27 @@ private:
     bool outcomePanelOpen_ = false;
     std::string outcomeTitle_;
     std::string outcomeBody_;
+    // Reel icons (owner direction 2026-08-17): when the outcome being shown is
+    // a reels result, each spin's three symbols render as an icon row above
+    // the text (values are gamble::ReelSymbol indices; empty for every other
+    // outcome). showOutcome() clears it; the reels resolver fills it after.
+    std::vector<std::array<int, 3>> outcomeReels_;
+    // 2026-08-28 (owner request): gear found or traded in an outcome shows as
+    // its own centered tag row — the M81 icon + the name in the reward gold —
+    // between the title (and any reel rows) and the body, so a find stands
+    // out instead of hiding in prose. {icon id ("" = none), display name}.
+    // showOutcome() clears it; granting sites fill it after (the reels-row
+    // pattern above).
+    std::vector<std::pair<std::string, std::string>> outcomeItems_;
+    // 2026-08-29 (owner request): the reels visibly SPIN. While >= 0 the
+    // outcome panel animates: every cell cycles symbols and locks left to
+    // right, row by row (one lock per step, scaled by message speed); the
+    // prize text, gear tags and Continue hint hold back until the last cell
+    // lands, and Confirm skips straight to the landed result. -1 = finished
+    // (or a non-reels outcome). The landed symbols were decided by the pure
+    // gamble hash long before the animation — this is presentation only.
+    float reelSpinT_ = -1.0f;
+    int reelLocksTicked_ = 0;  // lock sounds already played (Sfx::Move each)
     // M87: both panels' bodies are bounded scrollable viewports — the panel
     // (not the text) owns the height and Up/Down reaches the rest, so an
     // authored/translated body of any length works. The fixed trade-off line

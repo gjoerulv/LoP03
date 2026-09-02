@@ -24,6 +24,10 @@ struct Party {
     Inventory inventory;
     int gold = 0;
     int restTokens = 0;  // free-rest tokens from dungeon events (M30)
+    // M103 (Sacrifice event): the NEXT battle's spoils XP doubles, once.
+    // RUNTIME ONLY, never saved — the entry autosave predates the event, and
+    // DungeonState::onExit clears a leftover so it cannot leak into town.
+    bool doubleXpNext = false;
     // M95 (rules v17): summons cast this run — RUNTIME ONLY, never saved
     // (the entry autosave restarts a reload with a fresh ledger, like every
     // other run-runtime state). Reset at dungeon/challenge/treasure entry;
@@ -64,6 +68,9 @@ struct Party {
     // 4-floor completion drops) — banked IOUs, cap 3, paid out right after
     // the treasure-dig guardian falls. Optional save field (old saves -> 0).
     int mapPiecesOwed = 0;
+    // M105: the Eternal descent's record — floors fully beaten in one run
+    // (a felled floor-boss each). Optional save field; old saves -> 0.
+    int eternalBestFloors = 0;
     // M66: dungeon curios dug up via the single-use treasure maps (see
     // game/Curios.hpp). Optional save field; the Curator achievement fires at
     // the full dozen.
@@ -82,6 +89,9 @@ struct Party {
     // optional save fields; old saves -> fresh story. See game/Cutscenes.hpp.
     std::vector<std::string> seenCutscenes;
     std::vector<std::string> heirloomChoices;
+    // M100: how many post-finale jokes the stranger has told (drives the
+    // deterministic joke cycle). Optional save field; old saves -> 0.
+    int strangerJokesTold = 0;
     // Enrichment (M42), all optional save fields (old saves -> empty / 0):
     // the set of enemy/boss ids this party has fought (the bestiary), and the
     // party's personal victory records (display-only, never ranked).
@@ -94,6 +104,22 @@ struct Party {
 };
 
 inline constexpr std::size_t kMaxPartySize = 4;
+
+// A New Game's starting purse.
+inline constexpr int kNewGameGold = 150;
+
+// A New Game's clean slate (owner bug report 2026-08-29): reset the WHOLE
+// object, never a hand-picked field list — the old list silently leaked every
+// field added after it was written (a loaded save's Guild unlocks, perks,
+// castle/goose-town roads, map economy, curios, bestiary and records all
+// survived "quit to title -> New Game"). Cross-game state (reward-class
+// unlocks, achievements, tutorial progress, settings, the scoreboard) lives
+// OUTSIDE Party by design, so nothing in here survives on purpose — and any
+// FUTURE Party field is covered automatically. Pinned by test_party.
+inline void resetForNewGame(Party& party) {
+    party = Party{};
+    party.gold = kNewGameGold;
+}
 
 // Provisional MP pool until the combat milestone refines it: scales with magic.
 int deriveMaxMp(int magic);

@@ -97,6 +97,10 @@ add_executable(crystal_tests
     test_summons.cpp
     test_heirlooms.cpp
     test_cutscenes.cpp
+    test_battle_formation.cpp
+    test_gooseform.cpp
+    test_gamble.cpp
+    test_migration.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

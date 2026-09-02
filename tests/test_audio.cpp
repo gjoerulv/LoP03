@@ -189,7 +189,7 @@ TEST_CASE("every shipped audio file is a valid PCM16 mono 22050 Hz WAV", "[audio
         CHECK(info.dataBytes > 0);
         CHECK(info.dataBytes + 44 == std::filesystem::file_size(entry.path()));
     }
-    CHECK(files == 45);  // 11 music + 6 town-ladder (M32) + 2 castle/king (M40) + 1 duck (M62) + 4 ambience + 21 sfx (15 + the M91 elemental impacts)
+    CHECK(files == 48);  // 12 music (incl. dungeon_goosy, 2026-08-17) + 6 town-ladder (M32) + 2 castle/king (M40) + 1 duck (M62) + 5 ambience (incl. goosy) + 22 sfx (15 + the M91 elemental impacts + the M107 summon arrival)
 }
 
 TEST_CASE("audio: every element speaks with its own impact role (M91)", "[audio]") {

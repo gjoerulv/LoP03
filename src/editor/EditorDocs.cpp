@@ -159,9 +159,11 @@ std::string EditorDocs::entitySuffix(Category category, int index) const {
     if (category == Category::Composition) {
         return {};
     }
-    // Story and event flavor label by title; curio lore has neither name nor
-    // title, so its lookup misses and the suffix stays empty (ids carry it).
-    const char* key = category == Category::Story || category == Category::EventFlavor
+    // Story, event flavor and tutorials label by title; curio lore has neither
+    // name nor title, so its lookup misses and the suffix stays empty (ids
+    // carry it).
+    const char* key = category == Category::Story || category == Category::EventFlavor ||
+                              category == Category::Tutorials  // M99
                           ? "title"
                           : "name";
     const auto it = entity->find(key);

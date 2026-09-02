@@ -4,7 +4,9 @@
 
 #ifdef CRYSTAL_TEST_DATA_DIR
 #include <filesystem>
+#include <map>
 #include <set>
+#include <string>
 
 #include "content/ContentDatabase.hpp"
 #include "content/ContentLoader.hpp"
@@ -107,17 +109,17 @@ TEST_CASE("events: generated event rooms are well-formed dead ends", "[events]")
         }
     }
     // Events appear regularly and every kind shows up somewhere in the sample.
-    // M55: a ruined_keep dungeon guarantees the Armory Ghost rite on its first
-    // event slot, so the 6 pre-M55 kinds (RestToken since M30) plus ArmoryGhost
-    // all appear across the sample. (Town defaults to 1 here, so no Royal
-    // Relic leaks in.) M76: the Duckling Peddler's pure-hash replacement
-    // (~10% of seeds) joins them; M93 adds Dragonform on the same contract
-    // (~8% of seeds; the Surveyor is multi-floor-only and stays absent here)
-    // — 9 kinds.
+    // Since the v23 equal weighting every encounter — the rite, the peddler,
+    // Dragonform, and the M103/M104 kinds — rolls the SAME kEncounterChancePct
+    // (~7 of these 90 keep floors each, before contention), so which kinds
+    // land in a FIXED sample is deterministic luck: fifteen do here. (Town
+    // defaults to 1, so no Royal Relic leaks in; the Surveyor needs fog and
+    // stays absent on these 1F maps.) Full all-kind coverage is pinned by the
+    // [coverage] sweeps below, which run the wide seed ranges.
     REQUIRE(eventRooms > 100);
-    REQUIRE(kindsSeen.size() == 9);
+    REQUIRE(kindsSeen.size() == 15);
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::RestToken) == 1);
-    REQUIRE(kindsSeen.count(dungeon::RoomEventKind::ArmoryGhost) == 1);  // the guaranteed rite
+    REQUIRE(kindsSeen.count(dungeon::RoomEventKind::ArmoryGhost) == 1);  // the leveled rite, seen
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::DuckPeddler) == 1);  // M76: rare, real
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::Dragonform) == 1);   // M93: rare, real
     REQUIRE(kindsSeen.count(dungeon::RoomEventKind::Surveyor) == 0);     // M93: never on 1F
@@ -142,6 +144,147 @@ TEST_CASE("events: event rooms never sit on the main path", "[events]") {
 #include "dungeon/ThemeEvents.hpp"
 #include "game/Dragonform.hpp"
 #include "game/Spoils.hpp"
+
+// Owner request 2026-08-17 (after the rite leveling): prove EVERY event kind
+// can still spawn. A representative sweep — every theme at town 7 / depth 20
+// (the relic band's ceiling), plus multi-floor keeps for the Surveyor — must
+// meet all 21 spawnable kinds. If a future change silently strands a kind,
+// this fails naming it.
+TEST_CASE("events: every kind is reachable in a representative sweep", "[events][coverage]") {
+    const content::ContentDatabase db = loadContent();
+    std::map<dungeon::RoomEventKind, int> counts;
+    int floors = 0;
+    for (const char* theme :
+         {"ruined_keep", "crystal_mine", "hollow_forest", "goosy_gauntlet"}) {
+        for (std::uint64_t seed = 1; seed <= 200; ++seed) {
+            const dungeon::Dungeon d = dungeon::generate(seed, 20, db, theme, 7);
+            ++floors;
+            for (const dungeon::Room& r : d.rooms) {
+                if (r.type == dungeon::RoomType::Event) {
+                    ++counts[r.event.kind];
+                }
+            }
+        }
+    }
+    // The Surveyor only spawns on multi-floor runs (floors before the last).
+    for (std::uint64_t seed = 1; seed <= 50; ++seed) {
+        const std::vector<dungeon::Dungeon> run =
+            dungeon::generateFloors(seed, 20, db, "ruined_keep", 7, 4);
+        for (const dungeon::Dungeon& f : run) {
+            ++floors;
+            for (const dungeon::Room& r : f.rooms) {
+                if (r.type == dungeon::RoomType::Event) {
+                    ++counts[r.event.kind];
+                }
+            }
+        }
+    }
+    const dungeon::RoomEventKind kAll[] = {
+        dungeon::RoomEventKind::Shrine,         dungeon::RoomEventKind::HealingSpring,
+        dungeon::RoomEventKind::Merchant,       dungeon::RoomEventKind::EliteChallenge,
+        dungeon::RoomEventKind::ScoreWager,     dungeon::RoomEventKind::RestToken,
+        dungeon::RoomEventKind::RoyalRelic,     dungeon::RoomEventKind::ArmoryGhost,
+        dungeon::RoomEventKind::MinersCache,    dungeon::RoomEventKind::ElderRoot,
+        dungeon::RoomEventKind::GoosyFlock,     dungeon::RoomEventKind::DuckPeddler,
+        dungeon::RoomEventKind::Surveyor,       dungeon::RoomEventKind::Dragonform,
+        dungeon::RoomEventKind::GoosePolymorph, dungeon::RoomEventKind::Sacrifice,
+        dungeon::RoomEventKind::LevelAltar,     dungeon::RoomEventKind::StrangerStory,
+        dungeon::RoomEventKind::TokenExchange,  dungeon::RoomEventKind::PatrolReset,
+        dungeon::RoomEventKind::Reels,          dungeon::RoomEventKind::Blackjack,
+    };
+    std::string table;
+    for (dungeon::RoomEventKind k : kAll) {
+        table += std::string(dungeon::eventFlavorId(k)) + "=" +
+                 std::to_string(counts[k]) + " ";
+    }
+    INFO("floors=" << floors << "  " << table);
+    for (dungeon::RoomEventKind k : kAll) {
+        INFO("missing kind: " << dungeon::eventFlavorId(k) << "  (sweep: " << table << ")");
+        CHECK(counts[k] >= 1);
+    }
+    CHECK(counts[dungeon::RoomEventKind::None] == 0);  // no empty event rooms
+}
+
+TEST_CASE("events: the encounter tier is weighed equally (v23)", "[events][coverage]") {
+    // Owner direction 2026-08-28: every encounter event — the theme's rite
+    // plus the ten globals — rolls the SAME kEncounterChancePct, and starved
+    // floors pick survivors by a uniform shuffle, never a fixed order. The
+    // sweep uses a DISTINCT seed range per theme (the rolls hash only the
+    // seed, so reusing one range would sample the same draws four times) and
+    // pins every kind's count into one shared band. The pre-v23 chain — the
+    // Duckling Peddler at 10% drawn second vs the dens at 7% drawn last —
+    // fails this hard in both directions.
+    const content::ContentDatabase db = loadContent();
+    std::map<dungeon::RoomEventKind, int> counts;
+    struct Span {
+        const char* theme;
+        std::uint64_t base;
+    };
+    const Span spans[] = {
+        {"ruined_keep", 10000},
+        {"crystal_mine", 20000},
+        {"hollow_forest", 30000},
+        {"goosy_gauntlet", 40000},
+    };
+    constexpr int kSeedsPerTheme = 250;  // 1000 independent themed floors
+    for (const Span& s : spans) {
+        for (std::uint64_t i = 0; i < kSeedsPerTheme; ++i) {
+            const dungeon::Dungeon d = dungeon::generate(s.base + i, 20, db, s.theme, 7);
+            for (const dungeon::Room& r : d.rooms) {
+                if (r.type == dungeon::RoomType::Event) {
+                    ++counts[r.event.kind];
+                }
+            }
+        }
+    }
+    // Each global rolls on all 1000 floors; each rite only in its own 250 —
+    // so the four rites POOL to the same exposure and share the globals'
+    // band. Expected ≈ 8% of 1000 minus a small, UNIFORM contention loss;
+    // the band is ±4σ-generous, but the old spread (duck ~107, blackjack
+    // ~35, goose ~25 per 1000 floors) breaks it in both directions.
+    const int riteTotal = counts[dungeon::RoomEventKind::ArmoryGhost] +
+                          counts[dungeon::RoomEventKind::MinersCache] +
+                          counts[dungeon::RoomEventKind::ElderRoot] +
+                          counts[dungeon::RoomEventKind::GoosyFlock];
+    struct Entry {
+        const char* name;
+        int count;
+    };
+    const Entry tier[] = {
+        {"rites(pooled)", riteTotal},
+        {"duck_peddler", counts[dungeon::RoomEventKind::DuckPeddler]},
+        {"dragonform", counts[dungeon::RoomEventKind::Dragonform]},
+        {"goose_polymorph", counts[dungeon::RoomEventKind::GoosePolymorph]},
+        {"sacrifice", counts[dungeon::RoomEventKind::Sacrifice]},
+        {"level_altar", counts[dungeon::RoomEventKind::LevelAltar]},
+        {"stranger_story", counts[dungeon::RoomEventKind::StrangerStory]},
+        {"token_exchange", counts[dungeon::RoomEventKind::TokenExchange]},
+        {"patrol_reset", counts[dungeon::RoomEventKind::PatrolReset]},
+        {"reels", counts[dungeon::RoomEventKind::Reels]},
+        {"blackjack", counts[dungeon::RoomEventKind::Blackjack]},
+    };
+    std::string table;
+    for (const Entry& e : tier) {
+        table += std::string(e.name) + "=" + std::to_string(e.count) + " ";
+    }
+    int lo = tier[0].count;
+    int hi = tier[0].count;
+    for (const Entry& e : tier) {
+        INFO("tier: " << table);
+        CHECK(e.count >= 40);
+        CHECK(e.count <= 110);
+        if (e.count < lo) {
+            lo = e.count;
+        }
+        if (e.count > hi) {
+            hi = e.count;
+        }
+    }
+    // And the tier is FLAT: the widest pairwise gap stays inside what a fair
+    // shared roll deals (the old chain's gap was ~80 per 1000 floors).
+    INFO("tier: " << table << " spread=" << (hi - lo));
+    CHECK(hi - lo <= 50);
+}
 
 TEST_CASE("m93: the new events replace only plain rolled slots, deterministically",
           "[events][m93]") {
@@ -256,3 +399,76 @@ TEST_CASE("m93: dragonform swaps the party by percentage and swaps it back",
 }
 
 #endif  // CRYSTAL_TEST_DATA_DIR (M93)
+
+TEST_CASE("m103: the six new events replace only plain slots, deterministically",
+          "[events][m103]") {
+    const content::ContentDatabase db = loadContent();
+    std::set<dungeon::RoomEventKind> seen;
+    const dungeon::RoomEventKind kinds[] = {
+        dungeon::RoomEventKind::GoosePolymorph, dungeon::RoomEventKind::Sacrifice,
+        dungeon::RoomEventKind::LevelAltar,     dungeon::RoomEventKind::StrangerStory,
+        dungeon::RoomEventKind::TokenExchange,  dungeon::RoomEventKind::PatrolReset,
+    };
+    for (std::uint64_t seed = 1; seed <= 400; ++seed) {
+        const dungeon::Dungeon d = dungeon::generate(seed, 6, db, "hollow_forest", 4);
+        const dungeon::Dungeon again = dungeon::generate(seed, 6, db, "hollow_forest", 4);
+        int perDungeon[6] = {0, 0, 0, 0, 0, 0};
+        for (std::size_t r = 0; r < d.rooms.size(); ++r) {
+            const dungeon::RoomEvent& ev = d.rooms[r].event;
+            CHECK(ev.kind == again.rooms[r].event.kind);  // reload-honest
+            for (int k = 0; k < 6; ++k) {
+                if (ev.kind == kinds[k]) {
+                    seen.insert(ev.kind);
+                    ++perDungeon[k];
+                    CHECK(d.rooms[r].type == dungeon::RoomType::Event);
+                }
+            }
+        }
+        for (int k = 0; k < 6; ++k) {
+            CHECK(perDungeon[k] <= 1);  // at most one of each per dungeon
+        }
+    }
+    // Every kind lands somewhere across a wide sample (rates 6-8%/dungeon).
+    CHECK(seen.size() == 6);
+}
+
+TEST_CASE("m103: the goose pact pays +100 per acceptance, itemized", "[events][m103]") {
+    score::RunSummary run;
+    run.completed = true;
+    run.battleTurns = 20;
+    const int base = score::computeScore(run);
+    run.goosePolymorphs = 1;
+    CHECK(score::computeScore(run) == base + 100);
+    CHECK(score::scoreBreakdown(run).gooseBonus == 100);
+    run.completed = false;
+    CHECK(score::computeScore(run) == 0);  // unfinished still scores zero
+}
+
+TEST_CASE("m104: the gambling dens place like every replacement", "[events][m104]") {
+    const content::ContentDatabase db = loadContent();
+    int reels = 0;
+    int tables = 0;
+    for (std::uint64_t seed = 1; seed <= 400; ++seed) {
+        const dungeon::Dungeon d = dungeon::generate(seed, 6, db, "ruined_keep", 5);
+        const dungeon::Dungeon again = dungeon::generate(seed, 6, db, "ruined_keep", 5);
+        int perDungeonReels = 0;
+        int perDungeonTables = 0;
+        for (std::size_t r = 0; r < d.rooms.size(); ++r) {
+            CHECK(d.rooms[r].event.kind == again.rooms[r].event.kind);
+            if (d.rooms[r].event.kind == dungeon::RoomEventKind::Reels) {
+                ++perDungeonReels;
+                ++reels;
+                CHECK(d.rooms[r].type == dungeon::RoomType::Event);
+            }
+            if (d.rooms[r].event.kind == dungeon::RoomEventKind::Blackjack) {
+                ++perDungeonTables;
+                ++tables;
+                CHECK(d.rooms[r].type == dungeon::RoomType::Event);
+            }
+        }
+        CHECK(perDungeonReels <= 1);
+        CHECK(perDungeonTables <= 1);
+    }
+    CHECK(reels > 0);
+    CHECK(tables > 0);
+}

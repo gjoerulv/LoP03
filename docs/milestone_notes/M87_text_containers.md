@@ -6,7 +6,8 @@ checkout (branch `oyb08`).
 
 ## A. Status
 
-**◑ implemented, awaiting manual approval** — see §F for evidence.
+**☑ complete (approved 2026-08-16)** — owner batch-approved M86–M97 on
+2026-08-16; see §F for evidence.
 
 ## B. Goal (owner brief)
 
@@ -297,4 +298,16 @@ strings), so no prose was rewritten.
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-16)` — the header (§A) and the ledger are
+authoritative; this line lagged at the approval flip and was corrected
+2026-08-18.
+
+## Policy adjustment (2026-08-17, owner direction)
+
+The battle command panel's skill/item description preview grew from two
+policy-B lines to THREE (the panel's remaining height holds them exactly;
+the box did not grow), and its more-arrow is gone: there is no scroll in
+that panel, the header already advertises [Details] for the full sheet,
+and the owner read the arrow as a scroll affordance that doesn't exist.
+Policy B elsewhere is unchanged (the arrow stays wherever Details is the
+only hint that more exists).

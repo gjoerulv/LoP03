@@ -107,6 +107,14 @@ const CutsceneDef* ContentDatabase::findCutscene(const std::string& id) const { 
     return findIn(cutscenes_, id);
 }
 
+bool ContentDatabase::addTutorialText(const TutorialTextDef& def) {  // M99
+    return tutorialTexts_.emplace(def.id, def).second;
+}
+
+const TutorialTextDef* ContentDatabase::findTutorialText(const std::string& id) const {  // M99
+    return findIn(tutorialTexts_, id);
+}
+
 bool ContentDatabase::empty() const {
     return skills_.empty() && classes_.empty() && enemies_.empty() && items_.empty() &&
            bosses_.empty() && themes_.empty() && passives_.empty();
@@ -124,6 +132,7 @@ void ContentDatabase::clear() {
     eventFlavors_.clear();  // M80
     curioLores_.clear();  // M85
     cutscenes_.clear();  // M97
+    tutorialTexts_.clear();  // M99
 }
 
 std::vector<std::string> knownSkillsFor(const ClassDef& cls, int level) {

@@ -9,6 +9,7 @@
 #include "game/Spoils.hpp"
 #include "render/BattleBackdrop.hpp"
 #include "render/BattleSequencer.hpp"
+#include "render/SummonFx.hpp"  // M107
 #include "states/AoeTint.hpp"
 #include "states/BattleLog.hpp"
 #include "states/GameState.hpp"
@@ -62,6 +63,9 @@ public:
     // Capture-only: open the skill list for the acting party member, optionally
     // with a supplied skill set, so the widest name + MP column is overflow-checked.
     void captureEnterSkillMenu(std::vector<std::string> skills = {});
+    // Capture-only (M107): freeze a summon's apparition mid-beat so the
+    // centered stagecraft renders deterministically for the overflow check.
+    void captureShowSummon(const std::string& skillId);
     // Capture-only (M44): open the item list, so the widest item name + count
     // column (the Royal Relics) is overflow-checked.
     void captureEnterItemMenu();
@@ -135,7 +139,13 @@ private:
         FloatKind kind = FloatKind::Damage;
     };
     int enemyBaseY() const;
+    // True when any unit on the field is a boss — the enemy rows above the
+    // center slot lift by kBossHeadroom so the 36px crown stays clear.
+    bool bossOnField() const;
     void unitScreenPos(int index, int& outX, int& outY) const;
+    // M101: reorder targetCandidates_ to visual top-to-bottom (the center-out
+    // rows broke the old unit-order == screen-order equivalence).
+    void sortTargetsByScreenY();
     // Computes deltas into the pending presentation (floats, hit flags,
     // SFX); nothing is shown until commitPresentation() runs (at the
     // sequencer's impact beat, or immediately for status ticks).
@@ -209,6 +219,12 @@ private:
     // decorative — nothing reads it back into the battle.
     std::string jestLine_;
     float jestTimer_ = 0.0f;
+    // M107: the summon apparition — the creature, large at the battlefield's
+    // center, for the resolution beat (timer counts down; duration scales
+    // with the message-speed setting like the quip it accompanies).
+    render::SummonKind summonFxKind_ = render::SummonKind::Goose;
+    float summonFxTimer_ = 0.0f;
+    float summonFxDuration_ = 1.0f;
     std::vector<FloatNumber> floats_;
 
     // Staged presentation (M18): the sim result is already final; these only

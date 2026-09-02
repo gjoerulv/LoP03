@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <vector>
 
+#include "content/ContentDatabase.hpp"  // M100: the joke pool lives in content
+#include "content/Definitions.hpp"
 #include "game/Party.hpp"
 
 // M97: pure rules for the Hooded Goose story scenes — seen-tracking, the
@@ -74,6 +77,49 @@ inline void recordCutsceneChoice(Party& party, const std::string& sceneId,
     if (cutsceneChoiceFor(party, sceneId).empty()) {
         party.heirloomChoices.push_back(encodeCutsceneChoice(sceneId, heirloomId));
     }
+}
+
+// M100: the post-finale dry-joke pool — every authored "joke_*" scene id,
+// sorted, so the cycle is deterministic regardless of map order. Empty when
+// none are authored (the trigger site then simply replays the finale).
+inline std::vector<std::string> strangerJokeIds(const content::ContentDatabase& db) {
+    std::vector<std::string> ids;
+    for (const auto& [id, def] : db.cutscenes()) {
+        (void)def;
+        if (id.rfind(content::kJokeCutscenePrefix, 0) == 0) {
+            ids.push_back(id);
+        }
+    }
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
+// The joke the stranger tells on the Nth post-finale visit (told = how many
+// have been told already): a plain cycle through the sorted pool — every joke
+// heard before any repeats, reload-honest via the persisted counter.
+inline std::string nextStrangerJokeId(const content::ContentDatabase& db, int told) {
+    const std::vector<std::string> ids = strangerJokeIds(db);
+    if (ids.empty()) {
+        return {};
+    }
+    const std::size_t n = ids.size();
+    const std::size_t index = static_cast<std::size_t>(told < 0 ? 0 : told) % n;
+    return ids[index];
+}
+
+// M103: the dungeon stranger-story pool — every authored "story_*" scene id,
+// sorted (same shape as the joke pool; timing-neutral tales for the in-run
+// event, told whether or not the finale has happened).
+inline std::vector<std::string> strangerStoryIds(const content::ContentDatabase& db) {
+    std::vector<std::string> ids;
+    for (const auto& [id, def] : db.cutscenes()) {
+        (void)def;
+        if (id.rfind(content::kStoryCutscenePrefix, 0) == 0) {
+            ids.push_back(id);
+        }
+    }
+    std::sort(ids.begin(), ids.end());
+    return ids;
 }
 
 // Replaces the {member1}..{member4} name tokens with the party's member names.

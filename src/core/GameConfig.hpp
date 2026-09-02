@@ -16,6 +16,6 @@ inline constexpr int kWindowHeight = kVirtualHeight * kDefaultScale;  // 720
 
 inline constexpr int kTargetFps = 60;
 
-inline constexpr const char* kWindowTitle = "Crystal Dungeons";
+inline constexpr const char* kWindowTitle = "Are P Geese";  // M108: the rebrand
 
 }  // namespace cd::config

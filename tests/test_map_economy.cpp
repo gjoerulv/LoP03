@@ -100,7 +100,7 @@ TEST_CASE("mapdrop: the fourth granted piece fires the reveal", "[mapdrop]") {
     CHECK(treasure.town == 5);
     CHECK(treasure.scalePct == 260);
     CHECK(db().findBoss(treasure.bossId) != nullptr);  // a real roster guard
-    CHECK(treasure.bossId == treasureGuardBossId(db(), 424242));  // seeded, stable
+    CHECK(treasure.bossId == treasureGuardBossId(db(), 424242, 5));  // seeded, stable (M106: town-gated)
 }
 
 TEST_CASE("mapdrop: the IOU bank caps at three and pays without losses", "[mapdrop]") {

@@ -1,6 +1,6 @@
 # M93 — Dungeon dynamics: fog, the Surveyor, patrols & dragonform (generation v17)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). Generation **16 → 17** (two
 new pure-hash event replacements move seeds' event rolls; everything else
 byte-identical to v16 — the M55/M76 precedent). No battle-rules bump (the
@@ -20,9 +20,13 @@ never drift silently).
   minimap, door stubs toward the unknown, the M66 chart's X burns
   through; `floorRevealed_` per floor. 1F maps stay complete (M82 rule).
 - **The Surveyor** (new RoomEventKind; ~25 %/floor, multi-floor only,
-  placed in `generateFloors` by pure hash): pays **20 gold** (the owner's
-  flat number) to chart the current floor; free courtesy when nothing is
-  left to chart. Flavor authored ("The Surveyor").
+  placed in `generateFloors` by pure hash — since v23 (2026-08-28) the
+  gate is "the map starts fogged" (`FloorContext.fogged`, the owner's
+  formulation; the same floors today) and it draws FIRST, ahead of the
+  encounter tier, instead of dead last where it starved to ~15 %
+  effective): pays **20 gold** (the owner's flat number) to chart the
+  current floor; free courtesy when nothing is left to chart. Flavor
+  authored ("The Surveyor").
 - **The danger counter**: a visible **Patrol N** chip from 100; every
   tile ticks it; at 0 `dungeon::patrolTeam` (the stair-gate recipe —
   real pools, real composer, the run's town/depth scale, seeded from
@@ -93,4 +97,6 @@ three new paragraphs) · `docs/technical_design.md` (§46) ·
 
 ## Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-16)` — the header and the ledger are
+authoritative; this line lagged at the approval flip and was corrected
+2026-08-30.

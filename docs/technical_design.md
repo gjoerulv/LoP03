@@ -1,4 +1,4 @@
-# Crystal Dungeons — Technical Design
+# Are P Geese — Technical Design
 
 > Living document. Update when architecture, conventions, or build change.
 
@@ -28,7 +28,7 @@ README.md                 # human build/run instructions
 CMakeLists.txt            # root build
 CMakePresets.json         # msvc-debug / msvc-release + build/test presets (M24)
 cmake/                    # Dependencies.cmake, CompilerWarnings.cmake
-packaging/                # Version.hpp.in, CrystalDungeons.rc.in, crystal.ico (M24)
+packaging/                # Version.hpp.in, ArePGeese.rc.in, arepgeese.ico (M24; renamed M108)
 docs/                     # design + technical + milestones (source of truth)
 data/                     # JSON content (populated M2+)
 assets/                   # manifest.json + generated textures/audio + credits.md
@@ -57,7 +57,7 @@ src/
   editor/                 # CrystalForge content editor (separate executable)
 tools/                    # package.ps1 + asset_gen/ deterministic generators
 tests/                    # Catch2 unit tests (headless: pure logic + filesystem)
-.claude/skills/crystal-dungeons/SKILL.md
+.claude/skills/are-p-geese/SKILL.md
 ```
 
 One responsibility per file; prefer small cohesive files over monoliths.
@@ -191,7 +191,7 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` is currently **15** (bump history: M29 enlarged the theme
+  `kGenerationVersion` is currently **23** (bump history: M29 enlarged the theme
   enemy/boss pools; M30 added the RestToken event; M37 gave the merchant a 75 %
   bargain and gated chest gear by town; **M38 gates the per-town enemy/boss pools
   by `minTown`**; **M43 reprices the consumables a merchant offers and windows
@@ -199,7 +199,14 @@ carry the information without color.
   from the event stream**; **M55 guarantees each theme's rite event once per
   dungeon** (v11); **M65/M66 add the seed-hashed treasure maps** (v12/v13);
   **M68 tags the party-relative danger recalibration** (v14, generated output
-  byte-identical); **M82 adds the 1-or-4-floor system** (v15, §36) — each
+  byte-identical); **M82 adds the 1-or-4-floor system** (v15, §36); **the
+  M88–M97 and M98–M108 programs take it to v21** (20-floor descents, the
+  scroll ban, the eight new events, the Goosy Gauntlet); **the 2026-08-17
+  rite leveling to v22** (each theme's rite becomes an 8 % roll,
+  superseding the M55 guarantee); and **the 2026-08-28 equal weighting to
+  v23** (all eleven encounter events share `kEncounterChancePct` with a
+  uniform hash-shuffled contention instead of the accreted fixed chain;
+  the fog-gated Surveyor draws first at its own 25 %) — each
   owner-approved. The version-history comment in
   `src/dungeon/RoomLayout.hpp` is the authority).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
@@ -230,23 +237,24 @@ MultiThreaded` with `CMP0091` forced NEW so raylib matches — the exe's
 import table carries only OS DLLs and runs without the VC++
 redistributable; verified via dumpbin). The version lives once in
 `project(VERSION)` and is configured into `generated/core/Version.hpp`
-(title-screen stamp) and `packaging/CrystalDungeons.rc.in` (Windows
-VERSIONINFO + icon; the multi-size `packaging/crystal.ico` is generated
-from the approved emblem by `tools/asset_gen/generate_icon.ps1`).
+(title-screen stamp) and `packaging/ArePGeese.rc.in` (Windows
+VERSIONINFO + icon; the multi-size `packaging/arepgeese.ico` is generated
+from the goose emblem by `tools/asset_gen/generate_icon.ps1`).
 `tools/package.ps1` is the one-command release path: preset build →
 stage exe + `data/` + `assets/` + player README + LICENSES → validate
 (required files, every manifest path resolves inside the package, no
 debug artifacts, capture strings absent from the exe, exe
-ProductVersion matches) → zip `dist/CrystalDungeons-<version>-win64.zip`.
+ProductVersion matches) → zip `dist/ArePGeese-<version>-win64.zip`.
 Release builds cap raylib's log level at warnings (`NDEBUG`). User data
 stays in `paths::userDataDir()` for dev and packaged builds alike.
 
 ### Validation tooling (M23)
 
-Three layers, all deterministic. **Capture:** `CrystalDungeons --capture
+Three layers, all deterministic. **Capture:** `ArePGeese --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; **114 scenes as of M97**,
+list lives in `src/capture/CaptureRunner.cpp`; **127 scenes as of the
+2026-08-29 polish round**,
 `98`–`105` the pseudo-localized long-prose set) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
@@ -412,12 +420,15 @@ Each file is a versioned wrapper around a named array:
 ```
 
 `version` must equal the supported schema version (currently `1`). Files
-(**twelve** as of M85): `skills.json`, `classes.json`, `enemies.json`,
+(**fourteen** as of M99): `skills.json`, `classes.json`, `enemies.json`,
 `items.json`, `bosses.json`, `dungeon_themes.json`, `composition.json`
 (M20), `passives.json` (M36), `story.json` (M41), `milestones.json` (M63),
-and the two **optional** files `event_flavor.json` (M80) and
-`curio_lore.json` (M85) — `loadAll` skips an optional file when absent
-(§34/§39); all twelve are CrystalForge categories since M86 (§40). Bosses
+`cutscenes.json` (M97, required — its scenes grant heirlooms), and the
+three **optional** files `event_flavor.json` (M80), `curio_lore.json`
+(M85) and `tutorials.json` (M99, tutorial-prompt text with a constexpr
+fallback in `src/tutorial/Tutorial.hpp`) — `loadAll` skips an optional
+file when absent (§34/§39); all fourteen are CrystalForge categories
+(twelve since M86, cutscenes M97, tutorials M99). Bosses
 carry an `archetype`, `skills`, `minions`, and a
 `telegraph`; themes list `normalEnemies`/`eliteEnemies`/`bosses` id pools; skills
 may carry an optional `statusEffect`/`statusMagnitude`/`statusDuration`. All ids
@@ -558,7 +569,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 15 — the history comment in
+  `kGenerationVersion` (currently 23 — the history comment in
   `RoomLayout.hpp` is the authority; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
@@ -2289,7 +2300,11 @@ Content on the v15 engine — **no version motion of any kind**
   precedent; the program's one generation bump is reserved for M82's
   floors — recorded for the owner's veto in the M76 note). Constants:
   `kDuckPeddlerChancePct` 10, `kDuckPeddlerPriceGold` 300,
-  `kEvilDucklingItemId`. The one-per-customer rule is enforced at
+  `kEvilDucklingItemId`. (Superseded 2026-08-28, generation v23: the
+  appearance roll and its per-event constant folded into the equal
+  encounter tier — one shared `kEncounterChancePct` and
+  `encounterRegistry()` in `dungeon/ThemeEvents`; the price and item
+  constants survive.) The one-per-customer rule is enforced at
   INTERACTION time in `DungeonState` (prompt + resolution both decline
   while the party owns one, leaving the event unresolved for a duckless
   return), so what a seed generates never depends on the party's bag.

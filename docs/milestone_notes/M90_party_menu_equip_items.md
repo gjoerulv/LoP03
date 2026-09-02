@@ -1,6 +1,6 @@
 # M90 — Party menu: Equip Party & Items
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-08-16)
 **Program:** M88–M97 (authorized 2026-08-14). No version bumps; no
 save/schema changes.
 

@@ -40,5 +40,9 @@ TEST_CASE("paths: rejects absolute paths and root directories", "[paths]") {
 TEST_CASE("paths: user data dir is named for the app", "[paths]") {
     const fs::path dir = userDataDir();
     REQUIRE_FALSE(dir.empty());
-    REQUIRE(dir.filename() == "CrystalDungeons");
+    REQUIRE(dir.filename() == "ArePGeese");  // M108: the rebrand
+    // The legacy dir (the M108 migration's source) keeps the old name and the
+    // same parent, so the copy is always a sibling move.
+    REQUIRE(cd::paths::legacyUserDataDir().filename() == "CrystalDungeons");
+    REQUIRE(cd::paths::legacyUserDataDir().parent_path() == dir.parent_path());
 }

@@ -60,6 +60,25 @@ void drawActorPortrait(ResourceManager& resources, const std::string& classId, i
 inline constexpr int kGearIconSize = 10;
 void drawGearIcon(ResourceManager& resources, const std::string& id, int x, int y, int scale = 1);
 
+// 2026-08-28 (owner request): the one convention for naming a piece of gear
+// OUTSIDE a menu row — the M81 icon (when its category has one) leading the
+// name in a standout color (callers pass the palette's reward gold), so
+// equipment and heirloom names read as finds wherever panels mention them.
+// An empty/missing icon draws the name alone. centered=true treats x as the
+// center line. Returns the total width drawn.
+int drawGearNameTag(ResourceManager& resources, const std::string& iconId,
+                    const std::string& name, int x, int y, int fontSize,
+                    Color nameColor, bool centered = false);
+
+// 2026-08-29 (owner request): a one-line strip that CANNOT scroll ends in
+// "..." instead of silently overflowing, so the reader learns there is more
+// (the dungeon footer's full trade-off lives one Confirm away on the event
+// panel). Text that fits draws exactly like drawTextFitted; only genuine
+// overflow truncates at a codepoint boundary — by design this site can then
+// never raise an overflow diagnostic.
+void drawTextEllipsized(const std::string& text, int x, int y, int maxWidth, int fontSize,
+                        Color color, const char* site);
+
 // Installs the active UI fonts (M25): text is rendered with the base font
 // whose native size is nearest the requested size, so pixel glyphs stay crisp
 // (small=8, main=10, title=20). Any pointer may be null and any size with no

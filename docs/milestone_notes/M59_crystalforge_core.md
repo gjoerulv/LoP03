@@ -200,3 +200,17 @@ zero game-behavior change, and no version bumps.
 
 `complete (approved 2026-08-05)` — M60 (sim lab, battle observer,
 test runner) continues next under the same approved plan.
+
+## Post-approval defect fixed (2026-08-17)
+
+Owner-reported: the text-edit modal did not load all of a long body and
+refused further typing. Root cause: `textEdit_` was built with a
+240-character ceiling — `setValue` silently TRUNCATED longer shipped
+prose on open (story/cutscene bodies exceed 300 chars), and pressing
+Enter would have written the truncated text back into the data file (a
+silent data-loss hazard the owner caught before it bit). The game imposes
+no length rule on body prose (viewports scroll), so the editor now
+matches: a defensive 4000-char ceiling, and the modal became a taller
+window onto the TAIL of the wrapped text (the caret always visible while
+typing) with a character counter and an explicit "N more lines above"
+marker instead of a silent clip.

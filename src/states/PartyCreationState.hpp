@@ -40,6 +40,10 @@ private:
     };
 
     void cycleClass(int slotIndex, int direction);
+    // Owner request 2026-08-29: the Details key opens the highlighted class's
+    // full sheet (role, base stats, growth, learnset, quirks) in the shared
+    // DetailsOverlay, so the pick is informed before the run begins.
+    void openClassDetails();
     // M45: is this class still behind the King? Locked classes stay listed (so the
     // goal is visible) but cannot start a run.
     bool classLocked(const content::ClassDef& cls) const;

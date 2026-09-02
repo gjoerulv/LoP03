@@ -146,6 +146,12 @@ void DungeonResultState::render() {
         line(TextFormat("Dragonform pact (%d)", summary_.dragonformFights), -b.dragonformPact,
              minus);
     }
+    if (summary_.goosePolymorphs > 0) {  // M103: the goose pact, as promised
+        line(TextFormat("Goose pact (%d)", summary_.goosePolymorphs), b.gooseBonus, plus);
+    }
+    if (summary_.gooseFlockFights > 0) {  // M106: the flock, as promised
+        line(TextFormat("Flock battles (%d)", summary_.gooseFlockFights), b.gooseFlock, plus);
+    }
     if (summary_.townBonusPct > 0) {
         line(TextFormat("Town bonus (+%d%%)", summary_.townBonusPct), b.townBonus, plus);
     }

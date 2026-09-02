@@ -489,6 +489,8 @@ struct BossDef {
     std::string description;
 };
 
+// M106: minTown gates WHERE a theme is offered (the Goosy Gauntlet belongs
+// to town 7 alone); 1 = everywhere, every pre-M106 theme.
 struct DungeonThemeDef {
     std::string id;
     std::string name;
@@ -496,6 +498,7 @@ struct DungeonThemeDef {
     std::vector<std::string> eliteEnemies;   // enemy ids
     std::vector<std::string> bosses;         // boss ids
     std::string description;
+    int minTown = 1;  // M106: offered at the Guild only from this town on
 };
 
 // Story serial (M41): one beat per town 1..7 (told by the wandering storyteller)
@@ -527,8 +530,24 @@ inline constexpr const char* kEventFlavorIds[] = {
     "score_wager",  "rest_token",     "royal_relic", "armory_ghost",
     "miners_cache", "elder_root",     "duck_peddler",
     "surveyor",     "dragonform",  // M93 (generation v17)
+    "goose_polymorph", "sacrifice",      "level_altar",  // M103 (generation v19)
+    "stranger_story",  "token_exchange", "patrol_reset",
+    "reels",           "blackjack",  // M104 (generation v20)
+    "goosy_flock",  // M106 (generation v21; the Goosy Gauntlet's rite)
 };
-inline constexpr std::size_t kEventFlavorIdCount = 13;
+inline constexpr std::size_t kEventFlavorIdCount = 22;
+
+// M99: authored tutorial-prompt text (data/tutorials.json, the third OPTIONAL
+// content file) — a beat's title and body, CrystalForge-editable. Pure
+// presentation: the trigger keys stay code-owned (tutorial::kBeats, a layer
+// above, so known-ness and full coverage are test-enforced — the curio-lore
+// precedent), and a beat absent from the file (or the whole file missing)
+// falls back to the constexpr text it shipped with.
+struct TutorialTextDef {
+    std::string id;     // a tutorial::kBeats id
+    std::string title;  // prompt heading (one line)
+    std::string body;   // the teaching text (wrapped in the prompt panel)
+};
 
 // M85: authored inspect-lore for one dungeon curio (data/curio_lore.json,
 // the second OPTIONAL content file) — the Maps screen's lore panel. Pure
@@ -562,18 +581,25 @@ struct CutsceneOption {
 };
 
 struct CutsceneDef {
-    std::string id;        // one of kCutsceneIds
-    std::string question;  // the choice prompt (never skippable)
+    std::string id;        // one of kCutsceneIds, or a "joke_*" id (M100)
+    std::string question;  // the choice prompt (required only with options)
     std::vector<CutsceneBeat> beats;      // at least one
-    std::vector<CutsceneOption> options;  // exactly two
+    // Exactly two for the story scenes (the 8x2 heirloom promise), or NONE
+    // for a "joke_*" scene (M100): a tale with nothing to grant simply ends
+    // after its last beat.
+    std::vector<CutsceneOption> options;
 };
 
 // The scene vocabulary: the new-game prologue, the first arrival at each of
 // towns 2..7, and the post-King finale at town 7's would-be eastern road.
+// M100: any id starting with "joke_" is also known — the post-finale dry
+// jokes the stranger cycles through; forge users may author more.
 inline constexpr const char* kCutsceneIds[] = {
     "new_game", "town_2", "town_3", "town_4", "town_5", "town_6", "town_7", "finale",
 };
 inline constexpr std::size_t kCutsceneIdCount = 8;
+inline constexpr const char* kJokeCutscenePrefix = "joke_";    // M100
+inline constexpr const char* kStoryCutscenePrefix = "story_";  // M103: dungeon tales
 
 // The goose's stage vocabulary (presentation only; unknown never loads).
 inline constexpr const char* kGooseEmotes[] = {"idle", "waddle", "jump", "panic"};

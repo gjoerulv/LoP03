@@ -1,4 +1,6 @@
-# Crystal Dungeons
+﻿# Are P Geese
+
+> Formerly *Crystal Dungeons* - renamed in M108 (the old name was taken, and the stranger may be a goose; we ask, politely: Are P Geese?).
 
 A 16-bit-inspired, turn-based **JRPG roguelite** about clearing seeded dungeons
 **efficiently**. Take a party of four from a town hub into procedurally generated
@@ -8,10 +10,10 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M85
-> delivered and owner-approved; M86–M97 — from the CrystalForge catch-up
-> and the deliberate version renumber to **0.6.0** through the newest
-> expansion program — implemented, awaiting approval). In the box: a seven-town difficulty ladder
+> **Status: feature-complete, polished playable build** (milestones M1–M97
+> delivered and owner-approved; M98–M108 — the "Are P Geese" program, from
+> the post-M97 fix batch through the full rebrand at **v0.7.0** —
+> implemented, awaiting approval). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
 > dungeons with room events including the rare Royal Relics and per-theme
@@ -68,7 +70,7 @@ music, or text. Built in **C++20** with **raylib**.
 > CrystalForge catch-up with the version renumbered to 0.6.0. **M87**
 > then made every text container translation-ready (bounded scrollable
 > prose, a Latin-1 bitmap font). The newest work, the **M88–M97 program**
-> (2026-08-14, awaiting approval): town/Guild/shop UX fixes with a
+> (approved 2026-08-16): town/Guild/shop UX fixes with a
 > hand-editable seed and pre-fight **team inspection**, the Dragon's
 > fixed breath economy and a no-free-heal dungeon **carry-out**, Equip
 > Party + usable Items on both pause menus, per-element hit effects and
@@ -77,8 +79,8 @@ music, or text. Built in **C++20** with **raylib**.
 > countdown**, a dragonform pact, a Training Hall **sparring mirror** (AI
 > or manual control of the echoes), three once-per-run **summons** dug
 > from treasure maps, sixteen worn **heirlooms** with triggered effects,
-> and an eight-scene **cutscene story** told by a hooded goose. After its
-> approval only the deferred **validation playtesting (M23)** and
+> and an eight-scene **cutscene story** told by a hooded goose. After the
+> M98–M108 approvals only the deferred **validation playtesting (M23)** and
 > **release sign-off (M24)** remain. Current status always lives in
 > `docs/milestones.md`.
 
@@ -138,7 +140,7 @@ cmd /c "call ""C:\Program Files\Microsoft Visual Studio\2022\<edition>\VC\Auxili
 ```powershell
 cmake --preset msvc-debug      # development: debug overlay + capture CLI
 cmake --build --preset debug
-.\build-msvc\CrystalDungeons.exe
+.\build-msvc\ArePGeese.exe
 
 cmake --preset msvc-release    # shipping: static CRT, no capture CLI
 cmake --build --preset release
@@ -156,7 +158,7 @@ To build the full distribution zip (stage + validate + archive):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\package.ps1
-# -> dist\CrystalDungeons-<version>-win64.zip
+# -> dist\ArePGeese-<version>-win64.zip
 ```
 
 The version is set once in `CMakeLists.txt` `project(VERSION ...)` and flows
@@ -167,7 +169,7 @@ into the exe metadata, the title screen, and the package name.
 ```powershell
 cmake -S . -B build-msvc -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 cmake --build build-msvc
-.\build-msvc\CrystalDungeons.exe
+.\build-msvc\ArePGeese.exe
 ```
 
 `-DCMAKE_*_COMPILER=cl` forces MSVC so no other compiler on `PATH` is picked
@@ -179,7 +181,7 @@ by mistake. CMake copies `data/` and `assets/` next to the executable; the
 ```powershell
 cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
 cmake --build build-msvc --config Release
-.\build-msvc\Release\CrystalDungeons.exe
+.\build-msvc\Release\ArePGeese.exe
 ```
 
 ## Controls
@@ -260,7 +262,7 @@ letterbox/pillarbox bars.
    opens a scrollable **battle log** of the last actions.
 7. Clear any **town-7 dungeon** to open the northern road to the **castle** — a
    place above the ladder with **four challenges**: the **Boss Rush**
-   (all 12 dungeon bosses back-to-back **with their minions**, no free
+   (all 15 dungeon bosses back-to-back **with their minions**, no free
    healing), the
    **Endless Rush** (escalating waves — every 10th fields a boss and its
    court), **the
@@ -302,8 +304,8 @@ src/
   states/    game states (menu, town, dungeon, battle, shops, ...)
   capture/   deterministic screenshot scenes (dev builds only)
   editor/    CrystalForge content editor (separate dev tool; never shipped)
-data/        JSON content (13 files: skills, classes, enemies, items, bosses,
-             themes, composition, passives, milestones, story,
+data/        JSON content (14 files: skills, classes, enemies, items, bosses,
+             themes, composition, passives, milestones, story, tutorials,
              event_flavor + curio_lore + cutscenes)
 assets/      manifest.json + generated textures/audio/font + credits.md
 tools/       package.ps1 + deterministic asset generators (asset_gen/)
@@ -361,7 +363,7 @@ save round-trips via the Save Point + Continue.
 
 - **Generated assets.** All art (16-bit-style pixel tiles/sprites), the UI
   **bitmap font** (an original pixel typeface + BMFont descriptors), and all
-  audio (20 chiptune music tracks, 4 ambience beds, 21 SFX) are original and
+  audio (21 chiptune music tracks, 5 ambience beds, 22 SFX) are original and
   produced by deterministic in-repo generators (`tools/asset_gen/`). Every
   sound and visual role is replaceable without code via
   `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload

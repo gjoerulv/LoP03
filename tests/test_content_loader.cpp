@@ -137,16 +137,18 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     REQUIRE(db.classCount() == 9);  // 6 original + 3 M45 King-reward classes
     REQUIRE(db.skillCount() == 81);  // +2 M76 (Mirrorbreak, Absolve), +7 M77 (enemy offense),
                                      // +6 M85 (the Dragon's breaths), +3 M95 (the summons)
-    REQUIRE(db.enemyCount() == 62);  // +12 M38 per-town, +2 M49 Royal Guards, +5 M61 Evil Geese,
-                                     // +12 M84 guild courts
+    REQUIRE(db.enemyCount() == 70);  // +12 M38 per-town, +2 M49 Royal Guards, +5 M61 Evil Geese,
+                                     // +12 M84 guild courts, +8 M106 Goosy pond-fowl
     REQUIRE(db.itemCount() == 121);  // +2 M76 (Holy Taxes, Evil Duckling), +13 M81 (5 elemental
                                      // weapons, 6 ward charms, 2 legendaries), +7 M92 (the
                                      // Guild's-trove skill scrolls), +3 M95 (the summon
                                      // scrolls), +16 M96 (the heirlooms)
-    REQUIRE(db.bossCount() == 22);  // +1 M40 The Hollow King, +1 M61 The Deadly Duck,
-                                    // +7 M84 Guild Masters, +1 M85 the Last Dragon
-    REQUIRE(db.themeCount() == 3);
-    REQUIRE(db.cutsceneCount() == 8);  // M97 (the Hooded Goose arc; file is REQUIRED)
+    REQUIRE(db.bossCount() == 25);  // +1 M40 The Hollow King, +1 M61 The Deadly Duck,
+                                    // +7 M84 Guild Masters, +1 M85 the Last Dragon,
+                                    // +3 M106 Goosy bosses
+    REQUIRE(db.themeCount() == 4);  // +1 M106 the Goosy Gauntlet
+    REQUIRE(db.cutsceneCount() == 18);  // M97's 8-scene Hooded Goose arc (file is
+                                        // REQUIRED) + 7 M100 jokes + 3 M103 stories
     REQUIRE(db.findClass("knight") != nullptr);
     REQUIRE(db.hasSkill("fireball"));
     REQUIRE(db.findItem("scroll_fireball") != nullptr);

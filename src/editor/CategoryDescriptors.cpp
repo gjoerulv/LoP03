@@ -369,6 +369,7 @@ std::vector<FieldDesc> themeDescs() {
         refList("eliteEnemies", "Elite Enemies", Category::Enemies, true),
         refList("bosses", "Bosses", Category::Bosses, true),
         txt("description", "Description"),
+        num("minTown", "Min Town (M106)", 1, 7),
     };
 }
 
@@ -434,10 +435,23 @@ std::vector<FieldDesc> curioLoreDescs() {
     };
 }
 
+// M99: tutorial prompt text. The id is a code-owned trigger key
+// (tutorial::kBeats) — editing text is the point; adding a NEW id authors
+// nothing until code fires it, which the docs panel says outright.
+std::vector<FieldDesc> tutorialDescs() {
+    return {
+        idField(),
+        str("title", "Title", true),
+        txt("body", "Body", true),
+    };
+}
+
 // M97: one scene = dialogue beats (modal-edited rows) + the mandatory
 // two-option choice. Emotes follow content::kGooseEmotes; each option's
 // heirloom is an Items reference (existence, heirloom-ness, and one-owner
 // uniqueness are validateReferences rules, reported on save).
+// M100: "joke_*" scenes carry NO options (and need no question) — the loader
+// enforces both shapes, so validation says which rule a scene broke.
 std::vector<FieldDesc> cutsceneDescs() {
     std::vector<std::string> emotes;
     for (std::size_t i = 0; i < content::kGooseEmoteCount; ++i) {
@@ -445,7 +459,7 @@ std::vector<FieldDesc> cutsceneDescs() {
     }
     return {
         idField(),
-        str("question", "Choice Question", true),
+        str("question", "Choice Question", false),  // M100: jokes have none
         objArr("beats", "Beats",
                {str("speaker", "Speaker", true), txt("text", "Text", true),
                 en("emote", "Goose Emote", emotes, "idle"),
@@ -474,6 +488,7 @@ const std::vector<CategoryInfo>& categories() {
         {Category::EventFlavor, "event_flavor.json", "events", "Event Flavor", true},
         {Category::CurioLore, "curio_lore.json", "curios", "Curio Lore", true},
         {Category::Cutscenes, "cutscenes.json", "cutscenes", "Cutscenes", true},  // M97
+        {Category::Tutorials, "tutorials.json", "tutorials", "Tutorials", true},  // M99
     };
     return kInfos;
 }
@@ -501,6 +516,7 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
     static const std::vector<FieldDesc> kEventFlavor = eventFlavorDescs();
     static const std::vector<FieldDesc> kCurioLore = curioLoreDescs();
     static const std::vector<FieldDesc> kCutscenes = cutsceneDescs();
+    static const std::vector<FieldDesc> kTutorials = tutorialDescs();  // M99
     switch (category) {
         case Category::Skills: return kSkills;
         case Category::Classes: return kClasses;
@@ -515,6 +531,7 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
         case Category::EventFlavor: return kEventFlavor;
         case Category::CurioLore: return kCurioLore;
         case Category::Cutscenes: return kCutscenes;
+        case Category::Tutorials: return kTutorials;  // M99
     }
     return kSkills;
 }

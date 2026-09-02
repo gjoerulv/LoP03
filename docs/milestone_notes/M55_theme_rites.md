@@ -136,3 +136,37 @@ value was changed to satisfy it — it reflects the guarantee.
 - Capture: `CrystalDungeons.exe --capture` → **68/68 scenes clean** (65 + three
   event-prompt scenes: `66_armory_ghost`, `67_miners_cache`, `68_elder_root`;
   two prompts were shortened to fit the footer's ~418px budget).
+
+## Post-approval adjustment (2026-08-17, owner direction — generation v22)
+
+The owner observed the rites were over-represented, and the observation was
+right twice over: this milestone forced the rite onto the first event slot
+of every dungeon, and M82's floors silently turned "once per dungeon" into
+"once per FLOOR" — a 20-floor run met its rite twenty times, occupying a
+third to half of all event slots. The rites now roll on the same pure-hash
+replacement contract as every other special event (8% per floor — then
+"the top of the band, drawn FIRST", two distinctions the 2026-08-28
+adjustment below dissolved into the equal tier — at most one per floor,
+still theme-exclusive, payloads baked exactly as before with the Miner's
+Cache item moved to a pure hash). The Royal Relic's (town, depth) chance
+table is deliberately untouched. Guarantee-based test pins became band
+sweeps (`test_theme_events.cpp`, `test_counterplay.cpp`); the M55 capture
+scenes now sweep seeds to find a rolled rite.
+
+## Post-approval adjustment (2026-08-28, owner direction — generation v23)
+
+The owner then leveled the WHOLE tier. Analysis confirmed the Duckling
+Peddler was the most likely encounter by accretion — 10% drawn second in
+a fixed chain, against the gambling dens' 7% drawn last (measured ~10.7%
+vs ~3.5% effective per floor) — a rarity ladder nobody designed. The
+ruling ratified **two tiers**: the six staples keep the base roll's
+frequency, and EVERY encounter — these rites included — rolls the shared
+`kEncounterChancePct` (8%) from its own unchanged salt pair; when more
+encounters fire than plain slots remain, the survivors come from a
+uniform hash shuffle (`encounterContentionShuffle`), never a fixed order.
+The Royal Relic's table stays untouched (the standing exception), and the
+Surveyor became a fog-gated 25% utility drawn AHEAD of the tier (it had
+starved to ~15% effective at the back of the chain). A registry
+(`encounterRegistry()` in ThemeEvents) makes any future event one row at
+equal weight. Measured flat: all eleven tier kinds within 55–92 per 1,000
+floors (test_events, "the encounter tier is weighed equally").

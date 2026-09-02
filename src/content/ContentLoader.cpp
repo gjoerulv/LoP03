@@ -661,6 +661,7 @@ void parseThemes(const Json& root, const std::string& source, ContentDatabase& d
         d.eliteEnemies = r.optStringArray("eliteEnemies");
         d.bosses = r.optStringArray("bosses");
         d.description = r.optString("description");
+        d.minTown = r.optIntMin("minTown", 1, 1);  // M106: Guild-offer gate
         if (d.normalEnemies.empty()) {
             rep.add(source, ctx, "theme must list at least one entry in 'normalEnemies'");
         }
@@ -729,6 +730,28 @@ void parseEventFlavor(const Json& root, const std::string& source, ContentDataba
     });
 }
 
+void parseTutorialTexts(const Json& root, const std::string& source, ContentDatabase& db,
+                        LoadReport& rep) {
+    // M99: forge-editable tutorial prompt text. The beat-id table lives a
+    // layer up (tutorial/Tutorial.hpp), so KNOWN-ness and full coverage are
+    // asserted by the [tutorial] tests rather than here (the curio-lore
+    // precedent); the loader owns shape and duplicates.
+    forEachEntry(root, source, "tutorials", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        TutorialTextDef d;
+        d.id = r.reqString("id");
+        d.title = r.reqString("title");
+        d.body = r.reqString("body");
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addTutorialText(d)) {
+            rep.add(source, ctx, "duplicate tutorial id '" + d.id + "'");
+        }
+    });
+}
+
 void parseCurioLore(const Json& root, const std::string& source, ContentDatabase& db,
                     LoadReport& rep) {
     // M85: inspect-lore for the Maps screen's curios. The curio id table
@@ -766,10 +789,20 @@ void parseCutscenes(const Json& root, const std::string& source, ContentDatabase
                 break;
             }
         }
+        // M100/M103: "joke_*" (the post-finale pool) and "story_*" (the
+        // dungeon stranger-stories) are optionless TALES — known by prefix so
+        // the forge can grow either pool without a code change.
+        const bool isJoke =
+            (d.id.rfind(kJokeCutscenePrefix, 0) == 0 && d.id.size() > 5) ||
+            (d.id.rfind(kStoryCutscenePrefix, 0) == 0 && d.id.size() > 6);
+        known = known || isJoke;
         if (!d.id.empty() && !known) {
             rep.add(source, ctx, "unknown cutscene id '" + d.id + "'");
         }
-        d.question = r.reqString("question");
+        // M100: the question exists to introduce options — optional (and
+        // unused) on an optionless joke, still required on a story scene
+        // (checked with the option-count rule below).
+        d.question = r.optString("question");
 
         const auto emoteKnown = [](const std::string& e) {
             for (std::size_t i = 0; i < kGooseEmoteCount; ++i) {
@@ -826,13 +859,25 @@ void parseCutscenes(const Json& root, const std::string& source, ContentDatabase
                 o.responseText = orr.reqString("responseText");
                 d.options.push_back(std::move(o));
             }
-        } else {
+        } else if (!isJoke) {
             rep.add(source, ctx, "'options' array is required");
         }
-        // Exactly two: the choice UI, the heirloom set (8 scenes x 2 = 16),
-        // and the skip rule ("the choice is never skippable") all assume it.
-        if (d.options.size() != 2) {
-            rep.add(source, ctx, "a cutscene needs exactly 2 options");
+        // Story scenes: exactly two — the choice UI, the heirloom set
+        // (8 scenes x 2 = 16), and the skip rule ("the choice is never
+        // skippable") all assume it, and they need their question. A joke
+        // scene (M100) is the opposite: it grants nothing, so it carries NO
+        // options and simply ends after its last beat.
+        if (isJoke) {
+            if (!d.options.empty()) {
+                rep.add(source, ctx, "a joke scene carries no options");
+            }
+        } else {
+            if (d.options.size() != 2) {
+                rep.add(source, ctx, "a cutscene needs exactly 2 options");
+            }
+            if (d.question.empty()) {
+                rep.add(source, ctx, "'question' is required on a story scene");
+            }
         }
 
         if (rep.errorCount() != before) {
@@ -1168,6 +1213,18 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
         if (fs::exists(dataRoot / "curio_lore.json", ec) && !ec) {
             if (readJsonFile(dataRoot / "curio_lore.json", json, rep)) {
                 parseCurioLore(json, "curio_lore.json", db, rep);
+            }
+        }
+    }
+
+    // M99: tutorial text is the third optional file, on the same terms — a
+    // beat without its entry (or no file at all) falls back to the constexpr
+    // text in tutorial::kBeats, so onboarding can never go dark.
+    {
+        std::error_code ec;
+        if (fs::exists(dataRoot / "tutorials.json", ec) && !ec) {
+            if (readJsonFile(dataRoot / "tutorials.json", json, rep)) {
+                parseTutorialTexts(json, "tutorials.json", db, rep);
             }
         }
     }

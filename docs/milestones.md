@@ -1,4 +1,4 @@
-# Crystal Dungeons — Milestones
+# Are P Geese — Milestones
 
 > Work in order. **Stop after each milestone and wait for owner approval.**
 > Status legend: ☐ planned · ◐ in progress · ◑ implemented, awaiting manual
@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M88–M97)** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M98–M108)** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -62,11 +62,11 @@
 | 52 | Comforts & secrets | ☑ complete (approved) |
 | 53 | Toolbelt & trims (debug menu, 5 save slots, Champion, element chips) | ☑ complete (approved) |
 | 54 | Arms of the ladder (equipment rebalance) | ☑ complete (approved) |
-| 55 | Theme rites (per-theme dungeon events) | ☑ complete (approved) |
+| 55 | Theme rites (per-theme dungeon events) | ☑ complete (approved) (post-approval adjustments: 2026-08-17 rites leveled to an 8% roll (gen v22); 2026-08-28 the whole encounter tier equalized at a shared 8% with uniform contention (gen v23) - see the note) |
 | 56 | Boss stagecraft (battle backdrops + Crystal Shatter) | ☑ complete (approved) |
 | 57 | Advanced CRT post-process (0–10 CRT Strength) | ☑ complete (approved) |
 | 58 | Fixes: equip message, Deadly Spoon once, geese scare the King | ☑ complete (approved) |
-| 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ☑ complete (approved) |
+| 59 | CrystalForge editor core (browse/edit/save/validate + quick checks) | ☑ complete (approved) (post-approval fix 2026-08-17: text-edit capacity/data-loss, see the note) |
 | 60 | CrystalForge sim lab, battle observer, test runner | ☑ complete (approved) |
 | 61 | Goose Town & the Deadly Duck (rules v12) | ☑ complete (approved) |
 | 62 | Fixes & Duck stagecraft (Purify no-heal rules v13, goose/duck art, Duck theme) | ☑ complete (approved) |
@@ -93,18 +93,29 @@
 | 83 | Map economy: 4-floor map-piece drops | ☑ complete (approved) |
 | 84 | Guild Masters & town milestones | ☑ complete (approved) |
 | 85 | The Dragon & curio lore | ☑ complete (approved) |
-| 86 | CrystalForge catch-up & version 0.6.0 | ◑ implemented, awaiting manual approval |
-| 87 | Translation-ready text containers & scrollable prose | ◑ implemented, awaiting manual approval |
-| 88 | Town, Guild & dungeon UX fixes | ◑ implemented, awaiting manual approval |
-| 89 | Battle flow: the Dragon & the carry-out | ◑ implemented, awaiting manual approval |
-| 90 | Party menu: Equip Party & Items | ◑ implemented, awaiting manual approval |
-| 91 | Elemental impact presentation | ◑ implemented, awaiting manual approval |
-| 92 | The long descent: 20 floors & the scroll trove | ◑ implemented, awaiting manual approval |
-| 93 | Dungeon dynamics: fog, Surveyor, patrols & dragonform | ◑ implemented, awaiting manual approval |
-| 94 | The sparring mirror | ◑ implemented, awaiting manual approval |
-| 95 | Summons | ◑ implemented, awaiting manual approval |
-| 96 | Heirlooms | ◑ implemented, awaiting manual approval |
-| 97 | The Hooded Goose: cutscene story | ◑ implemented, awaiting manual approval |
+| 86 | CrystalForge catch-up & version 0.6.0 | ☑ complete (approved) |
+| 87 | Translation-ready text containers & scrollable prose | ☑ complete (approved) |
+| 88 | Town, Guild & dungeon UX fixes | ☑ complete (approved) |
+| 89 | Battle flow: the Dragon & the carry-out | ☑ complete (approved) |
+| 90 | Party menu: Equip Party & Items | ☑ complete (approved) |
+| 91 | Elemental impact presentation | ☑ complete (approved) |
+| 92 | The long descent: 20 floors & the scroll trove | ☑ complete (approved) |
+| 93 | Dungeon dynamics: fog, Surveyor, patrols & dragonform | ☑ complete (approved) |
+| 94 | The sparring mirror | ☑ complete (approved) (post-approval crash fix 2026-08-17: spar-row hover, see the note) |
+| 95 | Summons | ☑ complete (approved) |
+| 96 | Heirlooms | ☑ complete (approved) (post-approval UI fixes 2026-08-17: full offer text + party visibility, see the note) |
+| 97 | The Hooded Goose: cutscene story | ☑ complete (approved) |
+| 98 | Post-program approvals & the six-fix batch | ◑ implemented, awaiting manual approval |
+| 99 | Tutorial truth & the Forge tutorial editor | ◑ implemented, awaiting manual approval |
+| 100 | Cutscene stagecraft & THE STRANGER "P" | ◑ implemented, awaiting manual approval |
+| 101 | Center-out battle formation | ◑ implemented, awaiting manual approval (fix 2026-08-17: boss-crown headroom) |
+| 102 | Rules: the fallen & the shelf (KO XP + scroll ban) | ◑ implemented, awaiting manual approval |
+| 103 | Six new events | ◑ implemented, awaiting manual approval |
+| 104 | The gambling den: reels & blackjack | ◑ implemented, awaiting manual approval (fix round 2026-08-17: reel icons) |
+| 105 | Eternal (town-7 endless descent) | ◑ implemented, awaiting manual approval |
+| 106 | The Goosy Gauntlet (town-7 theme) | ◑ implemented, awaiting manual approval (fix round 2026-08-17: own art, tiles, backdrop, music, ambience) |
+| 107 | Summon stagecraft | ◑ implemented, awaiting manual approval |
+| 108 | Rebrand: "Are P Geese" | ◑ implemented, awaiting manual approval (fix round 2026-08-17: title plaque, goose emblem + icon, v0.7.0) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -170,6 +181,38 @@ encounters" is owner-amended by the forewarned patrol counter (documented
 in M93). Execution continues milestone by milestone to
 `implemented, awaiting manual approval` without pausing between them;
 M23 → M24 follow after the program.
+**On 2026-08-16 the owner approved M86–M97** (M86/M87 plus the whole
+M88–M97 program) after the manual pass; the feedback from that pass became
+the next program. **The same day the owner authorized the M98–M108
+"Are P Geese" program** (one plan, one authorization; branch `oyb09`):
+M98 approvals + the six-fix batch (tutorial-vs-prologue order, equip-shop
+count refresh, Arcane Burst → dark, heirloom effect text on the equip
+surfaces, the finale's king sprite, the elemental-SFX audit) → M99
+tutorial truth + the CrystalForge tutorial editor (tutorial text becomes
+data) → M100 cutscene stagecraft (speaker THE STRANGER "P", taller
+no-scroll text boxes, finale-plays-once + the dry-joke pool) → M101
+center-out battle formation (the boss always centered) → M102 the fallen
+& the shelf (KO'd members earn no battle XP — which also removes the
+level-up-heal auto-revive — and dungeon chests/peddler stop offering
+skill scrolls; generation v18) → M103 six new events (goose polymorph,
+equipment sacrifice, level-up-at-a-price, Stranger stories, the token
+exchange, the patrol reset; generation v19) → M104 the gambling den
+(the one-shot reels — the one sanctioned in-dungeon scroll source — and
+blackjack; generation v20) → M105 Eternal, the town-7 endless descent
+(no score, best-floors record, a real boss on every floor, escalating
+from depth-20 scale, stakes baseline to (town 7, depth 20) on entry
+regardless of outcome) → M106 the Goosy Gauntlet, the town-7-only fourth
+theme (new geese/duck enemies + bosses that join Boss Rush and Endless,
+treasure guards gated by minTown, the owed art-bible palette
+reconciliation; generation v21) → M107 summon stagecraft (the creature
+appears large at center) → M108 the full rebrand to **"Are P Geese"**
+(display title, exe/target `ArePGeese`, save dir `ArePGeese` with a
+one-time copy migration that never deletes the old folder). Key owner
+rulings recorded: the King CAN be Terrified by summons (the M95 flag is
+closed); no battle-rules bump anywhere in this program (spoils, inputs
+and presentation only). Execution continues milestone by milestone to
+`implemented, awaiting manual approval` without pausing; M23 → M24
+follow after the program, re-audited first.
 
 When M75–M86 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**85

@@ -1,14 +1,21 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "content/Enums.hpp"
 #include "dungeon/DungeonModel.hpp"
 
-// M55 per-theme rites: pure, raylib-free helpers shared by the generator, the
-// resolution state, and the tests. One rite is guaranteed per dungeon of its
-// theme (forced onto the first event slot) and never appears elsewhere.
+// Pure, raylib-free event helpers shared by the generator, the resolution
+// states, and the tests. Since the owner's 2026-08-28 equal-weighting ruling
+// (generation v23) the event system has exactly two tiers: the six STAPLE
+// events keep the base roll's frequency, and every ENCOUNTER event — the
+// theme's rite (own theme only) plus the ten global kinds — rolls the same
+// kEncounterChancePct per floor via the registry below. The Royal Relic keeps
+// its own (town, depth) table, and the Surveyor is a fog-gated utility, not a
+// tier member.
 
 namespace cd {
 namespace content {
@@ -16,8 +23,8 @@ class ContentDatabase;
 }
 namespace dungeon {
 
-// The rite guaranteed for a theme. RoomEventKind::None for an unknown/empty theme
-// id, so the generator forces nothing there and empty-theme generation stays
+// The rite belonging to a theme. RoomEventKind::None for an unknown/empty theme
+// id, so the generator rolls nothing there and empty-theme generation stays
 // byte-identical.
 RoomEventKind themeEventKind(const std::string& themeId);
 
@@ -65,34 +72,61 @@ inline int elderRootXp(int town, int depth) {
 // reload reproduces the same outcome rather than rerolling it.
 std::uint64_t themeEventHash(std::uint64_t seed, int roomIndex, std::uint64_t salt);
 
-// M76: the Duckling Peddler. A rare event that REPLACES one plain rolled event
-// (never a rite, the relic, or an elite challenge), decided by a PURE hash of
-// the dungeon seed so no rng draw is consumed and every other roll of a seed
-// stays byte-identical — generation stays v14 (the M52 additive precedent; the
-// program's one generation bump is reserved for M82's floors). The peddler
-// sells the Evil Duckling for a flat price and, per the owner's rule, will not
-// deal while the party already owns one (checked at interaction time, so the
-// dungeon a seed generates never depends on the party's bag).
+// M76: the Duckling Peddler's wares (its appearance roll lives in the
+// encounter registry below since v23). The peddler sells the Evil Duckling
+// for a flat price and, per the owner's rule, will not deal while the party
+// already owns one (checked at interaction time, so the dungeon a seed
+// generates never depends on the party's bag).
 inline constexpr const char* kEvilDucklingItemId = "evil_duckling";
-inline constexpr int kDuckPeddlerChancePct = 10;
 inline constexpr int kDuckPeddlerPriceGold = 300;
 
-// Which of the `eligibleCount` plain rolled event slots the peddler takes for
-// this seed, or -1 for none (the common case). Pure.
-int duckPeddlerSlot(std::uint64_t seed, int eligibleCount);
-
-// M93 (generation v17): two more pure-hash plain-event replacements on the
-// peddler's exact contract (never a rite, the relic, or an elite challenge;
-// no rng draw consumed). Dragonform rolls per DUNGEON inside generate();
-// the Surveyor rolls per FLOOR inside generateFloors (multi-floor runs
-// only — a 1-floor map has no fog to sell away).
-inline constexpr int kDragonformChancePct = 8;
+// M93: the Surveyor — a utility purchase, deliberately NOT an encounter-tier
+// member (owner ruling 2026-08-28). It exists only where the map starts
+// fogged (FloorContext.fogged — the owner's check; today that is multi-floor
+// descents) and keeps its own 25% so fog management stays purchasable. Since
+// v23 it draws BEFORE the encounter tier instead of dead last, so its
+// effective rate no longer starves (~15% pre-v23). Rolls from
+// (runSeed, floorIndex) so every floor of a run answers independently.
 inline constexpr int kSurveyorChancePct = 25;
 inline constexpr int kSurveyorPriceGold = 20;  // the owner's number, flat
-
-// Slot picks (or -1 for none). Pure; each rides its own salt.
-int dragonformSlot(std::uint64_t seed, int eligibleCount);
 int surveyorSlot(std::uint64_t seed, int floorIndex, int eligibleCount);
+
+// The encounter tier (owner direction 2026-08-28, generation v23): one shared
+// chance for ALL encounter events. The pre-v23 chain of per-milestone
+// percents (10/8/7/6) drawn in a fixed order gave the Duckling Peddler ~3x a
+// gambling den's effective rate — accretion, not design. Every encounter
+// still replaces only a plain STAPLE slot: never a relic, an elite challenge
+// (whose team would be orphaned), or another encounter. All rolls are pure
+// hashes of the floor seed — no generation-stream draw, reloads can never
+// reroll, and each event keeps its own salt pair.
+inline constexpr int kEncounterChancePct = 8;
+
+struct EncounterDef {
+    RoomEventKind kind = RoomEventKind::None;
+    std::uint64_t saltAppears = 0;  // the appearance roll's salt
+    std::uint64_t saltSlot = 0;     // the room pick's salt
+};
+
+// The ten GLOBAL encounter events (all towns, all themes), listed in the
+// historical draw order — a stable identity order for tests and docs, NOT a
+// priority (contention is shuffled). A future global event is one row here
+// with a fresh salt pair, plus its content and resolution state.
+const std::array<EncounterDef, 10>& encounterRegistry();
+
+// The theme's rite as a registry-shaped entry (kind None for an unknown or
+// empty theme id — encounterFires answers false for it).
+EncounterDef themeRiteEncounter(const std::string& themeId);
+
+// The pure appearance roll (kEncounterChancePct of 100) and room pick
+// (uniform over `eligibleCount`, -1 when none) for one encounter.
+bool encounterFires(std::uint64_t seed, const EncounterDef& e);
+int encounterPick(std::uint64_t seed, const EncounterDef& e, int eligibleCount);
+
+// The contention shuffle: a pure Fisher-Yates over the fired list. The
+// generator takes survivors from the front while plain slots remain, so on a
+// starved floor every fired encounter has the SAME survival chance — no kind
+// outranks another.
+void encounterContentionShuffle(std::uint64_t seed, std::vector<EncounterDef>& fired);
 
 // M80: the content-layer flavor id for an event kind (data/event_flavor.json,
 // content::kEventFlavorIds). Empty for None. A test holds this mapping and
@@ -112,6 +146,15 @@ inline const char* eventFlavorId(RoomEventKind kind) {
         case RoomEventKind::DuckPeddler: return "duck_peddler";
         case RoomEventKind::Surveyor: return "surveyor";      // M93
         case RoomEventKind::Dragonform: return "dragonform";  // M93
+        case RoomEventKind::GoosePolymorph: return "goose_polymorph";  // M103
+        case RoomEventKind::Sacrifice: return "sacrifice";             // M103
+        case RoomEventKind::LevelAltar: return "level_altar";          // M103
+        case RoomEventKind::StrangerStory: return "stranger_story";    // M103
+        case RoomEventKind::TokenExchange: return "token_exchange";    // M103
+        case RoomEventKind::PatrolReset: return "patrol_reset";        // M103
+        case RoomEventKind::Reels: return "reels";                     // M104
+        case RoomEventKind::Blackjack: return "blackjack";             // M104
+        case RoomEventKind::GoosyFlock: return "goosy_flock";          // M106
         case RoomEventKind::None: break;
     }
     return "";

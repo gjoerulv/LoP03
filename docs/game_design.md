@@ -1,4 +1,4 @@
-# Crystal Dungeons — Game Design
+# Are P Geese — Game Design
 
 > Living document. Update whenever player-facing design changes. Authoritative
 > contract is `CLAUDE.md`; this explains *what the game is and why*.
@@ -14,6 +14,14 @@ seeds and scaling depth.
 
 It is original. It evokes the clarity, side-view battles, readable windows, and
 class identity of classic 16-bit JRPGs without copying any of them.
+
+**The name (M108, owner decision).** The game is **Are P Geese** — the
+working title *Crystal Dungeons* was taken elsewhere and never fit the
+game's register. The new name is the game's own dry joke on the RPG
+acronym: THE STRANGER "P" may be a goose; nobody will confirm it; so we
+ask. Title screen, window, icon identity, executable (`ArePGeese.exe`) and
+the save folder (`%APPDATA%\ArePGeese`, with a one-time copy migration
+from the old folder that never deletes it) all carry the new name.
 
 ## 2. Audience & design north star
 
@@ -88,7 +96,9 @@ The M65 treasure maps pay exclusive scrolls into this same system.
 fight against **exact echoes of the current party** — same stats, gear
 share, skills, passives, and elements, driven by the enemy AI — or, in
 **manual mode**, commanded by the player on both sides (echo turns use the
-same Attack/Skill/Guard phases; echoes carry no bag and cannot Escape —
+same Attack/Skill/Guard phases; a **Jester echo still acts on its own**,
+exactly as a Jester does in your party — it is never yours to command;
+echoes carry no bag and cannot Escape —
 that verb ends the spar from the player's side). A spar is **zero-stakes by
 construction**: the whole party ledger (HP, MP, items, gold, records,
 bestiary) is snapshotted before the fight and restored afterwards
@@ -197,10 +207,13 @@ and still resets the counter.
 whole minimap: unvisited rooms are absent, a visited room's door to the
 unknown shows as a stub, and the picture fills in as you walk. The classic
 1-floor map stays complete (the M82 "classic unchanged" rule), the M66
-chart's X still burns through the fog, and the **Surveyor** — a new
-multi-floor-only room event — sells the current floor's full map for a flat
-**20 gold**. Fog invites exploring; the patrol counter taxes it — that
-tension is the point.
+chart's X still burns through the fog, and the **Surveyor** — a room event
+that exists only where the map starts fogged (the owner's rule; today that
+is exactly the multi-floor descents) — sells the current floor's full map
+for a flat **20 gold**. The Surveyor is a utility, not an encounter: it
+keeps its own **25% per floor** and draws ahead of the encounter tier
+(v23), so fog management stays reliably purchasable. Fog invites exploring;
+the patrol counter taxes it — that tension is the point.
 
 **Dragonform (M93, owner decision).** A rare room event (any run) offers a
 pact stated in full on its panel: the party fights its **NEXT battle as
@@ -210,6 +223,69 @@ result screen as "Dragonform pact". HP and MP carry over by percentage in
 both directions and the fallen stay fallen, so the transformation is never
 a heal and never an execution. The M45 per-class score modifier does NOT
 additionally apply; the pact is the whole price.
+
+**Six more events (M103, owner request; generation v19).** All towns and
+themes, encounter-tier placement (at most one of each per floor), every
+trade-off stated before Confirm and party-state gates checked at
+interaction, never at generation:
+
+- **The Pond Spirit** — accept, and one **RANDOM** non-goose member is a
+  **Goose** (the M45 class, bare but for their heirloom) for the **rest of
+  the run**, at **+100 score** itemized as "Goose pact". XP and levels
+  earned while waddling carry back on restore; a KO'd goose returns KO'd.
+  Cannot complete when the whole party is already geese.
+- **The Hungry Forge** — burn one **bag** equipment piece (worn gear and
+  heirlooms are out of reach): the **next battle pays double XP**, shown
+  doubled on the victory panel. One offering at a time.
+- **The Level Altar** — one member of your choosing gains **exactly one
+  level** on the spot (the Training-Hall rule) and their **MP drops to 0**.
+  At level 99 nothing happens; the altar covers its embarrassment dryly.
+- **A Familiar Hood** — THE STRANGER "P" tells one seeded tale from the
+  story pool ("story_*" scenes, forge-editable like the jokes), then
+  restores **20 MP** to a member of your choosing.
+- **The Token Changer** — **1 legendary token** buys **3 rest tokens** or
+  **1 map piece** (the M83 grant rule, this dungeon's own guard scale).
+  No token, no trade.
+- **The Cold Trail** — the **patrol counter resets to 100**.
+
+**The Goosy Gauntlet (M106, owner request; generation v21; town 7 only).**
+The fourth dungeon theme — reeds, ponds, and an unreasonable number of
+geese — offered by the Guild only at the last town (themes now carry a
+`minTown`; the three classics stay everywhere). New pond-fowl enemies and
+elites (all with a 5 % chance to just "Honk."), and three new bosses —
+**The Gray Gander** (brute), **The Mother of Ponds** (sorcerer), **The
+Pondlord** (commander) — whose courts are the M61 Evil Geese, and who
+**join the Boss Rush and the Endless pool** like any dungeon boss (the
+rush now runs fifteen). Treasure digs below town 7 never meet them. The
+theme's rite (an encounter-tier roll per floor — leveled 2026-08-17,
+equal-tier since v23 — like every rite) is **The Flock**: the WHOLE party fights its next
+battle as Geese (heirlooms worn, arms shed, HP/MP by percentage both
+ways) for a flat **+300 score**, itemized. Since 2026-08-17 the theme has
+its **own presentation**: reed-and-water tiles, eleven bespoke pond-fowl
+sprites, a reed battle backdrop, the "waddling strut" dungeon track, and
+an occupied-wetland ambience bed (art_bible §8b/§9b).
+
+**The gambling den (M104, owner request; generation v20; presentation
+upgraded 2026-08-29).** Two more, same placement, both **seeded** (a
+reload replays the same reels and the same shoe — the animations below are
+presentation only): **The Reels** — a ONE-SHOT machine: 1 spin for 10 g or 3 for 70 g
+(the bundle's arithmetic is the owner's joke, priced verbatim), then it is
+gone however the reels land. Since 2026-08-29 the reels visibly **spin**:
+cells flick through the symbol wheel and land left to right, row by row,
+with the prize held back until the last cell sits (Confirm skips ahead;
+message speed paces it). Three of a kind pays: tax papers COST 100 g;
+the goose head tells a goose joke and pays equipment **new at this town**
+(never legendary); the P-Spoon pays a Deadly Spoon and the crown the
+**Dragon Crown** (both refuse politely at their caps); the red X a map
+piece; the bald red-bearded head **one normal skill scroll — the single
+sanctioned in-dungeon scroll source**; and 7-7-7 pays 1000 g. **Blackjack**
+— bet 10/25/50/100 g on one interactive hand (hit/stand, dealer stands on
+17): a win pays the bet back **doubled**, a push returns it, a loss feeds
+the candle. Since 2026-08-29 the table deals **real cards** — the dealer's
+hole card face-down on a woven back until the hand ends, ranks lettered on
+the cream face, and the game's own royalty: the Ace's crystal shard, the
+**goose Jack**, the **duck Queen**, and the **dark-king King** (no real
+deck imitated). Gamble gold is plain gold, never score treasure.
 
 Visible enemy team shows: team name, danger level, enemy count, optional tags
 (Fast, Magic, Armored, Poison, …). **Since M88 a faced team can be inspected
@@ -276,6 +352,22 @@ boards** — cycled with the party-cycle keys (Q/E, LB/RB) — because a
 multi-floor turn count compared against a one-floor sprint would make both
 numbers meaningless; every pre-M82 entry sits on the 1-floor board.
 
+**The Eternal descent (M105, owner request; town 7 only).** The Floors
+stepper's fourth shape, offered only at the last town: **endless** floors at
+a fixed **depth 20**, every stairway guarded by a **REAL theme boss** (never
+Stairway Wardens), each floor **+10 %pts harder** than the last (the M49
+Endless-Rush curve shape). **No score, ever** — the run cannot complete;
+its record is **floors fully beaten** (a felled floor-boss each), kept on
+the party as *Eternal best* and shown at the Guild. The price is stated in
+a warning before entry and is unconditional: **entering raises the M33
+stakes baseline to (town 7, depth 20) immediately, regardless of outcome**
+(a genuine raise resets the penalty ladder, as any raise does; from then on
+only the Eternal itself stands at your stakes). No map pieces, no trove, no
+black-market rolls — an endless run feeds no economy; patrols keep their
+hundred-step watch. Floors generate on demand from the same per-floor
+sub-seed rule, so a reload replays the identical staircase. Retreat and
+defeat work as in any dungeon (the record is already banked per floor).
+
 **The long descent (M92, owner request; generation v16).** Floors: **20**
 is the endurance shape on the same machinery — Stairway Wardens on floors
 1–19, the real boss at the bottom, one continuous run with the entry-only
@@ -334,11 +426,26 @@ revive exist; game over if all party KO. **Every** encounter (incl. bosses) is
 escapable. Escaping a normal battle forfeits that guarded chest/reward; escaping
 the boss or leaving the dungeon gives **0 dungeon score**.
 
+**Formation (M101, owner request).** The enemy column fills **center-out**:
+first unit at the middle row, then center-top, center-bottom, top, bottom.
+A boss is always built as the first enemy unit, so **the boss always stands
+dead-center** with its court around it. Presentation only — the simulation's
+unit order (and every seed) is untouched; target cycling walks the visible
+column top-to-bottom, and a fallen enemy keeps its row (no reflow).
+
 **Victory spoils (M68).** A won dungeon battle ends on a compact results
 panel over the battlefield — XP and gold received, plus a diff block for
 every member that leveled (stat gains, newly learned skills) — dismissed by
 the same single Confirm that always ended a battle; no extra screen, no
 extra presses. Castle-tier fights keep their own flat rewards.
+**The fallen earn nothing (M102, owner decision).** A member KO'd when the
+fight ends receives **no XP** from it — which also closed the old silent
+"auto-revive" (a KO'd member could level up mid-award and stand back up on
+the level-up heal). The fallen stay fallen until a sanctioned revive: a
+Phoenix Tear (field or battle), Renew (in battle), or the Inn. Paid
+tuition (the Training Hall, the Elder Root) still teaches the whole party
+— it is not a fight, and paying the Root to raise a fallen friend through
+a level is a deliberate, priced path.
 
 **The victory celebration (M71).** A dungeon cleared **flawlessly** —
 zero stakes penalty, a positive score, and not a single escape — opens on
@@ -447,7 +554,11 @@ pushes the player to keep climbing rather than farm one comfortable stake.
 
 Useful chests; most valuable are **guarded** (show enemy danger, chest rarity,
 "fight to claim"); some minor chests unguarded. Rewards: consumables, equipment,
-gold, relics/accessories, rare class skill scrolls.
+gold, relics/accessories. **Never skill scrolls (M102, owner decision;
+generation v18)**: no dungeon chest and no wandering peddler offers one.
+Scrolls come from exactly three places — the Guild's trove (a raised-stakes
+20-floor clear, M92), the town treasure digs (M65/M83), and the one
+sanctioned in-dungeon gamble, the reels event's rarest prize (M104).
 
 **Black market & legendary gear (M34).** Optional **elite challenges** in
 dungeons (a room event) pay, on victory, **one legendary token** on top of their
@@ -488,13 +599,16 @@ challenges** (three at M40; M85 added the Dragon), each a step above normal
 play and each paying a **one-time first-clear
 reward**:
 
-- **Boss Rush** — the full 12-boss roster, back to back, **each with its own
+- **Boss Rush** — the full dungeon-boss roster (fifteen since M106's Goosy
+  bosses joined), back to back, **each with its own
   minions** (M49), with **no free healing between fights** (items and skills
   still work). Record: fewest total turns.
 - **Endless Rush** — deterministic escalating waves; survive as long as you can, no
   free healing. Record: best wave reached.
 - **The Hollow King** — the hardest fight in the game. A bespoke boss above every
-  town-7 foe, immune to Blind, Silence, **and** Confusion, striking your afflicted
+  town-7 foe, immune to Blind, Silence, **and** Confusion — but **never to
+  Terrified** (M44's counterplay, owner-reaffirmed 2026-08-16 for M95's
+  summons: the King can cower) — striking your afflicted
   party harder as the fight wears on, with a kit that inflicts every status —
   and, since M49, **two Royal Guards he keeps calling back**. Since **M77** he
   also hums a **cradle-song every 5th of his own turns** (the whole party
@@ -578,6 +692,13 @@ everything else — and the **Hollow King deliberately does not**: M44's
 "the King is not immune to any of them" is owner-approved design (the
 Evil Goose relic is his counterplay puzzle), so a summoned goose scares
 him just as the pocket one does. Enemies never answer a call.
+**Since M107 a call is a SPECTACLE**: the legend appears LARGE at the
+battlefield's center for the resolution beat — the Goose as its true
+sprite writ big under a golden burst, the Sentinel as star-streaks
+falling into a bright lattice, the Spring as rising radiant ripples —
+with an arrival fanfare of its own. Procedurally drawn and deterministic;
+Battle Flash Off strips the burst, and the beat scales with the
+message-speed setting so fast play stays fast.
 
 **The map economy (M83).** The 4-floor descent feeds the puzzle:
 completing a **4-floor** run in **town 2 or later** rolls a map-piece drop
@@ -781,26 +902,39 @@ earned — value 0, sold nowhere; the debug menu grants them for testing
 until the story ships). Anyone may keep one — even the Goose, whose "equips
 nothing" joke is about arms, not memories. Heirlooms are equipment for
 scoreboard purposes: like all gear, they are not tagged (M19 reasoning).
+On the equip surfaces (shop and party Equip alike) an heirloom candidate
+shows its **effect text** where the stat diff would sit — it has no stats
+to diff, so the old zero row said nothing (M98).
 
 **The Hooded Goose (M97, owner concept; Claude-authored story).** How
 heirlooms are earned: a **red thread in eight scenes**, told by a hooded
-stranger who is very obviously a goose and will not admit it. The
+stranger who is very obviously a goose and will not admit it — captioned,
+since M100 at the owner's word, **THE STRANGER "P"** (the P stands for
+Patience, mostly; occasionally Plumage). The
 prologue plays once after party creation; one scene meets the party on
 its **first arrival** at each of towns 2–7; and after the King falls, the
 stranger stands at town 7's eastern roadside — exactly where the road to
 a Town 8 would begin — with the finale, King and Dragon staged behind it.
-Every scene ends in a **mandatory pick-one-of-two** keepsake choice (the
-sixteen M96 heirlooms, two per scene); beats may be skipped, the choice
-never. The story is original and dry: the realm ran on "kept things"
-carried between towns by the wild flocks; the King hollowed himself
-outlawing what he could not command; the Dragon slept on the deep fire to
-keep it from the rot; the Duck, given a pond, chose empire (we do not
-discuss the Duck). The narrator acts goose-like throughout — waddles,
+Every story scene ends in a **mandatory pick-one-of-two** keepsake choice
+(the sixteen M96 heirlooms, two per scene); beats may be skipped, the
+choice never. The story is original and dry: the realm ran on "kept
+things" carried between towns by the wild flocks; the King hollowed
+himself outlawing what he could not command; the Dragon slept on the deep
+fire to keep it from the rot; the Duck, given a pond, chose empire (we do
+not discuss the Duck). The narrator acts goose-like throughout — waddles,
 hops, panics near bread, honks exactly once, mid-confession. Party
 members speak via name tokens, so the party the player named carries the
-dialogue. Replays (the finale NPC stays; the debug menu can play any
-scene) retell but never re-grant. Editable in CrystalForge like any
-content.
+dialogue. Editable in CrystalForge like any content.
+**After the finale's choice is recorded, the finale never replays**
+(M100, owner report — it used to loop forever): each later visit to the
+roadside instead plays **one dry joke** from an authored optionless pool
+("joke_*" scenes — no question, no options, no reward), cycled in order
+by a persisted counter so every joke is heard before any repeats. The
+first joke is the owner's own: "Now it seems you are on a wild goose
+chase." A quit-mid-finale first play still re-offers the finale until its
+keepsake is chosen (the M97 guard). The stage sits higher since M100 and
+the dialogue panel grows to **six lines**, so every shipped beat reads
+without scrolling (the M87 viewport remains as the translation net).
 
 **The King's classes (M45).** Beating the Hollow King unlocks three more classes
 **for the player, not for that save** — they are offered on every future New
@@ -1082,9 +1216,10 @@ bar, honoured in order:
 - **The Evil Duckling** — a small, deeply unpleasant consumable that
   **curses one foe** (half damage out, double MP costs). It cannot be
   bought, found or dropped; it is sold by exactly one merchant: the
-  **Duckling Peddler**, a rare dungeon event (~10% of dungeons, decided by
-  a pure hash of the seed so a reload changes nothing) asking a flat
-  **300 gold**. Strictly **one per customer** — while the party owns a
+  **Duckling Peddler**, a rare dungeon event (an encounter-tier roll —
+  8% per floor since the v23 equal weighting, ~10% and the tier's most
+  common before it — decided by a pure hash of the seed so a reload
+  changes nothing) asking a flat **300 gold**. Strictly **one per customer** — while the party owns a
   duckling the peddler refuses to deal, and the offer stands unresolved
   until the duck is spent. Using it delivers a **Hilarious Punchline** on
   the battle's quip channel. ("What do you call a duck that steals? A
@@ -1167,7 +1302,14 @@ one-time contextual prompts (`src/tutorial/`) fire on first encounter —
 town, guild, dungeon, battle, guarded chest, event, first victory, first
 result, first return to town — each a small dismissible panel; once seen,
 never again (progress persists in `tutorial.json`; disable-all and reset
-live in Settings). The **Details** action (remappable; C / gamepad Y)
+live in Settings). A prompt never interrupts a story scene (M98): when a
+cutscene stands above the town — the prologue, a first arrival, the
+finale — the prompt waits and fires the moment the scene closes. Prompt
+text lives in `data/tutorials.json` (CrystalForge-editable since M99, with
+a code fallback so a missing file can never silence onboarding); the M99
+truth pass rewrote the beats the game had outgrown — patrols are taught,
+the Inn charges gold, travel is the east/west edge walk, the castle holds
+four challenges, and the scoreboard compares town + depth + level. The **Details** action (remappable; C / gamepad Y)
 opens read-only contextual help wherever the footer offers it: unit stats
 and status shorthand in battle, danger-tier derivation in the dungeon,
 score components on the result and scoreboard, and per-member gear
@@ -1272,11 +1414,36 @@ party still loses, but a modest snack/relic loadout that used to lose now wins) 
 a balance shift reported for review, with King winnability remaining an owner
 manual item.
 
-**Theme rites (M55).** Each of the three dungeon themes now hides **one signature
-room event, guaranteed exactly once per dungeon** and never appearing in another
-theme (this is the only generation change in the program: **generation version
-10 → 11**). Each states its full trade-off in the footer before you Confirm, like
-every event:
+**The two event tiers (owner ruling 2026-08-28, generation v23).** Room
+events are decided in exactly two tiers, and the split is deliberate:
+
+- **Staples** — Shrine, Healing Spring, Merchant, Elite Challenge, Score
+  Wager, Rest Token. Each floor's 2–3 event rooms draw distinct staples
+  uniformly; they are the run's bread and butter (healing, shopping, score,
+  danger) and stay common so sustain and scoring hold up across a descent.
+- **Encounters** — the theme's rite plus every later event kind (the
+  Duckling Peddler, Dragonform, the six M103 events, the two gambling
+  dens). Every encounter rolls the **same 8% per floor** from its own seed
+  hash, at most one of each per floor, replacing only a staple slot; when
+  more fire than slots remain, the survivors are chosen by a **uniform
+  seeded shuffle** — no kind outranks another. (Before v23 each carried its
+  own accreted percent in a fixed draw order, which quietly made the
+  Duckling Peddler ~3x as likely as a gambling den; that ladder was never
+  designed, and the owner leveled it.) A future event lands in the
+  encounter tier by default — one registry row, equal weight, no tuning.
+
+Outside the tiers: the **Royal Relic** keeps its own (town, depth) chance
+table (the owner's standing exception), and the **Surveyor** is a fog-gated
+utility at its own 25% (see the M93 fog passage).
+
+**Theme rites (M55; leveled 2026-08-17, equal-tier since v23).** Each
+dungeon theme hides **one signature room event** that never appears in
+another theme. As shipped in M55 the rite was guaranteed once per dungeon —
+and after M82's floors, once per FLOOR, which over-represented it badly (a
+20-floor run met its rite twenty times); the 2026-08-17 leveling made it an
+8% roll, and v23 folded it into the equal encounter tier above. Each rite
+states its full trade-off in the footer before you Confirm, like every
+event:
 - **The Armory Ghost** (Ruined Keep) — trade one piece of gear from your bag for
   a random piece **one rarity finer, same slot, sight unseen**. An epic can even
   yield a legendary (a third way to find one); the offered piece is consumed and

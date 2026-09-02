@@ -38,8 +38,11 @@ enum class Sfx {
     HitEarth,
     HitHoly,
     HitDark,
+    // M107: the summons' arrival fanfare (one shared voice for the three
+    // legends; per-summon voices are the owner's call for a later pass).
+    Summon,
 };
-inline constexpr std::size_t kSfxCount = 21;
+inline constexpr std::size_t kSfxCount = 22;
 
 enum class MusicTrack {
     None,
@@ -57,8 +60,11 @@ enum class MusicTrack {
     Castle,       // M40: the castle place
     KingBattle,   // M40: the King fight
     DuckBattle,   // M62: the Deadly Duck fight (his pond, his own anthem)
+    // Appended (owner direction 2026-08-17) so every earlier role keeps its
+    // table index: the Goosy Gauntlet's own tune.
+    DungeonGoosy,
 };
-inline constexpr std::size_t kMusicCount = 14;  // excludes None
+inline constexpr std::size_t kMusicCount = 15;  // excludes None
 
 enum class AmbienceTrack {
     None,
@@ -66,8 +72,9 @@ enum class AmbienceTrack {
     Keep,
     Mine,
     Forest,
+    Goosy,  // owner direction 2026-08-17: the wetland bed
 };
-inline constexpr std::size_t kAmbienceCount = 4;  // excludes None
+inline constexpr std::size_t kAmbienceCount = 5;  // excludes None
 
 namespace audio {
 
@@ -79,6 +86,8 @@ inline constexpr std::array<const char*, kSfxCount> kSfxIds = {
     // M91: the six elemental impacts.
     "sfx.battle.hit_fire",  "sfx.battle.hit_ice",  "sfx.battle.hit_lightning",
     "sfx.battle.hit_earth", "sfx.battle.hit_holy", "sfx.battle.hit_dark",
+    // M107: the summon arrival.
+    "sfx.battle.summon",
 };
 
 inline constexpr std::array<const char*, kMusicCount> kMusicIds = {
@@ -86,7 +95,7 @@ inline constexpr std::array<const char*, kMusicCount> kMusicIds = {
     "music.dungeon.keep",  "music.dungeon.mine", "music.dungeon.forest",
     "music.battle",        "music.boss",         "music.victory",
     "music.defeat",        "music.result",       "music.castle",
-    "music.king",          "music.duck",
+    "music.king",          "music.duck",         "music.dungeon.goosy",
 };
 
 inline constexpr std::array<const char*, kAmbienceCount> kAmbienceIds = {
@@ -94,6 +103,7 @@ inline constexpr std::array<const char*, kAmbienceCount> kAmbienceIds = {
     "ambience.keep",
     "ambience.mine",
     "ambience.forest",
+    "ambience.goosy",
 };
 
 // Victory/defeat are one-shot jingles: the music channel plays them once and
@@ -118,6 +128,7 @@ inline constexpr std::array<int, kMusicCount> kSynthMusicIndex = {
     0,          // Castle (town-tier synth fallback)
     2,          // KingBattle (battle-tier synth fallback)
     2,          // DuckBattle (battle-tier synth fallback)
+    1,          // DungeonGoosy (dungeon-tier synth fallback)
 };
 
 // Minimum seconds between accepted plays of the same SFX role. Guards rapid
@@ -128,6 +139,7 @@ inline constexpr std::array<float, kSfxCount> kSfxMinInterval = {
     0.05f, 0.25f, 0.25f,         // ko, victory, defeat
     0.10f, 0.16f, 0.12f, 0.10f,  // chest, step, door, interact
     0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f,  // M91: the elemental impacts
+    0.30f,                                     // M107: the summon arrival (one-shot beat)
 };
 
 // M91: the impact role for an elemental hit. None (and any future value)

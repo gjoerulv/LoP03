@@ -1,6 +1,8 @@
 #include "states/BattleState.hpp"
 
 #include <algorithm>
+
+#include "states/BattleFormation.hpp"  // M101: center-out enemy rows
 #include <memory>
 #include <utility>
 
@@ -223,8 +225,22 @@ void BattleState::captureEnterTargeting() {
     }
     pendingKind_ = PendingKind::Attack;
     targetCandidates_ = battle_.aliveIndices(battle::Side::Enemy);
+    sortTargetsByScreenY();  // M101: captures cycle visually, like live play
     targetCursor_ = 0;
     phase_ = Phase::ChooseTarget;
+}
+
+void BattleState::captureShowSummon(const std::string& skillId) {
+    // M107: mid-beat pose — burst extended, creature bright, quip pinned.
+    if (const auto kind = render::summonKindFor(skillId)) {
+        summonFxKind_ = *kind;
+        summonFxDuration_ = 2.0f;
+        summonFxTimer_ = 1.1f;
+    }
+    if (const content::SkillDef* s = context_.content.findSkill(skillId)) {
+        jestLine_ = s->summonName + " answers the call!";
+        jestTimer_ = 999.0f;
+    }
 }
 
 void BattleState::captureEnterSkillMenu(std::vector<std::string> skills) {
@@ -395,6 +411,23 @@ void BattleState::captureOpenSkillDetails(std::vector<std::string> skills) {
 }
 #endif
 
+void BattleState::sortTargetsByScreenY() {
+    // M101: target cycling walks the VISIBLE column top-to-bottom. With the
+    // center-out rows, unit order no longer matches screen order, so cursor
+    // movement would hop rows without this. Party columns keep their order
+    // (their rows are still sequential) — the sort is a stable no-op there.
+    std::stable_sort(targetCandidates_.begin(), targetCandidates_.end(),
+                     [this](int a, int b) {
+                         int ax = 0;
+                         int ay = 0;
+                         int bx = 0;
+                         int by = 0;
+                         unitScreenPos(a, ax, ay);
+                         unitScreenPos(b, bx, by);
+                         return ay != by ? ay < by : ax < bx;
+                     });
+}
+
 int BattleState::enemyBaseY() const {
     int enemies = 0;
     for (const battle::Combatant& c : battle_.units) {
@@ -405,6 +438,15 @@ int BattleState::enemyBaseY() const {
     // Five enemy rows only fit above the bottom panel when the column starts
     // higher (the turn counter lives top-right, so this space is free).
     return enemies >= 5 ? 20 : 36;
+}
+
+bool BattleState::bossOnField() const {
+    for (const battle::Combatant& c : battle_.units) {
+        if (c.isBoss) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
@@ -419,7 +461,8 @@ void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     }
     if (battle_.units[static_cast<std::size_t>(index)].side == battle::Side::Enemy) {
         outX = 36;
-        outY = enemyBaseY() + enemyRow * 34;
+        // M101 center-out; the rows above a boss lift for its 36px crown.
+        outY = enemyBaseY() + battle_ui::enemyRowOffset(enemyRow, bossOnField());
     } else {
         outX = context_.virtualWidth - 110;
         outY = 36 + partyRow * 34;
@@ -583,8 +626,14 @@ void BattleState::startActorTurn() {
         // M94: the sparring mirror's manual mode — the player commands the
         // echo side through the SAME phases (forced turns still auto-resolve,
         // exactly as they do for the party).
-        phase_ = Phase::Command;
-        buildCommandMenu();
+        if (battle_.units[static_cast<std::size_t>(actor)].uncontrolled) {
+            // Owner rule 2026-08-29: a Jester echo acts the same way it does
+            // in the player's party — its own AI, never a command menu.
+            executeUncontrolled(actor);
+        } else {
+            phase_ = Phase::Command;
+            buildCommandMenu();
+        }
     } else {
         executeEnemy(actor);
     }
@@ -719,6 +768,7 @@ void BattleState::onCommand() {
                 battle_.units[static_cast<std::size_t>(currentActor())].side;
             targetCandidates_ = battle_.aliveIndices(
                 actorSide == battle::Side::Party ? battle::Side::Enemy : battle::Side::Party);
+            sortTargetsByScreenY();  // M101
             targetCursor_ = 0;
             phase_ = Phase::ChooseTarget;
             break;
@@ -767,6 +817,7 @@ void BattleState::onSkillChosen() {
             actorSide == battle::Side::Party ? battle::Side::Enemy : battle::Side::Party;
         targetCandidates_ = ally ? battle::skillAllyTargets(battle_, actorSide, *s)
                                  : battle_.aliveIndices(foeSide);
+        sortTargetsByScreenY();  // M101
         targetCursor_ = 0;
         phase_ = Phase::ChooseTarget;
     } else {
@@ -794,6 +845,7 @@ void BattleState::onItemChosen() {
     if (targetCandidates_.empty()) {
         return;
     }
+    sortTargetsByScreenY();  // M101
     pendingKind_ = PendingKind::Item;
     targetCursor_ = 0;
     phase_ = Phase::ChooseTarget;
@@ -826,11 +878,22 @@ void BattleState::executePending(int targetUnit) {
                 message_ = battle_.useSkill(actor, targetUnit, *s);
                 fxElement_ = s->element;  // M91
                 // M95: the creature's name rides the quip channel over the
-                // resolution — the summon's one theatrical beat.
+                // resolution — and since M107 the creature itself appears,
+                // LARGE at the battlefield's center, for the same beat, with
+                // its arrival fanfare (owner: "show the summoned creature at
+                // the center, and play an epic animation").
                 if (s->oncePerRun && !s->summonName.empty()) {
                     jestLine_ = s->summonName + " answers the call!";
                     jestTimer_ = 2.5f * settings::messageDurationScale(
                                             context_.settings.values.messageSpeed);
+                    if (const auto kind = render::summonKindFor(s->id)) {
+                        summonFxKind_ = *kind;
+                        summonFxDuration_ =
+                            2.0f * settings::messageDurationScale(
+                                       context_.settings.values.messageSpeed);
+                        summonFxTimer_ = summonFxDuration_;
+                        context_.audio.play(Sfx::Summon);
+                    }
                 }
                 damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
                 statusAction = s->statusEffect != content::StatusType::None;
@@ -1360,6 +1423,9 @@ void BattleState::handleInput(const Input& input) {
 }
 
 void BattleState::update(float dt) {
+    if (summonFxTimer_ > 0.0f) {  // M107: the apparition lives for its beat
+        summonFxTimer_ -= dt;
+    }
     if (jestTimer_ > 0.0f) {  // M45: the Jester's quip fades on its own
         jestTimer_ -= dt;
         if (jestTimer_ <= 0.0f) {
@@ -1438,6 +1504,7 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
     // Sprite lookup: a specific id first (per-enemy art is a manifest
     // drop-in), then the tier-generic sprite, then the pre-asset rectangle.
     std::string spriteId;
+    bool flipX = false;
     if (c.side == battle::Side::Party) {
         spriteId = "actor." + c.sourceId + ".battle";
     } else if (c.isBoss) {
@@ -1448,10 +1515,20 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
     } else {
         spriteId = "enemy." + c.sourceId + ".battle";
         if (!context_.resources.hasTexture(spriteId)) {
-            const content::EnemyDef* def = context_.content.findEnemy(c.sourceId);
-            spriteId = (def != nullptr && def->tier == content::EnemyTier::Elite)
-                           ? "enemy.elite.battle"
-                           : "enemy.normal.battle";
+            // M94 spar echoes mirror party members, so an enemy-side sourceId
+            // can be a CLASS id: the member's own battle sprite is the echo's
+            // face, flipped to face the party like any foe (owner fix
+            // 2026-08-17; the tier-generic beast was wearing their names).
+            const std::string actorId = "actor." + c.sourceId + ".battle";
+            if (context_.resources.hasTexture(actorId)) {
+                spriteId = actorId;
+                flipX = true;
+            } else {
+                const content::EnemyDef* def = context_.content.findEnemy(c.sourceId);
+                spriteId = (def != nullptr && def->tier == content::EnemyTier::Elite)
+                               ? "enemy.elite.battle"
+                               : "enemy.normal.battle";
+            }
         }
     }
 
@@ -1462,7 +1539,15 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         const int sy = y + 16 - tex.height;      // 40x16 footprint
         Color tint = shownAlive ? WHITE : Color{110, 110, 125, 255};
         tint.a = static_cast<unsigned char>(255.0f * fade);
-        DrawTexture(tex, sx, sy, tint);
+        if (flipX) {
+            // Negative source width mirrors horizontally (raylib idiom).
+            const Rectangle src{0.0f, 0.0f, -static_cast<float>(tex.width),
+                                static_cast<float>(tex.height)};
+            DrawTextureRec(tex, src,
+                           Vector2{static_cast<float>(sx), static_cast<float>(sy)}, tint);
+        } else {
+            DrawTexture(tex, sx, sy, tint);
+        }
         if (flash > 0.0f) {
             DrawRectangle(sx, sy, tex.width, tex.height, Fade(WHITE, 0.55f * flash));
             // M91: the element's own accent over the hit — inherits the Battle
@@ -1557,11 +1642,7 @@ void BattleState::render() {
         DrawRectangle(6, gy - 6, 2, 8, pal.borderDark);
         DrawRectangle(w - 16, gy, 10, 2, pal.borderDark);  // party-side bracket
         DrawRectangle(w - 8, gy - 6, 2, 8, pal.borderDark);
-        bool bossOnField = false;
-        for (const battle::Combatant& c : battle_.units) {
-            bossOnField = bossOnField || c.isBoss;
-        }
-        if (bossOnField) {
+        if (bossOnField()) {
             const auto pip = [&pal](int x, int y) {
                 DrawRectangle(x, y + 1, 3, 1, pal.magic);
                 DrawRectangle(x + 1, y, 1, 3, pal.magic);
@@ -1585,12 +1666,17 @@ void BattleState::render() {
     // battlefield, never the UI panel.
     const int shakeX = seq_.shakeOffset();
     const int enemyY0 = enemyBaseY();
+    const bool bossField = bossOnField();
     for (std::size_t i = 0; i < battle_.units.size(); ++i) {
         const battle::Combatant& c = battle_.units[i];
         const bool isCurrent = partyTurn && static_cast<int>(i) == actor;
         const bool isTarget = static_cast<int>(i) == targetUnit;
         if (c.side == battle::Side::Enemy) {
-            drawUnit(c, static_cast<int>(i), 36 + shakeX, enemyY0 + enemyRow * 34, isCurrent,
+            // M101: center-out rows — the boss (first enemy unit) holds the
+            // middle; unitScreenPos applies the same mapping for the floats.
+            // The two rows above a boss lift clear of its 36px crown.
+            drawUnit(c, static_cast<int>(i), 36 + shakeX,
+                     enemyY0 + battle_ui::enemyRowOffset(enemyRow, bossField), isCurrent,
                      isTarget);
             ++enemyRow;
         } else {
@@ -1605,6 +1691,15 @@ void BattleState::render() {
     // Turn counter as a compact badge top-right: the top-left is needed by
     // tall enemy columns; the badge stays quieter than the acting unit.
     ui::drawChipRight(TextFormat("Turns %d", battle_.turnsTaken), w - 4, 4, pal.gold);
+
+    // M107: the summoned legend, LARGE at the battlefield's center, for the
+    // resolution beat — over the combatants, under the panels and quip.
+    if (summonFxTimer_ > 0.0f && summonFxDuration_ > 0.0f) {
+        render::drawSummonApparition(
+            context_.resources, summonFxKind_, w / 2, (h - kPanelH) / 2,
+            summonFxTimer_ / summonFxDuration_,
+            context_.settings.values.effectFlash != settings::EffectLevel::Off);
+    }
 
     // M45: the Jester's quip, mid-screen above the panel — decorative, dismissed
     // by its own timer, and fitted so a long line can never spill.
@@ -1715,18 +1810,21 @@ void BattleState::render() {
                 if (const content::SkillDef* s = context_.content.findSkill(sid)) {
                     // The row's "SIL" tag is terse by necessity; spell the block
                     // out here rather than leaving the player to decode it.
-                    // M87: a 2-line POLICY-B preview — intentional truncation
-                    // marked by the arrow (never an overflow event); Details
-                    // opens the full sheet.
+                    // M87 policy-B preview. Owner fix 2026-08-17: THREE lines
+                    // (the panel's remaining height holds them exactly) and NO
+                    // more-arrow — there is no scroll here, the header already
+                    // advertises [Details] for the full sheet, and the arrow
+                    // read as scrollable.
                     const battle::Combatant& a =
                         battle_.units[static_cast<std::size_t>(actor)];
                     if (!battle::canCast(a, *s)) {
                         ui::drawTextPreview("SIL: silenced - MP skills are blocked.", kInfoX,
                                             panelY + 20, infoW, style::kFontBody,
-                                            style::palette().textDim, 2);
+                                            style::palette().textDim, 3, /*markMore=*/false);
                     } else if (!s->description.empty()) {
                         ui::drawTextPreview(s->description, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().success, 2);
+                                            style::kFontBody, style::palette().success, 3,
+                                            /*markMore=*/false);
                     }
                 }
             }
@@ -1743,14 +1841,17 @@ void BattleState::render() {
                 const std::string& iid = itemIds_[static_cast<std::size_t>(itemMenu_.cursor())];
                 if (const content::ItemDef* it = context_.content.findItem(iid)) {
                     // M43: a greyed item says why before it says what it does.
-                    // M87: policy-B preview; Details opens the full sheet.
+                    // M87 policy-B preview; three lines, no more-arrow (owner
+                    // fix 2026-08-17 — same reasoning as the skill preview).
                     const std::string blocked = itemBlockReason(*it);
                     if (!blocked.empty()) {
                         ui::drawTextPreview(blocked, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().textDim, 2);
+                                            style::kFontBody, style::palette().textDim, 3,
+                                            /*markMore=*/false);
                     } else if (!it->description.empty()) {
                         ui::drawTextPreview(it->description, kInfoX, panelY + 20, infoW,
-                                            style::kFontBody, style::palette().success, 2);
+                                            style::kFontBody, style::palette().success, 3,
+                                            /*markMore=*/false);
                     }
                 }
             }
@@ -1763,11 +1864,21 @@ void BattleState::render() {
             // with the side-specific status lines. M28 depends on this panel.
             if (targetUnit >= 0) {
                 const battle::Combatant& t = battle_.units[static_cast<std::size_t>(targetUnit)];
-                ui::drawTextFitted("Target: " + t.name, kListX, panelY + 5, w - kListX - 96,
+                // Owner rule 2026-08-29: a long name wins the row — the back
+                // hint hides rather than colliding with it (Cancel still
+                // works; the target list phase re-shows the binding).
+                const std::string targetLine = "Target: " + t.name;
+                const int sharedW = w - kListX - 96;
+                const bool hintFits =
+                    ui::measureText(targetLine, style::kFontHeading) <= sharedW;
+                ui::drawTextFitted(targetLine, kListX, panelY + 5,
+                                   hintFits ? sharedW : w - kListX - 10,
                                    style::kFontHeading, style::palette().cursor,
                                    "battle.target.name");
-                ui::drawTextRight(backHint, w - 10, panelY + 7, style::kFontBody,
-                                  style::palette().textDim);
+                if (hintFits) {
+                    ui::drawTextRight(backHint, w - 10, panelY + 7, style::kFontBody,
+                                      style::palette().textDim);
+                }
                 std::string vitals = "HP " + std::to_string(t.hp < 0 ? 0 : t.hp) + "/" +
                                      std::to_string(t.maxHp);
                 if (t.side == battle::Side::Party) {

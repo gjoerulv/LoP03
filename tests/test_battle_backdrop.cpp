@@ -30,6 +30,7 @@ TEST_CASE("backdrop: theme id maps to a stage, unknown is Plain", "[backdrop]") 
     CHECK(stageForTheme("ruined_keep") == BackdropStage::Keep);
     CHECK(stageForTheme("crystal_mine") == BackdropStage::Mine);
     CHECK(stageForTheme("hollow_forest") == BackdropStage::Forest);
+    CHECK(stageForTheme("goosy_gauntlet") == BackdropStage::Goosy);
     CHECK(stageForTheme("") == BackdropStage::Plain);
     CHECK(stageForTheme("no_such_theme") == BackdropStage::Plain);
 }
@@ -41,7 +42,8 @@ TEST_CASE("backdrop: Plain draws nothing", "[backdrop]") {
 
 TEST_CASE("backdrop: every stage stays subdued and clear of the float corridor", "[backdrop]") {
     const BackdropStage stages[] = {BackdropStage::Keep, BackdropStage::Mine,
-                                    BackdropStage::Forest, BackdropStage::Castle};
+                                    BackdropStage::Forest, BackdropStage::Castle,
+                                    BackdropStage::Goosy};
     // The central float/status corridor that must stay clear: inner span,
     // below the top skyline strip, above the bottom silhouette strip.
     const int corridorX0 = kBand.x + kCorridorXMarginPx;
@@ -80,9 +82,11 @@ TEST_CASE("backdrop: every stage stays subdued and clear of the float corridor",
 }
 
 TEST_CASE("backdrop: high contrast drops accents but keeps the silhouettes", "[backdrop]") {
-    // Mine (crystal glint) and Castle (gold pips + keyline) carry accents; Keep
-    // and Forest carry none. accents=false must never lose the silhouette bodies.
-    for (BackdropStage stage : {BackdropStage::Mine, BackdropStage::Castle}) {
+    // Mine (crystal glint), Castle (gold pips + keyline) and Goosy (ripple
+    // glint) carry accents; Keep and Forest carry none. accents=false must
+    // never lose the silhouette bodies.
+    for (BackdropStage stage : {BackdropStage::Mine, BackdropStage::Castle,
+                                BackdropStage::Goosy}) {
         const auto withAccents = buildBackdrop(stage, kBand, 0, true);
         const auto noAccents = buildBackdrop(stage, kBand, 0, false);
         int accentCount = 0;
@@ -100,7 +104,7 @@ TEST_CASE("backdrop: high contrast drops accents but keeps the silhouettes", "[b
 
 TEST_CASE("backdrop: geometry is deterministic", "[backdrop]") {
     for (BackdropStage stage : {BackdropStage::Keep, BackdropStage::Mine, BackdropStage::Forest,
-                                BackdropStage::Castle}) {
+                                BackdropStage::Castle, BackdropStage::Goosy}) {
         const auto a = buildBackdrop(stage, kBand, 0, true);
         const auto b = buildBackdrop(stage, kBand, 0, true);
         REQUIRE(a.size() == b.size());

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "core/Geometry.hpp"
 #include "states/GameState.hpp"
 #include "town/TownData.hpp"
@@ -39,6 +41,10 @@ private:
     void buildForCurrentTown(town::TownEntry entry = town::TownEntry::Default);
     void travelTo(int destTown, town::TownEntry entry);  // M32/M50: switch towns in place
     void applyTownAudio();        // town-indexed music + ambience
+    // M98: queue a tutorial beat instead of pushing it from a lifecycle hook —
+    // a story cutscene queued above (prologue, town arrivals, finale) must play
+    // uninterrupted; update() flushes the queue once this state is top again.
+    void queueTutorial(const char* beatId);
 
     bool blackMarketHere() const;  // an offer is present and belongs to this town
     bool onBlackMarketTile() const;
@@ -68,6 +74,9 @@ private:
     // to an edge (or returning from the castle onto the north trigger) cannot
     // instantly travel back.
     bool travelArmed_ = false;
+    // M98: tutorial beats waiting for this state to be the active top (one
+    // fires per frame, so back-to-back beats present as separate prompts).
+    std::vector<const char*> pendingBeats_;
     float moveX_ = 0.0f;
     float moveY_ = 0.0f;
     float walkTime_ = 0.0f;  // walk-cycle clock; 0 while standing (stand frame)

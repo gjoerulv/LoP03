@@ -1293,13 +1293,32 @@ void EditorShell::renderModal() {
     }
     switch (modal_) {
         case Modal::TextEdit: {
-            const int w = 420, h = 96;
+            // Owner fix 2026-08-17: bodies run long, so the modal is a tall
+            // window onto the TAIL of the wrapped text (the caret always
+            // stays visible while typing), with a character counter and a
+            // "lines above" marker instead of clipping the head silently.
+            constexpr int kEditLines = 10;
+            const int step = ui::lineHeight(10);
+            const int w = 480, h = 34 + kEditLines * step + 14;
             const int x = (kLogicalW - w) / 2, y = (kLogicalH - h) / 2;
             ui::drawFrame(x, y, w, h, ui::FrameStyle::Raised);
             ui::drawTextFitted((desc != nullptr ? desc->label : std::string("Text")) + ":", x + 12,
-                               y + 8, w - 24, 10, pal.gold, "editor.textedit.label");
-            ui::drawTextWrapped(textEdit_.value() + "_", x + 12, y + 24, w - 24, 10, pal.text,
-                                "editor.textedit.value", 4);
+                               y + 8, w - 120, 10, pal.gold, "editor.textedit.label");
+            ui::drawTextRight(TextFormat("%d/%d", static_cast<int>(textEdit_.value().size()),
+                                         static_cast<int>(textEdit_.maxLength())),
+                              x + w - 12, y + 8, 8, pal.textHint);
+            const std::vector<std::string> lines =
+                ui::wrapText(textEdit_.value() + "_", w - 24, 10, ui::raylibMeasure());
+            const int first = std::max(0, static_cast<int>(lines.size()) - kEditLines);
+            if (first > 0) {
+                ui::drawTextRight(TextFormat("^ %d more line%s above", first,
+                                             first == 1 ? "" : "s"),
+                                  x + w - 12, y + 8 + 9, 8, pal.textHint);
+            }
+            for (int i = first; i < static_cast<int>(lines.size()); ++i) {
+                ui::drawText(lines[static_cast<std::size_t>(i)], x + 12,
+                             y + 24 + (i - first) * step, 10, pal.text);
+            }
             ui::drawFooterHints({{"Enter", "Apply"}, {"Esc", "Cancel"}}, kLogicalW, kLogicalH,
                                 "editor.textedit.hints");
             break;

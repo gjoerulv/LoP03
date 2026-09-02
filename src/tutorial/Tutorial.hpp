@@ -45,20 +45,24 @@ struct Beat {
 
 // All shipped beats, in teaching order (content lint tests iterate this).
 inline constexpr Beat kBeats[] = {
-    {kTownWelcome, "Welcome to Crystal Dungeons",
+    {kTownWelcome, "Welcome to Are P Geese",  // M108: the rebrand
      "Walk with the movement keys. Step onto a doorway and press Confirm to "
      "enter a building. Runs begin at the Guild - but the shops, the "
      "Training Hall, and the Inn can make your first one easier."},
     {kGuildPrepare, "The Guild",
-     "Choose a theme, a depth, and a seed, then enter the dungeon. Runs are "
-     "ranked by completion first, then by fewest battle turns - decisive "
-     "play beats cautious grinding. Retreating, or escaping the boss, "
-     "forfeits the run's score."},
+     // M99 truth pass: the Floors picker (M82/M92) joined the preparation row.
+     "Choose a theme, a depth, floors, and a seed, then enter the dungeon. "
+     "Runs are ranked by completion first, then by fewest battle turns - "
+     "decisive play beats cautious grinding. Retreating, or escaping the "
+     "boss, forfeits the run's score."},
     {kDungeonFirst, "Into the dungeon",
-     "Enemy teams are always visible - nothing ambushes you here. Face a "
-     "team to read its danger in the footer before you commit. Gate teams "
-     "must be fought to reach the boss; side rooms are optional. Press Menu "
-     "to retreat or check your party."},
+     // M99 truth pass: "nothing ambushes you" died with the M93 patrols —
+     // the counter IS the forewarning, so teach it instead of denying it.
+     "Enemy teams hold their ground and are always visible - but the Patrol "
+     "counter ticks down as you walk, and at zero a roused patrol attacks "
+     "at once. Face a team to read its danger in the footer before you "
+     "commit. Gate teams must be fought to reach the boss; side rooms are "
+     "optional. Press Menu to retreat or check your party."},
     {kBattleFirst, "Battle",
      "Turn order follows Speed. Attack, cast skills, use items, Guard to "
      "brace, or Escape - though escaping forfeits whatever the team was "
@@ -79,18 +83,24 @@ inline constexpr Beat kBeats[] = {
      "Remember: the score rewards fewest total battle turns, so a quick "
      "overwhelming win is worth more than a long safe one."},
     {kResultFirst, "The reckoning",
+     // M99 truth pass: the M32 town tag joined depth and level.
      "Your score counts completion, battle turns, optional danger defeated, "
      "treasure, boss and no-death bonuses - and any omen wager. The "
-     "Scoreboard compares runs at the same depth and level."},
+     "Scoreboard compares runs at the same town, depth and level."},
     {kTownReturn, "Back in town",
+     // M99 truth pass: the Inn has charged gold since M30 (rest tokens are
+     // the free path) — the owner caught the prompt still promising free.
      "Spend your spoils: the shops sell gear and supplies, the Training "
-     "Hall levels a character instantly for gold, and the Inn heals for "
-     "free. Deeper dungeons pay better - when you are ready."},
+     "Hall levels a character instantly for gold, and the Inn heals the "
+     "party for gold - or free with a rest token earned in the dungeons. "
+     "Deeper dungeons pay better - when you are ready."},
     {kFirstTravel, "The road onward",
-     "Towns form a chain. The road at the bottom right leads to the next "
-     "town - tougher foes, but a higher score bonus on every run. The road "
-     "at the bottom left returns the way you came. Clear one dungeon in a "
-     "town to open the road onward from it."},
+     // M99 truth pass: M50 moved travel to east/west edge walk-throughs —
+     // the "bottom" roads this text described no longer exist.
+     "Towns form a chain. Walk off the eastern edge to reach the next town "
+     "- tougher foes, but a higher score bonus on every run. The western "
+     "edge returns the way you came; no key press needed, just walk "
+     "through. Clear one dungeon in a town to open the road onward."},
     {kFirstPenalty, "Raising the stakes",
      "A run that does not raise the stakes loses score - another 30% each "
      "time, down to a 99% floor. Raise the town or the depth above your last "
@@ -102,9 +112,12 @@ inline constexpr Beat kBeats[] = {
      "optional elite challenges in dungeons. Buy it or walk away; the offer "
      "keeps until you do."},
     {kFirstCastle, "The castle",
-     "Above the seven towns stands the castle. Here wait the King's three "
-     "challenges - the Boss Rush, the Endless Rush, and the Hollow King himself. "
-     "The castle keeps its own records, apart from your dungeon scores."},
+     // M99 truth pass: M85 made it four — the Dragon waits behind the curios,
+     // named only as a rumor here (the prompt teaches, it does not spoil).
+     "Above the seven towns stands the castle. Here wait the King's "
+     "challenges - the Boss Rush, the Endless Rush, the Hollow King himself, "
+     "and one more legend for those who gather what the dungeons hide. The "
+     "castle keeps its own records, apart from your dungeon scores."},
     {kFirstChallenge, "The King's challenges",
      "A challenge gives NO free healing between fights - bring items and spend "
      "them wisely. Each pays a one-time reward the first time you clear it; the "

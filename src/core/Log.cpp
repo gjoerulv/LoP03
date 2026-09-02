@@ -87,7 +87,7 @@ bool initialize(const fs::path& logDirectory) {
         return false;
     }
     rotateLogs(logDirectory);
-    gPath = logDirectory / ("CrystalDungeons-" + timestamp("%Y%m%d-%H%M%S") + ".log");
+    gPath = logDirectory / ("ArePGeese-" + timestamp("%Y%m%d-%H%M%S") + ".log");  // M108
     gFile.open(gPath, std::ios::binary | std::ios::out | std::ios::trunc);
     if (!gFile) {
         gPath.clear();

@@ -473,6 +473,48 @@ $MusicSongs.duck = @{
   bass = $duckBassA + $duckBassB + $duckBassBreak + $duckBassA
 }
 
+# --- Dungeon (Goosy Gauntlet): the waddling strut (G dorian, 116 BPM) -----
+# Owner direction 2026-08-17: the town-7 theme gets its own tune. A cocksure
+# two-step over an oom-pah bass — the honk motif is the repeated-note pair
+# that drops a third, dry rather than silly; kin to the Duck's march but its
+# own key, meter feel, and form. Form: A(16) B(16) breakdown(8) A(16)
+# = 56 beats (~29s).
+$goosyLeadA = @(
+  @('G4',0.5),@('G4',0.25),@('G4',0.25),@('A#4',0.5),@('G4',0.5), @('D5',0.5),@('D5',0.5),@('C5',0.5),@('A#4',0.5),
+  @('C5',0.5),@('C5',0.25),@('C5',0.25),@('D5',0.5),@('C5',0.5), @('A#4',0.5),@('G4',0.5),@('A4',1.0),
+  @('G4',0.5),@('A#4',0.5),@('D5',0.5),@('E5',0.5), @('F5',0.5),@('E5',0.5),@('D5',0.5),@('C5',0.5),
+  @('A#4',0.5),@('C5',0.5),@('D5',0.75),@('A#4',0.25), @('G4',1.0),@('D4',1.0)
+)
+$goosyLeadB = @(
+  @('A#4',0.5),@('A#4',0.25),@('A#4',0.25),@('C5',0.5),@('A#4',0.5), @('D5',0.5),@('F5',0.5),@('E5',0.5),@('D5',0.5),
+  @('E5',0.5),@('E5',0.25),@('E5',0.25),@('F5',0.5),@('E5',0.5), @('D5',0.5),@('C5',0.5),@('D5',1.0),
+  @('G5',0.5),@('F5',0.5),@('E5',0.5),@('D5',0.5), @('C5',0.5),@('D5',0.5),@('E5',0.5),@('C5',0.5),
+  @('A4',0.5),@('C5',0.5),@('D5',0.75),@('E5',0.25), @('D5',0.5),@('C5',0.5),@('A#4',0.5),@('A4',0.5)
+)
+$goosyLeadBreak = @(
+  @('-',1.0),@('G4',0.5),@('G4',0.5), @('-',1.0),@('A#4',0.5),@('A4',0.5),
+  @('-',0.5),@('G4',0.5),@('A#4',0.5),@('C5',0.5), @('D5',1.0),@('A4',1.0)
+)
+$goosyBassA = @(
+  @('G2',0.5),@('D3',0.5),@('G2',0.5),@('D3',0.5), @('G2',0.5),@('D3',0.5),@('G2',0.5),@('D3',0.5),
+  @('A#2',0.5),@('F3',0.5),@('A#2',0.5),@('F3',0.5), @('C3',0.5),@('G2',0.5),@('D3',0.5),@('D3',0.5),
+  @('G2',0.5),@('D3',0.5),@('G2',0.5),@('D3',0.5), @('E3',0.5),@('C3',0.5),@('E3',0.5),@('C3',0.5),
+  @('F3',0.5),@('C3',0.5),@('A#2',0.5),@('F2',0.5), @('G2',0.5),@('D3',0.5),@('G2',1.0)
+)
+$goosyBassB = @(
+  @('A#2',0.5),@('F3',0.5),@('A#2',0.5),@('F3',0.5), @('D3',0.5),@('A2',0.5),@('D3',0.5),@('A2',0.5),
+  @('C3',0.5),@('G2',0.5),@('C3',0.5),@('G2',0.5), @('D3',0.5),@('A2',0.5),@('D3',1.0),
+  @('G2',0.5),@('D3',0.5),@('G2',0.5),@('D3',0.5), @('C3',0.5),@('G2',0.5),@('C3',0.5),@('G2',0.5),
+  @('F2',0.5),@('C3',0.5),@('F2',0.5),@('C3',0.5), @('G2',0.5),@('D3',0.5),@('G2',1.0)
+)
+$goosyBassBreak = @( @('G2',2),@('F2',2),@('A#2',2),@('D3',2) )
+$MusicSongs.dungeon_goosy = @{
+  bpm = 116.0; beats = 56.0; jingle = $false
+  leadWave = 'square'; leadAmp = 0.24; bassAmp = 0.30
+  lead = $goosyLeadA + $goosyLeadB + $goosyLeadBreak + $goosyLeadA
+  bass = $goosyBassA + $goosyBassB + $goosyBassBreak + $goosyBassA
+}
+
 # The M32 town-ladder variants (towns 2..7): the town song re-rendered darker —
 # transposed down, slowed, softer, tri lead in the deepest towns. Variant bass
 # is always 'tri' at amp 0.28.

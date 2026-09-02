@@ -155,22 +155,33 @@ TEST_CASE("counterplay: Holy Taxes stocks from town 3; the duckling never stocks
 // --- the Duckling Peddler ------------------------------------------------------
 
 TEST_CASE("counterplay: the peddler roll is pure, deterministic and rare", "[counterplay]") {
+    // v23: the peddler is one registry row in the encounter tier — its M76
+    // salts, the SHARED chance. Find its row (the registry is the identity
+    // order, not a priority).
+    dungeon::EncounterDef duck{};
+    for (const dungeon::EncounterDef& e : dungeon::encounterRegistry()) {
+        if (e.kind == dungeon::RoomEventKind::DuckPeddler) {
+            duck = e;
+        }
+    }
+    REQUIRE(duck.kind == dungeon::RoomEventKind::DuckPeddler);
     // Deterministic: the same seed always answers the same.
     for (std::uint64_t seed : {1ull, 42ull, 0xDEADull}) {
-        CHECK(dungeon::duckPeddlerSlot(seed, 3) == dungeon::duckPeddlerSlot(seed, 3));
+        CHECK(dungeon::encounterFires(seed, duck) == dungeon::encounterFires(seed, duck));
+        CHECK(dungeon::encounterPick(seed, duck, 3) == dungeon::encounterPick(seed, duck, 3));
     }
-    // No eligible slots, no peddler.
-    CHECK(dungeon::duckPeddlerSlot(7, 0) == -1);
-    // Rare but real: the appearance rate over many seeds sits near the
-    // authored percent (wide window; the hash is not a coin we tuned).
+    // No eligible slots, no pick.
+    CHECK(dungeon::encounterPick(7, duck, 0) == -1);
+    // Rare but real: the appearance rate over many seeds sits near the shared
+    // percent (wide window; the hash is not a coin we tuned).
     int appears = 0;
     for (std::uint64_t seed = 1; seed <= 2000; ++seed) {
-        if (dungeon::duckPeddlerSlot(seed, 3) >= 0) {
+        if (dungeon::encounterFires(seed, duck)) {
             ++appears;
         }
     }
-    CHECK(appears > 2000 * (dungeon::kDuckPeddlerChancePct - 5) / 100);
-    CHECK(appears < 2000 * (dungeon::kDuckPeddlerChancePct + 5) / 100);
+    CHECK(appears > 2000 * (dungeon::kEncounterChancePct - 5) / 100);
+    CHECK(appears < 2000 * (dungeon::kEncounterChancePct + 5) / 100);
 }
 
 TEST_CASE("counterplay: a generated peddler sells the duckling at the flat price",
@@ -207,24 +218,24 @@ TEST_CASE("counterplay: a generated peddler sells the duckling at the flat price
     CHECK(found >= 1);  // the sweep met the peddler at least once
 }
 
-TEST_CASE("counterplay: the peddler never displaces a rite and the rite still leads",
-          "[counterplay]") {
-    // Themed dungeons keep their guaranteed rite in every seed that places
-    // event rooms at all — the peddler only ever takes a PLAIN slot
-    // (Shrine/Spring/Merchant/Wager/Rest), never the rite's.
+TEST_CASE("counterplay: the peddler never displaces a rite", "[counterplay]") {
+    // v23: every encounter replaces only a PLAIN Shrine/Spring/Merchant/
+    // Wager/Rest slot and never another encounter — so whatever order the
+    // contention shuffle deals, the peddler can never take a rite's room, a
+    // floor never holds more than one rite, and no two encounters ever share
+    // a room by construction.
+    int riteFloors = 0;
     for (std::uint64_t seed = 1; seed <= 200; ++seed) {
         const dungeon::Dungeon d = dungeon::generate(seed, 4, db(), "ruined_keep", 3);
-        int eventRooms = 0;
-        bool riteSeen = false;
+        int rites = 0;
         for (const dungeon::Room& r : d.rooms) {
-            if (r.type == dungeon::RoomType::Event) {
-                ++eventRooms;
-            }
             if (r.event.kind == dungeon::RoomEventKind::ArmoryGhost) {
-                riteSeen = true;
+                ++rites;
             }
         }
         INFO(seed);
-        CHECK((eventRooms == 0 || riteSeen));
+        CHECK(rites <= 1);
+        riteFloors += rites;
     }
+    CHECK(riteFloors >= 1);  // the sweep met the leveled rite at least once
 }

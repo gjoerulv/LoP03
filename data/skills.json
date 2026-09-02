@@ -39,7 +39,7 @@
     { "id": "hamstring", "name": "Hamstring", "category": "physical", "target": "single_enemy", "power": 8, "mpCost": 6, "statusEffect": "attack_down", "statusMagnitude": 25, "statusDuration": 3, "description": "Cripple a foe's strength." },
     { "id": "rend", "name": "Rend", "category": "physical", "target": "single_enemy", "power": 11, "mpCost": 5, "statusEffect": "poison", "statusMagnitude": 5, "statusDuration": 3, "description": "A deep cut that bleeds." },
     { "id": "eviscerate", "name": "Eviscerate", "category": "physical", "target": "single_enemy", "power": 24, "mpCost": 10, "description": "A brutal killing blow." },
-    { "id": "arcane_burst", "name": "Arcane Burst", "category": "magic", "target": "single_enemy", "power": 17, "mpCost": 7, "description": "A blast of raw arcane force." },
+    { "id": "arcane_burst", "name": "Arcane Burst", "category": "magic", "target": "single_enemy", "element": "dark", "power": 17, "mpCost": 7, "description": "A blast of raw arcane force, edged with the dark." },
     { "id": "smite", "name": "Smite", "category": "magic", "target": "single_enemy", "element": "holy", "power": 12, "mpCost": 6, "description": "Strike a foe with holy force." },
     { "id": "radiance", "name": "Radiance", "category": "magic", "target": "all_enemies", "element": "holy", "power": 10, "mpCost": 12, "description": "Searing light burns every foe." },
     { "id": "intimidate", "name": "Intimidate", "category": "support", "target": "all_enemies", "power": 0, "mpCost": 10, "statusEffect": "attack_down", "statusMagnitude": 20, "statusDuration": 3, "description": "Cow every foe into weaker blows." },

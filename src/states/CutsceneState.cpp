@@ -24,9 +24,12 @@ namespace {
 
 // Stage geometry (426x240): actors stand on the floor line, the dialogue
 // panel owns the bottom band, and the sky above stays uncluttered.
-constexpr int kFloorY = 150;         // feet line for every actor
+// M100 (owner request): the stage moved UP (150 -> 106) so the panel below can
+// grow to six body lines — the longest authored beat now fits unscrolled.
+constexpr int kFloorY = 106;         // feet line for every actor
 constexpr int kPanelX = 8;
 constexpr int kPanelW = 410;
+constexpr int kChoiceBoxW = 300;     // the Stranger's offer box (owner fix 2026-08-17)
 constexpr int kPartyX = 44;          // first member's center
 constexpr int kPartySpacing = 34;
 constexpr int kGooseX = 262;         // the storyteller's spot, right of center
@@ -92,6 +95,8 @@ void CutsceneState::advanceBeat() {
     if (beatIndex_ + 1 < static_cast<int>(def_->beats.size())) {
         ++beatIndex_;
         loadBeat();
+    } else if (def_->options.empty()) {
+        stack().popState();  // M100: a joke grants nothing, asks nothing — it just ends
     } else {
         enterChoice();
     }
@@ -99,6 +104,23 @@ void CutsceneState::advanceBeat() {
 
 void CutsceneState::enterChoice() {
     phase_ = Phase::Choice;
+    // Owner fix 2026-08-17: the box sizes itself to the LONGEST keepsake
+    // description (measured wrapped lines, capped defensively), so no
+    // heirloom's own words are cut to a two-line preview.
+    choiceDetailLines_ = 2;
+    if (def_ != nullptr) {
+        for (const content::CutsceneOption& o : def_->options) {
+            if (const content::ItemDef* it = context_.content.findItem(o.heirloomId)) {
+                // Owner request 2026-08-28: the keepsake's name rides its own
+                // icon + gold tag line; only the description wraps below it.
+                const int lines = 1 + static_cast<int>(
+                    ui::wrapText(it->description, kChoiceBoxW - 28,
+                                 ui::style::kFontBody, ui::raylibMeasure())
+                        .size());
+                choiceDetailLines_ = std::max(choiceDetailLines_, std::min(lines, 6));
+            }
+        }
+    }
     context_.audio.play(Sfx::Move);
 }
 
@@ -147,7 +169,11 @@ void CutsceneState::handleInput(const Input& input) {
         case Phase::SkipAsk:
             if (input.pressed(InputAction::Confirm)) {
                 context_.audio.play(Sfx::Confirm);
-                enterChoice();  // skip lands ON the choice — never past it
+                if (def_->options.empty()) {
+                    stack().popState();  // M100: no choice to land on — just leave
+                } else {
+                    enterChoice();  // skip lands ON the choice — never past it
+                }
             } else if (input.pressed(InputAction::Cancel)) {
                 context_.audio.play(Sfx::Cancel);
                 phase_ = Phase::Beats;
@@ -189,8 +215,10 @@ void CutsceneState::render() {
     const bool showGuests = beat != nullptr && phase_ != Phase::Choice;
 
     // Staged guests first (behind the goose), dimmed: memories, not fights.
+    // M98: the staged King is THE Hollow King (the castle boss), not the
+    // hollow_sovereign dungeon boss the finale mistakenly showed.
     if (showGuests && beat->kingOnStage) {
-        if (!render::drawTextureCentered(context_.resources, "boss.hollow_sovereign.battle",
+        if (!render::drawTextureCentered(context_.resources, "boss.the_hollow_king.battle",
                                          static_cast<float>(kKingX),
                                          static_cast<float>(kFloorY - 16),
                                          Color{190, 190, 205, 255})) {
@@ -234,7 +262,10 @@ void CutsceneState::render() {
     if (phase_ == Phase::Beats || phase_ == Phase::SkipAsk || phase_ == Phase::Response) {
         const int textW = kPanelW - 2 * style::kPad - ui::kScrollGutterW;
         bodyView_.setContent(panelText_, textW, style::kFontBody, ui::raylibMeasure());
-        const int capLines = 3;
+        // M100: six lines fit under the raised stage, and the longest shipped
+        // beat wraps to five — scrolling remains only as the translation
+        // safety net (M87 policy A), no longer the routine reading mode.
+        const int capLines = 6;
         bodyView_.setVisibleLines(std::clamp(bodyView_.lineCount(), 1, capLines));
         const int bodyH = bodyView_.visibleLines() * ui::lineHeight(style::kFontBody);
         const int chromeH = style::kPad + style::kFontSmall + 5 + 4 + style::kFontSmall +
@@ -272,8 +303,10 @@ void CutsceneState::render() {
         const int boxY = h / 2 - boxH / 2;
         ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
         ui::drawTextCentered("Skip the scene?", w / 2, boxY + 10, style::kFontBody, p.text);
-        ui::drawTextCentered("The choice will still be asked.", w / 2, boxY + 24,
-                             style::kFontSmall, p.textDim);
+        ui::drawTextCentered(def_ != nullptr && def_->options.empty()
+                                 ? "It was short anyway."  // M100: a joke asks nothing
+                                 : "The choice will still be asked.",
+                             w / 2, boxY + 24, style::kFontSmall, p.textDim);
         const InputMap& map = context_.input.map();
         const ActiveDevice device = context_.input.activeDevice();
         const std::string hint =
@@ -284,25 +317,35 @@ void CutsceneState::render() {
 
     if (phase_ == Phase::Choice && def_ != nullptr) {
         ui::drawModalDim(w, h);
-        const int boxW = 300;
-        const int boxH = 96 + static_cast<int>(choiceMenu_.size()) * 16;
+        const int boxW = kChoiceBoxW;
+        // Owner fix 2026-08-17: the box grows past its old two-line detail
+        // budget to fit the longest keepsake description (enterChoice measures).
+        const int extraDetail =
+            (choiceDetailLines_ - 2) * ui::lineHeight(style::kFontBody);
+        const int boxH = 96 + static_cast<int>(choiceMenu_.size()) * 16 + extraDetail;
         const int boxX = w / 2 - boxW / 2;
         const int boxY = h / 2 - boxH / 2;
         ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
-        ui::drawTitlePlaque("The Stranger Offers", w / 2, boxY - 10, 12);
+        ui::drawTitlePlaque("The Stranger \"P\" Offers", w / 2, boxY - 10, 12);  // M100
         ui::drawTextPreview(game::cutsceneResolveTokens(def_->question, context_.party),
                             boxX + 14, boxY + 16, boxW - 28, style::kFontBody, p.text, 2);
         ui::drawMenu(choiceMenu_, boxX + 28, boxY + 48, 16, 12, p.text, p.disabled, p.cursor);
 
-        // The highlighted keepsake's own words under the list.
+        // The highlighted keepsake's own words under the list, in full.
         const int cursor = choiceMenu_.cursor();
         const int detailY = boxY + 52 + static_cast<int>(choiceMenu_.size()) * 16;
         if (cursor >= 0 && cursor < static_cast<int>(def_->options.size())) {
             const content::CutsceneOption& o =
                 def_->options[static_cast<std::size_t>(cursor)];
             if (const content::ItemDef* it = context_.content.findItem(o.heirloomId)) {
-                ui::drawTextPreview(it->name + " - " + it->description, boxX + 14, detailY,
-                                    boxW - 28, style::kFontBody, p.textDim, 2);
+                // Owner request 2026-08-28: the keepsake leads with its M81
+                // icon + name in the reward gold — the one gear-name
+                // convention — and the description keeps its own dim lines.
+                ui::drawGearNameTag(context_.resources, content::gearIconTextureId(*it),
+                                    it->name, boxX + 14, detailY, style::kFontBody, p.gold);
+                ui::drawTextPreview(it->description, boxX + 14,
+                                    detailY + ui::lineHeight(style::kFontBody), boxW - 28,
+                                    style::kFontBody, p.textDim, choiceDetailLines_ - 1);
             }
         }
     }
@@ -320,7 +363,7 @@ void CutsceneState::captureShowBeat(int index) {
 
 void CutsceneState::captureShowChoice() {
     if (def_ != nullptr) {
-        phase_ = Phase::Choice;
+        enterChoice();  // measures the detail budget exactly as play does
     }
 }
 #endif

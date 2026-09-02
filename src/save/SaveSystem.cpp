@@ -109,6 +109,8 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["storyMet"] = party.storyMet;  // M41 (optional; old -> 0)
   root["seenCutscenes"] = party.seenCutscenes;      // M97 (optional; old -> fresh story)
   root["heirloomChoices"] = party.heirloomChoices;  // M97 ("scene:heirloom" entries)
+  root["strangerJokesTold"] = party.strangerJokesTold;  // M100 (optional; old -> 0)
+  root["eternalBestFloors"] = party.eternalBestFloors;  // M105 (optional; old -> 0)
   root["encountered"] = party.encountered;             // M42 (optional; old -> empty)
   root["recordBiggestHit"] = party.recordBiggestHit;   // M42 (optional; old -> 0)
   root["recordRunDamage"] = party.recordRunDamage;     // M42 (optional; old -> 0)
@@ -304,6 +306,8 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
       loaded.heirloomChoices.push_back(entry);
     }
   }
+  loaded.strangerJokesTold = rootReader.optIntMin("strangerJokesTold", 0, 0);  // M100
+  loaded.eternalBestFloors = rootReader.optIntMin("eternalBestFloors", 0, 0);  // M105
   loaded.encountered = rootReader.optStringArray("encountered");  // M42 (optional; old -> empty)
   loaded.recordBiggestHit = rootReader.optIntMin("recordBiggestHit", 0, 0);  // M42
   loaded.recordRunDamage = rootReader.optIntMin("recordRunDamage", 0, 0);    // M42

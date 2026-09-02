@@ -1,6 +1,6 @@
-# Crystal Dungeons — application icon generator (M24).
-# Builds packaging/crystal.ico from the approved crystal emblem
-# (assets/textures/ui/emblem_crystal.png): nearest-neighbor upscales at
+# Are P Geese — application icon generator (M24; rebranded 2026-08-17).
+# Builds packaging/arepgeese.ico from the goose emblem
+# (assets/textures/ui/emblem_goose.png): nearest-neighbor upscales at
 # 16/32/48/256 stored as classic uncompressed 32bpp DIB entries (accepted
 # by rc.exe and every Windows shell). Fully original; rerun-safe.
 
@@ -8,8 +8,8 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$srcPng = Join-Path $repo 'assets\textures\ui\emblem_crystal.png'
-$outIco = Join-Path $repo 'packaging\crystal.ico'
+$srcPng = Join-Path $repo 'assets\textures\ui\emblem_goose.png'
+$outIco = Join-Path $repo 'packaging\arepgeese.ico'
 New-Item -ItemType Directory -Force (Split-Path $outIco -Parent) | Out-Null
 
 $src = [System.Drawing.Bitmap]::FromFile($srcPng)
@@ -70,4 +70,4 @@ for ($i = 0; $i -lt $sizes.Count; $i++) {
 }
 foreach ($b in $blobs) { $w.Write([byte[]]$b) }
 [System.IO.File]::WriteAllBytes($outIco, $ms.ToArray()); $w.Dispose()
-Write-Output "  crystal.ico ($($sizes -join '/') px, $((Get-Item $outIco).Length) bytes)"
+Write-Output "  arepgeese.ico ($($sizes -join '/') px, $((Get-Item $outIco).Length) bytes)"

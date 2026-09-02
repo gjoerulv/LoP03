@@ -113,12 +113,16 @@ void MainMenuState::render() {
     const ui::style::Palette& p = ui::style::palette();
     ClearBackground(p.canvas);
 
-    if (context_.resources.hasTexture("ui.emblem.crystal")) {
+    // Rebrand follow-up (owner direction 2026-08-17): the goose emblem fronts
+    // the title screen; the crystal emblem stays shipped as its fallback.
+    if (context_.resources.hasTexture("ui.emblem.goose")) {
+        DrawTexture(context_.resources.texture("ui.emblem.goose"), w / 2 - 16, 8, WHITE);
+    } else if (context_.resources.hasTexture("ui.emblem.crystal")) {
         DrawTexture(context_.resources.texture("ui.emblem.crystal"), w / 2 - 16, 8, WHITE);
     }
     // Title plaque with the crystal-pip corners; subtitle rides a subdued
     // caption row flanked by two glinting pips.
-    const int plaqueBottom = ui::drawTitlePlaque("CRYSTAL DUNGEONS", w / 2, 42,
+    const int plaqueBottom = ui::drawTitlePlaque("ARE P GEESE", w / 2, 42,
                                                  ui::style::kFontTitleHero);
     // M51: a randomized comedic phrase (never a genre description), pulsing
     // lightly on the 3-step motion clock — textHint -> textDim -> text — so it

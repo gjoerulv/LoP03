@@ -1,5 +1,6 @@
 #include "states/TownState.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -172,7 +173,9 @@ void TownState::travelTo(int destTown, town::TownEntry entry) {
     buildForCurrentTown(entry);
     context_.fade.start();
     applyTownAudio();
-    maybeTutorialPrompt(stack(), context_, tutorial::kFirstTravel);
+    // M98: deferred — a first arrival at towns 2..7 pushes a story scene just
+    // below; the prompt must follow the scene, not interrupt it.
+    queueTutorial(tutorial::kFirstTravel);
     // M97: the hooded stranger meets the party on their FIRST arrival at each
     // new town (2..7). Marked seen before the push, so a save written after
     // the scene can never replay it; a reload from the entry stands here too.
@@ -188,7 +191,9 @@ void TownState::travelTo(int destTown, town::TownEntry entry) {
 void TownState::onEnter() {
     context_.fade.start();
     applyTownAudio();
-    maybeTutorialPrompt(stack(), context_, tutorial::kTownWelcome);
+    // M98: deferred — at New Game the prologue cutscene is queued above this
+    // state; the welcome prompt fires after it finishes, never over it.
+    queueTutorial(tutorial::kTownWelcome);
     // M63: an old save (or a fresh load) may carry earned-but-unchosen level
     // milestones — prompt once on arrival. Event-driven sites (battle XP, the
     // Training Hall, the Elder Root) cover everything after this.
@@ -220,13 +225,13 @@ void TownState::onResume() {
     }
     // Fires once, after the player has seen their first run's reckoning.
     if (context_.tutorial.state.seen.count(tutorial::kResultFirst) > 0) {
-        maybeTutorialPrompt(stack(), context_, tutorial::kTownReturn);
+        queueTutorial(tutorial::kTownReturn);  // M98: deferred (see queueTutorial)
     }
     // M89: arriving with fallen members (the dungeon carry-out replaced the
     // old free full heal) teaches the new defeat price exactly once.
     for (const Character& m : context_.party.members) {
         if (m.hp <= 0) {
-            maybeTutorialPrompt(stack(), context_, tutorial::kCarriedOut);
+            queueTutorial(tutorial::kCarriedOut);  // M98: deferred
             break;
         }
     }
@@ -262,6 +267,14 @@ const town::TownExit* TownState::exitAtPlayerTile() const {
         }
     }
     return nullptr;
+}
+
+void TownState::queueTutorial(const char* beatId) {
+    // Seen-set dedupe happens at fire time (takeBeat); this only prevents the
+    // same beat queuing twice before its first flush.
+    if (std::find(pendingBeats_.begin(), pendingBeats_.end(), beatId) == pendingBeats_.end()) {
+        pendingBeats_.push_back(beatId);
+    }
 }
 
 bool TownState::blackMarketHere() const {
@@ -391,15 +404,33 @@ void TownState::handleInput(const Input& input) {
                     stack(), context_, beat->speaker, beat->title, beat->body));
             }
         } else if (nearGoose_) {
-            // M97: the finale, where the Town-8 road would begin. The NPC
-            // stays for replays; the grant guards itself on the recorded
-            // choice, so replay=false keeps a quit-mid-scene first play
-            // able to earn its keepsake.
-            if (context_.content.findCutscene("finale") != nullptr) {
-                context_.audio.play(Sfx::Confirm);
-                game::markCutsceneSeen(context_.party, "finale");
-                stack().pushState(std::make_unique<CutsceneState>(stack(), context_, "finale",
-                                                                  /*replay=*/false));
+            // M97/M100: the roadside stranger. The finale plays until its
+            // choice is RECORDED (so a quit-mid-scene first play can still
+            // earn its keepsake — the M97 guard); once the story is truly
+            // done, every visit is one dry joke from the authored pool,
+            // cycled by a persisted counter. No rewards, no re-grants.
+            const bool finaleDone = !game::cutsceneChoiceFor(context_.party, "finale").empty();
+            if (!finaleDone) {
+                if (context_.content.findCutscene("finale") != nullptr) {
+                    context_.audio.play(Sfx::Confirm);
+                    game::markCutsceneSeen(context_.party, "finale");
+                    stack().pushState(std::make_unique<CutsceneState>(
+                        stack(), context_, "finale", /*replay=*/false));
+                }
+            } else {
+                const std::string joke = game::nextStrangerJokeId(
+                    context_.content, context_.party.strangerJokesTold);
+                if (!joke.empty()) {
+                    context_.audio.play(Sfx::Confirm);
+                    ++context_.party.strangerJokesTold;
+                    stack().pushState(std::make_unique<CutsceneState>(
+                        stack(), context_, joke, /*replay=*/true));
+                } else if (context_.content.findCutscene("finale") != nullptr) {
+                    // No jokes authored: retell the finale rather than go mute.
+                    context_.audio.play(Sfx::Confirm);
+                    stack().pushState(std::make_unique<CutsceneState>(
+                        stack(), context_, "finale", /*replay=*/false));
+                }
             }
         }
         // M50: town exits are walk-through triggers now — no Confirm here. Travel
@@ -412,6 +443,15 @@ void TownState::handleInput(const Input& input) {
 }
 
 void TownState::update(float dt) {
+    // M98: flush one deferred tutorial prompt per frame, and only while this
+    // state is the active top — never over a cutscene or another modal. The
+    // first prompt therefore follows the New Game prologue instead of
+    // interrupting it (owner report, 2026-08-16).
+    if (!pendingBeats_.empty() && stack().top() == this) {
+        const char* beat = pendingBeats_.front();
+        pendingBeats_.erase(pendingBeats_.begin());
+        maybeTutorialPrompt(stack(), context_, beat);
+    }
     const float length = std::sqrt(moveX_ * moveX_ + moveY_ * moveY_);
     moving_ = length > 0.0001f;
     if (moving_) {
@@ -599,7 +639,7 @@ void TownState::render() {
             DrawRectangle(ox + town::kGooseNpcTileX * ts + 3, oy + town::kGooseNpcTileY * ts + 2,
                           ts - 6, ts - 4, Color{120, 100, 150, 255});
         }
-        ui::drawTextCentered("Stranger", ox + town::kGooseNpcTileX * ts + ts / 2,
+        ui::drawTextCentered("\"P\"", ox + town::kGooseNpcTileX * ts + ts / 2,  // M100
                              oy + town::kGooseNpcTileY * ts - 9, 8, pal.gold);
     }
 

@@ -53,3 +53,76 @@ TEST_CASE("party: healFull and highestLevel", "[game]") {
     REQUIRE(p.members[1].mp == p.members[1].maxMp);
     REQUIRE(highestLevel(p) == 4);
 }
+
+TEST_CASE("party: a New Game resets the WHOLE object (nothing leaks a loaded save)",
+          "[game][new-game]") {
+    // Owner bug 2026-08-29: New Game after loading a save kept every field the
+    // old hand-picked clear list missed - the town-1 Guild Boss stood unlocked
+    // (with its perk bonuses ACTIVE) in a brand-new game. The contract is now a
+    // whole-object reset (game/Party.hpp resetForNewGame); this dirties the
+    // once-leaking fields and pins the slate clean.
+    const content::ClassDef knight = knightClass();
+    Party p;
+    p.members.push_back(createCharacter(knight, "Old", 40));
+    p.gold = 9999;
+    p.restTokens = 3;
+    p.doubleXpNext = true;
+    p.usedSummons = {"summon_goose"};
+    p.currentTown = 7;
+    p.highestUnlockedTown = 7;
+    p.stakes.prevTown = 7;
+    p.stakes.prevDepth = 20;
+    p.stakes.penaltySteps = 2;
+    p.legendaryTokens = 5;
+    p.castleUnlocked = true;
+    p.gooseTownUnlocked = true;
+    p.mapPieces = 2;
+    p.mapPiecesOwed = 1;
+    p.treasure.active = true;
+    p.treasureScrollsAwarded = {"scroll_x"};
+    p.eternalBestFloors = 9;
+    p.ownedCurios = {"keep_banner"};
+    guildRecord(p.guild, 1).unlocked = true;   // the reported symptom
+    guildRecord(p.guild, 1).bestTurns = 5;
+    guildRecord(p.guild, 1).perkId = "perk_exp";
+    p.storyMet = 0x7f;
+    p.seenCutscenes = {"new_game"};
+    p.heirloomChoices = {"new_game:heirloom_lastlight"};
+    p.strangerJokesTold = 4;
+    p.encountered = {"bandit"};
+    p.recordBiggestHit = 999;
+    p.recordRunDamage = 12345;
+
+    resetForNewGame(p);
+
+    CHECK(p.members.empty());
+    CHECK(p.gold == kNewGameGold);
+    CHECK(p.restTokens == 0);
+    CHECK_FALSE(p.doubleXpNext);
+    CHECK(p.usedSummons.empty());
+    CHECK(p.currentTown == 1);
+    CHECK(p.highestUnlockedTown == 1);
+    CHECK(p.stakes.prevTown == 0);
+    CHECK(p.stakes.penaltySteps == 0);
+    CHECK(p.legendaryTokens == 0);
+    CHECK_FALSE(p.blackMarket.present);
+    CHECK_FALSE(p.castleUnlocked);
+    CHECK_FALSE(p.gooseTownUnlocked);
+    CHECK(p.mapPieces == 0);
+    CHECK(p.mapPiecesOwed == 0);
+    CHECK_FALSE(p.treasure.active);
+    CHECK(p.treasureScrollsAwarded.empty());
+    CHECK(p.eternalBestFloors == 0);
+    CHECK(p.ownedCurios.empty());
+    CHECK_FALSE(guildRecord(p.guild, 1).unlocked);
+    CHECK(guildRecord(p.guild, 1).bestTurns == 0);
+    CHECK(guildRecord(p.guild, 1).perkId.empty());
+    CHECK(p.storyMet == 0);
+    CHECK(p.seenCutscenes.empty());
+    CHECK(p.heirloomChoices.empty());
+    CHECK(p.strangerJokesTold == 0);
+    CHECK(p.encountered.empty());
+    CHECK(p.recordBiggestHit == 0);
+    CHECK(p.recordRunDamage == 0);
+    CHECK(p.inventory.stacks.empty());
+}

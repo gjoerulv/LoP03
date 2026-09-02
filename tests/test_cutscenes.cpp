@@ -120,7 +120,10 @@ TEST_CASE("cutscenes: options must grant real heirlooms, one owner each", "[cuts
 #ifdef CRYSTAL_TEST_DATA_DIR
 TEST_CASE("cutscenes: the shipped arc is eight scenes covering all 16 heirlooms",
           "[cutscene][data]") {
-    REQUIRE(db().cutsceneCount() == content::kCutsceneIdCount);  // all 8, exactly
+    // All 8 arc scenes, plus only the M100 joke and M103 story pools.
+    REQUIRE(db().cutsceneCount() == content::kCutsceneIdCount +
+                                        game::strangerJokeIds(db()).size() +
+                                        game::strangerStoryIds(db()).size());
     std::set<std::string> granted;
     for (std::size_t i = 0; i < content::kCutsceneIdCount; ++i) {
         const content::CutsceneDef* scene = db().findCutscene(content::kCutsceneIds[i]);
@@ -238,5 +241,74 @@ TEST_CASE("cutscenes: story progress round-trips; junk degrades to unseen",
     CHECK(fresh.seenCutscenes.empty());
     CHECK(fresh.heirloomChoices.empty());
     std::filesystem::remove_all(dir);
+}
+#endif
+
+// --- M100: the post-finale joke pool -----------------------------------------
+
+TEST_CASE("cutscenes: joke scenes are optionless tales, story scenes are not",
+          "[cutscene]") {
+    // A joke: known by prefix, no question, no options — loads clean.
+    CHECK(parses(R"({"version":1,"cutscenes":[{"id":"joke_9",
+        "beats":[{"speaker":"S","text":"T"}]}]})"));
+    // A joke smuggling options is rejected (it must never grant).
+    CHECK_FALSE(parses(R"({"version":1,"cutscenes":[{"id":"joke_9","question":"Q",
+        "beats":[{"speaker":"S","text":"T"}],
+        "options":[{"label":"A","heirloom":"a","responseSpeaker":"S","responseText":"R"},
+                   {"label":"B","heirloom":"b","responseSpeaker":"S","responseText":"R"}]}]})"));
+    // A story scene without its question is rejected.
+    CHECK_FALSE(parses(R"({"version":1,"cutscenes":[{"id":"new_game",
+        "beats":[{"speaker":"S","text":"T"}],
+        "options":[{"label":"A","heirloom":"a","responseSpeaker":"S","responseText":"R"},
+                   {"label":"B","heirloom":"b","responseSpeaker":"S","responseText":"R"}]}]})"));
+    // The bare prefix alone is not an id.
+    CHECK_FALSE(parses(R"({"version":1,"cutscenes":[{"id":"joke_",
+        "beats":[{"speaker":"S","text":"T"}]}]})"));
+}
+
+#ifdef CRYSTAL_TEST_DATA_DIR
+TEST_CASE("cutscenes: the shipped joke pool cycles, dry and rewardless",
+          "[cutscene][data]") {
+    const std::vector<std::string> jokes = game::strangerJokeIds(db());
+    REQUIRE(jokes.size() >= 7);  // the M100 authored pool
+    for (const std::string& id : jokes) {
+        INFO(id);
+        const content::CutsceneDef* j = db().findCutscene(id);
+        REQUIRE(j != nullptr);
+        CHECK(j->options.empty());   // never a grant
+        CHECK(!j->beats.empty());
+        for (const content::CutsceneBeat& b : j->beats) {
+            CHECK(b.speaker == "THE STRANGER \"P\"");  // the M100 rename
+        }
+    }
+    // The cycle: every joke heard once before any repeats, then it wraps.
+    std::set<std::string> heard;
+    for (int told = 0; told < static_cast<int>(jokes.size()); ++told) {
+        heard.insert(game::nextStrangerJokeId(db(), told));
+    }
+    CHECK(heard.size() == jokes.size());
+    CHECK(game::nextStrangerJokeId(db(), static_cast<int>(jokes.size())) ==
+          game::nextStrangerJokeId(db(), 0));
+    // The owner's own line ships verbatim.
+    const content::CutsceneDef* first = db().findCutscene("joke_1");
+    REQUIRE(first != nullptr);
+    bool wildGoose = false;
+    for (const content::CutsceneBeat& b : first->beats) {
+        wildGoose = wildGoose || b.text.find("wild goose chase") != std::string::npos;
+    }
+    CHECK(wildGoose);
+}
+
+TEST_CASE("cutscenes: no scene still speaks as the un-named Stranger (M100)",
+          "[cutscene][data]") {
+    for (const auto& [id, scene] : db().cutscenes()) {
+        INFO(id);
+        for (const content::CutsceneBeat& b : scene.beats) {
+            CHECK(b.speaker != "The Stranger");
+        }
+        for (const content::CutsceneOption& o : scene.options) {
+            CHECK(o.responseSpeaker != "The Stranger");
+        }
+    }
 }
 #endif

@@ -1,10 +1,10 @@
-CRYSTAL DUNGEONS
+ARE P GEESE
 a 16-bit-inspired dungeon-score roguelite
 
 
 RUNNING THE GAME
 
-Run CrystalDungeons.exe. No installation is needed; keep the data and
+Run ArePGeese.exe. No installation is needed; keep the data and
 assets folders next to the exe. To uninstall, delete this folder.
 
 Saves and settings live in your user folder (not here), so replacing or

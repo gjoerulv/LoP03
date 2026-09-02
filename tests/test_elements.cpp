@@ -316,6 +316,14 @@ TEST_CASE("elements: the sim and live play resolve a tagged hit identically",
     CHECK(sim.rollCursor == live.rollCursor);  // elements draw no randomness
 }
 
+TEST_CASE("elements: Arcane Burst strikes as dark (owner decision 2026-08-16, M98)",
+          "[content][elements]") {
+    const content::ContentDatabase db = loadContent();
+    const content::SkillDef* burst = db.findSkill("arcane_burst");
+    REQUIRE(burst != nullptr);
+    CHECK(burst->element == Element::Dark);
+}
+
 TEST_CASE("elements: an untagged fight resolves exactly as before", "[battle][elements]") {
     // Every pre-M48 encounter must be byte-identical: no foe tagged, no weapon
     // element, so every modifier is 100.

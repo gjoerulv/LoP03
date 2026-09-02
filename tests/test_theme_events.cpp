@@ -12,11 +12,17 @@
 #include "dungeon/DungeonModel.hpp"
 #include "dungeon/RoomLayout.hpp"
 #include "dungeon/ThemeEvents.hpp"
+#include "game/Castle.hpp"     // M106: bossRushOrder — the rush inclusion pin
+#include "game/Gooseform.hpp"  // M106: the flock transform
+#include "game/Party.hpp"
+#include "score/Scoring.hpp"   // M106: the +300 itemization
 
-// M55 per-theme rites: the generator guarantees exactly one theme rite per themed
-// dungeon and never a cross-theme one; the pure helpers (tier-up, cache, root)
-// behave as designed and deterministically. Content-loading cases need the real
-// data (CRYSTAL_TEST_DATA_DIR); the pure-math cases run anywhere.
+// M55 per-theme rites, LEVELED 2026-08-17 (v22) and folded into the equal
+// encounter tier 2026-08-28 (v23): a themed floor rolls its rite at
+// kEncounterChancePct like every other encounter, never a cross-theme one;
+// the pure helpers (tier-up, cache, root) behave as designed and
+// deterministically. Content-loading cases need the real data
+// (CRYSTAL_TEST_DATA_DIR); the pure-math cases run anywhere.
 
 using namespace cd;
 using namespace cd::dungeon;
@@ -84,8 +90,11 @@ int countAnyRite(const Dungeon& d) {
 }
 }  // namespace
 
-TEST_CASE("theme rites: each theme guarantees its rite exactly once, never cross-theme",
+TEST_CASE("theme rites: leveled to a rare roll, at most once, never cross-theme",
           "[theme-events]") {
+    // Leveled at v22, equal-tier at v23: the rite is a kEncounterChancePct
+    // pure-hash encounter like every other — the sweep pins the band, the
+    // at-most-once rule, and that a theme only ever rolls ITS OWN rite.
     const content::ContentDatabase db = loadContent();
     struct ThemeCase {
         const char* id;
@@ -97,14 +106,23 @@ TEST_CASE("theme rites: each theme guarantees its rite exactly once, never cross
         {"hollow_forest", RoomEventKind::ElderRoot},
     };
     for (const ThemeCase& tc : cases) {
-        for (std::uint64_t seed = 1; seed <= 150; ++seed) {
+        int withRite = 0;
+        constexpr int kSeeds = 200;
+        for (std::uint64_t seed = 1; seed <= kSeeds; ++seed) {
             const int depth = 1 + static_cast<int>(seed % 12);
             const int town = 1 + static_cast<int>(seed % 7);
             const Dungeon d = generate(seed, depth, db, tc.id, town);
             INFO("theme=" << tc.id << " seed=" << seed << " depth=" << depth << " town=" << town);
-            CHECK(countRite(d, tc.rite) == 1);  // exactly this theme's rite, once
-            CHECK(countAnyRite(d) == 1);        // and no other rite ever appears
+            const int own = countRite(d, tc.rite);
+            CHECK(own <= 1);                    // never more than one per floor
+            CHECK(countAnyRite(d) == own);      // and never another theme's rite
+            withRite += own;
         }
+        // ~8% of 200 floors = 16 expected; a generous band that still fails
+        // hard on "always" (old behavior) or "never" (a broken roll).
+        INFO("theme=" << tc.id << " withRite=" << withRite << "/" << kSeeds);
+        CHECK(withRite >= 3);
+        CHECK(withRite <= 45);
     }
 }
 
@@ -116,14 +134,25 @@ TEST_CASE("theme rites: an empty-theme dungeon carries no rite", "[theme-events]
     }
 }
 
-TEST_CASE("theme rites: the relic never displaces the rite", "[theme-events]") {
-    // At high town/depth the Royal Relic replacement is likely; the rite must
-    // still be present exactly once (it owns the first slot, relic-proof).
+TEST_CASE("theme rites: the rite and the relic never share a room", "[theme-events]") {
+    // The rite replaces only PLAIN rolled slots — never the relic (drawn from
+    // the base stream first) and never an elite challenge (whose team would
+    // be orphaned); the relic stays at most one per floor.
     const content::ContentDatabase db = loadContent();
     for (std::uint64_t seed = 1; seed <= 120; ++seed) {
         const Dungeon d = generate(seed, 20, db, "ruined_keep", 7);
         INFO("seed=" << seed);
-        CHECK(countRite(d, RoomEventKind::ArmoryGhost) == 1);
+        int relics = 0;
+        for (const Room& r : d.rooms) {
+            if (r.event.kind == RoomEventKind::RoyalRelic) {
+                ++relics;
+            }
+            if (r.event.kind == RoomEventKind::ArmoryGhost) {
+                CHECK(r.teamIndex < 0);  // never on an elite challenge's room
+            }
+        }
+        CHECK(relics <= 1);
+        CHECK(countRite(d, RoomEventKind::ArmoryGhost) <= 1);
     }
 }
 
@@ -138,22 +167,31 @@ TEST_CASE("theme rites: same seed reproduces the same placement and payloads",
         CHECK(a.rooms[i].event.itemId == b.rooms[i].event.itemId);
         CHECK(a.rooms[i].event.goldCost == b.rooms[i].event.goldCost);
     }
-    // The Miner's Cache carries a guaranteed item baked in at generation.
+    // Where the leveled roll places a rite, its payload is baked exactly as
+    // the old forced path baked it: the Miner's Cache carries an item, the
+    // Elder Root a town-scaled price. Sweep until each has appeared once.
     bool sawCacheItem = false;
-    for (const Room& r : a.rooms) {
-        if (r.event.kind == RoomEventKind::MinersCache) {
-            CHECK_FALSE(r.event.itemId.empty());
-            sawCacheItem = true;
+    for (std::uint64_t seed = 1; seed <= 400 && !sawCacheItem; ++seed) {
+        const Dungeon d = generate(seed, 8, db, "crystal_mine", 4);
+        for (const Room& r : d.rooms) {
+            if (r.event.kind == RoomEventKind::MinersCache) {
+                CHECK_FALSE(r.event.itemId.empty());
+                sawCacheItem = true;
+            }
         }
     }
     CHECK(sawCacheItem);
-    // The Elder Root carries a town-scaled price.
-    const Dungeon forest = generate(7, 6, db, "hollow_forest", 3);
-    for (const Room& r : forest.rooms) {
-        if (r.event.kind == RoomEventKind::ElderRoot) {
-            CHECK(r.event.goldCost == elderRootPrice(3, 6));
+    bool sawRootPrice = false;
+    for (std::uint64_t seed = 1; seed <= 400 && !sawRootPrice; ++seed) {
+        const Dungeon d = generate(seed, 6, db, "hollow_forest", 3);
+        for (const Room& r : d.rooms) {
+            if (r.event.kind == RoomEventKind::ElderRoot) {
+                CHECK(r.event.goldCost == elderRootPrice(3, 6));
+                sawRootPrice = true;
+            }
         }
     }
+    CHECK(sawRootPrice);
 }
 
 TEST_CASE("theme rites: the Armory Ghost upgrades same-slot, next-rarity, refuses legendary",
@@ -219,3 +257,95 @@ TEST_CASE("theme rites: Elder Root price is affordable and its XP is elite-battl
 }
 
 #endif  // CRYSTAL_TEST_DATA_DIR
+
+// ============================ M106: the Goosy Gauntlet ========================
+
+TEST_CASE("goosy: the theme ships town-gated with its own roster", "[goosy][m106]") {
+    const content::ContentDatabase db = loadContent();
+    const content::DungeonThemeDef* goosy = db.findTheme("goosy_gauntlet");
+    REQUIRE(goosy != nullptr);
+    CHECK(goosy->minTown == 7);
+    // Every classic theme stays everywhere (the loader default).
+    CHECK(db.findTheme("ruined_keep")->minTown == 1);
+    CHECK(db.findTheme("crystal_mine")->minTown == 1);
+    CHECK(db.findTheme("hollow_forest")->minTown == 1);
+    // The three new bosses are town-7-gated, never Guild Masters, and join
+    // the rush roster (the owner's ask).
+    const std::vector<std::string> rush = bossRushOrder(db);
+    for (const char* id : {"the_gray_gander", "mother_of_ponds", "the_pondlord"}) {
+        INFO(id);
+        const content::BossDef* b = db.findBoss(id);
+        REQUIRE(b != nullptr);
+        CHECK(b->minTown == 7);
+        CHECK(b->guildTown == 0);
+        CHECK(std::find(rush.begin(), rush.end(), std::string(id)) != rush.end());
+    }
+}
+
+TEST_CASE("goosy: goosy bosses lead, and the Flock rolls at the leveled rate",
+          "[goosy][m106]") {
+    const content::ContentDatabase db = loadContent();
+    const content::DungeonThemeDef* goosy = db.findTheme("goosy_gauntlet");
+    REQUIRE(goosy != nullptr);
+    int rites = 0;
+    constexpr int kSeeds = 200;
+    for (std::uint64_t seed = 1; seed <= kSeeds; ++seed) {
+        const dungeon::Dungeon d = dungeon::generate(seed, 8, db, "goosy_gauntlet", 7);
+        // The boss comes from the goosy list.
+        bool bossListed = false;
+        for (const dungeon::EnemyTeam& t : d.teams) {
+            if (t.isBoss) {
+                bossListed = std::find(goosy->bosses.begin(), goosy->bosses.end(), t.bossId) !=
+                             goosy->bosses.end();
+            }
+        }
+        CHECK(bossListed);
+        int perFloor = 0;
+        for (const dungeon::Room& r : d.rooms) {
+            if (r.event.kind == dungeon::RoomEventKind::GoosyFlock) {
+                ++perFloor;
+            }
+        }
+        CHECK(perFloor <= 1);  // leveled: a rare roll, never stacked
+        rites += perFloor;
+    }
+    // Leveled at v22, equal-tier at v23: the Flock rolls at
+    // kEncounterChancePct like every other encounter — the +300 is a find,
+    // not a per-floor stipend.
+    INFO("rites=" << rites << "/" << kSeeds);
+    CHECK(rites >= 3);
+    CHECK(rites <= 45);
+}
+
+TEST_CASE("goosy: the flock turns everyone and turns everyone back", "[goosy][m106]") {
+    const content::ContentDatabase db = loadContent();
+    Party p;
+    p.members.push_back(createCharacter(*db.findClass("knight"), "Rolan", 20));
+    p.members.push_back(createCharacter(*db.findClass("mage"), "Mira", 20));
+    p.members[0].equippedHeirloom = "heirloom_hearthstone";
+    refreshCharacter(p.members[0], db);
+    const int mageMaxBefore = p.members[1].maxHp;
+
+    const DragonformStash stash = enterFlockGooseform(p, db);
+    REQUIRE(stash.original.size() == 2);
+    for (const Character& m : p.members) {
+        CHECK(m.classId == "goose");
+    }
+    CHECK(p.members[0].equippedHeirloom == "heirloom_hearthstone");  // memories stay
+    p.members[1].hp = 0;  // the mage-goose falls
+    leaveDragonform(p, stash);
+    CHECK(p.members[0].classId == "knight");
+    CHECK(p.members[1].classId == "mage");
+    CHECK(p.members[1].hp == 0);              // KO maps to KO
+    CHECK(p.members[1].maxHp == mageMaxBefore);
+}
+
+TEST_CASE("goosy: flock battles pay +300 each, itemized", "[goosy][m106]") {
+    score::RunSummary run;
+    run.completed = true;
+    run.battleTurns = 20;
+    const int base = score::computeScore(run);
+    run.gooseFlockFights = 1;
+    CHECK(score::computeScore(run) == base + 300);
+    CHECK(score::scoreBreakdown(run).gooseFlock == 300);
+}

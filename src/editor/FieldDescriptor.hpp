@@ -28,12 +28,13 @@ enum class Category {
     Story,
     EventFlavor,  // M86 (data authored in M80)
     CurioLore,    // M86 (data authored in M85)
-    Cutscenes     // M97 (the Hooded Goose scenes)
+    Cutscenes,    // M97 (the Hooded Goose scenes)
+    Tutorials     // M99 (tutorial prompt text, owner request)
 };
 // MUST equal categories().size() — pinned by the [editor] suite. (M63 grew the
 // enum without bumping this, which silently shifted the sidebar's Sim Lab/Test
 // Runner rows onto the Story row; found and fixed in M86.)
-inline constexpr int kCategoryCount = 13;
+inline constexpr int kCategoryCount = 14;
 
 enum class FieldKind {
     String,      // short single-line text (names, roles)

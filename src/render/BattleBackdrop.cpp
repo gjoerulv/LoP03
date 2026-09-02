@@ -9,6 +9,7 @@ BackdropStage stageForTheme(const std::string& themeId) {
     if (themeId == "ruined_keep") return BackdropStage::Keep;
     if (themeId == "crystal_mine") return BackdropStage::Mine;
     if (themeId == "hollow_forest") return BackdropStage::Forest;
+    if (themeId == "goosy_gauntlet") return BackdropStage::Goosy;
     return BackdropStage::Plain;  // castle passes BackdropStage::Castle explicitly
 }
 
@@ -78,6 +79,29 @@ std::vector<BackdropRect> buildBackdrop(BackdropStage stage, BackdropBand band, 
             for (int i = 0; i < 6; ++i) {
                 add(band.x + 10 + i * 70, skyY + 1, 40, 6, BackdropRole::BorderDark);
             }
+            break;
+        }
+        case BackdropStage::Goosy: {
+            // Broken reed-top strip along the skyline (thinner and gappier
+            // than the forest canopy, so the two differ in grayscale).
+            for (int i = 0; i < 7; ++i) {
+                add(band.x + 14 + i * 58, skyY + 1, 20, 5, BackdropRole::BorderDark);
+            }
+            // Cattail clumps: thin stalk, dark head, one offset leaf blade.
+            // Edge clumps plus one low-centre clump below the corridor.
+            const int gx[5] = {band.x + 18, band.x + 44, band.x + band.w / 2 - 8,
+                               right - 52, right - 24};
+            for (int c = 0; c < 5; ++c) {
+                add(gx[c], floorBase - 24, 2, 34, BackdropRole::BorderDark);
+                add(gx[c] - 1, floorBase - 30, 4, 8, BackdropRole::Ink);
+                add(gx[c] + 4, floorBase - 12, 2, 18, BackdropRole::BorderDark);
+            }
+            // The pond line the fights are staged on, with one drifting ripple
+            // glint that steps on the motion phase.
+            add(band.x + 6, floorBase + 10, band.w - 12, 2, BackdropRole::BorderDark);
+            add(band.x + 6, floorBase + 10, band.w - 12, 1, BackdropRole::Ink);
+            add(band.x + band.w / 2 - 40 + (phase == 0 ? 0 : 2), floorBase + 11, 4, 1,
+                BackdropRole::AccentCrystal);
             break;
         }
         case BackdropStage::Castle: {
