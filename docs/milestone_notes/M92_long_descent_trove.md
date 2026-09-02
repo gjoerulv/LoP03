@@ -87,4 +87,5 @@ the long-descent paragraph) · `docs/technical_design.md` (§45) ·
 
 ## Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-16)` — the ledger is authoritative; this line
+lagged at the approval flip and was corrected 2026-09-02.

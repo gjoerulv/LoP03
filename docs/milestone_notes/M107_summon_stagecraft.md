@@ -1,6 +1,6 @@
 # M107 — Summon stagecraft
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16).
 Presentation-only — no battle-rules, generation, or save change; the
 Simulator never sees any of it.

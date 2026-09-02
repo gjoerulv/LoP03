@@ -1,6 +1,6 @@
 # M106 — The Goosy Gauntlet (town-7 theme)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16).
 **Generation 20 → 21** (the new theme + its rite + the grown boss rosters
 move guard picks where the roster grew; classic-theme generation is

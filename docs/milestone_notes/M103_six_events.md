@@ -1,6 +1,6 @@
 # M103 — Six new events
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16).
 **Generation 18 → 19** (six new pure-hash event replacements move seeds'
 event rolls where the hashes land; everything else byte-identical). NO

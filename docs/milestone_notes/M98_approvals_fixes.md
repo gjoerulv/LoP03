@@ -1,6 +1,6 @@
 # M98 — Post-program approvals & the six-fix batch
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16; one plan,
 one authorization; plan file with the exploration record and the owner
 interview at `~/.claude/plans/new-milestones-and-keen-liskov.md`). No

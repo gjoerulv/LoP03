@@ -1,6 +1,6 @@
 # M102 — Rules: the fallen & the shelf (KO XP + the scroll ban)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16).
 **Generation 17 → 18** (the scroll-free item pools change what seeds' chest
 and merchant rolls produce; the scoreboard tags comparability as always).

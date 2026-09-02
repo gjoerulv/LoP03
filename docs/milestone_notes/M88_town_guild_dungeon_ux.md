@@ -125,4 +125,5 @@ panel by design).
 
 ## Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-16)` — the ledger is authoritative; this line
+lagged at the approval flip and was corrected 2026-09-02.

@@ -1,6 +1,6 @@
 # M99 — Tutorial truth & the Forge tutorial editor
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16). No
 battle-rules, generation, or save-version bump; `data/tutorials.json` is a
 new OPTIONAL content file (the third), so old installs and forge-less

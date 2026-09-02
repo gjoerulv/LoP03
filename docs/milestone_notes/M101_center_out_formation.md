@@ -1,6 +1,6 @@
 # M101 — Center-out battle formation
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16).
 Presentation ONLY — no battle-rules, generation, or save change; the sim's
 unit order and every seeded outcome are byte-identical (the [battle]

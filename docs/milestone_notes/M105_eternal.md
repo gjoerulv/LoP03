@@ -1,6 +1,6 @@
 # M105 — Eternal: the town-7 endless descent
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16). NO
 generation bump (a new mode; every existing shape generates byte-identical)
 and no battle-rules bump. Save schema additive-only: `eternalBestFloors`

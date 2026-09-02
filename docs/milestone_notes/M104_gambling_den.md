@@ -1,6 +1,6 @@
 # M104 — The gambling den: reels & blackjack
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16).
 **Generation 19 → 20** (two more pure-hash event replacements). No
 battle-rules or save change; all randomness is hashed from (dungeon seed,

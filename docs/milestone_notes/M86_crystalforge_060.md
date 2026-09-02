@@ -154,4 +154,5 @@ is deliberately renumbered to **0.6.0** (owner decision 2026-08-05: the
 
 ## I. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-08-16)` — the ledger is authoritative; this line
+lagged at the approval flip and was corrected 2026-09-02.

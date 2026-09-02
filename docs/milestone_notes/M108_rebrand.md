@@ -1,6 +1,6 @@
 # M108 — Rebrand: "Are P Geese"
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16) — the
 program's last milestone, run last on purpose: one identity flip over a
 stable build. No battle-rules, generation, or save-FORMAT change; the save

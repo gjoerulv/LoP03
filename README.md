@@ -10,10 +10,10 @@ score on how few battle turns you spent — then upgrade and dive again, forever
 Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
-> **Status: feature-complete, polished playable build** (milestones M1–M97
-> delivered and owner-approved; M98–M108 — the "Are P Geese" program, from
-> the post-M97 fix batch through the full rebrand at **v0.7.0** —
-> implemented, awaiting approval). In the box: a seven-town difficulty ladder
+> **Status: feature-complete, polished playable build** (milestones
+> **M1–M108** delivered and owner-approved — the M98–M108 "Are P Geese"
+> program, from the post-M97 fix batch through the full rebrand at
+> **v0.7.0**, approved 2026-09-02). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
 > dungeons with room events including the rare Royal Relics and per-theme
@@ -79,10 +79,10 @@ music, or text. Built in **C++20** with **raylib**.
 > countdown**, a dragonform pact, a Training Hall **sparring mirror** (AI
 > or manual control of the echoes), three once-per-run **summons** dug
 > from treasure maps, sixteen worn **heirlooms** with triggered effects,
-> and an eight-scene **cutscene story** told by a hooded goose. After the
-> M98–M108 approvals only the deferred **validation playtesting (M23)** and
-> **release sign-off (M24)** remain. Current status always lives in
-> `docs/milestones.md`.
+> and an eight-scene **cutscene story** told by a hooded goose. With the
+> M98–M108 approvals (2026-09-02) only the deferred **validation
+> playtesting (M23)** and **release sign-off (M24)** remain. Current
+> status always lives in `docs/milestones.md`.
 
 ## Requirements
 

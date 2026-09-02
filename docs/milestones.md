@@ -105,17 +105,17 @@
 | 95 | Summons | ☑ complete (approved) |
 | 96 | Heirlooms | ☑ complete (approved) (post-approval UI fixes 2026-08-17: full offer text + party visibility, see the note) |
 | 97 | The Hooded Goose: cutscene story | ☑ complete (approved) |
-| 98 | Post-program approvals & the six-fix batch | ◑ implemented, awaiting manual approval |
-| 99 | Tutorial truth & the Forge tutorial editor | ◑ implemented, awaiting manual approval |
-| 100 | Cutscene stagecraft & THE STRANGER "P" | ◑ implemented, awaiting manual approval |
-| 101 | Center-out battle formation | ◑ implemented, awaiting manual approval (fix 2026-08-17: boss-crown headroom) |
-| 102 | Rules: the fallen & the shelf (KO XP + scroll ban) | ◑ implemented, awaiting manual approval |
-| 103 | Six new events | ◑ implemented, awaiting manual approval |
-| 104 | The gambling den: reels & blackjack | ◑ implemented, awaiting manual approval (fix round 2026-08-17: reel icons) |
-| 105 | Eternal (town-7 endless descent) | ◑ implemented, awaiting manual approval |
-| 106 | The Goosy Gauntlet (town-7 theme) | ◑ implemented, awaiting manual approval (fix round 2026-08-17: own art, tiles, backdrop, music, ambience) |
-| 107 | Summon stagecraft | ◑ implemented, awaiting manual approval |
-| 108 | Rebrand: "Are P Geese" | ◑ implemented, awaiting manual approval (fix round 2026-08-17: title plaque, goose emblem + icon, v0.7.0) |
+| 98 | Post-program approvals & the six-fix batch | ☑ complete (approved 2026-09-02) |
+| 99 | Tutorial truth & the Forge tutorial editor | ☑ complete (approved 2026-09-02) |
+| 100 | Cutscene stagecraft & THE STRANGER "P" | ☑ complete (approved 2026-09-02) |
+| 101 | Center-out battle formation | ☑ complete (approved 2026-09-02) (fix 2026-08-17: boss-crown headroom) |
+| 102 | Rules: the fallen & the shelf (KO XP + scroll ban) | ☑ complete (approved 2026-09-02) |
+| 103 | Six new events | ☑ complete (approved 2026-09-02) |
+| 104 | The gambling den: reels & blackjack | ☑ complete (approved 2026-09-02) (fix round 2026-08-17: reel icons; 2026-08-29: spin animation + real cards) |
+| 105 | Eternal (town-7 endless descent) | ☑ complete (approved 2026-09-02) |
+| 106 | The Goosy Gauntlet (town-7 theme) | ☑ complete (approved 2026-09-02) (fix round 2026-08-17: own art, tiles, backdrop, music, ambience) |
+| 107 | Summon stagecraft | ☑ complete (approved 2026-09-02) |
+| 108 | Rebrand: "Are P Geese" | ☑ complete (approved 2026-09-02) (fix round 2026-08-17: title plaque, goose emblem + icon, v0.7.0) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -213,6 +213,17 @@ closed); no battle-rules bump anywhere in this program (spoils, inputs
 and presentation only). Execution continues milestone by milestone to
 `implemented, awaiting manual approval` without pausing; M23 → M24
 follow after the program, re-audited first.
+**On 2026-09-02 the owner approved M98–M108** after the manual pass —
+the approval covers the program as it stands after every owner-directed
+round on top of it: the 2026-08-17 fix rounds (real Goosy art/audio,
+reel icons, the true title-screen rebrand at v0.7.0, the rite leveling),
+the 2026-08-28 equal encounter tier (generation v23) and gear-name
+convention, and the 2026-08-29 rounds (spar-Jester + New-Game clean-slate
+fixes; footer ellipsis, target-name/hint rule, the spinning reels, the
+blackjack cards, the party-creation class sprites + Details sheet). Only
+the deliberately deferred **M23 → M24** remain, in that order, each
+re-audited against the then-current checkout before it begins — and
+neither starts without explicit owner authorization.
 
 When M75–M86 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**85
@@ -3295,7 +3306,7 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M86 — CrystalForge catch-up & version 0.6.0
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved 2026-08-16) — implemented
   2026-08-07 on the post-M85 checkout (`f562d5c`). The re-audit found
   **no descriptor catch-up owed** — every program field shipped its
   descriptor with its milestone under the M59 sweep, and the enum
@@ -3326,7 +3337,7 @@ derives from committed seeds or pure hashes — no new RNG streams.
 
 ### M87 — Translation-ready text containers & scrollable prose
 
-- **Status:** ◑ implemented, awaiting manual approval — authorized and
+- **Status:** ☑ complete (approved 2026-08-16) — authorized and
   implemented 2026-08-11 on the post-M86 checkout (owner brief, full
   implementation authorized in the same message). Prose-heavy UI moves
   from English-sized budgets to bounded, scrollable text containers so
