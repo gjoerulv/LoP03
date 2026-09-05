@@ -90,7 +90,13 @@ namespace cd::dungeon {
 // effective rate), and the fog-gated Surveyor draws FIRST at its own 25%
 // instead of dead last — event kinds and rooms move on every seed; the
 // Royal Relic's table is deliberately untouched.
-inline constexpr int kGenerationVersion = 23;
+// version 24 (M110, owner-approved) adds the PATROL DISPATCHER: the Nth
+// patrol of a run resolves to a seeded kind (65% an ordinary patrol, 10%
+// the Golden Goose, 5% a lore question, 15% treasure chests, 5% a Stranger
+// scene) under its own pure-hash salt — room, event and team rolls are
+// byte-identical to v23, but what a seed's patrols PRODUCE changed, and
+// the scoreboard must say so.
+inline constexpr int kGenerationVersion = 24;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).

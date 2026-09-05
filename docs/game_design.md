@@ -193,15 +193,101 @@ ambushes you unannounced — stands.
 
 **The danger counter (M93, owner decision).** A visible **"Patrol N"**
 countdown starts every run at **100**; each tile walked ticks it down, and at
-**0 the roused patrol attacks immediately** — a normal team for this dungeon
-(same theme pool, composition rules, and depth/town scaling), drawn from a
-seeded per-run stream so the Nth patrol of a seed is deterministic and
-reload-honest. The counter resets to 100 after the fight and keeps counting
-across floors. **Patrols pay XP but no gold, drop nothing, and earn no
+**0 the roused patrol answers immediately**. Since **M110** what answers is a
+**seeded mixture** — the Nth patrol of a run is a pure hash of the run seed
+and the patrol's index, so it is deterministic and reload-honest and a reload
+can never turn one kind into another: **65 %** an ordinary patrol team (a
+normal team for this dungeon — same theme pool, composition rules, and
+depth/town scaling), **10 %** the **Golden Goose** (M111), **5 %** the
+Jester's **lore question** (M112), **15 %** the **treasure chests** (M112),
+and **5 %** a **Stranger "P" scene** — one of four dedicated, optionless,
+rewardless tales (never the story or joke pools; valid before or after the
+King), told in a seed-shuffled cycle so a long run hears all four before any
+repeats, at a cost of **zero battle turns**. Every outcome — a fought, fled or
+escaped battle, a scene, a question, a gamble — consumes the patrol: the
+counter resets to 100 (and keeps counting across floors) and the index
+advances. **Ordinary patrols pay XP but no gold, drop nothing, and earn no
 danger-defeated credit** (owner decision: circling for step-triggered fights
-must never become a farm) — and their battle turns count against the score
-like any other, so lingering actively costs. Fleeing one counts as an escape
-and still resets the counter.
+must never become a gold farm) — and their battle turns count against the
+score like any other, so lingering actively costs. Fleeing one counts as an
+escape and still resets the counter.
+
+**The economy amendment (M110, owner decision).** The M93 rule above is
+**deliberately relaxed for the special patrols**: the Golden Goose, the lore
+question and the treasure chests pay their explicit rewards, and the owner
+accepts that a player who does not care about score may walk in circles and
+farm them indefinitely. There are, on purpose, **no** cooldowns, diminishing
+returns, once-per-run limits, reward throttles or lowered odds after farming.
+The counterweight is the score itself — every battle turn and every escape
+still costs, and walking is not free of patrols — not a hidden mechanic.
+
+**The Golden Goose (M111, owner decision).** One patrol in ten is the
+**Golden Goose** — a single, small, absurdly quick foe that stands alone in
+the centre of the field (a patrol foe, never a boss: no crystal shatter, no
+boss music) with a **2000-gold hoard** on its back. It cannot really fight
+(HP 45, Attack 1, Magic 0, Defense 2, Speed 40) but it is built to get
+away: **Spell Ward, Evasion, Iron Will and First Strike**, and it starts the
+battle under **Reflect**. Its three own turns are a **script, not a choice**
+(authored in `data/enemies.json`; the engine's rule, not the goose's name):
+on its first turn it **beats its wings once** and every living party member
+is **Blinded, Silenced and Poisoned (magnitude 5) for three turns** in one
+action — a turn a control status steals still spends the step; on its
+second it **guards**; on its third it **flees**. A fled goose ends the battle
+with **nothing gained and nothing lost** — no XP, no gold, no escape counted
+against the player, the patrol simply consumed. Catching it inside those
+turns pays the **2000 gold** plus **exactly the XP the ordinary patrol it
+replaced would have paid** (never more, so a goose farm is no better an XP
+farm than the patrol it stood in for), and — like every patrol — no drop and
+no danger-defeated credit. Its speed is the one place the Deadly Duck's
+"fastest thing in the game" rule yields: the goose exists to act first and
+run, not to be fought. Hunting it is a party-build question: enough burst to
+land 45 HP through Evasion and Iron Will before the third turn, or a
+cleanse ready for the dust.
+
+**The Jester's lore question (M112, owner decision).** One patrol in
+twenty is **the Jester** — the reward class's own face, standing centre
+where a foe would, with a **question** written above the field and **two
+answers** standing on the field beside it as boxes. The battle screen
+becomes a **decision**: the party's first member to act may **Attack**, use
+an **offensive Skill**, or **Escape** — Guard, Item and every ally-facing
+skill are greyed with their reason. Striking an answer chooses it. The
+**right answer pays 500 gold** with the victory fanfare; the **wrong one**
+earns the Jester's authored mock line and the **mocking jingle** (a new
+one-shot beside Victory and Defeat). **Striking the Jester itself, or
+sweeping the whole field** with an all-foes attack or skill, is answered
+in kind: the striker is **knocked out — for real** (no Iron Will, no
+mercy; the KO is carried out of the battle like any other, and a party
+whose last standing member tried it is wiped). Whatever the pick, the
+encounter costs **one battle turn**, no foe is "defeated" (nothing enters
+the bestiary or the kill counts), and the patrol is consumed. Escape
+steps away as from any patrol. The questions are **28 original, editable
+entries** (`data/lore_questions.json`, about four per town tier), asked in
+a **run-seeded order** that walks the whole eligible pool before any
+repeat; a question is only eligible once its town tier is unlocked, and
+the one about the King's name only after he has fallen — **no question
+ever spoils what the party has not yet seen.**
+
+**The treasure chests and the Mimic (M112, owner decision).** Three
+patrols in twenty are **three closed chests** on the field — **one pays,
+one is empty, one is lying** — shuffled by the run seed and the patrol
+index, so a reload can never reshuffle them. The same decision rules
+apply (Attack / offensive Skill / Escape). The paying chest is a **coin
+flip**: **500 gold**, or **one piece of town-appropriate worn equipment**
+(a weapon, armor or accessory sold at this town — never legendary, never
+a relic, heirloom, consumable or scroll; 500 gold when nothing qualifies).
+The empty chest earns the mock jingle and nothing else. The lying chest
+is **the Mimic** — a **new original boss** on the median dungeon-boss line
+for its floor (chest with a maw and a tongue of coins; power smash, sunder,
+a venom bite, Counter Attack) that **reveals itself the moment it is
+struck** — or the moment the whole field is swept — and the decision
+battle becomes a **boss battle in place**: boss music, the Mimic alone at
+the centre, no crystal-shatter intro, and the **committed action lands on
+it as the opening blow of round one** (an all-foes sweep resolves against
+the lone Mimic). Nothing double counts: the decision turn IS round one.
+Beating it pays **boss-equivalent XP** (the Mimic's authored 230) plus a
+**500-gold bounty** on the spoils panel, and it enters the bestiary like
+any boss; it drops nothing and earns no danger credit (a patrol). Reward
+and empty picks cost one turn; the Mimic fight costs what it costs.
 
 **Fog on the descents (M93).** Multi-floor runs (4F/20F) no longer show the
 whole minimap: unvisited rooms are absent, a visited room's door to the
@@ -771,7 +857,12 @@ itself), Spoon-proof, and armed with **six party-wide elemental
 breaths** — one per element, met by the M81 ward charms. Below half HP
 it **inhales the party's entire MP once**; below 10 % its attack and
 speed **double**; at the brink it **clones itself** at 5 % of its full
-HP. Felling it earns the **Wyrmbane** achievement.
+HP. Felling it earns the **Wyrmbane** achievement. Since **M115** the
+Dragon looks the part — a horned, one-eyed, one-winged dragon silhouette
+within the boss canvas — and **its clone wears its face** (the clone is
+not a boss: no boss rules, no bestiary or defeat entry of its own, but it
+is drawn from the same art), the two seated without ever overlapping
+(the formation now measures every unit's real height).
 
 **The breaths no longer run dry (M89, owner-reported).** The Dragon's MP
 pool derived from its Magic and afforded exactly six breaths at the arena
@@ -819,6 +910,21 @@ goals (16 at M42; M61 added Quackbane, M66 the Curator, M84 Guildbane,
 M85 Wyrmbane) — clearing dungeons, climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
+
+**Lifetime statistics (M109).** Every save keeps a **lifetime ledger**: how
+much each hero has dealt, taken, healed and felled; battles won and lost,
+escapes, turns, statuses, guards, summons and revives; gold earned, spent
+and lost, purchases, finds, level-ups, tokens, treasures and curios; each
+town's attempts, clears, wipes, retreats, patrols and best score; the
+patrol encounters met; runs, floors, tiles and chests; the King, Duck,
+Dragon and Guild Master victories; how many times every enemy and boss has
+been defeated; and the hours genuinely spent playing (a paused menu does
+not count). The ledger is **display-only** — it never touches how a
+battle, a dungeon or an enemy resolves — and it counts forever: nothing
+ends it. Only real play records: the sparring mirror, the simulator and
+the editor never do. A save from before the ledger starts every counter at
+zero (its old biggest-hit record is the one fact carried over) and says
+so. The End-game Summary (M116) is where the ledger is read.
 
 **Balance pass (M43).** The endgame arc opens by making consumables a real budget
 decision and healing a real choice, at one battle-rules bump (v4).
@@ -924,7 +1030,36 @@ fire to keep it from the rot; the Duck, given a pond, chose empire (we do
 not discuss the Duck). The narrator acts goose-like throughout — waddles,
 hops, panics near bread, honks exactly once, mid-confession. Party
 members speak via name tokens, so the party the player named carries the
-dialogue. Editable in CrystalForge like any content.
+dialogue. Editable in CrystalForge like any content. Since **M113** every
+scene plays over a **stage**: a town-triggered scene (the prologue, the
+arrivals, the finale, the roadside Stranger) over a **mountainous town
+panorama**, and a scene met inside a dungeon (the Stranger's story rooms,
+the patrol tales) over **that dungeon theme's own stage** — Keep, Mine,
+Forest or Goosy. The stage is the place the scene is met, never the scene
+itself (the same tale plays on any stage); the art stays restrained
+behind a dim strip so the actors and the dialogue panel remain dominant.
+
+**The end-game summary (M116, owner decision).** The moment the finale's
+keepsake choice is recorded, an **End-game Summary** unlocks and **shows
+itself once**, automatically, on the return to town (the victory stinger
+plays, then the Result loop). From then on THE STRANGER "P" at the
+roadside offers two things — **Talk** (the dry joke cycle, exactly as
+before) or the **End-game Summary** (Cancel steps away with nothing
+spent). The game never ends: every counter keeps updating and the summary
+always reads the live ledger. It is six tabbed pages, cycled with the
+board-cycling keys — **Overview** (play time, clears/attempts, battles,
+damage, the biggest hit and who landed it, gold, patrols, the King, Duck,
+Dragon and Guild Master counts, the Eternal best, floors and tiles),
+**Heroes** (per member: damage dealt and taken, biggest hit, finishing
+blows, times knocked out, healing done and received, revives, skills cast,
+statuses inflicted, scrolls learned, skills known), **Combat**, **World**
+(per-town blocks, the economy, exploration), **Bestiary** (every foe in
+the bestiary's order; a met foe shows "Defeated: N", an unmet one stays
+"? ? ?" — nothing is ever marked seen from here), and **Patrols** (the
+Golden Goose, lore and chest breakdown). Nothing is crammed: every page
+scrolls. A save from before the ledger existed opens the Overview with a
+"Lifetime tracking began with this version" line and starts its counts at
+zero (see *Lifetime statistics* below).
 **After the finale's choice is recorded, the finale never replays**
 (M100, owner report — it used to loop forever): each later visit to the
 roadside instead plays **one dry joke** from an authored optionless pool

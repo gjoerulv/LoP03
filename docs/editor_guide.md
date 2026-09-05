@@ -34,7 +34,9 @@ save, and `git diff` shows every change it made. Save deliberately.
 
 Four panes, left to right:
 
-1. **Categories** — the thirteen content files. A `*` marks unsaved changes.
+1. **Categories** — the fifteen content files (the M112 lore questions are
+   the newest: one row per question — tier, post-King gate, question, the
+   right and wrong answers, the mock line). A `*` marks unsaved changes.
 2. **Entries** — the entities of the selected category (id + display name).
 3. **Fields** — the selected entity's fields, one row each, driven by the
    game's own schema. Unrecognized keys (future schema) are shown dimmed and

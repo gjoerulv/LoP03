@@ -44,6 +44,9 @@ void parseCurioLore(const Json& root, const std::string& source, ContentDatabase
 void parseCutscenes(const Json& root, const std::string& source, ContentDatabase& db,
                     LoadReport& rep);  // M97
 void parseTutorialTexts(const Json& root, const std::string& source, ContentDatabase& db,
+                        LoadReport& rep);
+// M112: the Jester's lore questions (optional file, see LoreQuestionDef).
+void parseLoreQuestions(const Json& root, const std::string& source, ContentDatabase& db,
                         LoadReport& rep);  // M99
 
 // Cross-reference checks: skill ids referenced by classes, enemies, and scrolls

@@ -11,6 +11,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "resource/ResourceManager.hpp"  // M113: hasTexture for the stage fallback
 #include "render/SpriteDraw.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
@@ -58,8 +59,9 @@ void gooseEmoteOffset(const std::string& emote, int& dx, int& dy) {
 }  // namespace
 
 CutsceneState::CutsceneState(StateStack& stack, AppContext& context, std::string sceneId,
-                             bool replay)
-    : GameState(stack), context_(context), sceneId_(std::move(sceneId)), replay_(replay) {
+                             bool replay, render::CutsceneStage stage)
+    : GameState(stack), context_(context), sceneId_(std::move(sceneId)), replay_(replay),
+      stage_(stage) {
     def_ = context_.content.findCutscene(sceneId_);
     if (def_ != nullptr) {
         std::vector<ui::MenuItem> items;
@@ -205,10 +207,21 @@ void CutsceneState::render() {
     const int h = context_.virtualHeight;
     const style::Palette& p = style::palette();
 
-    // The stage: a deep night sky over a packed-earth floor band. Flat fills
-    // (no textures needed), readable in high contrast, quiet behind actors.
-    DrawRectangle(0, 0, w, h, Color{13, 12, 26, 255});
-    DrawRectangle(0, kFloorY + 2, w, h - kFloorY - 2, Color{34, 28, 40, 255});
+    // The stage (M113): the caller's full-screen scene — the mountainous
+    // town panorama or a dungeon theme's stage — over the M97 flat fills,
+    // which remain the fallback when the texture is missing. The horizon
+    // keyline stays as the readability anchor, and a low-alpha dim strip
+    // over the actor zone keeps party, goose, King and Dragon dominant over
+    // the art (the framed dialogue panel already backs the text).
+    const Color sky{13, 12, 26, 255};
+    const char* stageId = render::cutsceneStageTextureId(stage_);
+    const bool staged = context_.resources.hasTexture(stageId);
+    ui::drawSceneBackground(context_.resources, stageId, sky, w, h);
+    if (!staged) {
+        DrawRectangle(0, kFloorY + 2, w, h - kFloorY - 2, Color{34, 28, 40, 255});
+    } else {
+        DrawRectangle(0, 36, w, kFloorY - 36, Fade(sky, 0.28f));
+    }
     DrawRectangle(0, kFloorY + 1, w, 1, Color{58, 50, 66, 255});  // horizon keyline
 
     const content::CutsceneBeat* beat = currentBeat();

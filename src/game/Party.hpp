@@ -9,6 +9,7 @@
 #include "game/Character.hpp"
 #include "game/Guild.hpp"
 #include "game/Inventory.hpp"
+#include "game/Lifetime.hpp"   // M109: the persistent lifetime ledger
 #include "game/StakesLadder.hpp"
 #include "game/TreasureMap.hpp"  // M65: TreasureReveal + the puzzle-map rules
 
@@ -92,12 +93,20 @@ struct Party {
     // M100: how many post-finale jokes the stranger has told (drives the
     // deterministic joke cycle). Optional save field; old saves -> 0.
     int strangerJokesTold = 0;
+    // M116: the End-game Summary has shown itself once (flow state, not a
+    // statistic - deliberately outside LifetimeStats). Optional save field;
+    // old saves -> false, so a finished story shows it on the next return.
+    bool summaryShown = false;
     // Enrichment (M42), all optional save fields (old saves -> empty / 0):
     // the set of enemy/boss ids this party has fought (the bestiary), and the
     // party's personal victory records (display-only, never ranked).
     std::vector<std::string> encountered;
     int recordBiggestHit = 0;
     int recordRunDamage = 0;
+    // M109: the lifetime ledger - cumulative display-only statistics saved as
+    // one additive optional object (game/Lifetime.hpp). Old saves load zeros
+    // with `migrated` set; New Game resets it with the rest of the object.
+    LifetimeStats lifetime;
 
     bool empty() const { return members.empty(); }
     std::size_t size() const { return members.size(); }

@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "core/AppContext.hpp"
+#include "game/Party.hpp"  // M109: the lifetime ledger (retreat tally)
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "states/EquipShopState.hpp"  // M90: partyMode equip flow
@@ -79,6 +80,7 @@ void DungeonMenuState::handleInput(const Input& input) {
                 stack().pushState(std::make_unique<SettingsState>(stack(), context_));
                 break;
             case kRetreat:
+                ++lifetimeTown(context_.party.lifetime, context_.party.currentTown).retreats;  // M109
                 stack().popState();  // close this menu
                 stack().popState();  // leave the dungeon, back to town
                 break;

@@ -84,6 +84,14 @@ Dungeon generateEternalFloor(std::uint64_t runSeed, int floorIndex,
 // generation stream is never touched. The team is flagged `patrol`: it pays
 // XP but no gold (game/Spoils.hpp) and earns no danger credit (owner
 // decision 7).
+// M111: the Golden Goose patrol — the one `golden_goose` foe at exactly the
+// scale patrolTeam would give this (town, depth), flagged to pay its gold
+// bounty and to pay the XP of the ordinary patrol it replaced (derived from
+// patrolTeam with the same seed and index, so the swap never farms better
+// than the patrol did). Empty when the content lacks the foe.
+inline constexpr const char* kGoldenGooseEnemyId = "golden_goose";
+EnemyTeam goldenGooseTeam(const content::ContentDatabase& db, const std::string& themeId,
+                          int town, int depth, std::uint64_t runSeed, int patrolIndex);
 EnemyTeam patrolTeam(const content::ContentDatabase& db, const std::string& themeId,
                      int town, int depth, std::uint64_t runSeed, int patrolIndex);
 

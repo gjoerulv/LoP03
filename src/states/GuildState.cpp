@@ -143,6 +143,8 @@ void GuildState::enterDungeon() {
                 }
                 p.stakes.prevTown = kTownCount;
                 p.stakes.prevDepth = kMaxDepth;
+                ++p.lifetime.explore.runsAttempted;  // M109: before the entry autosave
+                ++lifetimeTown(p.lifetime, p.currentTown).attempts;
                 content::LoadReport report;
                 context_.saves.autosave(p, report);
                 std::vector<dungeon::Dungeon> floors;
@@ -155,6 +157,8 @@ void GuildState::enterDungeon() {
         return;
     }
 
+    ++context_.party.lifetime.explore.runsAttempted;  // M109: before the entry autosave
+    ++lifetimeTown(context_.party.lifetime, context_.party.currentTown).attempts;
     content::LoadReport report;
     context_.saves.autosave(context_.party, report);
 

@@ -6,6 +6,7 @@
 #include "core/AppContext.hpp"
 #include "game/Gamble.hpp"
 #include "game/Party.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "resource/ResourceManager.hpp"  // 2026-08-29: the card textures
@@ -79,10 +80,12 @@ void BlackjackEventState::finishHand() {
         }
         const int dealer = gamble::handValue(dealer_);
         if (dealer > 21 || player > dealer) {
-            context_.party.gold += bet_ * 2;  // the bet back, doubled (owner spec)
+            earnGold(context_.party, bet_ * 2, EconomySource::Blackjack,
+                     context_.party.currentTown);  // the bet back, doubled (owner spec)
             resultText_ = "You win! " + std::to_string(bet_ * 2) + "g slides across the table.";
         } else if (player == dealer) {
-            context_.party.gold += bet_;  // push returns the bet
+            earnGold(context_.party, bet_, EconomySource::Blackjack,
+                     context_.party.currentTown);  // push returns the bet
             resultText_ = "A push. Your " + std::to_string(bet_) + "g comes back, reluctantly.";
         } else {
             resultText_ = "The house takes it. The house usually does.";
@@ -90,6 +93,7 @@ void BlackjackEventState::finishHand() {
     }
     if (ev_ != nullptr) {
         ev_->resolved = true;  // one round per den (owner: "a round of black-jack")
+        ++context_.party.lifetime.explore.eventsResolved;  // M109
     }
     done_ = true;
     context_.audio.play(Sfx::Interact);

@@ -1,5 +1,10 @@
 # M101 — Center-out battle formation
 
+> **Superseded in part (M115, 2026-09-02):** the fixed boss headroom became a
+> bounds-aware envelope layout (`battle_ui::enemyRowYs`) that reproduces
+> these rows for the M101 cases; see
+> `docs/milestone_notes/M115_last_dragon.md`.
+
 **Status:** complete (approved 2026-09-02)
 **Program:** M98–M108 "Are P Geese" (owner-authorized 2026-08-16).
 Presentation ONLY — no battle-rules, generation, or save change; the sim's

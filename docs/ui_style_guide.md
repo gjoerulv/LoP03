@@ -28,36 +28,45 @@
 
 ## 2. Text roles found in the current game
 
-**Font (M25; Latin set M87):** text now renders through an **original bitmap
-font** (not the raylib default), installed by `ui::setFonts` and drawn via the
-`DrawTextEx` wrappers in `src/ui/UiDraw`. One 5×7 glyph design is delivered as
+**Font (M25; Latin set M87; readability redesign M114):** text renders
+through an **original bitmap font** (not the raylib default), installed by
+`ui::setFonts` and drawn via the `DrawTextEx` wrappers in `src/ui/UiDraw`.
+Since M114 the typeface is drawn on a **6×9 master cell** — cap height 7,
+x-height 5, two descender rows, accents in the top two rows — with the
+readability forms the owner asked for: a two-storey `a`, an open `c` beside a
+closed `e`, distinct `r`/`n`/`m` arches, a pointed `v` beside a round `u`, a
+serifed `I`, a tailed `l` and a flagged `1`, a dotted `0` beside `O`, a barred
+`G`, cleaner punctuation and paired quotes. One glyph design is delivered as
 three BMFont descriptors so the dominant sizes stay crisp — `font.ui.small`
-(base 8), `font.ui.main` (base 10), `font.ui.title` (base 20, a 2× atlas);
+(base **9**), `font.ui.main` (base 10), `font.ui.title` (base 20, a 2× atlas);
 intermediate sizes scale from the nearest base with point filtering. Generated
-by `tools/asset_gen/generate_font.ps1` (see `docs/asset_pipeline.md`). Since
-M87 the set covers **161 glyphs**: printable ASCII plus every Latin-1
-Supplement letter and `¡ ¿ « »` (accents in the cell's top two rows,
-compressed capitals — ASCII forms byte-identical). `src/ui/GlyphCoverage.hpp`
-is the coverage contract and `tests/test_glyph_coverage.cpp` enforces it
-against both the shipped `.fnt` files and all shipped content text (§11).
-Missing font assets fall back to the raylib default font, so nothing crashes;
-an unsupported codepoint renders the `?` fallback glyph — which the content
-lint exists to prevent. The size roles below (`src/ui/UiStyle.hpp`) are
-unchanged; they now select a base font by size.
+by `tools/asset_gen/generate_font.ps1` (see `docs/asset_pipeline.md`), every
+glyph a hand-placed grid — nothing traced or rasterized. Since M87 the set
+covers **161 glyphs**: printable ASCII plus every Latin-1 Supplement letter
+and `¡ ¿ « »` (accents in the cell's top two rows, compressed capitals).
+`src/ui/GlyphCoverage.hpp` is the coverage contract and
+`tests/test_glyph_coverage.cpp` enforces it against both the shipped `.fnt`
+files and all shipped content text (§11). Missing font assets fall back to
+the raylib default font, so nothing crashes; an unsupported codepoint renders
+the `?` fallback glyph — which the content lint exists to prevent. The size
+roles below (`src/ui/UiStyle.hpp`) select a base font by size.
 
-| Provisional role | Size today | Where seen |
+| Role | Size | Where seen |
 |---|---|---|
 | `title.hero` | 22 | title screen name |
 | `title.screen` | 16–18 | screen headings (Help, shops, results) |
 | `heading.panel` | 14 | pause panels |
 | `body` | 10–12 | menus, messages, most content |
-| `body.small` | 9 | footer hints, secondary lines |
-| `caption` | 8 | HUD lines, unit names, danger labels, statuses |
+| `caption` (`kFontSmall`) | **9** | HUD lines, footer hints, unit names, danger labels, statuses, secondary lines |
 
-Rules for M12-c:
-- Collapse to a small named set (≈5 roles); no ad-hoc numeric sizes in states.
-- 8px text is at the legibility floor at 1× scale — flag every use during
-  migration; owner judges which survive.
+Rules (M12-c; M114):
+- A small named set of roles; no ad-hoc numeric sizes in states — every
+  caption site names `style::kFontSmall`.
+- **9 px is the legibility floor** (M114, owner decision). No 8 px text
+  exists: the small base font is 9 rows, so an 8 would render at a 0.89
+  scale — visibly worse than the floor. Overflow is answered by **reflow**
+  (a wider budget, a compact fallback, a wrap), never by shrinking text
+  below the floor; the `--capture` overflow lint referees every site.
 
 ## 3. Spacing scale (provisional)
 

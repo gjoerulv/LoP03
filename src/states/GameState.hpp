@@ -33,6 +33,10 @@ public:
     // Transparency: should the state directly below also update / render?
     virtual bool updatesBelow() const { return false; }
     virtual bool rendersBelow() const { return false; }
+    // M109: does this state pause the lifetime ledger's active-play clock?
+    // True for the menus a player idles in (main menu, slots, settings, help,
+    // the pause menus, the debug menu); everything else counts as play.
+    virtual bool pausesPlayClock() const { return false; }
 
 protected:
     StateStack& stack() { return *stack_; }

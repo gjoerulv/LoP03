@@ -160,5 +160,23 @@ inline const char* eventFlavorId(RoomEventKind kind) {
     return "";
 }
 
+// M110 (debug tooling): the event kinds a dev-only one-shot may substitute
+// for the next faced plain event AT INTERACTION TIME — exactly the kinds
+// whose resolution reads nothing baked at generation. Shrine, Merchant,
+// Elder Root, Surveyor, Miner's Cache and the Duck Peddler read
+// RoomEvent.goldCost / itemId; the Elite Challenge needs its pre-generated
+// team; the Royal Relic keeps its own table outside the shuffled kinds — none
+// of those are here. A test pins this reading against the model.
+inline const std::vector<RoomEventKind>& debugSubstitutableEventKinds() {
+    static const std::vector<RoomEventKind> kinds = {
+        RoomEventKind::HealingSpring, RoomEventKind::ScoreWager,   RoomEventKind::RestToken,
+        RoomEventKind::ArmoryGhost,   RoomEventKind::Dragonform,   RoomEventKind::GoosePolymorph,
+        RoomEventKind::Sacrifice,     RoomEventKind::LevelAltar,   RoomEventKind::StrangerStory,
+        RoomEventKind::TokenExchange, RoomEventKind::PatrolReset,  RoomEventKind::Reels,
+        RoomEventKind::Blackjack,     RoomEventKind::GoosyFlock,
+    };
+    return kinds;
+}
+
 }  // namespace dungeon
 }  // namespace cd

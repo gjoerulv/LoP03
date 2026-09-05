@@ -100,3 +100,13 @@ three new paragraphs) · `docs/technical_design.md` (§46) ·
 `complete (approved 2026-08-16)` — the header and the ledger are
 authoritative; this line lagged at the approval flip and was corrected
 2026-08-30.
+
+## Superseded in part (2026-09-02, M110 — owner-approved program)
+
+The patrol's ANSWER is no longer always a normal team: M110's dispatcher
+resolves a seeded kind (65 % ordinary patrol, 10 % Golden Goose, 5 % lore
+question, 15 % treasure chests, 5 % a Stranger scene), and the owner
+deliberately relaxed decision 7 for the special kinds — they may pay
+explicit rewards and farming them is accepted (no anti-farm mechanics).
+Ordinary patrols keep every rule above verbatim. The canonical record is
+`docs/milestone_notes/M110_patrol_dispatcher.md` and game_design §6.

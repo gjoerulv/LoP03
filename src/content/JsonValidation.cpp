@@ -114,6 +114,18 @@ int ObjectReader::optIntMin(const char* key, int minValue, int fallback) {
     return value;
 }
 
+std::int64_t ObjectReader::optInt64(const char* key, std::int64_t fallback) {
+    const Json* p = find(key);
+    if (p == nullptr) {
+        return fallback;
+    }
+    if (!p->is_number_integer()) {
+        err(key, "expected integer");
+        return fallback;
+    }
+    return p->get<std::int64_t>();
+}
+
 float ObjectReader::optFloat(const char* key, float fallback) {
     const Json* p = find(key);
     if (p == nullptr) {

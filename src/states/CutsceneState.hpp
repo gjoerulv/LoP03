@@ -3,6 +3,7 @@
 #include <string>
 
 #include "content/Definitions.hpp"
+#include "render/CutsceneBackdrop.hpp"  // M113
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
 #include "ui/TextViewport.hpp"
@@ -22,7 +23,10 @@ struct AppContext;
 // BEFORE pushing; this state never touches the seen list.
 class CutsceneState : public GameState {
 public:
-    CutsceneState(StateStack& stack, AppContext& context, std::string sceneId, bool replay);
+    // M113: `stage` is the backdrop the CALLER knows — the town panorama
+    // (default) or the dungeon theme's stage; a scene id never implies one.
+    CutsceneState(StateStack& stack, AppContext& context, std::string sceneId, bool replay,
+                  render::CutsceneStage stage = render::CutsceneStage::Panorama);
 
     void handleInput(const Input& input) override;
     void render() override;
@@ -44,6 +48,7 @@ private:
     AppContext& context_;
     std::string sceneId_;
     bool replay_ = false;
+    render::CutsceneStage stage_ = render::CutsceneStage::Panorama;  // M113
     const content::CutsceneDef* def_ = nullptr;  // null = unauthored; pops on first input
     Phase phase_ = Phase::Beats;
     int beatIndex_ = 0;

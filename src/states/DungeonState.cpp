@@ -18,6 +18,8 @@
 #include "game/Milestones.hpp"  // M63: gold bonus + pending-choice prompt
 #include "game/ItemCaps.hpp"
 #include "game/Party.hpp"
+#include "game/Profile.hpp"  // M112: the King gate for the lore pool
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "game/Relics.hpp"  // the M44 relic grant (seeded, reload-proof)
 #include "game/WorldLadder.hpp"
 #include "dungeon/DungeonGenerator.hpp"  // M93 patrolTeam
@@ -42,6 +44,7 @@
 #include "render/SpriteDraw.hpp"
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
+#include "render/CutsceneBackdrop.hpp"  // M113
 #include "render/BattleBackdrop.hpp"
 #include "states/AchievementToast.hpp"
 #include "states/MilestoneChoiceState.hpp"  // M63
@@ -488,7 +491,8 @@ void DungeonState::openChest() {
     // untouched, the M76 interaction-time precedent.
     const int chestGold =
         room.chest.gold + room.chest.gold * guildChestGoldPct(context_.party.guild) / 100;
-    context_.party.gold += chestGold;
+    earnGold(context_.party, chestGold, EconomySource::Chest, dungeon_.town);  // M109
+    ++context_.party.lifetime.explore.chestsOpened;
     ++run_.chestsOpened;
     run_.treasureGold += room.chest.gold;
     std::string msg = TextFormat("Found %d gold", chestGold);
@@ -498,6 +502,7 @@ void DungeonState::openChest() {
     std::string foundName;
     if (!room.chest.itemId.empty()) {
         context_.party.inventory.add(room.chest.itemId, 1);
+        recordTreasureFound(context_.party);  // M109
         foundName = room.chest.itemId;
         if (const content::ItemDef* it = context_.content.findItem(room.chest.itemId)) {
             foundName = it->name;
@@ -610,11 +615,12 @@ void DungeonState::digBuried() {
     const std::string curioId = pickCurio(p.ownedCurios, dungeon_.themeId, dungeon_.seed);
     if (curioId.empty()) {
         // The dozen is complete: buried treasures pay a legendary token now.
-        p.legendaryTokens += 1;
+        earnTokens(p, 1, EconomySource::TreasureDig);  // M109
         showOutcome("The Buried Treasure",
                     "Buried riches! +1 legendary token (your curio collection is complete).");
     } else {
         p.ownedCurios.push_back(curioId);
+        recordCurioFound(p);  // M109
         const CurioDef* curio = findCurio(curioId);
         showOutcome("The Buried Treasure",
                     TextFormat("Buried treasure: %s! (curios: %d of %d - see Maps in town)",
@@ -678,7 +684,7 @@ void DungeonState::resolveEvent() {
                                 "g - you cannot pay.");
                 return;
             }
-            context_.party.gold -= ev.goldCost;
+            spendGold(context_.party, ev.goldCost, EconomySource::Shrine, dungeon_.town);  // M109
             for (Character& c : context_.party.members) {
                 c.hp = std::min(c.maxHp, c.hp + (c.maxHp - c.hp) / 2);
             }
@@ -719,7 +725,8 @@ void DungeonState::resolveEvent() {
                                 "g - you cannot pay.");
                 return;
             }
-            context_.party.gold -= price;
+            spendGold(context_.party, price, EconomySource::Merchant, dungeon_.town);  // M109
+            recordItemBought(context_.party);
             context_.party.inventory.add(ev.itemId, 1);
             context_.audio.play(Sfx::Interact);
             showOutcome(outcomeTitleFor(context_, ev.kind),
@@ -819,6 +826,7 @@ void DungeonState::resolveEvent() {
                     context_.party.inventory.remove(ids[static_cast<std::size_t>(i)], 1);
                     context_.party.doubleXpNext = true;
                     ev.resolved = true;
+                    ++context_.party.lifetime.explore.eventsResolved;  // M109
                     context_.audio.play(Sfx::Interact);
                     // Owner request 2026-08-28: the burned piece rides the
                     // gear tag row over a body that no longer restates it.
@@ -848,6 +856,7 @@ void DungeonState::resolveEvent() {
                     Character& c = context_.party.members[static_cast<std::size_t>(i)];
                     if (c.level >= kMaxLevel) {
                         ev.resolved = true;  // spent either way (owner: a dry line)
+                        ++context_.party.lifetime.explore.eventsResolved;  // M109
                         context_.audio.play(Sfx::Cancel);
                         showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::LevelAltar),
                                     c.name + " is already everything they can be. The altar "
@@ -855,8 +864,10 @@ void DungeonState::resolveEvent() {
                         return;
                     }
                     grantXp(c, xpToNext(c.level) - c.xp, context_.content);  // exactly one level
+                    recordLevelUps(context_.party, 1);  // M109
                     c.mp = 0;
                     ev.resolved = true;
+                    ++context_.party.lifetime.explore.eventsResolved;  // M109
                     context_.audio.play(Sfx::Interact);
                     showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::LevelAltar),
                                 c.name + " rises to Lv " + std::to_string(c.level) +
@@ -882,6 +893,7 @@ void DungeonState::resolveEvent() {
                     Character& c = context_.party.members[static_cast<std::size_t>(i)];
                     c.mp = std::min(c.maxMp, c.mp + 20);
                     ev.resolved = true;
+                    ++context_.party.lifetime.explore.eventsResolved;  // M109
                     context_.audio.play(Sfx::Heal);
                     showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::StrangerStory),
                                 c.name + " feels 20 MP wiser. When you look up, the "
@@ -894,7 +906,7 @@ void DungeonState::resolveEvent() {
                     dungeon::themeEventHash(dungeon_.seed, currentRoom_, kSaltStoryPick);
                 stack().pushState(std::make_unique<CutsceneState>(
                     stack(), context_, stories[static_cast<std::size_t>(pick % stories.size())],
-                    /*replay=*/true));
+                    /*replay=*/true, render::cutsceneStageForTheme(dungeon_.themeId)));  // M113
             }
             return;  // the modal owns resolution
         }
@@ -912,8 +924,9 @@ void DungeonState::resolveEvent() {
                 stack(), context_, "One legendary token buys...",
                 std::vector<std::string>{"3 rest tokens", "1 map piece"},
                 [this, &ev](int i) {
-                    context_.party.legendaryTokens -= 1;
+                    spendTokens(context_.party, 1, EconomySource::TokenExchange);  // M109
                     ev.resolved = true;
+                    ++context_.party.lifetime.explore.eventsResolved;  // M109
                     context_.audio.play(Sfx::Interact);
                     if (i == 0) {
                         context_.party.restTokens += 3;
@@ -983,8 +996,9 @@ void DungeonState::resolveEvent() {
                                     "Not enough for that one. The machine looks unsurprised.");
                         return;  // nothing spent; the machine waits
                     }
-                    context_.party.gold -= cost;
+                    spendGold(context_.party, cost, EconomySource::Reels, dungeon_.town);  // M109
                     ev.resolved = true;  // one play, win or lose (owner rule)
+                    ++context_.party.lifetime.explore.eventsResolved;  // M109
                     // The spun symbols render as icon rows above the text
                     // (owner direction 2026-08-17); the body keeps only the
                     // prize lines, so nothing is said twice.
@@ -1042,7 +1056,8 @@ void DungeonState::resolveEvent() {
                         return;
                     }
                     const int bet = bets[static_cast<std::size_t>(i)];
-                    context_.party.gold -= bet;  // the stake rides
+                    spendGold(context_.party, bet, EconomySource::Blackjack,
+                              dungeon_.town);  // the stake rides (M109 ledger)
                     stack().pushState(std::make_unique<BlackjackEventState>(
                         stack(), context_, bet, dungeon_.seed, currentRoom_, &ev));
                 }));
@@ -1086,7 +1101,7 @@ void DungeonState::resolveEvent() {
                 }
             }
             const int gold = dungeon::minersCacheGold(dungeon_.depth);
-            context_.party.gold += gold;
+            earnGold(context_.party, gold, EconomySource::MinersCache, dungeon_.town);  // M109
             run_.treasureGold += gold;
             std::string reward = TextFormat("%d gold", gold);
             // Owner request 2026-08-28: the cache's item rides the gear tag row.
@@ -1094,6 +1109,7 @@ void DungeonState::resolveEvent() {
             std::string cacheName;
             if (!ev.itemId.empty()) {
                 context_.party.inventory.add(ev.itemId, 1);
+                recordTreasureFound(context_.party);  // M109
                 cacheName = ev.itemId;
                 if (const content::ItemDef* it = context_.content.findItem(ev.itemId)) {
                     cacheName = it->name;
@@ -1119,9 +1135,20 @@ void DungeonState::resolveEvent() {
                                 "g for its wisdom - you cannot pay.");
                 return;
             }
-            context_.party.gold -= ev.goldCost;
+            spendGold(context_.party, ev.goldCost, EconomySource::ElderRoot, dungeon_.town);  // M109
             const int xp = dungeon::elderRootXp(dungeon_.town, dungeon_.depth);
-            grantPartyXp(context_.party, xp, context_.content);
+            {
+                int levelsBefore = 0;
+                for (const Character& c : context_.party.members) {
+                    levelsBefore += c.level;
+                }
+                grantPartyXp(context_.party, xp, context_.content);
+                int levelsAfter = 0;
+                for (const Character& c : context_.party.members) {
+                    levelsAfter += c.level;
+                }
+                recordLevelUps(context_.party, levelsAfter - levelsBefore);  // M109
+            }
             context_.audio.play(Sfx::Interact);
             showOutcome(
                 outcomeTitleFor(context_, ev.kind),
@@ -1147,7 +1174,8 @@ void DungeonState::resolveEvent() {
                                 "g - you cannot pay.");
                 return;
             }
-            context_.party.gold -= ev.goldCost;
+            spendGold(context_.party, ev.goldCost, EconomySource::DuckPeddler, dungeon_.town);  // M109
+            recordItemBought(context_.party);
             context_.party.inventory.add(dungeon::kEvilDucklingItemId, 1);
             const content::ItemDef* it = context_.content.findItem(ev.itemId);
             context_.audio.play(Sfx::Interact);
@@ -1177,7 +1205,7 @@ void DungeonState::resolveEvent() {
                                 "g - you cannot pay.");
                 return;
             }
-            context_.party.gold -= ev.goldCost;
+            spendGold(context_.party, ev.goldCost, EconomySource::Surveyor, dungeon_.town);  // M109
             floorRevealed_ = true;
             context_.audio.play(Sfx::Interact);
             showOutcome(outcomeTitleFor(context_, ev.kind),
@@ -1212,6 +1240,7 @@ void DungeonState::resolveEvent() {
             return;  // challenges resolve through battle, not here
     }
     ev.resolved = true;
+    ++context_.party.lifetime.explore.eventsResolved;  // M109
     buildRoom();
     // M80 addendum: every branch above raised the outcome panel; the old
     // footer-message timer has nothing left to time.
@@ -1569,6 +1598,28 @@ std::string DungeonState::eventPromptText() const {
     return "";
 }
 
+void DungeonState::startSpecialBattle() {
+    // M112: a decision patrol. A party-only battle with the encounter's three
+    // placeholders appended (game/SpecialEncounter.hpp), no spoils (the
+    // screen pays the decision's own reward; the Mimic's spoils ride the
+    // encounter), the theme backdrop, the run's ledger. An armed dragonform
+    // or flock stays armed for the next real fight.
+    pendingKind_ = EncounterKind::Patrol;
+    pendingRoom_ = currentRoom_;
+    pendingTeamIndex_ = -1;
+    pendingGateDir_ = dungeon::Dir::North;
+    battleResult_ = battle::BattleResult{};
+    pendingSpoils_ = BattleSpoils{};
+    battle::Battle b = battle::buildBattle(context_.party, dungeon::EnemyTeam{}, context_.content);
+    appendPlaceholders(b, *special_);
+    const render::BackdropStage stage = render::stageForTheme(dungeon_.themeId);
+    const LifetimeHook lifetime{&context_.party.lifetime, dungeon_.town};
+    stack().pushState(std::make_unique<BattleState>(
+        stack(), context_, std::move(b), &battleResult_, MusicTrack::None, &victoryStats_,
+        /*castleChallenge=*/false, stage, /*spoils=*/nullptr, /*manualEnemies=*/false,
+        lifetime, special_.get()));
+}
+
 void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir gateDir) {
     if (teamIndex < 0 || teamIndex >= static_cast<int>(dungeon_.teams.size())) {
         return;
@@ -1600,16 +1651,138 @@ void DungeonState::startBattle(int teamIndex, EncounterKind kind, dungeon::Dir g
     // M56: every battle wears the theme backdrop; a boss-team fight (bossId set)
     // opens with the Crystal Shatter intro, which then launches the same battle.
     const render::BackdropStage stage = render::stageForTheme(dungeon_.themeId);
+    // M109: a dungeon fight records into the save's lifetime ledger under this
+    // run's town.
+    const LifetimeHook lifetime{&context_.party.lifetime, dungeon_.town};
     if (!team.bossId.empty()) {
         stack().pushState(std::make_unique<BossIntroState>(
             stack(), context_, std::move(b), &battleResult_, MusicTrack::None, &victoryStats_,
-            /*castleChallenge=*/false, stage, dungeon_.seed, &pendingSpoils_));
+            /*castleChallenge=*/false, stage, dungeon_.seed, &pendingSpoils_, lifetime));
     } else {
-        stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b),
-                                                        &battleResult_, MusicTrack::None,
-                                                        &victoryStats_, /*castleChallenge=*/false,
-                                                        stage, &pendingSpoils_));
+        stack().pushState(std::make_unique<BattleState>(
+            stack(), context_, std::move(b), &battleResult_, MusicTrack::None, &victoryStats_,
+            /*castleChallenge=*/false, stage, &pendingSpoils_, /*manualEnemies=*/false,
+            lifetime));
     }
+}
+
+void DungeonState::consumePatrol() {
+    // M93/M110: every patrol outcome — a fought, fled or escaped battle, a
+    // Stranger scene, a lore or chest encounter — rewinds the counter and
+    // advances the index that seeds the next one.
+    dangerSteps_ = kDangerStepsPerPatrol;
+    ++patrolIndex_;
+}
+
+void DungeonState::triggerPatrol(int forcedKind) {
+    // M110: the kind is a pure hash of (runSeed, patrolIndex) — reload-honest,
+    // consuming no roll. A debug one-shot replaces the RESOLVED kind for this
+    // trigger only; the hash sequence beneath is untouched.
+    dungeon::PatrolKind kind = dungeon::patrolKindFor(dungeon_.runSeed, patrolIndex_);
+#ifdef CRYSTAL_DEBUG_OVERLAY
+    if (forcedKind < 0 && context_.cheats.nextPatrolKind >= 0) {
+        forcedKind = context_.cheats.nextPatrolKind;
+        context_.cheats.nextPatrolKind = -1;  // consumed once
+    }
+#endif
+    if (forcedKind >= 0 && forcedKind < dungeon::kPatrolKindCount) {
+        kind = static_cast<dungeon::PatrolKind>(forcedKind);
+    }
+    LifetimeStats& ledger = context_.party.lifetime;  // M109
+    ++ledger.patrols.total;
+    ++lifetimeTown(ledger, dungeon_.town).patrols;
+    switch (kind) {
+        case dungeon::PatrolKind::StrangerP: {
+            // The Stranger's own scene: zero battle turns, nothing paid,
+            // nothing fought — the patrol is simply consumed. The scene is the
+            // run's next in a seed-shuffled cycle of the dedicated pool.
+            const int told = dungeon::patrolKindCount(dungeon_.runSeed, patrolIndex_,
+                                                      dungeon::PatrolKind::StrangerP);
+            const std::string scene =
+                game::patrolSceneFor(context_.content, dungeon_.runSeed, told);
+            if (!scene.empty()) {
+                ++ledger.patrols.strangerScenes;
+                consumePatrol();
+                message_ = "A familiar hood steps out of the dark.";
+                messageTimer_ = scaledMessageTime(context_, 2.0f);
+                stack().pushState(std::make_unique<CutsceneState>(
+                    stack(), context_, scene, /*replay=*/true,
+                    render::cutsceneStageForTheme(dungeon_.themeId)));  // M113
+                return;
+            }
+            break;  // nothing authored: an ordinary patrol answers instead
+        }
+        case dungeon::PatrolKind::GoldenGoose: {
+            // M111: the Golden Goose — a patrol foe, never a boss: its own team
+            // at this patrol's scale, the replaced patrol's XP, a 2000-gold
+            // bounty on defeat and nothing on its getaway (the team recipe is
+            // dungeon::goldenGooseTeam; the spoils rules in game/Spoils.hpp).
+            dungeon::EnemyTeam goose = dungeon::goldenGooseTeam(
+                context_.content, dungeon_.themeId, dungeon_.town, dungeon_.depth,
+                dungeon_.runSeed, patrolIndex_);
+            if (!goose.enemyIds.empty()) {
+                ++ledger.patrols.geeseMet;
+                pendingPatrolKind_ = kind;
+                dungeon_.teams.push_back(std::move(goose));
+                teamTier_.push_back(danger::assess(dungeon_.teams.back(), context_.content,
+                                                   danger::partyThreat(context_.party.members)));
+                startBattle(static_cast<int>(dungeon_.teams.size()) - 1, EncounterKind::Patrol,
+                            dungeon::Dir::North);
+                return;
+            }
+            break;  // the content lacks the foe: an ordinary patrol answers
+        }
+        case dungeon::PatrolKind::Lore: {
+            // M112: the Jester's question — the run-seeded walk over the
+            // questions this party may know (tier + King gates), hosted by the
+            // battle screen's decision mode. Nothing eligible: an ordinary patrol.
+            const int loreCount = dungeon::patrolKindCount(dungeon_.runSeed, patrolIndex_, kind);
+            const auto lore = makeLoreEncounter(
+                context_.content, context_.party.highestUnlockedTown,
+                context_.profile.data.kingDefeated, dungeon_.runSeed, patrolIndex_, loreCount);
+            if (lore.has_value()) {
+                special_ = std::make_unique<SpecialEncounter>();
+                special_->kind = SpecialKind::Lore;
+                special_->lore = *lore;
+                ++ledger.patrols.loreAttempted;
+                pendingPatrolKind_ = kind;
+                startSpecialBattle();
+                return;
+            }
+            break;
+        }
+        case dungeon::PatrolKind::Chests: {
+            // M112: three chests; the lying one is the Mimic at this patrol's
+            // own scale (the shadow patrol's). No Mimic in the content: an
+            // ordinary patrol.
+            const dungeon::EnemyTeam shadow = dungeon::patrolTeam(
+                context_.content, dungeon_.themeId, dungeon_.town, dungeon_.depth,
+                dungeon_.runSeed, patrolIndex_);
+            const auto chests = makeChestEncounter(context_.content, dungeon_.town,
+                                                   dungeon_.runSeed, patrolIndex_,
+                                                   shadow.statScalePct);
+            if (chests.has_value()) {
+                special_ = std::make_unique<SpecialEncounter>();
+                special_->kind = SpecialKind::Chests;
+                special_->chests = *chests;
+                pendingPatrolKind_ = kind;
+                startSpecialBattle();
+                return;
+            }
+            break;
+        }
+        case dungeon::PatrolKind::Normal:
+            break;
+    }
+    pendingPatrolKind_ = dungeon::PatrolKind::Normal;
+    ++ledger.patrols.normal;
+    dungeon_.teams.push_back(dungeon::patrolTeam(context_.content, dungeon_.themeId,
+                                                 dungeon_.town, dungeon_.depth,
+                                                 dungeon_.runSeed, patrolIndex_));
+    teamTier_.push_back(danger::assess(dungeon_.teams.back(), context_.content,
+                                       danger::partyThreat(context_.party.members)));
+    startBattle(static_cast<int>(dungeon_.teams.size()) - 1, EncounterKind::Patrol,
+                dungeon::Dir::North);
 }
 
 void DungeonState::onEnter() {
@@ -1679,15 +1852,77 @@ void DungeonState::onResume() {
         run_.noDeath = false;
     }
 
+    // M112: a decision patrol resolved — tally the ledger by what the screen
+    // decided (the rewards were paid there), and pick the line the outcome
+    // branches below show. The patrol itself is consumed by those branches.
+    std::string specialLine;
+    if (special_ != nullptr) {
+        PatrolLifetime& pl = context_.party.lifetime.patrols;
+        switch (special_->result) {
+            case SpecialResult::LoreCorrect:
+                ++pl.loreCorrect;
+                specialLine = "The Jester pays its debt and vanishes down the corridor.";
+                break;
+            case SpecialResult::LoreWrong:
+                ++pl.loreWrong;
+                specialLine = "The Jester's laughter follows you down the corridor.";
+                break;
+            case SpecialResult::JesterPunished:
+                ++pl.jesterPunish;
+                specialLine = "The Jester takes its bow. Someone is not getting up.";
+                break;
+            case SpecialResult::AoePunished:
+                ++pl.aoePunish;
+                specialLine = "The Jester takes its bow. Someone is not getting up.";
+                break;
+            case SpecialResult::ChestGold:
+            case SpecialResult::ChestGear:
+                ++pl.rewardChests;
+                specialLine = "The other two chests are gone when you look again.";
+                break;
+            case SpecialResult::ChestEmpty:
+                ++pl.emptyChests;
+                specialLine = "Empty. The other two chests are gone when you look again.";
+                break;
+            case SpecialResult::MimicRevealed:
+                ++pl.mimicsRevealed;
+                if (outcome == battle::Outcome::Victory) {
+                    ++pl.mimicsDefeated;
+                    specialLine = "The Mimic is slain - its hoard is yours!";
+                }
+                break;
+            case SpecialResult::Unresolved:
+                break;
+        }
+        special_.reset();
+    }
+
     if (outcome == battle::Outcome::Escaped) {
         ++run_.escapes;
         // M93: fleeing a patrol still resets the counter — the fight happened
         // (and the escape penalty stands like any other).
         if (kind == EncounterKind::Patrol) {
-            dangerSteps_ = kDangerStepsPerPatrol;
-            ++patrolIndex_;
+            consumePatrol();
         }
         return;  // gate intact; resume in the dungeon
+    }
+    if (outcome == battle::Outcome::EnemyFled) {
+        // M111: the foe fled — nothing gained, no escape counted, no gate or
+        // chest touched; a patrol is simply consumed (the Golden Goose's
+        // getaway, which the ledger remembers).
+        if (kind == EncounterKind::Patrol) {
+            consumePatrol();
+            if (!specialLine.empty()) {
+                message_ = specialLine;  // M112
+            } else if (pendingPatrolKind_ == dungeon::PatrolKind::GoldenGoose) {
+                ++context_.party.lifetime.patrols.geeseEscaped;
+                message_ = "The Golden Goose is gone - and its hoard with it.";
+            } else {
+                message_ = "The patrol is gone. The dungeon quiets - for now.";
+            }
+            messageTimer_ = scaledMessageTime(context_, 2.5f);
+        }
+        return;
     }
     if (outcome == battle::Outcome::Defeat) {
         // M89: the castle carry-out (M47) reaches the dungeons — one member
@@ -1696,7 +1931,10 @@ void DungeonState::onResume() {
         // goes). TownState teaches the new rule once, on arrival with fallen
         // members (tutorial::kCarriedOut).
         clampCastleDefeat(context_.party);
-        context_.party.gold /= 2;
+        // M109: the halving is a LOSS in the ledger (never "spent"); the wipe
+        // is the run's end for this town.
+        loseGold(context_.party, context_.party.gold - context_.party.gold / 2);
+        ++lifetimeTown(context_.party.lifetime, dungeon_.town).wipes;
         stack().popState();  // game over -> back to town
         return;
     }
@@ -1712,9 +1950,15 @@ void DungeonState::onResume() {
     // credit, no gate or chest (owner decision 7: XP only, which the spoils
     // already paid, gold-free). The counter simply rewinds.
     if (kind == EncounterKind::Patrol) {
-        dangerSteps_ = kDangerStepsPerPatrol;
-        ++patrolIndex_;
-        message_ = "The patrol scatters. The dungeon quiets - for now.";
+        consumePatrol();
+        if (!specialLine.empty()) {
+            message_ = specialLine;  // M112
+        } else if (pendingPatrolKind_ == dungeon::PatrolKind::GoldenGoose) {
+            ++context_.party.lifetime.patrols.geeseDefeated;  // M111
+            message_ = "The Golden Goose falls - its hoard is yours!";
+        } else {
+            message_ = "The patrol scatters. The dungeon quiets - for now.";
+        }
         messageTimer_ = scaledMessageTime(context_, 2.0f);
         return;
     }
@@ -1757,9 +2001,10 @@ void DungeonState::onResume() {
             run_.dangerDefeated +=
                 danger::tierWeight(teamTier_[static_cast<std::size_t>(pendingTeamIndex_)]);
         }
-        context_.party.legendaryTokens += 1;  // M34: elite fights fund the black market
+        earnTokens(context_.party, 1, EconomySource::EliteChallenge);  // M34: elite fights fund the black market
         room.teamIndex = -1;
         room.event.resolved = true;
+        ++context_.party.lifetime.explore.eventsResolved;  // M109
         buildRoom();
         message_ = "Challenge won - double danger, +1 legendary token.";
         messageTimer_ = scaledMessageTime(context_, 2.5f);
@@ -1769,10 +2014,12 @@ void DungeonState::onResume() {
         room.teamIndex = -1;
         dungeon_.stairsOpen = true;
         buildRoom();
+        ++context_.party.lifetime.explore.floorsCleared;  // M109: a felled floor
         if (dungeon_.eternal) {
             // M105: a felled floor-boss IS the record unit; the best sticks to
             // the party immediately (it persists with the next town save).
             ++eternalFloorsCleared_;
+            ++context_.party.lifetime.explore.eternalFloors;  // M109: cumulative
             context_.party.eternalBestFloors =
                 std::max(context_.party.eternalBestFloors, eternalFloorsCleared_);
             message_ = TextFormat("Floor %d falls. The way down stands open. It always does.",
@@ -1795,7 +2042,7 @@ std::string DungeonState::applyReelPrize(
     switch (static_cast<ReelSymbol>(symbolIndex)) {
         case ReelSymbol::TaxPapers: {
             const int owed = std::min(100, p.gold);
-            p.gold -= owed;
+            spendGold(p, owed, EconomySource::Reels, dungeon_.town);  // M109: a "prize" that takes
             return "Three tax papers. You owe 100g, effective immediately. Collected: " +
                    std::to_string(owed) + "g.";
         }
@@ -1827,7 +2074,7 @@ std::string DungeonState::applyReelPrize(
                 }
             }
             if (pool.empty()) {
-                p.gold += 200;
+                earnGold(p, 200, EconomySource::Reels, dungeon_.town);  // M109
                 return line + "The prize tray is empty; 200g rolls out instead.";
             }
             std::sort(pool.begin(), pool.end());
@@ -1835,6 +2082,7 @@ std::string DungeonState::applyReelPrize(
                                                              0x600553C4113C0802ull);
             const std::string& id = pool[static_cast<std::size_t>(ph % pool.size())];
             p.inventory.add(id, 1);
+            recordTreasureFound(p);  // M109
             const content::ItemDef* it = context_.content.findItem(id);
             itemTags.push_back({it != nullptr ? content::gearIconTextureId(*it) : std::string(),
                                 it != nullptr ? it->name : id});
@@ -1853,6 +2101,7 @@ std::string DungeonState::applyReelPrize(
                        " - but you hold the maximum. The machine keeps it, smugly.";
             }
             p.inventory.add(id, 1);
+            recordTreasureFound(p);  // M109
             itemTags.push_back({content::gearIconTextureId(*it), it->name});
             return "It drops into the tray. Mind it.";
         }
@@ -1876,19 +2125,20 @@ std::string DungeonState::applyReelPrize(
             // drawn from the trove's own "normal" pool.
             const std::vector<std::string> pool = scrollTrovePool(context_.content);
             if (pool.empty()) {
-                p.gold += 200;
+                earnGold(p, 200, EconomySource::Reels, dungeon_.town);  // M109
                 return "The bald stranger has run out of scrolls; 200g of apology instead.";
             }
             const std::uint64_t h = dungeon::themeEventHash(dungeon_.seed, currentRoom_,
                                                             0x600553C4113C0803ull);
             const std::string& id = pool[static_cast<std::size_t>(h % pool.size())];
             p.inventory.add(id, 1);
+            recordTreasureFound(p);  // M109: found, not yet learned
             const content::ItemDef* it = context_.content.findItem(id);
             itemTags.push_back({std::string(), it != nullptr ? it->name : id});
             return "The bald stranger nods once. Teach it from the Party panel.";
         }
         case ReelSymbol::Seven: {
-            p.gold += 1000;
+            earnGold(p, 1000, EconomySource::Reels, dungeon_.town);  // M109
             return "SEVEN SEVEN SEVEN. One thousand gold, and the machine's grudging respect.";
         }
     }
@@ -1907,6 +2157,10 @@ void DungeonState::onExit() {
 
 void DungeonState::completeDungeon() {
     runComplete_ = true;  // M67: the next resume of this state pops it (see onResume)
+    // M109: the run's completion, the final floor, and the town's clear.
+    ++context_.party.lifetime.explore.runsCompleted;
+    ++context_.party.lifetime.explore.floorsCleared;
+    ++lifetimeTown(context_.party.lifetime, dungeon_.town).clears;
     score::RunSummary summary;
     summary.completed = true;
     summary.battleTurns = run_.battleTurns;
@@ -1936,6 +2190,10 @@ void DungeonState::completeDungeon() {
         stakesRaised(context_.party.stakes, dungeon_.town, dungeon_.depth);
 
     const int total = score::computeScore(summary);
+    {
+        TownLifetime& tl = lifetimeTown(context_.party.lifetime, dungeon_.town);  // M109
+        tl.bestScore = std::max<LifetimeCount>(tl.bestScore, total);
+    }
 
     // M32: completing a run unlocks the next town (persisted in the live party;
     // saved on the next save/autosave, like the run's gold and XP).
@@ -1996,10 +2254,11 @@ void DungeonState::completeDungeon() {
     const BossDropResult drops =
         rollBossDrops(dungeon_.runSeed, dungeon_.town, dungeon_.depth, context_.content);
     if (drops.tokens > 0) {
-        context_.party.legendaryTokens += drops.tokens;
+        earnTokens(context_.party, drops.tokens, EconomySource::BossDrop);  // M109
     }
     if (drops.legendary) {
         context_.party.inventory.add(drops.legendaryId, 1);
+        recordTreasureFound(context_.party);  // M109
     }
 
     // M83: a completed 4-FLOOR run in town >= 2 may pay a map piece. The roll
@@ -2220,7 +2479,8 @@ void DungeonState::update(float dt) {
     // M93 debug one-shots: burn the fuse / arm the form via the REAL paths.
     if (context_.cheats.requestPatrolNow) {
         context_.cheats.requestPatrolNow = false;
-        dangerSteps_ = 1;
+        triggerPatrol();  // M110: immediately, through the real dispatcher
+        return;
     }
     if (context_.cheats.requestArmDragonform) {
         context_.cheats.requestArmDragonform = false;
@@ -2275,6 +2535,29 @@ void DungeonState::update(float dt) {
 
     recomputeInteraction(tx, ty);
 
+#ifdef CRYSTAL_DEBUG_OVERLAY
+    // M110: the "Next event" one-shot — the next faced plain, unresolved
+    // event becomes the chosen kind AT INTERACTION TIME. Runtime room state
+    // only (generation and the entry autosave are untouched); the room's own
+    // event is spent by it, as the debug row says. Only kinds whose
+    // resolution reads nothing baked can be substituted, in either direction.
+    if (context_.cheats.nextEventKind >= 0 && facingMarker_ != nullptr &&
+        facingMarker_->kind == MarkerKind::Event) {
+        dungeon::RoomEvent& ev = dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].event;
+        const std::vector<dungeon::RoomEventKind>& safe = dungeon::debugSubstitutableEventKinds();
+        const auto chosen = static_cast<dungeon::RoomEventKind>(context_.cheats.nextEventKind);
+        if (!ev.resolved && std::find(safe.begin(), safe.end(), ev.kind) != safe.end() &&
+            std::find(safe.begin(), safe.end(), chosen) != safe.end()) {
+            ev.kind = chosen;
+            ev.goldCost = 0;
+            ev.itemId.clear();
+            context_.cheats.nextEventKind = -1;  // consumed by this substitution
+            buildRoom();                         // the marker glyph follows the kind
+            recomputeInteraction(tx, ty);        // markers_ was rebuilt
+        }
+    }
+#endif
+
     // M93: the danger counter (owner decisions 5/7). A step is a tile: every
     // tile the party walks onto ticks the visible countdown, and at 0 the
     // roused patrol attacks IMMEDIATELY — composed by the dungeon's own
@@ -2285,14 +2568,11 @@ void DungeonState::update(float dt) {
         const bool counted = lastTileX_ >= 0;  // the spawn tile itself is free
         lastTileX_ = tx;
         lastTileY_ = ty;
+        if (counted) {
+            ++context_.party.lifetime.explore.tilesWalked;  // M109
+        }
         if (counted && --dangerSteps_ <= 0) {
-            dungeon_.teams.push_back(dungeon::patrolTeam(context_.content, dungeon_.themeId,
-                                                         dungeon_.town, dungeon_.depth,
-                                                         dungeon_.runSeed, patrolIndex_));
-            teamTier_.push_back(danger::assess(dungeon_.teams.back(), context_.content,
-                                               danger::partyThreat(context_.party.members)));
-            startBattle(static_cast<int>(dungeon_.teams.size()) - 1, EncounterKind::Patrol,
-                        dungeon::Dir::North);
+            triggerPatrol();  // M110: the dispatcher decides what answers
             return;
         }
     }
@@ -2626,7 +2906,7 @@ void DungeonState::render() {
             DrawTexture(context_.resources.texture(fallbackId), mx + 2, my + 2, tint);
         } else {
             DrawRectangle(mx + 2, my + 2, kTile - 4, kTile - 4, c);
-            ui::drawTextCentered(glyph, mx + kTile / 2, my + 4, 8, Color{20, 20, 20, 255});
+            ui::drawTextCentered(glyph, mx + kTile / 2, my + 3, ui::style::kFontSmall, Color{20, 20, 20, 255});
         }
     }
 
@@ -2649,7 +2929,7 @@ void DungeonState::render() {
             m.teamIndex < static_cast<int>(teamTier_.size())) {
             const danger::Tier tier = teamTier_[static_cast<std::size_t>(m.teamIndex)];
             ui::drawTextCentered(danger::tierName(tier), originX_ + m.x * kTile + kTile / 2,
-                                 originY_ + m.y * kTile - 8, 8, tierColor(tier));
+                                 originY_ + m.y * kTile - 9, ui::style::kFontSmall, tierColor(tier));
         }
     }
     const Marker* highlight = facingMarker_;
@@ -2779,9 +3059,9 @@ void DungeonState::render() {
         // "..." (the event panel one Confirm away carries the full text)
         // instead of overflowing off screen.
         ui::drawFooterHints({}, context_.virtualWidth, h, "dungeon.footer");
-        const int promptW = ui::measureText(text, 8);
+        const int promptW = ui::measureText(text, ui::style::kFontSmall);
         const int promptX = std::max(4, (context_.virtualWidth - promptW) / 2);
-        ui::drawTextEllipsized(text, promptX, h - 12, context_.virtualWidth - promptX - 4, 8,
+        ui::drawTextEllipsized(text, promptX, h - 12, context_.virtualWidth - promptX - 4, ui::style::kFontSmall,
                                pal.text, "dungeon.prompt");
     }
 

@@ -76,7 +76,7 @@ void HelpState::render() {
     ui::drawTextWrapped(
         "Bindings can be changed under Settings. The window is resizable; the image always "
         "scales to fit.",
-        kCol1X, h - 34, w - 2 * kCol1X, 9, p.textHint, "help.note", 2);
+        kCol1X, h - 34, w - 2 * kCol1X, style::kFontSmall, p.textHint, "help.note", 2);
     ui::drawFooterHints({{input::primaryLabel(map, InputAction::Cancel,
                                               context_.input.activeDevice()),
                           "Back"}},

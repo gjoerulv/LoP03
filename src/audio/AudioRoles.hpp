@@ -63,8 +63,11 @@ enum class MusicTrack {
     // Appended (owner direction 2026-08-17) so every earlier role keeps its
     // table index: the Goosy Gauntlet's own tune.
     DungeonGoosy,
+    // M112: the Jester's mocking jingle — a one-shot like Victory/Defeat
+    // (appended, so every earlier role keeps its table index).
+    Mock,
 };
-inline constexpr std::size_t kMusicCount = 15;  // excludes None
+inline constexpr std::size_t kMusicCount = 16;  // excludes None
 
 enum class AmbienceTrack {
     None,
@@ -96,6 +99,7 @@ inline constexpr std::array<const char*, kMusicCount> kMusicIds = {
     "music.battle",        "music.boss",         "music.victory",
     "music.defeat",        "music.result",       "music.castle",
     "music.king",          "music.duck",         "music.dungeon.goosy",
+    "music.mock",
 };
 
 inline constexpr std::array<const char*, kAmbienceCount> kAmbienceIds = {
@@ -111,7 +115,7 @@ inline constexpr std::array<const char*, kAmbienceCount> kAmbienceIds = {
 // is missing, the matching battle stinger SFX plays instead so battle end is
 // never silent.
 inline constexpr bool isJingle(MusicTrack t) {
-    return t == MusicTrack::Victory || t == MusicTrack::Defeat;
+    return t == MusicTrack::Victory || t == MusicTrack::Defeat || t == MusicTrack::Mock;  // M112
 }
 
 // Which of the three M8 synthesized loops (0 town, 1 dungeon, 2 battle)
@@ -129,6 +133,7 @@ inline constexpr std::array<int, kMusicCount> kSynthMusicIndex = {
     2,          // KingBattle (battle-tier synth fallback)
     2,          // DuckBattle (battle-tier synth fallback)
     1,          // DungeonGoosy (dungeon-tier synth fallback)
+    -1,         // Mock (M112: a jingle; falls back to the error stinger)
 };
 
 // Minimum seconds between accepted plays of the same SFX role. Guards rapid

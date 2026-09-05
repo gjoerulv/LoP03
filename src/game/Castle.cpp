@@ -34,6 +34,9 @@ std::vector<std::string> bossRushOrder(const content::ContentDatabase& content) 
         if (def.guildTown != 0) {
             continue;  // M84: a Guild Master presides over its town's gauntlet
         }
+        if (def.specialOnly) {
+            continue;  // M112: the Mimic lives inside a lying chest, nowhere else
+        }
         ids.push_back(id);
     }
     std::sort(ids.begin(), ids.end());
@@ -96,7 +99,7 @@ dungeon::EnemyTeam endlessWaveTeam(const content::ContentDatabase& content, int 
         // M49: the Royal Guards belong to the King's throne room and nowhere
         // else — the endless pool is the other place that sweeps the whole
         // enemy database, so it needs the same guard as the generator's.
-        if (def.bossOnly) {
+        if (def.bossOnly || def.specialOnly) {  // M111: the Golden Goose is no wave either
             continue;
         }
         pool.push_back(id);
@@ -164,7 +167,7 @@ dungeon::EnemyTeam dragonEliteWaveTeam(const content::ContentDatabase& content, 
     }
     std::vector<std::string> pool;
     for (const auto& [id, def] : content.enemies()) {
-        if (def.bossOnly || def.tier != content::EnemyTier::Elite) {
+        if (def.bossOnly || def.specialOnly || def.tier != content::EnemyTier::Elite) {
             continue;
         }
         pool.push_back(id);

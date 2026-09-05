@@ -30,7 +30,14 @@ public:
     DebugMenuState(StateStack& stack, AppContext& context, bool inDungeon);
 
     void handleInput(const Input& input) override;
+    bool pausesPlayClock() const override { return true; }  // M109: a menu, not play
     void render() override;
+
+#ifdef CRYSTAL_CAPTURE
+    // Capture-only (M110): arm the widest patrol/event labels and seven-digit
+    // ledger values and scroll the window onto the new rows.
+    void captureShowDispatcherRows();
+#endif
 
 private:
     // What a highlighted row does. Steppers respond to MoveLeft/Right; actions
@@ -47,7 +54,9 @@ private:
         GrantSummons,      // action: 1x each summon scroll (M95)
         ResetSummons,      // action: clear the run's used-summon ledger (M95)
         GrantHeirlooms,    // action: 1x each heirloom (M96)
-        PatrolNow,         // action: set the danger counter to 1 step (M93; dungeon only)
+        PatrolNow,         // action: fire the patrol dispatcher now (M93; M110: immediate)
+        NextPatrol,        // stepper: force the next patrol's kind, one-shot (M110)
+        NextEvent,         // stepper: force the next faced plain event's kind, one-shot (M110)
         ArmDragonform,     // action: arm the next battle as Dragons (M93; dungeon only)
         SpawnMarket,       // action (town only)
         GodMode,           // toggle
@@ -58,6 +67,7 @@ private:
         GrantCurio,        // action: the next unowned curio (M66/M85)
         PlayCutscene,      // stepper cycles the scene, Confirm plays it (M97; no re-grant)
         ResetStory,        // action: clear seen scenes + recorded choices (M97)
+        Lifetime,          // read-only: the M109 ledger's fight count + play time (smoke check)
     };
     struct RowDef {
         Row kind;

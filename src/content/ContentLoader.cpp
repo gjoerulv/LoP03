@@ -242,6 +242,48 @@ void readTriggers(const Json& el, const std::string& source, const std::string& 
     }
 }
 
+// M111 (rules v19): the scripted own-turn sequence (enemies only). Each step
+// is one action; `statuses` belongs to status_all_foes alone; a flee, if
+// present, ends the script.
+void readScript(const Json& el, const std::string& source, const std::string& ctx,
+                LoadReport& rep, std::vector<ScriptStep>& out) {
+    const auto it = el.find("script");
+    if (it == el.end()) {
+        return;
+    }
+    if (!it->is_array()) {
+        rep.add(source, ctx + ".script", "expected array");
+        return;
+    }
+    int si = 0;
+    for (const auto& se : *it) {
+        const std::string sctx = ctx + ".script[" + std::to_string(si) + "]";
+        ++si;
+        if (!se.is_object()) {
+            rep.add(source, sctx, "expected object");
+            continue;
+        }
+        ObjectReader sr(se, sctx, source, rep);
+        ScriptStep step;
+        step.action = sr.reqEnum<ScriptDo>("do", parseScriptDo, "script action");
+        readStatusList(se, source, sctx, rep, "statuses", step.statuses);
+        step.text = sr.optString("text");
+        if (step.action == ScriptDo::StatusAllFoes && step.statuses.empty()) {
+            rep.add(source, sctx, "'status_all_foes' requires at least one entry in 'statuses'");
+        }
+        if (step.action != ScriptDo::StatusAllFoes && !step.statuses.empty()) {
+            rep.add(source, sctx, "'statuses' is only valid with 'status_all_foes'");
+        }
+        out.push_back(std::move(step));
+    }
+    for (std::size_t i = 0; i < out.size(); ++i) {
+        if (out[i].action == ScriptDo::Flee && i + 1 != out.size()) {
+            rep.add(source, ctx + ".script", "'flee' must be the last step");
+            break;
+        }
+    }
+}
+
 }  // namespace
 
 void parseSkills(const Json& root, const std::string& source, ContentDatabase& db,
@@ -405,6 +447,8 @@ void parseEnemies(const Json& root, const std::string& source, ContentDatabase& 
         // sleep-aware AI manners — all optional, all inert by default.
         readStatusList(el, source, ctx, rep, "initialStatuses", d.initialStatuses);
         readTriggers(el, source, ctx, rep, d.triggers, /*allowClone=*/false);
+        readScript(el, source, ctx, rep, d.script);          // M111
+        d.specialOnly = r.optBool("specialOnly", false);   // M111
         d.statusImmunities = readStatusImmunities(r, source, ctx, rep);
         d.avoidSleepingTargets = r.optBool("avoidSleepingTargets", false);
         d.noStunWhileAllFoesSleep = r.optBool("noStunWhileAllFoesSleep", false);
@@ -633,6 +677,7 @@ void parseBosses(const Json& root, const std::string& source, ContentDatabase& d
         // bound is the seven-town ladder (kTownCount; the story parser's 1..9
         // literal precedent).
         d.guildTown = r.optIntMin("guildTown", 0, 0);
+        d.specialOnly = r.optBool("specialOnly", false);  // M111/M112
         if (d.guildTown > 7) {
             rep.add(source, ctx, "'guildTown' must be 0 (ordinary boss) or a town 1..7");
         }
@@ -773,6 +818,45 @@ void parseCurioLore(const Json& root, const std::string& source, ContentDatabase
     });
 }
 
+void parseLoreQuestions(const Json& root, const std::string& source, ContentDatabase& db,
+                        LoadReport& rep) {
+    // M112: the Jester's lore questions. The loader owns shape, ranges and
+    // duplicates; the tier gate and the seeded walk live in
+    // game/SpecialEncounter.hpp. The glyph lint covers the text like every
+    // other authored string.
+    forEachEntry(root, source, "questions", rep, [&](const Json& el, const std::string& ctx, int) {
+        const std::size_t before = rep.errorCount();
+        ObjectReader r(el, ctx, source, rep);
+        LoreQuestionDef d;
+        d.id = r.reqString("id");
+        d.minTown = r.optIntMin("minTown", 1, 1);
+        d.postKing = r.optBool("postKing", false);
+        d.question = r.reqString("question");
+        d.answer = r.reqString("answer");
+        d.wrongAnswer = r.reqString("wrongAnswer");
+        d.mockLine = r.reqString("mockLine");
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (d.minTown > 7) {  // the seven-town ladder (game/WorldLadder.hpp)
+            rep.add(source, ctx, "'minTown' must be 1..7");
+        }
+        if (d.question.empty() || d.answer.empty() || d.wrongAnswer.empty() ||
+            d.mockLine.empty()) {
+            rep.add(source, ctx, "'question', 'answer', 'wrongAnswer' and 'mockLine' must be non-empty");
+        }
+        if (d.answer == d.wrongAnswer) {
+            rep.add(source, ctx, "'answer' and 'wrongAnswer' must differ");
+        }
+        if (rep.errorCount() != before) {
+            return;
+        }
+        if (!db.addLoreQuestion(d)) {
+            rep.add(source, ctx, "duplicate lore question id '" + d.id + "'");
+        }
+    });
+}
+
 void parseCutscenes(const Json& root, const std::string& source, ContentDatabase& db,
                     LoadReport& rep) {
     // M97: the Hooded Goose story scenes. Shape and vocabulary live here;
@@ -789,12 +873,14 @@ void parseCutscenes(const Json& root, const std::string& source, ContentDatabase
                 break;
             }
         }
-        // M100/M103: "joke_*" (the post-finale pool) and "story_*" (the
-        // dungeon stranger-stories) are optionless TALES — known by prefix so
-        // the forge can grow either pool without a code change.
+        // M100/M103/M110: "joke_*" (the post-finale pool), "story_*" (the
+        // dungeon stranger-stories) and "patrol_*" (the Stranger's patrol
+        // scenes) are optionless TALES — known by prefix so the forge can grow
+        // any pool without a code change.
         const bool isJoke =
             (d.id.rfind(kJokeCutscenePrefix, 0) == 0 && d.id.size() > 5) ||
-            (d.id.rfind(kStoryCutscenePrefix, 0) == 0 && d.id.size() > 6);
+            (d.id.rfind(kStoryCutscenePrefix, 0) == 0 && d.id.size() > 6) ||
+            (d.id.rfind(kPatrolCutscenePrefix, 0) == 0 && d.id.size() > 7);
         known = known || isJoke;
         if (!d.id.empty() && !known) {
             rep.add(source, ctx, "unknown cutscene id '" + d.id + "'");
@@ -1225,6 +1311,18 @@ bool loadAll(const fs::path& dataRoot, ContentDatabase& db, LoadReport& rep) {
         if (fs::exists(dataRoot / "tutorials.json", ec) && !ec) {
             if (readJsonFile(dataRoot / "tutorials.json", json, rep)) {
                 parseTutorialTexts(json, "tutorials.json", db, rep);
+            }
+        }
+    }
+
+    // M112: the lore questions are the fourth optional file, on the same
+    // terms — with no file (or an empty pool) the lore patrol falls back to
+    // an ordinary patrol, so a content drop can never dead-end a run.
+    {
+        std::error_code ec;
+        if (fs::exists(dataRoot / "lore_questions.json", ec) && !ec) {
+            if (readJsonFile(dataRoot / "lore_questions.json", json, rep)) {
+                parseLoreQuestions(json, "lore_questions.json", db, rep);
             }
         }
     }

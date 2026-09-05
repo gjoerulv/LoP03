@@ -45,6 +45,7 @@
     { "id": "music.king", "type": "music", "path": "audio/music/king.wav", "loop": true, "volume": 0.85 },
     { "id": "music.duck", "type": "music", "path": "audio/music/duck.wav", "loop": true, "volume": 0.85 },
     { "id": "music.dungeon.goosy", "type": "music", "path": "audio/music/dungeon_goosy.wav", "loop": true, "volume": 0.8 },
+    { "id": "music.mock", "type": "music", "path": "audio/music/mock.wav", "loop": false, "volume": 0.8 },
 
     { "id": "ambience.town", "type": "ambience", "path": "audio/ambience/town.wav", "loop": true, "volume": 0.3 },
     { "id": "ambience.keep", "type": "ambience", "path": "audio/ambience/keep.wav", "loop": true, "volume": 0.24 },
@@ -236,12 +237,15 @@
     { "id": "enemy.guild_seat_warden.battle", "type": "texture", "path": "textures/enemies/guild_seat_warden.png" },
     { "id": "enemy.guild_null_notary.battle", "type": "texture", "path": "textures/enemies/guild_null_notary.png" },
     { "id": "enemy.guild_final_clause.battle", "type": "texture", "path": "textures/enemies/guild_final_clause.png" },
+    { "id": "enemy.golden_goose.battle", "type": "texture", "path": "textures/enemies/golden_goose.png" },
 
     { "id": "boss.the_dragon.battle", "type": "texture", "path": "textures/enemies/boss_the_dragon.png" },
+    { "id": "boss.mimic.battle", "type": "texture", "path": "textures/enemies/boss_mimic.png" },
 
     { "id": "prop.chest", "type": "texture", "path": "textures/props/chest.png" },
     { "id": "prop.gate_marker", "type": "texture", "path": "textures/props/gate_marker.png" },
     { "id": "prop.boss_marker", "type": "texture", "path": "textures/props/boss_marker.png" },
+    { "id": "prop.chest_battle", "type": "texture", "path": "textures/props/chest_battle.png" },
     { "id": "prop.event.shrine", "type": "texture", "path": "textures/props/event_shrine.png" },
     { "id": "prop.event.spring", "type": "texture", "path": "textures/props/event_spring.png" },
     { "id": "prop.event.merchant", "type": "texture", "path": "textures/props/event_merchant.png" },
@@ -304,6 +308,11 @@
     { "id": "bg.training_hall.7", "type": "texture", "path": "textures/backgrounds/training_hall_t7.png" },
     { "id": "bg.scoreboard.7", "type": "texture", "path": "textures/backgrounds/scoreboard_t7.png" },
     { "id": "bg.guild.7", "type": "texture", "path": "textures/backgrounds/guild_t7.png" },
+    { "id": "bg.cutscene.panorama", "type": "texture", "path": "textures/backgrounds/cutscene_panorama.png" },
+    { "id": "bg.cutscene.keep", "type": "texture", "path": "textures/backgrounds/cutscene_keep.png" },
+    { "id": "bg.cutscene.mine", "type": "texture", "path": "textures/backgrounds/cutscene_mine.png" },
+    { "id": "bg.cutscene.forest", "type": "texture", "path": "textures/backgrounds/cutscene_forest.png" },
+    { "id": "bg.cutscene.goosy", "type": "texture", "path": "textures/backgrounds/cutscene_goosy.png" },
 
     { "id": "ui.frame.default", "type": "texture", "path": "textures/ui/frame_default.png" },
     { "id": "ui.emblem.crystal", "type": "texture", "path": "textures/ui/emblem_crystal.png" },

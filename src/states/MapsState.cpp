@@ -189,7 +189,7 @@ void MapsState::render() {
         line += TextFormat("  The guild owes %d piece%s, payable after the dig.",
                            party.mapPiecesOwed, party.mapPiecesOwed == 1 ? "" : "s");
     }
-    ui::drawTextWrapped(line, 40, mapY + mapH + 10, w - 80, 8, revealed ? p.gold : p.textDim,
+    ui::drawTextWrapped(line, 40, mapY + mapH + 10, w - 80, ui::style::kFontSmall, revealed ? p.gold : p.textDim,
                         "maps.status", 2);
 
     // M66: the curio collection — twelve trinkets paid out by the single-use
@@ -209,7 +209,7 @@ void MapsState::render() {
         if (i == cursor_ && !loreOpen_) {
             ui::drawSelectionSlab(cxp - 3, cyp - 1, colW - 2, 11);
         }
-        ui::drawTextFitted(owned ? cd.name : "? ? ?", cxp, cyp, colW - 6, 8,
+        ui::drawTextFitted(owned ? cd.name : "? ? ?", cxp, cyp, colW - 6, ui::style::kFontSmall,
                            i == cursor_ ? (owned ? p.gold : p.textDim)
                                         : (owned ? p.text : p.textHint),
                            "maps.curio");
@@ -230,7 +230,7 @@ void MapsState::render() {
         ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
         ui::drawTextCentered(cd.name, w / 2, boxY + 10, 14, p.gold);
         ui::drawDivider(boxX + 14, boxY + 28, boxW - 28);
-        loreView_.setContent(body, boxW - 32 - ui::kScrollGutterW, 9, ui::raylibMeasure());
+        loreView_.setContent(body, boxW - 32 - ui::kScrollGutterW, ui::style::kFontSmall, ui::raylibMeasure());
         loreView_.setVisibleLines(std::clamp(loreView_.lineCount(), 1, 7));
         ui::drawTextViewport(loreView_, boxX + 16, boxY + 36, p.text);
         std::string hint = input::prompt(context_.input.map(), InputAction::Confirm,
@@ -243,7 +243,7 @@ void MapsState::render() {
                                        context_.input.activeDevice()) +
                    " Scroll   " + hint;
         }
-        ui::drawTextCentered(hint.c_str(), w / 2, boxY + boxH - 14, 9, p.textDim);
+        ui::drawTextCentered(hint.c_str(), w / 2, boxY + boxH - 14, ui::style::kFontSmall, p.textDim);
     }
 
     ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Confirm,

@@ -108,6 +108,7 @@ void ArmoryGhostState::trade() {
     context_.party.inventory.add(upgrade, 1);
     if (event_ != nullptr) {
         event_->resolved = true;
+        ++context_.party.lifetime.explore.eventsResolved;  // M109
     }
     const content::ItemDef* gave = context_.content.findItem(tradedId);
     const content::ItemDef* got = context_.content.findItem(upgrade);

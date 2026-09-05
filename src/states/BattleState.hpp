@@ -1,10 +1,12 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "audio/AudioRoles.hpp"
 #include "battle/Battle.hpp"
+#include "game/BattleTelemetry.hpp"  // M109: LifetimeHook + the ledger's battle observer
 #include "game/RunStats.hpp"
 #include "game/Spoils.hpp"
 #include "render/BattleBackdrop.hpp"
@@ -19,6 +21,7 @@
 namespace cd {
 
 struct AppContext;
+struct SpecialEncounter;  // M112: the decision encounters (game/SpecialEncounter.hpp)
 namespace content {
 struct ItemDef;
 }
@@ -44,11 +47,15 @@ public:
     // M94: `manualEnemies` is the sparring mirror's manual mode — enemy-side
     // units whose turn is not forced/uncontrolled route through the SAME
     // player command phases (Attack/Skill/Guard; never Item or Escape).
+    // M109: `lifetime` names the save's ledger this fight records into (and
+    // the town it belongs to); the default records nothing, which is what
+    // every zero-stakes surface (the spar, capture scenes) passes.
     BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                 battle::BattleResult* resultSlot, MusicTrack musicOverride = MusicTrack::None,
                 RunStats* statsSlot = nullptr, bool castleChallenge = false,
                 render::BackdropStage stage = render::BackdropStage::Plain,
-                const BattleSpoils* spoils = nullptr, bool manualEnemies = false);
+                const BattleSpoils* spoils = nullptr, bool manualEnemies = false,
+                LifetimeHook lifetime = {}, SpecialEncounter* special = nullptr);
 
     void onEnter() override;  // first-battle tutorial beat
     void handleInput(const Input& input) override;
@@ -59,7 +66,7 @@ public:
     // Capture-only (M25): force the target-selection phase (first party member
     // attacking the first living enemy) so the target-info panel renders
     // deterministically for the overflow check. Not present in shipping builds.
-    void captureEnterTargeting();
+    void captureEnterTargeting(int cursor = 0);  // M115: `cursor` = which visual target
     // Capture-only: open the skill list for the acting party member, optionally
     // with a supplied skill set, so the widest name + MP column is overflow-checked.
     void captureEnterSkillMenu(std::vector<std::string> skills = {});
@@ -93,6 +100,10 @@ public:
     // Capture-only (M87): open the skill list and the highlighted skill's full
     // sheet in the scrollable Details overlay.
     void captureOpenSkillDetails(std::vector<std::string> skills = {});
+    // M112: resolve the decision encounter as if the first party member had
+    // struck placeholder `ordinal` (0..2) with a basic attack, and hold the
+    // resulting beat (the Done beat, or the Mimic's revealed impact).
+    void captureSpecialPick(int ordinal);
 #endif
 
 private:
@@ -114,6 +125,14 @@ private:
     // M43: why a battle item is unusable right now ("" when it is usable).
     std::string itemBlockReason(const content::ItemDef& item) const;
     void executePending(int targetUnit);
+    // M112 decision mode: the encounter stands unresolved and every hostile
+    // action is a CHOICE, never a hit.
+    bool decisionPending() const;
+    bool isInert(int index) const;  // a placeholder (answer, Jester, chest)
+    void noteRoster();              // bestiary + boss telegraph, skipping inert units
+    void pruneOrder();              // inert units never take a turn
+    void resolveDecision(int targetUnit);
+    void revealMimic(int actor, const content::SkillDef* skill);
     void executeEnemy(int actor);
     void executeConfused(int actor);  // M35: a confused party member auto-attacks an ally
     void executeUncontrolled(int actor);  // M45: the Jester picks its own turn
@@ -139,9 +158,16 @@ private:
         FloatKind kind = FloatKind::Damage;
     };
     int enemyBaseY() const;
-    // True when any unit on the field is a boss — the enemy rows above the
-    // center slot lift by kBossHeadroom so the 36px crown stays clear.
+    // True when any unit on the field is a boss (the M46 violet accent pair).
     bool bossOnField() const;
+    // M115: the enemy sprite id drawUnit resolves (boss family, per-enemy
+    // art, the class-sprite echo fallback, the tier generic) — shared with
+    // the formation so the envelopes come from the very texture drawn.
+    std::string enemySpriteId(const battle::Combatant& c, bool& flipX) const;
+    // M115: recompute the per-ordinal enemy row lines from every unit's
+    // envelope (texture height when loaded, else the family default). Called
+    // whenever the roster is set: the ctor and the Mimic morph.
+    void rebuildFormation();
     void unitScreenPos(int index, int& outX, int& outY) const;
     // M101: reorder targetCandidates_ to visual top-to-bottom (the center-out
     // rows broke the old unit-order == screen-order equivalence).
@@ -243,6 +269,25 @@ private:
     content::Element fxElement_ = content::Element::None;
     // M94: the sparring mirror's manual mode (see the ctor note).
     bool manualEnemies_ = false;
+    // M112: the decision encounter this battle hosts (null for a real fight;
+    // owned by the dungeon, outliving the state). `inert_` marks the
+    // placeholders — real enemy-side units at 1 HP the model counts as a
+    // living side, kept off the turn order, the bestiary and the meters here.
+    // A resolved decision ends the battle at the next settled beat with
+    // `decisionOutcome_`, or morphs it into the Mimic fight and plays on.
+    SpecialEncounter* special_ = nullptr;
+    std::vector<char> inert_;
+    // M115: the absolute row line y of every enemy ordinal (battle_ui::
+    // enemyRowYs), presentation only.
+    std::vector<int> enemyRowY_;
+    int placeholderFirst_ = -1;
+    bool decisionDone_ = false;
+    battle::Outcome decisionOutcome_ = battle::Outcome::Ongoing;
+    // M109: the ledger this fight records into (stats null = nothing), and the
+    // observer that feeds it - owned here, attached to battle_.observer for
+    // the life of the state. Declared after battle_ (it refers into it).
+    LifetimeHook lifetime_;
+    std::unique_ptr<BattleTelemetry> telemetry_;
 };
 
 }  // namespace cd

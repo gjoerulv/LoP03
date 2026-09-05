@@ -3068,3 +3068,378 @@ fields). The story layer that hands out the M96 heirlooms.
   (cycles the eight, replay-only, no re-grant, no seen-mark) and
   "Reset story progress".
 
+## 51. M109 — the lifetime ledger
+
+No rules/generation/save-version bump: the ledger is one additive optional
+save object, every recording seam is record-only, and the one pure-model
+change (telemetry emits) is proven byte-inert by the M60 parity test.
+
+- **Model** (`game/Lifetime.hpp`, pure): `LifetimeStats` — 64-bit counters
+  in six groups (`members[4]` keyed by PARTY SLOT, `combat`, `economy`,
+  `towns[7]`, `patrols`, `explore`), a `defeats` map (stable enemy/boss
+  content id → times defeated) and `migrated`. Slots are the identity:
+  `Party.members` only ever grows at creation and the transforms
+  (Gooseform/Dragonform) swap the Character AT a slot, so a rename or a
+  transform never moves history. The header includes only
+  `game/WorldLadder.hpp` (it must not include `Party.hpp`, which includes
+  it — the `RunStats.hpp` precedent for the duplicated slot constant).
+  **Field tables** (`kMemberLifetimeFields` …) list every counter once
+  with its JSON key; the save writer, the reader and the tests iterate
+  them, so a counter added without its table row fails the suite.
+- **Persistence** (`save/SaveSystem.cpp`): `root["lifetime"]` is one
+  nested object (members/towns arrays, group objects, `defeats` object,
+  `migrated`) — a deliberate departure from the file's flat-key idiom for
+  ~90 counters. Reading uses the new `ObjectReader::optInt64` (type-checked,
+  no minimum) and clamps below-zero values inline, so a display-only
+  counter can never fail a load the way `optIntMin`'s error would; a wrong
+  TYPE still reports like every other field. The `defeats` ids are NOT
+  validated against the content database (the M42 `encountered`
+  precedent: a tally must survive a renamed or retired foe), entries are
+  capped (`kLifetimeDefeatEntryCap`), non-integer values skipped. An
+  absent block is an old save: `migrateLifetime` zeros everything, sets
+  `migrated`, and carries the one derivable fact — `recordBiggestHit` →
+  `combat.highestHit` (author unknown). `recordRunDamage` is a single-run
+  peak and is not backfilled. `resetForNewGame` covers the block (whole
+  object); the spar's whole-Party restore is a safety net only.
+- **Battle seam** (`game/BattleTelemetry.hpp`): `LifetimeHook { stats,
+  town }` rides the launch payloads (`BossIntroState` → `BattleState`,
+  town 0 = castle/pond/guild-hall fights); `BattleState` owns a
+  `BattleTelemetry` observer and attaches it to `battle_.observer` only
+  when a hook carries stats — the attach IS the exclusion rule (SparState
+  and every capture scene pass none; the Simulator and the editor never
+  do). The M60 observer grew additively: Damage/KO events carry the
+  ATTACKER (`applyDamage` gained a trailing `attacker` parameter — the
+  deliberate hit's actor, the thorns bearer, the counter-attacker; poison
+  stays -1), plus `Guard` and `StatusApplied` events (the latter emitted by
+  the OUTER functions that know the actor, only when the free `addStatus`
+  — now returning whether the status landed — actually applied it).
+  Consumer rules: damage dealt = non-poison hits by a member on a FOE;
+  damage taken = every HP a member loses; finishing blow = a KO event
+  whose actor is a member; summons = an Action whose skill is
+  `oncePerRun`; statuses inflicted = landed on foes, statuses applied =
+  anything a member landed. `recordBattleEnd` runs once in
+  `BattleState::finish`: won/lost/escaped, turns, the boss-encounter count
+  (a boss unit on the field of a won battle), and the defeat ledger —
+  every dead enemy unit that is not a `summonSlot` counts its id once
+  (the Dragon's raised clone therefore never touches `defeats["the_dragon"]`
+  while still crediting `enemiesKo` and a finishing blow).
+- **Economy seam** (`game/Ledger.hpp`): `earnGold`/`spendGold`/`loseGold`
+  and the token/purchase/find/learn/level-up helpers move the money AND
+  tally it once with town attribution; every production gold/token write
+  routes through them (spoils, chests, every event, the dens, shops, Inn,
+  Training Hall, black market, castle rewards, treasure digs, boss drops).
+  Debug cheats, capture scenes and tests write `party.gold` directly on
+  purpose, which is why the helpers are called per site and never hidden
+  in a shared primitive. Gross flow, not net; the defeat halving is
+  `goldLost`, never a spend; the Inn also tallies `innGold`.
+- **Exploration seams**: run attempts at the Guild's entry (before the
+  entry autosave — the only production `DungeonState` construction);
+  completions, the town's clears and best score in `completeDungeon`;
+  retreats in the dungeon pause menu; wipes in the defeat branch; floors
+  at each felled stair-gate and the completion (Eternal floors also
+  cumulatively); tiles in the M93 counted-tile block; chests, events (every
+  `resolved = true` site), patrols at the trigger; the encounter-level
+  King/Duck/Dragon/Guild-Master counters in `CastleChallengeState::finish`
+  (once per cleared gauntlet, distinct from the per-unit defeat ledger).
+- **Play clock** (`Application::processFrame`): whole seconds of
+  `min(dt, 0.25)` accumulate into `explore.playSeconds` while a party is
+  loaded, the window has focus, and the top state does not override
+  `GameState::pausesPlayClock()` (true for the main menu, slot menus,
+  Settings, remap, Help, both pause menus and the debug menu). The float
+  remainder lives on `Application`; persistence rides the normal saves.
+- **Tests**: `test_lifetime.cpp` (model, tables, round-trip with 64-bit
+  values, migration, degrade-vs-report reader rules, slot identity, New
+  Game), `test_battle_telemetry.cpp` (parity with the observer attached,
+  every attribution rule, the boss-once/clone-never ledger rule),
+  `test_ledger.cpp` (the economy helpers).
+
+## 52. M110 — the patrol dispatcher (generation v24)
+
+Generation **23 → 24** (`RoomLayout.hpp` history, the authority): room,
+event and team rolls are byte-identical to v23, but what the Nth patrol of
+a seed PRODUCES changed, so new score entries tag v24 and old entries keep
+v23. No battle-rules or save motion.
+
+- **The dispatcher** (`dungeon/PatrolDispatch.hpp`, pure): `PatrolKind
+  { Normal, GoldenGoose, Lore, Chests, StrangerP }`, the owner's mixture
+  `kPatrolKindPct = {65, 10, 5, 15, 5}` as cumulative thresholds
+  (`patrolKindForRoll`), and `patrolKindFor(runSeed, patrolIndex)` =
+  `blackMarketHash(runSeed, kSaltPatrolKind + index) % 100` — its own salt,
+  independent of the M93 team salt, consuming no rng stream (SKILL gotcha
+  10). `patrolKindCount(runSeed, index, kind)` is the per-kind ordinal of
+  the patrols BEFORE `index` (the lore pool walk and the P-scene cycle key
+  off it), derived rather than stored so it is reload-honest.
+- **The trigger** (`DungeonState::triggerPatrol(forcedKind)`): both the
+  M93 tile block and the debug one-shot call it; the seeded kind (or a
+  forced one for THIS trigger only) is tallied into the ledger
+  (`patrols.total`, the town's `patrols`, then the kind's own counter) and
+  dispatched: Normal → the M93 `patrolTeam` battle, unchanged; StrangerP →
+  `game::patrolSceneFor` and `CutsceneState(scene, replay=true)` pushed
+  after `consumePatrol()` (zero turns, nothing paid); Goose/Lore/Chests →
+  M111/M112 (an ordinary patrol until they land). `consumePatrol()` is the
+  one place the counter rewinds and `patrolIndex_` advances (the two
+  onResume sites call it too).
+- **The Stranger's patrol pool** (`game/Cutscenes.hpp`): `patrol_*` scenes
+  are a third optionless-tale prefix (`content::kPatrolCutscenePrefix`; the
+  loader's joke/story shape rule covers it — no question, no options);
+  `strangerPatrolIds` sorts them and `patrolSceneFor(db, runSeed, told)`
+  walks a Fisher-Yates order hashed from the run seed under its own salt,
+  so every scene plays once per cycle before a repeat and a reload replays
+  the same order. The joke and story counters are never touched.
+- **Debug one-shots** (`core/DebugCheats.hpp`, `DebugMenuState`, all under
+  `CRYSTAL_DEBUG_OVERLAY`): `Next patrol` (a stepper over Random + the five
+  kinds; `cheats.nextPatrolKind` replaces the resolved kind of the next
+  trigger and is consumed then — the hash beneath never moves), `Trigger
+  patrol now` (`requestPatrolNow` is consumed at the top of
+  `DungeonState::update` by calling the dispatcher directly — no tile
+  walk), and `Next event` (a stepper over Random + the pure
+  `dungeon::debugSubstitutableEventKinds()` — exactly the kinds whose
+  resolution reads nothing baked at generation; Shrine, Merchant, Elder
+  Root, Surveyor, Miner's Cache and the Duck Peddler read
+  `RoomEvent.goldCost`/`itemId`, the Elite Challenge needs its team and the
+  Royal Relic keeps its own table, so none of those can be substituted in
+  either direction). The event override applies the moment the player
+  faces a plain, unresolved event marker: the room's runtime `RoomEvent`
+  takes the chosen kind (baked fields cleared), the marker glyph, the
+  footer prompt and the resolution all read that one field, and the
+  cheat is consumed — generation and the entry autosave are untouched; the
+  room's own event is spent by the substitution. Forced patrols run the
+  real dispatcher and record telemetry like walked ones (dev-only).
+- **Tests** (`test_patrol_dispatch.cpp`): the exact thresholds, hash
+  determinism, a 20 000-sample census within two points of every weight,
+  the M93 team roll untouched, the per-kind ordinal, the four-scene cycle
+  (all before a repeat, seed-shuffled, stable, empty-pool fallback) and the
+  shipped pool's shape (four dedicated optionless, questionless, unstaged
+  scenes disjoint from the jokes and stories).
+
+## 53. M111 — scripted enemy actions and the enemy flee (battle rules v19)
+
+Battle rules **18 → 19** (`Battle.hpp` history, the authority): a data-
+driven scripted own-turn mechanism and a new outcome. No pre-M111 foe
+carries a script or can flee, so every earlier battle resolves
+byte-identically; the bump follows the M89/M95/M96 precedent of tagging a
+new engine hook that ships with scored content. Generation and saves do
+not move.
+
+- **Content** (`content::ScriptDo { StatusAllFoes, Guard, Flee }`,
+  `content::ScriptStep { action, statuses, text }`, `EnemyDef.script`,
+  `EnemyDef.specialOnly`, `BossDef.specialOnly`; the `kScriptDos` table
+  beside `kTriggerDos`; `readScript` in the loader on the `readTriggers`/
+  `readStatusList` shape): `status_all_foes` needs at least one status,
+  the other actions carry none, and a `flee` must be the last step.
+  `specialOnly` marks a foe that exists only for a special encounter — the
+  theme pools, the generator's fallback sweep, the endless waves, the
+  guild trials and the elite vigils all skip it (`bossOnly`'s shape: a
+  flag, because two code paths sweep the whole database). The editor
+  descriptors (`scriptChildren`, the two `specialOnly` booleans) ship in
+  the same milestone; the M59 completeness battery covers them.
+- **Model** (`battle::ScriptedAction`, `Combatant.script` mirrored at
+  `buildBattle` the attackStatuses way, `Combatant.fled`): the free
+  `scriptedTurn(const Combatant&)` indexes the script by `ownTurnsTaken`
+  (1-based; `beginUnitTurn` runs unconditionally in both drivers before any
+  forced-action check, so a turn a control status steals still consumes the
+  step — the M89 lunge precedent) and returns nullptr once it is exhausted.
+  `chooseEnemyAction` answers `EnemyChoice.scripted = true` right after the
+  do-nothing tier and before any target is chosen; the ONE shared executor
+  `Battle::runScriptedStep(actor)` carries it out — `status_all_foes` lands
+  each status on every living foe through `addStatus` (immunities, the M35
+  duration scaling, the M75 poison magnitude from the applier's own Magic,
+  the `StatusApplied` observer event), `guard` is the ordinary guard, `flee`
+  sets `fled`. `Simulator::applyChoice` and `BattleState::executeEnemy` both
+  call it first, so the sim and the screen agree by construction; no roll
+  is consumed, so the rng cursor never moves.
+- **The flee**: a fled unit is alive but gone — `sideAlive`,
+  `aliveIndices`, `turnOrder`, the enemy AI's hurt-ally scan, the
+  court-revival scan and `bodyguardFor` all filter on `!fled`, so it is
+  never a target, never takes a turn and never dies. `Battle::outcome()`,
+  the one chokepoint both drivers poll, returns **`Outcome::EnemyFled`**
+  when no foe stands and one has fled (Victory otherwise, the existing
+  precedence). BattleState: no jingle for a flight (the battle music runs
+  into Done as a player escape does), the KO fade plays for a fled foe,
+  `outcomeMessage` names it, `maybeApplySpoils` already pays nothing off
+  Victory; the M109 telemetry counts only the turns. `DungeonState::
+  onResume` consumes the patrol, counts `geeseEscaped`, touches no gate or
+  chest and records no escape.
+- **The team** (`dungeon::goldenGooseTeam(db, theme, town, depth, runSeed,
+  patrolIndex)`, `EnemyTeam.patrolPaysGold`, `EnemyTeam.xpOverride`): the
+  one `golden_goose` foe at the scale `patrolTeam` gives the same (town,
+  depth), flagged to pay its authored gold (`teamSpoils` keeps zeroing gold
+  for every other patrol — `if (team.patrol && !team.patrolPaysGold)`) and
+  with `xpOverride` = the summed XP of the ordinary patrol derived with the
+  same seed and index (so the swap is reload-honest and never a better XP
+  farm than the patrol it replaced). `patrolTeam` itself is untouched.
+  `DungeonState::triggerPatrol` pushes the team, counts `geeseMet`,
+  remembers `pendingPatrolKind_` and starts an ordinary Patrol battle (no
+  boss intro; the lone foe lands centre by the M101 formation); Victory
+  counts `geeseDefeated` and the bounty flows through the M109 ledger like
+  any spoils.
+- **Art**: `enemy.golden_goose.battle`, a 24×24 hand-placed grid appended
+  last in `generate_textures.ps1` (every earlier PNG byte-identical).
+
+## 54. M112 — the decision encounters: the Lore trap, the chests and the Mimic
+
+No version motion: the encounters are `game::` models hosted by the battle
+screen's new **decision mode**; the pure battle model gains three public
+helpers (`hostileTargetCount`, `spendMp`, `koUnit`) that change no rule
+(the rules version stays 19); the Mimic is a plain boss; the content
+files stay v1 (one new optional file, one new boss); the manifest stays
+v2 (three new ids).
+
+- **Content** (`content::LoreQuestionDef`, `parseLoreQuestions`,
+  `ContentDatabase::loreQuestions/findLoreQuestion/loreQuestionCount`):
+  `data/lore_questions.json` is the fourth OPTIONAL file (the flavor-file
+  terms — no file or an empty pool means the lore patrol falls back to an
+  ordinary one); the loader owns shape (`minTown` 1..7, non-empty texts,
+  `answer != wrongAnswer`, unique ids). Forge: `Category::LoreQuestions`
+  (`kCategoryCount` 15), `loreQuestionDescs`, inline canonical style, the
+  validation table row. `data/bosses.json` `mimic` (`specialOnly: true`):
+  `pickBoss`'s fallback sweep, `bossRushOrder` (hence the Boss Rush, the
+  Endless boss draw and the treasure guards) skip it; no theme lists it.
+- **Models** (`game/SpecialEncounter.hpp`, pure): `LoreEncounter`
+  (`makeLoreEncounter(db, highestTown, kingDefeated, runSeed, patrolIndex,
+  loreCount)` — the eligible pool sorted, a run-seeded Fisher-Yates order
+  walked by the per-kind ordinal `patrolKindCount` gives, the right
+  answer's side its own hash), `ChestEncounter` (`makeChestEncounter(db,
+  town, runSeed, patrolIndex, statScalePct)` — roles shuffled by hash, the
+  coin flip, `chestGearPool` = worn equipment sold at the town minus
+  legendaries, the Mimic team at the shadow patrol's scale with its
+  `mimicSpoils` = authored boss XP + the 500 bounty), `appendPlaceholders`
+  (three real enemy-side Combatants at 1 HP, speed 0 — `Battle::outcome()`
+  would otherwise declare victory over an empty side; the Jester carries
+  `sourceId "jester"` so the actor-sprite fallback draws the class art
+  flipped), `resolveSpecial(e, ordinal, aoe)` (the one rule: answer /
+  Jester / sweep; reward / Mimic / empty), `carryPartyOver` and
+  `orderAfterDecision` (the Mimic morph's pure halves). Every chance is a
+  `blackMarketHash` under its own salt (SKILL gotcha 10).
+- **Decision mode** (`BattleState`, trailing `SpecialEncounter*` ctor
+  parameter; `inert_`, `placeholderFirst_`, `decisionDone_`): the
+  placeholders are inert only in the screen's bookkeeping — `pruneOrder`
+  keeps them off `order_` at `beginTurns`/`advanceTurn`, `noteRoster`
+  (the extracted ctor loop) skips them for the bestiary and the telegraph,
+  `drawUnit` draws an answer as a framed text box, a chest as
+  `prop.chest_battle`, and no meter/KO/status for any of them; a prompt
+  strip above the field carries the question (or the chests' warning) for
+  the whole encounter. `buildCommandMenu` offers Attack / offensive Skill /
+  Escape (`skillIsOffensive`; the info column says why the rest are
+  greyed); `executePending` hands every hostile action to
+  `resolveDecision`: the AOE test is `Battle::hostileTargetCount` (the
+  battle's own `resolveTargets` for a skill, the sweep rule for a basic
+  attack — one definition for all-enemy skills, summons, class sweeps and
+  future targets), a skill pays its MP through `Battle::spendMp`, the
+  reward is paid there and then (`earnGold(..., Patrol, town)`, the gear
+  into the bag + `recordTreasureFound`), a punishment is
+  `Battle::koUnit(actor)` (never `applyDamage`: no Iron Will, no first-hit
+  immunity, no god mode — the Damage/KO events still reach the ledger),
+  and the battle ends at the next settled beat with `Victory` for a reward
+  or `EnemyFled` (the nothing-gained outcome) otherwise — a party the
+  Jester wiped is a real `Defeat`. `BattleResult.rounds` is 1.
+- **The Mimic morph** (`revealMimic`): a fresh `buildBattle(party,
+  mimicTeam)` for the right skills/gear/milestones, `carryPartyOver`
+  (HP/MP/statuses/guard/acted/own-turns by partyIndex, the summon ledger,
+  the debug flag, the round — never a `writeBackParty` round-trip, whose
+  once-only latch would block the real end-of-fight write-back), the
+  observer re-attached, the presentation arrays rebuilt, `bossBattle_`,
+  `noteRoster` (the Mimic enters the bestiary), `spoils_` pointed at the
+  encounter's `mimicSpoils`, `MusicTrack::Boss`, the telegraph on the quip
+  channel, `order_` = the decider then `orderAfterDecision`, and the
+  committed action applied through the real `attack`/`useSkill` as round
+  one's opening blow. The roll stream starts fresh (nothing rolled during
+  the decision). No `BossIntroState` by construction.
+- **Dungeon** (`DungeonState::startSpecialBattle`, `special_`): the Lore
+  case builds the encounter from `highestUnlockedTown` and the profile's
+  `kingDefeated`; the Chests case at the shadow patrol's scale; both push a
+  party-only battle with the placeholders and the run's ledger hook, no
+  spoils. `onResume` tallies `patrols.loreAttempted/loreCorrect/loreWrong/
+  jesterPunish/aoePunish/rewardChests/emptyChests/mimicsRevealed/
+  mimicsDefeated` from `special_->result` and the outcome, picks the
+  corridor line, and lets the existing outcome branches consume the patrol.
+  An armed dragonform or flock stays armed for the next real fight.
+- **Audio**: `MusicTrack::Mock` / `music.mock` (`kMusicCount` 16, a jingle;
+  a missing file falls back to `Sfx::Error`), an original ~2.5 s phrase in
+  `music_data.ps1`.
+- **Art**: `boss.mimic.battle` (36×36) and `prop.chest_battle` (24×24),
+  hand-placed grids appended last; every earlier PNG and WAV byte-identical.
+
+## 55. M113 — cutscene stages
+
+No version motion. `render/CutsceneBackdrop.hpp` (pure, header-only):
+`CutsceneStage { Panorama, Keep, Mine, Forest, Goosy }`,
+`cutsceneStageForTheme(themeId)` (unknown → Panorama) and
+`cutsceneStageTextureId(stage)` → `bg.cutscene.<stage>`. `CutsceneState`
+takes a trailing `stage` parameter (default Panorama, so every town site
+is unchanged) and `render()` draws `ui::drawSceneBackground` with the M97
+sky fill as the fallback colour, the old floor band only when the texture
+is missing, the horizon keyline always, and a 28 % sky-coloured dim strip
+over the actor zone (y 36..106) when the stage is present. `CutsceneDef`
+carries no theme; the stage is always the caller's — `DungeonState`
+passes `cutsceneStageForTheme(dungeon_.themeId)` at its two push sites
+(the story room, the patrol scene). The five scenes are generated on the
+M27 `New-Bg` recipe under their own rng reseed (actor band kept quiet;
+motifs above y 36 and below y 106), byte-stable for every earlier file.
+
+## 56. M115 — the Last Dragon: clone identity and the bounds-aware formation
+
+No version motion. **Clone identity:** `Combatant.bossArt` ("draws from
+the `boss.` sprite family") is set beside `isBoss` in `buildBattle`'s boss
+block and travels to the clone through the `SummonCloneSelf` struct copy
+while the clone's `isBoss = false` stays — so the bestiary, the telemetry
+(`defeats` never counts a `summonSlot`), the boss rules and the M46 boss
+accent keep their `isBoss`/`summonSlot` semantics and only the art
+follows. `BattleState::enemySpriteId` is the ONE resolver (boss family
+for `isBoss || bossArt`, per-enemy art, the class-sprite echo fallback,
+the tier generic, the M112 chest prop) shared by `drawUnit` and the
+formation. **Formation** (`battle_ui::UnitEnvelope { above, below }`,
+`kEnvelopeGap = 2`, `enemyRowYs(envelopes, baseY)` in
+`states/BattleFormation.hpp`, pure): each enemy ordinal's row line comes
+from every unit's real envelope — `above` = texture height − 16 (a sprite
+anchors bottom-centre at line + 16), `below` = 22 (the meter's bottom;
+the enemy status column stays inside it) — with the M101 centre-out
+seating; adjacent screen rows need `below(upper) + above(lower) + gap`,
+a short pair lifts the upper row and everything above it (the old
+`kBossHeadroom` falls out exactly for 24-over-36; two 36s lift more), and
+a block that would climb above y 0 is pushed down whole.
+`BattleState::rebuildFormation` computes the rows once per roster (the
+ctor, the Mimic morph) from the loaded textures (family defaults 36/24
+when a texture is missing); `unitScreenPos`, the render loop and the
+target sort read `enemyRowY_`. `enemyRowOffset` stays for the M101 pins
+and as the fallback. **Art:** `boss_the_dragon` redrawn as a dragon
+silhouette within 36×36 (hand-placed, RNG-free); every other PNG
+byte-identical.
+
+## 57. M116 — the End-game Summary
+
+Save schema stays v1: `Party.summaryShown` is an additive optional bool
+(the `strangerJokesTold` idiom; old saves → false), deliberately outside
+`LifetimeStats` (flow state, not a statistic). **Pure side**
+(`game/Summary.hpp`): `summaryUnlocked(party)` = the finale's keepsake
+choice is recorded (`cutsceneChoiceFor(party, "finale")`), never the
+King's fall alone; `shouldAutoShowSummary` = unlocked and not yet shown;
+`SummaryPage` (six), `summaryPageAt` (wrapping), `summaryRows(page,
+party, db)` → `{label, value, header}` rows built from the M109 ledger
+(display-only; the Bestiary page walks the BestiaryState order — enemies
+then bosses by name — and never marks anything seen), `formatCount`
+(thousands grouping) and `formatPlayTime` (`Hh MMm`). **State**
+(`states/EndgameSummaryState`): a header band, the page name with its
+`n/6`, an Inset list of `drawMenuScrolled` rows (label + right-aligned
+value at the body size, headers as disabled rows — the §6 convention),
+CyclePrev/CycleNext cycle the pages (the scoreboard's board-cycling
+idiom), Up/Down scroll, Cancel leaves; `pausesPlayClock()` is true.
+`onEnter` plays `setMusicThen(Victory, Result)` on the first showing and
+`setMusic(Result)` on revisits; the town restores its own music on
+resume. **Unlock flow** (`TownState::onResume`, before
+`pushAchievementToasts` so a finale toast dismisses first): once
+`shouldAutoShowSummary`, set `summaryShown` and push the state with
+`firstShow = true`. **Revisit**: the roadside block, once the finale is
+done, pushes a two-row `EventChoiceState` ("Talk" / "End-game Summary";
+Cancel steps away) — Talk calls the extracted
+`TownState::playNextStrangerBeat()` (the M100 joke cycle, verbatim), the
+summary pushes the state with `firstShow = false`. **Audio**
+(`AudioManager::setMusicThen(jingle, next)`, `pendingAfterJingle_`): a
+non-jingle first argument plays `next` outright; headless records `next`
+as current; a missing jingle file (the stinger path, which leaves the
+channel idle) starts `next` at once; otherwise the finished-jingle branch
+of `update()` starts the pending loop; a plain `setMusic()` clears any
+pending chain so a stale one never redirects a later jingle. Captures:
+`142`–`147` (each page at maximal content: seven-digit counts in every
+field, the longest names, every boss known, the migration note) and
+`148_stranger_choice`.

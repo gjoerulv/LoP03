@@ -158,6 +158,10 @@ add_library(crystal_core STATIC
     # M53: development-only debug menu. Compiled unconditionally; its body is
     # entirely under #ifdef CRYSTAL_DEBUG_OVERLAY, so it is empty in Release.
     src/states/DebugMenuState.cpp
+    # M114: capture-only font specimen. Same shape: compiled unconditionally,
+    # its body entirely under #ifdef CRYSTAL_CAPTURE.
+    src/states/FontSpecimenState.cpp
+    src/states/EndgameSummaryState.cpp
 )
 
 target_include_directories(crystal_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src"

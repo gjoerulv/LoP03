@@ -9,6 +9,7 @@
 #include "dungeon/DungeonModel.hpp"
 #include "game/Guild.hpp"  // M84: town-perk EXP/gold bonuses
 #include "game/Milestones.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "game/Party.hpp"
 #include "game/Scrolls.hpp"
 
@@ -42,8 +43,11 @@ inline BattleSpoils teamSpoils(const dungeon::EnemyTeam& team,
     // M93 (owner decision 7): a danger-counter patrol pays XP but never gold —
     // circling for step-triggered fights must not become a gold farm. One
     // shared rule here, so the victory panel and the award agree.
-    if (team.patrol) {
+    if (team.patrol && !team.patrolPaysGold) {  // M111: the Goose's bounty stands
         s.gold = 0;
+    }
+    if (team.xpOverride > 0) {  // M111: the replaced patrol's XP, no more
+        s.xp = team.xpOverride;
     }
     return s;
 }
@@ -89,7 +93,7 @@ inline SpoilsResult applySpoils(Party& party, const BattleSpoils& spoils,
     out.gold = spoils.gold +
                spoils.gold *
                    (partyGoldBonusPct(party.members, db) + guildEnemyGoldPct(party.guild)) / 100;
-    party.gold += out.gold;
+    earnGold(party, out.gold, EconomySource::BattleSpoils, party.currentTown);  // M109
 
     struct Snapshot {
         int level, maxHp, maxMp, atk, mag, def, spd;
@@ -121,6 +125,7 @@ inline SpoilsResult applySpoils(Party& party, const BattleSpoils& spoils,
         if (c.level <= b.level) {
             continue;
         }
+        recordLevelUps(party, c.level - b.level);  // M109
         LevelUpDiff d;
         d.name = c.name;
         d.fromLevel = b.level;

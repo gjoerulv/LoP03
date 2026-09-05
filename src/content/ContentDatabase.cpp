@@ -99,6 +99,14 @@ const CurioLoreDef* ContentDatabase::findCurioLore(const std::string& id) const 
     return findIn(curioLores_, id);
 }
 
+bool ContentDatabase::addLoreQuestion(const LoreQuestionDef& def) {  // M112
+    return loreQuestions_.emplace(def.id, def).second;
+}
+
+const LoreQuestionDef* ContentDatabase::findLoreQuestion(const std::string& id) const {  // M112
+    return findIn(loreQuestions_, id);
+}
+
 bool ContentDatabase::addCutscene(const CutsceneDef& def) {  // M97
     return cutscenes_.emplace(def.id, def).second;
 }

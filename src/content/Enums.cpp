@@ -224,6 +224,12 @@ constexpr std::array<std::pair<std::string_view, TriggerDo>, 8> kTriggerDos{{
     {"heal_self_pct", TriggerDo::HealSelfPct},  // M96: heirlooms (rules v18)
 }};
 
+constexpr std::array<std::pair<std::string_view, ScriptDo>, 3> kScriptDos{{  // M111
+    {"status_all_foes", ScriptDo::StatusAllFoes},
+    {"guard", ScriptDo::Guard},
+    {"flee", ScriptDo::Flee},
+}};
+
 }  // namespace
 
 std::optional<Element> parseElement(std::string_view s) { return parseFrom(kElements, s); }
@@ -262,6 +268,7 @@ std::optional<TriggerWhen> parseTriggerWhen(std::string_view s) {
     return parseFrom(kTriggerWhens, s);
 }
 std::optional<TriggerDo> parseTriggerDo(std::string_view s) { return parseFrom(kTriggerDos, s); }
+std::optional<ScriptDo> parseScriptDo(std::string_view s) { return parseFrom(kScriptDos, s); }
 
 const char* toString(Element v) { return nameFrom(kElements, v); }
 
@@ -295,6 +302,7 @@ const char* toString(PassiveHook v) { return nameFrom(kPassiveHooks, v); }
 const char* toString(MilestoneEffect v) { return nameFrom(kMilestoneEffects, v); }
 const char* toString(TriggerWhen v) { return nameFrom(kTriggerWhens, v); }
 const char* toString(TriggerDo v) { return nameFrom(kTriggerDos, v); }
+const char* toString(ScriptDo v) { return nameFrom(kScriptDos, v); }
 
 namespace {
 
@@ -329,5 +337,6 @@ std::vector<std::string_view> passiveHookIds() { return idsFrom(kPassiveHooks); 
 std::vector<std::string_view> milestoneEffectIds() { return idsFrom(kMilestoneEffects); }
 std::vector<std::string_view> triggerWhenIds() { return idsFrom(kTriggerWhens); }
 std::vector<std::string_view> triggerDoIds() { return idsFrom(kTriggerDos); }
+std::vector<std::string_view> scriptDoIds() { return idsFrom(kScriptDos); }
 
 }  // namespace cd::content

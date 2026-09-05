@@ -101,6 +101,16 @@ add_executable(crystal_tests
     test_gooseform.cpp
     test_gamble.cpp
     test_migration.cpp
+    test_lifetime.cpp
+    test_battle_telemetry.cpp
+    test_ledger.cpp
+    test_patrol_dispatch.cpp
+    test_golden_goose.cpp
+    test_lore_encounter.cpp
+    test_chest_encounter.cpp
+    test_cutscene_stage.cpp
+    test_dragon_art.cpp
+    test_summary.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

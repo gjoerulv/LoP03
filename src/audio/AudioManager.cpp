@@ -220,7 +220,11 @@ void AudioManager::startCurrent() {
     if (audio::isJingle(current_)) {
         // No jingle file: play the matching stinger SFX so battle end is
         // never silent, and leave the music channel idle.
-        play(current_ == MusicTrack::Victory ? Sfx::Victory : Sfx::Defeat);
+        // M112: the mocking jingle's stinger is the UI error blip — the
+        // closest thing to a raspberry the SFX table owns.
+        play(current_ == MusicTrack::Victory  ? Sfx::Victory
+             : current_ == MusicTrack::Defeat ? Sfx::Defeat
+                                              : Sfx::Error);
         current_ = MusicTrack::None;
         return;
     }
@@ -232,7 +236,26 @@ void AudioManager::startCurrent() {
     }
 }
 
+void AudioManager::setMusicThen(MusicTrack jingle, MusicTrack next) {
+    pendingAfterJingle_ = MusicTrack::None;
+    if (!audio::isJingle(jingle)) {
+        setMusic(next);  // a loop can never end on its own: play the loop
+        return;
+    }
+    if (!ready_) {
+        current_ = next;  // headless: the loop is the intent
+        return;
+    }
+    setMusic(jingle);
+    if (current_ == MusicTrack::None) {
+        setMusic(next);  // the stinger path: no stream to wait for
+        return;
+    }
+    pendingAfterJingle_ = next;
+}
+
 void AudioManager::setMusic(MusicTrack track) {
+    pendingAfterJingle_ = MusicTrack::None;  // M116: a stale chain never redirects
     if (track == current_) {
         return;
     }
@@ -375,6 +398,11 @@ void AudioManager::update() {
         // One-shot jingles end on their own; free the channel when done.
         if (!fileMusic_[idx].get().looping && !IsMusicStreamPlaying(fileMusic_[idx].get())) {
             current_ = MusicTrack::None;
+            if (pendingAfterJingle_ != MusicTrack::None) {  // M116: the chained loop
+                const MusicTrack next = pendingAfterJingle_;
+                pendingAfterJingle_ = MusicTrack::None;
+                setMusic(next);
+            }
         }
         return;
     }

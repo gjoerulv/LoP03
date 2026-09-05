@@ -27,7 +27,7 @@ BossIntroState::BossIntroState(StateStack& stack, AppContext& context, battle::B
                                battle::BattleResult* resultSlot, MusicTrack music,
                                RunStats* statsSlot, bool castleChallenge,
                                render::BackdropStage stage, std::uint64_t introSeed,
-                               const BattleSpoils* spoils)
+                               const BattleSpoils* spoils, LifetimeHook lifetime)
     : GameState(stack),
       context_(context),
       battle_(std::move(battle)),
@@ -38,6 +38,7 @@ BossIntroState::BossIntroState(StateStack& stack, AppContext& context, battle::B
       stage_(stage),
       introSeed_(introSeed),
       spoils_(spoils),
+      lifetime_(lifetime),
       shards_(buildIntroShards(introSeed, kShardCount)) {
     // The boss name + telegraph shown during the intro (copied out now, so
     // render never reaches back into the battle after it is moved into
@@ -69,7 +70,8 @@ void BossIntroState::launchBattle() {
     context_.fade.start();
     stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(battle_),
                                                     resultSlot_, music_, statsSlot_,
-                                                    castleChallenge_, stage_, spoils_));
+                                                    castleChallenge_, stage_, spoils_,
+                                                    /*manualEnemies=*/false, lifetime_));
 }
 
 void BossIntroState::update(float dt) {

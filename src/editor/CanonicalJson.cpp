@@ -161,7 +161,8 @@ FileStyle styleForFile(const std::string& filename) {
     if (filename == "skills.json" || filename == "enemies.json" || filename == "items.json" ||
         filename == "passives.json" || filename == "milestones.json" ||
         filename == "event_flavor.json" || filename == "curio_lore.json" ||
-        filename == "tutorials.json") {  // M99: id/title/body rows, the flavor shape
+        filename == "tutorials.json" ||  // M99: id/title/body rows, the flavor shape
+        filename == "lore_questions.json") {  // M112: one question per row
         return FileStyle::InlineEntities;
     }
     return FileStyle::BlockEntities;

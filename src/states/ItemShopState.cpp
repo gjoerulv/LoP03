@@ -9,6 +9,7 @@
 #include "core/AppContext.hpp"
 #include "game/ItemCaps.hpp"
 #include "game/Party.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -83,7 +84,9 @@ void ItemShopState::handleInput(const Input& input) {
                            std::to_string(capFor(*it, capBonus)) + ")";
                 messageIsError_ = true;
             } else if (context_.party.gold >= it->value) {
-                context_.party.gold -= it->value;
+                spendGold(context_.party, it->value, EconomySource::ItemShop,
+                          context_.party.currentTown);  // M109
+                recordItemBought(context_.party);
                 context_.party.inventory.add(it->id, 1);
                 context_.audio.play(Sfx::Confirm);
                 message_ = "Bought " + it->name;

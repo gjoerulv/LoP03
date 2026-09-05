@@ -118,8 +118,18 @@ struct BattleObserver;  // M60 record-only telemetry hook (battle/BattleObserver
 // its M75 triggers to the wearer — the first PARTY-side trigger source —
 // TriggerDo gains heal_self_pct, and the item's lowHp* pair is a conditional
 // attack edge on the Brute-enrage pattern, announced once. A party wearing
-// no heirloom resolves byte-identically to v17).
-inline constexpr int kBattleRulesVersion = 18;
+// no heirloom resolves byte-identically to v17); 19 = M111 (scripted enemy
+// actions + the enemy flee: a foe authored `script` takes its first N own
+// turns from the list — one action landing several statuses on every living
+// foe, a guard, a flee — before the ordinary AI resumes, step N tied to
+// ownTurnsTaken so a turn a control status took still consumes it; a fled
+// unit leaves the roster alive-but-gone, and a battle whose foes have all
+// fled ends as EnemyFled — no reward, not a player escape. Shipped content:
+// the Golden Goose patrol. No pre-M111 foe carries a script or can flee, so
+// every earlier battle resolves byte-identically; the bump follows the
+// M89/M95/M96 precedent of tagging a new engine hook that ships with scored
+// content).
+inline constexpr int kBattleRulesVersion = 19;
 
 // Blind (M35): a physical attack from a blinded unit misses this often.
 inline constexpr int kBlindMissPct = 75;
@@ -139,7 +149,9 @@ inline constexpr int kCurseDurationPct = 150;
 inline constexpr int kPoisonMagicDiv = 4;
 
 enum class Side { Party, Enemy };
-enum class Outcome { Ongoing, Victory, Defeat, Escaped };
+// M111: EnemyFled — every foe still standing has FLED (the Golden Goose's
+// getaway): the battle ends with no reward, and it is not a player escape.
+enum class Outcome { Ongoing, Victory, Defeat, Escaped, EnemyFled };
 
 struct StatusInstance {
     content::StatusType type = content::StatusType::None;
@@ -167,6 +179,15 @@ struct TriggerRule {
     int counter = 0;    // EveryNthOwnTurn's own-turn count
 };
 
+// M111 (rules v19): one scripted own-turn action, mirrored from the content
+// ScriptStep at buildBattle (the TriggerRule precedent: the pure model never
+// needs a content struct beyond its enums).
+struct ScriptedAction {
+    content::ScriptDo action = content::ScriptDo::None;
+    std::vector<StatusInstance> statuses;  // status_all_foes: {type, magnitude, authored turns}
+    std::string text;                      // authored announcement (may be empty)
+};
+
 // Reported back to the caller (the dungeon) when a battle ends.
 struct BattleResult {
     Outcome outcome = Outcome::Ongoing;
@@ -192,6 +213,10 @@ struct Combatant {
     // guard.
     bool intercepting = false;
     bool isBoss = false;
+    // M115: draws from the `boss.` sprite family. Set beside isBoss at build
+    // and COPIED to the boss's clone (the struct copy), which is not a boss
+    // (no boss rules, no bestiary/defeat entry of its own) but wears its face.
+    bool bossArt = false;
     // M58 (Deadly Spoon): set once a battle-long stat-scale relic has diminished
     // this unit, so a second such relic cannot halve its stats again. Battle-only
     // state, never persisted.
@@ -339,6 +364,12 @@ struct Combatant {
     int hitsTaken = 0;
     bool summonSlot = false;
 
+    // M111 (rules v19): the foe's scripted own turns (mirrored from
+    // EnemyDef.script at buildBattle; empty for every other unit), and whether
+    // it has FLED — alive but gone: never a target, never a turn, never a KO.
+    std::vector<ScriptedAction> script;
+    bool fled = false;
+
     bool alive() const { return hp > 0; }
 };
 
@@ -431,6 +462,21 @@ public:
     std::string useSkill(int actor, int primaryTarget, const content::SkillDef& skill);
     std::string useItem(int actor, int target, const content::ItemDef& item);
     std::string guard(int actor);
+    // M111: carries out the scripted action for this own turn (both drivers
+    // call it when chooseEnemyAction reports one). Returns the log line.
+    std::string runScriptedStep(int actor);
+    // M112: the ONE definition of "would hit more than one foe" — this
+    // battle's own targeting (resolveTargets for a skill, the sweep rule for
+    // a basic attack), so every all-enemy skill, summon, class sweep and any
+    // future SkillTarget answers here. A pure query: no roll, no mark.
+    int hostileTargetCount(int actor, const content::SkillDef* skill) const;
+    // M112: a decision-mode "cast" at a placeholder pays the skill's MP and
+    // records the Action exactly as useSkill would, resolving nothing.
+    void spendMp(int actor, const content::SkillDef& skill);
+    // M112: an outright knock-out (the Jester's punishment) — deliberately
+    // NOT applyDamage, so Iron Will, first-hit immunity and the debug flag
+    // never soften it; the Damage and KO events still fire for the ledger.
+    void koUnit(int unit);
 
 private:
     // M53: promoted from a file-local free function to a member so it can honour
@@ -440,7 +486,14 @@ private:
     // confusion on any real hit.
     // M63: `extra` (when the caller has a log to grow) receives the
     // first-hit-glance and on-death lines; nullptr callers stay silent.
-    void applyDamage(Combatant& d, int dmg, std::string* extra = nullptr);
+    // M109: `attacker` is the unit responsible (a deliberate hit's actor, the
+    // thorns bearer, the counter-attacker) and rides the Damage/KO telemetry
+    // events only - resolution never reads it; -1 = unattributable.
+    void applyDamage(Combatant& d, int dmg, std::string* extra = nullptr, int attacker = -1);
+    // M109: emits a StatusApplied telemetry event (no-op without an observer).
+    // Called only where addStatus reported the status actually landed.
+    void emitStatusApplied(int actor, const Combatant& target, content::StatusType type,
+                           int turns) const;
     // M63 (Standing Ovation): called where an explicit killer is known.
     std::string rallyOnKill(int killer);
 
@@ -600,6 +653,7 @@ struct EnemyChoice {
     int target = -1;
     std::string skillId;
     ForcedAction forced = ForcedAction::None;  // M44: set when the turn was taken away
+    bool scripted = false;  // M111: carry out Battle::runScriptedStep instead of an action
 };
 EnemyChoice chooseEnemyAction(const Battle& b, int actor, const content::ContentDatabase& db);
 
@@ -677,6 +731,13 @@ bool doesNothingThisTurn(const Battle& b, int actor);
 // construction. Feeds `chooseEnemyAction` (the boss swings instead of
 // casting); BattleState also calls it to show the authored flavour line.
 bool basicAttackTurn(const Combatant& c);
+
+// M111 (rules v19): the scripted action for this unit's CURRENT own turn
+// (ownTurnsTaken, 1-based, indexes the script — a turn a control status took
+// still consumed its step, the M89 lunge precedent), or nullptr once the
+// script is exhausted or absent. Feeds chooseEnemyAction; BattleState reads
+// the same predicate for its presentation. Counter-based, no hash.
+const ScriptedAction* scriptedTurn(const Combatant& c);
 
 // M43: the forced action of a confused unit — a basic attack, never a skill.
 // `attack()` then performs the seeded same-side redirect, so the returned target

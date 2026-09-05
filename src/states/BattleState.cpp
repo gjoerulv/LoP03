@@ -11,7 +11,9 @@
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
+#include "game/Ledger.hpp"            // M112: the decision rewards
 #include "game/Party.hpp"
+#include "game/SpecialEncounter.hpp"  // M112
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "input/PromptLabels.hpp"
@@ -155,7 +157,8 @@ std::vector<std::string> statusLines(const battle::Combatant& c, int maxWidth, i
 BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle battle,
                          battle::BattleResult* resultSlot, MusicTrack musicOverride,
                          RunStats* statsSlot, bool castleChallenge, render::BackdropStage stage,
-                         const BattleSpoils* spoils, bool manualEnemies)
+                         const BattleSpoils* spoils, bool manualEnemies, LifetimeHook lifetime,
+                         SpecialEncounter* special)
     : GameState(stack),
       context_(context),
       battle_(std::move(battle)),
@@ -165,7 +168,9 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
       castleChallenge_(castleChallenge),
       stage_(stage),
       spoils_(spoils),
-      manualEnemies_(manualEnemies) {
+      manualEnemies_(manualEnemies),
+      lifetime_(lifetime),
+      special_(special) {
 #ifndef CRYSTAL_SHIPPING_BUILD
     // M53 debug god mode: seed the battle's party-unkillable flag from the debug
     // cheat. Off in every normal/shipping/sim path (the cheat can only be set by
@@ -173,22 +178,35 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
     // untouched.
     battle_.debugPartyUnkillable = context_.cheats.godMode;
 #endif
-    for (const battle::Combatant& c : battle_.units) {
-        if (c.side == battle::Side::Enemy && c.isBoss) {
-            bossBattle_ = true;
-            if (!c.telegraph.empty()) {
-                bossTelegraph_ = c.telegraph;
-            }
-        }
-        // M42 bestiary: record every foe faced (dedup, insertion order kept).
-        if (c.side == battle::Side::Enemy && !c.sourceId.empty()) {
-            std::vector<std::string>& seen = context_.party.encountered;
-            if (std::find(seen.begin(), seen.end(), c.sourceId) == seen.end()) {
-                seen.push_back(c.sourceId);
+    // M109: a real fight feeds the save's lifetime ledger through the model's
+    // record-only observer hook. Nothing zero-stakes ever passes a ledger, so
+    // the attach itself is the exclusion rule (the observer can only tally).
+    if (lifetime_.stats != nullptr) {
+        telemetry_ = std::make_unique<BattleTelemetry>(*lifetime_.stats, battle_,
+                                                       context_.content);
+        battle_.observer = telemetry_.get();
+    }
+    // M112: a decision encounter's placeholders are every enemy-side unit of
+    // the party-only battle it arrives in (appended after the party, so the
+    // first enemy index is the first placeholder).
+    inert_.assign(battle_.units.size(), 0);
+    if (special_ != nullptr && !special_->resolved()) {
+        for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+            if (battle_.units[i].side == battle::Side::Enemy) {
+                inert_[i] = 1;
+                if (placeholderFirst_ < 0) {
+                    placeholderFirst_ = static_cast<int>(i);
+                }
             }
         }
     }
-    message_ = bossBattle_ ? "A boss appears!" : "A battle begins!";
+    noteRoster();
+    if (decisionPending()) {
+        message_ = special_->kind == SpecialKind::Lore ? "The Jester has a question."
+                                                       : "Three chests stand in the corridor.";
+    } else {
+        message_ = bossBattle_ ? "A boss appears!" : "A battle begins!";
+    }
     displayHp_.reserve(battle_.units.size());
     for (const battle::Combatant& c : battle_.units) {
         displayHp_.push_back(c.hp);
@@ -203,6 +221,7 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
             koFade_[i] = 0.0f;
         }
     }
+    rebuildFormation();  // M115
     context_.fade.start();
     context_.audio.setMusic(musicOverride_ != MusicTrack::None
                                 ? musicOverride_
@@ -212,8 +231,38 @@ BattleState::BattleState(StateStack& stack, AppContext& context, battle::Battle 
 void BattleState::onEnter() { maybeTutorialPrompt(stack(), context_, tutorial::kBattleFirst); }
 
 #ifdef CRYSTAL_CAPTURE
-void BattleState::captureEnterTargeting() {
+void BattleState::captureSpecialPick(int ordinal) {
+    // M112: the first standing member strikes placeholder `ordinal` with a
+    // basic attack; the beat is held (the Done beat, or the Mimic's impact).
+    captureEnterTargeting();
+    // A sweeping class (the capture party carries a Dragon) would turn any
+    // pick into a field sweep; the scene wants a single strike, so the first
+    // standing member whose basic attack hits one foe decides.
+    for (std::size_t i = 0; i < order_.size(); ++i) {
+        const battle::Combatant& u = battle_.units[static_cast<std::size_t>(order_[i])];
+        if (u.side == battle::Side::Party && u.alive() && !u.attackHitsAll) {
+            orderPos_ = static_cast<int>(i);
+            break;
+        }
+    }
+    pendingKind_ = PendingKind::Attack;
+    if (placeholderFirst_ < 0) {
+        return;
+    }
+    executePending(placeholderFirst_ + ordinal);
+    if (decisionDone_) {
+        commitPresentation();
+        decisionDone_ = false;
+        result_ = decisionOutcome_;
+        phase_ = Phase::Done;
+    } else {
+        captureFreezeSeq_ = true;  // the Mimic's revealed impact
+    }
+}
+
+void BattleState::captureEnterTargeting(int cursor) {
     order_ = battle::turnOrder(battle_);
+    pruneOrder();  // M112
     orderPos_ = 0;
     for (std::size_t i = 0; i < order_.size(); ++i) {
         const int u = order_[static_cast<std::size_t>(i)];
@@ -225,8 +274,11 @@ void BattleState::captureEnterTargeting() {
     }
     pendingKind_ = PendingKind::Attack;
     targetCandidates_ = battle_.aliveIndices(battle::Side::Enemy);
-    sortTargetsByScreenY();  // M101: captures cycle visually, like live play
-    targetCursor_ = 0;
+    targetCursor_ = 0;  // M115: `cursor` picks the highlighted target below
+    sortTargetsByScreenY();
+    if (cursor > 0 && cursor < static_cast<int>(targetCandidates_.size())) {
+        targetCursor_ = cursor;  // M115: the visual ordinal, like live play (M101)
+    }
     phase_ = Phase::ChooseTarget;
 }
 
@@ -449,6 +501,56 @@ bool BattleState::bossOnField() const {
     return false;
 }
 
+std::string BattleState::enemySpriteId(const battle::Combatant& c, bool& flipX) const {
+    flipX = false;
+    if (isInert(static_cast<int>(&c - battle_.units.data())) && special_ != nullptr &&
+        special_->kind == SpecialKind::Chests) {
+        return "prop.chest_battle";  // M112: a closed chest until it is opened
+    }
+    if (c.side == battle::Side::Party) {
+        return "actor." + c.sourceId + ".battle";
+    }
+    if (c.isBoss || c.bossArt) {  // M115: the clone wears the boss's face
+        const std::string id = "boss." + c.sourceId + ".battle";
+        return context_.resources.hasTexture(id) ? id : "boss.generic.battle";
+    }
+    const std::string id = "enemy." + c.sourceId + ".battle";
+    if (context_.resources.hasTexture(id)) {
+        return id;
+    }
+    // M94 spar echoes mirror party members, so an enemy-side sourceId can
+    // be a CLASS id: the member's own battle sprite is the echo's face,
+    // flipped to face the party like any foe (owner fix 2026-08-17).
+    const std::string actorId = "actor." + c.sourceId + ".battle";
+    if (context_.resources.hasTexture(actorId)) {
+        flipX = true;
+        return actorId;
+    }
+    const content::EnemyDef* def = context_.content.findEnemy(c.sourceId);
+    return (def != nullptr && def->tier == content::EnemyTier::Elite) ? "enemy.elite.battle"
+                                                                       : "enemy.normal.battle";
+}
+
+void BattleState::rebuildFormation() {
+    std::vector<battle_ui::UnitEnvelope> envelopes;
+    for (const battle::Combatant& c : battle_.units) {
+        if (c.side != battle::Side::Enemy) {
+            continue;
+        }
+        battle_ui::UnitEnvelope e;
+        bool flip = false;
+        const std::string id = enemySpriteId(c, flip);
+        int height = (c.isBoss || c.bossArt) ? 36 : 24;  // the family defaults
+        if (context_.resources.hasTexture(id)) {
+            height = context_.resources.texture(id).height;
+        }
+        e.above = std::max(0, height - 16);
+        e.below = 22;
+        envelopes.push_back(e);
+    }
+    enemyRowY_ = battle_ui::enemyRowYs(envelopes, enemyBaseY());
+}
+
 void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     int enemyRow = 0;
     int partyRow = 0;
@@ -461,8 +563,10 @@ void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
     }
     if (battle_.units[static_cast<std::size_t>(index)].side == battle::Side::Enemy) {
         outX = 36;
-        // M101 center-out; the rows above a boss lift for its 36px crown.
-        outY = enemyBaseY() + battle_ui::enemyRowOffset(enemyRow, bossOnField());
+        // M101 center-out; M115: every row's line comes from the envelopes.
+        outY = enemyRow < static_cast<int>(enemyRowY_.size())
+                   ? enemyRowY_[static_cast<std::size_t>(enemyRow)]
+                   : enemyBaseY() + battle_ui::enemyRowOffset(enemyRow, bossOnField());
     } else {
         outX = context_.virtualWidth - 110;
         outY = 36 + partyRow * 34;
@@ -560,6 +664,43 @@ void BattleState::commitPresentation() {
     pendingSfx_ = 0;
 }
 
+void BattleState::noteRoster() {
+    for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+        const battle::Combatant& c = battle_.units[i];
+        if (isInert(static_cast<int>(i))) {
+            continue;  // M112: a placeholder is a choice, never a foe faced
+        }
+        if (c.side == battle::Side::Enemy && c.isBoss) {
+            bossBattle_ = true;
+            if (!c.telegraph.empty()) {
+                bossTelegraph_ = c.telegraph;
+            }
+        }
+        // M42 bestiary: record every foe faced (dedup, insertion order kept).
+        if (c.side == battle::Side::Enemy && !c.sourceId.empty()) {
+            std::vector<std::string>& seen = context_.party.encountered;
+            if (std::find(seen.begin(), seen.end(), c.sourceId) == seen.end()) {
+                seen.push_back(c.sourceId);
+            }
+        }
+    }
+}
+
+bool BattleState::decisionPending() const {
+    return special_ != nullptr && !special_->resolved();
+}
+
+bool BattleState::isInert(int index) const {
+    return index >= 0 && index < static_cast<int>(inert_.size()) &&
+           inert_[static_cast<std::size_t>(index)] != 0;
+}
+
+void BattleState::pruneOrder() {
+    order_.erase(std::remove_if(order_.begin(), order_.end(),
+                                [this](int i) { return isInert(i); }),
+                 order_.end());
+}
+
 int BattleState::currentActor() const {
     if (order_.empty()) {
         return 0;
@@ -569,6 +710,7 @@ int BattleState::currentActor() const {
 
 void BattleState::beginTurns() {
     order_ = battle::turnOrder(battle_);
+    pruneOrder();  // M112
     orderPos_ = 0;
     battle_.turnsTaken = 1;  // round 1
     battle_.beginRound();    // enmity decay at round start (M28); mirrors Simulator
@@ -645,6 +787,7 @@ void BattleState::advanceTurn() {
         ++orderPos_;
         if (orderPos_ >= static_cast<int>(order_.size())) {
             order_ = battle::turnOrder(battle_);
+            pruneOrder();  // M112
             orderPos_ = 0;
             ++battle_.turnsTaken;  // a new round begins
             battle_.beginRound();  // enmity decay at round start (M28)
@@ -681,6 +824,21 @@ void BattleState::buildCommandMenu() {
     // PLAYER side's end-the-spar verb, so both rows sit disabled.
     const bool echoTurn = a.side == battle::Side::Enemy;
     const bool hasItems = !echoTurn && !consumableIds().empty();
+    if (decisionPending()) {
+        // M112: a decision is answered with an attack, an offensive skill or
+        // a retreat — nothing else (the greyed rows say why in the info column).
+        bool offensive = false;
+        for (const std::string& sid : a.skillIds) {
+            const content::SkillDef* sk = context_.content.findSkill(sid);
+            offensive = offensive || (sk != nullptr && skillIsOffensive(*sk));
+        }
+        commandMenu_.setItems({{"Attack", true},
+                               {"Skill", offensive},
+                               {"Item", false},
+                               {"Guard", false},
+                               {"Escape", true}});
+        return;
+    }
     commandMenu_.setItems({{"Attack", true},
                            {"Skill", hasSkills},
                            {"Item", hasItems},
@@ -707,11 +865,15 @@ void BattleState::buildSkillMenu() {
         // M75: a cursed caster pays double — the shown cost IS the real cost,
         // through the same shared rule useSkill deducts by.
         const int cost = battle::mpCostFor(a, *s);
-        const bool enabled = a.mp >= cost && !silencedBlocked && !summonSpent;
+        // M112: only an offensive skill can answer a decision.
+        const bool notHere = decisionPending() && !skillIsOffensive(*s);
+        const bool enabled = a.mp >= cost && !silencedBlocked && !summonSpent && !notHere;
         // The cost lives in its own right-aligned column so a long skill name can
         // never push it out of view; a blocked skill shows the reason instead.
         std::string suffix;
-        if (summonSpent) {
+        if (notHere) {
+            suffix = "N/A";
+        } else if (summonSpent) {
             suffix = "USED";
         } else if (silencedBlocked) {
             suffix = "SIL";
@@ -852,6 +1014,10 @@ void BattleState::onItemChosen() {
 }
 
 void BattleState::executePending(int targetUnit) {
+    if (decisionPending()) {
+        resolveDecision(targetUnit);  // M112: a choice, never a hit
+        return;
+    }
     const int actor = currentActor();
     std::vector<int> hpBefore;
     hpBefore.reserve(battle_.units.size());
@@ -933,6 +1099,162 @@ void BattleState::executePending(int targetUnit) {
     afterAction();
 }
 
+void BattleState::resolveDecision(int targetUnit) {
+    // M112: the committed hostile action IS the pick. The one AOE definition
+    // is the battle's own targeting; a skill still pays its MP (it was cast,
+    // at a chest or a question); nothing is ever damaged here except the
+    // striker the Jester punishes, and that for real.
+    const int actor = currentActor();
+    const content::SkillDef* skill = pendingKind_ == PendingKind::Skill
+                                         ? context_.content.findSkill(pendingSkillId_)
+                                         : nullptr;
+    const bool aoe = battle_.hostileTargetCount(actor, skill) > 1;
+    const int ordinal = targetUnit >= placeholderFirst_ && placeholderFirst_ >= 0
+                            ? targetUnit - placeholderFirst_
+                            : 0;
+    if (skill != nullptr) {
+        battle_.spendMp(actor, *skill);
+    } else {
+        battle_.units[static_cast<std::size_t>(actor)].actedOnce = true;
+    }
+    special_->deciderPartyIndex = battle_.units[static_cast<std::size_t>(actor)].partyIndex;
+    const SpecialResult result = resolveSpecial(*special_, ordinal, aoe);
+    if (result == SpecialResult::MimicRevealed) {
+        revealMimic(actor, skill);
+        return;
+    }
+    std::vector<int> hpBefore;
+    hpBefore.reserve(battle_.units.size());
+    for (const battle::Combatant& u : battle_.units) {
+        hpBefore.push_back(u.hp);
+    }
+    const std::string& who = battle_.units[static_cast<std::size_t>(actor)].name;
+    aoeTint_ = AoeTint::None;
+    fxElement_ = content::Element::None;
+    int damageSfx = 2;
+    switch (result) {
+        case SpecialResult::LoreCorrect:
+            message_ = "Correct! The Jester pays up: " + std::to_string(special_->rewardGold) +
+                       " gold.";
+            earnGold(context_.party, special_->rewardGold, EconomySource::Patrol, lifetime_.town);
+            break;
+        case SpecialResult::LoreWrong:
+            message_ = "The Jester: \"" + special_->lore.mockLine + "\"";
+            break;
+        case SpecialResult::JesterPunished:
+            message_ = who + " strikes the Jester. The Jester strikes back - " + who +
+                       " is knocked out!";
+            battle_.koUnit(actor);
+            break;
+        case SpecialResult::AoePunished:
+            message_ = "The whole corridor? The Jester objects - " + who + " is knocked out!";
+            battle_.koUnit(actor);
+            break;
+        case SpecialResult::ChestGold:
+            message_ = "The chest is full: " + std::to_string(special_->rewardGold) + " gold!";
+            earnGold(context_.party, special_->rewardGold, EconomySource::Patrol, lifetime_.town);
+            break;
+        case SpecialResult::ChestGear: {
+            const content::ItemDef* it = context_.content.findItem(special_->rewardGearId);
+            message_ = "The chest holds " + (it != nullptr ? it->name : special_->rewardGearId) +
+                       "!";
+            context_.party.inventory.add(special_->rewardGearId, 1);
+            recordTreasureFound(context_.party);
+            break;
+        }
+        case SpecialResult::ChestEmpty:
+            message_ = "Empty. Somewhere down the corridor, a jester laughs.";
+            break;
+        case SpecialResult::MimicRevealed:
+        case SpecialResult::Unresolved:
+            break;
+    }
+    // The battle ends at the next settled beat: a reward is a win, anything
+    // else pays nothing and counts no escape (the flee outcome's semantics);
+    // a party wiped by the punishment is a real defeat (update() checks).
+    decisionDone_ = true;
+    decisionOutcome_ = specialRewards(result) ? battle::Outcome::Victory
+                                              : battle::Outcome::EnemyFled;
+    stageNumbers(hpBefore, damageSfx, /*statusAction=*/false);
+    afterAction();
+}
+
+void BattleState::revealMimic(int actor, const content::SkillDef* skill) {
+    // M112: the lying chest is a boss. The battle morphs in place — a fresh
+    // Mimic battle for the right skills, gear and milestones, the party's
+    // fight state carried over by partyIndex (never a writeBackParty
+    // round-trip), the boss music, the roster noted — and the committed
+    // action lands on the Mimic as round one's opening blow. Nothing double
+    // counts: the decision turn IS round one.
+    const int deciderPartyIndex = battle_.units[static_cast<std::size_t>(actor)].partyIndex;
+    battle::Battle fresh =
+        battle::buildBattle(context_.party, special_->chests.mimicTeam, context_.content);
+    carryPartyOver(battle_, fresh);
+    battle_ = std::move(fresh);
+    battle_.observer = telemetry_.get();
+    const std::size_t n = battle_.units.size();
+    displayHp_.clear();
+    for (const battle::Combatant& c : battle_.units) {
+        displayHp_.push_back(c.hp);
+    }
+    hitFlags_.assign(n, 0);
+    koFade_.assign(n, 1.0f);
+    inert_.assign(n, 0);
+    placeholderFirst_ = -1;
+    bossBattle_ = true;
+    noteRoster();
+    rebuildFormation();  // M115: the lone boss at the centre
+    spoils_ = &special_->chests.mimicSpoils;
+    context_.audio.setMusic(MusicTrack::Boss);
+    jestLine_ = bossTelegraph_.empty() ? "The lid was a lie." : bossTelegraph_;
+    jestTimer_ = 2.5f * settings::messageDurationScale(context_.settings.values.messageSpeed);
+    // The decider keeps the current slot; the rest of round one follows it.
+    int decider = 0;
+    int mimic = -1;
+    for (std::size_t i = 0; i < n; ++i) {
+        if (battle_.units[i].side == battle::Side::Party &&
+            battle_.units[i].partyIndex == deciderPartyIndex) {
+            decider = static_cast<int>(i);
+        }
+        if (battle_.units[i].side == battle::Side::Enemy && mimic < 0) {
+            mimic = static_cast<int>(i);
+        }
+    }
+    order_ = orderAfterDecision(battle_, deciderPartyIndex);
+    order_.insert(order_.begin(), decider);
+    orderPos_ = 0;
+    // The opening action, through the real rules (an AOE resolves against
+    // the lone foe).
+    std::vector<int> hpBefore;
+    hpBefore.reserve(n);
+    for (const battle::Combatant& u : battle_.units) {
+        hpBefore.push_back(u.hp);
+    }
+    int damageSfx = 2;
+    bool statusAction = false;
+    aoeTint_ = AoeTint::None;
+    fxElement_ = content::Element::None;
+    std::string opening;  // the telegraph rides the quip channel; the log is the blow
+    if (skill != nullptr && mimic >= 0) {
+        opening += battle_.useSkill(decider, mimic, *skill);
+        fxElement_ = skill->element;
+        damageSfx = skill->category == content::SkillCategory::Magic ? 4 : 2;
+        statusAction = skill->statusEffect != content::StatusType::None;
+        aoeTint_ = aoeTintForSkill(*skill);
+    } else if (mimic >= 0) {
+        const battle::Combatant& self = battle_.units[static_cast<std::size_t>(decider)];
+        if (self.attackHitsAll && !battle::isConfused(self)) {
+            aoeTint_ = AoeTint::Damage;
+        }
+        fxElement_ = self.weaponElement;
+        opening += battle_.attack(decider, mimic);
+    }
+    message_ = opening;
+    accumulateStats(hpBefore, decider, /*offensiveStatus=*/false);
+    stageNumbers(hpBefore, damageSfx, statusAction);
+    afterAction();
+}
+
 void BattleState::accumulateStats(const std::vector<int>& hpBefore, int actor,
                                   bool offensiveStatus) {
     if (stats_ == nullptr) {
@@ -977,7 +1299,15 @@ void BattleState::executeEnemy(int actor) {
     aoeTint_ = AoeTint::None;               // M51
     fxElement_ = content::Element::None;    // M91: set per resolved action below
     const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
-    if (choice.forced == battle::ForcedAction::Guard) {
+    if (choice.scripted) {
+        // M111: the foe's scripted own turn — its authored line is the whole
+        // show; a mass status action wears the M51 debuff tint, and a fled foe
+        // fades out below like a fallen one.
+        const battle::ScriptedAction* step = battle::scriptedTurn(self);
+        statusAction = step != nullptr && step->action == content::ScriptDo::StatusAllFoes;
+        aoeTint_ = statusAction ? AoeTint::Debuff : AoeTint::None;
+        message_ = battle_.runScriptedStep(actor);
+    } else if (choice.forced == battle::ForcedAction::Guard) {
         // M44 (Evil Goose): the foe is too frightened to do anything but guard.
         message_ = self.name + " is terrified and can only cower behind its guard!";
         battle_.guard(actor);
@@ -1179,6 +1509,10 @@ void BattleState::maybeApplySpoils() {
 
 void BattleState::finish() {
     writeBackParty();
+    // M109: the one place every real fight ends - the ledger's outcome seam.
+    if (lifetime_.stats != nullptr) {
+        recordBattleEnd(*lifetime_.stats, battle_, result_, battle_.turnsTaken, lifetime_.town);
+    }
     if (resultSlot_ != nullptr) {
         resultSlot_->outcome = result_;
         resultSlot_->rounds = battle_.turnsTaken;
@@ -1205,6 +1539,8 @@ std::string BattleState::outcomeMessage() const {
                          "half your gold is lost and the run is forfeit.";
         case battle::Outcome::Escaped:
             return "Escaped!";
+        case battle::Outcome::EnemyFled:  // M111
+            return "The foe has fled! Nothing gained, nothing lost.";
         case battle::Outcome::Ongoing:
             return "";
     }
@@ -1218,6 +1554,14 @@ void BattleState::openDetails() {
         unit = targetCandidates_[static_cast<std::size_t>(targetCursor_)];
     }
     const battle::Combatant& c = battle_.units[static_cast<std::size_t>(unit)];
+    if (isInert(unit)) {
+        // M112: a choice, not a foe.
+        stack().pushState(std::make_unique<DetailsOverlayState>(
+            stack(), context_, "Battle Details",
+            c.name + "\nA choice, not a foe. Strike it with an attack or an offensive skill "
+                     "to choose it; Escape steps away."));
+        return;
+    }
     std::string body = c.name + " - HP " + std::to_string(c.hp) + "/" +
                        std::to_string(c.maxHp);
     if (c.side == battle::Side::Party) {
@@ -1446,8 +1790,8 @@ void BattleState::update(float dt) {
     // Fallen enemies sink away once their shown HP reaches zero; party
     // members stay visible (they can be revived).
     for (std::size_t i = 0; i < battle_.units.size(); ++i) {
-        if (battle_.units[i].side == battle::Side::Enemy && displayHp_[i] <= 0 &&
-            koFade_[i] > 0.0f) {
+        if (battle_.units[i].side == battle::Side::Enemy &&
+            (displayHp_[i] <= 0 || battle_.units[i].fled) && koFade_[i] > 0.0f) {  // M111
             koFade_[i] = std::max(0.0f, koFade_[i] - dt / 0.4f);
         }
     }
@@ -1468,6 +1812,24 @@ void BattleState::update(float dt) {
         return;
     }
     lungeUnit_ = -1;
+    if (decisionDone_) {
+        // M112: the decision is settled and shown; the battle ends here. A
+        // party the Jester wiped is a real defeat; otherwise the outcome the
+        // resolution chose (a win with its fanfare, or nothing with the mock).
+        decisionDone_ = false;
+        const battle::Outcome wiped = battle_.outcome();
+        result_ = wiped == battle::Outcome::Defeat ? wiped : decisionOutcome_;
+        phase_ = Phase::Done;
+        if (result_ == battle::Outcome::Defeat) {
+            message_ = outcomeMessage();
+            log_.push(message_);
+            context_.audio.setMusic(MusicTrack::Defeat);
+        } else {
+            context_.audio.setMusic(specialRewards(special_->result) ? MusicTrack::Victory
+                                                                     : MusicTrack::Mock);
+        }
+        return;
+    }
     const battle::Outcome o = battle_.outcome();
     if (o != battle::Outcome::Ongoing) {
         result_ = o;
@@ -1477,8 +1839,13 @@ void BattleState::update(float dt) {
         maybeApplySpoils();   // M68: pay the team's spoils; the panel shows them
         // One-shot jingle on the music channel (M21); if its file is missing
         // the AudioManager falls back to the matching stinger SFX.
-        context_.audio.setMusic(o == battle::Outcome::Victory ? MusicTrack::Victory
-                                                             : MusicTrack::Defeat);
+        // M111: a foe's flight (EnemyFled) earns no jingle either way — the
+        // battle music simply runs into the Done beat, as a player escape does.
+        if (o == battle::Outcome::Victory) {
+            context_.audio.setMusic(MusicTrack::Victory);
+        } else if (o == battle::Outcome::Defeat) {
+            context_.audio.setMusic(MusicTrack::Defeat);
+        }
     } else {
         advanceTurn();
     }
@@ -1500,39 +1867,33 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
     }
     const float flash =
         hitFlags_[static_cast<std::size_t>(index)] != 0 ? seq_.flashStrength() : 0.0f;
-
-    // Sprite lookup: a specific id first (per-enemy art is a manifest
-    // drop-in), then the tier-generic sprite, then the pre-asset rectangle.
-    std::string spriteId;
-    bool flipX = false;
-    if (c.side == battle::Side::Party) {
-        spriteId = "actor." + c.sourceId + ".battle";
-    } else if (c.isBoss) {
-        spriteId = "boss." + c.sourceId + ".battle";
-        if (!context_.resources.hasTexture(spriteId)) {
-            spriteId = "boss.generic.battle";
+    const bool inert = isInert(index);  // M112: a choice on the field, not a foe
+    const style::Palette& pal = style::palette();
+    if (inert && special_ != nullptr && special_->kind == SpecialKind::Lore &&
+        c.sourceId.empty()) {
+        // A lore answer: a framed text box where a foe would stand. Wide
+        // enough for the longest authored answer at the caption size; the
+        // focus brackets frame the box while it is targeted.
+        constexpr int kAnswerW = 190;  // 26 wide glyphs at the caption size, with room
+        constexpr int kAnswerH = 15;
+        ui::drawFrame(x - 2, y + 1, kAnswerW, kAnswerH, ui::FrameStyle::Inset);
+        ui::drawTextFitted(c.name, x + 3, y + 4, kAnswerW - 10, style::kFontSmall,
+                           targeted ? pal.cursor : pal.text, "battle.answer");
+        if (targeted) {
+            ui::drawFocusBrackets(x - 3, y, kAnswerW + 2, kAnswerH + 2, pal.cursor);
         }
-    } else {
-        spriteId = "enemy." + c.sourceId + ".battle";
-        if (!context_.resources.hasTexture(spriteId)) {
-            // M94 spar echoes mirror party members, so an enemy-side sourceId
-            // can be a CLASS id: the member's own battle sprite is the echo's
-            // face, flipped to face the party like any foe (owner fix
-            // 2026-08-17; the tier-generic beast was wearing their names).
-            const std::string actorId = "actor." + c.sourceId + ".battle";
-            if (context_.resources.hasTexture(actorId)) {
-                spriteId = actorId;
-                flipX = true;
-            } else {
-                const content::EnemyDef* def = context_.content.findEnemy(c.sourceId);
-                spriteId = (def != nullptr && def->tier == content::EnemyTier::Elite)
-                               ? "enemy.elite.battle"
-                               : "enemy.normal.battle";
-            }
-        }
+        return;
     }
 
-    const style::Palette& p = style::palette();
+    // Sprite lookup (M115: one shared resolver — the formation reads the
+    // same id for its envelopes): a specific id first (per-enemy art is a
+    // manifest drop-in), the boss family for a boss OR its clone, the
+    // class-sprite echo, then the tier-generic sprite, then the pre-asset
+    // rectangle.
+    bool flipX = false;
+    const std::string spriteId = enemySpriteId(c, flipX);
+
+    const style::Palette& p = pal;
     if (context_.resources.hasTexture(spriteId)) {
         const Texture2D& tex = context_.resources.texture(spriteId);
         const int sx = x + 20 - tex.width / 2;   // bottom-center on the old
@@ -1577,6 +1938,9 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         // Acting unit: gold chevron with the sanctioned one-pixel nudge.
         ui::drawChevron(x - 10, y + 4, p.cursor, ui::motionPhase());
     }
+    if (inert) {
+        return;  // M112: no meter, no KO tag, no statuses for a placeholder
+    }
 
     // Names are no longer painted over every sprite (M25 slice 2); a unit's
     // name and judgment stats appear on the target-info panel while it is being
@@ -1589,13 +1953,13 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         ui::drawMeter(x, y + 23, 40, 4, c.mp < 0 ? 0 : c.mp, c.maxMp, p.mpFill);
         // HP and MP as numerals (M25 slice 3): MP is the resource that gates
         // skills, so its exact value gets the same clarity as HP.
-        ui::drawText(TextFormat("HP %d/%d", shownHp < 0 ? 0 : shownHp, c.maxHp), x + 44, y + 4, 8,
+        ui::drawText(TextFormat("HP %d/%d", shownHp < 0 ? 0 : shownHp, c.maxHp), x + 44, y + 4, style::kFontSmall,
                      p.text);
-        ui::drawText(TextFormat("MP %d/%d", c.mp < 0 ? 0 : c.mp, c.maxMp), x + 44, y + 13, 8,
+        ui::drawText(TextFormat("MP %d/%d", c.mp < 0 ? 0 : c.mp, c.maxMp), x + 44, y + 13, style::kFontSmall,
                      p.mpFill);
     }
     if (!shownAlive) {
-        ui::drawText("KO", x + 13, y + 4, 8, Fade(p.dangerText, fade));
+        ui::drawText("KO", x + 13, y + 4, style::kFontSmall, Fade(p.dangerText, fade));
     }
 
     if (!c.statuses.empty() && shownAlive) {
@@ -1606,9 +1970,9 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         const int sx = x + 44;
         const int sy = y + (party ? 22 : 4);
         const int maxWidth = party ? context_.virtualWidth - sx - 2 : 120;
-        const std::vector<std::string> lines = statusLines(c, maxWidth, 8, 2);
+        const std::vector<std::string> lines = statusLines(c, maxWidth, style::kFontSmall, 2);
         for (std::size_t i = 0; i < lines.size(); ++i) {
-            ui::drawTextFitted(lines[i], sx, sy + static_cast<int>(i) * 8, maxWidth, 8,
+            ui::drawTextFitted(lines[i], sx, sy + static_cast<int>(i) * style::kFontSmall, maxWidth, style::kFontSmall,
                                ui::lighten(p.magic, 32),
                                party ? "battle.status.party" : "battle.status.enemy");
         }
@@ -1675,9 +2039,10 @@ void BattleState::render() {
             // M101: center-out rows — the boss (first enemy unit) holds the
             // middle; unitScreenPos applies the same mapping for the floats.
             // The two rows above a boss lift clear of its 36px crown.
-            drawUnit(c, static_cast<int>(i), 36 + shakeX,
-                     enemyY0 + battle_ui::enemyRowOffset(enemyRow, bossField), isCurrent,
-                     isTarget);
+            const int rowY = enemyRow < static_cast<int>(enemyRowY_.size())
+                                 ? enemyRowY_[static_cast<std::size_t>(enemyRow)]
+                                 : enemyY0 + battle_ui::enemyRowOffset(enemyRow, bossField);
+            drawUnit(c, static_cast<int>(i), 36 + shakeX, rowY, isCurrent, isTarget);  // M115
             ++enemyRow;
         } else {
             // The party column leaves room to its right for the HP/MP numerals
@@ -1742,6 +2107,20 @@ void BattleState::render() {
             DrawRectangle(0, 0, w, panelY, tint);
         }
     }
+    if (special_ != nullptr && special_->result != SpecialResult::MimicRevealed) {
+        // M112: the question (or the chests' warning) above the field, for the
+        // whole encounter including its settled beat — the player sees what
+        // they answered. Two caption lines at most; the capture lint referees.
+        // It sits in the top strip beside the turn counter (the only free band:
+        // the party's first row starts right under the stage's top keyline).
+        const std::string prompt = specialPrompt(*special_);
+        constexpr int kPromptX = 6;
+        constexpr int kPromptY = 3;
+        const int promptW = w - 80;  // clear of the top-right "Turns N" label
+        ui::drawFrame(kPromptX, kPromptY, promptW, 24, ui::FrameStyle::Raised);
+        ui::drawTextWrappedCentered(prompt, kPromptX + promptW / 2, kPromptY + 4, promptW - 16,
+                                    style::kFontSmall, pal.text, "battle.special.prompt", 2);
+    }
     const bool bossIntro = phase_ == Phase::Intro && !bossTelegraph_.empty();
     ui::drawFrame(4, panelY, w - 8, kPanelH,
                   bossIntro ? ui::FrameStyle::Danger : ui::FrameStyle::Standard);
@@ -1788,6 +2167,14 @@ void BattleState::render() {
                 const char* why = commandMenu_.cursor() == 1 ? "No skills learned."
                                   : commandMenu_.cursor() == 2 ? "No usable items."
                                                                : "";
+                if (decisionPending()) {  // M112: the decision's own reasons
+                    const bool lore = special_->kind == SpecialKind::Lore;
+                    why = commandMenu_.cursor() == 1   ? "No offensive skill to answer with."
+                          : commandMenu_.cursor() == 2 ? "Not before you choose."
+                          : commandMenu_.cursor() == 3
+                              ? (lore ? "The Jester giggles. No." : "The chests are waiting.")
+                              : "";
+                }
                 ui::drawTextFitted(why, kInfoX, panelY + 20, infoW, style::kFontBody,
                                    style::palette().textDim, "battle.why");
             }
@@ -1817,7 +2204,12 @@ void BattleState::render() {
                     // read as scrollable.
                     const battle::Combatant& a =
                         battle_.units[static_cast<std::size_t>(actor)];
-                    if (!battle::canCast(a, *s)) {
+                    if (decisionPending() && !skillIsOffensive(*s)) {
+                        ui::drawTextPreview("Not here. Only an attack or an offensive skill "
+                                            "answers.",
+                                            kInfoX, panelY + 20, infoW, style::kFontBody,
+                                            style::palette().textDim, 3, /*markMore=*/false);
+                    } else if (!battle::canCast(a, *s)) {
                         ui::drawTextPreview("SIL: silenced - MP skills are blocked.", kInfoX,
                                             panelY + 20, infoW, style::kFontBody,
                                             style::palette().textDim, 3, /*markMore=*/false);
@@ -1878,6 +2270,20 @@ void BattleState::render() {
                 if (hintFits) {
                     ui::drawTextRight(backHint, w - 10, panelY + 7, style::kFontBody,
                                       style::palette().textDim);
+                }
+                if (isInert(targetUnit)) {
+                    // M112: a choice has no vitals — say what striking it means.
+                    const bool jester = t.sourceId == std::string(kJesterSourceId);
+                    ui::drawTextWrapped(
+                        jester ? "The Jester itself. Strike it and it strikes back - for real."
+                        : special_->kind == SpecialKind::Lore
+                            ? "An answer. Strike it to choose it. Sweeping the field counts "
+                              "as striking the Jester."
+                            : "A chest. Strike it to open it. Sweep the field and the lying "
+                              "one wakes.",
+                        kListX, panelY + 22, w - 2 * kListX, style::kFontBody,
+                        style::palette().text, "battle.target.choice", 2);
+                    break;
                 }
                 std::string vitals = "HP " + std::to_string(t.hp < 0 ? 0 : t.hp) + "/" +
                                      std::to_string(t.maxHp);
@@ -1987,7 +2393,7 @@ void BattleState::drawSpoilsPanel() const {
     int y = boxY + headerH;
     for (const LevelUpDiff& d : spoilsResult_.levelUps) {
         ui::drawTextFitted(TextFormat("%s   Lv.%d > %d", d.name.c_str(), d.fromLevel, d.toLevel),
-                           boxX + 12, y, boxW - 24, 9, pal.text, "battle.spoils.name");
+                           boxX + 12, y, boxW - 24, style::kFontSmall, pal.text, "battle.spoils.name");
         y += lineH;
         std::string statLine;
         const auto piece = [&statLine](const char* tag, int v) {
@@ -2002,7 +2408,7 @@ void BattleState::drawSpoilsPanel() const {
         piece("MAG", d.magDelta);
         piece("DEF", d.defDelta);
         piece("SPD", d.spdDelta);
-        ui::drawTextFitted(statLine.empty() ? "-" : statLine, boxX + 22, y, boxW - 34, 8,
+        ui::drawTextFitted(statLine.empty() ? "-" : statLine, boxX + 22, y, boxW - 34, style::kFontSmall,
                            pal.textDim, "battle.spoils.stats");
         y += lineH;
         if (!d.newSkillNames.empty()) {
@@ -2010,7 +2416,7 @@ void BattleState::drawSpoilsPanel() const {
             for (std::size_t i = 0; i < d.newSkillNames.size(); ++i) {
                 learned += (i == 0 ? "" : ", ") + d.newSkillNames[i];
             }
-            ui::drawTextFitted(learned, boxX + 22, y, boxW - 34, 8, pal.gold,
+            ui::drawTextFitted(learned, boxX + 22, y, boxW - 34, style::kFontSmall, pal.gold,
                                "battle.spoils.skills");
             y += lineH;
         }

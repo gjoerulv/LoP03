@@ -28,6 +28,7 @@ public:
     bool addCurioLore(const CurioLoreDef& def);  // M85
     bool addCutscene(const CutsceneDef& def);  // M97
     bool addTutorialText(const TutorialTextDef& def);  // M99
+    bool addLoreQuestion(const LoreQuestionDef& def);  // M112
 
     const SkillDef* findSkill(const std::string& id) const;
     const ClassDef* findClass(const std::string& id) const;
@@ -49,6 +50,7 @@ public:
     // M85: nullptr when unauthored — the Maps screen falls back to the
     // curio's own name + description, so lore can never block the panel.
     const CurioLoreDef* findCurioLore(const std::string& id) const;
+    const LoreQuestionDef* findLoreQuestion(const std::string& id) const;  // M112
     // M97: nullptr when the scene is unauthored — every trigger site checks
     // first, so a missing scene simply never plays (no crash, no block).
     const CutsceneDef* findCutscene(const std::string& id) const;
@@ -73,6 +75,9 @@ public:
     }
     const std::unordered_map<std::string, CurioLoreDef>& curioLores() const {
         return curioLores_;  // M85
+    }
+    const std::unordered_map<std::string, LoreQuestionDef>& loreQuestions() const {
+        return loreQuestions_;  // M112
     }
     const std::unordered_map<std::string, CutsceneDef>& cutscenes() const {
         return cutscenes_;  // M97
@@ -99,6 +104,7 @@ public:
     std::size_t curioLoreCount() const { return curioLores_.size(); }  // M85
     std::size_t cutsceneCount() const { return cutscenes_.size(); }  // M97
     std::size_t tutorialTextCount() const { return tutorialTexts_.size(); }  // M99
+    std::size_t loreQuestionCount() const { return loreQuestions_.size(); }  // M112
 
     bool empty() const;
     void clear();
@@ -117,6 +123,7 @@ private:
     std::unordered_map<std::string, CurioLoreDef> curioLores_;  // M85
     std::unordered_map<std::string, CutsceneDef> cutscenes_;  // M97
     std::unordered_map<std::string, TutorialTextDef> tutorialTexts_;  // M99
+    std::unordered_map<std::string, LoreQuestionDef> loreQuestions_;  // M112
     CompositionDef composition_;
 };
 

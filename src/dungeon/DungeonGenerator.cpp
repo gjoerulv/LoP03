@@ -43,7 +43,8 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
     // including a theme that names one explicitly, so the rule cannot be
     // sidestepped by content.
     const auto spawnable = [town](const content::EnemyDef* def) {
-        return def != nullptr && !def->bossOnly && def->minTown <= town;
+        // M111: a specialOnly foe (the Golden Goose) is likewise never pooled.
+        return def != nullptr && !def->bossOnly && !def->specialOnly && def->minTown <= town;
     };
     if (theme != nullptr) {
         for (const std::string& id : theme->normalEnemies) {
@@ -123,7 +124,9 @@ const content::BossDef* pickBoss(Rng& rng, const content::DungeonThemeDef* theme
             // dungeon — the fallback sweep must skip it or adding one would
             // change what existing seeds generate. M85: the Dragon's arena is
             // behind the twelve curios, same rule.
-            if (def.minTown <= town && def.guildTown == 0 && id != kDragonBossId) {
+            // M112: a special-encounter boss (the Mimic) lives in no sweep.
+            if (def.minTown <= town && def.guildTown == 0 && !def.specialOnly &&
+                id != kDragonBossId) {
                 ids.push_back(id);
             }
         }
@@ -837,6 +840,30 @@ EnemyTeam patrolTeam(const content::ContentDatabase& db, const std::string& them
     EnemyTeam team = makeTeam(rng, pools, depth, /*boss=*/false, db, clampTown(town));
     team.name = "Roused Patrol";
     team.patrol = true;  // XP only, no gold, no danger credit (owner decision 7)
+    return team;
+}
+
+EnemyTeam goldenGooseTeam(const content::ContentDatabase& db, const std::string& themeId,
+                          int town, int depth, std::uint64_t runSeed, int patrolIndex) {
+    EnemyTeam team;
+    if (db.findEnemy(kGoldenGooseEnemyId) == nullptr) {
+        return team;
+    }
+    // The shadow patrol: the ordinary team this goose replaces, for its scale
+    // and its XP (the same pure recipe, so a reload derives the same numbers).
+    const EnemyTeam shadow = patrolTeam(db, themeId, town, depth, runSeed, patrolIndex);
+    team.name = "Golden Goose";
+    team.enemyIds = {kGoldenGooseEnemyId};
+    team.statScalePct = shadow.statScalePct;
+    team.patrol = true;
+    team.patrolPaysGold = true;
+    int xp = 0;
+    for (const std::string& id : shadow.enemyIds) {
+        if (const content::EnemyDef* def = db.findEnemy(id)) {
+            xp += def->xpReward;
+        }
+    }
+    team.xpOverride = xp > 0 ? xp : 1;
     return team;
 }
 

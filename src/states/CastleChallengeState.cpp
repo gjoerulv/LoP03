@@ -10,6 +10,7 @@
 #include "core/FadeController.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "game/Party.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "game/Profile.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -140,14 +141,18 @@ void CastleChallengeState::startNextFight() {
                                             : render::BackdropStage::Castle;
     // M71: the challenge accumulates its own damage tallies so the celebration
     // can put the true MVP on the pedestal.
+    // M109: castle-tier fights record into the ledger's combat totals; town 0
+    // = no per-town attribution (the castle, the pond and the guild hall are
+    // not a town's dungeon).
+    const LifetimeHook lifetime{&context_.party.lifetime, 0};
     if (!team.bossId.empty()) {
         stack().pushState(std::make_unique<BossIntroState>(
             stack(), context_, std::move(b), &result_, music, &stats_, /*castleChallenge=*/true,
-            stage, introSeed));
+            stage, introSeed, /*spoils=*/nullptr, lifetime));
     } else {
-        stack().pushState(std::make_unique<BattleState>(stack(), context_, std::move(b), &result_,
-                                                        music, &stats_, /*castleChallenge=*/true,
-                                                        stage));
+        stack().pushState(std::make_unique<BattleState>(
+            stack(), context_, std::move(b), &result_, music, &stats_, /*castleChallenge=*/true,
+            stage, /*spoils=*/nullptr, /*manualEnemies=*/false, lifetime));
     }
 }
 
@@ -197,8 +202,8 @@ void CastleChallengeState::finish(bool cleared) {
                 }
                 msg = "Boss Rush cleared in " + std::to_string(totalRounds_) + " turns!";
                 if (first) {
-                    context_.party.gold += kBossRushRewardGold;
-                    context_.party.legendaryTokens += kBossRushRewardTokens;
+                    earnGold(context_.party, kBossRushRewardGold, EconomySource::CastleReward, 0);
+                    earnTokens(context_.party, kBossRushRewardTokens, EconomySource::CastleReward);
                     msg += " First clear reward: +" + std::to_string(kBossRushRewardGold) +
                            " gold and +" + std::to_string(kBossRushRewardTokens) +
                            " legendary tokens.";
@@ -218,8 +223,8 @@ void CastleChallengeState::finish(bool cleared) {
             }
             msg = "Endless Rush: you reached wave " + std::to_string(wavesWon_) + ".";
             if (first) {
-                context_.party.gold += kEndlessRewardGold;
-                context_.party.legendaryTokens += kEndlessRewardTokens;
+                earnGold(context_.party, kEndlessRewardGold, EconomySource::CastleReward, 0);
+                earnTokens(context_.party, kEndlessRewardTokens, EconomySource::CastleReward);
                 msg += " First run reward: +" + std::to_string(kEndlessRewardGold) +
                        " gold and +" + std::to_string(kEndlessRewardTokens) + " legendary tokens.";
             }
@@ -227,6 +232,7 @@ void CastleChallengeState::finish(bool cleared) {
         }
         case CastleChallenge::King:
             if (cleared) {
+                ++context_.party.lifetime.explore.kingDefeats;  // M109: the encounter, once
                 const bool first = !rec.kingDefeated;
                 if (kingImproved(rec, totalRounds_)) {
                     rec.kingBestTurns = totalRounds_;
@@ -243,8 +249,9 @@ void CastleChallengeState::finish(bool cleared) {
                 if (first) {
                     rec.kingTitle = kKingTitle;
                     context_.party.inventory.add(kKingLegendaryId, 1);
-                    context_.party.gold += kKingRewardGold;
-                    context_.party.legendaryTokens += kKingRewardTokens;
+                    recordTreasureFound(context_.party);
+                    earnGold(context_.party, kKingRewardGold, EconomySource::CastleReward, 0);
+                    earnTokens(context_.party, kKingRewardTokens, EconomySource::CastleReward);
                     msg += " You take the title \"" + std::string(kKingTitle) +
                            "\" and win the Sovereign's Regalia, +" +
                            std::to_string(kKingRewardGold) + " gold, +" +
@@ -273,6 +280,7 @@ void CastleChallengeState::finish(bool cleared) {
                 if (duckImproved(rec, totalRounds_)) {
                     rec.duckBestTurns = totalRounds_;
                 }
+                ++context_.party.lifetime.explore.duckDefeats;  // M109
                 msg = "The Deadly Duck sinks beneath the pond in " +
                       std::to_string(totalRounds_) +
                       " turns! The geese fall silent. Nothing in the realm out-fights "
@@ -288,6 +296,7 @@ void CastleChallengeState::finish(bool cleared) {
                 if (dragonImproved(rec, totalRounds_)) {
                     rec.dragonBestTurns = totalRounds_;
                 }
+                ++context_.party.lifetime.explore.dragonDefeats;  // M109: the gauntlet, once
                 msg = "The Last Dragon burns out in " + std::to_string(totalRounds_) +
                       " turns! The King, reached for comment, looks genuinely relieved. "
                       "The Pale Jester writes something down.";
@@ -307,6 +316,7 @@ void CastleChallengeState::finish(bool cleared) {
                 if (guildImproved(g, totalRounds_)) {
                     g.bestTurns = totalRounds_;
                 }
+                ++context_.party.lifetime.explore.guildMasterDefeats;  // M109
                 msg = masterName + " falls in " + std::to_string(totalRounds_) + " turns!";
                 if (first) {
                     msg += " The town will remember this: its milestone is yours to choose.";

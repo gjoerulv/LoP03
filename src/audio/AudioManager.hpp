@@ -33,6 +33,12 @@ public:
 
     void play(Sfx id);
     void setMusic(MusicTrack track);
+    // M116: play a one-shot `jingle` and, when it ends, start `next` (the
+    // End-game Summary's victory stinger into the Result loop). A missing
+    // jingle file (the stinger SFX path) starts `next` at once; a plain
+    // setMusic() clears a pending chain; a non-jingle first argument plays
+    // `next` outright. Headless: `next` is recorded as current.
+    void setMusicThen(MusicTrack jingle, MusicTrack next);
     // Selects which town-music variant backs MusicTrack::Town (M32). Town 1 is
     // the base `music.town`; towns 2..7 use `music.town.<n>` when present, else
     // fall back to the base track. Rebinds the Town stream and, if Town music is
@@ -99,6 +105,7 @@ private:
 
     MusicTrack current_ = MusicTrack::None;
     AmbienceTrack currentAmbience_ = AmbienceTrack::None;
+    MusicTrack pendingAfterJingle_ = MusicTrack::None;  // M116
 
     // Town-music variants (M32): the active town, the manifest-resolved relative
     // path + volume per town (index 0 = town 1 = base `music.town`), and the
