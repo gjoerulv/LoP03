@@ -1,6 +1,6 @@
 # M111 — The Golden Goose (scripted enemy actions, the enemy flee; rules v19)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-10)
 **Program:** M109–M116 (owner-authorized 2026-09-02 via the approved plan).
 **Battle rules 18 → 19** (`src/battle/Battle.hpp` history, the authority):
 a data-driven scripted own-turn mechanism on enemies and a new outcome,
@@ -245,4 +245,4 @@ As listed above.
 
 ### 9. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-09-10)`

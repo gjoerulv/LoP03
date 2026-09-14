@@ -1,6 +1,6 @@
 # M112 — The Jester's Lore trap & the Treasure chests (the Mimic, the mocking jingle)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-10)
 **Program:** M109–M116 (owner-authorized 2026-09-02 via the approved plan).
 **No version motion:** battle rules stay 19 (the three new `Battle` helpers
 change no rule), generation stays 24, saves stay v1, content files stay v1
@@ -235,4 +235,4 @@ As listed above.
 
 ### 9. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-09-10)`

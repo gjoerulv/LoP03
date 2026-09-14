@@ -1,6 +1,6 @@
 # M116 — The End-game Summary
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-10)
 **Program:** M109–M116 (owner-authorized 2026-09-02 via the approved plan).
 **Save schema stays v1:** `Party.summaryShown` is an additive optional bool
 (old saves → false). No other version motion.
@@ -159,4 +159,4 @@ As listed above.
 
 ### 9. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-09-10)`

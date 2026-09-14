@@ -1,6 +1,6 @@
 # M110 — Patrol dispatcher, debug tools & the Stranger's patrol scenes
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-10)
 **Program:** M109–M116 (owner-authorized 2026-09-02 via the approved plan).
 **Generation 23 → 24** (`src/dungeon/RoomLayout.hpp` history, the
 authority): room, event and team rolls are byte-identical to v23, but what
@@ -189,4 +189,4 @@ As listed above.
 
 ### 9. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-09-10)`

@@ -178,8 +178,9 @@ Silent truncation and guessed character widths are prohibited. After M87,
 ## 10. Formerly unresolved decisions — all settled
 
 The open questions this section once tracked are resolved: the role set and
-scrolling policies landed in M12 (scoreboard scrolls; 8px survives as the
-caption floor), prompt grammar became binding-derived in M13 (M46 renders
+scrolling policies landed in M12 (scoreboard scrolls; 8px was the caption
+floor until M114 raised it to 9px), prompt grammar became binding-derived in
+M13 (M46 renders
 hints as keycap groups via `drawFooterHints`), the debug overlay defaults
 to hidden (M12), the bitmap font shipped in M25, and the final visual
 identity — palette, frames, iconography, motif language — is the **M46

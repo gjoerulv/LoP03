@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M98–M108)** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M109–M116, approved 2026-09-10)** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -116,14 +116,14 @@
 | 106 | The Goosy Gauntlet (town-7 theme) | ☑ complete (approved 2026-09-02) (fix round 2026-08-17: own art, tiles, backdrop, music, ambience) |
 | 107 | Summon stagecraft | ☑ complete (approved 2026-09-02) |
 | 108 | Rebrand: "Are P Geese" | ☑ complete (approved 2026-09-02) (fix round 2026-08-17: title plaque, goose emblem + icon, v0.7.0) |
-| 109 | Lifetime ledger (persistent telemetry foundation) | ◑ implemented, awaiting manual approval |
-| 110 | Patrol dispatcher, debug tools & the Stranger's patrol scenes (generation v24) | ◑ implemented, awaiting manual approval |
-| 111 | The Golden Goose: scripted enemy actions & enemy flee (battle rules v19) | ◑ implemented, awaiting manual approval |
-| 112 | The Jester's Lore trap & the Treasure chests (Mimic, mocking jingle) | ◑ implemented, awaiting manual approval |
-| 113 | Cutscene stages (town panorama + theme stages) | ◑ implemented, awaiting manual approval |
-| 114 | Font readability redesign (6×9 master alphabet, 9 px floor) | ◑ implemented, awaiting manual approval |
-| 115 | The Last Dragon redesign, clone identity & bounds-aware formation | ◑ implemented, awaiting manual approval |
-| 116 | The End-game Summary (lifetime statistics, unlocked by the finale) | ◑ implemented, awaiting manual approval |
+| 109 | Lifetime ledger (persistent telemetry foundation) | ☑ complete (approved 2026-09-10) |
+| 110 | Patrol dispatcher, debug tools & the Stranger's patrol scenes (generation v24) | ☑ complete (approved 2026-09-10) |
+| 111 | The Golden Goose: scripted enemy actions & enemy flee (battle rules v19) | ☑ complete (approved 2026-09-10) |
+| 112 | The Jester's Lore trap & the Treasure chests (Mimic, mocking jingle) | ☑ complete (approved 2026-09-10) |
+| 113 | Cutscene stages (town panorama + theme stages) | ☑ complete (approved 2026-09-10) |
+| 114 | Font readability redesign (6×9 master alphabet, 9 px floor) | ☑ complete (approved 2026-09-10) |
+| 115 | The Last Dragon redesign, clone identity & bounds-aware formation | ☑ complete (approved 2026-09-10) |
+| 116 | The End-game Summary (lifetime statistics, unlocked by the finale) | ☑ complete (approved 2026-09-10) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -972,19 +972,20 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs after the M75–M86
-  expansion program (authorized 2026-08-05)** (the deferral was extended by each expansion program the
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs after the M109–M116
+  program (approved 2026-09-10)** (the deferral was extended by each program the
   owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
   M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
-  M61, the M62–M66 program, the M67–M74 owner batches, and the M75–M86
-  expansion program). The tooling,
+  M61, the M62–M66 program, the M67–M74 owner batches, the M75–M86
+  expansion program, M87, and the M88–M97, M98–M108 and M109–M116
+  programs). The tooling,
   diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
-  Re-audit this note against the post-M86 checkout before starting — the
-  capture scene list has grown (**85 scenes** since M71) and the balance
+  Re-audit this note against the then-current checkout before starting — the
+  capture scene list has grown (**148 scenes** as of M116) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
   `[king-report]`, `[classes-report]`, and the M61–M68
   `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/`[spoils]`/
@@ -998,8 +999,11 @@ milestone is not automatic authorization to start the next.
   party-relative danger, town exteriors, the CRT split, the celebration,
   the party-panel reflow, the M73 enemy/boss art pass, and the M74 mine
   ambience rework) — plus everything M75–M86 adds (the v15 statuses and
-  triggers, floors, Guild Masters, the Dragon, the new gear and icons).
-  **M75–M86 is the newest authorized expansion program; this runs after
+  triggers, floors, Guild Masters, the Dragon, the new gear and icons) and
+  everything M87–M116 added (the Latin-1 text pass, summons, heirlooms,
+  the cutscene story and its stages, the patrol mixture with its special
+  encounters, the lifetime ledger and the End-game Summary, the 6×9 font).
+  **M109–M116 is the newest approved program (2026-09-10); this runs after
   it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
@@ -1032,10 +1036,13 @@ milestone is not automatic authorization to start the next.
 
 - **Status:** ☐ planned — **deferred on 2026-07-20; runs last, after M23.**
   The packaging engineering is already implemented and stays in the tree
-  (presets with static CRT, version 0.9.0 plumbing, generated icon +
-  VERSIONINFO, one-command stage/validate/zip via tools/package.ps1;
-  package smoke-tested, capture-inert; owner decisions 2026-07-20: v0.9.0
-  until playtests pass, plain zip, emblem-generated icon). Only the final
+  (presets with static CRT, version plumbing from `project(VERSION)` —
+  0.8.0 today (distribution built 2026-09-10), generated icon + VERSIONINFO, one-command
+  stage/validate/zip via tools/package.ps1; package smoke-tested,
+  capture-inert; owner decisions 2026-07-20: plain zip, emblem-generated
+  icon — the 2026-07-20 "v0.9.0 until playtests pass" label was superseded
+  by the M86 rule that the version trails the game, so the release number
+  is decided at sign-off; audit 2026-09-10). Only the final
   validation and sign-off are deferred. Note that M25–M74 added assets and
   content (see the header narrative's packaging list), so the packaging
   manifest coverage and package-size expectations must be re-checked before
@@ -3437,7 +3444,7 @@ decisions no milestone may reopen without escalation:
 
 ### M109 — Lifetime ledger
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-09-02).
+- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02.
 - **Goal:** a persistent, 64-bit, display-only lifetime ledger on the save
   (per member, combat, economy, per town, patrols, exploration, a defeat
   ledger keyed by content id, an active-play clock) recorded at the
@@ -3449,7 +3456,7 @@ decisions no milestone may reopen without escalation:
 
 ### M110 — Patrol dispatcher, debug tools & the Stranger's patrol scenes
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-09-02).
+- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02.
 - **Goal:** the pure 65/10/5/15/5 dispatcher on (run seed, patrol index),
   four dedicated optionless `patrol_*` Stranger scenes on a seed-shuffled
   cycle, the debug one-shots (`Next patrol`, `Trigger patrol now`, `Next
@@ -3458,7 +3465,7 @@ decisions no milestone may reopen without escalation:
 
 ### M111 — The Golden Goose
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-09-02).
+- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02.
 - **Goal:** a data-driven scripted-action mechanism on enemies (a
   multi-status all-foes action, guard, flee), the `EnemyFled` outcome, the
   Golden Goose content and art, the normal-patrol-equivalent XP with the
@@ -3467,7 +3474,7 @@ decisions no milestone may reopen without escalation:
 
 ### M112 — The Jester's Lore trap & the Treasure chests
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-09-02).
+- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02.
 - **Goal:** the Lore encounter (28 editable questions, a new content
   category, two text answers, the AOE and Jester punishments, one
   battle-turn), the Chest gamble (reward / Mimic / empty), the Mimic boss,
@@ -3476,7 +3483,7 @@ decisions no milestone may reopen without escalation:
 
 ### M113 — Cutscene stages
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-09-02).
+- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02.
 - **Goal:** an explicit stage context for cutscenes with an original
   mountainous-town panorama and four dungeon-theme stages replacing the
   flat fills.
@@ -3484,7 +3491,7 @@ decisions no milestone may reopen without escalation:
 
 ### M114 — Font readability redesign
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-09-02).
+- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02.
 - **Goal:** the master alphabet redrawn on a ~6×9 cell for distinct
   glyphs, 9 px as the floor for meaningful text, reflow under the capture
   lint, a specimen scene.
@@ -3496,7 +3503,7 @@ decisions no milestone may reopen without escalation:
 
 ### M115 — The Last Dragon redesign, clone identity & bounds-aware formation
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-09-02).
+- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02.
 - **Goal:** the Dragon redrawn as a dragon within the 36×36 cap, a visual
   identity the summoned clone inherits, an enemy-column layout aware of
   each unit's visual envelope.
@@ -3504,7 +3511,7 @@ decisions no milestone may reopen without escalation:
 
 ### M116 — The End-game Summary
 
-- **Status:** ◑ implemented, awaiting manual approval (2026-09-02).
+- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02.
 - **Goal:** a tabbed lifetime summary state unlocked by the recorded
   finale choice, shown once automatically, revisited through P's Talk /
   End-game Summary choice, with a jingle-then-loop music transition.
@@ -3514,8 +3521,10 @@ decisions no milestone may reopen without escalation:
 M116, then M23 → M24 (re-audited against the then-current checkout, each
 awaiting explicit owner authorization).
 
-**Program status (2026-09-02): all eight milestones implemented, awaiting
-manual approval** — nothing beyond M116 was started. Closing battery on the
+**Program status: complete. On 2026-09-10 the owner approved M109–M116** after
+the manual pass — the approval covers the program as it stands after the
+2026-09-03 fix (M114: the period glyph's stray pixel). Implemented
+2026-09-02; nothing beyond M116 was started. Closing battery on the
 final checkout: Debug configure + build clean (zero project-code warnings);
 `ctest --preset debug` **887/887 passed** (497 s); `ArePGeese.exe --capture`
 **148/148 scenes clean**, zero overflow events (21 new scenes across the
@@ -3526,4 +3535,33 @@ Release build clean + `ctest --preset release` **883/883 passed** (555 s; the fo
 Debug-only cases are compiled out there). Owner
 validation: matrix rows 213–231. Findings for the owner's eye: the Golden
 Goose battery (M111 note), the Duck-speed exception (M111 note), the Mimic
-battery (M112 note).
+battery (M112 note). Only the deliberately deferred **M23 → M24** remain,
+in that order, each re-audited against the then-current checkout before it
+begins — and neither starts without explicit owner authorization. Owner
+ruling 2026-09-10 (raised during the manual pass): the Dragon's 5 %
+`summon_clone` trigger stays as authored — a turn-start
+`first_time_hp_below_pct` rule, so a party that fells the Dragon from above
+5 % within one round never meets the clone; a death-triggered clone was
+proposed and declined. Recorded in the Dragon passage of
+`docs/game_design.md`.
+
+**Documentation audit (2026-09-10, `/audit-docs` on the post-approval
+checkout):** every stale statement found was corrected, no player-facing
+change — the technical design's restated version numbers (generation 24, rules 19)
+and its scene/tutorial/test counts, the asset pipeline's and art bible's font
+and sprite censuses, the README's data-file count and preset heading, the
+style guide's settled-decisions line, the credits' font row, the matrix's
+appended rows re-joined to the table in numeric order (row 109's expected
+result aligned with the Goose ultimate), the M23/M24 sections
+re-anchored to this program (M24's "v0.9.0" label retired: the version
+trails the game and is decided at sign-off), and the Goose ultimate's design
+sentence aligned with the shipped skill (owner rulings 2026-09-10).
+
+**Distribution 0.8.0 (2026-09-10, owner-directed):** `project(VERSION 0.8.0)`;
+`tools\package.ps1` configured and built the Release preset and produced
+`dist\ArePGeese-0.8.0-win64.zip` (29.1 MB; 341 staged files) with the staged
+layout validated by the script (required files, every manifest path present,
+no debug artifacts, AMD64 PE, no capture/overlay markers, exe ProductVersion
+0.8.0). `ctest --preset release` on that build: **883/883 passed** (132 s);
+the Debug preset was reconfigured and rebuilt so the dev executable carries
+the same version.

@@ -7,7 +7,7 @@
 # M108: the "Are P Geese" rebrand (owner decision, full: exe, target, save dir).
 # 0.7.0 (owner direction 2026-08-17): the M98-M108 program build.
 project(ArePGeese
-        VERSION 0.7.0
+        VERSION 0.8.0
         DESCRIPTION "16-bit-inspired turn-based JRPG roguelite"
         LANGUAGES C CXX)
 

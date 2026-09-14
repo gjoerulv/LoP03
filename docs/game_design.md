@@ -857,7 +857,10 @@ itself), Spoon-proof, and armed with **six party-wide elemental
 breaths** — one per element, met by the M81 ward charms. Below half HP
 it **inhales the party's entire MP once**; below 10 % its attack and
 speed **double**; at the brink it **clones itself** at 5 % of its full
-HP. Felling it earns the **Wyrmbane** achievement. Since **M115** the
+HP — each beat checked as the Dragon's own turn begins (the M75 trigger
+rule), so a party that carries it from above a threshold to nothing within
+one round never meets that beat (owner ruling 2026-09-10: kept as
+authored; no death-triggered clone). Felling it earns the **Wyrmbane** achievement. Since **M115** the
 Dragon looks the part — a horned, one-eyed, one-winged dragon silhouette
 within the boss canvas — and **its clone wears its face** (the clone is
 not a boss: no boss rules, no bestiary or defeat entry of its own, but it
@@ -1089,7 +1092,8 @@ long before it is earned. All three are jokes that are also real classes:
   heirloom is the one exception — a memory is not equipment; owner-approved
   2026-08-16). Its heals and cures work
   — and cheerfully buff **every enemy** at the same time. At level 30 it learns
-  one ultimate that lays every debuff on every foe for 30 MP. **+5 % per Goose.**
+  one ultimate, Everyone Is Welcome, that poisons every foe at once for 30 MP
+  (the shipped skill is the design — owner ruling 2026-09-10). **+5 % per Goose.**
   Against the **Hollow King** it has a hidden edge (M58): each of the King's own
   turns he has a **10 % chance per living Goose** in the party to be scared into
   doing nothing — *"The geese scare the King…"* flashes above the panel like a

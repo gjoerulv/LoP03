@@ -191,7 +191,7 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` is currently **23** (bump history: M29 enlarged the theme
+  `kGenerationVersion` is currently **24** (bump history: M29 enlarged the theme
   enemy/boss pools; M30 added the RestToken event; M37 gave the merchant a 75 %
   bargain and gated chest gear by town; **M38 gates the per-town enemy/boss pools
   by `minTown`**; **M43 reprices the consumables a merchant offers and windows
@@ -206,7 +206,9 @@ carry the information without color.
   superseding the M55 guarantee); and **the 2026-08-28 equal weighting to
   v23** (all eleven encounter events share `kEncounterChancePct` with a
   uniform hash-shuffled contention instead of the accreted fixed chain;
-  the fog-gated Surveyor draws first at its own 25 %) — each
+  the fog-gated Surveyor draws first at its own 25 %); and **the M110
+  patrol dispatcher to v24** (the Nth patrol of a seed can now be a
+  special encounter; §52) — each
   owner-approved. The version-history comment in
   `src/dungeon/RoomLayout.hpp` is the authority).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
@@ -253,8 +255,8 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `ArePGeese --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; **127 scenes as of the
-2026-08-29 polish round**,
+list lives in `src/capture/CaptureRunner.cpp`; **148 scenes as of M116
+(2026-09-02)**,
 `98`–`105` the pseudo-localized long-prose set) — all
 three themes, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
@@ -279,7 +281,7 @@ clearing curve from 1/1/1/1/3/5/9/11 to 1/1/1/2/3/7/9/11 (depths
 ### Onboarding & accessibility (M22)
 
 Tutorial: `src/tutorial/Tutorial.*` is raylib-free — a constexpr beat table
-(9 beats at M22; **15 today**, stable ids), `Progress {enabled, seen}` with defensive
+(9 beats at M22; **16 today**, stable ids), `Progress {enabled, seen}` with defensive
 parse/serialize (malformed or foreign-version `tutorial.json` → fresh
 state, reported, never a crash; unknown seen ids survive round trips), and
 `TutorialStore::takeBeat` which marks-and-saves on first fire so a prompt
@@ -569,7 +571,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 23 — the history comment in
+  `kGenerationVersion` (currently 24 — the history comment in
   `RoomLayout.hpp` is the authority; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
@@ -646,7 +648,8 @@ reproducible and unit-tested; `BattleState` is the side-view UI driving it.
   the shared `applyDamage` chokepoint, so sim/live agree and the poison DoT —
   which bypasses `applyDamage` — does not clear it). Statuses live only inside a
   `Battle` (never serialized), so no save bump; `battle::kBattleRulesVersion`
-  was **2** at M35 (15 today — the history comment in `src/battle/Battle.hpp`
+  was **2** at M35 (19 today, after M89/M95/M96/M111 took it v16–v19 — the
+  history comment in `src/battle/Battle.hpp`
   is the authority).
 - **Passive skills (M36).** `content::PassiveDef { id, name, hook, magnitude,
   price }` (a `PassiveHook` enum of 10) loads from `data/passives.json` into a
@@ -1872,7 +1875,8 @@ of** the caller (never `replaceState`), and neither backdrops nor the intro touc
   (gold→level progression alongside battle XP). Parties start with a little gold.
 - **Packaging:** the final `README.md` documents what the game is, the MSVC build/
   run, controls, the play loop, project layout, the smoke test (the test
-  suite — 125 tests at M10, 725 today — which loads content, generates
+  suite — 125 tests at M10, 887 today in Debug (883 in Release, where the
+  Debug-only cases are compiled out) — which loads content, generates
   dungeons, and simulates a clear), and
   known limitations. The M10 deliverable was `CrystalDungeons.exe` plus the
   `data/` folder copied beside it — superseded by the M24 staged zip

@@ -1,6 +1,6 @@
 # M113 — Cutscene stages
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-10)
 **Program:** M109–M116 (owner-authorized 2026-09-02 via the approved plan).
 **No version motion:** rules 19, generation 24, saves v1, content v1;
 manifest v2 with five new texture ids.
@@ -159,4 +159,4 @@ As listed above.
 
 ### 9. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-09-10)`

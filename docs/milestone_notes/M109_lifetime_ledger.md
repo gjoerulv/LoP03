@@ -1,6 +1,6 @@
 # M109 — Lifetime ledger (persistent telemetry foundation)
 
-**Status:** implemented, awaiting manual approval
+**Status:** complete (approved 2026-09-10)
 **Program:** M109–M116 (owner-authorized 2026-09-02 via the approved plan).
 No battle-rules, generation or save-version bump: the ledger is one
 additive optional save object (`"lifetime"`), the only pure-model change
@@ -246,4 +246,4 @@ As listed above.
 
 ### 9. Final status
 
-`implemented, awaiting manual approval`
+`complete (approved 2026-09-10)`
