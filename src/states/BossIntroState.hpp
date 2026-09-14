@@ -6,6 +6,7 @@
 
 #include "audio/AudioRoles.hpp"
 #include "battle/Battle.hpp"
+#include "game/BattleTelemetry.hpp"  // M109: LifetimeHook
 #include "game/RunStats.hpp"
 #include "render/BattleBackdrop.hpp"
 #include "states/BossIntroTimeline.hpp"
@@ -31,7 +32,7 @@ public:
     BossIntroState(StateStack& stack, AppContext& context, battle::Battle battle,
                    battle::BattleResult* resultSlot, MusicTrack music, RunStats* statsSlot,
                    bool castleChallenge, render::BackdropStage stage, std::uint64_t introSeed,
-                   const BattleSpoils* spoils = nullptr);
+                   const BattleSpoils* spoils = nullptr, LifetimeHook lifetime = {});
 
     void update(float dt) override;
     void handleInput(const Input& input) override;
@@ -58,6 +59,7 @@ private:
     render::BackdropStage stage_;
     std::uint64_t introSeed_;
     const BattleSpoils* spoils_ = nullptr;  // M68
+    LifetimeHook lifetime_;                 // M109: forwarded to the launched BattleState
     BossIntroTimeline timeline_;
     std::vector<IntroShard> shards_;
     bool launched_ = false;   // BattleState pushed; onResume now pops self

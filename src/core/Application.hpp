@@ -62,6 +62,9 @@ private:
     AppContext context_;
     StateStack stack_;
     bool debugOverlay_;
+    // M109: sub-second remainder of the active-play clock (whole seconds flush
+    // into the party's lifetime ledger; see processFrame).
+    float playClockRemainder_ = 0.0f;
 };
 
 }  // namespace cd

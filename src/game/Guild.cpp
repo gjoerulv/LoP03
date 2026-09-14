@@ -31,7 +31,7 @@ std::vector<std::string> guildTownPool(const content::ContentDatabase& content, 
     for (const auto& [id, def] : content.enemies()) {
         // The endless-pool rule (bossOnly courts stay with their bosses),
         // town-gated the way the generator gates spawns (M38).
-        if (def.bossOnly || def.minTown > town) {
+        if (def.bossOnly || def.specialOnly || def.minTown > town) {  // M111
             continue;
         }
         pool.push_back(id);

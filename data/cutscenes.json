@@ -204,6 +204,35 @@
         { "speaker": "THE STRANGER \"P\"", "text": "The deep crystals hum, you know. Miners say it is the mountain thinking. Scholars say it is resonance." },
         { "speaker": "THE STRANGER \"P\"", "text": "It is neither. It is humming. Everything hums when it believes nobody is listening. You may take notes.", "emote": "jump" }
       ]
+    },
+    {
+      "id": "patrol_1",
+      "beats": [
+        { "speaker": "THE STRANGER \"P\"", "text": "You walk a great deal. I have counted. That is not a criticism - geese also walk a great deal, or so I am told." },
+        { "speaker": "THE STRANGER \"P\"", "text": "Whatever roused this patrol has, on reflection, decided against it. Carry on. Mind the corners.", "emote": "waddle" }
+      ]
+    },
+    {
+      "id": "patrol_2",
+      "beats": [
+        { "speaker": "THE STRANGER \"P\"", "text": "Ah. You again. Or me again - underground the distinction blurs." },
+        { "speaker": "THE STRANGER \"P\"", "text": "I was following something shiny. It turned out to be you. I am choosing not to be disappointed.", "emote": "jump" },
+        { "speaker": "THE STRANGER \"P\"", "text": "The dungeon is quieter behind me. Do not ask how." }
+      ]
+    },
+    {
+      "id": "patrol_3",
+      "beats": [
+        { "speaker": "THE STRANGER \"P\"", "text": "A patrol was due. I sent it home. It had families, probably, and I have a hood, which is nearly the same as authority." },
+        { "speaker": "THE STRANGER \"P\"", "text": "You may thank me by walking a little less. Everything down here counts your steps, and one of us finds that unsettling.", "emote": "waddle" }
+      ]
+    },
+    {
+      "id": "patrol_4",
+      "beats": [
+        { "speaker": "THE STRANGER \"P\"", "text": "Do you ever wonder who lights the torches? No? I do. Constantly. It is the one mystery I have not solved, and I am starting to suspect the answer is nobody." },
+        { "speaker": "THE STRANGER \"P\"", "text": "There. That was your hundred. Consider the debt paid, the patrol postponed, and the torches, still, a mystery.", "emote": "panic" }
+      ]
     }
   ]
 }

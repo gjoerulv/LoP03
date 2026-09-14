@@ -166,6 +166,15 @@ std::vector<FieldDesc> statusRiderChildren() {
 }
 
 // M75: one deterministic WHEN -> DO trigger row (enemies and bosses).
+// M111: one scripted own-turn step (enemies only).
+std::vector<FieldDesc> scriptChildren() {
+    return {
+        en("do", "Do", ids(content::scriptDoIds()), "status_all_foes", true),
+        objArr("statuses", "Statuses (status_all_foes)", statusRiderChildren()),
+        str("text", "Announcement"),
+    };
+}
+
 std::vector<FieldDesc> triggerChildren() {
     return {
         en("when", "When", ids(content::triggerWhenIds()), "first_time_hp_below_pct", true),
@@ -249,6 +258,8 @@ std::vector<FieldDesc> enemyDescs() {
         str("doNothingText", "Do-Nothing Line"),
         objArr("initialStatuses", "Initial Statuses (M75)", statusRiderChildren()),
         objArr("triggers", "Triggers (M75)", triggerChildren()),
+        objArr("script", "Scripted Turns (M111)", scriptChildren()),
+        bl("specialOnly", "Special-Encounter Only (M111)"),
         enList("statusImmunities", "Status Immunities", ids(content::statusTypeIds())),
         bl("avoidSleepingTargets", "Avoid Sleeping Targets"),
         bl("noStunWhileAllFoesSleep", "No Stun While All Sleep"),
@@ -272,6 +283,7 @@ std::vector<FieldDesc> bossDescs() {
         // M84: 0 = ordinary boss; 1..7 marks the town's Guild Master (fought
         // only in that town's guild gauntlet, excluded from dungeons/rush).
         num("guildTown", "Guild Master Of Town (M84)", 0, 7),
+        bl("specialOnly", "Special-Encounter Only (M111)"),
         enList("weaknesses", "Weak To", ids(content::elementIds())),
         enList("immunities", "Immune To", ids(content::elementIds())),
         num("reviveMinionTurns", "Revive Minions (turns)", 0, 99),
@@ -435,6 +447,20 @@ std::vector<FieldDesc> curioLoreDescs() {
     };
 }
 
+// M112: the Jester's lore questions. Free-form content: any id, one right
+// and one wrong answer, the tier gate, the post-King gate, the mock line.
+std::vector<FieldDesc> loreQuestionDescs() {
+    return {
+        idField(),
+        num("minTown", "Known From Town (tier)", 1, 7),
+        bl("postKing", "Post-King Only"),
+        txt("question", "Question", true),
+        str("answer", "Right Answer", true),
+        str("wrongAnswer", "Wrong Answer", true),
+        txt("mockLine", "Mock Line", true),
+    };
+}
+
 // M99: tutorial prompt text. The id is a code-owned trigger key
 // (tutorial::kBeats) — editing text is the point; adding a NEW id authors
 // nothing until code fires it, which the docs panel says outright.
@@ -489,6 +515,7 @@ const std::vector<CategoryInfo>& categories() {
         {Category::CurioLore, "curio_lore.json", "curios", "Curio Lore", true},
         {Category::Cutscenes, "cutscenes.json", "cutscenes", "Cutscenes", true},  // M97
         {Category::Tutorials, "tutorials.json", "tutorials", "Tutorials", true},  // M99
+        {Category::LoreQuestions, "lore_questions.json", "questions", "Lore Questions", true},  // M112
     };
     return kInfos;
 }
@@ -517,6 +544,7 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
     static const std::vector<FieldDesc> kCurioLore = curioLoreDescs();
     static const std::vector<FieldDesc> kCutscenes = cutsceneDescs();
     static const std::vector<FieldDesc> kTutorials = tutorialDescs();  // M99
+    static const std::vector<FieldDesc> kLoreQuestions = loreQuestionDescs();  // M112
     switch (category) {
         case Category::Skills: return kSkills;
         case Category::Classes: return kClasses;
@@ -532,6 +560,7 @@ const std::vector<FieldDesc>& descriptorsFor(Category category) {
         case Category::CurioLore: return kCurioLore;
         case Category::Cutscenes: return kCutscenes;
         case Category::Tutorials: return kTutorials;  // M99
+        case Category::LoreQuestions: return kLoreQuestions;  // M112
     }
     return kSkills;
 }

@@ -26,6 +26,9 @@
 #include "states/MilestoneChoiceState.hpp"  // M63
 #include "states/TreasureFightState.hpp"    // M65
 #include "states/CastleState.hpp"
+#include "game/Summary.hpp"  // M116
+#include "states/EndgameSummaryState.hpp"  // M116
+#include "states/EventChoiceState.hpp"  // M116
 #include "states/CutsceneState.hpp"  // M97
 #include "states/EquipShopState.hpp"
 #include "states/RoadForkState.hpp"
@@ -203,6 +206,24 @@ void TownState::onEnter() {
     maybePushGuildPerkChoice(stack(), context_);
 }
 
+void TownState::playNextStrangerBeat() {
+    // The M100 joke cycle, verbatim: one dry joke from the authored pool,
+    // cycled by the persisted counter; no jokes authored -> retell the
+    // finale rather than go mute. No rewards, no re-grants.
+    const std::string joke =
+        game::nextStrangerJokeId(context_.content, context_.party.strangerJokesTold);
+    if (!joke.empty()) {
+        context_.audio.play(Sfx::Confirm);
+        ++context_.party.strangerJokesTold;
+        stack().pushState(
+            std::make_unique<CutsceneState>(stack(), context_, joke, /*replay=*/true));
+    } else if (context_.content.findCutscene("finale") != nullptr) {
+        context_.audio.play(Sfx::Confirm);
+        stack().pushState(
+            std::make_unique<CutsceneState>(stack(), context_, "finale", /*replay=*/false));
+    }
+}
+
 void TownState::onResume() {
     context_.fade.start();
     applyTownAudio();
@@ -234,6 +255,16 @@ void TownState::onResume() {
             queueTutorial(tutorial::kCarriedOut);  // M98: deferred
             break;
         }
+    }
+    // M116: the End-game Summary unlocks the moment the finale's keepsake
+    // choice is recorded (the finale pops back here) and shows itself ONCE;
+    // pushed before the toasts so a finale toast dismisses first and reveals
+    // the summary beneath. The game never ends: the counters keep updating
+    // and P offers the summary from then on.
+    if (shouldAutoShowSummary(context_.party)) {
+        context_.party.summaryShown = true;
+        stack().pushState(
+            std::make_unique<EndgameSummaryState>(stack(), context_, /*firstShow=*/true));
     }
     // M42: catch achievements earned by a town action (e.g. equipping a passive or
     // training to level 50); the check is cheap and only toasts newly-unlocked ones.
@@ -418,19 +449,19 @@ void TownState::handleInput(const Input& input) {
                         stack(), context_, "finale", /*replay=*/false));
                 }
             } else {
-                const std::string joke = game::nextStrangerJokeId(
-                    context_.content, context_.party.strangerJokesTold);
-                if (!joke.empty()) {
-                    context_.audio.play(Sfx::Confirm);
-                    ++context_.party.strangerJokesTold;
-                    stack().pushState(std::make_unique<CutsceneState>(
-                        stack(), context_, joke, /*replay=*/true));
-                } else if (context_.content.findCutscene("finale") != nullptr) {
-                    // No jokes authored: retell the finale rather than go mute.
-                    context_.audio.play(Sfx::Confirm);
-                    stack().pushState(std::make_unique<CutsceneState>(
-                        stack(), context_, "finale", /*replay=*/false));
-                }
+                // M116: once the story is done, P offers a talk or the
+                // End-game Summary (Cancel steps away with nothing spent).
+                context_.audio.play(Sfx::Confirm);
+                stack().pushState(std::make_unique<EventChoiceState>(
+                    stack(), context_, "THE STRANGER \"P\"",
+                    std::vector<std::string>{"Talk", "End-game Summary"}, [this](int pick) {
+                        if (pick == 0) {
+                            playNextStrangerBeat();
+                        } else {
+                            stack().pushState(std::make_unique<EndgameSummaryState>(
+                                stack(), context_, /*firstShow=*/false));
+                        }
+                    }));
             }
         }
         // M50: town exits are walk-through triggers now — no Confirm here. Travel
@@ -571,7 +602,7 @@ void TownState::render() {
     // Building name labels above each building.
     for (const town::Building& b : town_.buildings) {
         const int cx = ox + b.x * ts + b.w * ts / 2;
-        ui::drawTextCentered(b.name.c_str(), cx, oy + b.y * ts - 9, 8, pal.text);
+        ui::drawTextCentered(b.name.c_str(), cx, oy + b.y * ts - 10, ui::style::kFontSmall, pal.text);
     }
 
     // Exit signposts by each road (M50: side roads mid-height, castle road north).
@@ -588,7 +619,7 @@ void TownState::render() {
         const Color col = e.locked ? pal.dangerText : pal.gold;
         // Castle label below its top gap; side roads above the edge tile.
         const int labelY = e.toCastle ? oy + (e.tileY + 1) * ts + 1 : oy + (e.tileY - 1) * ts - 1;
-        ui::drawTextCentered(label.c_str(), cx, labelY, 8, col);
+        ui::drawTextCentered(label.c_str(), cx, labelY, ui::style::kFontSmall, col);
     }
 
     // Black-market NPC (M34): a hooded dealer at the offer's seeded plaza tile.
@@ -601,7 +632,7 @@ void TownState::render() {
             DrawRectangle(ox + mx * ts + 3, oy + my * ts + 2, ts - 6, ts - 4,
                           Color{120, 70, 150, 255});
         }
-        ui::drawTextCentered("Black Market", ox + mx * ts + ts / 2, oy + my * ts - 9, 8,
+        ui::drawTextCentered("Black Market", ox + mx * ts + ts / 2, oy + my * ts - 10, ui::style::kFontSmall,
                              ui::lighten(pal.magic, 40));
     }
 
@@ -614,7 +645,7 @@ void TownState::render() {
             DrawRectangle(dx + s, dy + s, 2, 2, Color{224, 96, 84, 255});
             DrawRectangle(dx + ts - s, dy + s, 2, 2, Color{224, 96, 84, 255});
         }
-        ui::drawTextCentered("Dig Site", dx + ts / 2, dy - 9, 8, pal.danger);
+        ui::drawTextCentered("Dig Site", dx + ts / 2, dy - 10, ui::style::kFontSmall, pal.danger);
     }
 
     // Wandering storyteller (M41): always present at a fixed plaza tile in every town.
@@ -626,7 +657,7 @@ void TownState::render() {
                           ts - 4, Color{150, 120, 60, 255});
         }
         ui::drawTextCentered("Storyteller", ox + town::kBardTileX * ts + ts / 2,
-                             oy + town::kBardTileY * ts - 9, 8, pal.gold);
+                             oy + town::kBardTileY * ts - 10, ui::style::kFontSmall, pal.gold);
     }
 
     // M97: the hooded stranger at the would-be Town-8 roadside (town 7,
@@ -640,7 +671,7 @@ void TownState::render() {
                           ts - 6, ts - 4, Color{120, 100, 150, 255});
         }
         ui::drawTextCentered("\"P\"", ox + town::kGooseNpcTileX * ts + ts / 2,  // M100
-                             oy + town::kGooseNpcTileY * ts - 9, 8, pal.gold);
+                             oy + town::kGooseNpcTileY * ts - 10, ui::style::kFontSmall, pal.gold);
     }
 
     // Player: directional walk animation, then static sprite, then rectangle
@@ -681,13 +712,13 @@ void TownState::render() {
         const std::string text =
             input::prompt(bindings, InputAction::Confirm, device, "Enter " + nearDoor_->name) +
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.text);
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, ui::style::kFontSmall, pal.text);
     } else if (nearMarket_) {
         ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
         const std::string text =
             input::prompt(bindings, InputAction::Confirm, device, "Browse the Black Market") +
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8,
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, ui::style::kFontSmall,
                              ui::lighten(pal.magic, 40));
     } else if (nearDig_) {
         // M65: the fight is announced before the shovel bites.
@@ -696,20 +727,20 @@ void TownState::render() {
             input::prompt(bindings, InputAction::Confirm, device,
                           "Dig for the treasure - its guardian will not like it") +
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.danger);
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, ui::style::kFontSmall, pal.danger);
     } else if (nearBard_) {
         ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
         const std::string text =
             input::prompt(bindings, InputAction::Confirm, device, "Hear the storyteller") + "   " +
             input::prompt(bindings, InputAction::Menu, device, "Pause");
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.gold);
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, ui::style::kFontSmall, pal.gold);
     } else if (nearGoose_) {
         // M97: the finale invitation — quiet gold, like the storyteller's.
         ui::drawFooterHints({}, context_.virtualWidth, h, "town.footer");
         const std::string text =
             input::prompt(bindings, InputAction::Confirm, device, "Speak with the stranger") +
             "   " + input::prompt(bindings, InputAction::Menu, device, "Pause");
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8, pal.gold);
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, ui::style::kFontSmall, pal.gold);
     } else if (nearExit_ != nullptr) {
         // M50: walk-through roads. A locked one explains why and does not travel;
         // an unlocked one only shows here on a castle-return (the latch is holding
@@ -725,7 +756,7 @@ void TownState::render() {
         } else {
             text = "Walk out to Town " + std::to_string(nearExit_->destTown);
         }
-        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, 8,
+        ui::drawTextCentered(text.c_str(), context_.virtualWidth / 2, h - 12, ui::style::kFontSmall,
                              nearExit_->locked ? pal.dangerText : pal.text);
     } else {
         const std::string moveLabel =

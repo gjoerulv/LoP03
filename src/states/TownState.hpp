@@ -41,6 +41,9 @@ private:
     void buildForCurrentTown(town::TownEntry entry = town::TownEntry::Default);
     void travelTo(int destTown, town::TownEntry entry);  // M32/M50: switch towns in place
     void applyTownAudio();        // town-indexed music + ambience
+    // M116: the roadside Stranger's talk (the M100 joke cycle, moved here
+    // verbatim) - one of the two picks P offers once the story is done.
+    void playNextStrangerBeat();
     // M98: queue a tutorial beat instead of pushing it from a lifecycle hook —
     // a story cutscene queued above (prologue, town arrivals, finale) must play
     // uninterrupted; update() flushes the queue once this state is top again.

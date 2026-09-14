@@ -159,9 +159,11 @@ TEST_CASE("offense: exactly the authored foes carry the new vocabulary", "[offen
                            "guild_chain_mistress", "guild_warden_mole",
                            "guild_cutlery_curator", "guild_grandmaster_ossia",
                            "guild_registrar_null", "the_dragon"});
+    // M111 adds the Golden Goose: it opens under Reflect (its script is the
+    // new vocabulary, pinned in test_golden_goose).
     CHECK(initial == std::set<std::string>{"rune_sentry", "evil_goose_trickster",
                                            "crystal_sorcerer", "deadly_duck",
-                                           "guild_registrar_null"});
+                                           "guild_registrar_null", "golden_goose"});
     CHECK(mannered == std::set<std::string>{"the_hollow_king", "deadly_duck",
                                             "guild_cutlery_curator", "the_dragon"});
 

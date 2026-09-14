@@ -90,6 +90,11 @@ EnemyChoice choosePartyAction(const Battle& b, int actor, const content::Content
 
 void applyChoice(Battle& b, int actor, const EnemyChoice& choice,
                  const content::ContentDatabase& db) {
+    // M111: a scripted own turn — the one shared executor, as the screen uses.
+    if (choice.scripted) {
+        b.runScriptedStep(actor);
+        return;
+    }
     // M44: a forced Guard or Skip is resolved here, so the sim and the battle
     // screen carry out an imposed turn the same way.
     if (choice.forced == ForcedAction::Guard) {

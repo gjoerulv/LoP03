@@ -2,11 +2,14 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "content/ContentDatabase.hpp"  // M100: the joke pool lives in content
 #include "content/Definitions.hpp"
+#include "game/BlackMarket.hpp"  // M110: blackMarketHash for the patrol-scene shuffle
 #include "game/Party.hpp"
 
 // M97: pure rules for the Hooded Goose story scenes — seen-tracking, the
@@ -120,6 +123,44 @@ inline std::vector<std::string> strangerStoryIds(const content::ContentDatabase&
     }
     std::sort(ids.begin(), ids.end());
     return ids;
+}
+
+// M110: the Stranger's PATROL pool — every authored "patrol_*" scene id,
+// sorted (the joke/story shape): optionless tales told when the danger
+// counter's patrol resolves as a Stranger encounter, valid before or after
+// the King. Empty when none are authored.
+inline std::vector<std::string> strangerPatrolIds(const content::ContentDatabase& db) {
+    std::vector<std::string> ids;
+    for (const auto& [id, def] : db.cutscenes()) {
+        (void)def;
+        if (id.rfind(content::kPatrolCutscenePrefix, 0) == 0) {
+            ids.push_back(id);
+        }
+    }
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
+// The scene for a run's Nth patrol encounter (told = how many the run has
+// met already): the sorted pool in a seed-shuffled order — a Fisher-Yates
+// over pure hashes of the run seed under its own salt — walked to the end
+// before it repeats, so a long run meets every scene once per cycle. Reload-
+// honest by construction; never touches the joke or story counters. "" when
+// the pool is empty (the trigger then falls back to an ordinary patrol).
+inline std::string patrolSceneFor(const content::ContentDatabase& db, std::uint64_t runSeed,
+                                  int told) {
+    std::vector<std::string> ids = strangerPatrolIds(db);
+    if (ids.empty()) {
+        return {};
+    }
+    constexpr std::uint64_t kSaltPatrolScene = 0x7A7201C5CE0E5EEDull;
+    for (std::size_t i = ids.size() - 1; i > 0; --i) {
+        const std::uint64_t h =
+            blackMarketHash(runSeed, kSaltPatrolScene + static_cast<std::uint64_t>(i));
+        const std::size_t j = static_cast<std::size_t>(h % (i + 1));
+        std::swap(ids[i], ids[j]);
+    }
+    return ids[static_cast<std::size_t>(told < 0 ? 0 : told) % ids.size()];
 }
 
 // Replaces the {member1}..{member4} name tokens with the party's member names.

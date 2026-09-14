@@ -20,6 +20,11 @@
 #include "core/FadeController.hpp"
 #include "core/GameConfig.hpp"
 #include "dungeon/DungeonGenerator.hpp"
+#include "game/SpecialEncounter.hpp"  // M112
+#include "render/CutsceneBackdrop.hpp"  // M113
+#include "states/FontSpecimenState.hpp"  // M114
+#include "game/Lifetime.hpp"  // M116
+#include "states/EndgameSummaryState.hpp"  // M116
 #include "dungeon/TeamInspect.hpp"  // M88: describeTeam for the inspection scene
 #include "dungeon/ThemeEvents.hpp"  // M87: eventFlavorId for the long-flavor scene
 #include "game/Achievements.hpp"
@@ -201,6 +206,38 @@ dungeon::EnemyTeam makeGoosyBossTeam(const content::ContentDatabase& db) {
 // Applies a spread of statuses so battle rows show every tag at once, including
 // the M35 Confusion/Silence/Blind (duration-only, magnitude 0) and a stacked row
 // to stress the status-line width with the wider labels.
+// M116: seven-digit counts in every lifetime field, the longest boss as a
+// known foe, the migration note - the summary pages at their widest.
+void captureFillLifetime(AppContext& c) {
+    LifetimeStats& L = c.party.lifetime;
+    for (MemberLifetime& m : L.members) {
+        m = MemberLifetime{};
+        for (const auto& f : kMemberLifetimeFields) {
+            m.*(f.member) = 9999999;
+        }
+    }
+    for (const auto& f : kCombatLifetimeFields) { L.combat.*(f.member) = 9999999; }
+    L.combat.highestHitMember = 0;
+    for (const auto& f : kEconomyLifetimeFields) { L.economy.*(f.member) = 9999999; }
+    for (TownLifetime& t : L.towns) {
+        for (const auto& f : kTownLifetimeFields) { t.*(f.member) = 9999999; }
+    }
+    for (const auto& f : kPatrolLifetimeFields) { L.patrols.*(f.member) = 9999999; }
+    for (const auto& f : kExploreLifetimeFields) { L.explore.*(f.member) = 9999999; }
+    L.explore.playSeconds = 9999LL * 3600 + 59 * 60;
+    L.migrated = true;
+    c.party.eternalBestFloors = 9999999;
+    c.party.encountered.clear();
+    for (const auto& [id, def] : c.content.enemies()) {
+        c.party.encountered.push_back(id);
+        L.defeats[id] = 9999999;
+    }
+    for (const auto& [id, def] : c.content.bosses()) {
+        c.party.encountered.push_back(id);
+        L.defeats[id] = 9999999;
+    }
+}
+
 void applyCaptureStatuses(battle::Battle& b) {
     using content::StatusType;
     int i = 0;
@@ -1425,6 +1462,262 @@ int run(const char* outDir) {
                  // frame (joke_1 carries the owner's own line).
                  s.pushState(
                      std::make_unique<CutsceneState>(s, c, "joke_1", /*replay=*/true));
+             }},
+#ifdef CRYSTAL_DEBUG_OVERLAY
+            {"128_debug_patrol_rows",
+             [](StateStack& s, AppContext& c) {
+                 // M110: the dungeon debug menu scrolled onto the dispatcher
+                 // one-shots (Next patrol / Trigger patrol now / Next event)
+                 // and the M109 ledger rows, at their widest values.
+                 auto st = std::make_unique<DebugMenuState>(s, c, /*inDungeon=*/true);
+                 st->captureShowDispatcherRows();
+                 s.pushState(std::move(st));
+             }},
+#endif
+            {"129_patrol_scene",
+             [](StateStack& s, AppContext& c) {
+                 // M110: a Stranger patrol scene — the pool's longest beat on
+                 // the six-line panel (patrol_4 opens with the torch question).
+                 s.pushState(
+                     std::make_unique<CutsceneState>(s, c, "patrol_4", /*replay=*/true));
+             }},
+            {"131_lore_question",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M112: the Jester's question at its longest — the two-line
+                 // prompt strip, the Jester (centre), two answer boxes with the
+                 // longest authored answers, the target panel's choice line.
+                 static SpecialEncounter special;
+                 special = SpecialEncounter{};
+                 special.kind = SpecialKind::Lore;
+                 std::string longest;
+                 for (const auto& [id, q] : c.content.loreQuestions()) {
+                     if (q.question.size() > longest.size()) {
+                         longest = q.question;
+                     }
+                 }
+                 special.lore.questionId = "capture";
+                 special.lore.question = longest;
+                 special.lore.answers = {"WWWWWWWWWWWWWWWWWWWWWWWWWW", "The keys around his neck"};
+                 special.lore.correctAnswer = 1;
+                 special.lore.mockLine = "Migrations. The hood, the scholarship, the cold. Do keep up.";
+                 battle::Battle b =
+                     battle::buildBattle(c.party, dungeon::EnemyTeam{}, c.content);
+                 appendPlaceholders(b, special);
+                 auto state = std::make_unique<BattleState>(
+                     s, c, std::move(b), &battleSlot, MusicTrack::None, nullptr,
+                     /*castleChallenge=*/false, render::BackdropStage::Keep, nullptr, false,
+                     LifetimeHook{}, &special);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
+             }},
+            {"132_lore_result_mock",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M112: the wrong answer's settled beat — the Jester's mock line
+                 // in the outcome panel, the prompt still above the field.
+                 static SpecialEncounter special;
+                 special = SpecialEncounter{};
+                 special.kind = SpecialKind::Lore;
+                 std::string longestMock;
+                 for (const auto& [id, q] : c.content.loreQuestions()) {
+                     if (q.mockLine.size() > longestMock.size()) {
+                         longestMock = q.mockLine;
+                     }
+                 }
+                 special.lore.questionId = "capture";
+                 special.lore.question = "Which of these is one of the six founding classes?";
+                 special.lore.answers = {"Guardian", "Paladin"};
+                 special.lore.correctAnswer = 0;
+                 special.lore.mockLine = longestMock;
+                 battle::Battle b =
+                     battle::buildBattle(c.party, dungeon::EnemyTeam{}, c.content);
+                 appendPlaceholders(b, special);
+                 auto state = std::make_unique<BattleState>(
+                     s, c, std::move(b), &battleSlot, MusicTrack::None, nullptr,
+                     /*castleChallenge=*/false, render::BackdropStage::Forest, nullptr, false,
+                     LifetimeHook{}, &special);
+                 state->captureSpecialPick(2);  // the wrong answer
+                 s.pushState(std::move(state));
+             }},
+            {"133_chests",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M112: three closed chests on the field, the warning strip,
+                 // one chest targeted.
+                 static SpecialEncounter special;
+                 special = SpecialEncounter{};
+                 special.kind = SpecialKind::Chests;
+                 special.chests = *makeChestEncounter(c.content, 3, 4242ull, 0, 150);
+                 battle::Battle b =
+                     battle::buildBattle(c.party, dungeon::EnemyTeam{}, c.content);
+                 appendPlaceholders(b, special);
+                 auto state = std::make_unique<BattleState>(
+                     s, c, std::move(b), &battleSlot, MusicTrack::None, nullptr,
+                     /*castleChallenge=*/false, render::BackdropStage::Mine, nullptr, false,
+                     LifetimeHook{}, &special);
+                 state->captureEnterTargeting();
+                 s.pushState(std::move(state));
+             }},
+            {"134_mimic_revealed",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M112: the lying chest opened — the Mimic alone at the centre
+                 // (36x36 boss canvas), the opening blow's impact beat held, the
+                 // telegraph on the quip channel.
+                 static SpecialEncounter special;
+                 special = SpecialEncounter{};
+                 special.kind = SpecialKind::Chests;
+                 special.chests = *makeChestEncounter(c.content, 3, 4242ull, 0, 150);
+                 int mimic = 0;
+                 for (int i = 0; i < 3; ++i) {
+                     if (special.chests.roles[static_cast<std::size_t>(i)] == ChestRole::Mimic) {
+                         mimic = i;
+                     }
+                 }
+                 battle::Battle b =
+                     battle::buildBattle(c.party, dungeon::EnemyTeam{}, c.content);
+                 appendPlaceholders(b, special);
+                 auto state = std::make_unique<BattleState>(
+                     s, c, std::move(b), &battleSlot, MusicTrack::None, nullptr,
+                     /*castleChallenge=*/false, render::BackdropStage::Mine, nullptr, false,
+                     LifetimeHook{}, &special);
+                 state->captureSpecialPick(mimic);
+                 s.pushState(std::move(state));
+             }},
+            {"142_summary_overview",
+             [](StateStack& s, AppContext& c) {
+                 // M116: the End-game Summary at maximal content - seven-digit
+                 // counts, the longest names, the migration note.
+                 captureFillLifetime(c);
+                 auto st = std::make_unique<EndgameSummaryState>(s, c, /*firstShow=*/false);
+                 st->captureShowPage(0);
+                 s.pushState(std::move(st));
+             }},
+            {"143_summary_heroes",
+             [](StateStack& s, AppContext& c) {
+                 captureFillLifetime(c);
+                 auto st = std::make_unique<EndgameSummaryState>(s, c, /*firstShow=*/false);
+                 st->captureShowPage(1);
+                 s.pushState(std::move(st));
+             }},
+            {"144_summary_combat",
+             [](StateStack& s, AppContext& c) {
+                 captureFillLifetime(c);
+                 auto st = std::make_unique<EndgameSummaryState>(s, c, /*firstShow=*/false);
+                 st->captureShowPage(2);
+                 s.pushState(std::move(st));
+             }},
+            {"145_summary_world",
+             [](StateStack& s, AppContext& c) {
+                 captureFillLifetime(c);
+                 auto st = std::make_unique<EndgameSummaryState>(s, c, /*firstShow=*/false);
+                 st->captureShowPage(3);
+                 s.pushState(std::move(st));
+             }},
+            {"146_summary_bestiary",
+             [](StateStack& s, AppContext& c) {
+                 captureFillLifetime(c);
+                 auto st = std::make_unique<EndgameSummaryState>(s, c, /*firstShow=*/false);
+                 st->captureShowPage(4);
+                 s.pushState(std::move(st));
+             }},
+            {"147_summary_patrols",
+             [](StateStack& s, AppContext& c) {
+                 captureFillLifetime(c);
+                 auto st = std::make_unique<EndgameSummaryState>(s, c, /*firstShow=*/false);
+                 st->captureShowPage(5);
+                 s.pushState(std::move(st));
+             }},
+            {"148_stranger_choice",
+             [](StateStack& s, AppContext& c) {
+                 // M116: P's roadside pick once the story is done.
+                 s.pushState(std::make_unique<EventChoiceState>(
+                     s, c, "THE STRANGER \"P\"",
+                     std::vector<std::string>{"Talk", "End-game Summary"}, [](int) {}));
+             }},
+            {"140_dragon_clone",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M115: the Dragon and its clone on the field together - both
+                 // in the boss art, the clone centre-top above the Dragon, the
+                 // clone targeted (its brackets against the Dragon's crown).
+                 battle::Battle b = battle::buildBattle(c.party, dragonTeam(c.content), c.content);
+                 for (battle::Combatant& u : b.units) {
+                     if (u.side == battle::Side::Enemy && u.summonSlot) {
+                         u.hp = u.maxHp;  // the clone, raised
+                     }
+                 }
+                 auto state = std::make_unique<BattleState>(
+                     s, c, std::move(b), &battleSlot, MusicTrack::None, nullptr,
+                     /*castleChallenge=*/true, render::BackdropStage::Castle);
+                 state->captureEnterTargeting(0);
+                 s.pushState(std::move(state));
+             }},
+            {"141_dragon_target",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M115: the same field with the Dragon itself targeted - its
+                 // brackets against the clone's meter above.
+                 battle::Battle b = battle::buildBattle(c.party, dragonTeam(c.content), c.content);
+                 for (battle::Combatant& u : b.units) {
+                     if (u.side == battle::Side::Enemy && u.summonSlot) {
+                         u.hp = u.maxHp;
+                     }
+                 }
+                 auto state = std::make_unique<BattleState>(
+                     s, c, std::move(b), &battleSlot, MusicTrack::None, nullptr,
+                     /*castleChallenge=*/true, render::BackdropStage::Castle);
+                 state->captureEnterTargeting(1);
+                 s.pushState(std::move(state));
+             }},
+            {"139_font_specimen",
+             [](StateStack& s, AppContext& c) {
+                 // M114: the readability redesign under the lint - confusable
+                 // groups, paired quotes, the accented sets and the Latin
+                 // pangram at the three exact sizes.
+                 s.pushState(std::make_unique<FontSpecimenState>(s, c));
+             }},
+            {"135_cutscene_stage_keep",
+             [](StateStack& s, AppContext& c) {
+                 // M113: a dungeon story scene on the Keep stage (parapets and
+                 // arches) - the stage is the caller's, never the scene's.
+                 auto st = std::make_unique<CutsceneState>(s, c, "story_1", /*replay=*/true,
+                                                           render::CutsceneStage::Keep);
+                 st->captureShowBeat(0);
+                 s.pushState(std::move(st));
+             }},
+            {"136_cutscene_stage_mine",
+             [](StateStack& s, AppContext& c) {
+                 // M113: the Mine stage (crystal clusters and supports).
+                 auto st = std::make_unique<CutsceneState>(s, c, "story_2", /*replay=*/true,
+                                                           render::CutsceneStage::Mine);
+                 st->captureShowBeat(0);
+                 s.pushState(std::move(st));
+             }},
+            {"137_cutscene_stage_forest",
+             [](StateStack& s, AppContext& c) {
+                 // M113: the Forest stage (trunk columns and roots).
+                 auto st = std::make_unique<CutsceneState>(s, c, "story_3", /*replay=*/true,
+                                                           render::CutsceneStage::Forest);
+                 st->captureShowBeat(0);
+                 s.pushState(std::move(st));
+             }},
+            {"138_cutscene_stage_goosy",
+             [](StateStack& s, AppContext& c) {
+                 // M113: the Goosy stage (reeds and still water) under a
+                 // patrol tale - the same scene plays on any stage.
+                 auto st = std::make_unique<CutsceneState>(s, c, "patrol_2", /*replay=*/true,
+                                                           render::CutsceneStage::Goosy);
+                 st->captureShowBeat(0);
+                 s.pushState(std::move(st));
+             }},
+            {"130_battle_golden_goose",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M111: the Golden Goose patrol as it opens — the lone foe
+                 // centered (M101), its Reflect showing in the status column,
+                 // the new 24x24 sprite on the Keep stage, at a town-3 scale.
+                 battle::Battle b = battle::buildBattle(
+                     c.party,
+                     dungeon::goldenGooseTeam(c.content, "ruined_keep", 3, 5, 4242ull, 0),
+                     c.content);
+                 s.pushState(std::make_unique<BattleState>(
+                     s, c, std::move(b), &battleSlot, MusicTrack::None, nullptr,
+                     /*castleChallenge=*/false, render::BackdropStage::Keep));
              }},
             {"64_settings_audio",
              [](StateStack& s, AppContext& c) {

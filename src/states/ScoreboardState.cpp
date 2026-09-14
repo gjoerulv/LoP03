@@ -101,7 +101,7 @@ void ScoreboardState::render() {
         const char* label = boardFloors_ == 1
                                 ? "1-Floor Runs"
                                 : (boardFloors_ == 4 ? "4-Floor Runs" : "20-Floor Runs");
-        const int chipW = ui::measureText(label, 8) + 12;
+        const int chipW = ui::measureText(label, style::kFontSmall) + 12;
         ui::drawChip(label, w / 2 - chipW / 2, 26,
                      boardFloors_ == 1 ? pal.gold
                                        : (boardFloors_ == 4 ? pal.crystal : pal.danger));

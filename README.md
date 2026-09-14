@@ -11,9 +11,13 @@ Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
 > **Status: feature-complete, polished playable build** (milestones
-> **M1–M108** delivered and owner-approved — the M98–M108 "Are P Geese"
+> **M1–M116** delivered and owner-approved — the M98–M108 "Are P Geese"
 > program, from the post-M97 fix batch through the full rebrand at
-> **v0.7.0**, approved 2026-09-02). In the box: a seven-town difficulty ladder
+> **v0.7.0**, approved 2026-09-02; the **M109–M116 program** — the lifetime
+> ledger, the patrol dispatcher with the Golden Goose, the Jester's lore
+> trap and the treasure chests, cutscene stages, the font readability
+> redesign, the Last Dragon redesign and the End-game Summary — approved
+> 2026-09-10 and packaged as **v0.8.0** the same day). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
 > dungeons with room events including the rare Royal Relics and per-theme
@@ -79,10 +83,14 @@ music, or text. Built in **C++20** with **raylib**.
 > countdown**, a dragonform pact, a Training Hall **sparring mirror** (AI
 > or manual control of the echoes), three once-per-run **summons** dug
 > from treasure maps, sixteen worn **heirlooms** with triggered effects,
-> and an eight-scene **cutscene story** told by a hooded goose. With the
-> M98–M108 approvals (2026-09-02) only the deferred **validation
-> playtesting (M23)** and **release sign-off (M24)** remain. Current
-> status always lives in `docs/milestones.md`.
+> and an eight-scene **cutscene story** told by a hooded goose, now over
+> painted stages; since M109–M116 also a **seeded patrol mixture** (the
+> Golden Goose hunt, the Jester's lore question, three chests and the
+> Mimic, a Stranger scene), a persistent **lifetime ledger** with a
+> six-page **End-game Summary**, and the typeface redrawn on a 6×9 cell.
+> With the M109–M116 approvals (2026-09-10) only the deferred **validation
+> playtesting (M23)** and **release sign-off (M24)** remain. Current status always lives in
+> `docs/milestones.md`.
 
 ## Requirements
 
@@ -135,7 +143,7 @@ cmd /c "call ""C:\Program Files\Microsoft Visual Studio\2022\<edition>\VC\Auxili
 
 </details>
 
-### Presets (recommended, M24)
+### Presets (recommended)
 
 ```powershell
 cmake --preset msvc-debug      # development: debug overlay + capture CLI
@@ -304,9 +312,9 @@ src/
   states/    game states (menu, town, dungeon, battle, shops, ...)
   capture/   deterministic screenshot scenes (dev builds only)
   editor/    CrystalForge content editor (separate dev tool; never shipped)
-data/        JSON content (14 files: skills, classes, enemies, items, bosses,
-             themes, composition, passives, milestones, story, tutorials,
-             event_flavor + curio_lore + cutscenes)
+data/        JSON content (15 files: skills, classes, enemies, items, bosses,
+             dungeon_themes, composition, passives, milestones, story,
+             tutorials, event_flavor, curio_lore, cutscenes, lore_questions)
 assets/      manifest.json + generated textures/audio/font + credits.md
 tools/       package.ps1 + deterministic asset generators (asset_gen/)
 tests/       Catch2 unit/integration tests (headless)
@@ -361,9 +369,11 @@ save round-trips via the Save Point + Continue.
 
 ## Known limitations
 
-- **Generated assets.** All art (16-bit-style pixel tiles/sprites), the UI
-  **bitmap font** (an original pixel typeface + BMFont descriptors), and all
-  audio (21 chiptune music tracks, 5 ambience beds, 22 SFX) are original and
+- **Generated assets.** All art (16-bit-style pixel tiles/sprites — 100
+  battle sprites incl. 27 bosses — plus five painted cutscene stages), the UI
+  **bitmap font** (an original 161-glyph pixel typeface on a 6×9 cell, three
+  BMFont descriptors), and all audio (22 chiptune music tracks incl. the
+  mocking jingle, 5 ambience beds, 22 SFX) are original and
   produced by deterministic in-repo generators (`tools/asset_gen/`). Every
   sound and visual role is replaceable without code via
   `assets/manifest.json` (see `docs/asset_pipeline.md`; debug builds reload

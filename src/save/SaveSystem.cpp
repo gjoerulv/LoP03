@@ -19,6 +19,158 @@ namespace cd::save {
 namespace fs = std::filesystem;
 using content::Json;
 
+namespace {
+
+// M109: the lifetime ledger rides the save as ONE nested object (a deliberate
+// departure from the file's flat-key idiom - it carries ~90 counters). Both
+// directions iterate the field tables in game/Lifetime.hpp, so the writer
+// and the reader can never disagree about a field. Reading is defensive in
+// the ledger's own way: a TYPE error reports like every other field (and so
+// fails the load), but a below-zero VALUE silently degrades to 0 - a
+// display-only counter must never cost the player a save.
+template <typename Group, std::size_t N>
+Json lifetimeGroupToJson(const Group& g,
+                         const std::array<LifetimeField<Group>, N>& fields) {
+  Json j = Json::object();
+  for (const LifetimeField<Group>& f : fields) {
+    j[f.key] = g.*(f.member);
+  }
+  return j;
+}
+
+template <typename Group, std::size_t N>
+void lifetimeGroupFromJson(const Json& obj, Group& g,
+                           const std::array<LifetimeField<Group>, N>& fields,
+                           const std::string& ctx, const std::string& source,
+                           content::LoadReport& report) {
+  content::ObjectReader r(obj, ctx, source, report);
+  for (const LifetimeField<Group>& f : fields) {
+    g.*(f.member) = std::max<std::int64_t>(0, r.optInt64(f.key, 0));
+  }
+}
+
+Json lifetimeToJson(const LifetimeStats& s) {
+  Json j = Json::object();
+  Json members = Json::array();
+  for (const MemberLifetime& m : s.members) {
+    members.push_back(lifetimeGroupToJson(m, kMemberLifetimeFields));
+  }
+  j["members"] = std::move(members);
+  Json combat = lifetimeGroupToJson(s.combat, kCombatLifetimeFields);
+  combat["highestHitMember"] = s.combat.highestHitMember;
+  j["combat"] = std::move(combat);
+  j["economy"] = lifetimeGroupToJson(s.economy, kEconomyLifetimeFields);
+  Json towns = Json::array();
+  for (const TownLifetime& t : s.towns) {
+    towns.push_back(lifetimeGroupToJson(t, kTownLifetimeFields));
+  }
+  j["towns"] = std::move(towns);
+  j["patrols"] = lifetimeGroupToJson(s.patrols, kPatrolLifetimeFields);
+  j["explore"] = lifetimeGroupToJson(s.explore, kExploreLifetimeFields);
+  Json defeats = Json::object();
+  for (const auto& [id, count] : s.defeats) {
+    defeats[id] = count;
+  }
+  j["defeats"] = std::move(defeats);
+  j["migrated"] = s.migrated;
+  return j;
+}
+
+// Reads a nested group when present and an object; an absent group stays at
+// zeros; a present non-object reports a type error (the file's discipline).
+template <typename Group, std::size_t N>
+void readLifetimeGroup(const Json& parent, const char* key, Group& g,
+                       const std::array<LifetimeField<Group>, N>& fields,
+                       const std::string& ctx, const std::string& source,
+                       content::LoadReport& report) {
+  auto it = parent.find(key);
+  if (it == parent.end()) {
+    return;
+  }
+  if (!it->is_object()) {
+    report.add(source, ctx + "." + key, "expected object");
+    return;
+  }
+  lifetimeGroupFromJson(*it, g, fields, ctx + "." + key, source, report);
+}
+
+template <typename Group, std::size_t N, std::size_t Slots>
+void readLifetimeGroupArray(const Json& parent, const char* key,
+                            std::array<Group, Slots>& out,
+                            const std::array<LifetimeField<Group>, N>& fields,
+                            const std::string& ctx, const std::string& source,
+                            content::LoadReport& report) {
+  auto it = parent.find(key);
+  if (it == parent.end()) {
+    return;
+  }
+  if (!it->is_array()) {
+    report.add(source, ctx + "." + key, "expected array");
+    return;
+  }
+  std::size_t i = 0;
+  for (const Json& element : *it) {
+    if (i >= Slots) {
+      break;  // extra entries (a longer future roster) are ignored, never fatal
+    }
+    const std::string ectx = ctx + "." + key + "[" + std::to_string(i) + "]";
+    if (!element.is_object()) {
+      report.add(source, ectx, "expected object");
+    } else {
+      lifetimeGroupFromJson(element, out[i], fields, ectx, source, report);
+    }
+    ++i;
+  }
+}
+
+void lifetimeFromJson(const Json& obj, LifetimeStats& s, const std::string& source,
+                      content::LoadReport& report) {
+  const std::string ctx = "lifetime";
+  s = LifetimeStats{};
+  readLifetimeGroupArray(obj, "members", s.members, kMemberLifetimeFields, ctx, source, report);
+  readLifetimeGroup(obj, "combat", s.combat, kCombatLifetimeFields, ctx, source, report);
+  if (auto c = obj.find("combat"); c != obj.end() && c->is_object()) {
+    content::ObjectReader r(*c, ctx + ".combat", source, report);
+    const std::int64_t member = r.optInt64("highestHitMember", -1);
+    s.combat.highestHitMember =
+        member >= 0 && member < static_cast<std::int64_t>(kLifetimeMemberSlots)
+            ? static_cast<int>(member)
+            : -1;
+  }
+  readLifetimeGroup(obj, "economy", s.economy, kEconomyLifetimeFields, ctx, source, report);
+  readLifetimeGroupArray(obj, "towns", s.towns, kTownLifetimeFields, ctx, source, report);
+  readLifetimeGroup(obj, "patrols", s.patrols, kPatrolLifetimeFields, ctx, source, report);
+  readLifetimeGroup(obj, "explore", s.explore, kExploreLifetimeFields, ctx, source, report);
+  // The defeat ledger is a tally keyed by content id and is deliberately NOT
+  // validated against the database (the M42 `encountered` precedent): a foe
+  // renamed or retired by a later content patch keeps its history. Values
+  // that are not non-negative integers are skipped, never fatal; the entry
+  // cap keeps a hand-edited file from ballooning memory.
+  if (auto d = obj.find("defeats"); d != obj.end()) {
+    if (!d->is_object()) {
+      report.add(source, ctx + ".defeats", "expected object");
+    } else {
+      std::size_t seen = 0;
+      for (const auto& [id, value] : d->items()) {
+        if (++seen > kLifetimeDefeatEntryCap) {
+          break;
+        }
+        if (id.empty() || !value.is_number_integer()) {
+          continue;
+        }
+        const std::int64_t count = value.get<std::int64_t>();
+        if (count > 0) {
+          s.defeats[id] = count;
+        }
+      }
+    }
+  }
+  content::ObjectReader r(obj, ctx, source, report);
+  s.migrated = r.optBool("migrated", false);
+}
+
+}  // namespace
+
 const char* slotFileStem(SaveSlot slot) {
   switch (slot) {
   case SaveSlot::Auto: return "save_auto";
@@ -110,10 +262,12 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   root["seenCutscenes"] = party.seenCutscenes;      // M97 (optional; old -> fresh story)
   root["heirloomChoices"] = party.heirloomChoices;  // M97 ("scene:heirloom" entries)
   root["strangerJokesTold"] = party.strangerJokesTold;  // M100 (optional; old -> 0)
+  root["summaryShown"] = party.summaryShown;            // M116 (optional; old -> false)
   root["eternalBestFloors"] = party.eternalBestFloors;  // M105 (optional; old -> 0)
   root["encountered"] = party.encountered;             // M42 (optional; old -> empty)
   root["recordBiggestHit"] = party.recordBiggestHit;   // M42 (optional; old -> 0)
   root["recordRunDamage"] = party.recordRunDamage;     // M42 (optional; old -> 0)
+  root["lifetime"] = lifetimeToJson(party.lifetime);   // M109 (optional; old -> zeros + migrated)
 
   Json members = Json::array();
   for (const Character& c : party.members) {
@@ -307,10 +461,21 @@ bool SaveSystem::load(SaveSlot slot, Party& outParty,
     }
   }
   loaded.strangerJokesTold = rootReader.optIntMin("strangerJokesTold", 0, 0);  // M100
+  loaded.summaryShown = rootReader.optBool("summaryShown", false);              // M116
   loaded.eternalBestFloors = rootReader.optIntMin("eternalBestFloors", 0, 0);  // M105
   loaded.encountered = rootReader.optStringArray("encountered");  // M42 (optional; old -> empty)
   loaded.recordBiggestHit = rootReader.optIntMin("recordBiggestHit", 0, 0);  // M42
   loaded.recordRunDamage = rootReader.optIntMin("recordRunDamage", 0, 0);    // M42
+  // M109 lifetime ledger: absent = a save that predates it - every counter
+  // starts at zero, `migrated` is set, and the one derivable fact (the M42
+  // biggest-hit record) is carried over; nothing else is ever fabricated.
+  if (auto lifeIt = root.find("lifetime"); lifeIt == root.end()) {
+    migrateLifetime(loaded.lifetime, loaded.recordBiggestHit);
+  } else if (!lifeIt->is_object()) {
+    report.add(source, "lifetime", "expected object");
+  } else {
+    lifetimeFromJson(*lifeIt, loaded.lifetime, source, report);
+  }
 
   auto partyIt = root.find("party");
   if (partyIt == root.end() || !partyIt->is_array()) {

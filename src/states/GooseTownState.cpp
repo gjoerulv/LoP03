@@ -123,12 +123,12 @@ void GooseTownState::render() {
         rec.duckDefeated() ? std::to_string(rec.duckBestTurns) + " turns" : std::string("-");
     ui::drawText("The Duck:  " + duck, recX + 12, recY + 30, 10, p.textDim);
     if (rec.duckDefeated()) {
-        ui::drawText("The pond lies quiet.", recX + 12, recY + 48, 8, p.gold);
+        ui::drawText("The pond lies quiet.", recX + 12, recY + 48, ui::style::kFontSmall, p.gold);
     } else {
-        ui::drawText("Something huge dives below.", recX + 12, recY + 48, 8, p.textHint);
+        ui::drawText("Something huge dives below.", recX + 12, recY + 48, ui::style::kFontSmall, p.textHint);
     }
 
-    ui::drawTextCentered("Geese line the shore. They are all staring at you.", w / 2, h - 28, 8,
+    ui::drawTextCentered("Geese line the shore. They are all staring at you.", w / 2, h - 28, ui::style::kFontSmall,
                          ui::lighten(p.success, 24));
     ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
                                               context_.input.activeDevice()),

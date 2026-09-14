@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -12,8 +13,10 @@
 #include "game/Dragonform.hpp"  // M93
 #include "game/Gooseform.hpp"   // M103
 #include "game/RunStats.hpp"
+#include "game/SpecialEncounter.hpp"  // M112
 #include "game/Spoils.hpp"
 #include "dungeon/DungeonModel.hpp"
+#include "dungeon/PatrolDispatch.hpp"  // M110
 #include "dungeon/RoomLayout.hpp"
 #include "states/GameState.hpp"
 #include "town/Tilemap.hpp"
@@ -133,6 +136,14 @@ private:
     void showOutcome(const std::string& title, std::string body);
     void renderOutcomePanel() const;
     void startBattle(int teamIndex, EncounterKind kind, dungeon::Dir gateDir);
+    // M112: a Lore/Chests patrol — the party-only battle with the placeholders.
+    void startSpecialBattle();
+    // M110: the patrol dispatcher. The M93 trigger (and the debug one-shot)
+    // resolves the patrol's seeded kind — or a debug-forced one for this
+    // trigger only — and dispatches it; every kind consumes the patrol
+    // through consumePatrol() (counter -> 100, ++patrolIndex_).
+    void triggerPatrol(int forcedKind = -1);
+    void consumePatrol();
     void completeDungeon();
     void renderMinimap() const;
     // M82: is the current floor the run's last (its boss slot holds the boss)?
@@ -186,6 +197,9 @@ private:
     // floor-boss); mirrors into party.eternalBestFloors as it grows.
     int eternalFloorsCleared_ = 0;
     int patrolIndex_ = 0;  // how many patrols this run has rolled (seeds the next)
+    // M111: the kind the pending patrol battle was dispatched as (read on
+    // resume for the Golden Goose's own bookkeeping and lines).
+    dungeon::PatrolKind pendingPatrolKind_ = dungeon::PatrolKind::Normal;
     int lastTileX_ = -1;   // the tile whose leaving ticked the counter last
     int lastTileY_ = -1;
     // M80: the centered event-flavor panel is open (movement and the other
@@ -237,6 +251,10 @@ private:
     // M68: the pending battle's payout. The battle applies it on Victory and
     // shows the results panel; must outlive the battle (like battleResult_).
     BattleSpoils pendingSpoils_;
+    // M112: the decision encounter a Lore or Chests patrol is fighting (null
+    // otherwise); the battle screen reads and resolves it, onResume tallies
+    // it. Owned here so it outlives the battle like battleResult_.
+    std::unique_ptr<SpecialEncounter> special_;
     // M67: set by completeDungeon. The next resume pops this state, so the
     // return to town survives anything pushed between the dungeon and the
     // result screen (the M63 level-up modal a boss kill can wedge there).

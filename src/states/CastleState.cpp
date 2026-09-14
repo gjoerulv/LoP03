@@ -194,7 +194,7 @@ void CastleState::render() {
     // The Jester lounges by the throne (M41); his paler colleague (M85) keeps
     // to the stairs, counting something.
     ui::drawTextCentered("A jester lounges by the throne; a paler one counts on the stair.", w / 2,
-                         h - 28, 8, ui::lighten(p.magic, 32));
+                         h - 28, ui::style::kFontSmall, ui::lighten(p.magic, 32));
     ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Cancel,
                                               context_.input.activeDevice()),
                           "Leave"}},

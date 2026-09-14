@@ -6,6 +6,7 @@
 #include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -73,7 +74,8 @@ void InnState::handleInput(const Input& input) {
             message_ = "You spend a free-rest token. Fully restored.";
         } else {
             const int cost = restCost(context_.party);
-            context_.party.gold -= cost;  // enabled row guarantees affordability
+            spendGold(context_.party, cost, EconomySource::Inn,
+                      context_.party.currentTown);  // enabled row guarantees affordability
             healFull(context_.party);
             context_.audio.play(Sfx::Heal);
             message_ = "The party rests for " + std::to_string(cost) + "g. Fully restored.";

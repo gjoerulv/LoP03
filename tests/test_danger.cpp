@@ -77,7 +77,7 @@ Character member(int maxHp, int atk, int mag, int def, int spd) {
 // Gauntlet, v20's gambling dens, v19's events and v18's scroll-free pools
 // (the pin moves with each owner-approved bump).
 TEST_CASE("danger: generation version rides the newest bump", "[danger]") {
-    CHECK(dungeon::kGenerationVersion == 23);
+    CHECK(dungeon::kGenerationVersion == 24);  // M110: the patrol dispatcher
 }
 
 TEST_CASE("danger: threat grows with stronger and more numerous enemies", "[danger]") {

@@ -147,6 +147,13 @@ TEST_CASE("goose town: the Duck's effective stats top every authored context", "
         CHECK(dragonEff.maxHp > duckEff.maxHp);
     }
     for (const auto& [id, def] : db().enemies()) {
+        if (def.specialOnly) {
+            // M111: the Golden Goose cedes one supremacy on purpose — its
+            // whole design is to act first and get away (owner-locked SPD 40,
+            // First Strike); it is a patrol prize that flees, never a rival
+            // to the Duck. Pinned in test_golden_goose instead.
+            continue;
+        }
         const int pct = foeMaxScalePct(false, def.bossOnly, false, floor);
         const content::StatBlock eff = content::scaledStats(def.stats, pct);
         INFO(id);

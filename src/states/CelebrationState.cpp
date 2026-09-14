@@ -157,8 +157,8 @@ void CelebrationState::render() {
     // shrunk by the fitted helper when even 110px is not enough.
     if (mvp_ >= 0) {
         const std::string& name = members[static_cast<std::size_t>(mvp_)].name;
-        const int tw = std::min(110, ui::measureText(name, 8));
-        ui::drawTextFitted(name, w / 2 - tw / 2, kGroundY + 6, 110, 8, p.gold,
+        const int tw = std::min(110, ui::measureText(name, ui::style::kFontSmall));
+        ui::drawTextFitted(name, w / 2 - tw / 2, kGroundY + 6, 110, ui::style::kFontSmall, p.gold,
                            "celebrate.mvpname");
     }
 

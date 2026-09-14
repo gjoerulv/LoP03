@@ -182,6 +182,12 @@ enum class TriggerDo {
     HealSelfPct        // M96: heirlooms (party-side triggers)
 };
 
+// M111 (rules v19): a scripted own-turn action. A foe authored `script` takes
+// its first N own turns from the list instead of choosing — one action that
+// lands several statuses on every living foe, a guard, a flee (the Golden
+// Goose's dust / cower / getaway) — then the ordinary AI resumes.
+enum class ScriptDo { None, StatusAllFoes, Guard, Flee };
+
 // parse* return std::nullopt for unrecognized strings (the caller reports the
 // error with context). toString is the inverse and always returns a stable id.
 std::optional<Element> parseElement(std::string_view s);
@@ -202,6 +208,7 @@ std::optional<PassiveHook> parsePassiveHook(std::string_view s);
 std::optional<MilestoneEffect> parseMilestoneEffect(std::string_view s);
 std::optional<TriggerWhen> parseTriggerWhen(std::string_view s);
 std::optional<TriggerDo> parseTriggerDo(std::string_view s);
+std::optional<ScriptDo> parseScriptDo(std::string_view s);  // M111
 
 const char* toString(Element v);
 
@@ -233,6 +240,7 @@ const char* toString(PassiveHook v);
 const char* toString(MilestoneEffect v);
 const char* toString(TriggerWhen v);
 const char* toString(TriggerDo v);
+const char* toString(ScriptDo v);  // M111
 
 // M59 (CrystalForge): every valid data id for an enum, in declaration order,
 // built from the same tables the parse* functions read — one source, so an id
@@ -257,5 +265,6 @@ std::vector<std::string_view> passiveHookIds();
 std::vector<std::string_view> milestoneEffectIds();
 std::vector<std::string_view> triggerWhenIds();
 std::vector<std::string_view> triggerDoIds();
+std::vector<std::string_view> scriptDoIds();  // M111
 
 }  // namespace cd::content

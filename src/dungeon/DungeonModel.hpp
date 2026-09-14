@@ -83,6 +83,12 @@ struct EnemyTeam {
     // M93: a danger-counter patrol (owner decisions 5/7). Pays XP but no gold
     // (game/Spoils.hpp reads this) and earns no danger-defeated credit.
     bool patrol = false;
+    // M111: a special patrol that DOES pay its gold (the Golden Goose's
+    // bounty) — teamSpoils keeps zeroing gold for every other patrol; and an
+    // authored XP override (> 0 replaces the summed per-enemy XP: the Goose
+    // pays exactly what the ordinary patrol it replaced would have).
+    bool patrolPaysGold = false;
+    int xpOverride = 0;
 
     int count() const { return static_cast<int>(enemyIds.size()) + (bossId.empty() ? 0 : 1); }
 };

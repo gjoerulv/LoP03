@@ -14,6 +14,8 @@
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
+#include "dungeon/PatrolDispatch.hpp"  // M110
+#include "dungeon/ThemeEvents.hpp"     // M110: the substitutable event kinds
 #include "game/BlackMarket.hpp"
 #include "game/BossDrops.hpp"  // legendaryDropPool
 #include "game/Curios.hpp"       // M85 debug: grant curios toward the Dragon gate
@@ -96,7 +98,20 @@ void DebugMenuState::rebuild() {
     add("God mode", Row::GodMode, context_.cheats.godMode ? "ON" : "off");
     if (inDungeon_) {
         add("Instant dungeon clear", Row::InstantClear);
-        add("Patrol on next step", Row::PatrolNow);        // M93
+        // M110: the patrol dispatcher's one-shots — the next patrol's kind
+        // (Random = the seeded roll), an immediate trigger through the real
+        // dispatcher, and the next faced plain event's kind.
+        add("Next patrol", Row::NextPatrol,
+            stepper(context_.cheats.nextPatrolKind < 0
+                        ? std::string("Random")
+                        : dungeon::patrolKindName(static_cast<dungeon::PatrolKind>(
+                              context_.cheats.nextPatrolKind))));
+        add("Trigger patrol now", Row::PatrolNow);
+        add("Next event", Row::NextEvent,
+            stepper(context_.cheats.nextEventKind < 0
+                        ? std::string("Random")
+                        : dungeon::eventFlavorId(static_cast<dungeon::RoomEventKind>(
+                              context_.cheats.nextEventKind))));
         add("Arm dragonform", Row::ArmDragonform);         // M93
     }
     add("Unlock reward classes", Row::UnlockClasses,
@@ -118,12 +133,44 @@ void DebugMenuState::rebuild() {
         stepper(content::kCutsceneIds[static_cast<std::size_t>(cutsceneIndex_)]));
     add("Reset story progress", Row::ResetStory,
         std::to_string(p.seenCutscenes.size()) + " seen");
+    // M109: a read-only glance at the lifetime ledger (fights recorded + the
+    // active-play clock), so the seams can be smoke-checked without a screen.
+    {
+        const LifetimeCount fights = p.lifetime.combat.battlesWon + p.lifetime.combat.battlesLost +
+                                     p.lifetime.combat.playerEscapes;
+        const LifetimeCount minutes = p.lifetime.explore.playSeconds / 60;
+        const std::string tag = p.lifetime.migrated ? " (migrated save)" : "";
+        add("Lifetime fights" + tag, Row::Lifetime, std::to_string(fights));
+        add("Lifetime play time" + tag, Row::Lifetime,
+            std::to_string(minutes / 60) + "h " + std::to_string(minutes % 60) + "m");
+    }
 
     const int previous = menu_.cursor();
     menu_.setItems(std::move(items));
     menu_.setCursor(previous);
     scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
 }
+
+#ifdef CRYSTAL_CAPTURE
+void DebugMenuState::captureShowDispatcherRows() {
+    // M110: the widest values of the new rows — the longest patrol-kind and
+    // event-kind labels, seven-digit ledger counts, the migrated tag — with
+    // the window scrolled onto them. The forced kinds stay armed in the
+    // capture process only (no capture scene ever triggers a patrol).
+    context_.cheats.nextPatrolKind = static_cast<int>(dungeon::PatrolKind::GoldenGoose);
+    context_.cheats.nextEventKind = static_cast<int>(dungeon::RoomEventKind::GoosePolymorph);
+    context_.party.lifetime.migrated = true;
+    context_.party.lifetime.combat.battlesWon = 9999999;
+    context_.party.lifetime.explore.playSeconds = 999LL * 3600 + 59 * 60;
+    rebuild();
+    for (std::size_t i = 0; i < rows_.size(); ++i) {
+        if (rows_[i].kind == Row::NextEvent) {
+            menu_.setCursor(static_cast<int>(i));
+        }
+    }
+    scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
+}
+#endif
 
 void DebugMenuState::adjust(const RowDef& row, int dir) {
     Party& p = context_.party;
@@ -147,6 +194,27 @@ void DebugMenuState::adjust(const RowDef& row, int dir) {
         case Row::PlayCutscene: {  // M97: cycle the scene list
             const int n = static_cast<int>(content::kCutsceneIdCount);
             cutsceneIndex_ = ((cutsceneIndex_ + dir) % n + n) % n;
+            break;
+        }
+        case Row::NextPatrol: {  // M110: -1 (Random) then every kind
+            const int n = dungeon::kPatrolKindCount + 1;
+            const int cur = context_.cheats.nextPatrolKind + 1;
+            context_.cheats.nextPatrolKind = ((cur + dir) % n + n) % n - 1;
+            break;
+        }
+        case Row::NextEvent: {  // M110: -1 (Random) then the substitutable kinds
+            const std::vector<dungeon::RoomEventKind>& safe =
+                dungeon::debugSubstitutableEventKinds();
+            const int n = static_cast<int>(safe.size()) + 1;
+            int cur = 0;
+            for (std::size_t i = 0; i < safe.size(); ++i) {
+                if (static_cast<int>(safe[i]) == context_.cheats.nextEventKind) {
+                    cur = static_cast<int>(i) + 1;
+                }
+            }
+            const int next = ((cur + dir) % n + n) % n;
+            context_.cheats.nextEventKind =
+                next == 0 ? -1 : static_cast<int>(safe[static_cast<std::size_t>(next - 1)]);
             break;
         }
         default:
@@ -239,7 +307,7 @@ void DebugMenuState::activate(const RowDef& row) {
             stack().popState();  // this debug menu
             stack().popState();  // the dungeon pause menu -> back in the dungeon
             return;
-        case Row::PatrolNow:  // M93: burn the fuse; the real trigger path fires
+        case Row::PatrolNow:  // M110: the real dispatcher fires on the next dungeon update
             context_.cheats.requestPatrolNow = true;
             context_.audio.play(Sfx::Confirm);
             stack().popState();

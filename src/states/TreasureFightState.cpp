@@ -10,6 +10,7 @@
 #include "core/FadeController.hpp"
 #include "dungeon/DungeonModel.hpp"
 #include "game/Party.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "game/Scrolls.hpp"
 #include "game/TreasureMap.hpp"
 #include "input/Input.hpp"
@@ -53,7 +54,8 @@ void TreasureFightState::onEnter() {
     stack().pushState(std::make_unique<BossIntroState>(
         stack(), context_, std::move(b), &result_, MusicTrack::Boss, nullptr,
         /*castleChallenge=*/true, render::BackdropStage::Plain,
-        0xD16D16ull ^ static_cast<std::uint64_t>(t.scalePct)));
+        0xD16D16ull ^ static_cast<std::uint64_t>(t.scalePct), /*spoils=*/nullptr,
+        LifetimeHook{&context_.party.lifetime, 0}));  // M109: a real fight, no town
 }
 
 #ifdef CRYSTAL_CAPTURE
@@ -90,6 +92,7 @@ void TreasureFightState::finish(bool won) {
         return;
     }
     p.treasure = TreasureReveal{};  // dug up; a new cycle may begin
+    recordMapTreasureCompleted(p);  // M109
     // M83: the guild's IOUs pay out the moment the dig resolves, jump-starting
     // the next map cycle. The pouch never exceeds 3 (a fourth piece must come
     // with a run's town/guard context to fire a reveal), so a payout that
@@ -108,8 +111,8 @@ void TreasureFightState::finish(bool won) {
     }
     const std::string scrollId = nextTreasureScroll(p.treasureScrollsAwarded);
     if (scrollId.empty()) {
-        p.legendaryTokens += kTreasureTokenFallback;
-        p.gold += kTreasureGoldFallback;
+        earnTokens(p, kTreasureTokenFallback, EconomySource::TreasureDig);  // M109
+        earnGold(p, kTreasureGoldFallback, EconomySource::TreasureDig, 0);
         resultText_ = TextFormat(
             "The guardian falls! The chest holds riches: +%d gold and +%d legendary token.",
             kTreasureGoldFallback, kTreasureTokenFallback) + owedNote;
@@ -138,6 +141,7 @@ void TreasureFightState::awardTreasure(int memberIndex) {
         return;
     }
     learnScroll(c, *item);
+    recordScrollLearned(p, memberIndex);  // M109
     p.treasureScrollsAwarded.push_back(pendingScrollId_);
     const content::SkillDef* skill = context_.content.findSkill(item->grantsSkill);
     resultText_ = c.name + " learns " + (skill != nullptr ? skill->name : item->grantsSkill) +

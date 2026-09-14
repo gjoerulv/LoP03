@@ -94,6 +94,13 @@ struct TriggerDef {
     std::string text;          // authored announcement line (optional)
 };
 
+// M111 (rules v19): one step of a foe's scripted own-turn sequence.
+struct ScriptStep {
+    ScriptDo action = ScriptDo::None;
+    std::vector<AttackStatus> statuses;  // status_all_foes: every living foe, one action
+    std::string text;                    // authored announcement (optional)
+};
+
 struct ClassDef {
     std::string id;
     std::string name;
@@ -212,6 +219,16 @@ struct EnemyDef {
     // M89 (rules v16): optional MP pool override. 0 = derive from magic (every
     // pre-M89 foe); a positive value replaces the base and scales like magic.
     int maxMp = 0;
+    // M111 (rules v19): the foe's scripted own turns — step N of the list on
+    // its Nth own turn (a turn a control status took still consumes the step,
+    // the M89 lunge precedent), then the ordinary AI. Empty for every foe
+    // that carries none.
+    std::vector<ScriptStep> script;
+    // M111: a foe that exists only for a special encounter (the Golden Goose)
+    // — never generated in a theme pool, the fallback sweep, an endless wave
+    // or a guild trial. A flag like bossOnly, because two code paths sweep
+    // the whole database and a naming convention could be sidestepped.
+    bool specialOnly = false;
     int xpReward = 0;
     int goldReward = 0;
 };
@@ -483,6 +500,10 @@ struct BossDef {
     // Rush's every-10th-wave boss draw. At most one Master per town
     // (validated).
     int guildTown = 0;
+    // M111/M112: a boss fought only in a special encounter (the Mimic) —
+    // excluded from the dungeon boss pools, the Boss Rush, the Endless draw
+    // and the treasure guards the way guildTown excludes a Master.
+    bool specialOnly = false;
     std::string telegraph;              // flavor line shown when the battle begins
     int xpReward = 0;
     int goldReward = 0;
@@ -559,6 +580,21 @@ struct CurioLoreDef {
     std::string body;  // the dry Duck-mythology lore (wrapped in the panel)
 };
 
+// M112: one of the Jester's lore questions (data/lore_questions.json — an
+// OPTIONAL file like the flavor files; an empty pool means the lore patrol
+// falls back to an ordinary one). `minTown` is the earliest ladder tier at
+// which the fact is known (no spoilers below it); `postKing` gates the
+// handful that only make sense once the King has fallen.
+struct LoreQuestionDef {
+    std::string id;
+    int minTown = 1;        // 1..7
+    bool postKing = false;
+    std::string question;   // the prompt above the field (two lines at most)
+    std::string answer;     // the right answer (a field box)
+    std::string wrongAnswer;
+    std::string mockLine;   // the Jester's line when the pick is wrong
+};
+
 // M97: the Hooded Goose story cutscenes (data/cutscenes.json — REQUIRED, it
 // grants heirlooms, so unlike the two optional flavor files its absence is a
 // content error). One scene per kCutsceneIds entry: dialogue beats, then a
@@ -600,6 +636,7 @@ inline constexpr const char* kCutsceneIds[] = {
 inline constexpr std::size_t kCutsceneIdCount = 8;
 inline constexpr const char* kJokeCutscenePrefix = "joke_";    // M100
 inline constexpr const char* kStoryCutscenePrefix = "story_";  // M103: dungeon tales
+inline constexpr const char* kPatrolCutscenePrefix = "patrol_";  // M110: the Stranger's patrol scenes
 
 // The goose's stage vocabulary (presentation only; unknown never loads).
 inline constexpr const char* kGooseEmotes[] = {"idle", "waddle", "jump", "panic"};

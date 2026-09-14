@@ -11,6 +11,7 @@
 #include "core/AppContext.hpp"
 #include "game/Milestones.hpp"
 #include "game/Party.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "game/Scrolls.hpp"
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
@@ -170,6 +171,7 @@ void PartyState::handleInput(const Input& input) {
                 const std::string refusal = scrollRefusal(c, *item, context_.content);
                 if (refusal.empty()) {
                     learnScroll(c, *item);
+                    recordScrollLearned(context_.party, cursor_);  // M109
                     context_.party.inventory.remove(itemId, 1);
                     const content::SkillDef* skill = context_.content.findSkill(item->grantsSkill);
                     message_ = c.name + " learns " +
@@ -251,7 +253,7 @@ void PartyState::render() {
         const content::ClassDef* cls = db.findClass(c.classId);
         ui::drawTextFitted(TextFormat("Lv.%d %s", c.level,
                                       cls != nullptr ? cls->name.c_str() : c.classId.c_str()),
-                           listX + 30, y + 12, 86, 8, p.textHint, "party.class");
+                           listX + 30, y + 12, 86, ui::style::kFontSmall, p.textHint, "party.class");
     }
 
     if (members.empty()) {
@@ -269,22 +271,22 @@ void PartyState::render() {
         const int vy = listY + static_cast<int>(members.size()) * 26 + 8;
         ui::drawFrame(listX - 4, vy, 128, vh, ui::FrameStyle::Standard);
         int yy = vy + 5;
-        ui::drawTextFitted(TextFormat("HP %d/%d", c.hp, c.maxHp), listX + 4, yy, 116, 9, p.text,
+        ui::drawTextFitted(TextFormat("HP %d/%d", c.hp, c.maxHp), listX + 4, yy, 116, ui::style::kFontSmall, p.text,
                            "party.vitals");
         yy += 10;
-        ui::drawTextFitted(TextFormat("MP %d/%d", c.mp, c.maxMp), listX + 4, yy, 116, 9, p.text,
+        ui::drawTextFitted(TextFormat("MP %d/%d", c.mp, c.maxMp), listX + 4, yy, 116, ui::style::kFontSmall, p.text,
                            "party.vitals");
         yy += 10;
-        ui::drawTextFitted(statLine("ATK", c.stats.attack, gear.attack), listX + 4, yy, 116, 8,
+        ui::drawTextFitted(statLine("ATK", c.stats.attack, gear.attack), listX + 4, yy, 116, ui::style::kFontSmall,
                            p.text, "party.stat");
         yy += 10;
-        ui::drawTextFitted(statLine("MAG", c.stats.magic, gear.magic), listX + 4, yy, 116, 8,
+        ui::drawTextFitted(statLine("MAG", c.stats.magic, gear.magic), listX + 4, yy, 116, ui::style::kFontSmall,
                            p.text, "party.stat");
         yy += 10;
-        ui::drawTextFitted(statLine("DEF", c.stats.defense, gear.defense), listX + 4, yy, 116, 8,
+        ui::drawTextFitted(statLine("DEF", c.stats.defense, gear.defense), listX + 4, yy, 116, ui::style::kFontSmall,
                            p.text, "party.stat");
         yy += 10;
-        ui::drawTextFitted(statLine("SPD", c.stats.speed, gear.speed), listX + 4, yy, 116, 8,
+        ui::drawTextFitted(statLine("SPD", c.stats.speed, gear.speed), listX + 4, yy, 116, ui::style::kFontSmall,
                            p.text, "party.stat");
     }
 
@@ -296,7 +298,7 @@ void PartyState::render() {
     int y = listY + 2;
     ui::drawText(TextFormat("XP %d  (next Lv: %d)", c.xp,
                             c.level >= kMaxLevel ? 0 : xpToNext(c.level) - c.xp),
-                 dx, y, 8, p.textDim);
+                 dx, y, ui::style::kFontSmall, p.textDim);
     y += 11;
     // M81: each gear line leads with its category icon (the icon carries the
     // sword-vs-staff read the slot label cannot). Layout: [icon] label, with
@@ -308,16 +310,16 @@ void PartyState::render() {
         return ix + ui::kGearIconSize + 3;
     };
     int gx = gearIcon(c.weapon, dx, y - 1);
-    ui::drawTextFitted("Weapon: " + itemName(db, c.weapon), gx, y, dw - (gx - dx), 8, p.textDim,
+    ui::drawTextFitted("Weapon: " + itemName(db, c.weapon), gx, y, dw - (gx - dx), ui::style::kFontSmall, p.textDim,
                        "party.gear");
     y += 10;
     gx = gearIcon(c.armor, dx, y - 1);
     const std::string armorTxt = "Armor: " + itemName(db, c.armor);
-    ui::drawTextFitted(armorTxt, gx, y, dw - (gx - dx), 8, p.textDim, "party.gear");
-    int ax = gx + ui::measureText(armorTxt, 8) + 10;
+    ui::drawTextFitted(armorTxt, gx, y, dw - (gx - dx), ui::style::kFontSmall, p.textDim, "party.gear");
+    int ax = gx + ui::measureText(armorTxt, ui::style::kFontSmall) + 10;
     if (ax < dx + dw - 40) {  // room for the accessory half; else it clips fitted
         ax = gearIcon(c.accessory, ax, y - 1);
-        ui::drawTextFitted("Acc: " + itemName(db, c.accessory), ax, y, dx + dw - ax, 8,
+        ui::drawTextFitted("Acc: " + itemName(db, c.accessory), ax, y, dx + dw - ax, ui::style::kFontSmall,
                            p.textDim, "party.gear");
     }
     y += 10;
@@ -331,13 +333,13 @@ void PartyState::render() {
         c.equippedPassive.empty() ? nullptr : db.findPassive(c.equippedPassive);
     ui::drawTextFitted("Passive: " + std::string(passive != nullptr ? passive->name : "-") +
                            TextFormat("  (owned %d)", static_cast<int>(c.ownedPassives.size())),
-                       dx, y, dw, 8, p.textDim, "party.passive");
+                       dx, y, dw, ui::style::kFontSmall, p.textDim, "party.passive");
     y += 9;
     if (passive != nullptr && !passive->description.empty()) {
         // M67: what the equipped passive does, in the hint colour. M72: long
         // descriptions wrap to a second line. M87: the two lines are a
         // policy-B preview (arrow marks more; Details has the full text).
-        y = ui::drawTextPreview(passive->description, dx + 8, y, dw - 8, 8, p.textHint, 2)
+        y = ui::drawTextPreview(passive->description, dx + 8, y, dw - 8, ui::style::kFontSmall, p.textHint, 2)
                 .bottom;
     }
 
@@ -351,10 +353,10 @@ void PartyState::render() {
         const content::MilestoneDef* m = chosenMilestone(c, tier, db);
         if (m != nullptr) {
             anyTier = true;
-            ui::drawTextFitted(TextFormat("Lv.%d  %s", tier, m->name.c_str()), dx, y, dw, 8,
+            ui::drawTextFitted(TextFormat("Lv.%d  %s", tier, m->name.c_str()), dx, y, dw, ui::style::kFontSmall,
                                p.text, "party.milestone");
             y += 9;
-            y = ui::drawTextPreview(m->description, dx + 8, y, dw - 8, 8, p.textHint, 2)
+            y = ui::drawTextPreview(m->description, dx + 8, y, dw - 8, ui::style::kFontSmall, p.textHint, 2)
                     .bottom;
         } else if (c.level >= tier) {
             anyTier = true;
@@ -362,12 +364,12 @@ void PartyState::render() {
         }
     }
     if (!unchosen.empty()) {
-        ui::drawTextFitted("Milestone unchosen: " + unchosen, dx, y, dw, 8, p.textHint,
+        ui::drawTextFitted("Milestone unchosen: " + unchosen, dx, y, dw, ui::style::kFontSmall, p.textHint,
                            "party.milestone");
         y += 9;
     }
     if (!anyTier) {
-        ui::drawText("Milestones: none yet", dx, y, 8, p.textDim);
+        ui::drawText("Milestones: none yet", dx, y, ui::style::kFontSmall, p.textDim);
         y += 9;
     }
     y += 2;
@@ -390,7 +392,7 @@ void PartyState::render() {
     // skill with its description.
     ui::drawTextPreview("Skills: " + (skills.empty() ? "none" : skills) +
                             (c.extraSkills.empty() ? "" : "   (* from a scroll)"),
-                        dx, y, dw, 8, p.text, skillLines);
+                        dx, y, dw, ui::style::kFontSmall, p.text, skillLines);
 
     if (!message_.empty()) {
         // M67: overlay banner (the equip-shop toast idiom) — the old centered
@@ -407,7 +409,7 @@ void PartyState::render() {
         ui::drawModalDim(w, h);
         ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
         ui::drawTextCentered(("Teach " + c.name + " from:").c_str(), w / 2, boxY + 8, 10, p.gold);
-        ui::drawMenu(scrollMenu_, boxX + 24, boxY + 26, 16, 9, p.text, p.disabled, p.cursor);
+        ui::drawMenu(scrollMenu_, boxX + 24, boxY + 26, 16, ui::style::kFontSmall, p.text, p.disabled, p.cursor);
     }
 
     ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Confirm,

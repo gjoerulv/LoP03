@@ -15,6 +15,7 @@
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -270,7 +271,9 @@ void EquipShopState::confirm() {
                 return;
             }
             if (context_.party.gold >= it->value) {
-                context_.party.gold -= it->value;
+                spendGold(context_.party, it->value, EconomySource::EquipShop,
+                          context_.party.currentTown);  // M109
+                recordEquipmentBought(context_.party);
                 context_.party.inventory.add(it->id, 1);
                 context_.audio.play(Sfx::Confirm);
                 // M98: refresh the shelf in place so the owned ("x N") column

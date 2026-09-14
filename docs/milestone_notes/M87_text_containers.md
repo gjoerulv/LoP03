@@ -1,5 +1,10 @@
 # M87 — Translation-ready text containers & scrollable prose
 
+> **Superseded in part (M114, 2026-09-02):** the 5×7 glyph cell and the 8 px
+> caption size this note describes are gone — the typeface was redrawn on a
+> 6×9 cell with a 9 px floor (`docs/milestone_notes/M114_font_readability.md`).
+> The text-container policies and the 161-glyph Latin contract stand.
+
 Authorized 2026-08-11 by the owner (direct brief, full implementation
 authorized in the same message). Implemented 2026-08-11 on the post-M86
 checkout (branch `oyb08`).

@@ -428,6 +428,21 @@
       "xpReward": 1000,
       "goldReward": 600,
       "description": "The King's nemesis, and the reason the crown is so tired. Twelve curios wake it. Nothing puts it back down but you."
+    },
+    {
+      "id": "mimic",
+      "name": "The Mimic",
+      "archetype": "brute",
+      "stats": { "hp": 300, "attack": 24, "magic": 8, "defense": 16, "speed": 10 },
+      "skills": ["power_smash", "sunder", "venom_fang"],
+      "minions": [],
+      "passives": ["counter_attack"],
+      "minTown": 1,
+      "specialOnly": true,
+      "telegraph": "The lid was a lie.",
+      "xpReward": 230,
+      "goldReward": 0,
+      "description": "A treasure chest with a maw and a tongue of coins. It was waiting for a hand."
     }
   ]
 }

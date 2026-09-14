@@ -120,10 +120,11 @@ TEST_CASE("cutscenes: options must grant real heirlooms, one owner each", "[cuts
 #ifdef CRYSTAL_TEST_DATA_DIR
 TEST_CASE("cutscenes: the shipped arc is eight scenes covering all 16 heirlooms",
           "[cutscene][data]") {
-    // All 8 arc scenes, plus only the M100 joke and M103 story pools.
+    // All 8 arc scenes, plus only the M100 joke, M103 story and M110 patrol pools.
     REQUIRE(db().cutsceneCount() == content::kCutsceneIdCount +
                                         game::strangerJokeIds(db()).size() +
-                                        game::strangerStoryIds(db()).size());
+                                        game::strangerStoryIds(db()).size() +
+                                        game::strangerPatrolIds(db()).size());
     std::set<std::string> granted;
     for (std::size_t i = 0; i < content::kCutsceneIdCount; ++i) {
         const content::CutsceneDef* scene = db().findCutscene(content::kCutsceneIds[i]);

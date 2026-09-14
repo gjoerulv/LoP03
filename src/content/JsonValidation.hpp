@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -37,6 +38,11 @@ public:
     int reqIntRange(const char* key, int minValue, int maxValue);
     int optInt(const char* key, int fallback);
     int optIntMin(const char* key, int minValue, int fallback);
+    // M109: a 64-bit optional integer with NO minimum - for the lifetime
+    // ledger's display-only counters, where a below-range value must degrade
+    // (the caller clamps) rather than fail the whole load the way optIntMin's
+    // error does. A wrong TYPE still reports, like every other accessor.
+    std::int64_t optInt64(const char* key, std::int64_t fallback);
 
     // Accepts integer or floating JSON numbers.
     float optFloat(const char* key, float fallback);

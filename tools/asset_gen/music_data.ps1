@@ -515,6 +515,23 @@ $MusicSongs.dungeon_goosy = @{
   bass = $goosyBassA + $goosyBassB + $goosyBassBreak + $goosyBassA
 }
 
+# --- Mock (M112): the Jester's one-shot raspberry (F major that trips) ------
+# A jaunty two-bar rise that stumbles down, sours on a flattened third and
+# lands on a held wrong note: 5.5 beats at 132 BPM (~2.5s). Original, and
+# deliberately unlike the Victory fanfare it is the answer to.
+$MusicSongs.mock = @{
+  bpm = 132.0; beats = 5.5; jingle = $true
+  leadWave = 'square'; leadAmp = 0.30; bassAmp = 0.26
+  lead = @(
+    @('F4',0.25),@('A4',0.25),@('C5',0.25),@('F5',0.5),
+    @('E5',0.25),@('D5',0.25),@('C5',0.25),@('A4',0.25),
+    @('G#4',0.5),@('-',0.25),@('F#4',2.5)
+  )
+  bass = @(
+    @('F3',1.0),@('C3',0.5),@('F3',0.5),@('G#2',1.0),@('-',0.5),@('F#2',2.0)
+  )
+}
+
 # The M32 town-ladder variants (towns 2..7): the town song re-rendered darker —
 # transposed down, slowed, softer, tri lead in the deepest towns. Variant bass
 # is always 'tri' at amp 0.28.

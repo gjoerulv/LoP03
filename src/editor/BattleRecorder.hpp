@@ -96,6 +96,9 @@ public:
                 }
                 break;
             }
+            case battle::BattleEvent::Type::Guard:
+            case battle::BattleEvent::Type::StatusApplied:
+                break;  // M109 telemetry events; the sim lab tallies neither
         }
         ++eventCount_;
     }

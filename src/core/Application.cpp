@@ -1,5 +1,9 @@
 #include "core/Application.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+
 #include <filesystem>
 #include <memory>
 
@@ -215,6 +219,20 @@ void Application::processFrame() {
   GameState* const topBefore = stack_.top();
   stack_.handleInput(input_);
   stack_.update(dt);
+  // M109: the ledger's active-play clock - seconds genuinely spent playing:
+  // a party is loaded, the window has focus, and the top state is not a menu
+  // that pauses the clock. The frame is clamped so a stall never books
+  // minutes; whole seconds flush into the live party, which every save
+  // serializes.
+  if (!party_.members.empty() && IsWindowFocused() &&
+      (stack_.top() == nullptr || !stack_.top()->pausesPlayClock())) {
+    playClockRemainder_ += std::min(dt, 0.25f);
+    if (playClockRemainder_ >= 1.0f) {
+      const float whole = std::floor(playClockRemainder_);
+      party_.lifetime.explore.playSeconds += static_cast<std::int64_t>(whole);
+      playClockRemainder_ -= whole;
+    }
+  }
   audio_.update();
   fade_.update(dt);
   if (stack_.empty()) {

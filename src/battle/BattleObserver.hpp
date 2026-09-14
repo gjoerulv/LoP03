@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "content/Enums.hpp"  // M109: StatusApplied carries the status type
+
 // M60 (CrystalForge sim lab): a RECORD-ONLY telemetry hook for battle
 // resolution. The battle model emits an event at each chokepoint where the
 // fact is known (an action starts, effective damage/healing lands, a unit
@@ -28,6 +30,13 @@ struct BattleEvent {
         Heal,    // `target` regained `amount` HP
         KO,      // `target` just fell
         Revive,  // `target` just rose with `amount` HP
+        // M109 (additive, the same if-observer discipline): a unit guards, or a
+        // status actually LANDS on a unit (an immune or no-op application never
+        // emits). Damage/KO events now also carry the ATTACKER in `actor`
+        // where one exists (a deliberate hit, the thorns bearer, the
+        // counter-attacker); poison ticks stay -1.
+        Guard,          // actor = target = the guarding unit
+        StatusApplied,  // actor = the applier (-1 if none), target = the bearer
     };
 
     Type type = Type::Action;
@@ -37,6 +46,10 @@ struct BattleEvent {
     bool poison = false;
     bool item = false;
     std::string id;  // Action: skill/item id
+    // M109 (StatusApplied only). Trailing with defaults, so every positional
+    // emit written before them keeps compiling unchanged.
+    content::StatusType status = content::StatusType::None;
+    int duration = 0;  // authored turns (before the M35 duration scaling)
 };
 
 struct BattleObserver {

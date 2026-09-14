@@ -15,6 +15,7 @@ public:
     TownMenuState(StateStack& stack, AppContext& context);
 
     void handleInput(const Input& input) override;
+    bool pausesPlayClock() const override { return true; }  // M109: a menu, not play
     void render() override;
 
     bool rendersBelow() const override { return true; }

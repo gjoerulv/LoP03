@@ -1,5 +1,9 @@
 # M85 — The Dragon & curio lore
 
+> **Superseded in part (M115, 2026-09-02):** the Dragon's sprite was redrawn
+> as a dragon silhouette and its clone now wears the same art
+> (`Combatant.bossArt`); see `docs/milestone_notes/M115_last_dragon.md`.
+
 Authorized 2026-08-05 as part of the M75–M86 expansion program (see the
 program section in `docs/milestones.md`). Implemented 2026-08-07 on the
 post-M84 checkout (`a047590`).

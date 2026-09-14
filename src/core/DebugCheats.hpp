@@ -21,12 +21,20 @@ struct DebugCheats {
     // real completeDungeon() path so scoring/unlocks/market rolls stay honest.
     bool requestDungeonClear = false;
 
-    // M93 one-shots, same contract: set by the debug menu, consumed by
-    // DungeonState. PatrolNow burns the danger counter to one step (the next
-    // tile walked rouses the patrol through the REAL trigger path);
+    // M93/M110 one-shots, same contract: set by the debug menu, consumed by
+    // DungeonState. PatrolNow (M110: "Trigger patrol now") fires the REAL
+    // patrol dispatcher on the next dungeon update — no tile walk;
     // ArmDragonform arms the next battle exactly as the event would.
     bool requestPatrolNow = false;
     bool requestArmDragonform = false;
+    // M110 one-shots (dev-only, never saved, consumed once): the resolved
+    // kind of the next patrol (-1 = the seeded roll, else a
+    // dungeon::PatrolKind index — it replaces the resolved category for ONE
+    // trigger and never perturbs the hash sequence beneath), and the kind
+    // the next faced plain event becomes (-1 = as generated, else a
+    // dungeon::RoomEventKind index from the substitutable list).
+    int nextPatrolKind = -1;
+    int nextEventKind = -1;
 };
 
 }  // namespace cd

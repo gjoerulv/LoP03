@@ -16,7 +16,8 @@ inline constexpr int kFontHeading = 14;      // panel headings (pause boxes)
 inline constexpr int kFontMenuLarge = 14;    // title-screen menu
 inline constexpr int kFontMenu = 11;         // standard menus and lists
 inline constexpr int kFontBody = 10;         // messages, prompts, wrapped text
-inline constexpr int kFontSmall = 8;         // HUD/captions — legibility floor at 1x
+inline constexpr int kFontSmall = 9;         // HUD/captions — the M114 legibility floor at 1x
+                                             // (the small base font is 9 px; no 8 px text exists)
 
 // --- Spacing ---
 inline constexpr int kSafeMargin = 4;   // outer safe-area margin

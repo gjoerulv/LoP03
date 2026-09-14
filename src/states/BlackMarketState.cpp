@@ -9,6 +9,7 @@
 #include "core/AppContext.hpp"
 #include "game/BlackMarket.hpp"
 #include "game/Party.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -115,10 +116,14 @@ void BlackMarketState::handleInput(const Input& input) {
             return;
         }
         if (cursor == 0) {  // gold
-            context_.party.gold -= priceGold_;
+            spendGold(context_.party, priceGold_, EconomySource::BlackMarket,
+                      context_.party.currentTown);  // M109
+            recordEquipmentBought(context_.party);
             grantOffered();
         } else if (cursor == 1) {  // tokens (M84: the perk-adjusted price)
-            context_.party.legendaryTokens -= guildTokenPrice(context_.party.guild);
+            spendTokens(context_.party, guildTokenPrice(context_.party.guild),
+                        EconomySource::BlackMarket);  // M109
+            recordEquipmentBought(context_.party);
             grantOffered();
         }
     }

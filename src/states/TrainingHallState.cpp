@@ -8,6 +8,7 @@
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "game/Party.hpp"
+#include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -116,8 +117,9 @@ void TrainingHallState::trainSelected() {
     }
     const int cost = trainingCost(c.level);
     if (context_.party.gold >= cost) {
-        context_.party.gold -= cost;
+        spendGold(context_.party, cost, EconomySource::Training, context_.party.currentTown);
         grantXp(c, xpToNext(c.level) - c.xp, context_.content);  // exactly one level
+        recordLevelUps(context_.party, 1);  // M109
         context_.audio.play(Sfx::Heal);
         message_ = c.name + " trained to Lv." + std::to_string(c.level) + "!";
         messageIsError_ = false;
@@ -146,7 +148,8 @@ void TrainingHallState::onPassiveConfirm() {
         message_ = c.name + " equips " + name + ".";
         messageIsError_ = false;
     } else if (p != nullptr && context_.party.gold >= p->price) {
-        context_.party.gold -= p->price;
+        spendGold(context_.party, p->price, EconomySource::Passive, context_.party.currentTown);
+        recordPassiveBought(context_.party);  // M109
         c.ownedPassives.push_back(id);
         c.equippedPassive = id;  // auto-equip a fresh purchase
         context_.audio.play(Sfx::Heal);

@@ -40,6 +40,7 @@ TEST_CASE("editor: every listed enum id parses", "[editor]") {
     requireAllParse(passiveHookIds(), parsePassiveHook);
     requireAllParse(triggerWhenIds(), parseTriggerWhen);  // M75
     requireAllParse(triggerDoIds(), parseTriggerDo);      // M75
+    requireAllParse(scriptDoIds(), parseScriptDo);        // M111
 }
 
 TEST_CASE("editor: enum lists are complete", "[editor]") {
@@ -62,6 +63,7 @@ TEST_CASE("editor: enum lists are complete", "[editor]") {
     REQUIRE(passiveHookIds().size() == 10);      // "none" deliberately absent
     REQUIRE(triggerWhenIds().size() == 4);       // M75; "none" deliberately absent
     REQUIRE(triggerDoIds().size() == 8);         // M75; "none" absent; +1 M96 (heal_self_pct)
+    REQUIRE(scriptDoIds().size() == 3);          // M111; "none" absent
     // toString round-trips through the same table for a spot value.
     REQUIRE(parseElement(toString(Element::Fire)).value() == Element::Fire);
 }

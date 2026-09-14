@@ -3298,48 +3298,50 @@ Save-EnemyGrid 'guild_final_clause' @( # the contract that collects itself: a
   '........................'
 )
 
-# --- M85: the Last Dragon (36x36). Not a rearing wyvern — a HILL that turned
-# --- out to be a dragon: one coiled void mass with stone belly-bands, a spiked
-# --- wing ridge, gold horns and claws, a wrapped tail, and exactly ONE open
-# --- red eye (the telegraph). Smoke drifts from the nostril. RNG-free like
-# --- every grid above.
-
+# --- M85/M115: the Last Dragon (36x36). M115 (owner direction): a DRAGON
+# --- silhouette within the boss canvas - a horned head with a snout and
+# --- exactly ONE open red eye (the telegraph), a neck, one raised wing with
+# --- daylight between its membrane fingers (negative space, S5), foreclaws,
+# --- a substantial torso with stone belly bands, a tail curling out the
+# --- trailing side with a spade tip. Void ramp body, stone highlights, gold
+# --- horns / claws / spines. Asymmetric, facing right. Smoke drifts from
+# --- the nostril. RNG-free like every grid above; hand-placed rows.
 Save-EnemyGrid 'boss_the_dragon' @(
-  '....................................'
-  '..................................1.'
-  '.................................1..'
-  '.........................mmmmmmmm...'
-  '.......................YYmmmmmmmmm..'
-  '.......................mmmmmmDDmmmm.'
-  '.......................mmmmmmmmmmmm.'
-  '........................mmmmmmmmYmm.'
-  '.........................mmmmmmmmm..'
-  '........................mmmmmmmm....'
-  '........m...m...m.......mmmmmmm.....'
-  '.......mm..mmm..mm......mmmmmmm.....'
-  '......mmmmmmmmmmmmmm....mmmmmm......'
-  '.....nmmmmmmmmmmmmmmmm..mmmmmm......'
-  '....nmmmmmmmmmmmmmmmmmmmmmmmm.......'
-  '...nBmmmmmmmmmmmmmmmmmmmmmmmmm......'
-  '...nmmmmmmmmmmmmmmmmmmmmmmmmmmm.....'
-  '..nmmmmmmmmmmmmmmmmmmmmmmmmmmmm.....'
-  '..nmmmmmmmmmmmmmmmmmmmmmmmmmmmmm....'
-  '..nmmqqqqqqqqqqqqqqqqqqqqqmmmmmm....'
-  '..nmmqwwwwwwwwwwwwwwwwwwwqmmmmmm....'
-  '..nmmqwwwwwwwwwwwwwwwwwwwqmmmmmm....'
-  '..nmmqqqqqqqqqqqqqqqqqqqqqmmmmmm....'
-  '..nmmmmmmmmmmmmmmmmmmmmmmmmmmmm.....'
-  '..nnmmmmmmmmmmmmmmmmmmmmmmmmmm......'
-  '...nnmmmmmmmmmmmmmmmmmmmmmmmm.......'
-  '..mm..nnmmmmmmmmmmmmmmmmmmmm........'
-  '.mmmm...nnnmmmmmmmmmmmmmmm..........'
-  '.mmmmm..nnmmmmmmmmmmmmmmmmm.........'
-  '..mmm....nnnmmmmmmmmmmmmm...........'
-  '...K.......nnnnnnnnnnn..............'
-  '............YY....YY....YY..........'
-  '....................................'
-  '....................................'
-  '....................................'
+  '...............Y.........Y.Y........'
+  '.........Y.....B.....Y....B.Y.......'
+  '..........B.....B...nB.....YY......1'
+  '....Y.....B........nnB.....mYYmmmm.2'
+  '....nB.....B....B.nnnB.....mmmmmmm2.'
+  '.....nBB....B...BnnnBnn....mmmDDmmm.'
+  '.....nnnB.nnnBnnnBnnBnn.....mmDGmKm.'
+  '......nnnBnnnBnnnBnnBnn....mmmmmmmBB'
+  '..........BnnnBnnBnnBnn....mmmmmmnnn'
+  '...........BBnnBnBnnBnn...mmnYmmmnnn'
+  '.............BnBnnBnBnn...mmnmm.....'
+  '..............BnBnBnBn...mmnmmm.....'
+  '...............BnBBBn...mmnYmm......'
+  '................BBBBn...mYmmm.......'
+  '..................BBn..Ymnmmm.......'
+  '................mmmBmmmmnmmm........'
+  '..............mmYmmmmmmmmm..........'
+  '.............mYmmmmmmmmmmmm.........'
+  '............Ymmmmmmmmmmmmmmm........'
+  '..........mmmmmmmmmmmmmmmmmmm.......'
+  '..........mmmmmmmmmmmmmmmmmmm.......'
+  '..........mnnnnmmmmmmmmmmmmmm.......'
+  '..........mnnnnmmmmmmmmmmmmmm.......'
+  '..........mnnnnmmmmmmmmmmmmmm.......'
+  '..........mnnBBBBBBBBBBBBmmmm.......'
+  'Y.Y.......mnnqqqqqqqqqqqqmmmm.......'
+  '.Y........mnnqqqqqqqqqmmmmmmm.......'
+  '.n........mnnqqqqqqqqqmmmmmmm.......'
+  '.nm.......mmnnnnnnnwwwmmmmmmm.......'
+  '..n.......mmnnnnnnnwwwwmmmmmmm......'
+  '..nm.....mmmnnnnnnnmmmmmmnnnnm......'
+  '...mmmmmmmmmnnnnnnnmmmmmmnnnnm......'
+  '...mmmmmmmmmnnnnnnn.....mnnnnmm.....'
+  '....nnnnn...nnnnnnn.....mnnnnmY.....'
+  '............Y.Y.Y........Y.Y.Y......'
   '....................................'
 )
 
@@ -4513,5 +4515,220 @@ Save-CardGrid 'king' @(   # K - the dark king, crowned, displeased
   'KSSSSSSSSSSSSSSSSK'
   '.KKKKKKKKKKKKKKKK.'
 )
+
+
+# ============================ M111 the Golden Goose ============================
+# --- The patrol dispatcher's 10% prize: a goose reared and about to bolt,
+# --- facing right like every foe. One raised wing with daylight between it
+# --- and the neck (negative space, art_bible S5), a gold body on the reward
+# --- ramp with warm earth shading below, a white sheen on the head, one dark
+# --- eye, bill and feet in earth. A patrol foe, never a boss: the ordinary
+# --- 24x24 canvas. Hand-placed, RNG-free, appended last so every earlier file
+# --- stays byte-identical.
+Save-EnemyGrid 'golden_goose' @(   # reared goose, wing up, about to bolt
+  '........................'
+  '.............KKKK.......'
+  '............KYYYYK......'
+  '...........KYYKWYYKK....'
+  '...........KYYYYYYKffK..'
+  '............KYYYYYKKfK..'
+  '.............KYYYK..K...'
+  '.............KYYYK......'
+  '......KKK....KYYYK......'
+  '.....KYYYKK..KYYYK......'
+  '....KYYYYYYK.KYYYK......'
+  '....KYYYYYYYKKYYYK......'
+  '...KK.KKKKKYYYYYYYYK....'
+  '..KYK..KYYYYYYYYYYYYK...'
+  '.KYYKKYYYYYYYYYYYYYYYK..'
+  '.KYYYYYYYYYYYYYYYYYYYK..'
+  '.KfYYYYYYYYYYYYYYYYYK...'
+  '..KffYYYYYYYYYYYYYYK....'
+  '...KfffYYYYYYYYYYYK.....'
+  '....KKffffffffffKK......'
+  '......KKKKKKKKKK........'
+  '........Kd...Kd.........'
+  '........Kd...Kd.........'
+  '.......KdddKKdddK.......'
+)
+
+
+# ================================ M112 the Mimic ================================
+# --- The lying chest: a treasure chest whose lid has swung open into a MAW.
+# --- Hinge at the back (left), the lid rising to the right so the mouth opens
+# --- toward the party; a ring of white teeth on both rims, one red eye deep in
+# --- the dark, a tongue of gold coins lolling out and two loose coins on the
+# --- ground. Wood body on the earth ramp, gold bands with glints (S5b:
+# --- lore-before-ornament - the chest reads as a chest first). 36x36, the
+# --- boss canvas. Hand-placed, RNG-free, appended last.
+Save-EnemyGrid 'boss_mimic' @(   # a chest, open into a maw, coins for a tongue
+  '.............................sss....'
+  '.........................ssssddd....'
+  '....................sssYYddddddd....'
+  '................ssssdddYYddddddd....'
+  '...........sssssdddddddYYddddddd....'
+  '.......ssYYddddddddddddGYddddddd....'
+  '....sssddYYddddddddddddYYddddfff....'
+  '....dddddYYddddddddddddYYffff.......'
+  '....dddddGYdddddddddfffYY..W........'
+  '....dddddYYdddddffffW...W..W........'
+  '....dddddYYfffffW...W...W..S........'
+  '....dddffYYbWbbbWbbbSbbbSbbb........'
+  '....fffbWbbbWbbbSbbbbbbbbbbb........'
+  '......bbWKKKSKKKKKKKKKKKKKbb........'
+  '......bbSKKKDGKKKKKKKKKKKKbb........'
+  '......bbKKKKDDKKKKKKKKKKKKYGY.......'
+  '......bbKKKKKKKKKKKKKKKKKKfYY.......'
+  '......bSKKKSKKKSKKKSKKKSKKSbYGY.....'
+  '......bWKKKWKKKWKKKWKKKWKKWbfYY.....'
+  '......bWbbbWbbbWbbbWbbbWbbWb..YGY...'
+  '....ffsssYYssssssssssssYYsssddfYY...'
+  '....ffsssYYssssssssssssYYsssdd..YGY.'
+  '....ffdddGYddddddddddddGYddddd..fYY.'
+  '....ffdddYYddddYYYYddddYYddddd......'
+  '....ffdddYYddddYKYYddddYYddddd...YGY'
+  '....ffdddYYddddYKKYddddYYddddd...fYY'
+  '....ffdddYYddddYYYYddddYYddddd......'
+  '....ffdddYYddddddddddddYYddddd......'
+  '....ffdddYYddddddddddddYYddddd......'
+  '....ffdddYGddddddddddddYGddddd......'
+  '....ffdddYYddddddddddddYYddddd......'
+  '....fffffYYffffffffffffYYfffff.YGY..'
+  '....fffffYYffffffffffffYYfffff.YYY..'
+  '....fffffYYffffffffffffYYfffff...YGY'
+  '.................................YYY'
+  '....................................'
+)
+
+# --- The closed treasure chest of the decision phase (three of them stand on
+# --- the field before one is opened): domed lid, seam, two gold bands, a gold
+# --- lock plate with a dark keyhole, feet. 24x24 on the ordinary footprint.
+function Save-PropGrid([string]$name, [string[]]$rows) {
+  $b = Draw-Grid $rows
+  Outline $b
+  SaveImg $b "props/$name.png"
+}
+
+Save-PropGrid 'chest_battle' @(   # closed chest, decision phase
+  '........................'
+  '........................'
+  '........................'
+  '........................'
+  '....ssYYssssssssYYss....'
+  '...sssYYssssssssYYsss...'
+  '..ddddYYddddddddYYdddd..'
+  '..ddddGYddddddddGYdddd..'
+  '..ddddYYddYYYYddYYdddd..'
+  '..ffffYYffYYYYffYYffff..'
+  '..KKKKYYKKYKYYKKYYKKKK..'
+  '..ffddYYddYKKYddYYdddd..'
+  '..ffddYYddYYYYddYYdddd..'
+  '..ffddYYddddddddYYdddd..'
+  '..ffddYYddddddddYYdddd..'
+  '..ffddYGddddddddYGdddd..'
+  '..ffddYYddddddddYYdddd..'
+  '..ffddYYddddddddYYdddd..'
+  '..ffddYYddddddddYYdddd..'
+  '..ffddYYddddddddYYdddd..'
+  '..ffffYYffffffffYYffff..'
+  '..ffffYYffffffffYYffff..'
+  '...fff............fff...'
+  '........................'
+)
+
+
+# ============================ M113 cutscene stages ============================
+# --- Five full-screen (426x240) stages behind the cutscene actors, on the
+# --- M27 background recipe (gradient + darkened bottom band + low-alpha
+# --- motifs). Binding rules (art_bible S6): darker than the actors' ramps,
+# --- no signal colours, and the ACTOR BAND (y 36..106) kept quiet - motifs
+# --- sit above y 36 (sky, peaks, canopy, roof) and below y 106 (the floor),
+# --- with only far, low-alpha silhouettes at the edges of the band. Own rng
+# --- reseed so every earlier speckled file stays byte-identical.
+$script:rng = 20260902
+function GPoly($g, [int]$a, [string]$hex, [int[]]$xy) {
+  $pts = @()
+  for ($i = 0; $i -lt $xy.Count; $i += 2) { $pts += (New-Object System.Drawing.Point($xy[$i], $xy[$i + 1])) }
+  $g.FillPolygon((New-Object System.Drawing.SolidBrush(Ca $a $hex)), [System.Drawing.Point[]]$pts)
+}
+function Stars($b, [int]$n, [string]$hex, [int]$maxY) {
+  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BW); $y = [int]((Rnd) * $maxY); P $b $x $y $hex }
+}
+function FloorSpeckle($b, [int]$n, [string]$hex) {
+  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BW); $y = 110 + [int]((Rnd) * 100); P $b $x $y $hex }
+}
+
+# Town panorama: night sky, three bands of mountains fading with distance,
+# the keep and roofs on the near ridge at the edges, terraced paths, earth floor.
+$r = New-Bg $PAL.night1 $PAL.night3
+Stars $r[0] 44 $PAL.white0 30
+GEll $r[1] 40 $PAL.white0 352 6 18 18                                     # a small moon, top right
+GPoly $r[1] 70 $PAL.stone1 @(0,64, 40,38, 90,56, 140,34, 190,58, 240,40, 300,60, 350,36, 400,54, 426,44, 426,110, 0,110)   # far range
+GPoly $r[1] 90 $PAL.night3 @(0,84, 60,66, 120,80, 200,62, 260,78, 330,60, 390,76, 426,68, 426,112, 0,112)                 # mid range
+GFill $r[1] 110 $PAL.night2 0 96 426 14                                     # the near ridge line
+GFill $r[1] 120 $PAL.stone2 8 72 12 26;  GFill $r[1] 120 $PAL.stone2 22 80 22 18;  GFill $r[1] 140 $PAL.stone3 6 70 16 3   # the keep, far left
+GFill $r[1] 100 $PAL.earth2 386 84 18 14; GPoly $r[1] 110 $PAL.earth3 @(384,84, 395,74, 406,84)                            # a roof, far right
+GFill $r[1] 100 $PAL.earth2 406 88 14 10; GPoly $r[1] 110 $PAL.earth3 @(404,88, 413,80, 422,88)
+GFill $r[1] 255 $PAL.earth1 0 108 426 132                                   # the floor
+GFill $r[1] 60 $PAL.earth2 0 118 426 3; GFill $r[1] 40 $PAL.earth2 0 134 426 2; GFill $r[1] 30 $PAL.earth2 0 152 426 2  # terraces
+FloorSpeckle $r[0] 40 $PAL.earth2
+SaveBg $r 'cutscene_panorama'
+
+# Ruined Keep: broken parapets along the top, dark arches at the sides,
+# a cracked slab floor with rubble.
+$r = New-Bg $PAL.night1 $PAL.stone1
+foreach ($px in 0, 32, 64, 96, 300, 332, 364, 396) { GFill $r[1] 120 $PAL.stone2 $px 0 20 22 }   # crenellations, gaps in the middle
+GFill $r[1] 120 $PAL.stone2 0 22 426 8                                      # the parapet walk
+GFill $r[1] 90 $PAL.stone1 0 30 426 4
+GFill $r[1] 160 $PAL.void0 10 44 52 64; GEll $r[1] 160 $PAL.void0 10 30 52 40   # left arch (dark)
+GFill $r[1] 90 $PAL.stone3 8 44 3 64;   GFill $r[1] 90 $PAL.stone3 61 44 3 64
+GFill $r[1] 160 $PAL.void0 364 44 52 64; GEll $r[1] 160 $PAL.void0 364 30 52 40 # right arch
+GFill $r[1] 90 $PAL.stone3 362 44 3 64; GFill $r[1] 90 $PAL.stone3 415 44 3 64
+GFill $r[1] 255 $PAL.stone1 0 108 426 132                                   # slab floor
+foreach ($sy in 124, 146, 170, 196) { GFill $r[1] 70 $PAL.night2 0 $sy 426 2 }
+foreach ($sx in 70, 190, 330) { GFill $r[1] 60 $PAL.night2 $sx 108 2 132 }
+GFill $r[1] 110 $PAL.stone2 40 112 14 6; GFill $r[1] 110 $PAL.stone2 372 116 18 5; GFill $r[1] 110 $PAL.stone2 200 128 10 4  # rubble
+FloorSpeckle $r[0] 36 $PAL.stone2
+SaveBg $r 'cutscene_keep'
+
+# Crystal Mine: clusters hanging from the roof and rising at the sides,
+# timber supports, rails across the floor.
+$r = New-Bg $PAL.night1 $PAL.void0
+foreach ($cx in 60, 150, 250, 340) { GPoly $r[1] 60 $PAL.wat3 @(($cx-10),0, ($cx+10),0, $cx,30); GPoly $r[1] 50 $PAL.cyan @(($cx-3),0, ($cx+3),0, $cx,22) }  # hanging clusters
+GPoly $r[1] 60 $PAL.violet @(6,106, 22,70, 38,106); GPoly $r[1] 60 $PAL.wat3 @(30,106, 44,82, 58,106)        # left cluster, floor-rooted
+GPoly $r[1] 60 $PAL.violet @(388,106, 404,68, 420,106); GPoly $r[1] 60 $PAL.wat3 @(366,106, 380,84, 394,106) # right cluster
+GFill $r[1] 140 $PAL.earth1 66 16 8 92; GFill $r[1] 140 $PAL.earth1 352 16 8 92; GFill $r[1] 140 $PAL.earth1 60 14 306 6  # supports + beam
+GFill $r[1] 255 $PAL.stone1 0 108 426 132                                   # rock floor
+GFill $r[1] 120 $PAL.earth3 0 150 426 2; GFill $r[1] 120 $PAL.earth3 0 158 426 2   # rails
+foreach ($tx in 20, 80, 140, 200, 260, 320, 380) { GFill $r[1] 90 $PAL.earth2 $tx 148 8 12 }  # sleepers
+FloorSpeckle $r[0] 30 $PAL.wat2
+SaveBg $r 'cutscene_mine'
+
+# Hollow Forest: trunk columns at the sides, a dark canopy, roots across
+# the floor, a few fireflies.
+$r = New-Bg $PAL.night1 $PAL.veg0
+foreach ($tx in 14, 52, 362, 400) { GFill $r[1] 170 $PAL.earth1 $tx 0 14 108; GFill $r[1] 60 $PAL.earth2 ($tx+3) 0 3 108 }  # trunks
+foreach ($tx in 14, 52, 362, 400) { GFill $r[1] 80 $PAL.night2 $tx 40 14 3; GFill $r[1] 80 $PAL.night2 $tx 78 14 3 }        # bark bands
+GEll $r[1] 120 $PAL.veg1 -40 -30 200 60; GEll $r[1] 120 $PAL.veg1 120 -36 220 62; GEll $r[1] 120 $PAL.veg1 290 -30 200 60  # canopy
+GEll $r[1] 80 $PAL.veg0 60 -10 120 40; GEll $r[1] 80 $PAL.veg0 260 -12 130 42
+GFill $r[1] 255 $PAL.veg0 0 108 426 132                                     # forest floor
+GEll $r[1] 120 $PAL.earth1 -20 112 120 18; GEll $r[1] 120 $PAL.earth1 320 116 140 16; GEll $r[1] 100 $PAL.earth1 150 126 120 14  # roots
+GFill $r[1] 80 $PAL.earth2 0 124 426 2
+foreach ($f in @(@(120, 22), @(300, 14), @(200, 30))) { P $r[0] $f[0] $f[1] $PAL.veg3 }   # fireflies
+FloorSpeckle $r[0] 34 $PAL.veg1
+SaveBg $r 'cutscene_forest'
+
+# Goosy Gauntlet: a pale moon, reeds at the sides, a mist band, still water
+# for a floor with faint ripples.
+$r = New-Bg $PAL.night2 $PAL.wat0
+GEll $r[1] 70 $PAL.white0 34 4 26 26; GEll $r[1] 40 $PAL.white1 40 10 14 14   # the moon
+Stars $r[0] 20 $PAL.white0 28
+foreach ($rx in 8, 18, 30, 44, 56, 372, 384, 398, 410, 420) { GFill $r[1] 130 $PAL.veg2 $rx 58 2 50; GFill $r[1] 130 $PAL.veg2 ($rx-1) 54 4 8 }  # reeds + tufts
+GFill $r[1] 30 $PAL.white0 0 98 426 10                                       # the mist band
+GFill $r[1] 255 $PAL.wat1 0 108 426 132                                      # still water
+foreach ($wy in 120, 134, 150, 172) { GFill $r[1] 40 $PAL.wat2 0 $wy 426 1 }
+GFill $r[1] 40 $PAL.white0 60 116 30 1; GFill $r[1] 40 $PAL.white0 320 140 40 1  # moonlight on the water
+FloorSpeckle $r[0] 18 $PAL.wat2
+SaveBg $r 'cutscene_goosy'
 
 Write-Output 'Texture generation complete.'
