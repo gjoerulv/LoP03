@@ -7,6 +7,11 @@
 > `docs/milestone_notes/M70_crt_curvature.md`; this note remains the
 > authority for everything strength still drives.
 
+> **M117 addendum (2026-09-14, owner-directed):** the default strength is
+> **2/10** (was 0). Existing settings files keep their written value; a fresh
+> file or Settings → Reset shows the new default. See
+> `docs/milestone_notes/M117_owner_fix_batch.md`.
+
 > Owner-directed implementation task, authorized 2026-07-24. Runs after the
 > M53–M56 adjustment program and before the M23/M24 release track. **Pure
 > presentation** — no gameplay, save, generation, battle-rules, or virtual-

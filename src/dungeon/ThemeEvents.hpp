@@ -160,6 +160,55 @@ inline const char* eventFlavorId(RoomEventKind kind) {
     return "";
 }
 
+// M118 (owner direction 2026-09-14): every event kind's own 12×12 marker
+// sprite (assets/manifest.json `prop.event.<x>`). The seven shipped ids keep
+// their literal names; the fifteen added in M118 are `prop.event.<flavor id>`.
+// Null for None. A test holds this table, the presentation lint and the
+// shipped manifest in lockstep; DungeonState draws it at the marker (with a
+// colour+glyph box as the missing-texture fallback) and beside the flavor
+// panel's title.
+inline const char* eventMarkerSpriteId(RoomEventKind kind) {
+    switch (kind) {
+        case RoomEventKind::Shrine: return "prop.event.shrine";
+        case RoomEventKind::HealingSpring: return "prop.event.spring";
+        case RoomEventKind::Merchant: return "prop.event.merchant";
+        case RoomEventKind::EliteChallenge: return "prop.event.totem";
+        case RoomEventKind::ScoreWager: return "prop.event.omen";
+        case RoomEventKind::RestToken: return "prop.event.rest";
+        case RoomEventKind::RoyalRelic: return "prop.event.relic";
+        case RoomEventKind::ArmoryGhost: return "prop.event.armory_ghost";
+        case RoomEventKind::MinersCache: return "prop.event.miners_cache";
+        case RoomEventKind::ElderRoot: return "prop.event.elder_root";
+        case RoomEventKind::DuckPeddler: return "prop.event.duck_peddler";
+        case RoomEventKind::Surveyor: return "prop.event.surveyor";
+        case RoomEventKind::Dragonform: return "prop.event.dragonform";
+        case RoomEventKind::GoosePolymorph: return "prop.event.goose_polymorph";
+        case RoomEventKind::Sacrifice: return "prop.event.sacrifice";
+        case RoomEventKind::LevelAltar: return "prop.event.level_altar";
+        case RoomEventKind::StrangerStory: return "prop.event.stranger_story";
+        case RoomEventKind::TokenExchange: return "prop.event.token_exchange";
+        case RoomEventKind::PatrolReset: return "prop.event.patrol_reset";
+        case RoomEventKind::Reels: return "prop.event.reels";
+        case RoomEventKind::Blackjack: return "prop.event.blackjack";
+        case RoomEventKind::GoosyFlock: return "prop.event.goosy_flock";
+        case RoomEventKind::None: break;
+    }
+    return nullptr;
+}
+
+// M118: every real event kind, in enum order — the one list the flavor
+// lockstep test, the marker test and the capture specimen walk.
+inline constexpr std::array<RoomEventKind, 22> kAllRoomEventKinds = {
+    RoomEventKind::Shrine,         RoomEventKind::HealingSpring, RoomEventKind::Merchant,
+    RoomEventKind::EliteChallenge, RoomEventKind::ScoreWager,    RoomEventKind::RestToken,
+    RoomEventKind::RoyalRelic,     RoomEventKind::ArmoryGhost,   RoomEventKind::MinersCache,
+    RoomEventKind::ElderRoot,      RoomEventKind::DuckPeddler,   RoomEventKind::Surveyor,
+    RoomEventKind::Dragonform,     RoomEventKind::GoosePolymorph, RoomEventKind::Sacrifice,
+    RoomEventKind::LevelAltar,     RoomEventKind::StrangerStory, RoomEventKind::TokenExchange,
+    RoomEventKind::PatrolReset,    RoomEventKind::Reels,         RoomEventKind::Blackjack,
+    RoomEventKind::GoosyFlock,
+};
+
 // M110 (debug tooling): the event kinds a dev-only one-shot may substitute
 // for the next faced plain event AT INTERACTION TIME — exactly the kinds
 // whose resolution reads nothing baked at generation. Shrine, Merchant,

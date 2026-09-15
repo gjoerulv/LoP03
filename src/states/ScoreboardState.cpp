@@ -116,6 +116,7 @@ void ScoreboardState::render() {
                        ? "No 4-floor runs yet. Choose Floors: 4 at the Guild and descend!"
                        : "No 20-floor runs yet. Choose Floors: 20 at the Guild and "
                          "brave the long descent!");
+        ui::drawCaptionBacking(52, h / 2 - 4, w - 104, 34);  // M119: bare text on the art
         ui::drawTextWrapped(empty, 60, h / 2, w - 120, style::kFontBody, pal.textDim,
                             "scoreboard.empty", 2);
         const InputMap& emap = context_.input.map();

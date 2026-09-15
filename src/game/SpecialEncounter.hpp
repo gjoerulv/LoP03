@@ -291,6 +291,63 @@ inline bool specialRewards(SpecialResult r) {
            r == SpecialResult::ChestGear;
 }
 
+// ------------------------------------------- the Jester in the party ------
+
+// M117 (owner rule 2026-09-14): an UNCONTROLLED party member (the Jester
+// class) waits while the encounter stands unresolved — it takes no turn — as
+// long as a controllable living member can decide. Only in a party whose
+// living members are all uncontrolled do they act, and then the acting
+// unit's own pick (battle::uncontrolledChoice) IS the decision, under the
+// same rule a controlled member's committed action follows. The screen's
+// pruneOrder applies this while decisionPending().
+inline bool waitsForDecision(const battle::Battle& b, int unit) {
+    if (unit < 0 || unit >= static_cast<int>(b.units.size())) {
+        return false;
+    }
+    const battle::Combatant& self = b.units[static_cast<std::size_t>(unit)];
+    if (self.side != battle::Side::Party || !self.uncontrolled) {
+        return false;
+    }
+    for (const battle::Combatant& u : b.units) {
+        if (u.side == battle::Side::Party && u.alive() && !u.uncontrolled) {
+            return true;  // someone controllable can decide; the Jester waits
+        }
+    }
+    return false;
+}
+
+// Translates an uncontrolled unit's own pick into a decision. `decides` is
+// false for an ally-facing pick (the choice's target sits on the actor's own
+// side — Mend, the one such skill in the shipped Jester kit) or a targetless
+// one (unreachable while a placeholder stands): such a turn executes normally
+// and the encounter keeps waiting. `ordinal`/`aoe` mirror
+// BattleState::resolveDecision's own formula (kept in step by hand) so the
+// rule is testable headlessly; the screen still routes the resolution
+// through resolveDecision(choice.target).
+struct UncontrolledDecision {
+    bool decides = false;
+    int ordinal = 0;
+    bool aoe = false;
+};
+
+inline UncontrolledDecision uncontrolledDecisionFor(const battle::Battle& b, int actor,
+                                                    const battle::EnemyChoice& choice,
+                                                    int placeholderFirst,
+                                                    const content::SkillDef* skill) {
+    UncontrolledDecision d;
+    if (choice.target < 0 || placeholderFirst < 0 ||
+        choice.target >= static_cast<int>(b.units.size())) {
+        return d;
+    }
+    if (b.units[static_cast<std::size_t>(choice.target)].side != battle::Side::Enemy) {
+        return d;  // an ally-facing pick: not a decision
+    }
+    d.decides = true;
+    d.ordinal = std::max(0, choice.target - placeholderFirst);
+    d.aoe = b.hostileTargetCount(actor, skill) > 1;
+    return d;
+}
+
 // ------------------------------------------------- the Mimic morph --------
 
 // Carries the party's fight state from the decision battle into the fresh

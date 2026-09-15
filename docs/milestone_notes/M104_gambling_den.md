@@ -39,7 +39,7 @@ blackjack (bet gold, win pays the bet back doubled).
   gold is plain gold, never score treasure. One play, win or lose.
 - **Blackjack** (`RoomEventKind::Blackjack`, 7 %/dungeon — v23 likewise
   the shared 8 %): bet from the
-  affordable steps (10/25/50/100), then an interactive hand in
+  affordable steps (10/25/50/100; 250/500/1000 added 2026-09-14, see the post-approval section), then an interactive hand in
   [BlackjackEventState](../../src/states/BlackjackEventState.hpp) —
   Confirm hits, Cancel stands, dealer draws to 17, win pays the bet back
   doubled, push returns it. One round per den. Minimal fair rules
@@ -108,3 +108,13 @@ play/round; judge whether a spin animation should follow.
 
 game_design §6 (the dens paragraph), art_bible §3 (reel icons),
 assets/credits.md, ledger row, matrix row 200, this note.
+
+## Post-approval adjustment (2026-09-14, owner request): the high stakes
+
+M117 appended **250 / 500 / 1000 gold** to the blackjack stakes
+(`gamble::kBlackjackBets` = 10/25/50/100/250/500/1000); the builders are
+table-driven, the table minimum stays 10 g, all seven rows fit the pick
+modal without scrolling, and a won top stake pays 2000 back. Pinned in
+`test_gamble` (`[m117]`); capture `149_blackjack_stakes`; matrix row 234.
+Record: `docs/milestone_notes/M117_owner_fix_batch.md`. **M118** gave both
+dens their own room-marker icons (a three-window machine, two fanned cards).

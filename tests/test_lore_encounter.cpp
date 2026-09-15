@@ -41,6 +41,21 @@ Party makeParty() {
     return party;
 }
 
+// M117: the uncontrolled reward class in the party — first, so units[0] is
+// the Jester; `allJesters` seats four of them.
+Party makeJesterParty(bool allJesters = false) {
+    Party party;
+    const std::vector<const char*> ids =
+        allJesters ? std::vector<const char*>{"jester", "jester", "jester", "jester"}
+                   : std::vector<const char*>{"jester", "ranger", "mage", "cleric"};
+    for (const char* id : ids) {
+        const content::ClassDef* cls = db().findClass(id);
+        REQUIRE(cls != nullptr);
+        party.members.push_back(createCharacter(*cls, id, 12));
+    }
+    return party;
+}
+
 bool parses(const std::string& text) {
     content::ContentDatabase mem;
     content::LoadReport rep;
@@ -261,5 +276,136 @@ TEST_CASE("lore: the one AOE definition is the battle's own targeting", "[lore][
     for (const auto& [id, s] : db().skills()) {
         CHECK(skillIsOffensive(s) == (s.target == content::SkillTarget::SingleEnemy ||
                                       s.target == content::SkillTarget::AllEnemies));
+    }
+}
+
+TEST_CASE("lore: a Jester waits for the party's decision unless the party is all Jesters",
+          "[lore][chest][m117]") {
+    // Owner rule 2026-09-14: the uncontrolled member takes no turn while a
+    // controllable living member can decide; an all-Jester party acts.
+    SpecialEncounter e;
+    e.kind = SpecialKind::Lore;
+    e.lore = *makeLoreEncounter(db(), 3, false, 5ull, 2, 0);
+    battle::Battle b = battle::buildBattle(makeJesterParty(), dungeon::EnemyTeam{}, db());
+    const int first = appendPlaceholders(b, e);
+    REQUIRE(b.units[0].uncontrolled);
+    CHECK(waitsForDecision(b, 0));            // the Jester waits ...
+    CHECK_FALSE(waitsForDecision(b, 1));      // ... the ranger decides
+    CHECK_FALSE(waitsForDecision(b, first));  // a placeholder is inert, never "waiting"
+    CHECK_FALSE(waitsForDecision(b, -1));
+    CHECK_FALSE(waitsForDecision(b, 99));
+    // Every controllable member down: the Jester acts.
+    for (std::size_t i = 1; i < 4; ++i) {
+        b.units[i].hp = 0;
+    }
+    CHECK_FALSE(waitsForDecision(b, 0));
+    // An all-Jester party never waits.
+    battle::Battle all = battle::buildBattle(makeJesterParty(true), dungeon::EnemyTeam{}, db());
+    appendPlaceholders(all, e);
+    for (int i = 0; i < 4; ++i) {
+        REQUIRE(all.units[static_cast<std::size_t>(i)].uncontrolled);
+        CHECK_FALSE(waitsForDecision(all, i));
+    }
+}
+
+TEST_CASE("lore: an all-Jester party's own pick is the decision", "[lore][m117]") {
+    SpecialEncounter e;
+    e.kind = SpecialKind::Lore;
+    e.lore = *makeLoreEncounter(db(), 7, true, 9ull, 1, 3);
+    battle::Battle b = battle::buildBattle(makeJesterParty(true), dungeon::EnemyTeam{}, db());
+    const int first = appendPlaceholders(b, e);
+    const content::SkillDef* strike = db().findSkill("strike");
+    const content::SkillDef* radiance = db().findSkill("radiance");
+    const content::SkillDef* mend = db().findSkill("mend");
+    REQUIRE(strike != nullptr);
+    REQUIRE(radiance != nullptr);
+    REQUIRE(mend != nullptr);
+    REQUIRE(radiance->target == content::SkillTarget::AllEnemies);
+    REQUIRE(mend->target == content::SkillTarget::SingleAlly);
+    // A swing or a single-foe skill at placeholder N chooses N.
+    for (int n = 0; n < kSpecialPlaceholders; ++n) {
+        battle::EnemyChoice swing;
+        swing.target = first + n;
+        const UncontrolledDecision d = uncontrolledDecisionFor(b, 0, swing, first, nullptr);
+        CHECK(d.decides);
+        CHECK(d.ordinal == n);
+        CHECK_FALSE(d.aoe);
+        battle::EnemyChoice cast;
+        cast.useSkill = true;
+        cast.skillId = "strike";
+        cast.target = first + n;
+        const UncontrolledDecision s = uncontrolledDecisionFor(b, 0, cast, first, strike);
+        CHECK(s.decides);
+        CHECK(s.ordinal == n);
+        CHECK_FALSE(s.aoe);
+        SpecialEncounter r = e;
+        resolveSpecial(r, d.ordinal, d.aoe);
+        if (n == 0) {
+            CHECK(r.result == SpecialResult::JesterPunished);
+        } else {
+            CHECK((r.result == SpecialResult::LoreCorrect || r.result == SpecialResult::LoreWrong));
+        }
+    }
+    // An all-foes skill is the sweep.
+    battle::EnemyChoice sweep;
+    sweep.useSkill = true;
+    sweep.skillId = "radiance";
+    sweep.target = first + 1;
+    const UncontrolledDecision a = uncontrolledDecisionFor(b, 0, sweep, first, radiance);
+    CHECK(a.decides);
+    CHECK(a.aoe);
+    SpecialEncounter sw = e;
+    CHECK(resolveSpecial(sw, a.ordinal, a.aoe) == SpecialResult::AoePunished);
+    // An ally-facing pick (Mend on an ally) is no decision.
+    battle::EnemyChoice heal;
+    heal.useSkill = true;
+    heal.skillId = "mend";
+    heal.target = 2;
+    CHECK_FALSE(uncontrolledDecisionFor(b, 0, heal, first, mend).decides);
+    battle::EnemyChoice none;
+    CHECK_FALSE(uncontrolledDecisionFor(b, 0, none, first, nullptr).decides);
+    CHECK_FALSE(uncontrolledDecisionFor(b, 0, sweep, -1, radiance).decides);
+    // The translation never touches the field: every placeholder still stands.
+    for (int i = first; i < first + kSpecialPlaceholders; ++i) {
+        CHECK(b.units[static_cast<std::size_t>(i)].hp == 1);
+    }
+    CHECK(b.rollCursor == 0);
+}
+
+TEST_CASE("lore: the real Jester AI is classified consistently round after round",
+          "[lore][m117]") {
+    // The case that would have caught the defect: drive the production
+    // uncontrolledChoice hash over many rounds and classify every pick.
+    SpecialEncounter e;
+    e.kind = SpecialKind::Lore;
+    e.lore = *makeLoreEncounter(db(), 3, false, 5ull, 2, 0);
+    battle::Battle b = battle::buildBattle(makeJesterParty(true), dungeon::EnemyTeam{}, db());
+    const int first = appendPlaceholders(b, e);
+    int decided = 0;
+    int waited = 0;
+    for (int round = 1; round <= 64; ++round) {
+        b.turnsTaken = round;
+        const battle::EnemyChoice c = battle::uncontrolledChoice(b, 0, db());
+        REQUIRE(c.target >= 0);  // the placeholders are living foes
+        const content::SkillDef* s = c.useSkill ? db().findSkill(c.skillId) : nullptr;
+        const UncontrolledDecision d = uncontrolledDecisionFor(b, 0, c, first, s);
+        if (b.units[static_cast<std::size_t>(c.target)].side == battle::Side::Enemy) {
+            CHECK(d.decides);
+            CHECK(d.ordinal >= 0);
+            CHECK(d.ordinal < kSpecialPlaceholders);
+            CHECK(d.aoe == (s != nullptr && s->target == content::SkillTarget::AllEnemies));
+            ++decided;
+        } else {
+            CHECK_FALSE(d.decides);
+            CHECK(c.skillId == "mend");  // the one ally-facing skill in the kit
+            ++waited;
+        }
+    }
+    CHECK(decided > 0);
+    CHECK(decided + waited == 64);
+    // Nothing rolled, nothing struck: the field still stands.
+    CHECK(b.rollCursor == 0);
+    for (int i = first; i < first + kSpecialPlaceholders; ++i) {
+        CHECK(b.units[static_cast<std::size_t>(i)].hp == 1);
     }
 }

@@ -1,7 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <filesystem>
+#include <set>
+#include <string>
 #include <vector>
 
+#include "assets/AssetManifest.hpp"
+#include "content/LoadReport.hpp"
 #include "render/BattleBackdrop.hpp"
 
 // M56 — per-theme battle backdrops. Pure geometry only; drawing is validated by
@@ -116,4 +121,34 @@ TEST_CASE("backdrop: geometry is deterministic", "[backdrop]") {
             CHECK(a[i].role == b[i].role);
         }
     }
+}
+
+TEST_CASE("backdrop: M119 painted stages - one texture per themed stage, none for Plain, all shipped",
+          "[backdrop][lint]") {
+    CHECK(battleStageTextureId(BackdropStage::Plain) == nullptr);
+    const BackdropStage stages[] = {BackdropStage::Keep, BackdropStage::Mine,
+                                    BackdropStage::Forest, BackdropStage::Castle,
+                                    BackdropStage::Goosy};
+    std::set<std::string> ids;
+    for (const BackdropStage s : stages) {
+        const char* id = battleStageTextureId(s);
+        REQUIRE(id != nullptr);
+        CHECK(std::string(id).rfind("bg.battle.", 0) == 0);
+        ids.insert(id);
+    }
+    CHECK(ids.size() == 5);
+    cd::assets::AssetManifest m;
+    cd::content::LoadReport report;
+    REQUIRE(m.load(std::filesystem::path(CRYSTAL_TEST_ASSETS_DIR), report));
+    for (const std::string& id : ids) {
+        INFO(id);
+        const cd::assets::AssetEntry* e = m.find(id);
+        REQUIRE(e != nullptr);
+        CHECK(e->type == cd::assets::AssetType::Texture);
+    }
+    // The title scene rides the same manifest (a missing one falls back to
+    // the canvas fill, like every scene background).
+    const cd::assets::AssetEntry* title = m.find("bg.title");
+    REQUIRE(title != nullptr);
+    CHECK(title->type == cd::assets::AssetType::Texture);
 }

@@ -23,6 +23,7 @@
 #include "game/SpecialEncounter.hpp"  // M112
 #include "render/CutsceneBackdrop.hpp"  // M113
 #include "states/FontSpecimenState.hpp"  // M114
+#include "states/EventMarkerSpecimenState.hpp"  // M118
 #include "game/Lifetime.hpp"  // M116
 #include "states/EndgameSummaryState.hpp"  // M116
 #include "dungeon/TeamInspect.hpp"  // M88: describeTeam for the inspection scene
@@ -68,6 +69,7 @@
 #include "states/DungeonState.hpp"
 #include "states/BlackjackEventState.hpp"  // 2026-08-29: the card-table scene
 #include "states/EventChoiceState.hpp"
+#include "game/Gamble.hpp"  // M117: the blackjack stakes scene
 #include "states/EquipShopState.hpp"
 #include "states/InventoryState.hpp"  // M90
 #include "states/ScrollChoiceState.hpp"  // M92
@@ -1631,6 +1633,23 @@ int run(const char* outDir) {
                  s.pushState(std::make_unique<EventChoiceState>(
                      s, c, "THE STRANGER \"P\"",
                      std::vector<std::string>{"Talk", "End-game Summary"}, [](int) {}));
+             }},
+            {"149_blackjack_stakes",
+             [](StateStack& s, AppContext& c) {
+                 // M117 (owner-directed): the card table's bet pick with every
+                 // one of the seven stakes affordable - the maximal-content rows.
+                 std::vector<std::string> rows;
+                 for (int b : gamble::kBlackjackBets) {
+                     rows.push_back("Bet " + std::to_string(b) + "g");
+                 }
+                 s.pushState(std::make_unique<EventChoiceState>(
+                     s, c, "The dealer waits. Your bet?", std::move(rows), [](int) {}));
+             }},
+            {"150_event_icons",
+             [](StateStack& s, AppContext& c) {
+                 // M118: every event kind's marker beside its flavor title, at
+                 // the size the room draws it.
+                 s.pushState(std::make_unique<EventMarkerSpecimenState>(s, c));
              }},
             {"140_dragon_clone",
              [&battleSlot](StateStack& s, AppContext& c) {

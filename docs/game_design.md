@@ -260,7 +260,14 @@ mercy; the KO is carried out of the battle like any other, and a party
 whose last standing member tried it is wiped). Whatever the pick, the
 encounter costs **one battle turn**, no foe is "defeated" (nothing enters
 the bestiary or the kill counts), and the patrol is consumed. Escape
-steps away as from any patrol. The questions are **28 original, editable
+steps away as from any patrol. **A Jester in the party** (the uncontrolled
+reward class) **waits** while the question stands — it takes no turn as long
+as a controllable member lives; only when every standing member is a Jester
+do they act, and then the acting Jester's own whim is the answer: a swing or
+hostile skill at an answer chooses it, at the Jester earns the punishment,
+an all-foes skill is the sweep, and a heal on an ally is simply cast while
+the question waits (owner rule, fix 2026-09-14; the chests follow the same
+rule). The questions are **28 original, editable
 entries** (`data/lore_questions.json`, about four per town tier), asked in
 a **run-seeded order** that walks the whole eligible pool before any
 repeat; a question is only eligible once its town tier is unlocked, and
@@ -365,7 +372,8 @@ the goose head tells a goose joke and pays equipment **new at this town**
 **Dragon Crown** (both refuse politely at their caps); the red X a map
 piece; the bald red-bearded head **one normal skill scroll — the single
 sanctioned in-dungeon scroll source**; and 7-7-7 pays 1000 g. **Blackjack**
-— bet 10/25/50/100 g on one interactive hand (hit/stand, dealer stands on
+— bet 10/25/50/100/250/500/1000 g (the three high stakes since M117) on one
+interactive hand (hit/stand, dealer stands on
 17): a win pays the bet back **doubled**, a push returns it, a loss feeds
 the candle. Since 2026-08-29 the table deals **real cards** — the dealer's
 hole card face-down on a woven back until the hand ends, ranks lettered on
@@ -1087,7 +1095,10 @@ long before it is earned. All three are jokes that are also real classes:
 - **Jester** — **uncontrolled**. You do not choose its turns: each round it picks
   one of its own skills (any it can afford and cast) or a swing, at a foe of its
   choosing. It carries no weapon, quips one of twelve dry lines about 15 % of the
-  time, and pays **+5 % score per Jester** for the indignity.
+  time, and pays **+5 % score per Jester** for the indignity. In a Lore or
+  Chest patrol it **waits** for the party's decision (no turn while a
+  controllable member stands); only in an all-Jester party does its whim
+  decide — see the patrol passages in §6.
 - **Goose** — dreadful stats, **equips no arms or armor at all** (an M96
   heirloom is the one exception — a memory is not equipment; owner-approved
   2026-08-16). Its heals and cures work
@@ -1602,7 +1613,11 @@ event:
   bannered Castle throne room — kept deliberately quiet (small silhouettes low and
   along a top skyline strip, the central action corridor left clear) so it sets
   the place without competing with the fight. In **high contrast** the backdrops
-  simplify (accents drop, silhouettes stay).
+  simplify (accents drop, silhouettes stay). Since **M119** a painted far
+  layer per theme (the castle too) sits under those silhouettes — a far wall,
+  a crystal roof, trunk columns, tall windows, reeds — with the centre
+  corridor left plain so floats and status text read as before; high
+  contrast drops the painting along with the accents.
 - Every battle against a **boss team** (a dungeon boss, a Boss Rush wave, or the
   Hollow King) opens with a dramatic **Crystal Shatter** transition — cracks grow,
   the screen darkens with a single dim pulse, and the scene shatters into crystal

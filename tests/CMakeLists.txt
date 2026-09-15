@@ -7,6 +7,7 @@ add_executable(crystal_tests
     test_input_frame.cpp
     test_remap.cpp
     test_prompt_labels.cpp
+    test_help_page.cpp
     test_settings.cpp
     test_asset_manifest.cpp
     test_animation.cpp
@@ -85,6 +86,7 @@ add_executable(crystal_tests
     test_counterplay.cpp
     test_enemy_offensive.cpp
     test_event_flavor.cpp
+    test_event_marker.cpp
     test_input_qol.cpp
     test_item_caps.cpp
     test_arms_icons.cpp

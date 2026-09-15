@@ -22,14 +22,23 @@ constexpr int kCol1X = 20;
 constexpr int kCol2X = 160;
 constexpr int kCol3X = 300;
 
-// The actions shown on the controls page, generated from the LIVE bindings
-// (M13): remapping is always reflected here.
-constexpr InputAction kShownActions[] = {
-    InputAction::MoveUp,    InputAction::MoveDown, InputAction::MoveLeft,
-    InputAction::MoveRight, InputAction::Confirm,  InputAction::Cancel,
-    InputAction::Menu,      InputAction::TextBackspace, InputAction::ToggleDebug,
-};
 }  // namespace
+
+// The actions shown on the controls page, generated from the LIVE bindings
+// (M13): remapping is always reflected here. M117 (owner-directed): the F1
+// debug-overlay row exists only where the overlay itself is compiled in, so a
+// Release build's page never advertises a key that does nothing there.
+const std::vector<InputAction>& helpShownActions() {
+    static const std::vector<InputAction> actions = {
+        InputAction::MoveUp,    InputAction::MoveDown, InputAction::MoveLeft,
+        InputAction::MoveRight, InputAction::Confirm,  InputAction::Cancel,
+        InputAction::Menu,      InputAction::TextBackspace,
+#ifdef CRYSTAL_DEBUG_OVERLAY
+        InputAction::ToggleDebug,
+#endif
+    };
+    return actions;
+}
 
 HelpState::HelpState(StateStack& stack, AppContext& context)
     : GameState(stack), context_(context) {}
@@ -55,7 +64,8 @@ void HelpState::render() {
     const int col3W = w - kCol3X - 16;
     const InputMap& map = context_.input.map();
 
-    ui::drawFrame(12, 30, w - 24, 17 + 9 * 15 + 14, ui::FrameStyle::Inset);
+    const int rows = static_cast<int>(helpShownActions().size());
+    ui::drawFrame(12, 30, w - 24, 17 + rows * 15 + 14, ui::FrameStyle::Inset);
     int y = 38;
     ui::drawTextFitted("Action", kCol1X, y, col1W, style::kFontBody, p.textDim, "help.header");
     ui::drawTextFitted("Keyboard", kCol2X, y, col2W, style::kFontBody, p.textDim, "help.header");
@@ -63,7 +73,7 @@ void HelpState::render() {
     y += 12;
     ui::drawDivider(kCol1X - 4, y, w - 2 * (kCol1X - 4) - 16);
     y += 5;
-    for (InputAction a : kShownActions) {
+    for (InputAction a : helpShownActions()) {
         ui::drawTextFitted(std::string(actionDisplayName(a)), kCol1X, y, col1W,
                            style::kFontBody, p.text, "help.action");
         ui::drawTextFitted(input::allLabels(map, a, ActiveDevice::Keyboard), kCol2X, y, col2W,

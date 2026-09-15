@@ -236,3 +236,40 @@ As listed above.
 ### 9. Final status
 
 `complete (approved 2026-09-10)`
+
+## Post-approval defect fixed (2026-09-14, owner report)
+
+A **Jester** (the uncontrolled reward class) in the party broke both
+decision encounters: its turn runs through
+`BattleState::executeUncontrolled`, which carried no decision-mode check —
+only the controlled path (`executePending`) handed a hostile action to
+`resolveDecision`. So the Jester's hashed pick (`battle::uncontrolledChoice`,
+aimed at a living foe = a 1-HP placeholder) landed as a REAL attack or
+skill: nothing resolved, no reward paid, the Mimic never woke, the answer
+was never judged, and the M109 telemetry observer tallied the felled
+placeholder as an enemy KO (`enemiesKo` / `finishingBlows`; the Lore
+Jester's `sourceId "jester"` could even reach the defeat ledger).
+
+**Owner rule (2026-09-14):** while the encounter stands, a Jester **waits** —
+it takes no turn — as long as a controllable living member can decide; in a
+party whose living members are all Jesters, the Jesters act and the acting
+Jester's own pick **is** the decision under the controlled-pick rules (a
+swing or single-foe skill at placeholder N chooses N; an all-foes skill is
+the sweep; an ally-facing pick — Mend, the one such skill in the Jester's
+kit — is cast normally and the encounter keeps waiting).
+
+**Fix (M117):** `game::waitsForDecision` (pure, `SpecialEncounter.hpp`)
+applied by `pruneOrder` while `decisionPending()`;
+`game::uncontrolledDecisionFor` translates the `EnemyChoice` and
+`executeUncontrolled` routes a deciding pick through `resolveDecision`
+(returning before the quip so the Mimic's telegraph owns the channel).
+`uncontrolledChoice`, `resolveSpecial`, `hostileTargetCount` and
+`revealMimic` are untouched; no rules motion. **Audit** of the other actor
+paths: forced turns are unreachable (party units start every battle
+status-free), enemy turns are pruned, summons and sweeps resolve under
+`hostileTargetCount`, the spar and the Simulator never host an encounter,
+the Golden Goose is a normal battle — nothing else found. Pinned in
+`test_lore_encounter` / `test_chest_encounter` (`[m117]`: the wait
+predicate, the translation, the production AI classified over 64 rounds,
+the morph seating the Jester); matrix rows 235–236. Record:
+`docs/milestone_notes/M117_owner_fix_batch.md`.

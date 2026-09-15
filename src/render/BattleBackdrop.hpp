@@ -8,6 +8,10 @@
 // "subdued" rules); a thin raylib mapper turns roles into palette colours and
 // draws them. No texture, no per-frame heap growth beyond the small vector.
 
+namespace cd {
+class ResourceManager;
+}
+
 namespace cd::render {
 
 // Named BackdropStage (not BackdropStage) to avoid colliding with the
@@ -62,5 +66,15 @@ std::vector<BackdropRect> buildBackdrop(BackdropStage stage, BackdropBand band, 
 // run inside a draw pass; called from BattleState::render between the band fill
 // and the ink keylines.
 void drawBattleBackdrop(BackdropStage stage, BackdropBand band, int phase, bool accents);
+
+// M119: the painted far layer under the silhouettes. A 426x122 texture per
+// themed stage (`bg.battle.<stage>`; Plain has none) drawn between the flat
+// band fill and buildBackdrop's rects; the float/status corridor is kept
+// clear at the source (the generator clips every motif out of it and
+// asserts the band). High contrast (accents == false) skips the texture —
+// today's exact look — and so does a missing one.
+const char* battleStageTextureId(BackdropStage stage);
+void drawBattleStage(ResourceManager& resources, BackdropStage stage, BackdropBand band,
+                     int phase, bool accents);
 
 }  // namespace cd::render

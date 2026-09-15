@@ -92,6 +92,13 @@ reserved for their meanings and never decorative.
 - **Tile size: 16×16** (authoritative; matches `Tilemap::kTileSize`).
 - Overworld actors/props: **12×12** inside the 16px tile (collision box
   unchanged — art never changes collision).
+- **Event markers (M118):** every event kind carries its own 12×12 prop
+  (`prop.event.<kind>`, `dungeon::eventMarkerSpriteId`) — one motif each,
+  shape-distinct in silhouette, on the §2 ramps with at most one glint; an
+  unresolved event shows a 3×3 crystal pip above the icon on the shared
+  motion clock; a missing texture falls back to a coloured box with a
+  letter, never an invisible one. Review with
+  `tools/asset_gen/preview_events.ps1`.
 - Battle sprites: **24×24** (bosses **36×36** since M73; 32×32 before that),
   side-profile, party faces left, enemies face right.
   The boss canvas is a hard limit, not a preference: `BattleState::drawUnit`
@@ -297,12 +304,27 @@ the name label to make visual sense. The silhouette sheet from
   Crystal Mine = supports/rails/clusters; Hollow Forest = roots/organic
   boundaries. Grayscale composition must still distinguish them.
 - Decorative density stays low near doors, markers, and paths.
-- **Town service screens (M27):** each of the six services (Inn, Item Shop,
-  Equip Shop, Training Hall, Scoreboard, Guild) has its own full-screen
-  background — a distinct dark tinted gradient plus a low-contrast themed motif
-  biased to the top/edges. Legibility of overlaid text is the binding
-  constraint (§7): the base stays near the prior flat fill so M12 contrast
-  holds, and a missing background falls back to that flat fill.
+- **Town service screens (M27, redrawn M119):** each of the six services
+  (Inn, Item Shop, Equip Shop, Training Hall, Scoreboard, Guild) has its own
+  full-screen painted room on the M113 stage recipe — layered silhouettes
+  with the composition weight in the side margins and the strips above and
+  below the panels (the opaque header band and frames cover the rest), the
+  caption row (y 26..40) kept quiet at the source, every fill darker than
+  the panel fills, no signal colours. Legibility is still the binding
+  constraint (§7 and `docs/ui_style_guide.md` §4): a caption drawn directly
+  on the art gets a translucent canvas strip (`ui::drawCaptionBacking`), and
+  a missing background falls back to the flat fill. The per-town shades
+  (M32) regenerate from these bases.
+- **Title scene (M119):** the title screen's own place — a still lake at
+  night, reeds at the margins, the ridge low — quiet behind the emblem row
+  and the plaque/phrase band (the phrase gets the caption strip); the menu
+  frame and footer are opaque; the canvas fill is the fallback.
+- **Painted battle stages (M119):** a 426×122 far layer per themed
+  `BackdropStage` under the M56 ink silhouettes — motifs only in the skyline
+  strip, the side columns and the floor strip, far and low-alpha; the
+  float/status corridor carries the base gradient alone (clipped at the
+  source and asserted by the generator). High contrast drops the painting
+  and keeps the silhouettes; a missing texture is the M56 look.
 - **Cutscene stages (M113):** five full-screen scenes behind the Hooded
   Goose's actors — the mountainous town panorama and the four dungeon
   theme stages (parapets/arches, crystals/supports, trunks/roots,

@@ -215,7 +215,9 @@ cannot ship icon-less. Review with `tools/asset_gen/preview_icons.ps1`
 `ui::drawSceneBackground(resources, id, fallbackColor, w, h)`, which fills the
 old solid colour first and overlays the texture only if the catalog has it, so
 a missing background degrades to the previous flat fill. Backgrounds are
-authored dark/low-contrast (art bible §7) to keep overlaid text legible.
+authored dark and restrained (art bible §6/§7) to keep overlaid text legible;
+since M119 they are painted rooms on the M113 stage recipe, and the states
+back any caption drawn directly on the art with `ui::drawCaptionBacking`.
 
 **Cutscene stages (M113):** five more full-screen (426×240) scenes —
 `bg.cutscene.panorama` (every town-triggered scene) and
@@ -223,6 +225,27 @@ authored dark/low-contrast (art bible §7) to keep overlaid text legible.
 theme) — drawn by `CutsceneState` through the same helper; the caller
 names the stage (`render::cutsceneStageForTheme`), and a missing one
 degrades to the M97 flat sky/floor fills.
+
+**Event markers (M118):** twenty-two **12×12** props — `prop.event.<x>`, one
+per `dungeon::RoomEventKind` (the seven M20/M30/M44 names kept, the fifteen
+M118 ids following the flavor id) — mapped by `dungeon::eventMarkerSpriteId`
+and drawn by `DungeonState` at the room marker and beside the M80 flavor
+panel's title; a missing texture falls back to a coloured box with a letter.
+Authored as hand-placed pixels in a RNG-free section at the very end of
+`generate_textures.ps1`. The `[lint]` sweep and `test_event_marker` hold the
+table, the manifest and the shipped set in lockstep. Review with
+`tools/asset_gen/preview_events.ps1` (magnified contact sheet on a dark and
+a light row → `docs/sprite_review/events_contact.png`); the capture scene
+`150_event_icons` shows every icon beside its title at 1×.
+
+**Title scene and painted battle stages (M119):** `bg.title` (426×240, drawn
+first by `MainMenuState` with the canvas fill as the fallback) and
+`bg.battle.{keep,mine,forest,castle,goosy}` (426×122 — the battle band —
+drawn by `render::drawBattleStage` under the M56 silhouettes when accents are
+on; `battleStageTextureId(stage)`; Plain has none, high contrast skips it, a
+missing one is the M56 look). The generator clips every stage motif out of
+the float corridor and asserts the corridor against a plain reference before
+saving; `tests/test_battle_backdrop.cpp` pins the ids and the manifest.
 
 ## 4. How to add or replace an asset
 

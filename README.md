@@ -88,9 +88,15 @@ music, or text. Built in **C++20** with **raylib**.
 > Golden Goose hunt, the Jester's lore question, three chests and the
 > Mimic, a Stranger scene), a persistent **lifetime ledger** with a
 > six-page **End-game Summary**, and the typeface redrawn on a 6×9 cell.
-> With the M109–M116 approvals (2026-09-10) only the deferred **validation
-> playtesting (M23)** and **release sign-off (M24)** remain. Current status always lives in
-> `docs/milestones.md`.
+> The **M117–M119 program** (authorized 2026-09-14) is implemented and
+> awaits the owner's manual approval: the owner fix batch (CRT defaults
+> Strength 2 / Curvature 0, the Controls page's F1 row compiled out of
+> Release, blackjack stakes to 1000 g, the Jester waiting out the Lore and
+> Chest patrols), a bespoke icon for every dungeon event with a glint, and
+> the background art redesign (painted service interiors, a title scene,
+> painted battle stages under the familiar silhouettes). After it only the
+> deferred **validation playtesting (M23)** and **release sign-off (M24)**
+> remain. Current status always lives in `docs/milestones.md`.
 
 ## Requirements
 
@@ -221,11 +227,12 @@ to keep it playing).
 | Prev / Next member    | Q / E (or Ctrl / Alt)  | L1 / R1            |
 | Adjust (Guild, Settings) | Left / Right        | D-Pad L/R / Stick  |
 | Delete (name entry)   | Backspace              | X                  |
-| Toggle debug overlay  | F1                     | —                  |
+| Toggle debug overlay  | F1 (dev builds only)   | —                  |
 
 The in-game list (**Main Menu → Controls**) always shows your *current*
 bindings. The window is resizable; the 426×240 image always scales to fit with
-letterbox/pillarbox bars.
+letterbox/pillarbox bars. Release builds compile the debug overlay out, so
+the Controls page carries no F1 row there (M117).
 
 ## How to play
 
@@ -370,7 +377,9 @@ save round-trips via the Save Point + Continue.
 ## Known limitations
 
 - **Generated assets.** All art (16-bit-style pixel tiles/sprites — 100
-  battle sprites incl. 27 bosses — plus five painted cutscene stages), the UI
+  battle sprites incl. 27 bosses — plus five painted cutscene stages, six
+  painted service interiors with their town shades, a title scene, five
+  painted battle stages and 22 event-marker icons), the UI
   **bitmap font** (an original 161-glyph pixel typeface on a 6×9 cell, three
   BMFont descriptors), and all audio (22 chiptune music tracks incl. the
   mocking jingle, 5 ambience beds, 22 SFX) are original and

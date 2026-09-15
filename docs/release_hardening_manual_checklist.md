@@ -32,7 +32,8 @@ cmake --build build-vs --config Release
 
 Inspect both Release executables and confirm:
 
-- F1 has no debug-overlay effect.
+- F1 has no debug-overlay effect, and **Main Menu → Controls** lists no F1 row
+  (M117).
 - `--capture` is unavailable.
 - no capture output can be generated.
 - the packaged executable is AMD64.

@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M109–M116, approved 2026-09-10)** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M117–M119, authorized 2026-09-14)** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -119,11 +119,14 @@
 | 109 | Lifetime ledger (persistent telemetry foundation) | ☑ complete (approved 2026-09-10) |
 | 110 | Patrol dispatcher, debug tools & the Stranger's patrol scenes (generation v24) | ☑ complete (approved 2026-09-10) |
 | 111 | The Golden Goose: scripted enemy actions & enemy flee (battle rules v19) | ☑ complete (approved 2026-09-10) |
-| 112 | The Jester's Lore trap & the Treasure chests (Mimic, mocking jingle) | ☑ complete (approved 2026-09-10) |
+| 112 | The Jester's Lore trap & the Treasure chests (Mimic, mocking jingle) | ☑ complete (approved 2026-09-10) (post-approval fix 2026-09-14: the Jester class in decision mode, see the note) |
 | 113 | Cutscene stages (town panorama + theme stages) | ☑ complete (approved 2026-09-10) |
 | 114 | Font readability redesign (6×9 master alphabet, 9 px floor) | ☑ complete (approved 2026-09-10) |
 | 115 | The Last Dragon redesign, clone identity & bounds-aware formation | ☑ complete (approved 2026-09-10) |
 | 116 | The End-game Summary (lifetime statistics, unlocked by the finale) | ☑ complete (approved 2026-09-10) |
+| 117 | Owner fix batch: CRT defaults, the Controls page, blackjack stakes & the Jester's patrol decision | ◑ implemented, awaiting manual approval |
+| 118 | Event icons (a bespoke marker for every event kind, the glint, the panel icon) | ◑ implemented, awaiting manual approval |
+| 119 | Background art: service interiors, title screen & painted battle stages | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -251,6 +254,20 @@ mechanics; the M93 XP-only rule holds for ordinary patrols); the summary
 never ends the game. Execution continues milestone by milestone to
 `implemented, awaiting manual approval` without pausing; M23 → M24
 follow after the program, re-audited first, each awaiting explicit
+authorization. See the program section at the end of this file.
+**On 2026-09-14 the owner authorized the M117–M119 program** (one plan,
+one authorization, after a planning interview; branch `oyb11`, baseline
+`72f4c3e`): M117 the owner fix batch (CRT defaults Strength 2 / Curvature 0,
+the Controls page's F1 row compiled out of Release, blackjack stakes
+250/500/1000, and the Jester class in the Lore/Chest decision patrols — it
+waits unless the party is all Jesters, whose whim then decides — with a
+special-patrol audit) → M118 event icons (a bespoke 12×12 marker for every
+event kind, a glint on unresolved events, the flavor panel's icon) → M119
+background art (the six service interiors redrawn, a title-screen scene,
+painted battle stages under the M56 silhouettes; high contrast keeps
+today's look). No version motion anywhere. Execution continues milestone by
+milestone to `implemented, awaiting manual approval` without pausing; M23 →
+M24 follow after the program, re-audited first, each awaiting explicit
 authorization. See the program section at the end of this file.
 
 When M75–M86 close, both M23 and M24 must be re-audited against the
@@ -3474,7 +3491,9 @@ decisions no milestone may reopen without escalation:
 
 ### M112 — The Jester's Lore trap & the Treasure chests
 
-- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02.
+- **Status:** ☑ complete (approved 2026-09-10) — implemented 2026-09-02
+  (post-approval fix 2026-09-14: the Jester class in decision mode, see the
+  note's dated section).
 - **Goal:** the Lore encounter (28 editable questions, a new content
   category, two text answers, the AOE and Jester punishments, one
   battle-turn), the Chest gamble (reward / Mimic / empty), the Mimic boss,
@@ -3565,3 +3584,79 @@ no debug artifacts, AMD64 PE, no capture/overlay markers, exe ProductVersion
 0.8.0). `ctest --preset release` on that build: **883/883 passed** (132 s);
 the Debug preset was reconfigured and rebuilt so the dev executable carries
 the same version.
+
+## The M117–M119 program (authorized 2026-09-14)
+
+Plan approved by the owner 2026-09-14 after a planning interview (one plan,
+one authorization; branch `oyb11`, baseline `72f4c3e`). Locked decisions no
+milestone may reopen without escalation:
+
+1. **CRT defaults** are Strength 2/10 and Curvature 0/10 on a fresh settings
+   file and after Settings → Reset; files written by earlier builds keep
+   their explicit values (no migration). The settings schema stays v1.
+2. **The Controls page** lists the F1 debug-overlay row only where the
+   overlay is compiled in (dev builds) — never in Release.
+3. **Blackjack** offers 10/25/50/100/250/500/1000 gold: the original four
+   stay, the three high stakes are appended, the table minimum stays 10.
+4. **The Jester in a Lore/Chest patrol** (the M112 decision encounters): an
+   uncontrolled member waits — no turn — while a controllable living member
+   can decide; in an all-Jester party the Jesters act and the acting
+   Jester's own pick is the decision under the controlled-pick rules (an
+   ally-facing pick is cast normally and the encounter keeps waiting).
+5. **Event markers**: every event kind gets its own 12×12 icon plus a subtle
+   glint pip while unresolved; the M80 flavor panel shows the icon.
+6. **Background art** covers all three surfaces — the six service interiors
+   (42 PNGs), the title screen, and painted battle stages drawn UNDER the
+   M56 silhouettes (high contrast keeps today's look; the M56 geometry and
+   its tests are untouched). The M113 cutscene stages are the quality bar
+   and stay as they are.
+7. **No version motion anywhere** (rules 19, generation 24, save v1,
+   settings v1, content v1, manifest v2 with new ids only);
+   `project(VERSION)` stays 0.8.0 until the owner packages.
+
+### M117 — Owner fix batch
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-09-14 (Debug 894/894, Release 890/890, capture 149/149 clean; see the
+  note's completion report).
+- **Goal:** the CRT defaults, the Controls page's F1 row, the blackjack
+  stakes, the Jester's decision-mode rule with the special-patrol audit.
+- **Milestone note:** `docs/milestone_notes/M117_owner_fix_batch.md`
+
+### M118 — Event icons
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-09-14 (15 new PNGs, generator byte-stable; targeted tags 29/29;
+  capture 150/150 clean; see the note's completion report).
+- **Goal:** a bespoke marker for every event kind, the glint, the panel
+  icon, a specimen capture, the review sheet.
+- **Milestone note:** `docs/milestone_notes/M118_event_icons.md`
+
+### M119 — Background art
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-09-14 (42 interior PNGs redrawn + 6 new scenes, generator
+  byte-stable with the corridor assertions; targeted tags 29/29; capture
+  150/150 clean; see the note's completion report).
+- **Goal:** the six service interiors redrawn, the title scene, the painted
+  battle stages under the M56 silhouettes.
+- **Milestone note:** `docs/milestone_notes/M119_background_art.md`
+
+**Execution order:** M117 → M118 → M119, then M23 → M24 (re-audited against
+the then-current checkout, each awaiting explicit owner authorization).
+
+**Program status: implemented 2026-09-14, awaiting manual approval.** Closing
+battery on the final checkout: Debug configure + build clean (zero
+project-code warnings); `ctest --preset debug` **897/897 passed** (661.6 s);
+Release build clean + `ctest --preset release` **893/893 passed** (453.9 s;
+the four Debug-only cases are compiled out there); `ArePGeese.exe --capture`
+**150/150 scenes clean**, zero overflow events (two new scenes:
+`149_blackjack_stakes`, `150_event_icons`); the texture generator re-run
+byte-stable for every earlier file (new: 15 event-marker props, the title
+scene, five battle stages; the 42 service interiors redrawn by design);
+`CrystalForge --canonicalize` not needed (no data edits). Owner validation:
+matrix rows 232–241. Findings for the owner's eye: the Jester's decision
+rule as built (M117 note), the telemetry exposure the Jester defect had
+opened (closed by the fix; existing saves are not repaired), the dropped
+high-contrast battle capture (M119 note). Nothing beyond M119 was started;
+M23 → M24 remain deferred and each awaits explicit authorization.

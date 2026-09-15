@@ -98,6 +98,7 @@ void InnState::render() {
 
     ui::drawHeaderBand("Inn", w, p.mpFill, context_.party.gold);
     ui::drawChip(TextFormat("Rest tokens %d", context_.party.restTokens), 4, 27, p.gold);
+    ui::drawCaptionBacking(0, 26, w, 18);  // M119: the caption sits on the art
     ui::drawTextCentered("Rest to fully restore HP and MP.", w / 2, 30, style::kFontBody,
                          p.textDim);
 

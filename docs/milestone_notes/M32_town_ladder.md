@@ -299,3 +299,7 @@ and persists on the next save/autosave (autosave fires on dungeon entry), so
 quitting to title immediately after a clear without saving does not persist the
 unlock. This matches how a run's gold and XP already behave and was not part of
 the report.
+
+**M119 (2026-09-14):** the 36 per-town interior variants regenerated from the
+redrawn M27 bases (same ColorMatrix progression) — see
+`docs/milestone_notes/M119_background_art.md`.

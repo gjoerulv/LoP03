@@ -69,15 +69,18 @@ struct Settings {
     // M57 (owner-approved): CRT post-process strength, 0.0..1.0, exposed to the
     // player as a 0..10 slider (each step = 0.1). 0 = the exact unfiltered blit.
     // Optional field; absent falls back to the legacy M51 crtEffect bool
-    // (true -> 0.3 preserves the old subtle look, false -> 0.0), else 0.0.
-    float crtIntensity = 0.0f;
+    // (true -> 0.3 preserves the old subtle look, false -> 0.0), else the
+    // default. M117 (owner-directed 2026-09-14): the default is 0.2 (2/10);
+    // files written by earlier builds keep their explicit value.
+    float crtIntensity = 0.2f;
     // M70 (owner-specified): CRT screen curvature, 0.0..1.0, its own 0..10
     // slider — geometry (barrel warp, inset, rounded corners, curved-edge
     // masking) now follows THIS value alone, never CRT Strength. Optional
-    // field; absent = 0.3 (mild curved glass — deliberately, so an existing
-    // strength-7 file loses its excessive curl but keeps a gentle curve).
+    // field; absent = the default. M117 (owner-directed 2026-09-14): the
+    // default is 0.0 — flat glass (M70 shipped 0.3 so a pre-M70 strength-7
+    // file relaxed to a gentle curve; flat is now the wanted geometry).
     // Dormant while strength is 0 (the plain blit runs regardless).
-    float crtCurvature = 0.3f;
+    float crtCurvature = 0.0f;
     // M51 (owner-approved), optional bool, absent = false so older files load
     // unchanged: keep audio playing while the window is unfocused (Off default =
     // mute when unfocused, a deliberate behaviour change).

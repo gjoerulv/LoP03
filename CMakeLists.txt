@@ -161,6 +161,8 @@ add_library(crystal_core STATIC
     # M114: capture-only font specimen. Same shape: compiled unconditionally,
     # its body entirely under #ifdef CRYSTAL_CAPTURE.
     src/states/FontSpecimenState.cpp
+    # M118: capture-only event-marker specimen, the same shape.
+    src/states/EventMarkerSpecimenState.cpp
     src/states/EndgameSummaryState.cpp
 )
 

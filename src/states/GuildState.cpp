@@ -285,6 +285,7 @@ void GuildState::render() {
                             context_.virtualWidth, context_.virtualHeight, context_.party.currentTown);
 
     ui::drawHeaderBand("Guild", w, p.crystal);
+    ui::drawCaptionBacking(0, 25, w, 16);  // M119: the caption sits on the art
     ui::drawTextCentered("Choose a dungeon - entering autosaves.", w / 2, 28, style::kFontBody,
                          p.textDim);
 
@@ -346,6 +347,7 @@ void GuildState::render() {
                py + 74);
     // M105: the endless record rides under the panel at its home town.
     if (context_.party.currentTown >= kTownCount && context_.party.eternalBestFloors > 0) {
+        ui::drawCaptionBacking(px, py + ph + 2, pw, 13);  // M119
         ui::drawTextCentered(TextFormat("Eternal best: %d floors",
                                         context_.party.eternalBestFloors),
                              px + pw / 2, py + ph + 4, style::kFontSmall, p.gold);
