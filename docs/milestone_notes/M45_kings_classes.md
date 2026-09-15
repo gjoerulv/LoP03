@@ -78,6 +78,10 @@ A **15 % jest chance** shows one of twelve original dry one-liners in the M41
 Jester's voice — **presentation only**, from a pure hash of
 (`rngSeed`, turn, actor) that never advances `rollCursor`.
 
+**M117 (2026-09-14):** in a Lore/Chest decision patrol (M112) the Jester
+waits for the party's decision, and in an all-Jester party its own pick
+doubles as the choice — see the M112 note's post-approval fix.
+
 ### D5 — Goose
 
 Very low stats, **nothing equippable**. Its heal/cure skills also **buff every

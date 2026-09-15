@@ -147,6 +147,10 @@ void drawSceneBackground(ResourceManager& resources, const std::string& id, Colo
     drawSceneBackground(resources, id, fallback, w, h);
 }
 
+void drawCaptionBacking(int x, int y, int w, int h) {
+    DrawRectangle(x, y, w, h, Fade(style::palette().canvas, 0.72f));
+}
+
 void drawGearIcon(ResourceManager& resources, const std::string& id, int x, int y, int scale) {
     if (id.empty() || !resources.hasTexture(id)) {
         return;  // placeholder discipline: a missing icon draws nothing

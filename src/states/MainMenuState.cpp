@@ -111,7 +111,10 @@ void MainMenuState::render() {
     const int w = context_.virtualWidth;
     const int h = context_.virtualHeight;
     const ui::style::Palette& p = ui::style::palette();
-    ClearBackground(p.canvas);
+    // M119: the title's own scene (a still lake at night) with the canvas fill
+    // as the fallback; the emblem, plaque, menu frame and footer are opaque
+    // and the phrase row gets a caption backing below.
+    ui::drawSceneBackground(context_.resources, "bg.title", p.canvas, w, h);
 
     // Rebrand follow-up (owner direction 2026-08-17): the goose emblem fronts
     // the title screen; the crystal emblem stays shipped as its fallback.
@@ -130,6 +133,7 @@ void MainMenuState::render() {
     const std::string phrase = phrase_.empty() ? std::string(kTitlePhrases[0]) : phrase_;
     const int tagW = ui::measureText(phrase.c_str(), ui::style::kFontBody);
     const Color pulse[3] = {p.textHint, p.textDim, p.text};
+    ui::drawCaptionBacking(0, plaqueBottom + 3, w, 16);  // M119: the phrase sits on the scene
     ui::drawTextCentered(phrase.c_str(), w / 2, plaqueBottom + 6, ui::style::kFontBody,
                          pulse[ui::motionPhase3()]);
     ui::drawCrystalPip(w / 2 - tagW / 2 - 10, plaqueBottom + 9);

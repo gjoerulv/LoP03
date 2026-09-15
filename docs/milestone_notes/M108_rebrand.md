@@ -104,3 +104,7 @@ new zip name.
 CLAUDE.md identity, README, game_design intro, workflow skill,
 technical_design (icon/rc paths), art_bible §7 (the goose emblem),
 assets/credits.md (emblem row), ledger row, matrix row 204, this note.
+
+**M119 (2026-09-14):** the title screen gained its own scene (`bg.title`, a
+still lake at night) behind the goose emblem and the plaque — see
+`docs/milestone_notes/M119_background_art.md`.

@@ -1615,7 +1615,8 @@ optional bools with defensive parse, so old `settings.json` loads unchanged.
   a mild tonal response, restrained high-strength grain, and a restrained
   flat optical vignette (`0.06 · smoothstep(0.35,1,I)`, radial, never
   corner-cutting) — each on its own non-linear activation curve; and
-  **curvature** (`settings.crtCurvature`, default 0.3) drives ALL geometry —
+  **curvature** (`settings.crtCurvature`, default 0.0 since M117 — 0.3 before)
+  drives ALL geometry —
   pre-warp inset, barrel warp, the rounded curved-screen edge mask, and an
   extra edge darkening (`0.16 · curveAct`) — via
   `curveAct = pow(C, 1.35)`. **Curvature 0 is an exact identity**: no inset,
@@ -1637,9 +1638,12 @@ optional bools with defensive parse, so old `settings.json` loads unchanged.
   pair, so no frame sees mismatched halves).
   Both settings are defensive: a valid numeric `crtIntensity` wins; else the
   legacy M51 `crtEffect` bool migrates (`true→0.3`, `false→0.0`); absent →
-  0.0; malformed → reported + safe default. `crtCurvature` is optional:
-  absent → **0.3** (so a pre-M70 strength-7 file keeps its texture but
-  relaxes to mild glass), malformed → reported + 0.3, out-of-range clamped.
+  the default (**0.2** since M117, owner-set 2026-09-14; 0.0 before);
+  malformed → reported + safe default. `crtCurvature` is optional: absent →
+  the default (**0.0** since M117 — flat glass; M70 shipped 0.3 so a
+  pre-M70 strength-7 file relaxed to mild glass), malformed → reported + the
+  default, out-of-range clamped. Existing files keep their written values:
+  only a fresh file or Settings → Reset shows the new defaults.
   Both are serialized; `crtEffect` never is; **no `kSettingsVersion` bump**.
 - **Focus audio.** `Application::processFrame` calls
   `audio_.setEnabled(IsWindowFocused() || settings_.values.backgroundAudio)` once
@@ -1812,9 +1816,10 @@ unchanged.
   non-legendary), which on a chosen trade computes `armoryGhostUpgrade(db, id,
   themeEventHash(seed, room, fnv(id)))`, swaps the piece, and sets
   `event->resolved`. `DungeonState::onResume` rebuilds the room's markers when a
-  resolved event is detected on return. Event markers use a distinct glyph+colour
-  per rite (no bespoke art yet; the presentation lint's event-sprite allow-list is
-  unaffected).
+  resolved event is detected on return. Event markers draw each kind's own
+  sprite (`dungeon::eventMarkerSpriteId`, M118 — the lint holds the table and
+  the manifest in lockstep; the glyph+colour box is the missing-texture
+  fallback).
 
 ### Boss stagecraft (Milestone 56)
 
@@ -1834,6 +1839,11 @@ of** the caller (never `replaceState`), and neither backdrops nor the intro touc
   in `render()` between the flat band fill and the ink keylines/pips. The subdued
   rules (<= 25 % coverage, the central float corridor kept clear, `accents=false`
   drops accents, determinism) are asserted in `tests/test_battle_backdrop.cpp`.
+  **M119:** `battleStageTextureId(stage)` + `drawBattleStage(resources, stage,
+  band, phase, accents)` draw a painted 426×122 far layer (`bg.battle.<stage>`)
+  between the band fill and the rects when accents are on (high contrast and a
+  missing texture keep the M56 look); the generator clips every motif out of
+  the corridor and asserts it; the id/manifest pins ride the same test file.
 - **Crystal Shatter (B2).** `states/BossIntroState` is pushed on top of the caller
   carrying the full BattleState launch payload (built `Battle`, result/stats
   slots, music, castle flag, stage, presentation seed); `rendersBelow()=true`,
@@ -3337,6 +3347,16 @@ v2 (three new ids).
   and the battle ends at the next settled beat with `Victory` for a reward
   or `EnemyFled` (the nothing-gained outcome) otherwise — a party the
   Jester wiped is a real `Defeat`. `BattleResult.rounds` is 1.
+- **The Jester in decision mode** (M117 fix, 2026-09-14, owner rule): the
+  screen's `pruneOrder` also drops an uncontrolled party unit from `order_`
+  while the encounter stands and a controllable member lives
+  (`game::waitsForDecision`, pure); in an all-Jester party
+  `executeUncontrolled` routes a hostile pick through the same
+  `resolveDecision` — `game::uncontrolledDecisionFor` translates the
+  `EnemyChoice` (an enemy-side target decides; a party-side one, `mend`, is
+  cast normally and the encounter keeps waiting) — and returns before the
+  quip so the Mimic's telegraph owns the channel. `uncontrolledChoice` and
+  every pure rule are untouched; no rules motion.
 - **The Mimic morph** (`revealMimic`): a fresh `buildBattle(party,
   mimicTeam)` for the right skills/gear/milestones, `carryPartyOver`
   (HP/MP/statuses/guard/acted/own-turns by partyIndex, the summon ledger,
@@ -3447,3 +3467,92 @@ pending chain so a stale one never redirects a later jingle. Captures:
 `142`–`147` (each page at maximal content: seven-digit counts in every
 field, the longest names, every boss known, the migration note) and
 `148_stranger_choice`.
+
+## 58. M117 — the owner fix batch
+
+No version motion: settings v1 (two default values), rules 19 (the Jester
+rule is BattleState decision-mode bookkeeping over unchanged pure code),
+generation 24, save v1, manifest v2.
+
+- **CRT defaults** (`settings::Settings`): `crtIntensity` 0.2 (2/10) and
+  `crtCurvature` 0.0 (flat) — the fresh-file and Reset values. Absent fields
+  load the struct default; the legacy `crtEffect` migration (`true → 0.3`)
+  is untouched; both keys are always serialized, so files written by
+  earlier builds keep their explicit values (no migration, by design).
+- **The Controls page** (`states/HelpState`): `helpShownActions()` is a
+  pure accessor over the listed actions; `ToggleDebug` is a member only
+  under `CRYSTAL_DEBUG_OVERLAY` (a PUBLIC definition on `crystal_core`, so
+  the page, the exe and the tests agree per preset); the frame height
+  follows the list. `tests/test_help_page.cpp` pins both presets.
+- **Blackjack stakes** (`game/Gamble.hpp`): `kBlackjackBets` is
+  `{10, 25, 50, 100, 250, 500, 1000}`; the bet builder, the affordability
+  filter, the table-minimum message and the footer prompt are table-driven
+  (`[0]` is the minimum); the `EventChoiceState` window shows nine rows
+  before scrolling, so all seven fit. Capture `149_blackjack_stakes`.
+- **The Jester in decision mode**: §54's M117 bullet —
+  `game::waitsForDecision` applied by `BattleState::pruneOrder` while
+  `decisionPending()`, `game::uncontrolledDecisionFor` routing an
+  all-Jester party's hostile pick through `resolveDecision`;
+  `battle::uncontrolledChoice` untouched. The audit of the other actor paths
+  (forced turns unreachable — party units start every battle status-free;
+  enemy turns pruned; summons and sweeps under `hostileTargetCount`; the
+  spar and the Simulator never host an encounter; the Golden Goose is a
+  normal battle) found nothing else; the M109 telemetry exposure (a felled
+  placeholder tallied as an enemy KO before the fix) is closed because no
+  placeholder is ever struck.
+
+## 59. M118 — event icons
+
+No version motion: manifest v2 with fifteen new texture ids; content,
+rules, generation and saves untouched.
+
+- **The table** (`dungeon/ThemeEvents.hpp`): `eventMarkerSpriteId(kind)` —
+  the seven shipped ids keep their literal names (`prop.event.shrine` …
+  `relic`), the fifteen M118 kinds map to `prop.event.<flavor id>`, None →
+  null; `kAllRoomEventKinds` (22, enum order) is the one list the flavor
+  lockstep test, the marker test (`tests/test_event_marker.cpp`), the
+  presentation lint and the capture specimen walk. `static_assert`s bind the
+  list to the enum's last member and to the flavor vocabulary, so a new kind
+  cannot ship without a marker.
+- **The marker** (`DungeonState` render loop): `spriteId` comes from the
+  table; the colour + glyph switch now covers every kind and is the
+  missing-texture fallback only (nine kinds used to fall through with a
+  zero-alpha box — the owner's "inconspicuous" markers); an unresolved event
+  draws `ui::drawCrystalPip` centred one pixel above the icon (the shared
+  `motionPhase()` two-frame glint; markers exist only while unresolved, so
+  the pip leaves with the marker). The M80 flavor panel draws the icon at a
+  fixed inset left of its centred title.
+- **The specimen** (`states/EventMarkerSpecimenState`, capture-only under
+  `CRYSTAL_CAPTURE`, the M114 precedent): two columns of eleven — icon at 1×
+  and flavor title — scene `150_event_icons`; a missing icon is a loud red
+  block there.
+- **Art**: fifteen hand-placed 12×12 grids in a RNG-free section appended
+  last in `generate_textures.ps1`; `tools/asset_gen/preview_events.ps1`
+  (cloned from the M81 icon sheet) renders the dark/light contact sheet.
+
+## 60. M119 — background art
+
+No version motion: manifest v2 with six new texture ids (`bg.title`,
+`bg.battle.{keep,mine,forest,castle,goosy}`); the 42 service-interior PNGs
+are replaced under their existing ids.
+
+- **Interiors**: the M27 block of `generate_textures.ps1` redrawn in place
+  (same six file names, the block's own reseed), the M113 scene helpers
+  (`GPoly`/`Stars`/`FloorSpeckle`) hoisted above it; the M32 town-shade
+  section re-reads the bases from disk, so the 36 variants regenerate by
+  construction. `ui::drawCaptionBacking(x, y, w, h)` (a 72 % canvas strip)
+  backs every caption drawn directly on the art: the Inn caption, the Equip
+  Shop phase hint (shop mode only), the Training Hall phase captions, the
+  Guild caption and its "Eternal best" line, the Scoreboard's empty-board
+  text, the title phrase.
+- **Title**: `MainMenuState` draws `bg.title` through `drawSceneBackground`
+  (canvas fallback) before the emblem, plaque, menu frame and footer.
+- **Battle stages**: `render::battleStageTextureId` / `drawBattleStage`
+  (§56's M56 bullet); `BattleState::render` calls it in place of
+  `drawBattleBackdrop`; the other callers pass their stages unchanged. The
+  generator's `Clip-Corridor` / `Assert-CorridorClear` keep the float
+  corridor plain by construction; speckle touches the floor strip only.
+- **Captures**: the interior, title and battle scenes re-render; no new
+  scene — a high-contrast battle scene was planned but dropped: capture
+  scenes share one settings object and none may mutate it (the fallback is
+  the pre-existing M56 path, judged by the owner under High Contrast).

@@ -19,7 +19,7 @@ exceptions since M13 — text entry flows through the input layer):
 | Details | C | Y | M22: contextual help panels (battle stats/statuses, dungeon danger, score components, gear comparison); M87: the full skill/item sheet during battle selection, the full party-member sheet, bestiary read focus |
 | CyclePrev / CycleNext | Q / E (alt Left Ctrl / Left Alt) | L1 / R1 | M79: party-member cycling in the Equip Shop member phases (including M90's Equip Party mode) and Training Hall; M82/M92: scoreboard board cycling (1F / 4F / 20F); M116: End-game Summary page cycling (six pages, wrapping) |
 | TextBackspace | Backspace (fixed) | X (fixed) | delete-one-char in text editing |
-| ToggleDebug | F1 (fixed) | — | debug overlay |
+| ToggleDebug | F1 (fixed, dev builds) | — | debug overlay; the Controls page lists it only when the overlay is compiled in (M117) |
 | ReloadAssets | F5 (fixed, debug builds) | — | live manifest reload (see `docs/asset_pipeline.md`) |
 | Quit | — | — | reserved, unbound |
 

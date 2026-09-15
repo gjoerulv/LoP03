@@ -277,6 +277,7 @@ void TrainingHallState::render() {
                             context_.virtualWidth, context_.virtualHeight,
                             context_.party.currentTown);
     ui::drawHeaderBand("Training Hall", w, p.crystal, context_.party.gold);
+    ui::drawCaptionBacking(0, 26, w, 22);  // M119: the phase captions sit on the art
 
     const InputMap& map = context_.input.map();
     const ActiveDevice device = context_.input.activeDevice();

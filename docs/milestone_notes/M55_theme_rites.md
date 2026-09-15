@@ -110,7 +110,9 @@ unchanged).
   equip-shop list idiom); `DungeonState::onResume` rebuilds the room when a pushed
   sub-state resolves the event. Event markers use a distinct glyph+colour per rite
   (glyph+colour fallback — no bespoke art yet, placeholder policy; the presentation
-  lint's event-sprite allow-list is unaffected).
+  lint's event-sprite allow-list is unaffected). **M118 (2026-09-14):**
+  discharged — every kind, the rites included, has its own sprite; see
+  `docs/milestone_notes/M118_event_icons.md`.
 
 **Calibration.** MinersCache gold `68*depth + 25` exceeds the biggest possible
 trapped chest (`55*depth + 15`) at every depth. MinersCache wound is `maxHp/3`,

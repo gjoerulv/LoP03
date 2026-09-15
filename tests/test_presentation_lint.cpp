@@ -10,6 +10,7 @@
 #include "content/LoadReport.hpp"
 #include "dungeon/DungeonGenerator.hpp"
 #include "dungeon/RoomLayout.hpp"
+#include "dungeon/ThemeEvents.hpp"  // M118: the marker table
 #include "game/WorldLadder.hpp"
 #include "ui/TextLayout.hpp"
 
@@ -80,6 +81,15 @@ TEST_CASE("lint: every convention-derived texture id resolves in the manifest", 
                            "prop.event.relic",
                            "actor.player.overworld", "actor.market.overworld",
                            "actor.player.walk", "ui.frame.default"}) {
+        INFO(id);
+        CHECK(hasTexture(m, id));
+    }
+    // M118: every event kind's own marker (dungeon::eventMarkerSpriteId - the
+    // table, this lint and the manifest stay in lockstep; the seven M20-M44
+    // ids above are the legacy names the table keeps).
+    for (const cd::dungeon::RoomEventKind k : cd::dungeon::kAllRoomEventKinds) {
+        const char* id = cd::dungeon::eventMarkerSpriteId(k);
+        REQUIRE(id != nullptr);
         INFO(id);
         CHECK(hasTexture(m, id));
     }

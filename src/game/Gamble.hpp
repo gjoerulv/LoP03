@@ -87,7 +87,9 @@ inline int reelMatch(const std::array<ReelSymbol, 3>& s) {
 // value and the bitmap font carries no suit glyphs).
 
 inline constexpr int kDealerStands = 17;
-inline constexpr std::array<int, 4> kBlackjackBets = {10, 25, 50, 100};
+// M117 (owner-directed 2026-09-14): 250 / 500 / 1000 join the four original
+// steps; [0] stays the table minimum and the menu offers what the purse affords.
+inline constexpr std::array<int, 7> kBlackjackBets = {10, 25, 50, 100, 250, 500, 1000};
 
 inline int blackjackCard(std::uint64_t seed, int room, int drawIndex) {
     constexpr std::uint64_t kSaltCards = 0xB1AC7AC4A2D50000ull;

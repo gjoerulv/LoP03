@@ -1,6 +1,7 @@
 #include "render/BattleBackdrop.hpp"
 
 #include "raylib.h"
+#include "resource/ResourceManager.hpp"
 #include "ui/UiStyle.hpp"
 
 namespace cd::render {
@@ -148,6 +149,35 @@ void drawBattleBackdrop(BackdropStage stage, BackdropBand band, int phase, bool 
     for (const BackdropRect& r : buildBackdrop(stage, band, phase, accents)) {
         DrawRectangle(r.x, r.y, r.w, r.h, roleColor(r.role, p));
     }
+}
+
+const char* battleStageTextureId(BackdropStage stage) {
+    switch (stage) {
+        case BackdropStage::Keep: return "bg.battle.keep";
+        case BackdropStage::Mine: return "bg.battle.mine";
+        case BackdropStage::Forest: return "bg.battle.forest";
+        case BackdropStage::Castle: return "bg.battle.castle";
+        case BackdropStage::Goosy: return "bg.battle.goosy";
+        case BackdropStage::Plain: break;
+    }
+    return nullptr;
+}
+
+void drawBattleStage(ResourceManager& resources, BackdropStage stage, BackdropBand band,
+                     int phase, bool accents) {
+    if (accents) {
+        if (const char* id = battleStageTextureId(stage);
+            id != nullptr && resources.hasTexture(id)) {
+            const Texture2D& tex = resources.texture(id);
+            DrawTexturePro(tex,
+                           Rectangle{0, 0, static_cast<float>(tex.width),
+                                     static_cast<float>(tex.height)},
+                           Rectangle{static_cast<float>(band.x), static_cast<float>(band.y),
+                                     static_cast<float>(band.w), static_cast<float>(band.h)},
+                           Vector2{0, 0}, 0.0f, WHITE);
+        }
+    }
+    drawBattleBackdrop(stage, band, phase, accents);
 }
 
 }  // namespace cd::render

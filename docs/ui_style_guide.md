@@ -91,7 +91,8 @@ over variable room tiles (needs a backing strip once art lands), and white
 building labels over the mid-green town field.
 
 Text over variable art must get a stable backing (panel strip, shadow, or
-outline) — rule inherited from CLAUDE.md.
+outline) — rule inherited from CLAUDE.md; `ui::drawCaptionBacking` is the
+shared translucent strip for captions drawn straight on scene art (M119).
 
 **Palette accessor (M22; re-valued and extended in M46).** Shared UI colors
 are read through `style::palette()` (`src/ui/UiStyle.*`): a **28-role

@@ -165,3 +165,8 @@ behaviour change.
   beats — mid-Build and Peak — with the King's longest telegraph).
 - No compiler warnings (a C4456 shadow warning in the shard loop was fixed by
   renaming the local; behaviour-identical, so the test results above stand).
+
+**M119 (2026-09-14):** a painted 426×122 far layer per themed stage now sits
+under the B1 silhouettes (`render::drawBattleStage`; skipped in high
+contrast; the corridor kept clear at the source) — the rect geometry and its
+tests are untouched. See `docs/milestone_notes/M119_background_art.md`.

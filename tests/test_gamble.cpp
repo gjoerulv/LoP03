@@ -67,3 +67,18 @@ TEST_CASE("gamble: hand values count aces softly", "[gamble][m104]") {
     CHECK(gamble::handValue({10, 12, 5}) == 25);  // a bust stays a bust
     CHECK(gamble::handValue({7, 8}) == 15);
 }
+
+TEST_CASE("gamble: the blackjack stakes climb to the owner's high table", "[gamble][m117]") {
+    // M117 (owner-directed 2026-09-14): 250 / 500 / 1000 join the four
+    // original steps; the table minimum stays the first entry, the rows are
+    // strictly ascending, and a won top stake pays 2000 back.
+    REQUIRE(gamble::kBlackjackBets.size() == 7);
+    CHECK(gamble::kBlackjackBets.front() == 10);
+    for (std::size_t i = 1; i < gamble::kBlackjackBets.size(); ++i) {
+        CHECK(gamble::kBlackjackBets[i] > gamble::kBlackjackBets[i - 1]);
+    }
+    CHECK(gamble::kBlackjackBets[4] == 250);
+    CHECK(gamble::kBlackjackBets[5] == 500);
+    CHECK(gamble::kBlackjackBets.back() == 1000);
+    CHECK(gamble::kBlackjackBets.back() * 2 == 2000);
+}

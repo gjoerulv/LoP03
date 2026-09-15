@@ -1426,6 +1426,12 @@ void DungeonState::renderEventPanel() const {
     const int boxY = (h - kBoxH) / 2;
     ui::drawModalDim(w, h);
     ui::drawFrame(boxX, boxY, kPanelBoxW, kBoxH, ui::FrameStyle::Crystal);
+    // M118: the event's own marker icon heads the panel, left of the centred
+    // title (a fixed inset, so the title's centring math is untouched).
+    if (const char* icon = dungeon::eventMarkerSpriteId(ev.kind);
+        icon != nullptr && context_.resources.hasTexture(icon)) {
+        DrawTexture(context_.resources.texture(icon), boxX + 10, boxY + 7, WHITE);
+    }
     ui::drawTextCentered(flavor->title.c_str(), w / 2, boxY + 8, ui::style::kFontMenu,
                          pal.crystal);
     ui::drawTextViewport(eventFlavorView_, boxX + 14, boxY + 26, pal.text);
@@ -2776,6 +2782,7 @@ void DungeonState::render() {
         const char* spriteId = nullptr;   // M17 silhouette (shape encodes tier)
         const char* fallbackId = nullptr; // M15 prop sprite
         Color tint = WHITE;
+        bool eventMarker = false;  // M118: carries the crystal pip
         switch (m.kind) {
             case MarkerKind::GateTeam:
             case MarkerKind::GuardTeam:
@@ -2820,41 +2827,42 @@ void DungeonState::render() {
                 break;
             }
             case MarkerKind::Event: {
-                switch (dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].event.kind) {
+                const dungeon::RoomEventKind kind =
+                    dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].event.kind;
+                spriteId = dungeon::eventMarkerSpriteId(kind);  // M118: every kind's own icon
+                eventMarker = true;
+                // The colour + glyph box is the fallback for a MISSING texture,
+                // and every kind has one (nine kinds used to fall through with
+                // a zero-alpha box and a near-black "?" - the owner's
+                // "inconspicuous" markers).
+                switch (kind) {
                     case dungeon::RoomEventKind::Shrine:
                         c = Color{100, 220, 215, 255};
                         glyph = "S";
-                        spriteId = "prop.event.shrine";
                         break;
                     case dungeon::RoomEventKind::HealingSpring:
                         c = Color{90, 150, 220, 255};
                         glyph = "~";
-                        spriteId = "prop.event.spring";
                         break;
                     case dungeon::RoomEventKind::Merchant:
                         c = Color{230, 200, 110, 255};
                         glyph = "M";
-                        spriteId = "prop.event.merchant";
                         break;
                     case dungeon::RoomEventKind::EliteChallenge:
                         c = Color{210, 120, 90, 255};
                         glyph = "!";
-                        spriteId = "prop.event.totem";
                         break;
                     case dungeon::RoomEventKind::ScoreWager:
                         c = Color{180, 110, 220, 255};
                         glyph = "?";
-                        spriteId = "prop.event.omen";
                         break;
                     case dungeon::RoomEventKind::RestToken:
                         c = Color{240, 170, 90, 255};
                         glyph = "R";
-                        spriteId = "prop.event.rest";
                         break;
                     case dungeon::RoomEventKind::RoyalRelic:  // M44
                         c = Color{235, 225, 140, 255};
                         glyph = "*";
-                        spriteId = "prop.event.relic";
                         break;
                     case dungeon::RoomEventKind::ArmoryGhost:  // M55: spectral
                         c = Color{200, 205, 235, 255};
@@ -2879,6 +2887,42 @@ void DungeonState::render() {
                     case dungeon::RoomEventKind::Dragonform:  // M93: scale-red
                         c = Color{220, 120, 90, 255};
                         glyph = "W";
+                        break;
+                    case dungeon::RoomEventKind::GoosePolymorph:  // M103: goose-white
+                        c = Color{232, 232, 240, 255};
+                        glyph = "G";
+                        break;
+                    case dungeon::RoomEventKind::Sacrifice:  // M103: forge steel
+                        c = Color{192, 198, 208, 255};
+                        glyph = "A";
+                        break;
+                    case dungeon::RoomEventKind::LevelAltar:  // M103: altar gold
+                        c = Color{232, 214, 112, 255};
+                        glyph = "L";
+                        break;
+                    case dungeon::RoomEventKind::StrangerStory:  // M103: the hood
+                        c = Color{96, 88, 130, 255};
+                        glyph = "P";
+                        break;
+                    case dungeon::RoomEventKind::TokenExchange:  // M103: token violet
+                        c = Color{156, 108, 232, 255};
+                        glyph = "X";
+                        break;
+                    case dungeon::RoomEventKind::PatrolReset:  // M103: hourglass sand
+                        c = Color{169, 143, 99, 255};
+                        glyph = "H";
+                        break;
+                    case dungeon::RoomEventKind::Reels:  // M104: the machine's red
+                        c = Color{216, 90, 90, 255};
+                        glyph = "7";
+                        break;
+                    case dungeon::RoomEventKind::Blackjack:  // M104: card cream
+                        c = Color{242, 242, 240, 255};
+                        glyph = "J";
+                        break;
+                    case dungeon::RoomEventKind::GoosyFlock:  // M106: flock white
+                        c = Color{216, 216, 212, 255};
+                        glyph = "V";
                         break;
                     case dungeon::RoomEventKind::None:
                         break;
@@ -2907,6 +2951,12 @@ void DungeonState::render() {
         } else {
             DrawRectangle(mx + 2, my + 2, kTile - 4, kTile - 4, c);
             ui::drawTextCentered(glyph, mx + kTile / 2, my + 3, ui::style::kFontSmall, Color{20, 20, 20, 255});
+        }
+        if (eventMarker) {
+            // M118: an unresolved event carries a crystal pip above its icon
+            // (the shared motion clock's two-frame glint) so it draws the eye;
+            // the marker - and the pip with it - leaves once the event resolves.
+            ui::drawCrystalPip(mx + kTile / 2 - 1, my - 1);
         }
     }
 

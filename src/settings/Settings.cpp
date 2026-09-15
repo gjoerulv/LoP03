@@ -234,8 +234,8 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
     // M57: CRT strength is a 0..1 intensity. Precedence: a valid numeric
     // crtIntensity wins; otherwise migrate the legacy M51 crtEffect bool
     // (true -> 0.3 preserves the old subtle look, false -> 0.0); absent both
-    // keeps the 0.0 default. A malformed crtIntensity is reported and falls
-    // through to the legacy/default path.
+    // keeps the struct default (0.2 since M117). A malformed crtIntensity is
+    // reported and falls through to the legacy/default path.
     bool crtResolved = false;
     if (const auto ci = it->find("crtIntensity"); ci != it->end()) {
       if (ci->is_number()) {
@@ -254,11 +254,11 @@ bool parseSettingsText(const std::string& text, Settings& values, InputMap& map,
         }
       }
     }
-    // M70: CRT curvature is its own optional 0..1 field. Absent = the 0.3
-    // default (a deliberate migration: an old strength-7 file loads with mild
-    // curvature instead of the excessive strength-driven geometry). Malformed
-    // values are reported and keep the default. crtIntensity is never
-    // reinterpreted.
+    // M70: CRT curvature is its own optional 0..1 field. Absent = the struct
+    // default (0.0 since M117 — flat glass; M70's 0.3 relaxed an old
+    // strength-7 file to mild curvature instead of the strength-driven
+    // geometry). Malformed values are reported and keep the default.
+    // crtIntensity is never reinterpreted.
     if (const auto cc = it->find("crtCurvature"); cc != it->end()) {
       if (cc->is_number()) {
         values.crtCurvature = clamp01(cc->get<float>());

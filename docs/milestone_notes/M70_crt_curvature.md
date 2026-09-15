@@ -10,6 +10,11 @@ Implemented 2026-07-29.
 **☑ complete (approved by the owner 2026-08-05)** — implemented 2026-07-29. Evidence in §E;
 the required window-level visual review (§F) is owner work.
 
+> **M117 addendum (2026-09-14, owner-directed):** the default curvature is
+> **0/10** (was 3) — flat glass is the shipped geometry; an absent
+> `crtCurvature` now loads as 0.0 as well. Existing settings files keep their
+> written value. See `docs/milestone_notes/M117_owner_fix_batch.md`.
+
 ## B. As implemented
 
 - **Setting**: `settings::Settings::crtCurvature` (0.0..1.0, default

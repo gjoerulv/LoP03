@@ -166,3 +166,7 @@ Implemented on top of the M26 approval commit.
   recognisability and overall look are the owner's art call.
 - The ambience reroute is device-side raylib and not unit-tested (consistent
   with the rest of `AudioManager`); it is owner-validated by ear + slider check.
+
+**M119 (2026-09-14):** the six service backgrounds were redrawn as painted
+rooms on the M113 stage recipe (the M27 block edited in place; the M32 town
+shades regenerated) — see `docs/milestone_notes/M119_background_art.md`.

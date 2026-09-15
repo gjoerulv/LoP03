@@ -44,6 +44,11 @@ void drawSceneBackground(ResourceManager& resources, const std::string& id, Colo
 void drawSceneBackground(ResourceManager& resources, const std::string& id, Color fallback,
                          int w, int h, int town);
 
+// Caption backing (M119): a translucent canvas-coloured strip behind text
+// that sits directly on scene art — the ui_style_guide §4 rule (text over
+// variable art keeps a stable backing). Draw it before the text.
+void drawCaptionBacking(int x, int y, int w, int h);
+
 // Class portrait (M67): the character's "actor.<classId>.battle" sprite inside
 // a small Inset frame, scaled point-crisp. The framed box is
 // kPortraitSprite * scale + 2 * kPortraitPad square; a missing texture leaves

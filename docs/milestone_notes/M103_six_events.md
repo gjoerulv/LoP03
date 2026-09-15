@@ -100,3 +100,6 @@ remainder), and the title wraps to two lines so long flavor prompts stop
 squeezing into one. Every M103/M104 modal shares the state, so the
 Token Changer, Level Altar, blackjack bets and reels menus inherit the
 same bounds. Capture `124_event_choice_scroll` pins a 20-row list.
+
+**M118 (2026-09-14):** the six events (and every other kind) gained their own
+12×12 marker icons and a glint — see `docs/milestone_notes/M118_event_icons.md`.

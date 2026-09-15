@@ -3376,47 +3376,107 @@ function Motes($b, [int]$n, [string]$hex) {
   for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BW); $y = [int]((Rnd) * ($BH - 40)); P $b $x $y $hex }
 }
 function SaveBg($pair, [string]$name) { $pair[1].Dispose(); SaveImg $pair[0] "backgrounds/$name.png" }
+# Scene helpers (M113, hoisted here in M119 so the interiors can use them).
+function GPoly($g, [int]$a, [string]$hex, [int[]]$xy) {
+  $pts = @()
+  for ($i = 0; $i -lt $xy.Count; $i += 2) { $pts += (New-Object System.Drawing.Point($xy[$i], $xy[$i + 1])) }
+  $g.FillPolygon((New-Object System.Drawing.SolidBrush(Ca $a $hex)), [System.Drawing.Point[]]$pts)
+}
+function Stars($b, [int]$n, [string]$hex, [int]$maxY) {
+  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BW); $y = [int]((Rnd) * $maxY); P $b $x $y $hex }
+}
+function FloorSpeckle($b, [int]$n, [string]$hex) {
+  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BW); $y = 110 + [int]((Rnd) * 100); P $b $x $y $hex }
+}
 
-# Inn - warm restful interior: lantern glow + a bed by the wall.
+# M119 (owner direction 2026-09-14): the six interiors redrawn as painted
+# rooms on the M113 stage recipe - layered silhouettes with the composition
+# weight in the side margins and the strips above and below the panels (the
+# opaque header band covers y 0..24 and the frames the middle), the caption
+# row (y 26..40) kept quiet at the source (the states also back their bare
+# captions with a translucent strip), fills darker than the panel fills, no
+# signal colours. The M32 town shades regenerate from these bases.
+
+# Inn - a timbered common room: beams, a shuttered window with lamplight,
+# a hearth at the right, a plank floor with a rug edge.
 $r = New-Bg '#241A18' '#150F0D'
-GEll $r[1] 30 '#8A6D48' 300 6 130 104; GEll $r[1] 46 $PAL.gold 332 20 82 66; GEll $r[1] 70 $PAL.gold 356 34 34 30
-GFill $r[1] 40 $PAL.earth2 4 154 78 34; GFill $r[1] 60 $PAL.earth3 4 154 30 13
-Motes $r[0] 34 $PAL.earth3; SaveBg $r 'inn'
+GFill $r[1] 110 $PAL.earth1 0 24 426 5                                     # the ceiling beam
+foreach ($bx in 6, 62, 358, 414) { GFill $r[1] 90 $PAL.earth1 $bx 24 6 110 }   # posts
+GFill $r[1] 120 $PAL.night3 10 46 22 36; GFill $r[1] 70 $PAL.gold 13 49 16 30   # the window + lamplight
+GFill $r[1] 120 $PAL.earth1 20 49 1 30; GFill $r[1] 120 $PAL.earth1 13 63 16 1  # mullions
+GEll $r[1] 36 $PAL.gold 330 22 90 60                                        # lantern glow, top right
+GFill $r[1] 140 $PAL.stone2 386 118 36 70; GFill $r[1] 160 $PAL.night2 392 130 24 46   # the hearth
+GEll $r[1] 90 $PAL.danger 396 146 16 22; GEll $r[1] 70 $PAL.gold 399 152 10 12       # its fire
+GFill $r[1] 255 $PAL.earth1 0 190 426 50                                    # plank floor
+foreach ($py in 198, 206, 214) { GFill $r[1] 60 $PAL.night2 0 $py 426 1 }
+GFill $r[1] 120 $PAL.maroon 120 196 186 18; GFill $r[1] 80 $PAL.gold 120 196 186 1; GFill $r[1] 80 $PAL.gold 120 213 186 1   # the rug
+Motes $r[0] 20 $PAL.earth3; SaveBg $r 'inn'
 
-# Item Shop - cool market stall: shelf bands + goods on the side walls.
+# Item Shop - jars and bottles up both walls, a herb bundle, a hanging sign,
+# a counter edge.
 $r = New-Bg '#16182A' '#0D0F18'
-foreach ($sy in 40, 78, 116, 154) { GFill $r[1] 34 $PAL.wat2 0 $sy 70 4; GFill $r[1] 34 $PAL.wat2 356 $sy 70 4 }
-foreach ($bx in 8, 22, 36, 50) { GFill $r[1] 46 $PAL.wat3 $bx 30 8 8; GFill $r[1] 46 $PAL.wat3 (368 + $bx - 8) 68 8 10 }
-Motes $r[0] 26 $PAL.wat3; SaveBg $r 'item_shop'
+foreach ($sy in 42, 78, 114, 150) {
+  GFill $r[1] 70 $PAL.wat2 0 $sy 62 3; GFill $r[1] 70 $PAL.wat2 364 $sy 62 3          # the shelves
+  foreach ($jx in 6, 20, 34, 48) { GFill $r[1] 80 $PAL.wat3 $jx ($sy - 11) 8 10; P $r[0] ($jx + 2) ($sy - 9) $PAL.glint }
+  foreach ($jx in 370, 384, 398, 412) { GFill $r[1] 80 $PAL.veg2 $jx ($sy - 11) 8 10; P $r[0] ($jx + 2) ($sy - 9) $PAL.glint }
+}
+GFill $r[1] 90 $PAL.veg1 396 24 3 12; GEll $r[1] 90 $PAL.veg2 384 32 26 16      # the herb bundle
+GFill $r[1] 100 $PAL.earth2 26 24 44 12; GFill $r[1] 80 $PAL.gold 30 28 36 4     # a hanging sign
+GFill $r[1] 255 $PAL.earth1 0 196 426 44; GFill $r[1] 120 $PAL.earth2 0 196 426 3   # the counter's edge
+Motes $r[0] 16 $PAL.wat3; SaveBg $r 'item_shop'
 
-# Equip Shop - steel forge: hanging arms up top + an anvil block low.
+# Equip Shop - the forge: racked arms on the left wall, chains above, the
+# forge mouth at the right, an anvil low centre.
 $r = New-Bg '#1E2028' '#101218'
-foreach ($hx in 30, 70, 356, 396) { GFill $r[1] 40 $PAL.stone3 $hx 0 3 40; GFill $r[1] 46 $PAL.stone4 ($hx - 6) 34 15 10 }
-GFill $r[1] 40 $PAL.stone3 176 196 74 22; GFill $r[1] 46 $PAL.stone2 168 190 90 8; GFill $r[1] 34 $PAL.stone4 200 176 26 16
-GEll $r[1] 34 $PAL.danger 356 150 60 46; Motes $r[0] 22 $PAL.stone4; SaveBg $r 'equip_shop'
+foreach ($cx in 40, 120, 306, 386) { GFill $r[1] 90 $PAL.stone3 $cx 24 2 22 }   # chains
+GFill $r[1] 110 $PAL.earth1 4 44 26 124                                     # the rack
+foreach ($hy in 52, 74, 96, 118, 140) { GFill $r[1] 120 $PAL.earth3 8 $hy 6 2; GFill $r[1] 120 $PAL.clsKnight 14 $hy 12 2 }   # hafts + blades
+GFill $r[1] 140 $PAL.stone2 386 98 36 84; GFill $r[1] 160 $PAL.night1 392 114 24 42   # the forge
+GEll $r[1] 60 $PAL.danger 395 128 18 26; GEll $r[1] 45 $PAL.gold 399 136 10 12      # its glow
+GFill $r[1] 255 $PAL.stone1 0 194 426 46; GFill $r[1] 60 $PAL.night2 0 210 426 1   # stone floor
+GFill $r[1] 120 $PAL.stone3 176 200 74 14; GFill $r[1] 120 $PAL.stone2 168 196 90 6; GFill $r[1] 100 $PAL.stone4 196 184 30 12   # the anvil
+Motes $r[0] 14 $PAL.stone4; SaveBg $r 'equip_shop'
 
-# Training Hall - martial dojo: faint crossed blades + a wall target.
+# Training Hall - the dojo: a slatted paper screen, lanterns in the corners,
+# crossed staves high left, a wall target at the right, a mat floor.
 $r = New-Bg '#241618' '#140D0F'
-GFill $r[1] 26 $PAL.clsKnight 40 30 8 180; GFill $r[1] 26 $PAL.clsKnight 378 30 8 180
-$r[1].TranslateTransform(213, 120); $r[1].RotateTransform(35)
-GFill $r[1] 24 $PAL.stone4 -120 -4 240 8; $r[1].RotateTransform(-70); GFill $r[1] 24 $PAL.stone4 -120 -4 240 8
-$r[1].ResetTransform()
-GEll $r[1] 34 $PAL.maroon 348 18 66 66; GEll $r[1] 40 $PAL.danger 366 36 30 30; GEll $r[1] 55 $PAL.gold 378 48 6 6
-Motes $r[0] 22 $PAL.maroon; SaveBg $r 'training_hall'
+GFill $r[1] 22 $PAL.white0 0 24 426 92                                      # the paper glow
+foreach ($sx in 0, 24, 48, 72, 96, 120, 306, 330, 354, 378, 402) { GFill $r[1] 40 $PAL.earth4 $sx 24 2 92 }   # slats, clear of the middle
+GEll $r[1] 40 $PAL.gold 28 24 44 26; GEll $r[1] 40 $PAL.gold 354 24 44 26     # corner lanterns
+$r[1].TranslateTransform(30, 70); $r[1].RotateTransform(35)
+GFill $r[1] 70 $PAL.earth3 -34 -2 68 4; $r[1].RotateTransform(-70); GFill $r[1] 70 $PAL.earth3 -34 -2 68 4
+$r[1].ResetTransform()                                                      # the crossed staves
+GEll $r[1] 90 $PAL.maroon 382 40 36 36; GEll $r[1] 100 $PAL.danger 391 49 18 18; GEll $r[1] 120 $PAL.gold 397 55 6 6   # the target
+GFill $r[1] 255 $PAL.earth1 0 194 426 46; GFill $r[1] 60 $PAL.earth3 0 194 426 2   # the mat
+foreach ($mx in 60, 180, 300) { GFill $r[1] 40 $PAL.night2 $mx 196 2 44 }
+Motes $r[0] 14 $PAL.maroon; SaveBg $r 'training_hall'
 
-# Scoreboard - hall of honor: violet glow + flanking pillars.
+# Scoreboard - the hall of honour: fluted pillars with banners at the
+# margins, a crystal glow above, a flagstone floor.
 $r = New-Bg '#1A1626' '#100C18'
-GEll $r[1] 34 $PAL.violet 150 -40 126 110
-foreach ($px in 18, 386) { GFill $r[1] 40 $PAL.stone3 $px 24 22 190; GFill $r[1] 50 $PAL.stone4 ($px - 4) 22 30 8; GFill $r[1] 50 $PAL.stone4 ($px - 4) 206 30 8 }
-GFill $r[1] 40 $PAL.gold 24 26 10 186; GFill $r[1] 40 $PAL.gold 392 26 10 186
-Motes $r[0] 24 $PAL.violet; SaveBg $r 'scoreboard'
+GEll $r[1] 40 $PAL.violet 150 -30 126 90; GEll $r[1] 30 $PAL.cyan 190 -10 46 50   # the glow
+foreach ($px in 14, 386) {
+  GFill $r[1] 110 $PAL.stone3 $px 26 24 170; GFill $r[1] 120 $PAL.stone4 ($px - 4) 24 32 6; GFill $r[1] 120 $PAL.stone4 ($px - 4) 190 32 8   # pillar + caps
+  GFill $r[1] 40 $PAL.night2 ($px + 6) 30 2 160; GFill $r[1] 40 $PAL.night2 ($px + 16) 30 2 160                                             # flutes
+  GFill $r[1] 90 $PAL.gold ($px + 4) 42 16 56; GEll $r[1] 80 $PAL.violet ($px + 8) 58 8 8                                                    # a banner + its emblem
+}
+GFill $r[1] 255 $PAL.stone1 0 196 426 44                                    # flagstones
+foreach ($fy in 204, 214, 224) { GFill $r[1] 60 $PAL.night2 0 $fy 426 1 }
+foreach ($fx in 50, 150, 250, 350) { GFill $r[1] 50 $PAL.night2 $fx 196 1 8; GFill $r[1] 50 $PAL.night2 ($fx + 50) 204 1 10 }
+Motes $r[0] 18 $PAL.violet; SaveBg $r 'scoreboard'
 
-# Guild - adventurers' lodge: hanging banner + map pins.
+# Guild - the lodge: a beam ceiling, a pinned wall map left, notices right,
+# a hearth low right, a plank floor with a rug.
 $r = New-Bg '#16201A' '#0D140E'
-GFill $r[1] 40 $PAL.veg2 190 0 46 44; $r[1].FillPolygon((New-Object System.Drawing.SolidBrush(Ca 40 $PAL.veg2)), [System.Drawing.Point[]]@((New-Object System.Drawing.Point(190, 44)), (New-Object System.Drawing.Point(236, 44)), (New-Object System.Drawing.Point(213, 58))))
-GFill $r[1] 55 $PAL.veg3 206 12 14 14
-foreach ($p in @(@(60, 70), @(120, 150), @(330, 90), @(370, 170), @(90, 190))) { GEll $r[1] 45 $PAL.gold $p[0] $p[1] 6 6 }
-Motes $r[0] 26 $PAL.veg3; SaveBg $r 'guild'
+GFill $r[1] 100 $PAL.earth1 0 24 426 4; GFill $r[1] 80 $PAL.earth1 4 24 6 160; GFill $r[1] 80 $PAL.earth1 416 24 6 160   # beams + posts
+GFill $r[1] 60 $PAL.earth4 12 30 70 56; GFill $r[1] 50 $PAL.veg2 20 40 30 2; GFill $r[1] 50 $PAL.veg2 30 56 40 2; GFill $r[1] 50 $PAL.wat2 18 70 54 2   # the wall map
+foreach ($pin in @(@(28, 38), @(58, 54), @(44, 72))) { GEll $r[1] 70 $PAL.danger $pin[0] $pin[1] 4 4 }
+foreach ($np in @(@(346, 30), @(378, 36), @(356, 62), @(388, 68))) { GFill $r[1] 70 $PAL.white0 $np[0] $np[1] 22 16; P $r[0] ($np[0] + 11) $np[1] $PAL.gold }   # notices
+GFill $r[1] 120 $PAL.stone2 372 128 48 62; GFill $r[1] 150 $PAL.night2 380 140 32 42   # the hearth
+GEll $r[1] 80 $PAL.danger 386 154 20 22; GEll $r[1] 60 $PAL.gold 390 160 12 12
+GFill $r[1] 255 $PAL.earth1 0 196 426 44; GFill $r[1] 80 $PAL.earth2 0 196 426 2   # plank floor
+GFill $r[1] 90 $PAL.veg1 140 200 146 20; GFill $r[1] 60 $PAL.gold 140 200 146 1     # the rug
+Motes $r[0] 16 $PAL.veg3; SaveBg $r 'guild'
 
 # ============================ M32 town-ladder variants ============================
 # Per-town exterior tiles and per-town service interiors (owner: per-town
@@ -4646,17 +4706,8 @@ Save-PropGrid 'chest_battle' @(   # closed chest, decision phase
 # --- with only far, low-alpha silhouettes at the edges of the band. Own rng
 # --- reseed so every earlier speckled file stays byte-identical.
 $script:rng = 20260902
-function GPoly($g, [int]$a, [string]$hex, [int[]]$xy) {
-  $pts = @()
-  for ($i = 0; $i -lt $xy.Count; $i += 2) { $pts += (New-Object System.Drawing.Point($xy[$i], $xy[$i + 1])) }
-  $g.FillPolygon((New-Object System.Drawing.SolidBrush(Ca $a $hex)), [System.Drawing.Point[]]$pts)
-}
-function Stars($b, [int]$n, [string]$hex, [int]$maxY) {
-  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BW); $y = [int]((Rnd) * $maxY); P $b $x $y $hex }
-}
-function FloorSpeckle($b, [int]$n, [string]$hex) {
-  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BW); $y = 110 + [int]((Rnd) * 100); P $b $x $y $hex }
-}
+# (GPoly / Stars / FloorSpeckle moved up to the M27 block in M119: shared
+# scene helpers. A function definition draws nothing, so no bytes moved.)
 
 # Town panorama: night sky, three bands of mountains fading with distance,
 # the keep and roofs on the near ridge at the edges, terraced paths, earth floor.
@@ -4730,5 +4781,251 @@ foreach ($wy in 120, 134, 150, 172) { GFill $r[1] 40 $PAL.wat2 0 $wy 426 1 }
 GFill $r[1] 40 $PAL.white0 60 116 30 1; GFill $r[1] 40 $PAL.white0 320 140 40 1  # moonlight on the water
 FloorSpeckle $r[0] 18 $PAL.wat2
 SaveBg $r 'cutscene_goosy'
+
+# ===================== M118 event marker props (12x12) =====================
+# Owner direction 2026-09-14: every event kind owns its own marker. Fifteen
+# hand-placed 12x12 props in the M20 event-prop idiom (FR/P + Outline), one
+# motif each, shape-distinct in silhouette, keyed to the art_bible §2 ramps
+# (at most one glint). RNG-free and appended after the file's last reseed, so
+# no other file's bytes shift. The seven M20/M30/M44 event props are untouched.
+Write-Output 'Generating M118 event marker props...'
+
+$b = New-Img 12 12                                                # armory ghost: a spectral helm
+FR $b 3 2 6 3 $PAL.stone3; FR $b 3 2 6 1 $PAL.stone4              # dome + crown highlight
+P $b 6 1 $PAL.violet                                               # plume
+FR $b 2 5 8 1 $PAL.stone4                                          # brim
+FR $b 4 6 4 3 $PAL.night2                                          # the empty face
+P $b 5 7 $PAL.cyan                                                 # one glint eye
+FR $b 4 9 4 1 $PAL.stone2; P $b 3 10 $PAL.stone1; P $b 8 10 $PAL.stone1   # trailing wisp
+Outline $b; SaveImg $b 'props/event_armory_ghost.png'
+
+$b = New-Img 12 12                                                # miner's cache: an ore sack + pick
+FR $b 4 3 4 2 $PAL.earth3                                          # tied neck
+FR $b 3 5 6 5 $PAL.earth2; FR $b 3 9 6 1 $PAL.earth1              # sack + shadow
+P $b 5 7 $PAL.cyan; P $b 7 8 $PAL.violet; P $b 4 8 $PAL.glint      # gems showing through
+FR $b 8 1 3 1 $PAL.stone4; P $b 9 2 $PAL.earth4; P $b 9 3 $PAL.earth4   # the pick leaning in
+Outline $b; SaveImg $b 'props/event_miners_cache.png'
+
+$b = New-Img 12 12                                                # elder root: a knot with a sprout
+FR $b 2 6 8 3 $PAL.earth1                                          # the root
+FR $b 4 5 4 1 $PAL.earth2; FR $b 5 4 2 1 $PAL.earth2               # the knot
+P $b 1 8 $PAL.earth1; P $b 10 8 $PAL.earth1; P $b 2 9 $PAL.earth2; P $b 9 9 $PAL.earth2   # tips
+P $b 6 3 $PAL.veg3; P $b 6 2 $PAL.veg2; P $b 5 2 $PAL.veg3; P $b 7 1 $PAL.veg3            # the sprout
+Outline $b; SaveImg $b 'props/event_elder_root.png'
+
+$b = New-Img 12 12                                                # duck peddler: a hooded pack-figure, a sickly duck aboard
+FR $b 3 2 4 3 $PAL.night3; FR $b 4 4 2 1 $PAL.night1               # hood + face shadow
+FR $b 3 5 4 4 $PAL.night3                                          # coat
+FR $b 7 4 3 5 $PAL.earth1                                          # the pack
+FR $b 8 2 2 2 $PAL.veg3; P $b 10 3 $PAL.gold; P $b 9 2 $PAL.night1  # the duck head, bill, eye
+FR $b 3 9 1 2 $PAL.night1; FR $b 6 9 1 2 $PAL.night1               # boots
+Outline $b; SaveImg $b 'props/event_duck_peddler.png'
+
+$b = New-Img 12 12                                                # surveyor: a parchment with a red pin
+FR $b 2 3 8 6 $PAL.earth4                                          # the sheet
+FR $b 1 3 1 6 $PAL.earth3; FR $b 10 3 1 6 $PAL.earth3              # rolled ends
+FR $b 4 5 4 1 $PAL.earth2; FR $b 4 7 3 1 $PAL.earth2               # map lines
+FR $b 7 4 2 2 $PAL.danger; P $b 7 4 $PAL.glint                     # the pin
+Outline $b; SaveImg $b 'props/event_surveyor.png'
+
+$b = New-Img 12 12                                                # dragonform: a scaled snout, horns, a slit eye
+FR $b 3 4 6 5 $PAL.maroon; FR $b 3 4 6 1 $PAL.flesh3               # head + highlight band
+P $b 8 3 $PAL.earth4; P $b 9 2 $PAL.earth4; P $b 9 1 $PAL.earth4   # the curved horn
+P $b 3 3 $PAL.earth4                                               # the second horn's stub
+FR $b 5 6 2 2 $PAL.gold; P $b 6 6 $PAL.night1; P $b 6 7 $PAL.night1   # eye + slit
+FR $b 4 9 4 1 $PAL.flesh2; P $b 5 9 $PAL.white1; P $b 7 9 $PAL.white1   # jaw + teeth
+Outline $b; SaveImg $b 'props/event_dragonform.png'
+
+$b = New-Img 12 12                                                # goose polymorph: a goose, a wand spark
+FR $b 3 6 6 3 $PAL.white1                                          # body
+FR $b 7 3 1 3 $PAL.white1; FR $b 7 2 2 2 $PAL.white1               # neck + head
+P $b 9 3 $PAL.gold; P $b 8 2 $PAL.night1                           # bill, eye
+P $b 4 9 $PAL.gold; P $b 7 9 $PAL.gold                             # feet
+P $b 2 2 $PAL.violet; P $b 1 3 $PAL.glint; P $b 3 3 $PAL.glint; P $b 2 4 $PAL.glint   # the spark
+Outline $b; SaveImg $b 'props/event_goose_polymorph.png'
+
+$b = New-Img 12 12                                                # sacrifice: an anvil, a broken blade
+FR $b 2 6 8 2 $PAL.stone3; P $b 10 6 $PAL.stone3                   # anvil top + horn
+FR $b 4 8 4 1 $PAL.stone2; FR $b 3 9 6 1 $PAL.stone1               # waist + base
+FR $b 5 2 3 1 $PAL.earth3                                          # the guard
+FR $b 6 3 1 3 $PAL.clsKnight; P $b 6 3 $PAL.white2                 # the stub of the blade + glint
+P $b 8 4 $PAL.clsKnight; P $b 9 5 $PAL.clsKnight                   # the chip flying off
+Outline $b; SaveImg $b 'props/event_sacrifice.png'
+
+$b = New-Img 12 12                                                # level altar: stepped stone, a rising spark
+FR $b 2 9 8 1 $PAL.stone2; FR $b 3 8 6 1 $PAL.stone3; FR $b 4 7 4 1 $PAL.stone4   # three steps
+FR $b 2 10 8 1 $PAL.night3                                         # base shadow
+FR $b 5 5 2 2 $PAL.gold; P $b 6 4 $PAL.glint; P $b 6 3 $PAL.gold; P $b 6 2 $PAL.glint   # the spark rising
+Outline $b; SaveImg $b 'props/event_level_altar.png'
+
+$b = New-Img 12 12                                                # stranger story: the hooded Stranger
+FR $b 4 1 4 3 $PAL.night3; FR $b 5 3 2 1 $PAL.night1               # hood + face shadow
+FR $b 3 4 6 5 $PAL.night2; FR $b 3 4 6 1 $PAL.night3               # cloak + collar
+P $b 6 3 $PAL.cyan                                                 # one glint eye
+FR $b 4 9 2 1 $PAL.night1; FR $b 6 9 2 1 $PAL.night1               # feet
+Outline $b; SaveImg $b 'props/event_stranger_story.png'
+
+$b = New-Img 12 12                                                # token exchange: a balance, two tokens
+FR $b 6 2 1 7 $PAL.stone4; FR $b 4 9 5 1 $PAL.stone3               # post + base
+FR $b 2 3 9 1 $PAL.stone4                                          # the beam
+P $b 2 4 $PAL.stone2; P $b 2 5 $PAL.stone2; P $b 10 4 $PAL.stone2; P $b 10 5 $PAL.stone2   # strings
+FR $b 2 6 3 1 $PAL.stone3; FR $b 8 6 3 1 $PAL.stone3               # the pans
+P $b 3 5 $PAL.gold; P $b 9 5 $PAL.violet                           # a gold coin, a violet token
+Outline $b; SaveImg $b 'props/event_token_exchange.png'
+
+$b = New-Img 12 12                                                # patrol reset: an hourglass
+FR $b 2 1 8 1 $PAL.earth3; FR $b 2 10 8 1 $PAL.earth3              # caps
+FR $b 2 2 1 8 $PAL.earth3; FR $b 9 2 1 8 $PAL.earth3               # posts
+FR $b 3 2 6 1 $PAL.white0; FR $b 4 3 4 1 $PAL.white0               # upper glass
+FR $b 5 4 2 1 $PAL.gold; P $b 5 5 $PAL.gold                        # sand in the neck
+FR $b 5 6 2 1 $PAL.white0; FR $b 4 7 4 1 $PAL.white0               # lower glass
+FR $b 4 8 4 1 $PAL.gold; FR $b 3 9 6 1 $PAL.gold                   # the heap
+Outline $b; SaveImg $b 'props/event_patrol_reset.png'
+
+$b = New-Img 12 12                                                # reels: a three-window machine, a lever
+FR $b 2 2 8 1 $PAL.stone3; FR $b 2 3 8 7 $PAL.stone2               # cabinet
+FR $b 3 5 1 2 $PAL.white1; FR $b 5 5 1 2 $PAL.white1; FR $b 7 5 1 2 $PAL.white1   # the windows
+P $b 3 5 $PAL.danger; P $b 5 5 $PAL.gold; P $b 7 5 $PAL.cyan        # symbols in them
+FR $b 4 8 4 1 $PAL.night2                                          # the coin slot
+FR $b 10 3 1 4 $PAL.stone4; P $b 10 2 $PAL.danger                  # lever + knob
+FR $b 2 10 8 1 $PAL.night3                                         # base
+Outline $b; SaveImg $b 'props/event_reels.png'
+
+$b = New-Img 12 12                                                # blackjack: two fanned cards
+FR $b 2 3 5 7 $PAL.white2; P $b 3 4 $PAL.danger                    # the back card + a red pip
+FR $b 5 2 5 7 $PAL.white1                                          # the front card
+P $b 6 3 $PAL.night1; P $b 8 7 $PAL.night1; P $b 7 5 $PAL.cyan     # black pips + the crystal ace
+Outline $b; SaveImg $b 'props/event_blackjack.png'
+
+$b = New-Img 12 12                                                # goosy flock: five geese in a V
+P $b 5 3 $PAL.white1; P $b 6 2 $PAL.white1; P $b 7 3 $PAL.white1   # the lead
+P $b 2 6 $PAL.white1; P $b 3 5 $PAL.white1; P $b 4 6 $PAL.white1   # left wing
+P $b 8 6 $PAL.white1; P $b 9 5 $PAL.white1; P $b 10 6 $PAL.white1  # right wing
+P $b 1 9 $PAL.white0; P $b 2 8 $PAL.white0; P $b 3 9 $PAL.white0   # far left
+P $b 8 9 $PAL.white0; P $b 9 8 $PAL.white0; P $b 10 9 $PAL.white0  # far right
+Outline $b; SaveImg $b 'props/event_goosy_flock.png'
+
+# ============================ M119 title scene ============================
+# The title screen's own place (owner direction 2026-09-14): a still lake at
+# night, reeds at the margins, the ridge low. Quiet behind the emblem row
+# (y 0..40) and the plaque/phrase band (y 40..100; the state backs the phrase
+# with a caption strip); the menu frame (y 106+) and the footer are opaque.
+# Own rng reseed; every earlier file stays byte-identical.
+Write-Output 'Generating M119 title scene...'
+$script:rng = 20260914
+$r = New-Bg $PAL.night1 $PAL.wat0
+Stars $r[0] 26 $PAL.white0 34
+GEll $r[1] 60 $PAL.white0 372 12 22 22; GEll $r[1] 40 $PAL.white1 377 17 12 12     # the moon, top right
+GPoly $r[1] 80 $PAL.stone1 @(0,118, 50,96, 110,110, 170,92, 230,108, 290,90, 350,106, 426,94, 426,132, 0,132)   # the ridge
+GPoly $r[1] 110 $PAL.night3 @(0,126, 80,112, 160,122, 240,110, 320,124, 426,114, 426,136, 0,136)             # the near shore
+GFill $r[1] 255 $PAL.wat1 0 134 426 106                                     # the lake
+foreach ($wy in 146, 160, 178, 200, 216) { GFill $r[1] 40 $PAL.wat2 0 $wy 426 1 }
+GFill $r[1] 45 $PAL.white0 330 150 60 1; GFill $r[1] 35 $PAL.white0 344 164 34 1   # moonlight on the water
+foreach ($rx in 8, 18, 30, 44, 56, 372, 384, 398, 410, 420) { GFill $r[1] 130 $PAL.veg2 $rx 108 2 60; GFill $r[1] 130 $PAL.veg2 ($rx - 1) 104 4 8 }   # reeds + tufts
+GFill $r[1] 30 $PAL.white0 0 128 426 8                                       # a mist band on the shore
+FloorSpeckle $r[0] 16 $PAL.wat2
+SaveBg $r 'title'
+
+# ======================= M119 painted battle stages =======================
+# A 426x122 far layer per themed BackdropStage, drawn UNDER the M56 ink
+# silhouettes (render/BattleBackdrop) and skipped in high contrast. Binding
+# rule: the float/status corridor (x 70..356, y 8..73 of the band) carries
+# only the base gradient - every motif is drawn under a clip that EXCLUDES
+# it, and the section asserts the corridor against a plain reference before
+# saving. Motifs live in the skyline strip (y 0..8), the side columns and the
+# floor strip (y 74+), far and low-alpha. Own rng reseed.
+Write-Output 'Generating M119 battle stages...'
+$script:rng = 20260915
+$BAW = 426; $BAH = 122
+function New-Band([string]$topHex, [string]$botHex) {
+  $b = New-Object System.Drawing.Bitmap($BAW, $BAH, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+  $g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
+  $rect = New-Object System.Drawing.Rectangle(0, 0, $BAW, $BAH)
+  $grad = New-Object System.Drawing.Drawing2D.LinearGradientBrush($rect, (C $topHex), (C $botHex), 90.0)
+  $g.FillRectangle($grad, $rect); $grad.Dispose()
+  return @($b, $g)
+}
+$corridor = New-Object System.Drawing.Rectangle(70, 8, 286, 66)
+function Clip-Corridor($g) { $g.SetClip($corridor, [System.Drawing.Drawing2D.CombineMode]::Exclude) }
+function BandSpeckle($b, [int]$n, [string]$hex) {
+  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BAW); $y = 76 + [int]((Rnd) * 44); P $b $x $y $hex }
+}
+function Assert-CorridorClear($b, [string]$topHex, [string]$botHex, [string]$name) {
+  $ref = New-Band $topHex $botHex; $ref[1].Dispose()
+  for ($y = $corridor.Top; $y -lt $corridor.Bottom; $y++) { for ($x = $corridor.Left; $x -lt $corridor.Right; $x++) {
+    if ($b.GetPixel($x, $y).ToArgb() -ne $ref[0].GetPixel($x, $y).ToArgb()) { $ref[0].Dispose(); throw "M119 battle stage '$name': the corridor is not clear at ($x,$y)" } } }
+  $ref[0].Dispose()
+}
+function SaveBand($pair, [string]$name, [string]$topHex, [string]$botHex) {
+  $pair[1].Dispose(); Assert-CorridorClear $pair[0] $topHex $botHex $name; SaveImg $pair[0] "backgrounds/battle_$name.png"
+}
+
+# Ruined Keep: a far wall with arrow slits and a tower in the side columns,
+# flagstone courses and rubble along the floor.
+$r = New-Band $PAL.night1 $PAL.night3
+Clip-Corridor $r[1]
+GFill $r[1] 70 $PAL.stone1 0 8 426 30                                       # the far wall (the corridor is clipped out)
+foreach ($sx in 20, 44, 380, 404) { GFill $r[1] 110 $PAL.night1 $sx 16 3 12 }   # arrow slits
+GFill $r[1] 90 $PAL.stone2 8 0 14 8; GFill $r[1] 90 $PAL.stone2 404 0 14 8   # crenellations on the skyline
+GFill $r[1] 80 $PAL.stone2 366 10 26 64; GFill $r[1] 100 $PAL.stone3 362 8 34 4   # the tower, right column
+GFill $r[1] 150 $PAL.stone1 0 74 426 48                                     # flagstones
+foreach ($fy in 86, 100, 114) { GFill $r[1] 70 $PAL.night2 0 $fy 426 1 }
+foreach ($fx in 40, 140, 240, 340) { GFill $r[1] 60 $PAL.night2 $fx 74 1 12; GFill $r[1] 60 $PAL.night2 ($fx + 50) 86 1 14 }
+GFill $r[1] 110 $PAL.stone2 16 78 14 5; GFill $r[1] 110 $PAL.stone2 386 80 18 5   # rubble
+BandSpeckle $r[0] 26 $PAL.stone2
+SaveBand $r 'keep' $PAL.night1 $PAL.night3
+
+# Crystal Mine: a crystal drip line along the skyline, clusters rising at
+# the sides, timber supports at the corridor's edges, rails across the floor.
+$r = New-Band $PAL.night1 $PAL.void0
+Clip-Corridor $r[1]
+foreach ($cx in 30, 110, 200, 300, 396) { GPoly $r[1] 60 $PAL.wat3 @(($cx - 8),0, ($cx + 8),0, $cx,8) }   # the drip line
+GPoly $r[1] 70 $PAL.violet @(6,74, 22,40, 38,74); GPoly $r[1] 70 $PAL.wat3 @(30,74, 44,52, 58,74)      # left cluster
+GPoly $r[1] 70 $PAL.violet @(388,74, 404,38, 420,74); GPoly $r[1] 70 $PAL.wat3 @(366,74, 380,54, 394,74) # right cluster
+P $r[0] 22 46 $PAL.cyan; P $r[0] 404 44 $PAL.cyan                             # two facet glints
+GFill $r[1] 120 $PAL.earth1 60 8 6 66; GFill $r[1] 120 $PAL.earth1 360 8 6 66   # supports
+GFill $r[1] 150 $PAL.stone1 0 74 426 48                                     # the rock floor
+GFill $r[1] 120 $PAL.earth3 0 92 426 2; GFill $r[1] 120 $PAL.earth3 0 100 426 2   # rails
+foreach ($tx in 20, 80, 140, 200, 260, 320, 380) { GFill $r[1] 90 $PAL.earth2 $tx 90 8 12 }   # sleepers
+BandSpeckle $r[0] 20 $PAL.wat2
+SaveBand $r 'mine' $PAL.night1 $PAL.void0
+
+# Hollow Forest: trunk columns in the side columns, a canopy strip along
+# the skyline, roots across the floor, a firefly each side.
+$r = New-Band $PAL.night1 $PAL.veg0
+Clip-Corridor $r[1]
+foreach ($tx in 10, 44, 372, 406) { GFill $r[1] 170 $PAL.earth1 $tx 0 12 74; GFill $r[1] 60 $PAL.earth2 ($tx + 3) 0 3 74; GFill $r[1] 80 $PAL.night2 $tx 30 12 3 }   # trunks + bark bands
+GEll $r[1] 110 $PAL.veg1 -30 -10 200 18; GEll $r[1] 110 $PAL.veg1 120 -12 220 20; GEll $r[1] 110 $PAL.veg1 280 -10 200 18   # the canopy
+P $r[0] 30 50 $PAL.veg3; P $r[0] 392 40 $PAL.veg3                              # fireflies
+GFill $r[1] 150 $PAL.veg0 0 74 426 48                                       # the forest floor
+GEll $r[1] 120 $PAL.earth1 -20 78 120 14; GEll $r[1] 120 $PAL.earth1 320 82 140 12; GEll $r[1] 100 $PAL.earth1 150 90 120 10   # roots
+GFill $r[1] 80 $PAL.earth2 0 88 426 2
+BandSpeckle $r[0] 22 $PAL.veg1
+SaveBand $r 'forest' $PAL.night1 $PAL.veg0
+
+# Castle: tall windows and banners in the side columns, a chandelier
+# silhouette on the skyline, the dais edge along the floor.
+$r = New-Band $PAL.night1 $PAL.void1
+Clip-Corridor $r[1]
+GEll $r[1] 90 $PAL.night1 186 0 54 8; GFill $r[1] 70 $PAL.gold 212 0 2 6       # the chandelier and its chain
+foreach ($wx in 12, 396) { GFill $r[1] 70 $PAL.wat3 $wx 10 18 46; GFill $r[1] 50 $PAL.violet ($wx + 4) 14 10 36; GPoly $r[1] 70 $PAL.wat3 @($wx,10, ($wx + 9),2, ($wx + 18),10) }   # tall windows
+foreach ($bx in 40, 372) { GFill $r[1] 80 $PAL.maroon $bx 8 14 40; GFill $r[1] 90 $PAL.gold ($bx + 5) 16 4 4 }   # banners
+GFill $r[1] 150 $PAL.stone1 0 74 426 48                                     # the hall floor
+GFill $r[1] 90 $PAL.stone3 0 84 426 3; GFill $r[1] 70 $PAL.gold 0 87 426 1   # the dais edge
+foreach ($fx in 30, 130, 230, 330) { GFill $r[1] 50 $PAL.night2 $fx 92 1 30 }
+BandSpeckle $r[0] 14 $PAL.stone2
+SaveBand $r 'castle' $PAL.night1 $PAL.void1
+
+# Goosy Gauntlet: reeds in the side columns, a mist strip along the
+# skyline, the pond floor with ripples and moonlight.
+$r = New-Band $PAL.night2 $PAL.wat0
+Clip-Corridor $r[1]
+GFill $r[1] 36 $PAL.white0 0 1 426 6                                        # the mist
+foreach ($rx in 8, 20, 34, 48, 60, 366, 378, 392, 406, 418) { GFill $r[1] 120 $PAL.veg2 $rx 24 2 50; GFill $r[1] 120 $PAL.veg2 ($rx - 1) 20 4 8 }   # reeds + tufts
+GFill $r[1] 150 $PAL.wat1 0 74 426 48                                       # still water
+foreach ($wy in 84, 96, 108, 118) { GFill $r[1] 40 $PAL.wat2 0 $wy 426 1 }
+GFill $r[1] 40 $PAL.white0 60 90 30 1; GFill $r[1] 40 $PAL.white0 320 104 40 1   # moonlight on the water
+BandSpeckle $r[0] 14 $PAL.wat2
+SaveBand $r 'goosy' $PAL.night2 $PAL.wat0
 
 Write-Output 'Texture generation complete.'

@@ -460,6 +460,9 @@ void EquipShopState::render() {
         case Phase::EquipSlot: hint = "Choose a slot."; break;
         case Phase::EquipItem: hint = "Choose an item to equip."; break;
     }
+    if (!partyMode_) {
+        ui::drawCaptionBacking(0, 26, w, 18);  // M119: the hint sits on the art
+    }
     ui::drawTextCentered(hint, w / 2, 30, style::kFontBody, p.textDim);
 
     ui::drawFrame(kListX - 24, kListY - 8, 352, kVisibleRows * kListItemH + 14,

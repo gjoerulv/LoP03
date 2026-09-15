@@ -79,6 +79,13 @@ TEST_CASE("flavor: the dungeon mapping and the content vocabulary agree", "[flav
         CHECK(known);
     }
     CHECK(std::string(dungeon::eventFlavorId(RoomEventKind::None)).empty());
+    // M118: the shared list every consumer walks (the marker test, the
+    // capture specimen) agrees with this one, kind for kind.
+    static_assert(dungeon::kAllRoomEventKinds.size() == sizeof(kinds) / sizeof(kinds[0]),
+                  "kAllRoomEventKinds and the flavor lockstep list drifted apart");
+    for (std::size_t i = 0; i < dungeon::kAllRoomEventKinds.size(); ++i) {
+        CHECK(dungeon::kAllRoomEventKinds[i] == kinds[i]);
+    }
 }
 
 TEST_CASE("flavor: the panel CONTAINS every authored body (M87)", "[flavor]") {

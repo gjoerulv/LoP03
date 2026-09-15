@@ -47,6 +47,21 @@ Party makeParty(int level = 12) {
     return party;
 }
 
+// M117: the uncontrolled reward class in the party — first, so units[0] is
+// the Jester; `allJesters` seats four of them.
+Party makeJesterParty(bool allJesters = false) {
+    Party party;
+    const std::vector<const char*> ids =
+        allJesters ? std::vector<const char*>{"jester", "jester", "jester", "jester"}
+                   : std::vector<const char*>{"jester", "ranger", "mage", "cleric"};
+    for (const char* id : ids) {
+        const content::ClassDef* cls = db().findClass(id);
+        REQUIRE(cls != nullptr);
+        party.members.push_back(createCharacter(*cls, id, 12));
+    }
+    return party;
+}
+
 }  // namespace
 
 TEST_CASE("chest: the Mimic is a boss on the median line, special-only", "[chest][content][data]") {
@@ -355,4 +370,60 @@ TEST_CASE("mimic-report: the Mimic against the theme bosses at the same scale (-
             CHECK(peerFights > 0);
         }
     }
+}
+
+TEST_CASE("chest: an all-Jester party's pick opens a chest or wakes the Mimic; a mixed party's Jester waits",
+          "[chest][m117]") {
+    SpecialEncounter e;
+    e.kind = SpecialKind::Chests;
+    e.chests = *makeChestEncounter(db(), 2, 5ull, 0, 120);
+    battle::Battle b = battle::buildBattle(makeJesterParty(true), dungeon::EnemyTeam{}, db());
+    const int first = appendPlaceholders(b, e);
+    for (int i = 0; i < 4; ++i) {
+        CHECK_FALSE(waitsForDecision(b, i));  // all Jesters: they act
+    }
+    int mimicAt = -1;
+    for (int i = 0; i < 3; ++i) {
+        if (e.chests.roles[static_cast<std::size_t>(i)] == ChestRole::Mimic) {
+            mimicAt = i;
+        }
+    }
+    REQUIRE(mimicAt >= 0);
+    battle::EnemyChoice swing;
+    swing.target = first + mimicAt;
+    const UncontrolledDecision d = uncontrolledDecisionFor(b, 0, swing, first, nullptr);
+    CHECK(d.decides);
+    CHECK(d.ordinal == mimicAt);
+    CHECK_FALSE(d.aoe);
+    SpecialEncounter m = e;
+    CHECK(resolveSpecial(m, d.ordinal, d.aoe) == SpecialResult::MimicRevealed);
+    // A sweep from the Jester wakes the Mimic whichever chest it aimed at.
+    const content::SkillDef* radiance = db().findSkill("radiance");
+    REQUIRE(radiance != nullptr);
+    battle::EnemyChoice sweep;
+    sweep.useSkill = true;
+    sweep.skillId = "radiance";
+    sweep.target = first + ((mimicAt + 1) % 3);
+    const UncontrolledDecision a = uncontrolledDecisionFor(b, 0, sweep, first, radiance);
+    CHECK(a.decides);
+    CHECK(a.aoe);
+    SpecialEncounter s = e;
+    CHECK(resolveSpecial(s, a.ordinal, a.aoe) == SpecialResult::MimicRevealed);
+    // The mixed party: the Jester waits while the ranger can decide, and the
+    // morph still seats it (the fresh battle re-derives the flag).
+    battle::Battle mixed = battle::buildBattle(makeJesterParty(false), dungeon::EnemyTeam{}, db());
+    appendPlaceholders(mixed, e);
+    CHECK(waitsForDecision(mixed, 0));
+    CHECK_FALSE(waitsForDecision(mixed, 1));
+    battle::Battle fresh = battle::buildBattle(makeJesterParty(false), e.chests.mimicTeam, db());
+    carryPartyOver(mixed, fresh);
+    CHECK(fresh.units[0].uncontrolled);
+    const std::vector<int> rest = orderAfterDecision(fresh, 1);  // the ranger decided
+    bool jesterSeated = false;
+    for (int i : rest) {
+        if (fresh.units[static_cast<std::size_t>(i)].uncontrolled) {
+            jesterSeated = true;
+        }
+    }
+    CHECK(jesterSeated);
 }

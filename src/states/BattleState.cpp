@@ -696,8 +696,15 @@ bool BattleState::isInert(int index) const {
 }
 
 void BattleState::pruneOrder() {
+    // M112: the placeholders never act. M117 (owner rule 2026-09-14): while
+    // the decision stands, an uncontrolled member (the Jester) waits too — as
+    // long as a controllable living member can decide.
+    const bool pending = decisionPending();
     order_.erase(std::remove_if(order_.begin(), order_.end(),
-                                [this](int i) { return isInert(i); }),
+                                [this, pending](int i) {
+                                    return isInert(i) ||
+                                           (pending && waitsForDecision(battle_, i));
+                                }),
                  order_.end());
 }
 
@@ -1418,6 +1425,22 @@ void BattleState::executeUncontrolled(int actor) {
     // and neither driver can drift from the other.
     const battle::EnemyChoice choice =
         battle::uncontrolledChoice(battle_, actor, context_.content);
+    if (decisionPending()) {
+        // M117 (owner rule 2026-09-14): in an all-Jester party the Jester's
+        // own pick IS the decision — the same seam a controlled member's
+        // committed action takes (executePending). An ally-facing pick
+        // (Mend) falls through and is cast normally; the encounter waits.
+        const content::SkillDef* skill =
+            choice.useSkill ? context_.content.findSkill(choice.skillId) : nullptr;
+        const UncontrolledDecision d =
+            uncontrolledDecisionFor(battle_, actor, choice, placeholderFirst_, skill);
+        if (d.decides) {
+            pendingKind_ = choice.useSkill ? PendingKind::Skill : PendingKind::Attack;
+            pendingSkillId_ = choice.useSkill ? choice.skillId : std::string();
+            resolveDecision(choice.target);
+            return;  // no quip: the Mimic's telegraph owns the channel
+        }
+    }
     int damageSfx = 2;
     bool statusAction = false;
     aoeTint_ = AoeTint::None;             // M51
@@ -1995,9 +2018,10 @@ void BattleState::render() {
         // M56: the subdued per-theme backdrop sits on the flat band fill, under
         // the ink keylines/brackets/pips below (so the M46 grounding stays crisp).
         // Accents are dropped in high contrast; a static 2-frame glint uses the
-        // shared UI motion phase.
-        render::drawBattleBackdrop(stage_, {0, bandY, w, bandH}, ui::motionPhase(),
-                                   !context_.settings.values.highContrast);
+        // shared UI motion phase. M119: a painted far layer sits under the
+        // silhouettes (skipped in high contrast, missing texture = the M56 look).
+        render::drawBattleStage(context_.resources, stage_, {0, bandY, w, bandH},
+                                ui::motionPhase(), !context_.settings.values.highContrast);
         DrawRectangle(0, bandY, w, 1, pal.ink);
         DrawRectangle(0, bandY + bandH - 1, w, 1, pal.ink);
         DrawRectangle(0, bandY + 1, w, 1, pal.borderDark);
