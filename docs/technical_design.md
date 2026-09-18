@@ -1837,13 +1837,20 @@ of** the caller (never `replaceState`), and neither backdrops nor the intro touc
   defaulted `render::BackdropStage stage = Plain`; `DungeonState::startBattle`
   passes `stageForTheme(themeId)` and `CastleChallengeState` passes `Castle`. Drawn
   in `render()` between the flat band fill and the ink keylines/pips. The subdued
-  rules (<= 25 % coverage, the central float corridor kept clear, `accents=false`
-  drops accents, determinism) are asserted in `tests/test_battle_backdrop.cpp`.
-  **M119:** `battleStageTextureId(stage)` + `drawBattleStage(resources, stage,
-  band, phase, accents)` draw a painted 426×122 far layer (`bg.battle.<stage>`)
-  between the band fill and the rects when accents are on (high contrast and a
-  missing texture keep the M56 look); the generator clips every motif out of
-  the corridor and asserts it; the id/manifest pins ride the same test file.
+  rules (<= 25 % coverage, every rect inside an allowed zone — the skyline
+  strip, the two margins or the near strip's open centre — and off every
+  formation footprint, `accents=false` drops accents, determinism) are
+  asserted in `tests/test_battle_backdrop.cpp`.
+  **M119 (corrected 2026-09-16, §60):** the band is (0, 24, 426, 150) — down
+  to two pixels above the command panel — and `drawBattleStage(resources,
+  stage, band, phase, accents)` draws three layers: `buildGroundPlane(band)`
+  (a pure list — far strip, horizon, ground, perspective seams — mapped to
+  value-only palette roles), the painted `bg.battle.<stage>` texture
+  (`battleStageTextureId`; 426×150, drawn unscaled, accents on only), then
+  `buildBackdrop`'s silhouettes. High contrast and a missing texture keep
+  the ground plane and the silhouettes. `actionField(band)` and
+  `silhouetteAllowed(rect, band)` are the shared zone contract; the id,
+  manifest and PNG-size pins ride the same test file.
 - **Crystal Shatter (B2).** `states/BossIntroState` is pushed on top of the caller
   carrying the full BattleState launch payload (built `Battle`, result/stats
   slots, music, castle flag, stage, presentation seed); `rendersBelow()=true`,
@@ -3547,11 +3554,42 @@ are replaced under their existing ids.
   text, the title phrase.
 - **Title**: `MainMenuState` draws `bg.title` through `drawSceneBackground`
   (canvas fallback) before the emblem, plaque, menu frame and footer.
-- **Battle stages**: `render::battleStageTextureId` / `drawBattleStage`
-  (§56's M56 bullet); `BattleState::render` calls it in place of
-  `drawBattleBackdrop`; the other callers pass their stages unchanged. The
-  generator's `Clip-Corridor` / `Assert-CorridorClear` keep the float
-  corridor plain by construction; speckle touches the floor strip only.
+- **Battle stages** (as first shipped 2026-09-14, superseded by the
+  corrective pass below and kept as history): a 426×122 far layer under
+  the M56 silhouettes, the float corridor kept plain by the generator's
+  corridor clip and assertion.
+- **Corrective pass (2026-09-16, owner brief "grounded battle stages")** —
+  the first cut made the combatants float: the band stopped at y 146 while
+  the lowest party row's feet sit at y 154 and its meters reach y 165, and
+  the gradient-only corridor left no floor under the upper rows (the
+  painted floor strip began at y 98, below the feet of rows one and two).
+  Now: `BattleState::render` builds the band `h - kPanelH - 6 - bandY` = 150
+  tall (y 24..174, a two-pixel seam above the panel frame);
+  `render/BattleBackdrop` gains the zone contract (`kHorizonPx` 12,
+  `kNearStripPx` 10, `kLeftMarginPx` 30, `kRightMarginPx` 18,
+  `kNearCentreX0/X1` 90/290; `actionField`, `silhouetteAllowed`), the pure
+  `buildGroundPlane` (`GroundRole` Far/Horizon/Ground/Seam →
+  `panelInset`/`borderDark`/`panelRaised`/`panel`, seams at 12/17/22/27/32
+  px) drawn under everything, the M56 rects re-seated into the margins and
+  the near strip (the skyline pieces broken over the two sprite columns),
+  and `drawBattleStage` drawing the texture unscaled with `DrawTexture`.
+  The accents flag now follows `ui::style::highContrastActive()` (the live
+  palette, which the settings-apply path and the capture tool both drive)
+  instead of the settings struct, so `51_battle_high_contrast` and
+  `73_backdrop_mine_hc` capture the real fallback. The generator's battle
+  section is rewritten for 426×150: `New-Stage` (per-row far/ground
+  ramps), `Clip-Field`, `Snapshot`, `Assert-StageGrounded` (a value step
+  ≥ 6 between the far strip and the ground, every field cue within 26
+  luminance of the plane, cues on 2–35 % of the field, no signal colour,
+  the plane even along the party foot rows) and `SaveStage` replace
+  `New-Band`, `Clip-Corridor`, `Assert-CorridorClear` and `SaveBand`.
+  Tests (`[backdrop]`, 9 cases): the zone and footprint rules, the ground
+  plane's shape, the band's reach and the PNGs' size. Captures:
+  `151_stage_keep_patrol`, `152_stage_mine_patrol`,
+  `153_stage_forest_patrol`, `154_stage_plain_fallback` (a three-foe
+  patrol from `makePatrolTeam`) and `155_stage_castle_court` (the King's
+  court on the Castle stage). No formation, meter, rule, schema or content
+  change; the M117 and M118 slices are untouched.
 - **Captures**: the interior, title and battle scenes re-render; no new
   scene — a high-contrast battle scene was planned but dropped: capture
   scenes share one settings object and none may mutate it (the fallback is

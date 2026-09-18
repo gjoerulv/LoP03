@@ -205,6 +205,20 @@ dungeon::EnemyTeam makeGoosyBossTeam(const content::ContentDatabase& db) {
     return team;
 }
 
+// M119 correction (2026-09-16): a plain three-foe patrol on the common base
+// line, so the grounding review sees the full party and a normal formation
+// over every stage (the five-foe scenes hang from the higher base line).
+dungeon::EnemyTeam makePatrolTeam(const content::ContentDatabase& db) {
+    dungeon::EnemyTeam team = makeFiveEnemyTeam(db);
+    team.name = "A wandering patrol";
+    if (team.enemyIds.size() > 3) {
+        team.enemyIds.resize(3);
+    }
+    team.tags = {"Fast"};
+    team.statScalePct = 100;
+    return team;
+}
+
 // Applies a spread of statuses so battle rows show every tag at once, including
 // the M35 Confusion/Silence/Blind (duration-only, magnitude 0) and a stacked row
 // to stress the status-line width with the wider labels.
@@ -1650,6 +1664,58 @@ int run(const char* outDir) {
                  // M118: every event kind's marker beside its flavor title, at
                  // the size the room draws it.
                  s.pushState(std::make_unique<EventMarkerSpecimenState>(s, c));
+             }},
+            {"151_stage_keep_patrol",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M119 correction (the grounding review): a three-foe patrol on
+                 // the common base line and the full party over the Keep's
+                 // paving - every foot on one plane, the far wall behind the
+                 // top row, the band reaching the command panel.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makePatrolTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Keep));
+             }},
+            {"152_stage_mine_patrol",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // The same patrol on the Mine's rock floor and rails.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makePatrolTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Mine));
+             }},
+            {"153_stage_forest_patrol",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // The same patrol on the Forest's earth and path.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makePatrolTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Forest));
+             }},
+            {"154_stage_plain_fallback",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // The procedural ground plane alone (Plain: no painting, no
+                 // silhouettes) - the floor a fight keeps when its stage's
+                 // texture is missing, and the floor under High Contrast
+                 // (73_backdrop_mine_hc shows it with a theme's silhouettes).
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makePatrolTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Plain));
+             }},
+            {"155_stage_castle_court",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // A boss and its minions on the Castle stage (the King fight
+                 // as CastleChallengeState stages it) - the 36 px boss footprint,
+                 // the lifted upper row and the court on the dais runway.
+                 battle::Battle b = battle::buildBattle(c.party, kingTeam(c.content), c.content);
+                 s.pushState(std::make_unique<BattleState>(s, c, std::move(b), &battleSlot,
+                                                           MusicTrack::None, nullptr, false,
+                                                           render::BackdropStage::Castle));
              }},
             {"140_dragon_clone",
              [&battleSlot](StateStack& s, AppContext& c) {

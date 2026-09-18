@@ -166,7 +166,12 @@ behaviour change.
 - No compiler warnings (a C4456 shadow warning in the shard loop was fixed by
   renaming the local; behaviour-identical, so the test results above stand).
 
-**M119 (2026-09-14):** a painted 426×122 far layer per themed stage now sits
-under the B1 silhouettes (`render::drawBattleStage`; skipped in high
-contrast; the corridor kept clear at the source) — the rect geometry and its
-tests are untouched. See `docs/milestone_notes/M119_background_art.md`.
+**M119 (2026-09-14; corrected 2026-09-16):** a painted stage per theme now
+sits under the B1 silhouettes (`render::drawBattleStage`; skipped in high
+contrast). The corrective pass of 2026-09-16 re-seated the B1 rects — the
+skyline pieces broken over the two sprite columns, every other piece in the
+margins or the near strip, off every formation footprint — replaced the
+corridor rule with the action-field rule (`render::actionField`,
+`silhouetteAllowed`), put a procedural ground plane under everything and
+grew the band to 426×150; the tests were rewritten to the new contract. See
+`docs/milestone_notes/M119_background_art.md` (the corrective section).

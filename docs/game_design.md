@@ -1610,14 +1610,20 @@ event:
 **Boss stagecraft (M56).** Pure presentation, no rules change:
 - Every battle now wears a **subdued per-theme backdrop** behind the combatants —
   a broken-parapet Keep, a crystal-cluster Mine, a trunk-columned Forest, or a
-  bannered Castle throne room — kept deliberately quiet (small silhouettes low and
-  along a top skyline strip, the central action corridor left clear) so it sets
-  the place without competing with the fight. In **high contrast** the backdrops
-  simplify (accents drop, silhouettes stay). Since **M119** a painted far
-  layer per theme (the castle too) sits under those silhouettes — a far wall,
-  a crystal roof, trunk columns, tall windows, reeds — with the centre
-  corridor left plain so floats and status text read as before; high
-  contrast drops the painting along with the accents.
+  bannered Castle throne room — kept deliberately quiet (small silhouettes
+  along a top skyline strip, in the margins and at the near edge, the action
+  field left to the fight) so it sets the place without competing with it.
+  In **high contrast** the backdrops simplify (accents drop, silhouettes
+  stay). Since **M119** (corrected 2026-09-16) every fight stands on a
+  **painted stage** per theme (the castle too): a far strip behind the top
+  row — a keep wall, a mine ceiling, the canopy's underside, a dark hall,
+  mist over a pond — and one continuous ground plane under the whole
+  formation, reaching the command panel — flagstones, a rock floor with
+  rails, forest earth with a path, paving with a dais runway, a muddy pond
+  bank — quiet enough that floats, status lines and meters read as before.
+  High contrast drops the painting along with the accents but keeps a plain
+  procedural floor (a far strip, a horizon and a ground with a few seams),
+  and so does a missing texture.
 - Every battle against a **boss team** (a dungeon boss, a Boss Rush wave, or the
   Hollow King) opens with a dramatic **Crystal Shatter** transition — cracks grow,
   the screen darkens with a single dim pulse, and the scene shatters into crystal

@@ -4927,105 +4927,192 @@ FloorSpeckle $r[0] 16 $PAL.wat2
 SaveBg $r 'title'
 
 # ======================= M119 painted battle stages =======================
-# A 426x122 far layer per themed BackdropStage, drawn UNDER the M56 ink
-# silhouettes (render/BattleBackdrop) and skipped in high contrast. Binding
-# rule: the float/status corridor (x 70..356, y 8..73 of the band) carries
-# only the base gradient - every motif is drawn under a clip that EXCLUDES
-# it, and the section asserts the corridor against a plain reference before
-# saving. Motifs live in the skyline strip (y 0..8), the side columns and the
-# floor strip (y 74+), far and low-alpha. Own rng reseed.
+# Corrected 2026-09-16 (owner brief "grounded battle stages"). A 426x150
+# painting per themed BackdropStage - the WHOLE battle band (y 24 to two
+# pixels above the command panel) - drawn unscaled under the M56 ink
+# silhouettes and skipped in high contrast (render/BattleBackdrop). Three
+# layers: the FAR strip (band y 0..12: wall base, ceiling, canopy, mist -
+# the lowest contrast), the GROUND plane (y 12..150: ONE continuous surface
+# every formation row stands on, lightening toward the near edge, with
+# restrained perspective cues whose spacing grows downward) and the NEAR
+# edge (the painting's bottom rows and the M56 rects). Binding rule: the
+# action field (x 30..408, y 8..140 - render::actionField) is QUIET, NOT
+# EMPTY. Major motifs are clipped out of it (Clip-Field: the margins, the
+# skyline and the near strip only); the ground plane and its cues run
+# straight through it; and Assert-StageGrounded proves before saving that
+# (1) the ground reads as a plane distinct from the far strip, (2) every cue
+# inside the field stays within a low-contrast band of the plane, (3) the
+# cues cover a bounded share of the field, (4) no signal colour enters it,
+# and (5) the plane is even along every party foot row. Own rng reseed; the
+# section is the file's last, so every earlier PNG stays byte-identical.
 Write-Output 'Generating M119 battle stages...'
 $script:rng = 20260915
-$BAW = 426; $BAH = 122
-function New-Band([string]$topHex, [string]$botHex) {
+$BAW = 426; $BAH = 150; $HZ = 12
+$field = New-Object System.Drawing.Rectangle(30, 8, 378, 132)
+$footRows = @(28, 62, 96, 130)   # the party's sprite feet in band rows (screen 52/86/120/154 - 24)
+function Ramp($g, [string]$topHex, [string]$botHex, [int]$y0, [int]$h) {   # a per-row value ramp (integer, deterministic)
+  $a = C $topHex; $z = C $botHex
+  for ($i = 0; $i -lt $h; $i++) {
+    $t = 0.0; if ($h -gt 1) { $t = $i / ($h - 1) }
+    $c = [System.Drawing.Color]::FromArgb(255, [int]($a.R + ($z.R - $a.R) * $t), [int]($a.G + ($z.G - $a.G) * $t), [int]($a.B + ($z.B - $a.B) * $t))
+    $g.FillRectangle((New-Object System.Drawing.SolidBrush($c)), 0, ($y0 + $i), $BAW, 1) }
+}
+function New-Stage([string]$farTop, [string]$farBot, [string]$gndTop, [string]$gndBot) {
   $b = New-Object System.Drawing.Bitmap($BAW, $BAH, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
   $g = [System.Drawing.Graphics]::FromImage($b); $g.SmoothingMode = 'None'
-  $rect = New-Object System.Drawing.Rectangle(0, 0, $BAW, $BAH)
-  $grad = New-Object System.Drawing.Drawing2D.LinearGradientBrush($rect, (C $topHex), (C $botHex), 90.0)
-  $g.FillRectangle($grad, $rect); $grad.Dispose()
+  Ramp $g $farTop $farBot 0 $HZ
+  Ramp $g $gndTop $gndBot $HZ ($BAH - $HZ)
   return @($b, $g)
 }
-$corridor = New-Object System.Drawing.Rectangle(70, 8, 286, 66)
-function Clip-Corridor($g) { $g.SetClip($corridor, [System.Drawing.Drawing2D.CombineMode]::Exclude) }
-function BandSpeckle($b, [int]$n, [string]$hex) {
-  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BAW); $y = 76 + [int]((Rnd) * 44); P $b $x $y $hex }
+function Clip-Field($g) { $g.SetClip($field, [System.Drawing.Drawing2D.CombineMode]::Exclude) }
+function Unclip-Field($g) { $g.ResetClip() }
+function Snapshot($b) { New-Object System.Drawing.Bitmap($b) }
+function Pixels($b) {   # the bitmap as ARGB ints, row-major
+  $rect = New-Object System.Drawing.Rectangle(0, 0, $b.Width, $b.Height)
+  $d = $b.LockBits($rect, [System.Drawing.Imaging.ImageLockMode]::ReadOnly, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+  $n = $b.Width * $b.Height; $px = New-Object int[] $n
+  [System.Runtime.InteropServices.Marshal]::Copy($d.Scan0, $px, 0, $n)
+  $b.UnlockBits($d); return ,$px
 }
-function Assert-CorridorClear($b, [string]$topHex, [string]$botHex, [string]$name) {
-  $ref = New-Band $topHex $botHex; $ref[1].Dispose()
-  for ($y = $corridor.Top; $y -lt $corridor.Bottom; $y++) { for ($x = $corridor.Left; $x -lt $corridor.Right; $x++) {
-    if ($b.GetPixel($x, $y).ToArgb() -ne $ref[0].GetPixel($x, $y).ToArgb()) { $ref[0].Dispose(); throw "M119 battle stage '$name': the corridor is not clear at ($x,$y)" } } }
-  $ref[0].Dispose()
+function Lum([int]$argb) { (0.299 * (($argb -shr 16) -band 255)) + (0.587 * (($argb -shr 8) -band 255)) + (0.114 * ($argb -band 255)) }
+$signal = @($PAL.cyan, $PAL.violet, $PAL.glint, $PAL.gold, $PAL.danger, $PAL.heal, $PAL.white1, $PAL.white2) | ForEach-Object { (C $_).ToArgb() }
+function Assert-StageGrounded($b, $ref, [string]$name) {
+  $px = Pixels $b; $rp = Pixels $ref; $w = $b.Width
+  # (1) the ground is its own plane: the far strip and the ground differ in value across the field's span
+  $farSum = 0.0; $farN = 0; $gndSum = 0.0; $gndN = 0
+  for ($y = 2; $y -lt $HZ; $y++) { for ($x = $field.Left; $x -lt $field.Right; $x += 3) { $farSum += Lum $px[$y * $w + $x]; $farN++ } }
+  for ($y = $HZ + 2; $y -lt $field.Bottom; $y += 2) { for ($x = $field.Left; $x -lt $field.Right; $x += 3) { $gndSum += Lum $px[$y * $w + $x]; $gndN++ } }
+  $gndMean = $gndSum / $gndN; $step = [math]::Abs($gndMean - $farSum / $farN)
+  if ($step -lt 6) { throw "M119 battle stage '$name': the ground does not separate from the far strip (value step $step < 6)" }
+  # (2)(3)(4) inside the action field: cues are low-contrast, bounded in number, never a signal colour
+  $changed = 0; $total = 0; $maxDelta = 0.0
+  for ($y = $field.Top; $y -lt $field.Bottom; $y++) { for ($x = $field.Left; $x -lt $field.Right; $x++) {
+    $i = $y * $w + $x; $v = $px[$i]; $total++
+    if ($signal -contains $v) { throw "M119 battle stage '$name': a signal colour inside the action field at ($x,$y)" }
+    if ($v -ne $rp[$i]) { $changed++; $d = [math]::Abs((Lum $v) - (Lum $rp[$i])); if ($d -gt $maxDelta) { $maxDelta = $d }
+      if ($d -gt 26) { throw "M119 battle stage '$name': the cue at ($x,$y) is too strong for the action field (luminance delta $d > 26)" } } } }
+  $frac = $changed / $total
+  if ($frac -lt 0.02) { throw "M119 battle stage '$name': the action field is empty (cues on $([math]::Round($frac * 100, 1))% of it, under 2%)" }
+  if ($frac -gt 0.35) { throw "M119 battle stage '$name': the action field is busy (cues on $([math]::Round($frac * 100, 1))% of it, over 35%)" }
+  # (5) the plane is even along every party foot row: nothing pools or glows under a sprite's feet
+  foreach ($fy in $footRows) { for ($x = $field.Left; $x -lt $field.Right; $x += 2) {
+    $d = [math]::Abs((Lum $px[$fy * $w + $x]) - $gndMean)
+    if ($d -gt 26) { throw "M119 battle stage '$name': the ground at ($x,$fy) strays from the plane under a foot row (delta $d > 26)" } } }
+  Write-Output ("  battle_{0}: far/ground step {1:N1}, cues on {2:P1} of the field, strongest cue {3:N1}" -f $name, $step, $frac, $maxDelta)
 }
-function SaveBand($pair, [string]$name, [string]$topHex, [string]$botHex) {
-  $pair[1].Dispose(); Assert-CorridorClear $pair[0] $topHex $botHex $name; SaveImg $pair[0] "backgrounds/battle_$name.png"
+function SaveStage($pair, $ref, [string]$name) {
+  $pair[1].Dispose(); Assert-StageGrounded $pair[0] $ref $name; $ref.Dispose(); SaveImg $pair[0] "backgrounds/battle_$name.png"
 }
+function Courses($g, [int]$a, [string]$hex, [int[]]$ys) { foreach ($y in $ys) { GFill $g $a $hex 0 $y $BAW 1 } }   # 1px course lines across the ground
+function Joints($g, [int]$a, [string]$hex, [int[]]$xyh) { for ($i = 0; $i -lt $xyh.Count; $i += 3) { GFill $g $a $hex $xyh[$i] $xyh[$i + 1] 1 $xyh[$i + 2] } }   # short 1px joints (x, y, length)
+function Root($g, [int]$a, [string]$hex, [int]$x, [int]$y, [int]$dir, [int]$n) {   # a stepped 2px root arc: n segments of 4x2, each a row lower and four columns along (no overlap, so no double blend)
+  for ($i = 0; $i -lt $n; $i++) { GFill $g $a $hex ($x + $dir * 4 * $i) ($y + $i) 4 2 } }
+function GroundSpeckle($g, [int]$n, [string]$hex) {   # sparse blended single pixels on the ground rows, never in the far strip or the near edge
+  for ($i = 0; $i -lt $n; $i++) { $x = [int]((Rnd) * $BAW); $y = $HZ + 6 + [int]((Rnd) * ($BAH - $HZ - 18)); GFill $g 90 $hex $x $y 1 1 } }
 
-# Ruined Keep: a far wall with arrow slits and a tower in the side columns,
-# flagstone courses and rubble along the floor.
-$r = New-Band $PAL.night1 $PAL.night3
-Clip-Corridor $r[1]
-GFill $r[1] 70 $PAL.stone1 0 8 426 30                                       # the far wall (the corridor is clipped out)
-foreach ($sx in 20, 44, 380, 404) { GFill $r[1] 110 $PAL.night1 $sx 16 3 12 }   # arrow slits
-GFill $r[1] 90 $PAL.stone2 8 0 14 8; GFill $r[1] 90 $PAL.stone2 404 0 14 8   # crenellations on the skyline
-GFill $r[1] 80 $PAL.stone2 366 10 26 64; GFill $r[1] 100 $PAL.stone3 362 8 34 4   # the tower, right column
-GFill $r[1] 150 $PAL.stone1 0 74 426 48                                     # flagstones
-foreach ($fy in 86, 100, 114) { GFill $r[1] 70 $PAL.night2 0 $fy 426 1 }
-foreach ($fx in 40, 140, 240, 340) { GFill $r[1] 60 $PAL.night2 $fx 74 1 12; GFill $r[1] 60 $PAL.night2 ($fx + 50) 86 1 14 }
-GFill $r[1] 110 $PAL.stone2 16 78 14 5; GFill $r[1] 110 $PAL.stone2 386 80 18 5   # rubble
-BandSpeckle $r[0] 26 $PAL.stone2
-SaveBand $r 'keep' $PAL.night1 $PAL.night3
+# Ruined Keep: coursed masonry in the far strip; a broken wall stump (left)
+# and the tower's edge (right) in the margins, rubble stones at their feet;
+# the ground ONE flagstone floor - courses at perspective spacing, staggered
+# joints, two cracks (the M56 ink piles sit on top at the near edge).
+$r = New-Stage $PAL.night1 $PAL.night2 $PAL.night3 $PAL.stone1
+GFill $r[1] 70 $PAL.night1 0 5 $BAW 1; GFill $r[1] 70 $PAL.night1 0 9 $BAW 1    # masonry courses
+GFill $r[1] 40 $PAL.stone2 0 11 $BAW 1                                          # the wall's base course, lit
+$ref = Snapshot $r[0]
+Clip-Field $r[1]
+GPoly $r[1] 110 $PAL.stone1 @(0,12, 30,12, 30,40, 22,34, 14,46, 6,38, 0,48)     # the wall stump, ragged
+GFill $r[1] 150 $PAL.night1 12 16 3 12                                          # its arrow slit
+GFill $r[1] 110 $PAL.stone2 408 0 18 150; GFill $r[1] 90 $PAL.stone3 408 0 18 2  # the tower's edge and its lit cap
+GFill $r[1] 120 $PAL.night1 414 20 3 14; GFill $r[1] 120 $PAL.night1 414 64 3 14  # two slits
+GFill $r[1] 100 $PAL.stone2 4 118 8 4; GFill $r[1] 100 $PAL.stone2 16 128 10 4; GFill $r[1] 100 $PAL.stone2 412 122 8 4   # rubble stones
+Unclip-Field $r[1]
+Courses $r[1] 110 $PAL.night1 @(24, 42, 66, 96, 132)
+Joints $r[1] 90 $PAL.night1 @(110,12,12, 200,12,12, 280,12,12, 150,24,18, 240,24,18, 390,24,18, 120,42,24, 210,42,24, 290,42,24, 170,66,30, 260,66,30, 100,66,30, 230,96,36, 140,96,36, 380,96,36)
+foreach ($c in @(@(160,112), @(250,126))) { GFill $r[1] 120 $PAL.night1 $c[0] $c[1] 4 1; GFill $r[1] 120 $PAL.night1 ($c[0] + 4) ($c[1] + 1) 3 1; GFill $r[1] 120 $PAL.night1 ($c[0] + 7) ($c[1] + 2) 4 1; GFill $r[1] 120 $PAL.night1 ($c[0] + 11) ($c[1] + 3) 3 1 }   # cracks, stepped
+GroundSpeckle $r[1] 24 $PAL.stone2
+SaveStage $r $ref 'keep'
 
-# Crystal Mine: a crystal drip line along the skyline, clusters rising at
-# the sides, timber supports at the corridor's edges, rails across the floor.
-$r = New-Band $PAL.night1 $PAL.void0
-Clip-Corridor $r[1]
-foreach ($cx in 30, 110, 200, 300, 396) { GPoly $r[1] 60 $PAL.wat3 @(($cx - 8),0, ($cx + 8),0, $cx,8) }   # the drip line
-GPoly $r[1] 70 $PAL.violet @(6,74, 22,40, 38,74); GPoly $r[1] 70 $PAL.wat3 @(30,74, 44,52, 58,74)      # left cluster
-GPoly $r[1] 70 $PAL.violet @(388,74, 404,38, 420,74); GPoly $r[1] 70 $PAL.wat3 @(366,74, 380,54, 394,74) # right cluster
-P $r[0] 22 46 $PAL.cyan; P $r[0] 404 44 $PAL.cyan                             # two facet glints
-GFill $r[1] 120 $PAL.earth1 60 8 6 66; GFill $r[1] 120 $PAL.earth1 360 8 6 66   # supports
-GFill $r[1] 150 $PAL.stone1 0 74 426 48                                     # the rock floor
-GFill $r[1] 120 $PAL.earth3 0 92 426 2; GFill $r[1] 120 $PAL.earth3 0 100 426 2   # rails
-foreach ($tx in 20, 80, 140, 200, 260, 320, 380) { GFill $r[1] 90 $PAL.earth2 $tx 90 8 12 }   # sleepers
-BandSpeckle $r[0] 20 $PAL.wat2
-SaveBand $r 'mine' $PAL.night1 $PAL.void0
+# Crystal Mine: the rock ceiling with a quiet crystal drip and a timber
+# lintel in the far strip; timber supports and crystal clusters (a facet
+# glint each) in the margins; the ground a rough rock floor - broad dark ore
+# veins (part of the plane), seams, then the rails and sleepers across it.
+$r = New-Stage $PAL.night1 $PAL.night2 $PAL.night3 $PAL.stone1
+foreach ($cx in 60, 150, 240, 330) { GPoly $r[1] 45 $PAL.wat3 @(($cx - 6),0, ($cx + 6),0, $cx,7) }   # the drip line
+GFill $r[1] 60 $PAL.earth1 0 10 $BAW 2                                          # the lintel
+GPoly $r[1] 40 $PAL.wat1 @(80,20, 140,26, 190,40, 230,60, 260,90, 300,130, 240,132, 200,100, 150,60, 90,30)   # an ore vein sweeping toward the near edge
+GPoly $r[1] 35 $PAL.wat1 @(340,40, 400,30, 404,60, 360,80)
+$ref = Snapshot $r[0]
+Clip-Field $r[1]
+GFill $r[1] 150 $PAL.earth1 24 0 6 150; GFill $r[1] 150 $PAL.earth1 410 0 6 150   # timber supports
+GPoly $r[1] 90 $PAL.violet @(0,150, 0,96, 10,72, 20,110, 22,150); GPoly $r[1] 90 $PAL.wat3 @(2,150, 8,118, 16,150)   # the left cluster
+GPoly $r[1] 90 $PAL.violet @(416,150, 418,100, 426,88, 426,150)                 # the right cluster
+P $r[0] 9 84 $PAL.cyan; P $r[0] 421 104 $PAL.cyan                              # facet glints (margins only)
+Unclip-Field $r[1]
+Courses $r[1] 90 $PAL.night1 @(30, 54, 84)
+GFill $r[1] 70 $PAL.earth3 0 108 $BAW 2; GFill $r[1] 70 $PAL.earth3 0 122 $BAW 2   # the rails
+foreach ($tx in 4, 50, 96, 142, 188, 234, 280, 326, 372) { GFill $r[1] 60 $PAL.earth2 $tx 104 6 22 }   # sleepers
+GroundSpeckle $r[1] 20 $PAL.wat2
+SaveStage $r $ref 'mine'
 
-# Hollow Forest: trunk columns in the side columns, a canopy strip along
-# the skyline, roots across the floor, a firefly each side.
-$r = New-Band $PAL.night1 $PAL.veg0
-Clip-Corridor $r[1]
-foreach ($tx in 10, 44, 372, 406) { GFill $r[1] 170 $PAL.earth1 $tx 0 12 74; GFill $r[1] 60 $PAL.earth2 ($tx + 3) 0 3 74; GFill $r[1] 80 $PAL.night2 $tx 30 12 3 }   # trunks + bark bands
-GEll $r[1] 110 $PAL.veg1 -30 -10 200 18; GEll $r[1] 110 $PAL.veg1 120 -12 220 20; GEll $r[1] 110 $PAL.veg1 280 -10 200 18   # the canopy
-P $r[0] 30 50 $PAL.veg3; P $r[0] 392 40 $PAL.veg3                              # fireflies
-GFill $r[1] 150 $PAL.veg0 0 74 426 48                                       # the forest floor
-GEll $r[1] 120 $PAL.earth1 -20 78 120 14; GEll $r[1] 120 $PAL.earth1 320 82 140 12; GEll $r[1] 100 $PAL.earth1 150 90 120 10   # roots
-GFill $r[1] 80 $PAL.earth2 0 88 426 2
-BandSpeckle $r[0] 22 $PAL.veg1
-SaveBand $r 'forest' $PAL.night1 $PAL.veg0
+# Hollow Forest: the canopy's underside in the far strip; trunks with bark
+# bands in the margins (two left, one right) and a firefly each side; the
+# ground leaf-litter earth with a path widening toward the near edge (part
+# of the plane), faint earth bands, stepped root arcs and leaf clusters.
+$r = New-Stage $PAL.night1 $PAL.veg0 $PAL.veg0 $PAL.earth1
+GEll $r[1] 60 $PAL.veg1 -40 -14 200 22; GEll $r[1] 60 $PAL.veg1 120 -16 220 24; GEll $r[1] 60 $PAL.veg1 280 -14 200 22   # the canopy
+GPoly $r[1] 40 $PAL.earth2 @(150,12, 276,12, 366,150, 60,150)                    # the path
+$ref = Snapshot $r[0]
+Clip-Field $r[1]
+foreach ($tx in 2, 18) { GFill $r[1] 170 $PAL.earth1 $tx 0 10 150; GFill $r[1] 60 $PAL.earth2 ($tx + 3) 0 3 150; GFill $r[1] 80 $PAL.night2 $tx 36 10 3; GFill $r[1] 80 $PAL.night2 $tx 92 10 3 }   # left trunks + bark bands
+GFill $r[1] 170 $PAL.earth1 410 0 14 150; GFill $r[1] 60 $PAL.earth2 414 0 3 150; GFill $r[1] 80 $PAL.night2 410 50 14 3; GFill $r[1] 80 $PAL.night2 410 110 14 3   # the right trunk
+P $r[0] 14 50 $PAL.veg3; P $r[0] 420 66 $PAL.veg3                               # fireflies
+GFill $r[1] 110 $PAL.earth1 0 140 30 10; GFill $r[1] 110 $PAL.earth1 408 140 18 10   # the near roots' mass
+Unclip-Field $r[1]
+foreach ($y in 24, 42, 66, 96, 132) { GFill $r[1] 30 $PAL.night1 0 $y $BAW 1 }    # earth bands, faint
+Root $r[1] 100 $PAL.night1 32 118 1 5; Root $r[1] 100 $PAL.night1 384 124 -1 5   # roots reaching in from the margins
+Root $r[1] 100 $PAL.night1 150 128 1 4; Root $r[1] 100 $PAL.night1 262 106 -1 4  # and two in the open ground
+foreach ($lx in 100, 172, 236, 300, 360) { GFill $r[1] 70 $PAL.veg1 $lx 60 2 1; GFill $r[1] 70 $PAL.veg1 ($lx + 30) 84 2 1 }   # leaf clusters
+GroundSpeckle $r[1] 26 $PAL.veg1
+SaveStage $r $ref 'forest'
 
-# Castle: tall windows and banners in the side columns, a chandelier
-# silhouette on the skyline, the dais edge along the floor.
-$r = New-Band $PAL.night1 $PAL.void1
-Clip-Corridor $r[1]
-GEll $r[1] 90 $PAL.night1 186 0 54 8; GFill $r[1] 70 $PAL.gold 212 0 2 6       # the chandelier and its chain
-foreach ($wx in 12, 396) { GFill $r[1] 70 $PAL.wat3 $wx 10 18 46; GFill $r[1] 50 $PAL.violet ($wx + 4) 14 10 36; GPoly $r[1] 70 $PAL.wat3 @($wx,10, ($wx + 9),2, ($wx + 18),10) }   # tall windows
-foreach ($bx in 40, 372) { GFill $r[1] 80 $PAL.maroon $bx 8 14 40; GFill $r[1] 90 $PAL.gold ($bx + 5) 16 4 4 }   # banners
-GFill $r[1] 150 $PAL.stone1 0 74 426 48                                     # the hall floor
-GFill $r[1] 90 $PAL.stone3 0 84 426 3; GFill $r[1] 70 $PAL.gold 0 87 426 1   # the dais edge
-foreach ($fx in 30, 130, 230, 330) { GFill $r[1] 50 $PAL.night2 $fx 92 1 30 }
-BandSpeckle $r[0] 14 $PAL.stone2
-SaveBand $r 'castle' $PAL.night1 $PAL.void1
+# Castle: the dark hall with a plinth line in the far strip; pilasters at
+# the outer edges and a pointed window below each banner in the margins;
+# the ground a paved floor whose dais runway (part of the plane) widens
+# toward the near edge - tile courses at perspective spacing and staggered
+# joints (the banners and the throne arch are the M56 rects on top).
+$r = New-Stage $PAL.night1 $PAL.void1 $PAL.void1 $PAL.stone1
+GFill $r[1] 40 $PAL.stone2 0 10 $BAW 1                                          # the plinth line
+GPoly $r[1] 45 $PAL.stone2 @(140,12, 286,12, 336,150, 90,150)                   # the dais runway
+$ref = Snapshot $r[0]
+Clip-Field $r[1]
+GFill $r[1] 90 $PAL.stone2 0 0 6 150; GFill $r[1] 60 $PAL.stone3 5 0 1 150      # the left pilaster and its lit edge
+GFill $r[1] 90 $PAL.stone2 420 0 6 150; GFill $r[1] 60 $PAL.stone3 420 0 1 150  # the right pilaster
+foreach ($wx in 10, 408) { GFill $r[1] 60 $PAL.wat3 $wx 62 14 44; GFill $r[1] 40 $PAL.violet ($wx + 3) 66 8 36; GPoly $r[1] 60 $PAL.wat3 @($wx,62, ($wx + 7),55, ($wx + 14),62) }   # pointed windows below the banners
+GFill $r[1] 110 $PAL.stone2 0 140 30 10; GFill $r[1] 110 $PAL.stone2 408 140 18 10   # the near edge's paving
+Unclip-Field $r[1]
+Courses $r[1] 100 $PAL.night1 @(24, 42, 66, 96, 132)
+Joints $r[1] 80 $PAL.night1 @(130,12,12, 213,12,12, 296,12,12, 100,24,18, 180,24,18, 260,24,18, 380,24,18, 140,42,24, 220,42,24, 290,42,24, 110,66,30, 200,66,30, 270,66,30, 160,96,36, 240,96,36, 370,96,36)
+GroundSpeckle $r[1] 12 $PAL.stone2
+SaveStage $r $ref 'castle'
 
-# Goosy Gauntlet: reeds in the side columns, a mist strip along the
-# skyline, the pond floor with ripples and moonlight.
-$r = New-Band $PAL.night2 $PAL.wat0
-Clip-Corridor $r[1]
-GFill $r[1] 36 $PAL.white0 0 1 426 6                                        # the mist
-foreach ($rx in 8, 20, 34, 48, 60, 366, 378, 392, 406, 418) { GFill $r[1] 120 $PAL.veg2 $rx 24 2 50; GFill $r[1] 120 $PAL.veg2 ($rx - 1) 20 4 8 }   # reeds + tufts
-GFill $r[1] 150 $PAL.wat1 0 74 426 48                                       # still water
-foreach ($wy in 84, 96, 108, 118) { GFill $r[1] 40 $PAL.wat2 0 $wy 426 1 }
-GFill $r[1] 40 $PAL.white0 60 90 30 1; GFill $r[1] 40 $PAL.white0 320 104 40 1   # moonlight on the water
-BandSpeckle $r[0] 14 $PAL.wat2
-SaveBand $r 'goosy' $PAL.night2 $PAL.wat0
+# Goosy Gauntlet: the far pond under a mist band in the far strip; reeds
+# with tufts in the margins; the ground a muddy BANK between that water and
+# the near water's edge (the bottom rows) - grass along the far edge, faint
+# mud bands, puddles that grow toward the near edge with a ripple each. The
+# party stands on the bank, never on open water.
+$r = New-Stage $PAL.night1 $PAL.night2 $PAL.night3 $PAL.earth1                # the far pond is night-dark; the mist is its light
+GFill $r[1] 36 $PAL.white0 0 2 $BAW 4; GFill $r[1] 40 $PAL.wat2 0 9 $BAW 1      # the mist, a far ripple
+$ref = Snapshot $r[0]
+Clip-Field $r[1]
+foreach ($rx in 4, 12, 22, 412, 420) { GFill $r[1] 130 $PAL.veg2 $rx 14 2 136; GFill $r[1] 130 $PAL.veg2 ($rx - 1) 10 4 8 }   # reeds + tufts
+GFill $r[1] 150 $PAL.wat1 0 140 30 10; GFill $r[1] 150 $PAL.wat1 408 140 18 10; GFill $r[1] 110 $PAL.wat1 30 142 378 8   # the near water's edge
+Unclip-Field $r[1]
+foreach ($tx in 40, 96, 150, 210, 262, 318, 372) { GFill $r[1] 80 $PAL.veg1 $tx 13 2 3 }   # grass along the far edge
+foreach ($y in 26, 46, 72, 104) { GFill $r[1] 45 $PAL.night1 0 $y $BAW 1 }      # mud bands
+GEll $r[1] 70 $PAL.wat1 100 40 40 6; GEll $r[1] 70 $PAL.wat1 230 74 56 8; GEll $r[1] 70 $PAL.wat1 130 116 70 10; GEll $r[1] 70 $PAL.wat1 340 100 50 8   # puddles, larger nearer
+GFill $r[1] 60 $PAL.wat2 110 43 20 1; GFill $r[1] 60 $PAL.wat2 250 78 24 1; GFill $r[1] 60 $PAL.wat2 150 121 30 1; GFill $r[1] 60 $PAL.wat2 352 104 26 1   # ripples
+foreach ($pb in @(@(84,58), @(196,52), @(292,66), @(120,92), @(272,98), @(386,84), @(212,136), @(60,128))) { GFill $r[1] 80 $PAL.stone1 $pb[0] $pb[1] 2 1 }   # pebbles
+foreach ($gt in @(@(70,30), @(250,34), @(330,28), @(180,48), @(392,44))) { GFill $r[1] 70 $PAL.veg1 $gt[0] $gt[1] 1 2; GFill $r[1] 70 $PAL.veg1 ($gt[0] + 2) ($gt[1] + 1) 1 1 }   # grass tufts on the bank
+GroundSpeckle $r[1] 16 $PAL.veg1
+SaveStage $r $ref 'goosy'
 
 Write-Output 'Texture generation complete.'

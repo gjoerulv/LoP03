@@ -319,12 +319,55 @@ the name label to make visual sense. The silhouette sheet from
   night, reeds at the margins, the ridge low — quiet behind the emblem row
   and the plaque/phrase band (the phrase gets the caption strip); the menu
   frame and footer are opaque; the canvas fill is the fallback.
-- **Painted battle stages (M119):** a 426×122 far layer per themed
-  `BackdropStage` under the M56 ink silhouettes — motifs only in the skyline
-  strip, the side columns and the floor strip, far and low-alpha; the
-  float/status corridor carries the base gradient alone (clipped at the
-  source and asserted by the generator). High contrast drops the painting
-  and keeps the silhouettes; a missing texture is the M56 look.
+- **Battle stages (M119, corrected 2026-09-16 — binding):** every fight is
+  staged on **three spatial layers** that must be tellable apart at 1×:
+  1. the **far layer** — the band's top strip above the horizon (a wall
+     base, a ceiling, the canopy's underside, mist; the M56 skyline
+     silhouettes): the lowest detail and contrast, it only names the place;
+  2. the **combat ground** — ONE continuous plane from the horizon to the
+     command panel that every grounded combatant visibly stands on: it
+     begins high enough that every normal formation row's feet lie on it,
+     runs under the lowest party row and its meters, carries restrained
+     perspective cues (courses, seams, rails, roots, path edges, ripples,
+     whose size or spacing grows toward the near edge — fewer and smaller
+     farther back), and is quieter than the actors but never empty;
+  3. the **near edge** — the band's bottom rows and the two margins, where
+     the M56 ink silhouettes and the slightly stronger detail sit, clear of
+     the battle UI.
+  **Continuous ground beats isolated platforms:** no pedestal, circle,
+  shelf or spotlight under a unit — the whole formation shares one surface
+  (flagstones, a rock floor, forest earth, paving with a dais runway, a
+  pond bank); contact cues are secondary. **The action field is quiet, not
+  blank** (`render::actionField` — x 30..408, y 32..164 of the screen —
+  everything the combatants, meters, numerals, status lines and floats can
+  touch): it may hold broad low-contrast ground masses, sparse seams,
+  roots, rails, path edges, shallow ripples, cracks and restrained
+  perspective bands; it must not hold bright accent clusters behind a
+  silhouette, dense speckle, high-contrast props, text-like shapes, strong
+  verticals through bodies, focal points or decorative noise. The generator
+  proves it for every painted stage (`Assert-StageGrounded`: the ground
+  separates from the far strip in value, every cue inside the field stays
+  within a low-contrast band of the plane, the cues cover a bounded share
+  of it, no signal colour enters it, the plane is even along the party's
+  foot rows) and the tests hold the ink silhouettes to the skyline strip,
+  the margins and the near strip's open centre, off every formation
+  footprint. **Perspective is pixel-authored:** aliased steps and 1 px
+  courses at growing spacing — never smooth rendering or anti-aliased
+  diagonals. **Grounding hierarchy** for any battle-presentation decision:
+  actor silhouette and readability, then the visible foot-to-ground
+  relationship, then a coherent theme, then depth, then decorative detail
+  — a themed backdrop that makes actors float fails this bible. **Contact
+  shadows** are optional, secondary aids only (hard-edged pixel clusters,
+  1–2 px tall, narrow, low contrast, consistent with the top-left light,
+  behind the sprite; never blurred ellipses, soft shadows or black blobs)
+  and are not used today: the game cannot tell hovering units from grounded
+  ones without new content fields, and the ground itself must solve the
+  grounding. The painting is 426×150 — the whole band, y 24 to two pixels
+  above the command panel — drawn unscaled under the silhouettes and
+  dropped in high contrast; a procedural ground plane (a far strip, a
+  horizon line, a ground mass, seams at growing spacing — value steps only)
+  is drawn under everything, so high contrast and a missing texture still
+  stand on a grounded floor.
 - **Cutscene stages (M113):** five full-screen scenes behind the Hooded
   Goose's actors — the mountainous town panorama and the four dungeon
   theme stages (parapets/arches, crystals/supports, trunks/roots,
