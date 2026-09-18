@@ -255,10 +255,10 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `ArePGeese --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; **148 scenes as of M116
-(2026-09-02)**,
-`98`–`105` the pseudo-localized long-prose set) — all
-three themes, five-enemy and boss battles, worst-case 12-char names,
+list lives in `src/capture/CaptureRunner.cpp`; **155 scenes as of M119
+(2026-09-16)**,
+`98`–`105` the pseudo-localized long-prose set) — every
+dungeon theme, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
 to the real 426×240 virtual screen in a hidden window, exports native-res
 PNGs (`VirtualScreen::exportImage`), and **fails (nonzero exit) if any
@@ -422,15 +422,16 @@ Each file is a versioned wrapper around a named array:
 ```
 
 `version` must equal the supported schema version (currently `1`). Files
-(**fourteen** as of M99): `skills.json`, `classes.json`, `enemies.json`,
+(**fifteen** as of M112): `skills.json`, `classes.json`, `enemies.json`,
 `items.json`, `bosses.json`, `dungeon_themes.json`, `composition.json`
 (M20), `passives.json` (M36), `story.json` (M41), `milestones.json` (M63),
 `cutscenes.json` (M97, required — its scenes grant heirlooms), and the
-three **optional** files `event_flavor.json` (M80), `curio_lore.json`
-(M85) and `tutorials.json` (M99, tutorial-prompt text with a constexpr
-fallback in `src/tutorial/Tutorial.hpp`) — `loadAll` skips an optional
-file when absent (§34/§39); all fourteen are CrystalForge categories
-(twelve since M86, cutscenes M97, tutorials M99). Bosses
+four **optional** files `event_flavor.json` (M80), `curio_lore.json`
+(M85), `tutorials.json` (M99, tutorial-prompt text with a constexpr
+fallback in `src/tutorial/Tutorial.hpp`) and `lore_questions.json` (M112,
+the Lore patrol's questions, §54) — `loadAll` skips an optional
+file when absent (§34/§39); all fifteen are CrystalForge categories
+(twelve since M86, cutscenes M97, tutorials M99, lore questions M112). Bosses
 carry an `archetype`, `skills`, `minions`, and a
 `telegraph`; themes list `normalEnemies`/`eliteEnemies`/`bosses` id pools; skills
 may carry an optional `statusEffect`/`statusMagnitude`/`statusDuration`. All ids
@@ -1892,7 +1893,7 @@ of** the caller (never `replaceState`), and neither backdrops nor the intro touc
   (gold→level progression alongside battle XP). Parties start with a little gold.
 - **Packaging:** the final `README.md` documents what the game is, the MSVC build/
   run, controls, the play loop, project layout, the smoke test (the test
-  suite — 125 tests at M10, 887 today in Debug (883 in Release, where the
+  suite — 125 tests at M10, 900 as of M119 in Debug (896 in Release, where the
   Debug-only cases are compiled out) — which loads content, generates
   dungeons, and simulates a clear), and
   known limitations. The M10 deliverable was `CrystalDungeons.exe` plus the

@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M117–M119, authorized 2026-09-14)** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M117–M119, approved 2026-09-18)** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -124,9 +124,9 @@
 | 114 | Font readability redesign (6×9 master alphabet, 9 px floor) | ☑ complete (approved 2026-09-10) |
 | 115 | The Last Dragon redesign, clone identity & bounds-aware formation | ☑ complete (approved 2026-09-10) |
 | 116 | The End-game Summary (lifetime statistics, unlocked by the finale) | ☑ complete (approved 2026-09-10) |
-| 117 | Owner fix batch: CRT defaults, the Controls page, blackjack stakes & the Jester's patrol decision | ◑ implemented, awaiting manual approval |
-| 118 | Event icons (a bespoke marker for every event kind, the glint, the panel icon) | ◑ implemented, awaiting manual approval |
-| 119 | Background art: service interiors, title screen & painted battle stages | ◑ implemented, awaiting manual approval |
+| 117 | Owner fix batch: CRT defaults, the Controls page, blackjack stakes & the Jester's patrol decision | ☑ complete (approved 2026-09-18) |
+| 118 | Event icons (a bespoke marker for every event kind, the glint, the panel icon) | ☑ complete (approved 2026-09-18) |
+| 119 | Background art: service interiors, title screen & painted battle stages | ☑ complete (approved 2026-09-18) (corrective pass 2026-09-16: grounded battle stages, see the note) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -269,6 +269,13 @@ today's look). No version motion anywhere. Execution continues milestone by
 milestone to `implemented, awaiting manual approval` without pausing; M23 →
 M24 follow after the program, re-audited first, each awaiting explicit
 authorization. See the program section at the end of this file.
+**On 2026-09-18 the owner approved M117–M119** after the manual pass — the
+approval covers the program as it stands after the 2026-09-16 corrective
+pass on the M119 battle stages (the combatants had floated; every stage is
+now a far strip over one continuous ground plane that reaches the command
+panel). Only the deliberately deferred **M23 → M24** remain, in that order,
+each re-audited against the then-current checkout before it begins — and
+neither starts without explicit owner authorization.
 
 When M75–M86 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**85
@@ -989,20 +996,20 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs after the M109–M116
-  program (approved 2026-09-10)** (the deferral was extended by each program the
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs after the M117–M119
+  program (approved 2026-09-18)** (the deferral was extended by each program the
   owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
   M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
   M61, the M62–M66 program, the M67–M74 owner batches, the M75–M86
-  expansion program, M87, and the M88–M97, M98–M108 and M109–M116
-  programs). The tooling,
+  expansion program, M87, and the M88–M97, M98–M108, M109–M116 and
+  M117–M119 programs). The tooling,
   diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
   Re-audit this note against the then-current checkout before starting — the
-  capture scene list has grown (**148 scenes** as of M116) and the balance
+  capture scene list has grown (**155 scenes** as of M119) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
   `[king-report]`, `[classes-report]`, and the M61–M68
   `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/`[spoils]`/
@@ -1017,10 +1024,12 @@ milestone is not automatic authorization to start the next.
   the party-panel reflow, the M73 enemy/boss art pass, and the M74 mine
   ambience rework) — plus everything M75–M86 adds (the v15 statuses and
   triggers, floors, Guild Masters, the Dragon, the new gear and icons) and
-  everything M87–M116 added (the Latin-1 text pass, summons, heirlooms,
+  everything M87–M119 added (the Latin-1 text pass, summons, heirlooms,
   the cutscene story and its stages, the patrol mixture with its special
-  encounters, the lifetime ledger and the End-game Summary, the 6×9 font).
-  **M109–M116 is the newest approved program (2026-09-10); this runs after
+  encounters, the lifetime ledger and the End-game Summary, the 6×9 font,
+  the event icons, the painted interiors and title scene, the grounded
+  battle stages).
+  **M117–M119 is the newest approved program (2026-09-18); this runs after
   it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
@@ -1054,7 +1063,7 @@ milestone is not automatic authorization to start the next.
 - **Status:** ☐ planned — **deferred on 2026-07-20; runs last, after M23.**
   The packaging engineering is already implemented and stays in the tree
   (presets with static CRT, version plumbing from `project(VERSION)` —
-  0.8.0 today (distribution built 2026-09-10), generated icon + VERSIONINFO, one-command
+  0.9.0 today (distribution built 2026-09-18), generated icon + VERSIONINFO, one-command
   stage/validate/zip via tools/package.ps1; package smoke-tested,
   capture-inert; owner decisions 2026-07-20: plain zip, emblem-generated
   icon — the 2026-07-20 "v0.9.0 until playtests pass" label was superseded
@@ -3616,7 +3625,7 @@ milestone may reopen without escalation:
 
 ### M117 — Owner fix batch
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved 2026-09-18) — implemented
   2026-09-14 (Debug 894/894, Release 890/890, capture 149/149 clean; see the
   note's completion report).
 - **Goal:** the CRT defaults, the Controls page's F1 row, the blackjack
@@ -3625,7 +3634,7 @@ milestone may reopen without escalation:
 
 ### M118 — Event icons
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved 2026-09-18) — implemented
   2026-09-14 (15 new PNGs, generator byte-stable; targeted tags 29/29;
   capture 150/150 clean; see the note's completion report).
 - **Goal:** a bespoke marker for every event kind, the glint, the panel
@@ -3634,14 +3643,14 @@ milestone may reopen without escalation:
 
 ### M119 — Background art
 
-- **Status:** ◑ implemented, awaiting manual approval — implemented
+- **Status:** ☑ complete (approved 2026-09-18) — implemented
   2026-09-14 (42 interior PNGs redrawn + 6 new scenes, generator
   byte-stable with the corridor assertions; targeted tags 29/29; capture
   150/150 clean; see the note's completion report). **Battle stages
   corrected 2026-09-16** (owner brief: the combatants floated — the band
   now reaches the command panel and every stage is a far strip over one
-  continuous ground plane; see the note's corrective section). Still
-  awaiting the owner's manual approval.
+  continuous ground plane; see the note's corrective section); the
+  approval covers the corrected stages.
 - **Goal:** the six service interiors redrawn, the title scene, the painted
   battle stages under the M56 silhouettes.
 - **Milestone note:** `docs/milestone_notes/M119_background_art.md`
@@ -3649,8 +3658,11 @@ milestone may reopen without escalation:
 **Execution order:** M117 → M118 → M119, then M23 → M24 (re-audited against
 the then-current checkout, each awaiting explicit owner authorization).
 
-**Program status: implemented 2026-09-14, awaiting manual approval.** Closing
-battery on the final checkout: Debug configure + build clean (zero
+**Program status: complete. On 2026-09-18 the owner approved M117–M119** after
+the manual pass — the approval covers the program as it stands after the
+2026-09-16 corrective pass on the M119 battle stages. Implemented
+2026-09-14; nothing beyond M119 was started. Closing
+battery on the 2026-09-14 checkout: Debug configure + build clean (zero
 project-code warnings); `ctest --preset debug` **897/897 passed** (661.6 s);
 Release build clean + `ctest --preset release` **893/893 passed** (453.9 s;
 the four Debug-only cases are compiled out there); `ArePGeese.exe --capture`
@@ -3672,5 +3684,43 @@ matrix row 241 amended and 242 added; battery re-run on the corrected
 checkout: Debug build clean, `[backdrop]` 9/9,
 `ctest --preset debug` **900/900** (360.10 s), Release build clean +
 `ctest --preset release` **896/896** (171.5 s), capture **155/155 clean**,
-the generator byte-stable for every file but the five re-authored stages. Nothing beyond M119 was started; M23 →
-M24 remain deferred and each awaits explicit authorization.
+the generator byte-stable for every file but the five re-authored stages.
+Only the deliberately deferred **M23 → M24** remain, in that order, each
+re-audited against the then-current checkout before it begins — and neither
+starts without explicit owner authorization.
+
+**Documentation audit (2026-09-18, `/audit-docs` on the post-approval
+checkout, HEAD `392c9ed`):** no blocking contradiction and no behaviour
+defect; every stale statement found was corrected the same day, no
+player-facing change — this ledger's M23 section re-anchored to this program
+(it still named M109–M116 and 148 scenes while the table row named
+M117–M119), the technical design's capture-scene count and theme wording
+(155 scenes, every theme), its test counts (900 Debug / 896 Release) and
+its data-file list (fifteen files: `lore_questions.json` is the fourth
+optional file and the fifteenth Forge category, as the README already
+said), three matrix evidence cells that cited captures that do not exist
+(rows 137, 169, 228), the matrix's pre-M108 executable and save-folder
+names, the roadmap's "currently the M88–M97 program" anchor and the M23 and
+M24 notes' "after M74" headers (all three now point at this ledger instead
+of restating it), and the art bible's one remaining old game name.
+Deliberately left: the matrix's M11-era baseline rows 1–36 with their period
+screenshot names and the dated "M23 update" counts, the authorization
+paragraphs' period numbers, and the historical notes. For the owner's
+decision, not acted on: the 0.8.0 distribution was built 2026-09-10 and
+predates M117–M119; repackaging and its version number remain the owner's
+call. The owner decided the same day — distribution 0.9.0, below.
+
+**Distribution 0.9.0 (2026-09-18, owner-directed):** `project(VERSION 0.9.0)`
+— the number had been the pre-M86 interim label (M86 renumbered it down to
+0.6.0 and no package was ever built under it); the owner now assigns it to
+the M117–M119 build, and it still trails 1.0.0, which waits for the M23
+playtests. `tools\package.ps1` configured and built the Release preset and
+produced `dist\ArePGeese-0.9.0-win64.zip` (29.1 MB; 362 staged files)
+with the staged layout validated by the script (required files, every
+manifest path present, no debug artifacts, AMD64 PE, no capture/overlay
+markers, exe ProductVersion 0.9.0). `ctest --preset release` on that build:
+**896/896 passed** (161 s); the Debug preset was reconfigured and
+rebuilt so the dev executable carries the same version (`ctest --preset
+debug` **900/900 passed**, 376 s). A distribution build, not the M24
+release sign-off: M23 → M24 remain deferred and each awaits explicit owner
+authorization.

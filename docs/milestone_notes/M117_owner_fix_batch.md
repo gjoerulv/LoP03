@@ -1,6 +1,6 @@
 # M117 — Owner fix batch
 
-**Status:** implemented, awaiting manual approval (implemented 2026-09-14)
+**Status:** complete (approved 2026-09-18)
 **Program:** M117–M119 (owner-authorized 2026-09-14 via the approved plan;
 branch `oyb11`, baseline `72f4c3e`).
 **No version motion:** settings v1 (default values only), rules 19,
@@ -260,7 +260,4 @@ As under "Documentation updated" above.
 
 ### 9. Final status
 
-`implemented, awaiting manual approval`
-
-Then stop and wait for the owner's manual acceptance decision (the program
-continues with M118 and M119 first, as authorized).
+`complete (approved 2026-09-18)`

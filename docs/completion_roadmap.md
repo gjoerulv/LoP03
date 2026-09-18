@@ -935,9 +935,9 @@ Crystal Mine ambience: the "water drips" were synthesised as bird
 whistles, and the bed now uses unpitched rockfall and inharmonic
 crystal-shard echoes instead.
 
-M23 → M24 run after the newest authorized expansion — currently the
-M88–M97 program (see the ledger's program section) — re-audited against
-the then-current checkout.
+M23 → M24 run after the newest authorized expansion — the ledger's
+execution-order note names it; this roadmap does not restate it —
+re-audited against the then-current checkout.
 
 ## 23. Expansion program (M75–M86) — direction
 
