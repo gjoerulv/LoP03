@@ -2010,18 +2010,24 @@ void BattleState::render() {
 
     // Stage dressing (M46): one broad value band behind the combatants with
     // ink keylines, side grounding brackets per side, and a violet accent
-    // pair when a boss is on the field. No texture, no noise behind units.
+    // pair when a boss is on the field. No noise behind units.
     {
         const int bandY = 24;
-        const int bandH = h - kPanelH - 34 - bandY;
+        // M119 (corrected 2026-09-16): the band reaches two pixels above the
+        // command panel (y 174) so the lowest party row, its meters and a
+        // fifth enemy row stand over the environment; the painted stages are
+        // authored at exactly this size (render::kStageTextureH).
+        const int bandH = h - kPanelH - 6 - bandY;
         DrawRectangle(0, bandY, w, bandH, pal.panel);
-        // M56: the subdued per-theme backdrop sits on the flat band fill, under
-        // the ink keylines/brackets/pips below (so the M46 grounding stays crisp).
-        // Accents are dropped in high contrast; a static 2-frame glint uses the
-        // shared UI motion phase. M119: a painted far layer sits under the
-        // silhouettes (skipped in high contrast, missing texture = the M56 look).
+        // M56/M119: the stage - the procedural ground plane, the painted
+        // far/ground texture (dropped in high contrast; a missing one leaves
+        // the plane showing) and the subdued silhouettes on top - all under
+        // the ink keylines/brackets/pips below (so the M46 grounding stays
+        // crisp). Accents follow the live palette, which the settings-apply
+        // path and the capture tool both drive; a static 2-frame glint uses
+        // the shared UI motion phase.
         render::drawBattleStage(context_.resources, stage_, {0, bandY, w, bandH},
-                                ui::motionPhase(), !context_.settings.values.highContrast);
+                                ui::motionPhase(), !style::highContrastActive());
         DrawRectangle(0, bandY, w, 1, pal.ink);
         DrawRectangle(0, bandY + bandH - 1, w, 1, pal.ink);
         DrawRectangle(0, bandY + 1, w, 1, pal.borderDark);

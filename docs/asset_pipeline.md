@@ -238,14 +238,25 @@ table, the manifest and the shipped set in lockstep. Review with
 a light row → `docs/sprite_review/events_contact.png`); the capture scene
 `150_event_icons` shows every icon beside its title at 1×.
 
-**Title scene and painted battle stages (M119):** `bg.title` (426×240, drawn
-first by `MainMenuState` with the canvas fill as the fallback) and
-`bg.battle.{keep,mine,forest,castle,goosy}` (426×122 — the battle band —
-drawn by `render::drawBattleStage` under the M56 silhouettes when accents are
-on; `battleStageTextureId(stage)`; Plain has none, high contrast skips it, a
-missing one is the M56 look). The generator clips every stage motif out of
-the float corridor and asserts the corridor against a plain reference before
-saving; `tests/test_battle_backdrop.cpp` pins the ids and the manifest.
+**Title scene and painted battle stages (M119; the stages corrected
+2026-09-16):** `bg.title` (426×240, drawn first by `MainMenuState` with the
+canvas fill as the fallback) and `bg.battle.{keep,mine,forest,castle,goosy}`
+(**426×150 — the whole battle band**, y 24 to two pixels above the command
+panel — drawn UNSCALED by `render::drawBattleStage` over the procedural
+ground plane and under the M56 silhouettes when accents are on;
+`battleStageTextureId(stage)`; Plain has none, high contrast skips it, a
+missing one leaves the ground plane showing). Each stage is authored as
+three layers (art bible §6): a far strip above the horizon (band y 12), one
+continuous ground plane with restrained perspective cues running straight
+through the action field, and the near edge. The generator clips major
+motifs out of the action field (`Clip-Field`), takes the plane reference
+(`Snapshot`) after the broad ground masses and before the cues, and
+`Assert-StageGrounded` refuses to save a stage unless the ground separates
+from the far strip in mean value (≥ 6), every cue inside the field stays
+within 26 luminance of the plane, the cues cover between 2 % and 35 % of
+the field, no signal colour enters it, and the plane stays even along
+every party foot row; `tests/test_battle_backdrop.cpp` pins the ids, the
+manifest and the PNGs' 426×150 size.
 
 ## 4. How to add or replace an asset
 

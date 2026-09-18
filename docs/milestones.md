@@ -3637,7 +3637,11 @@ milestone may reopen without escalation:
 - **Status:** ◑ implemented, awaiting manual approval — implemented
   2026-09-14 (42 interior PNGs redrawn + 6 new scenes, generator
   byte-stable with the corridor assertions; targeted tags 29/29; capture
-  150/150 clean; see the note's completion report).
+  150/150 clean; see the note's completion report). **Battle stages
+  corrected 2026-09-16** (owner brief: the combatants floated — the band
+  now reaches the command panel and every stage is a far strip over one
+  continuous ground plane; see the note's corrective section). Still
+  awaiting the owner's manual approval.
 - **Goal:** the six service interiors redrawn, the title scene, the painted
   battle stages under the M56 silhouettes.
 - **Milestone note:** `docs/milestone_notes/M119_background_art.md`
@@ -3655,8 +3659,18 @@ the four Debug-only cases are compiled out there); `ArePGeese.exe --capture`
 byte-stable for every earlier file (new: 15 event-marker props, the title
 scene, five battle stages; the 42 service interiors redrawn by design);
 `CrystalForge --canonicalize` not needed (no data edits). Owner validation:
-matrix rows 232–241. Findings for the owner's eye: the Jester's decision
+matrix rows 232–242. Findings for the owner's eye: the Jester's decision
 rule as built (M117 note), the telemetry exposure the Jester defect had
 opened (closed by the fix; existing saves are not repaired), the dropped
-high-contrast battle capture (M119 note). Nothing beyond M119 was started;
-M23 → M24 remain deferred and each awaits explicit authorization.
+high-contrast battle capture (M119 note — since the corrective pass the
+existing high-contrast scenes capture the real fallback). **Corrective
+pass 2026-09-16** (owner brief "grounded battle stages", a correction to
+M119, not a new milestone): the battle stages re-authored at 426×150 over
+one continuous ground plane, the quiet-action-field rule replacing the
+corridor rule, `Assert-StageGrounded`, five new capture scenes (151–155),
+matrix row 241 amended and 242 added; battery re-run on the corrected
+checkout: Debug build clean, `[backdrop]` 9/9,
+`ctest --preset debug` **900/900** (360.10 s), Release build clean +
+`ctest --preset release` **896/896** (171.5 s), capture **155/155 clean**,
+the generator byte-stable for every file but the five re-authored stages. Nothing beyond M119 was started; M23 →
+M24 remain deferred and each awaits explicit authorization.
