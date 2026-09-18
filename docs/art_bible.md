@@ -189,7 +189,7 @@ toy: same gold crown, same broad symmetrical humanoid mass, same pot-bodied
 caster, oversized equipment as the only joke. This section replaces that
 approach and is authoritative for every `boss_*` sprite.
 
-> **Statement of intent.** Crystal Dungeons bosses are threatening
+> **Statement of intent.** Are P Geese bosses are threatening
 > storybook grotesques rendered with 8-bit-plus economy. Their identity
 > comes from a coherent body plan, one dominant thematic motif, and a
 > silhouette tied to their combat behavior and environment. Humor is dry

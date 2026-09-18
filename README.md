@@ -11,13 +11,15 @@ Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
 > **Status: feature-complete, polished playable build** (milestones
-> **M1–M116** delivered and owner-approved — the M98–M108 "Are P Geese"
+> **M1–M119** delivered and owner-approved — the M98–M108 "Are P Geese"
 > program, from the post-M97 fix batch through the full rebrand at
 > **v0.7.0**, approved 2026-09-02; the **M109–M116 program** — the lifetime
 > ledger, the patrol dispatcher with the Golden Goose, the Jester's lore
 > trap and the treasure chests, cutscene stages, the font readability
 > redesign, the Last Dragon redesign and the End-game Summary — approved
-> 2026-09-10 and packaged as **v0.8.0** the same day). In the box: a seven-town difficulty ladder
+> 2026-09-10 and packaged as **v0.8.0** the same day; the **M117–M119
+> program**, described at the end of this note, approved 2026-09-18 and
+> packaged as **v0.9.0** the same day). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
 > dungeons with room events including the rare Royal Relics and per-theme
@@ -88,15 +90,15 @@ music, or text. Built in **C++20** with **raylib**.
 > Golden Goose hunt, the Jester's lore question, three chests and the
 > Mimic, a Stranger scene), a persistent **lifetime ledger** with a
 > six-page **End-game Summary**, and the typeface redrawn on a 6×9 cell.
-> The **M117–M119 program** (authorized 2026-09-14) is implemented and
-> awaits the owner's manual approval: the owner fix batch (CRT defaults
-> Strength 2 / Curvature 0, the Controls page's F1 row compiled out of
-> Release, blackjack stakes to 1000 g, the Jester waiting out the Lore and
-> Chest patrols), a bespoke icon for every dungeon event with a glint, and
-> the background art redesign (painted service interiors, a title scene,
-> painted battle stages under the familiar silhouettes). After it only the
-> deferred **validation playtesting (M23)** and **release sign-off (M24)**
-> remain. Current status always lives in `docs/milestones.md`.
+> The **M117–M119 program** (approved 2026-09-18) added the owner fix batch
+> (CRT defaults Strength 2 / Curvature 0, the Controls page's F1 row
+> compiled out of Release, blackjack stakes to 1000 g, the Jester waiting
+> out the Lore and Chest patrols), a bespoke icon for every dungeon event
+> with a glint, and the background art redesign (painted service interiors,
+> a title scene, and painted battle stages that stand every combatant on
+> one continuous floor under the familiar silhouettes). Only the deferred
+> **validation playtesting (M23)** and **release sign-off (M24)** remain.
+> Current status always lives in `docs/milestones.md`.
 
 ## Requirements
 

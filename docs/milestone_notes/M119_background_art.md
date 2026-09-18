@@ -1,7 +1,7 @@
 # M119 — Background art
 
-**Status:** implemented, awaiting manual approval (implemented 2026-09-14; the
-battle stages corrected 2026-09-16 — see the corrective section at the end)
+**Status:** complete (approved 2026-09-18; the battle stages were corrected
+2026-09-16, before approval — see the corrective section at the end)
 **Program:** M117–M119 (owner-authorized 2026-09-14 via the approved plan;
 branch `oyb11`, baseline `72f4c3e`).
 **No version motion:** manifest v2 with six new texture ids; 42 PNGs
@@ -193,16 +193,15 @@ As above.
 
 ### 9. Final status
 
-`implemented, awaiting manual approval`
-
-Then stop and wait for the owner's manual acceptance decision. M23 → M24
-follow only after explicit authorization.
+`complete (approved 2026-09-18)` — the approval covers the corrective pass
+recorded below. M23 → M24 follow only after explicit authorization.
 
 ## Corrective pass — grounded battle stages (2026-09-16)
 
 Owner brief of 2026-09-16, a correction to this milestone's B3 slice — not
-a new milestone; the status stays `implemented, awaiting manual approval`
-and only the owner may change it. Everything above is kept as written;
+a new milestone; at the time the status stayed `implemented, awaiting manual
+approval` (the owner approved M117–M119, this correction included, on
+2026-09-18). Everything above is kept as written;
 this section is the as-built record of the correction. M117 and M118 were
 not touched.
 
@@ -376,4 +375,5 @@ panel, as M75 documented.
 
 **13. Acceptance criteria.** All items of the brief's §12 are met on the
 captures reviewed, with (a) above as the one geometry the horizon cannot
-reach; the visual judgement itself is the owner's (matrix rows 241–242).
+reach; the visual judgement itself is the owner's (matrix rows 241–242) —
+given with the approval of 2026-09-18.

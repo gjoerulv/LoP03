@@ -4,13 +4,14 @@
 
 - **Status:** planned — deferred 2026-07-20; the deferral has been extended
   by every expansion the owner has authorized since, so this milestone now
-  runs **after M74** (`docs/milestones.md` — the ledger — is the authority
+  runs **after the newest approved program, which the ledger's M23 section
+  names** (`docs/milestones.md` — the ledger — is the authority
   for sequencing and for the full extension list; the tooling described
   below is already built and stays in the tree). Re-audit this note against
-  the **post-M74 checkout** before starting: the capture set is 84 scenes,
-  the batteries have grown through `[danger-report]`, and everything
-  M25–M74 added needs coverage — see the ledger's M23 section for the
-  itemized list. The system inventory below this line is the note's
+  the **then-current checkout** before starting: the capture set and the
+  batteries have grown far past this note's survey, and everything added
+  since M25 needs coverage — see the ledger's M23 section for the current
+  counts and the itemized list. The system inventory below this line is the note's
   original (M22-era) survey, kept as history.
 - **Last reviewed repository commit:** M22 approval HEAD (2026-07-20).
   Re-audit: no capture/scenario tooling exists (window-screenshot

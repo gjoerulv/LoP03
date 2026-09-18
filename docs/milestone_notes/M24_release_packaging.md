@@ -5,7 +5,8 @@
 - **Status:** planned — deferred 2026-07-20; runs **last, after M23** (the
   packaging engineering is already built; only final validation and sign-off
   remain). Re-check manifest/package coverage and size expectations against
-  the **post-M74** content before sign-off — the ledger's narrative lists
+  the **then-current** content before sign-off (the list below was last
+  reviewed at M74; the ledger's M24 section is the authority) — the ledger's narrative lists
   what packaging must now account for (the M62 goose/duck sprites and Duck
   theme, `data/milestones.json`, the M69 town facades + stele + crystal,
   `profile.json`, the M73-redrawn enemy/boss sprites (36×36 boss canvas,

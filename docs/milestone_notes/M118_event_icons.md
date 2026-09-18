@@ -1,6 +1,6 @@
 # M118 — Event icons
 
-**Status:** implemented, awaiting manual approval (implemented 2026-09-14)
+**Status:** complete (approved 2026-09-18)
 **Program:** M117–M119 (owner-authorized 2026-09-14 via the approved plan;
 branch `oyb11`, baseline `72f4c3e`).
 **No version motion:** manifest v2 with fifteen new texture ids; content,
@@ -167,7 +167,4 @@ As above.
 
 ### 9. Final status
 
-`implemented, awaiting manual approval`
-
-Then stop and wait for the owner's manual acceptance decision (the program
-continues with M119 first, as authorized).
+`complete (approved 2026-09-18)`
