@@ -19,7 +19,7 @@ exceptions since M13 — text entry flows through the input layer):
 | Details | C | Y | M22: contextual help panels (battle stats/statuses, dungeon danger, score components, gear comparison); M87: the full skill/item sheet during battle selection, the full party-member sheet, bestiary read focus |
 | CyclePrev / CycleNext | Q / E (alt Left Ctrl / Left Alt) | L1 / R1 | M79: party-member cycling in the Equip Shop member phases (including M90's Equip Party mode) and Training Hall; M82/M92: scoreboard board cycling (1F / 4F / 20F); M116: End-game Summary page cycling (six pages, wrapping) |
 | TextBackspace | Backspace (fixed) | X (fixed) | delete-one-char in text editing |
-| ToggleDebug | F1 (fixed, dev builds) | — | debug overlay; the Controls page lists it only when the overlay is compiled in (M117) |
+| ToggleDebug | F1 (fixed, dev builds) | — | debug overlay; the Controls page (Settings → Controls → Controls overview since M120) lists it only when the overlay is compiled in (M117) |
 | ReloadAssets | F5 (fixed, debug builds) | — | live manifest reload (see `docs/asset_pipeline.md`) |
 | Quit | — | — | reserved, unbound |
 
@@ -62,10 +62,27 @@ characters still require a keyboard (labeled in-game).
 ## 3. Navigation rules
 
 - **Lists:** Up/Down moves, wraps at ends (current `Menu` behavior — keep);
-  disabled rows are skipped by the cursor but visible; selection must remain
+  disabled rows are skipped by the cursor but visible (skill lists since M121
+  let the cursor rest on a greyed skill so its reason and Details can be
+  read; Confirm there is refused with the error beat); selection must remain
   inside the visible viewport once scrolling exists (M12-b).
+- **New Game (M123):** the title's New Game row opens the mode page
+  (Normal / Iron Man, Normal under the cursor); Confirm on Normal goes to
+  party creation, Confirm on Iron Man raises a Begin / Back prompt (cursor on
+  Back); Cancel returns to the title. In an Iron Man run the battle Escape
+  command raises an Escape / Keep fighting prompt (cursor on Keep fighting;
+  Cancel keeps fighting); outside Iron Man Escape is immediate as before.
+- **The fall and the Hall of Shame (M124):** the send-off scene continues on
+  Confirm or Cancel; the fallen summary that follows pages and scrolls like
+  the End-game Summary and leaves to the title on Cancel **or** Confirm. The
+  title's Hall of Shame row (present only with records) opens a list:
+  Up/Down moves (wraps), Confirm views the run's summary, Cancel goes back.
 - **Multi-column/battle-field selection:** target selection cycles the legal
   target set (current behavior); the targeted unit must be visibly marked.
+  An action that strikes every foe asks for **no target**: an all-foes skill
+  always has, and since M126 so does a sweeping basic attack (the Dragon's) —
+  Confirm on Attack resolves it at once. In the Lore and Chest patrols that
+  swing is a single pick, so there it opens target selection like anyone's.
 - **Left/Right are reserved** for value adjust (Guild, Settings) and future
   columns; vertical lists use Up/Down only (the old battle alias was removed
   — CTRL-022 resolved).

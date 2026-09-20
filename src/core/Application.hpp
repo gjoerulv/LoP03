@@ -6,6 +6,7 @@
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
 #include "game/Achievements.hpp"
+#include "game/FallenRuns.hpp"
 #include "game/Party.hpp"
 #include "game/Profile.hpp"
 #include "input/Input.hpp"
@@ -59,6 +60,7 @@ private:
     tutorial::TutorialStore tutorial_;
     AchievementStore achievements_;
     ProfileStore profile_;
+    FallenRunStore fallenRuns_;  // M124
     AppContext context_;
     StateStack stack_;
     bool debugOverlay_;

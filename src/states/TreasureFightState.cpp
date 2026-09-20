@@ -18,6 +18,7 @@
 #include "raylib.h"
 #include "render/BattleBackdrop.hpp"
 #include "states/BossIntroState.hpp"
+#include "states/IronManFall.hpp"  // M123
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -78,6 +79,18 @@ void TreasureFightState::onResume() {
         return;  // spurious resume while the intro/battle still runs
     }
     context_.fade.start();
+    if (result_.outcome == battle::Outcome::Defeat && context_.party.ironMan) {
+        // M123: a lost dig is a real wipe - the Iron Man run ends here. (An
+        // escape is not a wipe: it takes finish(false), already charged.)
+        done_ = true;
+        const TreasureReveal& t = context_.party.treasure;
+        dungeon::EnemyTeam guard;
+        guard.bossId = t.bossId;
+        beginIronManFall(stack(), context_,
+                         ironman::FallenInfo{"Town " + std::to_string(t.town) + " - the treasure dig",
+                                             ironman::fallenFoes(guard, context_.content)});
+        return;
+    }
     finish(result_.outcome == battle::Outcome::Victory);
 }
 

@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "core/AppContext.hpp"
+#include "game/IronMan.hpp"  // M123: the tag and the quit warning
 #include "game/Party.hpp"  // M109: the lifetime ledger (retreat tally)
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -67,7 +68,9 @@ void DungeonMenuState::handleInput(const Input& input) {
                 stack().popState();
                 break;
             case kParty:
-                stack().pushState(std::make_unique<PartyState>(stack(), context_));
+                // M122: the one place heals may be cast from the Party panel.
+                stack().pushState(
+                    std::make_unique<PartyState>(stack(), context_, /*inDungeon=*/true));
                 break;
             case kEquip:  // M90
                 stack().pushState(
@@ -88,7 +91,9 @@ void DungeonMenuState::handleInput(const Input& input) {
                 // M47: leaving the game outright from inside a run. The body
                 // states the dungeon-honest consequence — the run goes, the
                 // entry autosave stays.
-                pushQuitPrompt(stack(), context_, quit::kDungeonBody);
+                pushQuitPrompt(stack(), context_,
+                               context_.party.ironMan ? ironman::kQuitBody
+                                                      : quit::kDungeonBody);
                 break;
 #ifdef CRYSTAL_DEBUG_OVERLAY
             case kDebug:
@@ -119,6 +124,9 @@ void DungeonMenuState::render() {
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
     // Integrated title plaque riding the top edge.
     ui::drawTitlePlaque("Dungeon Paused", w / 2, boxY - 10, 12);
+    if (context_.party.ironMan) {  // M123: top-left - the minimap owns the right corner
+        ui::drawChip(ironman::kTag, 8, 22, p.danger);
+    }
     ui::drawMenu(menu_, boxX + 34, boxY + 26, 18, 12, p.text, p.disabled, p.cursor);
     ui::drawDivider(boxX + 12, boxY + boxH - 24, boxW - 24);
     // Retreat consequence as a danger note: warning shape + coral text.

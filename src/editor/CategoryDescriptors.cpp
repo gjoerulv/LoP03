@@ -323,6 +323,7 @@ std::vector<FieldDesc> itemDescs() {
         bl("notSoldInTown", "Not Sold In Town (M78)"),
         en("effect", "Effect", ids(content::consumableEffectIds())),
         num("effectAmount", "Effect Amount", 0, 9999),
+        num("mpAmount", "MP Amount (M120, heal only)", 0, 9999),
         bl("curesDebuffs", "Cures Debuffs"),
         bl("curesCurse", "Cures Curse (M75)"),
         num("kingEffectAmount", "King Effect Amount", 0, 9999),
@@ -370,6 +371,13 @@ std::vector<FieldDesc> milestoneDescs() {
         txt("description", "Description", true),
         en("effect", "Effect", ids(content::milestoneEffectIds()), "stat_max_hp_pct", true),
         num("magnitude", "Magnitude", 0, 300),
+        // M121: adjusted skill descriptions, shown only on a member who holds
+        // this milestone (the learnset's array-of-objects shape).
+        objArr("skillTexts", "Skill Texts (M121)",
+               {
+                   ref("skill", "Skill", Category::Skills),
+                   txt("description", "Adjusted Description", true),
+               }),
     };
 }
 

@@ -25,8 +25,15 @@ inline std::string itemUseRefusal(const Character& target, const content::ItemDe
             if (target.hp <= 0) {
                 return "The fallen need a revive, not a potion.";
             }
+            // M120: a heal with an MP rider (the Elixir) is still worth using
+            // on a member whose HP is full but whose MP is not.
             if (target.hp >= target.maxHp) {
-                return "Already at full HP.";
+                if (item.mpAmount <= 0) {
+                    return "Already at full HP.";
+                }
+                if (target.mp >= target.maxMp) {
+                    return "Already at full HP and MP.";
+                }
             }
             return "";
         case content::ConsumableEffect::RestoreMp:
@@ -59,7 +66,15 @@ inline std::string applyItemUse(Character& target, const content::ItemDef& item)
             const int before = target.hp;
             target.hp = target.hp + item.effectAmount > target.maxHp ? target.maxHp
                                                                      : target.hp + item.effectAmount;
-            return target.name + " recovers " + std::to_string(target.hp - before) + " HP.";
+            std::string line =
+                target.name + " recovers " + std::to_string(target.hp - before) + " HP";
+            if (item.mpAmount > 0) {  // M120: the Elixir's MP rider
+                const int mpBefore = target.mp;
+                target.mp = target.mp + item.mpAmount > target.maxMp ? target.maxMp
+                                                                     : target.mp + item.mpAmount;
+                line += " and " + std::to_string(target.mp - mpBefore) + " MP";
+            }
+            return line + ".";
         }
         case content::ConsumableEffect::RestoreMp: {
             const int before = target.mp;

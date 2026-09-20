@@ -19,6 +19,7 @@
 #include "game/ItemCaps.hpp"
 #include "game/Party.hpp"
 #include "game/Profile.hpp"  // M112: the King gate for the lore pool
+#include "game/IronMan.hpp"  // M123
 #include "game/Ledger.hpp"  // M109: the economy ledger seam
 #include "game/Relics.hpp"  // the M44 relic grant (seeded, reload-proof)
 #include "game/WorldLadder.hpp"
@@ -32,6 +33,7 @@
 #include "states/EventChoiceState.hpp"   // M103: the events' pick modal
 #include "dungeon/TeamInspect.hpp"  // M88 pre-fight team inspection
 #include "game/ScrollTrove.hpp"      // M92 the Guild's trove
+#include "states/IronManFall.hpp"  // M123
 #include "states/ScrollChoiceState.hpp"
 #include "dungeon/ThemeEvents.hpp"  // M55 per-theme rites
 #include "states/ArmoryGhostState.hpp"
@@ -279,7 +281,9 @@ void DungeonState::buildRoom() {
         markers_.push_back({layout.boss.x, layout.boss.y, MarkerKind::Stairs, -1,
                             dungeon::Dir::North});
     }
-    if (room.chest.present && layout.chest.valid()) {
+    // M126 (owner request 2026-09-20): an OPENED chest is gone - no marker,
+    // no prompt, no dark "C" left lying on the floor.
+    if (room.chest.present && !room.chest.opened && layout.chest.valid()) {
         markers_.push_back({layout.chest.x, layout.chest.y, MarkerKind::Chest, -1,
                             dungeon::Dir::North});
         if (room.teamIndex >= 0 && layout.guard.valid()) {
@@ -383,6 +387,71 @@ void DungeonState::captureShowOutcome(const std::string& title, const std::strin
     showOutcome(title, body);
 }
 
+void DungeonState::captureShowLoot(const std::string& title, const std::string& body, int gold,
+                                   const std::vector<std::string>& itemIds) {
+    showOutcome(title, body);
+    LootSummary loot;
+    loot.addGold(gold);
+    for (const std::string& id : itemIds) {
+        loot.addItem(id, context_.content);
+    }
+    outcomeItems_ = loot.rows();
+}
+
+void DungeonState::captureShowMapPiece() {
+    dungeon_.mapPieceRoom = currentRoom_;
+    buildRoom();
+    const dungeon::RoomLayout& layout = layouts_[static_cast<std::size_t>(currentRoom_)];
+    const int sx = layout.centerSpawn.x - 1;
+    const int sy = layout.centerSpawn.y;
+    const float inset = (kTile - kPlayerSize) * 0.5f;
+    player_ = Rect{static_cast<float>(sx) * kTile + inset, static_cast<float>(sy) * kTile + inset,
+                   kPlayerSize, kPlayerSize};
+    facing_ = Vec2{1.0f, 0.0f};
+    recomputeInteraction(sx, sy);
+}
+
+void DungeonState::captureShowCurioFound(int index) {
+    const CurioDef& curio = kCurios[static_cast<std::size_t>(
+        index < 0 ? 0 : (index >= kCurioCount ? kCurioCount - 1 : index))];
+    showOutcome("The Buried Treasure",
+                TextFormat("Buried treasure! Curios: %d of %d - see Maps in town.", kCurioCount,
+                           kCurioCount));
+    LootRow row;
+    row.name = curio.name;
+    row.icon = curioIconTextureId(curio);
+    row.count = 1;
+    outcomeItems_.push_back(std::move(row));
+}
+
+bool DungeonState::captureFaceVault(bool guardFallen) {
+    for (std::size_t i = 0; i < dungeon_.rooms.size(); ++i) {
+        dungeon::Room& room = dungeon_.rooms[i];
+        if (!room.chest.present || !room.chest.guarded || room.teamIndex < 0) {
+            continue;
+        }
+        if (guardFallen) {
+            room.teamIndex = -1;  // what a won guard battle leaves behind
+            room.chest.guarded = false;
+        }
+        enterRoom(static_cast<int>(i), std::nullopt);
+        const dungeon::RoomLayout& layout = layouts_[i];
+        // The guard's tile and the chest's are in line with the door: stand
+        // one step further out than the guard, looking in - or on the chest.
+        const int dx = layout.guard.x - layout.chest.x;
+        const int dy = layout.guard.y - layout.chest.y;
+        const int sx = guardFallen ? layout.chest.x : layout.guard.x + dx;
+        const int sy = guardFallen ? layout.chest.y : layout.guard.y + dy;
+        const float inset = (kTile - kPlayerSize) * 0.5f;
+        player_ = Rect{static_cast<float>(sx) * kTile + inset,
+                       static_cast<float>(sy) * kTile + inset, kPlayerSize, kPlayerSize};
+        facing_ = Vec2{static_cast<float>(-dx), static_cast<float>(-dy)};
+        recomputeInteraction(sx, sy);
+        return guardFallen ? onChest_ : facingMarker_ != nullptr;
+    }
+    return false;
+}
+
 void DungeonState::captureShowReels() {
     // A representative three-spin result: two misses around a crown match, so
     // the icon rows, the separator pips, and the prize text are all covered.
@@ -393,8 +462,10 @@ void DungeonState::captureShowReels() {
                 "No match. The machine hums, deeply satisfied with itself.");
     // Owner request 2026-08-28: the prize also rides a gear tag row, so the
     // scene covers the icon+gold-name convention.
-    if (const content::ItemDef* crown = context_.content.findItem("dragon_crown")) {
-        outcomeItems_.push_back({content::gearIconTextureId(*crown), crown->name});
+    {
+        LootSummary loot;
+        loot.addItem("dragon_crown", context_.content);
+        outcomeItems_ = loot.rows();
     }
     using gamble::ReelSymbol;
     outcomeReels_ = {
@@ -475,8 +546,7 @@ void DungeonState::openChest() {
         return;
     }
     if (room.chest.opened) {
-        showOutcome("The Chest", "It is empty. It was empty the last time, too.");
-        return;
+        return;  // M126: an opened chest is gone from the floor (buildRoom)
     }
     if (room.chest.guarded) {
         message_ = "Guarded - defeat the team first.";
@@ -495,21 +565,17 @@ void DungeonState::openChest() {
     ++context_.party.lifetime.explore.chestsOpened;
     ++run_.chestsOpened;
     run_.treasureGold += room.chest.gold;
-    std::string msg = TextFormat("Found %d gold", chestGold);
-    // Owner request 2026-08-28: a found item rides the outcome panel's gear
-    // tag row (icon + gold name) instead of hiding in the sentence.
-    std::string foundIcon;
-    std::string foundName;
+    // M126 (owner request 2026-09-20): everything the chest held is LISTED -
+    // the gold in one white line, the piece under it in the reward gold -
+    // instead of a "Found N gold - and:" sentence above a lone tag.
+    LootSummary loot;
+    loot.addGold(chestGold);
     if (!room.chest.itemId.empty()) {
         context_.party.inventory.add(room.chest.itemId, 1);
         recordTreasureFound(context_.party);  // M109
-        foundName = room.chest.itemId;
-        if (const content::ItemDef* it = context_.content.findItem(room.chest.itemId)) {
-            foundName = it->name;
-            foundIcon = content::gearIconTextureId(*it);
-        }
-        msg += " - and:";
+        loot.addItem(room.chest.itemId, context_.content);
     }
+    std::string msg;
     if (room.chest.trapped) {
         // Exactly the wound the prompt warned about: 25% max HP, never fatal.
         // M84 (Trap Sense): the perk shaves percentage points off the wound.
@@ -519,13 +585,14 @@ void DungeonState::openChest() {
                 c.hp = std::max(1, c.hp - c.maxHp * (woundPct > 0 ? woundPct : 0) / 100);
             }
         }
-        msg = "The trap bites - the party is wounded! " + msg;
+        msg = "The trap bites - the party is wounded!";
     }
     // M80 addendum: chest results ride the outcome panel.
     showOutcome("The Chest", msg);
-    if (!foundName.empty()) {
-        outcomeItems_.push_back({foundIcon, foundName});
-    }
+    outcomeItems_ = loot.rows();
+    buildRoom();  // M126: the opened chest leaves the floor (no lingering mark)
+    recomputeInteraction(static_cast<int>((player_.x + player_.w * 0.5f) / kTile),
+                         static_cast<int>((player_.y + player_.h * 0.5f) / kTile));
 }
 
 void DungeonState::interact() {
@@ -622,10 +689,17 @@ void DungeonState::digBuried() {
         p.ownedCurios.push_back(curioId);
         recordCurioFound(p);  // M109
         const CurioDef* curio = findCurio(curioId);
+        // M127: the curio rides the panel's row - its own icon and its name
+        // in the reward gold (the M126 listing idiom) - and the sentence
+        // stops restating it.
         showOutcome("The Buried Treasure",
-                    TextFormat("Buried treasure: %s! (curios: %d of %d - see Maps in town)",
-                               curio != nullptr ? curio->name : curioId.c_str(),
+                    TextFormat("Buried treasure! Curios: %d of %d - see Maps in town.",
                                static_cast<int>(p.ownedCurios.size()), kCurioCount));
+        LootRow row;
+        row.name = curio != nullptr ? curio->name : curioId;
+        row.icon = curio != nullptr ? curioIconTextureId(*curio) : std::string();
+        row.count = 1;
+        outcomeItems_.push_back(std::move(row));
         // Curator may fire the moment the dozen completes.
         pushAchievementToasts(stack(), context_, AchvContext{});
     }
@@ -834,7 +908,9 @@ void DungeonState::resolveEvent() {
                         outcomeTitleFor(context_, dungeon::RoomEventKind::Sacrifice),
                         "It melts to nothing. The NEXT battle pays DOUBLE XP.");
                     if (it != nullptr) {
-                        outcomeItems_.push_back({content::gearIconTextureId(*it), it->name});
+                        LootSummary burned;  // M126: the shared row shape
+                        burned.addItem(it->id, context_.content);
+                        outcomeItems_ = burned.rows();
                     }
                 },
                 std::move(icons)));
@@ -1003,7 +1079,7 @@ void DungeonState::resolveEvent() {
                     // (owner direction 2026-08-17); the body keeps only the
                     // prize lines, so nothing is said twice.
                     std::vector<std::array<int, 3>> rows;
-                    std::vector<std::pair<std::string, std::string>> itemTags;
+                    LootSummary loot;  // M126: every spin's winnings, summarized
                     std::string body;
                     bool anyMatch = false;
                     for (int s = 0; s < spins; ++s) {
@@ -1014,7 +1090,7 @@ void DungeonState::resolveEvent() {
                         const int m = gamble::reelMatch(reel);
                         if (m >= 0) {
                             anyMatch = true;
-                            body += applyReelPrize(m, itemTags) + "\n";
+                            body += applyReelPrize(m, loot) + "\n";
                         }
                     }
                     if (!anyMatch) {
@@ -1024,7 +1100,7 @@ void DungeonState::resolveEvent() {
                     showOutcome(outcomeTitleFor(context_, dungeon::RoomEventKind::Reels),
                                 std::move(body));
                     outcomeReels_ = std::move(rows);
-                    outcomeItems_ = std::move(itemTags);  // owner request 2026-08-28
+                    outcomeItems_ = loot.rows();  // owner request 2026-08-28; M126
                     reelSpinT_ = 0.0f;  // owner request 2026-08-29: SPIN first
                 }));
             return;  // the modal owns resolution
@@ -1103,26 +1179,19 @@ void DungeonState::resolveEvent() {
             const int gold = dungeon::minersCacheGold(dungeon_.depth);
             earnGold(context_.party, gold, EconomySource::MinersCache, dungeon_.town);  // M109
             run_.treasureGold += gold;
-            std::string reward = TextFormat("%d gold", gold);
-            // Owner request 2026-08-28: the cache's item rides the gear tag row.
-            std::string cacheIcon;
-            std::string cacheName;
+            // Owner request 2026-08-28: the cache's item rides the gear tag
+            // row. M126: so does its gold - the rows list all of it.
+            LootSummary loot;
+            loot.addGold(gold);
             if (!ev.itemId.empty()) {
                 context_.party.inventory.add(ev.itemId, 1);
                 recordTreasureFound(context_.party);  // M109
-                cacheName = ev.itemId;
-                if (const content::ItemDef* it = context_.content.findItem(ev.itemId)) {
-                    cacheName = it->name;
-                    cacheIcon = content::gearIconTextureId(*it);
-                }
-                reward += " and a find";
+                loot.addItem(ev.itemId, context_.content);
             }
             context_.audio.play(Sfx::Chest);
             showOutcome(outcomeTitleFor(context_, ev.kind),
-                        "You clear the rockfall - battered, but richer: " + reward + ".");
-            if (!cacheName.empty()) {
-                outcomeItems_.push_back({cacheIcon, cacheName});
-            }
+                        "You clear the rockfall - battered, but richer.");
+            outcomeItems_ = loot.rows();
             break;
         }
         case dungeon::RoomEventKind::ElderRoot: {
@@ -1183,9 +1252,12 @@ void DungeonState::resolveEvent() {
             // (name in gold; consumables carry no M81 icon, and that is fine).
             showOutcome(outcomeTitleFor(context_, ev.kind),
                         "The peddler hands it over. It looks... pleased.");
-            outcomeItems_.push_back(
-                {it != nullptr ? content::gearIconTextureId(*it) : std::string(),
-                 it != nullptr ? it->name : std::string("Evil Duckling")});
+            {
+                LootSummary bought;  // M126: the shared row shape
+                bought.addItem(it != nullptr ? it->id : std::string(dungeon::kEvilDucklingItemId),
+                               context_.content);
+                outcomeItems_ = bought.rows();
+            }
             break;
         }
         case dungeon::RoomEventKind::Surveyor: {
@@ -1288,7 +1360,10 @@ void DungeonState::renderOutcomePanel() const {
     // Gear tag rows (owner request 2026-08-28): one body line per found piece.
     constexpr int kItemRowH = 13;
     const int itemRows = static_cast<int>(outcomeItems_.size());
-    const int boxH = 86 + reelRows * kReelRowH + itemRows * kItemRowH;
+    // M126: a panel that is ALL rows (an untrapped chest: gold and a find, no
+    // sentence) closes up under them instead of holding three blank lines.
+    const int bodyH = outcomeBody_.empty() ? 8 : 47;
+    const int boxH = 39 + bodyH + reelRows * kReelRowH + itemRows * kItemRowH;
     const int boxX = (w - kPanelBoxW) / 2;
     const int boxY = (h - boxH) / 2;
     ui::drawModalDim(w, h);
@@ -1363,11 +1438,14 @@ void DungeonState::renderOutcomePanel() const {
     // Gear tag rows (owner request 2026-08-28): each found piece as its M81
     // icon + name in the reward gold, centered between the title (and any
     // reel rows) and the body.
+    // M126: the rows are a LootSummary's - gold in the body white, every
+    // piece in the reward gold with its count ("x2") when it came twice.
     for (int i = 0; i < itemRows; ++i) {
-        const auto& tag = outcomeItems_[static_cast<std::size_t>(i)];
-        ui::drawGearNameTag(context_.resources, tag.first, tag.second, w / 2,
+        const LootRow& row = outcomeItems_[static_cast<std::size_t>(i)];
+        ui::drawGearNameTag(context_.resources, row.icon, row.text(), w / 2,
                             boxY + 24 + reelRows * kReelRowH + i * kItemRowH,
-                            ui::style::kFontBody, pal.gold, /*centered=*/true);
+                            ui::style::kFontBody, row.isGold ? pal.text : pal.gold,
+                            /*centered=*/true);
     }
     // M87: the body scrolls past the visible budget instead of truncating.
     ui::drawTextViewport(outcomeView_, boxX + 14,
@@ -1862,7 +1940,11 @@ void DungeonState::onResume() {
     // decided (the rewards were paid there), and pick the line the outcome
     // branches below show. The patrol itself is consumed by those branches.
     std::string specialLine;
+    std::string specialFoes;  // M123: who a decision patrol's wipe belongs to
     if (special_ != nullptr) {
+        specialFoes = special_->kind == SpecialKind::Chests
+                          ? ironman::fallenFoes(special_->chests.mimicTeam, context_.content)
+                          : std::string("The riddling Jester");
         PatrolLifetime& pl = context_.party.lifetime.patrols;
         switch (special_->result) {
             case SpecialResult::LoreCorrect:
@@ -1905,6 +1987,12 @@ void DungeonState::onResume() {
 
     if (outcome == battle::Outcome::Escaped) {
         ++run_.escapes;
+        // M123: the battle already charged the Iron Man escape price; a
+        // dragonform/flock restore maps HP by percentage, so pin the vitals
+        // again on the real members (idempotent).
+        if (context_.party.ironMan) {
+            ironman::clampEscapeVitals(context_.party);
+        }
         // M93: fleeing a patrol still resets the counter — the fight happened
         // (and the escape penalty stands like any other).
         if (kind == EncounterKind::Patrol) {
@@ -1930,6 +2018,26 @@ void DungeonState::onResume() {
         }
         return;
     }
+    if (outcome == battle::Outcome::Defeat && context_.party.ironMan) {
+        // M123: an Iron Man wipe is the end of the run - nobody is carried
+        // out, no gold is halved, there is no town to return to. The ledger
+        // still counts the wipe (M124's send-off reads it).
+        ++lifetimeTown(context_.party.lifetime, dungeon_.town).wipes;
+        ironman::FallenInfo fallen;
+        const content::DungeonThemeDef* theme = context_.content.findTheme(dungeon_.themeId);
+        fallen.place = ironman::fallenPlaceDungeon(
+            dungeon_.town, theme != nullptr ? theme->name : std::string{},
+            dungeon_.floorIndex + 1, dungeon_.floorCount, dungeon_.eternal);
+        if (pendingTeamIndex_ >= 0 &&
+            pendingTeamIndex_ < static_cast<int>(dungeon_.teams.size())) {
+            fallen.foes = ironman::fallenFoes(
+                dungeon_.teams[static_cast<std::size_t>(pendingTeamIndex_)], context_.content);
+        } else {
+            fallen.foes = specialFoes.empty() ? std::string("Something unseen") : specialFoes;
+        }
+        beginIronManFall(stack(), context_, std::move(fallen));
+        return;
+    }
     if (outcome == battle::Outcome::Defeat) {
         // M89: the castle carry-out (M47) reaches the dungeons — one member
         // staggers back at 1 HP, the fallen stay fallen, MP is untouched. The
@@ -1938,8 +2046,11 @@ void DungeonState::onResume() {
         // members (tutorial::kCarriedOut).
         clampCastleDefeat(context_.party);
         // M109: the halving is a LOSS in the ledger (never "spent"); the wipe
-        // is the run's end for this town.
-        loseGold(context_.party, context_.party.gold - context_.party.gold / 2);
+        // is the run's end for this town. M120: the price comes from the one
+        // pure rule (wipeGoldLoss) — the halving, or the hidden quarter for an
+        // Eternal run that fell on floor five or deeper.
+        loseGold(context_.party, wipeGoldLoss(context_.party.gold, dungeon_.eternal,
+                                              eternalFloorsCleared_));
         ++lifetimeTown(context_.party.lifetime, dungeon_.town).wipes;
         stack().popState();  // game over -> back to town
         return;
@@ -2039,8 +2150,7 @@ void DungeonState::onResume() {
     }
 }
 
-std::string DungeonState::applyReelPrize(
-    int symbolIndex, std::vector<std::pair<std::string, std::string>>& itemTags) {
+std::string DungeonState::applyReelPrize(int symbolIndex, LootSummary& loot) {
     // M104: one three-of-a-kind, applied per the owner's table. Gold from the
     // machine is plain gold (never score treasure — a gamble is not a chest).
     using gamble::ReelSymbol;
@@ -2081,6 +2191,7 @@ std::string DungeonState::applyReelPrize(
             }
             if (pool.empty()) {
                 earnGold(p, 200, EconomySource::Reels, dungeon_.town);  // M109
+                loot.addGold(200);
                 return line + "The prize tray is empty; 200g rolls out instead.";
             }
             std::sort(pool.begin(), pool.end());
@@ -2089,9 +2200,7 @@ std::string DungeonState::applyReelPrize(
             const std::string& id = pool[static_cast<std::size_t>(ph % pool.size())];
             p.inventory.add(id, 1);
             recordTreasureFound(p);  // M109
-            const content::ItemDef* it = context_.content.findItem(id);
-            itemTags.push_back({it != nullptr ? content::gearIconTextureId(*it) : std::string(),
-                                it != nullptr ? it->name : id});
+            loot.addItem(id, context_.content);
             return line + "Also, in the tray:";
         }
         case ReelSymbol::Spoon:
@@ -2108,7 +2217,7 @@ std::string DungeonState::applyReelPrize(
             }
             p.inventory.add(id, 1);
             recordTreasureFound(p);  // M109
-            itemTags.push_back({content::gearIconTextureId(*it), it->name});
+            loot.addItem(id, context_.content);
             return "It drops into the tray. Mind it.";
         }
         case ReelSymbol::RedX: {
@@ -2132,6 +2241,7 @@ std::string DungeonState::applyReelPrize(
             const std::vector<std::string> pool = scrollTrovePool(context_.content);
             if (pool.empty()) {
                 earnGold(p, 200, EconomySource::Reels, dungeon_.town);  // M109
+                loot.addGold(200);
                 return "The bald stranger has run out of scrolls; 200g of apology instead.";
             }
             const std::uint64_t h = dungeon::themeEventHash(dungeon_.seed, currentRoom_,
@@ -2139,12 +2249,12 @@ std::string DungeonState::applyReelPrize(
             const std::string& id = pool[static_cast<std::size_t>(h % pool.size())];
             p.inventory.add(id, 1);
             recordTreasureFound(p);  // M109: found, not yet learned
-            const content::ItemDef* it = context_.content.findItem(id);
-            itemTags.push_back({std::string(), it != nullptr ? it->name : id});
-            return "The bald stranger nods once. Teach it from the Party panel.";
+            loot.addItem(id, context_.content);
+            return "The bald stranger nods once. Teach it from the Items menu.";  // M122: re-homed
         }
         case ReelSymbol::Seven: {
             earnGold(p, 1000, EconomySource::Reels, dungeon_.town);  // M109
+            loot.addGold(1000);
             return "SEVEN SEVEN SEVEN. One thousand gold, and the machine's grudging respect.";
         }
     }
@@ -2687,10 +2797,16 @@ void DungeonState::renderMinimap() const {
         }
         DrawRectangle(cx, cy, cell, cell, c);
         // M66: once the chart is read, the X it promised burns on the minimap.
+        // M120: it pulses lightly on the title phrase's 3-step motion clock
+        // (ember -> gold -> glint) so the eye finds it without any layout
+        // motion; the middle step is the pre-M120 gold.
         if (chartFound_ && static_cast<int>(i) == dungeon_.buriedRoom) {
-            DrawRectangle(cx + 1, cy + 1, cell - 2, 1, Color{235, 214, 112, 255});
-            DrawRectangle(cx + 1, cy + cell - 2, cell - 2, 1, Color{235, 214, 112, 255});
-            DrawRectangle(cx + cell / 2, cy + 2, 1, cell - 4, Color{235, 214, 112, 255});
+            constexpr Color kChartPulse[3] = {Color{176, 150, 64, 255}, Color{235, 214, 112, 255},
+                                              Color{255, 246, 190, 255}};
+            const Color mark = kChartPulse[ui::motionPhase3()];
+            DrawRectangle(cx + 1, cy + 1, cell - 2, 1, mark);
+            DrawRectangle(cx + 1, cy + cell - 2, cell - 2, 1, mark);
+            DrawRectangle(cx + cell / 2, cy + 2, 1, cell - 4, mark);
         }
         if (static_cast<int>(i) == currentRoom_) {
             DrawRectangleLines(cx - 1, cy - 1, cell + 2, cell + 2, RAYWHITE);
@@ -2815,12 +2931,14 @@ void DungeonState::render() {
                 glyph = "v";
                 break;
             case MarkerKind::Chest: {
+                // M126: only an UNOPENED chest has a marker (buildRoom), so
+                // the old dark "C" of an emptied one is gone with it.
                 const dungeon::Chest& chest =
                     dungeon_.rooms[static_cast<std::size_t>(currentRoom_)].chest;
-                c = chest.opened ? Color{120, 100, 50, 255} : Color{232, 200, 96, 255};
-                glyph = chest.trapped && !chest.opened ? "T" : "C";
-                fallbackId = chest.opened ? nullptr : "prop.chest";
-                if (chest.trapped && !chest.opened) {
+                c = Color{232, 200, 96, 255};
+                glyph = chest.trapped ? "T" : "C";
+                fallbackId = "prop.chest";
+                if (chest.trapped) {
                     tint = Color{255, 150, 150, 255};  // visibly dangerous
                     c = Color{220, 120, 96, 255};
                 }
@@ -2929,9 +3047,10 @@ void DungeonState::render() {
                 }
                 break;
             }
-            case MarkerKind::MapPiece:  // M65: a golden scrap (glyph marker,
-                c = Color{235, 214, 112, 255};  // the M55-rite precedent)
-                glyph = "?";
+            case MarkerKind::MapPiece:  // M65: a golden scrap. M127: a torn piece
+                c = Color{235, 214, 112, 255};  // of the Maps screen's own parchment
+                glyph = "?";                    // (the glyph box is the fallback)
+                fallbackId = kMapPiecePropId;
                 break;
             case MarkerKind::Chart:  // M66: a cyan chart scrap
                 c = Color{110, 214, 220, 255};
@@ -2978,8 +3097,25 @@ void DungeonState::render() {
         if (m.kind != MarkerKind::Chest && m.teamIndex >= 0 &&
             m.teamIndex < static_cast<int>(teamTier_.size())) {
             const danger::Tier tier = teamTier_[static_cast<std::size_t>(m.teamIndex)];
-            ui::drawTextCentered(danger::tierName(tier), originX_ + m.x * kTile + kTile / 2,
-                                 originY_ + m.y * kTile - 9, ui::style::kFontSmall, tierColor(tier));
+            // M126: a chest guard stands IN FRONT of its chest now; when the
+            // chest is the tile right above it the label would sit on the
+            // chest, so it moves beside the guard instead.
+            bool chestAbove = false;
+            if (m.kind == MarkerKind::GuardTeam) {
+                for (const Marker& other : markers_) {
+                    chestAbove = chestAbove || (other.kind == MarkerKind::Chest &&
+                                                other.x == m.x && other.y == m.y - 1);
+                }
+            }
+            if (chestAbove) {
+                ui::drawText(danger::tierName(tier), originX_ + (m.x + 1) * kTile + 4,
+                             originY_ + m.y * kTile + 4, ui::style::kFontSmall, tierColor(tier));
+            } else {
+                ui::drawTextCentered(danger::tierName(tier),
+                                     originX_ + m.x * kTile + kTile / 2,
+                                     originY_ + m.y * kTile - 9, ui::style::kFontSmall,
+                                     tierColor(tier));
+            }
         }
     }
     const Marker* highlight = facingMarker_;
@@ -3045,7 +3181,7 @@ void DungeonState::render() {
         const std::string rarity = chest.rarity.empty() ? "" : " (" + chest.rarity + ")";
         if (chest.guarded) {
             text = "Guarded chest" + rarity + " - defeat the guards to claim";
-        } else if (chest.trapped && !chest.opened) {
+        } else if (chest.trapped) {
             // Trapped treasure: the wound is stated before the take.
             text = input::prompt(map, InputAction::Confirm, device,
                                  "Take trapped chest" + rarity) +

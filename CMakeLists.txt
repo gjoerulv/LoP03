@@ -8,8 +8,9 @@
 # 0.7.0 (owner direction 2026-08-17): the M98-M108 program build.
 # 0.8.0 (owner direction 2026-09-10): the M109-M116 program build.
 # 0.9.0 (owner direction 2026-09-18): the M117-M119 program build.
+# 0.9.1 (owner direction 2026-09-20): the M120-M127 build.
 project(ArePGeese
-        VERSION 0.9.0
+        VERSION 0.9.1
         DESCRIPTION "16-bit-inspired turn-based JRPG roguelite"
         LANGUAGES C CXX)
 
@@ -34,6 +35,26 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 # "core/Version.hpp" (the generated dir is on crystal_core's include path).
 configure_file(packaging/Version.hpp.in
                "${CMAKE_BINARY_DIR}/generated/core/Version.hpp" @ONLY)
+
+# M120: the Credits & Licenses page embeds the shipped license text - include
+# as "core/Licenses.hpp". packaging/LICENSES.txt stays the single source (the
+# package copies the same file); editing it re-runs the configure step. The
+# size guard keeps the text inside one MSVC string literal (C2026 at ~16 KB),
+# and the delimiter guard keeps the raw string well-formed.
+set(_licenses_file "${CMAKE_SOURCE_DIR}/packaging/LICENSES.txt")
+file(READ "${_licenses_file}" ARE_P_GEESE_LICENSES_TEXT)
+string(LENGTH "${ARE_P_GEESE_LICENSES_TEXT}" _licenses_len)
+if(_licenses_len GREATER 15000)
+    message(FATAL_ERROR "packaging/LICENSES.txt is ${_licenses_len} bytes - over the "
+                        "15000-byte single-literal budget; chunk packaging/Licenses.hpp.in.")
+endif()
+string(FIND "${ARE_P_GEESE_LICENSES_TEXT}" ")ARE_P_GEESE_LIC" _licenses_delim)
+if(NOT _licenses_delim EQUAL -1)
+    message(FATAL_ERROR "packaging/LICENSES.txt contains the raw-string delimiter.")
+endif()
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_licenses_file}")
+configure_file(packaging/Licenses.hpp.in
+               "${CMAKE_BINARY_DIR}/generated/core/Licenses.hpp" @ONLY)
 
 # ---------------------------------------------------------------------------
 # Options
@@ -85,6 +106,7 @@ add_library(crystal_core STATIC
     src/game/Guild.cpp
     src/game/Achievements.cpp
     src/game/Profile.cpp
+    src/game/FallenRuns.cpp
     src/save/SaveSystem.cpp
     src/battle/Battle.cpp
     src/battle/Simulator.cpp
@@ -153,6 +175,11 @@ add_library(crystal_core STATIC
     src/states/AchievementToast.cpp
     src/states/EquipShopState.cpp
     src/states/HelpState.cpp
+    src/states/CreditsState.cpp
+    src/states/GameModeState.cpp
+    src/states/IronManFall.cpp
+    src/states/FallenState.cpp
+    src/states/HallOfShameState.cpp
     src/states/TutorialPromptState.cpp
     src/states/ConfirmPromptState.cpp
     src/states/QuitFlow.cpp

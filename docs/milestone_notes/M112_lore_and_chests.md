@@ -273,3 +273,7 @@ the Golden Goose is a normal battle — nothing else found. Pinned in
 predicate, the translation, the production AI classified over 64 rounds,
 the morph seating the Jester); matrix rows 235–236. Record:
 `docs/milestone_notes/M117_owner_fix_batch.md`.
+
+> **M126 (2026-09-20):** a basic attack is always ONE pick in both decision
+> encounters - a sweeping swing (the Dragon's) no longer counts as "sweeping
+> the field"; only an all-foes skill does. See `M126_owner_batch_2.md`.

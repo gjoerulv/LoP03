@@ -160,3 +160,7 @@ event mechanics, costs and seeded rolls are untouched.
 ## I. Final status
 
 `complete (approved)` — owner approval 2026-08-06, committed as `ccb4d2a`.
+
+> **M126 (2026-09-20):** the outcome panel lists what was received as rows -
+> the gold total in white, each piece once with its count. See
+> `M126_owner_batch_2.md`.

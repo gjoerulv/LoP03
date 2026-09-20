@@ -22,6 +22,11 @@ class DetailsOverlayState : public GameState {
 public:
     DetailsOverlayState(StateStack& stack, AppContext& context, std::string title,
                         std::string body);
+    // M121: a titled sheet with up to two 10x10 icons flanking the title (a
+    // skill's kind icon on the left, the milestone mark on the right). Either
+    // id may be empty; a missing texture draws nothing (placeholder rule).
+    DetailsOverlayState(StateStack& stack, AppContext& context, std::string title,
+                        std::string body, std::string leftIconId, std::string rightIconId);
 
     void handleInput(const Input& input) override;
     void render() override;
@@ -38,6 +43,8 @@ private:
     AppContext& context_;
     std::string title_;
     std::string body_;
+    std::string leftIconId_;   // M121 (empty = none)
+    std::string rightIconId_;  // M121 (empty = none)
     ui::TextViewport bodyView_;
 #ifdef CRYSTAL_CAPTURE
     int pendingCaptureScroll_ = 0;

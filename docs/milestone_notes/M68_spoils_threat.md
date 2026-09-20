@@ -127,3 +127,6 @@ changes; no data-file changes.
 ## H. Final status
 
 `complete (approved 2026-08-05)`
+
+> **M126 (2026-09-20):** learned skills on the spoils panel wear their M121
+> kind icons. See `M126_owner_batch_2.md`.

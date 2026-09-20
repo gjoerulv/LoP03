@@ -13,6 +13,8 @@
 #include "input/Remap.hpp"
 #include "raylib.h"
 #include "settings/Settings.hpp"
+#include "states/ConfirmPromptState.hpp"
+#include "states/HelpState.hpp"
 #include "states/RemapState.hpp"
 #include "states/StateStack.hpp"
 #include "tutorial/Tutorial.hpp"
@@ -54,6 +56,32 @@ SettingsState::SettingsState(StateStack& stack, AppContext& context)
 void SettingsState::onEnter() { rebuild(); }
 void SettingsState::onResume() { rebuild(); }
 
+// M120: every list change goes through here so a status banner never follows
+// the player into another category (owner report: "reset to defaults" lingered
+// over Audio/Display/...). Leaving Settings drops the state, banner included.
+void SettingsState::enterMode(Mode mode) {
+    mode_ = mode;
+    message_.clear();
+    menu_.setCursor(0);
+    rebuild();
+}
+
+void SettingsState::resetTutorial() {
+    context_.tutorial.reset();
+    message_ = "Tutorial prompts will show again";
+    rebuild();
+}
+
+void SettingsState::resetAll() {
+    context_.settings.values = settings::Settings{};
+    input::resetBindings(context_.input.map());
+    applyAudio();
+    ui::style::setHighContrast(context_.settings.values.highContrast);
+    saveSettings();
+    message_ = "Settings and bindings reset to defaults";
+    rebuild();
+}
+
 #ifdef CRYSTAL_CAPTURE
 void SettingsState::captureShowDisplay() {
     mode_ = Mode::Display;
@@ -64,6 +92,15 @@ void SettingsState::captureShowAudio() {
     mode_ = Mode::Audio;
     menu_.setCursor(0);
     rebuild();
+}
+void SettingsState::captureShowControls() {
+    mode_ = Mode::Controls;
+    menu_.setCursor(0);
+    rebuild();
+}
+void SettingsState::captureAskResetAll() {
+    rebuild();
+    activate(Row::ResetAll);
 }
 #endif
 
@@ -128,6 +165,9 @@ void SettingsState::rebuild() {
             add("Back", Row::Back);
             break;
         case Mode::Controls:
+            // M120: the Controls page left the title screen for the Credits
+            // row; it lives here now, beside the remap screens it describes.
+            add("Controls overview...", Row::ControlsOverview);
             add("Remap Keyboard...", Row::RemapKeyboard);
             add("Remap Gamepad...", Row::RemapGamepad, context_.input.gamepadAvailable());
             add("Back", Row::Back);
@@ -210,10 +250,13 @@ void SettingsState::adjust(Row row, int direction) {
 
 void SettingsState::activate(Row row) {
     switch (row) {
-        case Row::CatAudio: mode_ = Mode::Audio; menu_.setCursor(0); rebuild(); break;
-        case Row::CatDisplay: mode_ = Mode::Display; menu_.setCursor(0); rebuild(); break;
-        case Row::CatGameplay: mode_ = Mode::Gameplay; menu_.setCursor(0); rebuild(); break;
-        case Row::CatControls: mode_ = Mode::Controls; menu_.setCursor(0); rebuild(); break;
+        case Row::CatAudio: enterMode(Mode::Audio); break;
+        case Row::CatDisplay: enterMode(Mode::Display); break;
+        case Row::CatGameplay: enterMode(Mode::Gameplay); break;
+        case Row::CatControls: enterMode(Mode::Controls); break;
+        case Row::ControlsOverview:
+            stack().pushState(std::make_unique<HelpState>(stack(), context_));
+            break;
         case Row::RemapKeyboard:
             stack().pushState(
                 std::make_unique<RemapState>(stack(), context_, ActiveDevice::Keyboard));
@@ -222,28 +265,30 @@ void SettingsState::activate(Row row) {
             stack().pushState(
                 std::make_unique<RemapState>(stack(), context_, ActiveDevice::Gamepad));
             break;
+        // M120: a reset is destructive, so it asks first — the shared prompt
+        // starts on Cancel and Cancel/Back dismisses it (this state stays
+        // below the prompt, so capturing `this` is safe).
         case Row::ResetTutorial:
-            context_.tutorial.reset();
-            message_ = "Tutorial prompts will show again";
-            rebuild();
+            message_.clear();
+            stack().pushState(std::make_unique<ConfirmPromptState>(
+                stack(), context_, "Reset tutorial prompts?",
+                "Every tutorial prompt you have already seen will show again.", "Reset",
+                "Cancel", [this]() { resetTutorial(); }));
             break;
         case Row::ResetAll:
-            context_.settings.values = settings::Settings{};
-            input::resetBindings(context_.input.map());
-            applyAudio();
-            ui::style::setHighContrast(context_.settings.values.highContrast);
-            saveSettings();
-            message_ = "Settings and bindings reset to defaults";
-            rebuild();
+            message_.clear();
+            stack().pushState(std::make_unique<ConfirmPromptState>(
+                stack(), context_, "Reset settings?",
+                "Every setting and every keyboard and gamepad binding returns to its "
+                "default.",
+                "Reset", "Cancel", [this]() { resetAll(); }));
             break;
         case Row::Back:
             if (mode_ == Mode::Top) {
                 saveSettings();
                 stack().popState();
             } else {
-                mode_ = Mode::Top;
-                menu_.setCursor(0);
-                rebuild();
+                enterMode(Mode::Top);
             }
             break;
         default:
@@ -277,9 +322,7 @@ void SettingsState::handleInput(const Input& input) {
             saveSettings();
             stack().popState();
         } else {
-            mode_ = Mode::Top;
-            menu_.setCursor(0);
-            rebuild();
+            enterMode(Mode::Top);
         }
     }
 }

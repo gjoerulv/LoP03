@@ -54,8 +54,85 @@ struct SkillDef {
     // 25). 0 for every pre-M75 skill; valid on physical/magic only.
     int mpDamagePct = 0;
 
+    // M121: the derived at-a-glance kind (icon + kind line). Filled in by
+    // ContentDatabase::addSkill from skillKindFor when content loads — never
+    // authored, never written by the editor. A hand-built SkillDef (tests)
+    // reads NonElemental until it goes through the database.
+    SkillKind kind = SkillKind::NonElemental;
+
     std::string description;
 };
+
+// M121: a summon is announced by its creature; the once-per-run gate alone
+// would also be true of a future non-summon limited skill.
+inline bool isSummonSkill(const SkillDef& s) { return s.oncePerRun && !s.summonName.empty(); }
+
+inline bool targetsEnemies(const SkillDef& s) {
+    return s.target == SkillTarget::SingleEnemy || s.target == SkillTarget::AllEnemies;
+}
+
+// M121: does the skill wound what it targets? The battle's own rule
+// (Battle::useSkill): Physical and Magic always roll damage; a Support skill
+// wounds only with authored power and only an enemy target (M40); a Heal never.
+inline bool skillDealsDamage(const SkillDef& s) {
+    switch (s.category) {
+        case SkillCategory::Physical:
+        case SkillCategory::Magic:
+            return targetsEnemies(s) && s.power > 0;
+        case SkillCategory::Support:
+            return targetsEnemies(s) && s.power > 0;
+        case SkillCategory::Heal:
+            return false;
+    }
+    return false;
+}
+
+// The damage kind an element reads as (None -> non-elemental).
+inline SkillKind damageKindFor(Element e) {
+    switch (e) {
+        case Element::Fire: return SkillKind::Fire;
+        case Element::Ice: return SkillKind::Ice;
+        case Element::Lightning: return SkillKind::Lightning;
+        case Element::Earth: return SkillKind::Earth;
+        case Element::Holy: return SkillKind::Holy;
+        case Element::Dark: return SkillKind::Dark;
+        case Element::None: break;
+    }
+    return SkillKind::NonElemental;
+}
+
+// M121: the one kind rule. A summon wins (its own special icon); then a
+// restorative (the Heal category, or a cleanse / uncurse on allies); then
+// damage by element; what is left deals no damage and is a Debuff when aimed
+// at enemies, a Buff when aimed at the caster's own side.
+inline SkillKind skillKindFor(const SkillDef& s) {
+    if (isSummonSkill(s)) {
+        return SkillKind::Summon;
+    }
+    if (s.category == SkillCategory::Heal ||
+        (!targetsEnemies(s) &&
+         (s.controlEffect == SkillEffect::Cleanse || s.controlEffect == SkillEffect::Uncurse))) {
+        return SkillKind::Heal;
+    }
+    if (skillDealsDamage(s)) {
+        return damageKindFor(s.element);
+    }
+    return targetsEnemies(s) ? SkillKind::Debuff : SkillKind::Buff;
+}
+
+// The icon vocabulary ("ui.icon.skill.<id>"), in SkillKind order — kept in
+// lockstep with the generator's grids and the manifest by the presentation
+// lint (the M81 kIconCategoryIds idiom).
+inline constexpr const char* kSkillKindIds[kSkillKindCount] = {
+    "fire", "ice", "lightning", "earth", "holy", "dark",
+    "neutral", "heal", "buff", "debuff", "summon",
+};
+inline const char* skillKindId(SkillKind k) { return kSkillKindIds[static_cast<int>(k)]; }
+inline std::string skillKindTextureId(SkillKind k) {
+    return std::string("ui.icon.skill.") + skillKindId(k);
+}
+// M121: the mark a milestone-touched skill wears beside its kind icon.
+inline constexpr const char* kMilestoneIconId = "ui.icon.milestone";
 
 // One level-gated skill grant on a class learnset (M29). The skill is known
 // once the character reaches `level`; `startingSkills` remain the level-1 set.
@@ -139,6 +216,16 @@ struct ClassDef {
 // entry's id persists on the Character. One `effect` + one `magnitude`
 // (0 where the effect needs none) — compound behaviours are their own
 // effect values, the PassiveHook precedent.
+// M121: one authored skill-text adjustment on a milestone. When a character
+// HOLDS the milestone, the named skill's description reads as `description`
+// instead of the skill's own — for that character only (game/SkillInfo.hpp).
+// Authored where the base text would otherwise become wrong (Blessed Renew's
+// 35%, Purifying Light's heal, ...). Presentation only: no rule reads it.
+struct MilestoneSkillText {
+    std::string skill;        // skill id (validated to exist)
+    std::string description;  // the adjusted description
+};
+
 struct MilestoneDef {
     std::string id;
     std::string classId;
@@ -148,6 +235,8 @@ struct MilestoneDef {
     std::string description;  // shown on the choice modal and the party panel
     MilestoneEffect effect = MilestoneEffect::None;
     int magnitude = 0;
+    // M121: optional adjusted skill descriptions (empty for most milestones).
+    std::vector<MilestoneSkillText> skillTexts;
 };
 
 struct PassiveDef {
@@ -338,6 +427,11 @@ struct ItemDef {
     // Consumable behavior.
     ConsumableEffect effect = ConsumableEffect::None;
     int effectAmount = 0;
+    // M120 (the Elixir): a `heal` consumable may ALSO restore this much MP to
+    // the same target, in battle and from the bag alike. Validated to `heal`
+    // consumables only; 0 (every other item) keeps the pre-M120 behavior. In
+    // the King's fight a non-zero `kingMpAmount` still replaces it (M43).
+    int mpAmount = 0;
     // M43: the item also lifts ATK-/DEF- (stat debuffs only - full affliction
     // cleansing remains the Cure effect's job).
     bool curesDebuffs = false;

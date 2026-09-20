@@ -29,6 +29,7 @@
 #include "dungeon/TeamInspect.hpp"  // M88: describeTeam for the inspection scene
 #include "dungeon/ThemeEvents.hpp"  // M87: eventFlavorId for the long-flavor scene
 #include "game/Achievements.hpp"
+#include "game/FallenRuns.hpp"  // M124
 #include "game/Profile.hpp"
 #include "game/Castle.hpp"
 #include "game/Party.hpp"
@@ -45,6 +46,10 @@
 #include "states/BattleLogState.hpp"
 #include "states/BattleState.hpp"
 #include "states/CelebrationState.hpp"  // M71
+#include "states/CreditsState.hpp"  // M120
+#include "states/FallenState.hpp"       // M124
+#include "states/GameModeState.hpp"  // M123
+#include "states/HallOfShameState.hpp"  // M124
 #include "states/BossIntroState.hpp"
 #include "states/BlackMarketState.hpp"
 #include "states/AchievementsState.hpp"
@@ -403,11 +408,12 @@ int run(const char* outDir) {
         // otherwise, so the class-select scene can show both states.
         ProfileStore profile(scratch / "profile.json");
         profile.data.kingDefeated = true;
+        FallenRunStore fallenRuns(scratch / "fallen_runs.json");  // M124: empty until its scenes
 
         AppContext ctx{resources,  content,  saves,        party,
                        scoreboard, audio,    fade,         input,
                        settings,   tutorial, achievements, profile,
-                       config::kVirtualWidth, config::kVirtualHeight};
+                       fallenRuns, config::kVirtualWidth, config::kVirtualHeight};
 
         // One full save slot (the others stay empty) for the slot menu.
         {
@@ -1232,9 +1238,10 @@ int run(const char* outDir) {
                  // dynamic outcome string).
                  auto state = std::make_unique<DungeonState>(
                      s, c, dungeon::generate(424242, 8, c.content, "crystal_mine"));
-                 state->captureShowOutcome(
-                     "The Chest",
-                     "The trap bites - the party is wounded! Found 1240 gold + Hi-Potion");
+                 // M126: the chest's real shape now - the bite as the body,
+                 // the take as rows (gold in white, the piece in gold).
+                 state->captureShowLoot("The Chest", "The trap bites - the party is wounded!",
+                                        1240, {"hi_potion"});
                  s.pushState(std::move(state));
              }},
             {"46_battle_relics",
@@ -2180,12 +2187,333 @@ int run(const char* outDir) {
                                     "appends its full report in every official language."));
                  s.pushState(std::move(state));
              }},
+            {"156_credits",
+             [](StateStack& s, AppContext& c) {
+                 // M120: the title's Credits & Licenses page, top of the text.
+                 s.pushState(std::make_unique<CreditsState>(s, c));
+             }},
+            {"157_credits_scrolled",
+             [](StateStack& s, AppContext& c) {
+                 // M120: deep in the license prose (numbered clauses, the
+                 // long MIT paragraph) so the overflow lint reads those too.
+                 auto st = std::make_unique<CreditsState>(s, c);
+                 st->captureScroll(14);
+                 s.pushState(std::move(st));
+             }},
+            {"158_settings_controls",
+             [](StateStack& s, AppContext& c) {
+                 // M120: the Controls submenu with its new overview row.
+                 auto st = std::make_unique<SettingsState>(s, c);
+                 st->captureShowControls();
+                 s.pushState(std::move(st));
+             }},
+            {"159_settings_reset_confirm",
+             [](StateStack& s, AppContext& c) {
+                 // M120: the reset confirmation, raised by the row itself.
+                 auto st = std::make_unique<SettingsState>(s, c);
+                 SettingsState* raw = st.get();
+                 s.pushState(std::move(st));
+                 s.applyPending();
+                 raw->captureAskResetAll();
+             }},
+            {"163_party_skills_dungeon",
+             [](StateStack& s, AppContext& c) {
+                 // M122: the Party panel's skill list inside a dungeon - kind
+                 // icons, MP costs, the milestone mark, heals live (someone is
+                 // hurt), everything else greyed but focusable; the cursor on a
+                 // castable heal with its text below.
+                 if (c.party.members.size() > 1) {
+                     c.party.members[0].hp = c.party.members[0].maxHp;
+                     c.party.members[0].mp = c.party.members[0].maxMp;
+                     c.party.members[1].hp = std::max(1, c.party.members[1].maxHp / 4);
+                 }
+                 auto state = std::make_unique<PartyState>(s, c, /*inDungeon=*/true);
+                 state->captureSelect(0);
+                 state->captureOpenSkills(/*skillRow=*/0, /*pickTarget=*/false);
+                 s.pushState(std::move(state));
+             }},
+            {"164_party_heal_target",
+             [](StateStack& s, AppContext& c) {
+                 // M122: aiming a single-target heal - the roster turns into
+                 // the target pick (HP per member, the caster in gold) and the
+                 // panel says what the cast restores.
+                 auto state = std::make_unique<PartyState>(s, c, /*inDungeon=*/true);
+                 state->captureSelect(0);
+                 state->captureOpenSkills(/*skillRow=*/0, /*pickTarget=*/true);
+                 s.pushState(std::move(state));
+             }},
+            {"165_party_skills_town",
+             [](StateStack& s, AppContext& c) {
+                 // M122: the same list in town - inspect-only, the heal greyed
+                 // with the dungeon-only reason.
+                 auto state = std::make_unique<PartyState>(s, c, /*inDungeon=*/false);
+                 state->captureSelect(0);
+                 state->captureOpenSkills(/*skillRow=*/0, /*pickTarget=*/false);
+                 s.pushState(std::move(state));
+             }},
+            {"166_items_teach_scroll",
+             [](StateStack& s, AppContext& c) {
+                 // M122: teaching a scroll from the Items screen - the pupil
+                 // pick with the taught skill in view (icon, name, MP, kind,
+                 // description); member 0 already knows Fireball (scene 101),
+                 // so its row is greyed "knows it" and the cursor rests there.
+                 c.party.inventory.add("scroll_fireball", 1);
+                 auto st = std::make_unique<InventoryState>(s, c);
+                 st->captureCursorToItem("scroll_fireball");
+                 st->captureConfirm(/*memberRow=*/0);
+                 s.pushState(std::move(st));
+             }},
+            {"160_battle_skill_icons",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M121: kind icons down the skill list, the milestone mark on
+                 // the skills this member's milestones touch (Arcane Edge on
+                 // the spells, Blessed Renew on Renew), a summon named by its
+                 // creature - spent, greyed "USED", and the cursor resting on
+                 // it with the reason spelled out beside the list.
+                 for (Character& m : c.party.members) {
+                     m.milestone10 = "mage_10_b";
+                     m.milestone20 = "cleric_20_b";
+                     m.milestone30 = "mage_30_b";
+                 }
+                 c.party.usedSummons = {"summon_sentinel"};
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 c.party.usedSummons.clear();  // the ledger rides the battle; leak nothing
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureEnterSkillMenu({"fireball", "renew", "everyone_is_welcome",
+                                               "summon_sentinel", "battle_cry", "weaken"},
+                                              /*cursor=*/3);
+                 s.pushState(std::move(state));
+             }},
+            {"161_battle_skill_details_milestones",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M121: the details sheet - kind icon and milestone mark
+                 // flanking the title, the kind line, and two generic boosts'
+                 // own sentences (Arcane Edge + Devastation on an all-enemy
+                 // spell). The milestones were set by the scene above.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 BattleState* raw = state.get();
+                 s.pushState(std::move(state));
+                 raw->captureOpenSkillDetails({"inferno", "renew"}, /*cursor=*/0);
+             }},
+            {"162_battle_skill_details_adjusted",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M121: an authored adjustment - Renew as a Blessed Renew
+                 // holder casts it (35%), the milestone named under the text.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 BattleState* raw = state.get();
+                 s.pushState(std::move(state));
+                 raw->captureOpenSkillDetails({"inferno", "renew"}, /*cursor=*/1);
+             }},
+            {"167_slot_menu_playtime",
+             [](StateStack& s, AppContext& c) {
+                 // M123: the play-time clock down the Load list - a fresh
+                 // party (all three hour digits greyed), one / two / three
+                 // hour digits reached, the 999:59:59 cap, and an empty slot
+                 // (no clock). The label's fitted width stops short of it.
+                 const auto played = c.party.lifetime.explore.playSeconds;
+                 const int gold = c.party.gold;
+                 c.party.gold = 9999999;
+                 content::LoadReport report;
+                 const std::pair<save::SaveSlot, long long> clocks[] = {
+                     {save::SaveSlot::Auto, 56},
+                     {save::SaveSlot::Manual1, 3600 + 3 * 60 + 56},
+                     {save::SaveSlot::Manual2, 12LL * 3600 + 34 * 60 + 5},
+                     {save::SaveSlot::Manual3, 123LL * 3600 + 45 * 60 + 6},
+                     {save::SaveSlot::Manual4, 5000LL * 3600},
+                 };
+                 for (const auto& [slot, seconds] : clocks) {
+                     c.party.lifetime.explore.playSeconds = seconds;
+                     // M127: the rows show the party now - one slot was saved
+                     // with a member down, who lies in the row instead of standing.
+                     const bool downed = slot == save::SaveSlot::Manual2 && c.party.members.size() > 2;
+                     const int hp = downed ? c.party.members[2].hp : 0;
+                     if (downed) {
+                         c.party.members[2].hp = 0;
+                     }
+                     c.saves.save(slot, c.party, report);
+                     if (downed) {
+                         c.party.members[2].hp = hp;
+                     }
+                 }
+                 std::error_code ec;
+                 fs::remove(c.saves.slotPath(save::SaveSlot::Manual5), ec);
+                 c.party.lifetime.explore.playSeconds = played;
+                 c.party.gold = gold;
+                 s.pushState(std::make_unique<SlotMenuState>(s, c, SlotMenuMode::Load));
+             }},
+            {"168_new_game_mode",
+             [](StateStack& s, AppContext& c) {
+                 // M123: the New Game mode page as it opens - Normal under the
+                 // cursor, its blurb beside it.
+                 s.pushState(std::make_unique<GameModeState>(s, c));
+             }},
+            {"169_new_game_iron_man",
+             [](StateStack& s, AppContext& c) {
+                 // M123: Iron Man highlighted - the whole rule set in the
+                 // Danger panel (four paragraphs; the line budget is the lint).
+                 auto st = std::make_unique<GameModeState>(s, c);
+                 st->captureIronMan(/*askBegin=*/false);
+                 s.pushState(std::move(st));
+             }},
+            {"170_new_game_iron_man_confirm",
+             [](StateStack& s, AppContext& c) {
+                 // M123: the last question before an Iron Man run (cursor on Back).
+                 auto st = std::make_unique<GameModeState>(s, c);
+                 GameModeState* raw = st.get();
+                 s.pushState(std::move(st));
+                 s.applyPending();
+                 raw->captureIronMan(/*askBegin=*/true);
+             }},
+            {"171_battle_iron_man_escape",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M123: the Escape command's question in Iron Man - the price
+                 // spelled out over the frozen battle, cursor on "Keep fighting".
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 BattleState* raw = state.get();
+                 s.pushState(std::move(state));
+                 s.applyPending();
+                 raw->captureAskIronManEscape();
+             }},
+            {"172_save_iron_man_refused",
+             [](StateStack& s, AppContext& c) {
+                 // M123: any Save entry point in Iron Man - every slot greyed,
+                 // the refusal on the Danger banner, Back the only hint. The
+                 // flag stays set for the two scenes below; 84_celebration
+                 // clears it.
+                 c.party.ironMan = true;
+                 s.pushState(std::make_unique<SlotMenuState>(s, c, SlotMenuMode::Save));
+             }},
+            {"173_pause_iron_man",
+             [](StateStack& s, AppContext& c) {
+                 // M123: the pause menu's IRON MAN tag (top-right chip).
+                 c.party.ironMan = true;
+                 s.pushState(std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 8, c.content, "crystal_mine")));
+                 s.pushState(std::make_unique<DungeonMenuState>(s, c));
+             }},
+            {"174_iron_man_fall",
+             [](StateStack& s, AppContext& c) {
+                 // M123 -> M124: the end of an Iron Man run is now the send-off
+                 // scene - the party where it fell, the hoppers mid-air, the
+                 // King laughing, the joggers on their lap - with a place line
+                 // and a foe name longer than any the game can produce, both
+                 // fitted. The clock is pinned so the frame is byte-exact.
+                 c.party.ironMan = true;
+                 auto st = std::make_unique<FallenState>(
+                     s, c,
+                     ironman::FallenInfo{
+                         ironman::fallenPlaceDungeon(7, "The Sunken Reliquary", 128, 1, true),
+                         "Grand Archivist of the Drowned Stacks and company"});
+                 st->captureFreeze(2.35f);
+                 s.pushState(std::move(st));
+             }},
+            {"175_fallen_run_summary",
+             [](StateStack& s, AppContext& c) {
+                 // M124: the send-off's summary - the Overview leading with
+                 // where the party fell and to whom (full-width rows), then
+                 // the lifetime rows of the party AS IT FELL.
+                 s.pushState(std::make_unique<EndgameSummaryState>(
+                     s, c, c.party,
+                     ironman::FallenInfo{
+                         ironman::fallenPlaceDungeon(7, "The Sunken Reliquary", 128, 1, true),
+                         "Grand Archivist of the Drowned Stacks and company"},
+                     /*leaveToTitle=*/true));
+             }},
+            {"176_hall_of_shame",
+             [](StateStack& s, AppContext& c) {
+                 // M124: the Hall of Shame past its window - eight records
+                 // (six visible, the n / total chip), a fresh-party clock and
+                 // the 999:59:59 cap, the widest where/who line, the cursor on
+                 // the second row.
+                 c.fallenRuns.runs.clear();
+                 const std::string snapshot = c.saves.serialize(c.party);
+                 for (int i = 0; i < 8; ++i) {
+                     FallenRun run;
+                     run.place = i == 0 ? ironman::fallenPlaceDungeon(7, "The Sunken Reliquary",
+                                                                      128, 1, true)
+                                        : ironman::fallenPlaceDungeon(1 + i % 7, "Crystal Mine",
+                                                                      1 + i % 4, 4, false);
+                     run.foes = i == 0 ? "Grand Archivist of the Drowned Stacks and company"
+                                       : "Gander Grenadier and company";
+                     run.leader = i == 0 ? "Wwwwwwwwwwww" : c.party.members[0].name;
+                     run.highestLevel = i == 0 ? 99 : 3 + i * 4;
+                     run.playSeconds = i == 0 ? 5000LL * 3600 : 1234LL * (i * i * 7 + 1);
+                     run.party = snapshot;
+                     c.fallenRuns.runs.push_back(std::move(run));
+                 }
+                 auto st = std::make_unique<HallOfShameState>(s, c);
+                 st->captureSelect(1);
+                 s.pushState(std::move(st));
+             }},
+            {"177_title_hall_of_shame",
+             [](StateStack& s, AppContext& c) {
+                 // M124: the title with its sixth row (records exist - the
+                 // scene above left eight), at the tighter 17 px pitch.
+                 s.pushState(std::make_unique<MainMenuState>(s, c));
+             }},
+            {"178_chest_loot",
+             [](StateStack& s, AppContext& c) {
+                 // M126: an untrapped chest says nothing - it LISTS: the gold
+                 // total in white, then each piece once in the reward gold, a
+                 // repeat counted (x2). The box closes up under the rows.
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 6, c.content, "ruined_keep"));
+                 state->captureShowLoot("The Chest", "", 99999,
+                                        {"power_ring", "hi_potion", "power_ring"});
+                 s.pushState(std::move(state));
+             }},
+            {"179_vault_guarded",
+             [](StateStack& s, AppContext& c) {
+                 // M126: the guarded chest walled in against the far wall, its
+                 // guardian on the one open tile in front; the party faces it.
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 6, c.content, "ruined_keep"));
+                 if (state->captureFaceVault(/*guardFallen=*/false)) {
+                     s.pushState(std::move(state));
+                 }
+             }},
+            {"180_vault_open",
+             [](StateStack& s, AppContext& c) {
+                 // M126: the guard has fallen - the party stands on the chest
+                 // in its niche, the open prompt in the footer.
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 6, c.content, "ruined_keep"));
+                 if (state->captureFaceVault(/*guardFallen=*/true)) {
+                     s.pushState(std::move(state));
+                 }
+             }},
+            {"181_map_piece_floor",
+             [](StateStack& s, AppContext& c) {
+                 // M127: the Secret Map Piece on a dungeon floor - a torn scrap
+                 // of the Maps screen's own parchment (it was a gold "?" box).
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 6, c.content, "ruined_keep"));
+                 state->captureShowMapPiece();
+                 s.pushState(std::move(state));
+             }},
+            {"182_dig_curio",
+             [](StateStack& s, AppContext& c) {
+                 // M127: a buried treasure's curio on the outcome row - its own
+                 // icon, the longest curio name.
+                 auto state = std::make_unique<DungeonState>(
+                     s, c, dungeon::generate(424242, 6, c.content, "ruined_keep"));
+                 state->captureShowCurioFound(3);  // Gargoyle Ear
+                 s.pushState(std::move(state));
+             }},
             {"84_celebration",
              [](StateStack& s, AppContext& c) {
                  // M71: the victory celebration at its fullest — max score
                  // width, the MVP (12-char name) on the pedestal, one fallen
                  // member lying down. Runs LAST: the KO'd member leaks into no
                  // later scene.
+                 c.party.ironMan = false;  // M123: set by the Iron Man scenes above
                  if (c.party.members.size() > 2) {
                      c.party.members[2].hp = 0;
                  }

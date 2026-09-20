@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "states/GameState.hpp"
 #include "ui/Menu.hpp"
@@ -25,6 +26,9 @@ private:
 
     AppContext& context_;
     ui::Menu menu_;
+    // M124: which action each visible row is - the Hall of Shame row exists
+    // only once somebody has fallen, so rows are no longer fixed indices.
+    std::vector<int> rowIds_;
     std::string phrase_;  // M51: the comedic phrase picked for this title visit
 };
 

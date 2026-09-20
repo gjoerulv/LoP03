@@ -3,6 +3,8 @@
 #include <memory>
 
 #include "core/AppContext.hpp"
+#include "game/IronMan.hpp"  // M123: the tag and the quit warning
+#include "game/Party.hpp"
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "states/AchievementsState.hpp"
@@ -99,7 +101,8 @@ void TownMenuState::handleInput(const Input& input) {
                 // save is lost, so quitting asks the question outright rather than
                 // arming a second press on the same entry. M47 turned the single
                 // answer into three (title / desktop / stay).
-                pushQuitPrompt(stack(), context_, quit::kTownBody);
+                pushQuitPrompt(stack(), context_,
+                               context_.party.ironMan ? ironman::kQuitBody : quit::kTownBody);
                 break;
 #ifdef CRYSTAL_DEBUG_OVERLAY
             case kDebug:
@@ -132,6 +135,9 @@ void TownMenuState::render() {
     const int boxY = h / 2 - boxH / 2;
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
     ui::drawTitlePlaque("Paused", w / 2, boxY - 10, 12);
+    if (context_.party.ironMan) {  // M123
+        ui::drawChipRight(ironman::kTag, w - 8, 8, p.danger);
+    }
     ui::drawMenu(menu_, boxX + 44, boxY + 26, 18, 12, p.text, p.disabled, p.cursor);
 }
 

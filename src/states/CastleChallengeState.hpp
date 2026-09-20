@@ -55,6 +55,7 @@ private:
     int wave_ = 0;          // 0-based fight/wave index
     int totalRounds_ = 0;   // summed battle turns (the Boss Rush / King record)
     int wavesWon_ = 0;
+    std::string currentFoes_;  // M123: the team being fought (the Iron Man fall names it)
     bool done_ = false;     // the result overlay is showing
     std::string resultText_;
     // M87: the result body scrolls past its visible budget instead of

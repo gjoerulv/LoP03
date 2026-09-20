@@ -29,6 +29,7 @@ class TutorialStore;
 }
 class AchievementStore;
 class ProfileStore;
+class FallenRunStore;
 
 struct AppContext {
     ResourceManager& resources;
@@ -49,6 +50,8 @@ struct AppContext {
     // M45: cross-save player profile (profile.json) — currently just whether the
     // King has ever fallen, which unlocks the three reward classes.
     ProfileStore& profile;
+    // M124: the Hall of Shame - fallen Iron Man runs (fallen_runs.json).
+    FallenRunStore& fallenRuns;
     int virtualWidth;
     int virtualHeight;
     // M53: development-only cheat state. A value member (owned by the single

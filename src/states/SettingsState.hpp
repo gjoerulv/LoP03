@@ -32,6 +32,10 @@ public:
     // Capture-only (M52): open the Audio submenu so its rows (incl. the new
     // Ambience Volume row) are overflow-checked.
     void captureShowAudio();
+    // Capture-only (M120): the Controls submenu (its new overview row) and the
+    // reset confirmation exactly as the Reset row raises it.
+    void captureShowControls();
+    void captureAskResetAll();
 #endif
 
 private:
@@ -51,10 +55,13 @@ private:
         // Gameplay.
         BattleSpeed, MessageSpeed, TutorialPrompts, ResetTutorial,
         // Controls.
-        RemapKeyboard, RemapGamepad,
+        ControlsOverview, RemapKeyboard, RemapGamepad,
     };
 
     void rebuild();
+    void enterMode(Mode mode);  // M120: the one list switch; clears the banner
+    void resetTutorial();       // M120: run by the confirmation prompt
+    void resetAll();            // M120: run by the confirmation prompt
     void adjust(Row row, int direction);
     void activate(Row row);
     void applyAudio();

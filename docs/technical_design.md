@@ -191,7 +191,7 @@ carry the information without color.
   back to the normal pool rather than violating it. `EnemyTeam.statScalePct`
   carries the depth multiplier into both `buildBattle` and
   `danger::teamThreat`, so displayed danger always matches the fight.
-  `kGenerationVersion` is currently **24** (bump history: M29 enlarged the theme
+  `kGenerationVersion` is currently **25** (bump history: M29 enlarged the theme
   enemy/boss pools; M30 added the RestToken event; M37 gave the merchant a 75 %
   bargain and gated chest gear by town; **M38 gates the per-town enemy/boss pools
   by `minTown`**; **M43 reprices the consumables a merchant offers and windows
@@ -206,10 +206,11 @@ carry the information without color.
   superseding the M55 guarantee); and **the 2026-08-28 equal weighting to
   v23** (all eleven encounter events share `kEncounterChancePct` with a
   uniform hash-shuffled contention instead of the accreted fixed chain;
-  the fog-gated Surveyor draws first at its own 25 %); and **the M110
+  the fog-gated Surveyor draws first at its own 25 %); **the M110
   patrol dispatcher to v24** (the Nth patrol of a seed can now be a
-  special encounter; §52) — each
-  owner-approved. The version-history comment in
+  special encounter; §52); and **the M126 walled-in guarded chest to v25**
+  (a room-realization change, §67) — each
+  owner-approved or owner-directed. The version-history comment in
   `src/dungeon/RoomLayout.hpp` is the authority).
 - **Events:** `RoomType::Event` dead-end side rooms (2–3 per dungeon,
   kinds unique per dungeon) carry a `RoomEvent`
@@ -255,8 +256,8 @@ stays in `paths::userDataDir()` for dev and packaged builds alike.
 Three layers, all deterministic. **Capture:** `ArePGeese --capture
 <outdir>` (compiled only when `CRYSTAL_ENABLE_CAPTURE` is ON and the build
 is not Release) renders one scenario per screen family (the authoritative
-list lives in `src/capture/CaptureRunner.cpp`; **155 scenes as of M119
-(2026-09-16)**,
+list lives in `src/capture/CaptureRunner.cpp`; **182 scenes as of M127
+(2026-09-20)**,
 `98`–`105` the pseudo-localized long-prose set) — every
 dungeon theme, five-enemy and boss battles, worst-case 12-char names,
 maximal score breakdowns, the tutorial/Details overlays, High Contrast —
@@ -305,7 +306,9 @@ settings round-trip, Details action schema + defaults).
 
 The full soundscape ships through the M14 catalog — 30 original WAVs at M21,
 grown to **39 as of M74** (20 music, 4 ambience, 15 SFX — per-town, castle,
-King and Duck tracks joined later; M74 rebuilt the mine bed) — produced by the
+King and Duck tracks joined later; M74 rebuilt the mine bed) and **49 since
+M112** (22 music, 5 ambience, 22 SFX — `assets/manifest.json` and
+`assets/credits.md` are the authority) — produced by the
 deterministic `tools/asset_gen/generate_audio.ps1` (byte-identical reruns;
 provenance in `assets/credits.md`). The stable contract is `src/audio/AudioRoles.hpp`
 (raylib-free): `Sfx`/`MusicTrack`/`AmbienceTrack` enums, role-id tables,
@@ -367,8 +370,10 @@ one-shot commits, and settings honoring.
 
 ### Paths & safety
 
-`paths::userDataDir()` resolves a per-user writable dir (`%APPDATA%/CrystalDungeons`
-on Windows, `$XDG_DATA_HOME`/`~/.local/share` fallback elsewhere) using env vars
+`paths::userDataDir()` resolves a per-user writable dir (`%APPDATA%/ArePGeese`
+on Windows since M108 — the old `CrystalDungeons` folder is only the one-time
+migration's source, `src/platform/Migration.cpp`;
+`$XDG_DATA_HOME`/`~/.local/share` fallback elsewhere) using env vars
 only — **no shell execution**. `paths::sanitizeRelative()` rejects absolute paths,
 drive letters, and `..` traversal; all data/save file access goes through it.
 
@@ -480,8 +485,9 @@ Enums (string values), as of M2: `Element`, `SkillCategory`, `SkillTarget`,
 
 ### Flow & states
 
-`MainMenuState` (New Game / Continue / Controls / Quit) → `PartyCreationState` →
-`TownState`. Town locations push real sub-states (`InnState`, `ItemShopState`,
+`MainMenuState` (New Game / Continue / Credits / Settings / Quit — the title
+rows as of M120; M124 adds a conditional Hall of Shame row, §65) → `GameModeState` (M123: Normal or Iron Man, §64) →
+`PartyCreationState` → `TownState`. Town locations push real sub-states (`InnState`, `ItemShopState`,
 `EquipShopState`, `TrainingHallState`, `GuildState`, `ScoreboardState`,
 `SlotMenuState`); `TownMenuState` is a transparent pause overlay.
 `AppContext` now also carries `save::SaveSystem& saves` and the active
@@ -514,7 +520,7 @@ provisional `magic`-scaled pool until the combat milestone.
 ### Save format & rules
 
 Versioned JSON (`version` must equal `kSaveVersion`, currently `1`) under the
-user data dir (`%APPDATA%/CrystalDungeons/saves` on Windows). **Slots:** five
+user data dir (`%APPDATA%/ArePGeese/saves` on Windows). **Slots:** five
 manual (`save_slot1..5.json`; three until M53) plus an autosave
 (`save_auto.json`).
 
@@ -572,7 +578,7 @@ layout:
   kGenerationVersion, roomIndex, archetype)` (splitmix64-style mixing) feeds
   a per-room `Rng`. Realization **never draws from the topology RNG**, so
   presentation changes cannot alter what a published seed means.
-  `kGenerationVersion` (currently 24 — the history comment in
+  `kGenerationVersion` (currently 25 — the history comment in
   `RoomLayout.hpp` is the authority; 1 = the pre-M16 fixed 26×15 rooms) is
   folded into the hash and recorded on new score entries as an optional
   `generationVersion` field — no scoreboard format bump; absent = pre-M16
@@ -1055,7 +1061,8 @@ Presentation + persistence only; no battle/generation/scoring surface, no versio
   party's personal records (`recordBiggestHit`/`recordRunDamage`, save fields) on a
   completed run, and hands the stats to `DungeonResultState`, whose Details key opens
   the run stats + records. Castle challenges pass no slot (their own records cover them).
-- **Achievements.** `game/Achievements.hpp` — a fixed table of 16 original goals +
+- **Achievements.** `game/Achievements.hpp` — a fixed table of 16 original goals
+  at M42 (23 since M123; `kAchievementCount` is the authority) +
   `achievementMet(id, party, ctx)` (pure predicates over party state + a run event) +
   `AchievementStore` (a global `achievements.json`, tutorial.json-style: versioned,
   defensive load, atomic save), added to `AppContext` and created in `Application`.
@@ -1250,7 +1257,8 @@ classes are `data/classes.json` plus generic flags.
 - **Animation:** `BattleState` spawns floating damage/heal numbers (computed from
   per-unit HP deltas around each action) that rise and fade.
 - **Shared services:** `AppContext` now also carries `AudioManager&` and
-  `FadeController&`. The `HelpState` (from the main menu) documents controls.
+  `FadeController&`. The `HelpState` documents controls (pushed from the main
+  menu until M120; from Settings → Controls since).
 
 Visuals and audio are validated by a human (not unit-tested); only pure timing
 (`FadeController`) is covered by tests.
@@ -1893,7 +1901,7 @@ of** the caller (never `replaceState`), and neither backdrops nor the intro touc
   (gold→level progression alongside battle XP). Parties start with a little gold.
 - **Packaging:** the final `README.md` documents what the game is, the MSVC build/
   run, controls, the play loop, project layout, the smoke test (the test
-  suite — 125 tests at M10, 900 as of M119 in Debug (896 in Release, where the
+  suite — 125 tests at M10, 964 as of M127 in Debug (960 in Release, where the
   Debug-only cases are compiled out) — which loads content, generates
   dungeons, and simulates a clear), and
   known limitations. The M10 deliverable was `CrystalDungeons.exe` plus the
@@ -2081,7 +2089,9 @@ This makes `ItemDef.grantsSkill` real for the first time — it was loaded
 and validated since M2 but consumed nowhere. `PartyState` (both pause
 menus, "Party" row): member list + detail (stats with the summed equipped
 `statBonus` share, gear, passives, M63 choices, skills with `*` marks) and
-the Use-Scroll picker (consume-on-success via `Inventory::remove`).
+the Use-Scroll picker (consume-on-success via `Inventory::remove`). *M122
+moved the picker to `InventoryState` and gave `PartyState` the skill list and
+the dungeon-only heal cast — see §63.*
 
 ## 22. M65 — the town puzzle map
 
@@ -2901,8 +2911,8 @@ the 20-floor shape is new seed output; 1F/4F stay byte-identical to v15.
   `scrollTroveEarned(floorCount, raisedStakes, total)` is the trigger
   (scoring + stakes-raising + 20F). `ScrollChoiceState` (modal, pushed
   UNDER the result in `completeDungeon` — the M67 unwind order) adds the
-  chosen scroll ITEM to the bag; teaching stays the Party panel's M64
-  moment. Deviation from the plan's "immediate learn flow", recorded in
+  chosen scroll ITEM to the bag; teaching stays the M64 scroll flow (the
+  Party panel then, the Items screen since M122). Deviation from the plan's "immediate learn flow", recorded in
   the note: the bag route makes the owner-observed panel flow the one
   teaching path.
 - **Debug**: "Grant 1x each skill scroll" (the trove pool). Capture:
@@ -3595,3 +3605,369 @@ are replaced under their existing ids.
   scene — a high-contrast battle scene was planned but dropped: capture
   scenes share one settings object and none may mutate it (the fallback is
   the pre-existing M56 path, judged by the owner under High Contrast).
+
+## 61. M120 — the owner batch
+
+Five small, independent slices; no rule, generation, save, settings or
+manifest version moves.
+
+- **The chart's pulse** (`DungeonState::renderMinimap`): the M66 X picks its
+  colour from a three-step ramp (ember → the pre-M120 gold → glint) indexed
+  by `ui::motionPhase3()`, the title phrase's sanctioned clock. No layout
+  motion, no new state.
+- **`ItemDef::mpAmount`** (optional item field, default 0): an MP rider valid
+  on `heal` consumables only (the loader rejects it anywhere else). The one
+  shared battle path (`Battle::useItem`) restores it after the heal — the
+  King's `kingMpAmount` still replaces it in his fight when authored, and the
+  M63 item-potency share scales it like the heal — and the out-of-battle
+  path (`game/ItemUse.hpp`) offers the item when HP *or* MP has room and logs
+  both gains. Shipped content: the Elixir (`"mpAmount": 50`). The editor's
+  item descriptor carries the field. An inert-by-default content field, so
+  the battle-rules constant does not move (the `minTown` / `resistPct`
+  precedent).
+- **The wipe price** is one pure rule, `wipeGoldLoss(gold, eternal,
+  eternalFloorsCleared)` in `game/Ledger.hpp`: the M89 halving, or a quarter
+  once an Eternal run has felled `kEternalMercyFloors` (4) floor-bosses.
+  `DungeonState`'s Defeat branch feeds it `dungeon_.eternal` and
+  `eternalFloorsCleared_` and records the result through `loseGold`. The
+  battle's defeat line is deliberately unchanged (the mercy is hidden by
+  owner decision).
+- **Reset confirmations**: `SettingsState` raises `ConfirmPromptState`
+  (Yes/No form, cursor on Cancel) for Reset settings and bindings and Reset
+  tutorial prompts, and `RemapState` does the same for Reset to defaults;
+  the work runs in the prompt's `onConfirm` (the asking state stays below
+  the prompt, so capturing `this` is safe). Every list switch in
+  `SettingsState` goes through `enterMode`, which clears the status banner.
+- **Credits & Licenses**: `packaging/LICENSES.txt` stays the single source.
+  CMake reads it at configure time into `generated/core/Licenses.hpp`
+  (`packaging/Licenses.hpp.in`, one raw string literal; a size guard under
+  MSVC's single-literal limit, a delimiter guard, and
+  `CMAKE_CONFIGURE_DEPENDS` so an edit re-runs the step) — no runtime file,
+  no path handling. The pure `game/Credits.hpp` reflows the hard-wrapped
+  file for the viewport (paragraphs rejoined; headings, `Copyright` lines
+  and numbered clauses keep their own lines; the file's title and the credit
+  sentence are dropped because the page draws them). `CreditsState` lays it
+  out with `ui::TextViewport` (policy C). The title menu's third row pushes
+  it; `HelpState` is now pushed from `SettingsState` (Controls → Controls
+  overview) and keeps its M117 pin.
+- **Tests**: `[m120]` — the loader's `mpAmount` rules, the rider in and out
+  of battle, the wipe-price table; `[credits]` — the embedded text names
+  every shipped third party and the credit, every character has a glyph,
+  the reflow's structure. **Captures**: `156_credits`,
+  `157_credits_scrolled`, `158_settings_controls`,
+  `159_settings_reset_confirm`.
+
+## 62. M121 — skill kinds, icons and milestone-aware skill text
+
+Presentation only: no rule, generation, save or settings version moves.
+
+- **`content::SkillKind`** (`Enums.hpp`; eleven values in icon order) is
+  DERIVED, never authored: `skillKindFor` (`Definitions.hpp`) — a summon
+  (`oncePerRun` + a `summonName`) wins; then a restorative (the Heal category,
+  or a Cleanse/Uncurse aimed at allies); then damage by element
+  (`skillDealsDamage` mirrors `Battle::useSkill`: Physical/Magic with power on
+  an enemy target, a Support skill with power on an enemy target, a Heal
+  never); what remains is a Debuff when aimed at enemies, a Buff otherwise.
+  `ContentDatabase::addSkill` stores it on `SkillDef::kind` as content loads
+  (the owner's "assigned at start-up"); the editor never sees the field.
+  `kSkillKindIds` / `skillKindTextureId` / `kMilestoneIconId` are the icon
+  vocabulary (the M81 `kIconCategoryIds` idiom; the presentation lint binds it
+  to the manifest).
+- **`MilestoneDef::skillTexts`** — optional `[{skill, description}]` in
+  `data/milestones.json` (the learnset's array-of-objects idiom). The parser
+  rejects a non-array, a missing skill or description, an empty description
+  and a repeated skill; `validateReferences` rejects an unknown skill id. The
+  editor's Milestones category carries it as an object array. Five shipped
+  entries on four milestones (Purify, Renew, Taunt, the Goose's two heals).
+- **`game/SkillInfo.hpp`** (pure): `skillKindLine`; `milestoneTouchesSkill`,
+  whose cases mirror the conditions `Battle::useSkill` applies the matching
+  `Combatant` fields under (Magic category; Magic + all-enemies; a Heal that
+  is not a pure cleanse unless the holder also has Purifying Light; any status
+  except the turn-control pair; the Taunt control; a revive share that beats
+  the skill's own; a pure cleanse; an enemy-shared status) and deliberately
+  exclude effects keyed on the foe, basic attacks, stats and passives;
+  `skillTextFor(Character, SkillDef, db)` → the description for THAT member
+  (an authored adjustment from a held milestone wins, latest tier last), the
+  held milestones that touch the skill (`marked()`), and the ones whose own
+  sentence should be shown (`noted` — those that touched without supplying
+  the text); `skillDetailsBody` composes the sheet (cost, kind line, optional
+  block reason, description, milestone lines).
+- **`ui::Menu::setFocusDisabled`** — opt-in: `setCursor` stops nudging and
+  `step` stops skipping; `currentEnabled()` is unchanged. `drawMenu` /
+  `drawMenuScrolled` draw the slab and chevron on a focused greyed row only
+  for such a menu, so every other list renders byte-identically.
+  `MenuItem::icon2` is a trailing mark drawn right after the label when the
+  row has room (never a column, never clipping a name).
+- **`BattleState`**: `kInfoX` 186 → 206 (the list column absorbs the 13 px
+  icon column; every shipped name fits beside its cost, previews still fit
+  their three lines). `buildSkillMenu` opts in to focusable rows and fills
+  icon / mark / the summon's creature name; `actorCharacter()` maps the
+  acting `Combatant::partyIndex` to its `Character` (nullptr for an echo);
+  `skillBlockLine` is the one reason sentence the preview, the sheet and the
+  row share (decision encounter, spent summon, Silence, MP short);
+  `onSkillChosen` answers a greyed row with `Sfx::Error`; `openSkillDetails`
+  uses `skillDetailsBody` with the cursed-caster cost and passes the two
+  header icons to `DetailsOverlayState`'s new overload (existing callers
+  untouched). The party member sheet reads skills through `skillTextFor`.
+- **Assets**: twelve 10×10 grids in an RNG-free section appended to
+  `generate_textures.ps1` (byte-stable: a rerun adds only the twelve files);
+  twelve manifest ids; a credits row.
+- **Tests**: `[skillinfo]` (the kind table over every shipped skill, the
+  kind line, adjusted text only on the holder, generic sentences, Devotion
+  through Purifying Light, predicates vs. non-skill effects, the loader's
+  `skillTexts` rules), `[ui][m121]` (the focus mode), `[lint][m121]` (every
+  kind has a shipped icon). **Captures**: `160_battle_skill_icons`,
+  `161_battle_skill_details_milestones`, `162_battle_skill_details_adjusted`.
+
+## 63. M122 — the Party panel's skills, field healing, and scrolls from Items
+
+No version motion: healing from a menu happens outside battle (the M90
+item precedent), and the battle's heal arithmetic was only MOVED.
+
+- **`battle/HealMath.hpp`** (pure): `healBase(magic, power)`,
+  `healWithCastBonus(amount, healCastPct)`, `reviveHp(maxHp, skillPct,
+  casterPct)` — lifted verbatim out of `Battle.cpp`, which now calls them
+  (`healValue`, the Heal branch, the revive branch). A behavior-neutral
+  extraction pinned by the existing battle suites; the point is ONE formula
+  for the fight and the field.
+- **`game/FieldSkills.hpp`** (pure): `isFieldSkill` (Heal category with
+  power or a revive share; never a summon — so a pure cleanse is out);
+  `fieldCasterFor` resolves the caster's `HealCastPct` (summed) and
+  `ReviveAtPct` (highest) from the chosen milestones exactly as `buildBattle`
+  resolves them onto the `Combatant`; `fieldHealAmount`; `fieldSkillHelps` /
+  `fieldTargetRefusal` (per target); `fieldSkillRefusal(party, caster, skill,
+  inDungeon)` in fix-it order (summon / not a field skill / town / caster
+  fallen / MP / nobody to help); `applyFieldSkill` (spends the MP once;
+  whole-party, self or single target; skips targets the cast cannot help;
+  returns the log line). `Combatant::stats` is `Character::stats`, so the
+  menu and the fight agree by construction — and a test casts the same Mend
+  both ways to prove it.
+- **`PartyState(stack, context, inDungeon = false)`** — `DungeonMenuState`
+  passes `true`. Phases `Browse → Skills → PickTarget`. `rebuildSkills`
+  lists `allKnownSkills` with the M121 icon / mark / creature-name rules, a
+  row live only when `fieldSkillRefusal` is empty; the menu is
+  focusable-disabled. `renderSkillPanel` draws the list, the kind line, the
+  refusal (healing skills only) and the description via `skillTextFor`; in
+  `PickTarget` the roster's slab follows `targetCursor_`, rows show HP, and
+  the panel states what the cast restores. `openSkillDetails` reuses the
+  M121 sheet. The PickScroll phase is gone.
+- **`InventoryState`**: a scroll row opens `PickMember` when someone can
+  still learn it (`scrollRefusal`); the pick is focusable-disabled with
+  "can learn" / "knows it" suffixes; Confirm runs `learnScroll` +
+  `recordScrollLearned` + consume and returns to the list. The taught skill
+  is drawn in the list frame's free lower half (icon, name, MP, kind line,
+  a two-line preview as the highlighted member would cast it).
+- **Tests**: `[fieldskills]` (which skills qualify, every refusal, MP spend
+  and caps, Devotion and Blessed Renew, the whole-party cast, menu == battle).
+  **Captures**: `163_party_skills_dungeon`, `164_party_heal_target`,
+  `165_party_skills_town`, `166_items_teach_scroll`.
+
+## 64. M123 — the slot clock and the Iron Man rules
+
+- **The clock.** `game/PlayTime.hpp` (pure): `formatSlotPlayTime(seconds)` →
+  `SlotPlayTime{text = "HHH:MM:SS", greyChars}`; clamps to
+  `[0, kSlotPlayTimeCap]`. `save::SlotSummary::playSeconds` is filled from the
+  loaded party's `lifetime.explore.playSeconds` in `SaveSystem::summary`.
+  `SlotMenuState::rebuild` now calls `summary()` once per slot and keeps
+  `playSeconds_` (-1 = empty); `render` draws the grey prefix and the lit
+  remainder as two segments, both anchored on the same right edge, and
+  shortens the label's fitted width to the clock's left edge.
+- **The flag.** `Party::ironMan` — runtime-only, never serialized.
+  `PartyCreationState(stack, context, ironMan)` sets it after
+  `resetForNewGame`; `SaveSystem::load` replaces the whole `Party`, so it can
+  never come back from a file; `SaveSystem::save` refuses such a party (the
+  autosave routes through it), reporting `an Iron Man run cannot be saved`.
+- **`game/IronMan.hpp`** (pure, namespace `cd::ironman`) owns every rule and
+  every string: `kRules` (the mode page's paragraphs), the begin / save /
+  guild / quit / escape / defeat / fall lines, `keptOnEscape`,
+  `forfeitOnEscape` (gold through `loseGold`; the bag filtered to
+  `ItemType::Heirloom`), `clampEscapeVitals`, `applyEscape`, `FallenInfo`,
+  `fallenPlaceDungeon`, `fallenFoes`.
+- **States.** `GameModeState` (title → New Game): two rows and an explanation
+  panel (policy A per paragraph, the line budget derived from the panel's
+  remaining height so an overflow fails the capture lint); Iron Man confirms
+  through `ConfirmPromptState`. `IronManFall.{hpp,cpp}`:
+  `beginIronManFall(stack, context, FallenInfo)` clears the stack and starts
+  the send-off. (M123 shipped a plain notice state here; M124 replaced it
+  with the record + `FallenState` - see §65.)
+- **The battle seam.** `BattleState::ironManStakes()` =
+  `party.ironMan && lifetime_.stats != nullptr` — the M109 lifetime hook is
+  exactly "a real fight", which the spar and the capture scenes do not pass.
+  `onCommand` routes Escape through `askIronManEscape()` (a
+  `ConfirmPromptState` whose confirm calls `escapeBattle()`);
+  `writeBackParty` applies `ironman::applyEscape` when the result is
+  `Escaped`; `outcomeMessage` swaps the Escaped and Defeat lines.
+- **The wipe sites.** `DungeonState::onResume` (an Iron Man branch ahead of
+  the M89 carry-out: counts the wipe, builds `FallenInfo` from the theme,
+  floor and pending team — or the decision patrol captured before
+  `special_.reset()` — and calls `beginIronManFall`), plus a re-clamp of the
+  vitals on the Escaped branch (after the dragonform / flock restore).
+  `CastleChallengeState::onResume` and `TreasureFightState::onResume` branch
+  on `Outcome::Defeat` only; an escape still reaches their `finish(false)`.
+- **No-save UI.** `SlotMenuState` in Save mode with an Iron Man party:
+  `ironManRefusal_` greys every row, pins the Danger banner and drops the
+  Confirm hint. `GuildState` skips both `autosave` calls and swaps its
+  caption. `TownMenuState` / `DungeonMenuState` pass `ironman::kQuitBody` to
+  `pushQuitPrompt` and draw the `IRON MAN` chip.
+- **Accomplishments.** Three rows appended to `kAchievements`
+  (`kAchievementCount` is derived); predicates AND the ordinary castle record
+  with `Party::ironMan`. `AchievementsState` derives its column height from
+  the count; only the description gap changed.
+- **Tests**: `[m123]` (`tests/test_iron_man.cpp`). **Captures**:
+  `167_slot_menu_playtime` … `174_iron_man_fall` (the Iron Man scenes leave
+  `party.ironMan` set; `84_celebration`, which runs last, clears it).
+
+## 65. M124 — the Iron Man's fall: send-off, fallen summary, Hall of Shame
+
+- **The slot codec, without the slot.** `SaveSystem::serialize(party)` builds
+  the text `save` writes; `SaveSystem::parseText(text, source, out, report)`
+  and `load` both end in the private `parseRoot(json, ...)` (the header
+  forward-declares `nlohmann::json` via `json_fwd.hpp`). Behavior-neutral:
+  `save` = the M123 Iron Man refusal + `serialize` + the atomic write; slot
+  files are byte-identical (pinned by `[m124][save]`).
+- **`game/FallenRuns.{hpp,cpp}`** - `FallenRun{place, foes, leader,
+  highestLevel, playSeconds, party}`; `addFallenRun` (newest first, capped at
+  `kFallenRunsKept` = 20); `parseFallenRunsText` / `serializeFallenRuns`
+  (version 1; the party snapshot is embedded as the JSON object it is and
+  handed back as text - the store never interprets it); `FallenRunStore`
+  (`load` / `save` / `record`, `platform::writeTextFileAtomically`).
+  `AppContext::fallenRuns` (after `profile`); `Application` owns the store at
+  `userDataDir()/fallen_runs.json` and loads it with the other stores; the
+  capture runner builds one over its scratch directory.
+- **`beginIronManFall`** (`states/IronManFall.cpp`, no longer a state): builds
+  the `FallenRun` from the live party (`highestLevel`, the ledger's play
+  seconds, `saves.serialize`), records it (a failed write is logged; the run
+  still shows this sitting), then `clearStates()` + `FallenState`.
+- **`FallenState`** - the `CelebrationState` model: punchline picked in the
+  ctor with `GetRandomValue`; `update` advances a private clock (frozen by the
+  capture hook `captureFreeze`); `render` is a pure function of that clock -
+  feathers, the King at 2x with a 16 rad/s shake and an alternating "Ha!",
+  party members rotated 90 degrees at `kFan` offsets, one hopper each
+  (`kHoppers`, `|sin|` arcs from the celebration's jump idiom; `hop < 4` is
+  the impact frame: squash, pale tint, two stars), three `kJoggers` on a
+  wrapped lap drawn last. Sprites are looked up by manifest id and skipped
+  when absent. Confirm/Cancel: `clearStates()` + the fallen summary.
+- **`EndgameSummaryState`, fallen form** - a second ctor
+  `(stack, context, Party snapshot, FallenInfo, leaveToTitle)`; `source()`
+  returns the snapshot when present; `rebuildPage` prepends
+  `fallenSummaryRows(place, foes)` + a "Lifetime" header on the Overview;
+  `leave()` pops, or (send-off) clears the stack and pushes `MainMenuState`.
+- **`HallOfShameState`** - manual two-line rows (the `SlotMenuState` idiom)
+  over `context.fallenRuns.runs` with a `ScrollWindow`; the clock reuses
+  `formatSlotPlayTime`; the where/who line is policy E
+  (`drawTextEllipsized`); Confirm = `saves.parseText(run.party)` -> the fallen
+  summary (`leaveToTitle = false`), or the unreadable-record banner.
+- **`MainMenuState`** - rows carry action ids (`rowIds_`); the Hall of Shame
+  row is added only when `fallenRuns.runs` is non-empty; six rows use a 17 px
+  pitch and `frameY` 101 (five rows: 20 px, 106 - unchanged).
+- **Tests**: `[m124]` (`tests/test_fallen_runs.cpp`). **Captures**:
+  `174_iron_man_fall` (the send-off, clock pinned), `175_fallen_run_summary`,
+  `176_hall_of_shame`, `177_title_hall_of_shame`.
+
+## 66. M125 — CrystalForge catch-up
+
+- **The loader audit** (`tests/test_editor_loader_audit.cpp`, `[editor][m125]`)
+  is the editor's second staleness guard beside the M59 shipped-data sweep.
+  It reads `src/content/ContentLoader.cpp` through the test-only definition
+  `CRYSTAL_TEST_SOURCE_DIR`, splits the file into top-level functions (a
+  definition starts at column 0 - the file's own style), maps parser to data
+  file from `loadAll`'s `parseX(json, "file.json", ...)` calls, and gathers
+  each parser's keys with three patterns - `req*/opt*(<T>)?("key"`,
+  `.find("key"`, and `read*( ... "key"` - plus the keys of every `read*`
+  helper it calls, transitively. Each key must appear among the category's
+  descriptors at any depth (`FieldDesc::children` walked recursively);
+  categories and parsed files must match one to one. Keep the loader's
+  idioms and the audit keeps working; a new helper family should be named
+  `read*` or the patterns extended.
+- **`src/editor/EditorTitle.hpp`** - `cd::editor::windowTitle()` builds the
+  versioned window title from `version::kString`; `EditorMain` passes it to
+  `InitWindow`.
+- **Round trips**: `mpAmount` and `skillTexts` are exercised through
+  `setFieldValue`, `EditorDocs`, `buildDatabase` / `validateDocs` (the real
+  loader) and `canonicalize`; the Sim Lab test asserts the Elixir's rider
+  leaves a sweep identical, because `battle::Simulator` has no item command.
+- No production code path of the game changed in this milestone.
+
+## 67. M126 — owner batch 2
+
+- **`src/game/LootSummary.hpp`** (pure): `LootSummary::addGold` totals,
+  `addItem` merges by item id in first-received order, `rows()` yields the
+  gold row first then one `LootRow` per distinct piece; `LootRow::text()` is
+  the wording (`"26 gold"`, `"Power Ring"`, `"Power Ring x2"`).
+  `DungeonState::outcomeItems_` is now a `std::vector<LootRow>`; the chest,
+  the Miner's Cache and the reels (`applyReelPrize(symbol, LootSummary&)` —
+  gold *won* joins it, the tax papers' loss does not) fill it, the Duck
+  Peddler and the Sacrifice use the same row shape for their single piece.
+  `renderOutcomePanel` draws gold rows in `palette().text`, the rest in
+  `palette().gold`, and closes the box up (`bodyH` 8 instead of 47) when the
+  body is empty.
+- **The opened chest**: `buildRoom` creates a `MarkerKind::Chest` only while
+  `!chest.opened`; `openChest` rebuilds the room and recomputes the
+  interaction (the marker pointer is stale after a rebuild). The "opened"
+  branches of the marker drawing and the footer prompt are gone with it.
+- **`src/ui/TagFlow.hpp`** (pure): `flowTags(widths, gap, maxWidth)` packs
+  icon+name tags into lines. `LevelUpDiff::newSkillIcons` (parallel to
+  `newSkillNames`, filled by `applySpoils` from `SkillDef::kind`) feeds
+  `BattleState::drawSpoilsPanel`, which computes every member's flow FIRST so
+  the frame is sized by the lines it will draw (text lines pitch 10 px, icon
+  lines 12 px).
+- **The Dragon's targeting**: `BattleState::onCommand` resolves a sweeping
+  basic attack at once (`attackHitsAll && !isConfused && !decisionPending()`;
+  the nominal target is the first living foe — `Battle::attack` ignores it
+  for a sweep). `game/SpecialEncounter.hpp` gains
+  `decisionActionIsAoe(battle, actor, skill)` — false for every basic
+  attack, `hostileTargetCount > 1` for a skill — read by
+  `BattleState::resolveDecision` and `uncontrolledDecisionFor`. The battle
+  engine is untouched (`Battle::hostileTargetCount` keeps its meaning), so
+  **no `kBattleRulesVersion` bump** — the M112/M117 precedent: decision
+  rules live above the engine.
+- **The vault** (`src/dungeon/RoomLayout.cpp`): with a guard, the chest's
+  two flank tiles become `Wall` and `RoomLayout::guard` is the tile one step
+  from the chest toward the door — no RNG draw. `connectivityProblems`
+  checks every door configuration twice for such a room: guard standing
+  (guard solid, the chest must be **unreachable**, the guard must be
+  faceable) and guard fallen (guard floor, the chest must be reached).
+  `validateLayout` additionally requires the guard to be the chest's single
+  open neighbour. **`kGenerationVersion` 25** — topology, teams, chests and
+  events are byte-identical to v24; the version feeds `roomLocalSeed`, so
+  room dimensions and pillars re-roll as on every bump. `DungeonState`
+  draws a chest guard's tier label beside the guard when the chest is the
+  tile right above it.
+- **Blackjack** (`BlackjackEventState.cpp`): `kCardScale` 2, rank font 20,
+  `drawHand` takes the table's room and fans a hand wider than it.
+- **Capture**: `DungeonState::captureShowLoot` / `captureFaceVault`; scenes
+  `178_chest_loot`, `179_vault_guarded`, `180_vault_open`; `87_event_outcome`
+  now shows the chest's real shape.
+- **Tests**: `tests/test_owner_batch_2.cpp` (`[m126]`).
+
+## 68. M127 — owner batch 3
+
+- **The party on the slot**: `save::SlotSummary::members` (`classId` +
+  `fallen`, party order) is filled by `SaveSystem::summary`.
+  `SlotMenuState` keeps one vector per row, gained an `update` clock, and
+  draws the members' `actor.<class>.battle` sprites at 1x right-to-left of
+  the clock (`kSpriteStep` 20 for the 24px canvases, `kClockRight` 48 -> 42 so
+  the widest label still fits), centred on the row's slab. The hop is
+  **`src/render/PartyHop.hpp`** (pure): `partyHop(slot, time, scale)`, the
+  victory screen's three tables lifted out of `CelebrationState` (which now
+  calls it - identical arithmetic, `fabs(sin) * (amp * scale)`); the slots
+  use scale 0.3. The capture tool's fixed 30-frame settle makes the frozen
+  hop frame deterministic.
+- **The treasure map**: `kMapPieceTextureIds` / `kMapPiecePropId`
+  (`game/TreasureMap.hpp`). `MapsState` paints a dark board, then every owned
+  piece texture at the map's origin with `DrawTextureEx(..., 2.0f)` - the
+  textures share one canvas, so there is no per-piece geometry in code; the
+  old primitive `drawQuadrant` survives only as the missing-texture fallback.
+  `DungeonState` gives `MarkerKind::MapPiece` the prop as its `fallbackId`
+  (the gold glyph box remains underneath, for a missing texture).
+- **Curio icons**: `curioIconTextureId(const CurioDef&)`
+  (`game/Curios.hpp`). The Maps grid draws the icon before the name (12px row
+  pitch; the map moved up 5px and its frame tightened 2px to pay for it) and
+  the inspect panel shows it at 3x in an `Inset` well, the lore viewport
+  narrowed beside it. The buried-treasure outcome pushes a `LootRow` (M126)
+  with the curio's icon and name.
+- **Art**: one RNG-free generator section appended last; see
+  `docs/asset_pipeline.md`. `git status` after a generator run shows only the
+  seventeen new PNGs.
+- **Capture**: `181_map_piece_floor`, `182_dig_curio`; `167` saves one slot
+  with a member down. **Tests**: `tests/test_owner_batch_3.cpp` (`[m127]`).

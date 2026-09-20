@@ -24,8 +24,9 @@ M22 acceptance test ("completes a depth-1 run without external instruction").
 - Fresh state: delete the **entire user data folder** before profile-1
   sessions — it holds `settings.json`, `tutorial.json`, the `saves/`
   folder, **and** `profile.json` (cross-save unlocks — a leftover one
-  hands profile 1 an unlocked Goose class), `achievements.json`, and
-  `scoreboard.json` (a populated board is not first-run state).
+  hands profile 1 an unlocked Goose class), `achievements.json`,
+  `fallen_runs.json` (M124: a leftover one puts a Hall of Shame row on the
+  title), and `scoreboard.json` (a populated board is not first-run state).
   (Settings > "Reset tutorial prompts" is not enough — bindings and
   options should be defaults too).
 - Say only: "Play as you like; think aloud; I can't answer questions until

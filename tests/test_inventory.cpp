@@ -112,3 +112,39 @@ TEST_CASE("item use: applications cap and revive at the authored percent (M90)",
     applyItemUse(gone, tinyRevive);
     CHECK(gone.hp == 1);  // never rises at 0 HP
 }
+
+// --- M120: the Elixir's MP rider (ItemDef::mpAmount) ---------------------------
+
+TEST_CASE("item use: a heal with an MP rider restores both and gates on either (M120)",
+          "[game][itemuse][m120]") {
+    content::ItemDef elixir = consumableWith(content::ConsumableEffect::Heal, 300);
+    elixir.mpAmount = 50;
+
+    // Full HP but thirsty for MP: still worth a sip (a plain heal would refuse).
+    Character thirsty = member(50, 50, 5, 80);
+    CHECK(itemUseRefusal(thirsty, elixir).empty());
+    const std::string line = applyItemUse(thirsty, elixir);
+    CHECK(thirsty.hp == 50);
+    CHECK(thirsty.mp == 55);
+    CHECK(line == "Rolan recovers 0 HP and 50 MP.");
+
+    // Both bars full: refused with the both-bars reason, nothing spent.
+    Character full = member(50, 50, 80, 80);
+    CHECK(itemUseRefusal(full, elixir) == "Already at full HP and MP.");
+
+    // The fallen still need a revive, rider or not.
+    Character fallen = member(0, 50, 0, 80);
+    CHECK_FALSE(itemUseRefusal(fallen, elixir).empty());
+
+    // Both caps hold.
+    Character hurt = member(10, 50, 70, 80);
+    applyItemUse(hurt, elixir);
+    CHECK(hurt.hp == 50);
+    CHECK(hurt.mp == 80);
+
+    // A rider-free heal keeps the pre-M120 wording exactly.
+    const content::ItemDef potion = consumableWith(content::ConsumableEffect::Heal, 30);
+    Character scratched = member(30, 50, 5, 20);
+    CHECK(applyItemUse(scratched, potion) == "Rolan recovers 20 HP.");
+    CHECK(scratched.mp == 5);
+}

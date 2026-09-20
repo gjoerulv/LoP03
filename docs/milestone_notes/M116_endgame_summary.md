@@ -160,3 +160,9 @@ As listed above.
 ### 9. Final status
 
 `complete (approved 2026-09-10)`
+
+---
+
+**Pointer (M124, 2026-09-19):** `EndgameSummaryState` has a second, *fallen*
+form - the same pages over a party snapshot, led by where an Iron Man run
+fell and to whom. It changes nothing above; see `M124_iron_mans_fall.md`.

@@ -32,8 +32,8 @@ cmake --build build-vs --config Release
 
 Inspect both Release executables and confirm:
 
-- F1 has no debug-overlay effect, and **Main Menu → Controls** lists no F1 row
-  (M117).
+- F1 has no debug-overlay effect, and the Controls page (**Settings →
+  Controls → Controls overview** since M120) lists no F1 row (M117).
 - `--capture` is unavailable.
 - no capture output can be generated.
 - the packaged executable is AMD64.
@@ -43,6 +43,7 @@ Inspect both Release executables and confirm:
 
 - Save a valid slot, save again, and confirm `slot*.json.bak` holds the previous valid generation.
 - Confirm settings, tutorial progress, and scoreboard data survive normal restart.
+- Start an Iron Man run (M123), enter a dungeon, and confirm the user-data directory gains no new or updated `save_auto.json` / `save_slot*.json`; every Save entry point refuses with the reason.
 - Make the sibling `.tmp` path unwritable or non-removable; confirm a failed write leaves the previous destination intact.
 - Run the malformed-scoreboard automated test and confirm it proves a failed load preserves previously valid in-memory entries.
 

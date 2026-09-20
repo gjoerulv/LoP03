@@ -8,6 +8,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "resource/ResourceManager.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -25,6 +26,16 @@ constexpr int kTextW = kPanelW - 2 * style::kPad - ui::kScrollGutterW;
 DetailsOverlayState::DetailsOverlayState(StateStack& stack, AppContext& context,
                                          std::string title, std::string body)
     : GameState(stack), context_(context), title_(std::move(title)), body_(std::move(body)) {}
+
+DetailsOverlayState::DetailsOverlayState(StateStack& stack, AppContext& context,
+                                         std::string title, std::string body,
+                                         std::string leftIconId, std::string rightIconId)
+    : GameState(stack),
+      context_(context),
+      title_(std::move(title)),
+      body_(std::move(body)),
+      leftIconId_(std::move(leftIconId)),
+      rightIconId_(std::move(rightIconId)) {}
 
 void DetailsOverlayState::handleInput(const Input& input) {
     if (input.navPressed(InputAction::MoveUp) && bodyView_.scrollBy(-1)) {
@@ -68,6 +79,19 @@ void DetailsOverlayState::render() {
     int ty = y + style::kPad;
     ui::drawTextCentered(title_.c_str(), x + kPanelW / 2, ty, style::kFontHeading,
                          style::palette().text);
+    // M121: the optional icons hug the centered title, one each side.
+    if (!leftIconId_.empty() || !rightIconId_.empty()) {
+        const int titleW = ui::measureText(title_, style::kFontHeading);
+        const int iy = ty + (style::kFontHeading - ui::kGearIconSize) / 2;
+        if (!leftIconId_.empty()) {
+            ui::drawGearIcon(context_.resources, leftIconId_,
+                             x + kPanelW / 2 - titleW / 2 - ui::kGearIconSize - 5, iy);
+        }
+        if (!rightIconId_.empty()) {
+            ui::drawGearIcon(context_.resources, rightIconId_,
+                             x + kPanelW / 2 + titleW / 2 + 5, iy);
+        }
+    }
     ty += style::kFontHeading + 6;
     ty = ui::drawTextViewport(bodyView_, x + style::kPad, ty, style::palette().text);
     ty += 4;

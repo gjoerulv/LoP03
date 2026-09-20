@@ -294,6 +294,47 @@ TEST_CASE("rules v4: Royal Snacks are a nibble normally and a feast against the 
     CHECK(king.units[0].mp == 10);
 }
 
+// M120: the Elixir's MP rider rides the same shared useItem path (live play and
+// the Simulator agree by construction); the King's authored amount still wins
+// in his hall, and an item without one keeps its own rider there.
+TEST_CASE("rules v4: a heal's MP rider restores MP in any battle (M120)",
+          "[battle][items][m120]") {
+    content::ItemDef elixir = mkItem("elixir", content::ConsumableEffect::Heal, 300);
+    elixir.mpAmount = 50;
+
+    Battle ordinary = board();
+    ordinary.units[0].hp = 10;
+    ordinary.units[0].maxMp = 80;
+    ordinary.units[0].mp = 0;
+    ordinary.useItem(1, 0, elixir);
+    CHECK(ordinary.units[0].hp == ordinary.units[0].maxHp);
+    CHECK(ordinary.units[0].mp == 50);
+
+    Battle capped = board();
+    capped.units[0].maxMp = 80;
+    capped.units[0].mp = 60;
+    capped.useItem(1, 0, elixir);
+    CHECK(capped.units[0].mp == 80);  // never past max
+
+    Battle king = board();
+    king.kingBattle = true;
+    king.units[0].maxMp = 80;
+    king.units[0].mp = 0;
+    king.useItem(1, 0, elixir);
+    CHECK(king.units[0].mp == 50);  // no King amount authored: the rider stands
+
+    content::ItemDef snacks = mkItem("royal_snacks", content::ConsumableEffect::Heal, 10);
+    snacks.kingEffectAmount = 100;
+    snacks.kingMpAmount = 10;
+    snacks.mpAmount = 3;
+    Battle feast = board();
+    feast.kingBattle = true;
+    feast.units[0].maxMp = 80;
+    feast.units[0].mp = 0;
+    feast.useItem(1, 0, snacks);
+    CHECK(feast.units[0].mp == 10);  // the King's amount replaces the rider
+}
+
 TEST_CASE("rules v4: Royal Snacks lift ATK-/DEF- but leave real afflictions alone",
           "[battle][items]") {
     content::ItemDef snacks = mkItem("royal_snacks", content::ConsumableEffect::Heal, 10);

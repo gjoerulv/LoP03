@@ -67,7 +67,7 @@ void ScrollChoiceState::render() {
     if (cursor >= 0 && cursor < static_cast<int>(offers_.size())) {
         if (const content::ItemDef* it =
                 context_.content.findItem(offers_[static_cast<std::size_t>(cursor)])) {
-            ui::drawTextPreview(it->description + " Give it from the Party panel.", boxX + 14,
+            ui::drawTextPreview(it->description + " Teach it from the Items menu.", boxX + 14,
                                 detailY, boxW - 28, style::kFontBody, p.textDim, 2);
         }
     } else {

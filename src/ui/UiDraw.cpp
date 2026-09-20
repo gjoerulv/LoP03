@@ -691,11 +691,16 @@ void drawMenu(const Menu& menu, int x, int y, int itemHeight, int fontSize, Colo
         const int rowY = y + static_cast<int>(i) * itemHeight;
         const bool isCursor = static_cast<int>(i) == menu.cursor();
         Color color = items[i].enabled ? normal : disabled;
-        if (isCursor && items[i].enabled) {
-            color = cursor;
+        // M121: a focusable-disabled list shows its cursor on a greyed row too
+        // (slab + chevron), the label staying grey so the block still reads.
+        if (isCursor && (items[i].enabled || menu.focusDisabled())) {
+            if (items[i].enabled) {
+                color = cursor;
+            }
             const int slabH = std::min(itemHeight + 1, fontSize + 6);
             drawSelectionSlab(x - 12, rowY - 2, labelW + 18, slabH);
-            drawChevron(x - 9, rowY + (fontSize - 8) / 2, cursor, motionPhase());
+            drawChevron(x - 9, rowY + (fontSize - 8) / 2, items[i].enabled ? cursor : disabled,
+                        motionPhase());
         }
         drawTextRaw(items[i].label.c_str(), x, rowY, fontSize, color);
     }
@@ -748,11 +753,16 @@ void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleR
         const int rowY = y + row * itemHeight;
         const bool isCursor = first + row == menu.cursor();
         Color color = item.enabled ? normal : disabled;
-        if (isCursor && item.enabled) {
-            color = cursor;
+        // M121: see drawMenu - a focusable-disabled list keeps its cursor
+        // visible on a greyed row.
+        if (isCursor && (item.enabled || menu.focusDisabled())) {
+            if (item.enabled) {
+                color = cursor;
+            }
             const int slabH = std::min(itemHeight + 1, fontSize + 6);
             drawSelectionSlab(x - 12, rowY - 2, maxLabelWidth + 18, slabH);
-            drawChevron(x - 9, rowY + (fontSize - 8) / 2, cursor, motionPhase());
+            drawChevron(x - 9, rowY + (fontSize - 8) / 2, item.enabled ? cursor : disabled,
+                        motionPhase());
         }
         // The suffix column is reserved first; the label takes what is left.
         int labelWidth = maxLabelWidth;
@@ -786,8 +796,17 @@ void drawMenuScrolled(const Menu& menu, const ScrollWindow& window, int visibleR
         if (iconSpan > 0 && !item.icon.empty()) {
             drawGearIcon(*resources, item.icon, x, rowY + (fontSize - kGearIconSize) / 2);
         }
-        drawTextFitted(item.label, x + iconSpan, rowY, std::max(8, labelWidth - iconSpan),
-                       fontSize, color, site);
+        const int textRoom = std::max(8, labelWidth - iconSpan);
+        drawTextFitted(item.label, x + iconSpan, rowY, textRoom, fontSize, color, site);
+        // M121: the trailing mark rides right after the name when it fits; a
+        // long name goes without rather than being clipped for it.
+        if (resources != nullptr && !item.icon2.empty()) {
+            const int textW = measureWidth(item.label.c_str(), fontSize);
+            if (textW + 3 + kGearIconSize <= textRoom) {
+                drawGearIcon(*resources, item.icon2, x + iconSpan + textW + 3,
+                             rowY + (fontSize - kGearIconSize) / 2);
+            }
+        }
     }
 
     // Chunky stepped more-above/below arrows right of the list.

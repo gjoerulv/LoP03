@@ -12,6 +12,7 @@
 #include "danger/DangerRating.hpp"
 #include "game/Dragonform.hpp"  // M93
 #include "game/Gooseform.hpp"   // M103
+#include "game/LootSummary.hpp"  // M126
 #include "game/RunStats.hpp"
 #include "game/SpecialEncounter.hpp"  // M112
 #include "game/Spoils.hpp"
@@ -64,6 +65,21 @@ public:
                                const std::string& bodyOverride = "");
     // M80 addendum: show the outcome panel with a representative result.
     void captureShowOutcome(const std::string& title, const std::string& body);
+    // M126: the outcome panel listing what was RECEIVED - the gold total and
+    // each piece (a repeated id becomes one counted row), over `body` (may be
+    // empty: the untrapped chest says nothing, it only lists).
+    void captureShowLoot(const std::string& title, const std::string& body, int gold,
+                         const std::vector<std::string>& itemIds);
+    // M126: enter the first guarded-chest room and stand before its guardian
+    // (facing it); with `guardFallen` the guard is cleared first and the party
+    // stands ON the chest in its walled niche. False when no vault exists.
+    bool captureFaceVault(bool guardFallen);
+    // M127: put the Secret Map Piece in the entry room and stand BESIDE it,
+    // facing it, so the parchment scrap on the floor is in plain view.
+    void captureShowMapPiece();
+    // M127: the buried treasure's outcome panel for curio `index` - its own
+    // icon and name on the row, the tally in the sentence.
+    void captureShowCurioFound(int index);
     // Reel-icon rows over the outcome panel (owner direction 2026-08-17).
     void captureShowReels();
     // Mid-spin frame (owner request 2026-08-29): first cell landed, the rest
@@ -121,11 +137,10 @@ private:
     void resolveEvent();  // applies a non-battle event's stated trade-off
     // M104: applies one reels three-of-a-kind prize (by gamble::ReelSymbol
     // index) and returns the outcome line; every cap and banking rule holds.
-    // 2026-08-28 (owner request): a prize that lands an ITEM also appends its
-    // {icon id, name} to itemTags, which the resolver hands to the outcome
-    // panel's gear-tag rows.
-    std::string applyReelPrize(int symbolIndex,
-                               std::vector<std::pair<std::string, std::string>>& itemTags);
+    // 2026-08-28 (owner request): a prize that lands an ITEM also reaches the
+    // outcome panel's rows. M126: through the spin's LootSummary - gold WON
+    // joins it too, so three spins list one gold total and "Dragon Crown x2".
+    std::string applyReelPrize(int symbolIndex, LootSummary& loot);
     std::string eventPromptText() const;  // the pre-confirmation trade-off line
     void confirmEventPanel();       // M80: the panel's Confirm — resolve or fight
     // M87: fills the flavor viewport and raises the panel (render stays const).
@@ -220,8 +235,10 @@ private:
     // between the title (and any reel rows) and the body, so a find stands
     // out instead of hiding in prose. {icon id ("" = none), display name}.
     // showOutcome() clears it; granting sites fill it after (the reels-row
-    // pattern above).
-    std::vector<std::pair<std::string, std::string>> outcomeItems_;
+    // pattern above). M126 (owner request 2026-09-20): the rows are a
+    // LootSummary's - the gold total in one white line, then each distinct
+    // piece once with its count - so nothing received hides in the sentence.
+    std::vector<LootRow> outcomeItems_;
     // 2026-08-29 (owner request): the reels visibly SPIN. While >= 0 the
     // outcome panel animates: every cell cycles symbols and locks left to
     // right, row by row (one lock per step, scaled by message speed); the

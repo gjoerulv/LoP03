@@ -492,6 +492,11 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         d.effect = r.optEnum<ConsumableEffect>("effect", parseConsumableEffect,
                                                ConsumableEffect::None, "consumable effect");
         d.effectAmount = r.optIntMin("effectAmount", 0, 0);
+        d.mpAmount = r.optIntMin("mpAmount", 0, 0);  // M120 (the Elixir's MP rider)
+        if (d.mpAmount > 0 &&
+            (d.type != ItemType::Consumable || d.effect != ConsumableEffect::Heal)) {
+            rep.add(source, ctx, "'mpAmount' is valid on 'heal' consumables only (M120)");
+        }
         d.curesDebuffs = r.optBool("curesDebuffs", false);           // M43
         d.curesCurse = r.optBool("curesCurse", false);               // M75 (Holy Taxes)
         d.kingEffectAmount = r.optIntMin("kingEffectAmount", 0, 0);  // M43
@@ -992,6 +997,38 @@ void parseMilestones(const Json& root, const std::string& source, ContentDatabas
         d.description = r.reqString("description");
         d.effect = r.reqEnum<MilestoneEffect>("effect", parseMilestoneEffect, "milestone effect");
         d.magnitude = r.optIntMin("magnitude", 0, 0);
+        // M121: optional adjusted skill descriptions, shown only on the member
+        // who holds this milestone (the learnset's array-of-objects idiom; the
+        // skill ids are cross-checked in validateReferences).
+        if (const auto it = el.find("skillTexts"); it != el.end()) {
+            if (!it->is_array()) {
+                rep.add(source, ctx + ".skillTexts", "expected array");
+            } else {
+                int ti = 0;
+                for (const auto& te : *it) {
+                    const std::string tctx = ctx + ".skillTexts[" + std::to_string(ti) + "]";
+                    if (!te.is_object()) {
+                        rep.add(source, tctx, "expected object");
+                    } else {
+                        ObjectReader tr(te, tctx, source, rep);
+                        MilestoneSkillText text;
+                        text.skill = tr.reqString("skill");
+                        text.description = tr.reqString("description");
+                        if (text.description.empty()) {
+                            rep.add(source, tctx, "'description' must not be empty");
+                        }
+                        for (const MilestoneSkillText& seen : d.skillTexts) {
+                            if (seen.skill == text.skill) {
+                                rep.add(source, tctx,
+                                        "duplicate skillTexts entry for '" + text.skill + "'");
+                            }
+                        }
+                        d.skillTexts.push_back(std::move(text));
+                    }
+                    ++ti;
+                }
+            }
+        }
         if (d.level != 10 && d.level != 20 && d.level != 30) {
             rep.add(source, ctx, "'level' must be 10, 20 or 30");
         }
@@ -1116,6 +1153,13 @@ void validateReferences(const ContentDatabase& db, LoadReport& rep) {
             rep.add(source, "milestone '" + id + "'",
                     "class '" + m.classId + "' level " + std::to_string(m.level) +
                         " needs exactly one 'a' and one 'b' option");
+        }
+        // M121: an adjusted description must name a real skill.
+        for (const MilestoneSkillText& text : m.skillTexts) {
+            if (!db.hasSkill(text.skill)) {
+                rep.add(source, "milestone '" + id + "'.skillTexts",
+                        "references unknown skill '" + text.skill + "'");
+            }
         }
     }
     for (const auto& [id, theme] : db.themes()) {

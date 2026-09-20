@@ -74,6 +74,11 @@ treasure scrolls will use.
 - Learned skills cannot be forgotten; a forget/respec service would be a
   new owner decision.
 
+*Pointer (2026-09-18):* M122 moved scroll teaching from this panel to the
+Items screen (scroll first, then the pupil) and gave the panel a per-member
+skill list with dungeon-only heal casting - see
+`M122_party_skills_field_healing.md`. The learn rules here are unchanged.
+
 ## H. Final status
 
 `complete (approved 2026-08-05)`

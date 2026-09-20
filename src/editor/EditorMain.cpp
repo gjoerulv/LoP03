@@ -16,6 +16,7 @@
 
 #include "editor/EditorDocs.hpp"
 #include "editor/EditorShell.hpp"
+#include "editor/EditorTitle.hpp"  // M125: the versioned window title
 #include "editor/EditorValidation.hpp"
 #include "ui/UiDraw.hpp"
 
@@ -116,7 +117,8 @@ int main(int argc, char** argv) {
 
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(cd::editor::kLogicalW * cd::editor::kWindowScale,
-               cd::editor::kLogicalH * cd::editor::kWindowScale, "CrystalForge");
+               cd::editor::kLogicalH * cd::editor::kWindowScale,
+               cd::editor::windowTitle().c_str());
     SetExitKey(0);  // Esc is a UI key; quitting goes through the unsaved guard
     SetTargetFPS(60);
 

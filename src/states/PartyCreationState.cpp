@@ -31,8 +31,8 @@ constexpr int kRows = 5;
 const char* const kDefaultNames[4] = {"Rolan", "Mira", "Sable", "Pell"};
 }  // namespace
 
-PartyCreationState::PartyCreationState(StateStack& stack, AppContext& context)
-    : GameState(stack), context_(context) {}
+PartyCreationState::PartyCreationState(StateStack& stack, AppContext& context, bool ironMan)
+    : GameState(stack), context_(context), ironMan_(ironMan) {}
 
 void PartyCreationState::onEnter() {
     // Canonical class order first, then any extras the data may add.
@@ -110,6 +110,7 @@ void PartyCreationState::begin() {
     // after it, so a loaded save's Guild unlock survived into a fresh game).
     // See game/Party.hpp resetForNewGame for the contract.
     resetForNewGame(context_.party);
+    context_.party.ironMan = ironMan_;  // M123: AFTER the reset, which clears it
     for (std::size_t i = 0; i < slots_.size(); ++i) {
         std::string name = slots_[i].name.trimmed();
         if (name.empty()) {

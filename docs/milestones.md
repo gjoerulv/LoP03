@@ -30,7 +30,7 @@
 | 20 | Encounter & dungeon-content variety | ☑ complete (approved) |
 | 21 | Final music, ambience & sound effects | ☑ complete (approved) |
 | 22 | Onboarding & accessibility         | ☑ complete (approved) |
-| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest program (M117–M119, approved 2026-09-18)** (tooling + tuning already built) |
+| 23 | Automated visual validation, playtesting & balance hardening | ☐ planned — **runs after the newest approved work (M120–M127, approved 2026-09-20)** (tooling + tuning already built) |
 | 24 | Release packaging & final release validation | ☐ planned — **deferred, runs after M23** (engineering already built) |
 | 25 | UI corrections & battle HUD | ☑ complete (approved) |
 | 26 | Enemy visual identity | ☑ complete (approved) |
@@ -127,6 +127,14 @@
 | 117 | Owner fix batch: CRT defaults, the Controls page, blackjack stakes & the Jester's patrol decision | ☑ complete (approved 2026-09-18) |
 | 118 | Event icons (a bespoke marker for every event kind, the glint, the panel icon) | ☑ complete (approved 2026-09-18) |
 | 119 | Background art: service interiors, title screen & painted battle stages | ☑ complete (approved 2026-09-18) (corrective pass 2026-09-16: grounded battle stages, see the note) |
+| 120 | Owner batch: curio-map pulse, Elixir MP, the Eternal mercy, settings reset confirmations & the Credits page | ☑ complete (approved 2026-09-20) |
+| 121 | Skill kinds & icons, milestone-aware skill text, focusable disabled skills | ☑ complete (approved 2026-09-20) |
+| 122 | Party panel skills & field healing; scrolls taught from the Items menu | ☑ complete (approved 2026-09-20) |
+| 123 | Save-slot play time & the Iron Man rules (no saving, permadeath, the escape forfeit) | ☑ complete (approved 2026-09-20) |
+| 124 | The Iron Man's fall: humiliation scene, summary send-off & the Hall of Shame | ☑ complete (approved 2026-09-20) |
+| 125 | CrystalForge catch-up (the M120–M124 fields, loader-key audit, version stamp) | ☑ complete (approved 2026-09-20) |
+| 126 | Owner batch: loot summary rows, level-up skill icons, the vanishing chest, guarded vaults (generation v25), the Dragon's sweep targeting, big blackjack cards | ☑ complete (approved 2026-09-20) |
+| 127 | Owner batch 3: the party on the save slots (hopping when highlighted), parchment map pieces (Maps screen + dungeon pickup), twelve curio icons | ☑ complete (approved 2026-09-20) |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -273,9 +281,36 @@ authorization. See the program section at the end of this file.
 approval covers the program as it stands after the 2026-09-16 corrective
 pass on the M119 battle stages (the combatants had floated; every stage is
 now a far strip over one continuous ground plane that reaches the command
-panel). Only the deliberately deferred **M23 → M24** remain, in that order,
-each re-audited against the then-current checkout before it begins — and
-neither starts without explicit owner authorization.
+panel). **The same day the owner authorized the M120–M125 program** (one
+plan, one authorization, after a planning interview; branch `oyb12`,
+baseline `d789f31`): M120 the owner batch (the curio map's minimap X pulses,
+the Elixir also restores MP, a hidden Eternal wipe mercy, confirmation
+prompts on the settings resets, and a Credits & Licenses page in place of
+the title's Controls row) → M121 skill kinds and icons, milestone-aware
+skill text and focusable disabled skills → M122 the party panel's skill
+list with dungeon-only field healing, scrolls taught from the Items menu →
+M123 save-slot play time and the Iron Man rules (no saving, permadeath, the
+escape forfeit, three accomplishments) → M124 the Iron Man's fall (the
+humiliation scene, the summary send-off, the Hall of Shame on the title
+screen) → M125 the CrystalForge catch-up. No version motion anywhere.
+Execution continues milestone by milestone to `implemented, awaiting manual
+approval`; M23 → M24 follow after the program, re-audited first, each
+awaiting explicit authorization. See the program section at the end of this
+file.
+**On 2026-09-20 the owner approved M120–M127** — the M120–M125 program as
+implemented on 2026-09-18/19, and the two owner batches requested and
+implemented in the same session on 2026-09-20: **M126** (found loot listed
+as rows, kind icons on learned skills, the opened chest gone from the floor,
+the guarded chest walled in behind its guardian — **generation v25** — the
+Dragon's sweep asking for no target outside the decision patrols, blackjack
+cards at twice the size) and **M127** (each save slot's party beside its play
+time, hopping while highlighted; the treasure map redrawn as four torn
+parchment pieces with a matching dungeon pickup; an icon for every curio).
+Both batches were authorized by the owner's request itself and have their
+own sections at the end of this file. Only the deliberately deferred
+**M23 → M24** remain, in that order, each re-audited against the
+then-current checkout before it begins — and neither starts without explicit
+owner authorization.
 
 When M75–M86 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**85
@@ -996,20 +1031,20 @@ milestone is not automatic authorization to start the next.
 
 ## M23 — Automated visual validation, playtesting & balance hardening
 
-- **Status:** ☐ planned — **deferred on 2026-07-20; runs after the M117–M119
-  program (approved 2026-09-18)** (the deferral was extended by each program the
+- **Status:** ☐ planned — **deferred on 2026-07-20; runs after M120–M127
+  (approved 2026-09-20)** (the deferral was extended by each program the
   owner authorized: M31–M34, M35–M42, M43–M45, the M46 facelift, M47–M51,
   M52, the M53–M56 adjustments, M57, M58, the M59–M60 CrystalForge tools,
   M61, the M62–M66 program, the M67–M74 owner batches, the M75–M86
-  expansion program, M87, and the M88–M97, M98–M108, M109–M116 and
-  M117–M119 programs). The tooling,
+  expansion program, M87, the M88–M97, M98–M108, M109–M116, M117–M119 and
+  M120–M125 programs, and the M126–M127 owner batches). The tooling,
   diagnostics, lint/mass/report
   suites, and sim-justified early-ramp tuning (generation v4) are already
   implemented and remain in the tree; they are not re-work. What changed is
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
   Re-audit this note against the then-current checkout before starting — the
-  capture scene list has grown (**155 scenes** as of M119) and the balance
+  capture scene list has grown (**182 scenes** as of M127) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
   `[king-report]`, `[classes-report]`, and the M61–M68
   `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/`[spoils]`/
@@ -1028,8 +1063,12 @@ milestone is not automatic authorization to start the next.
   the cutscene story and its stages, the patrol mixture with its special
   encounters, the lifetime ledger and the End-game Summary, the 6×9 font,
   the event icons, the painted interiors and title scene, the grounded
-  battle stages).
-  **M117–M119 is the newest approved program (2026-09-18); this runs after
+  battle stages) and everything M120–M127 added (skill kinds and icons,
+  field healing and scrolls from the Items menu, the slot clock and the
+  party on the slots, the Iron Man mode with its send-off and the Hall of
+  Shame, the listed loot, the walled-in guarded chest of generation v25, the
+  parchment treasure map and the curio icons).
+  **M120–M127 is the newest approved work (2026-09-20); this runs after
   it.**
 - **Goal:** make representative presentation states reproducible, prevent
   layout/asset/room/balance regressions, and harden balance with observed
@@ -1063,7 +1102,7 @@ milestone is not automatic authorization to start the next.
 - **Status:** ☐ planned — **deferred on 2026-07-20; runs last, after M23.**
   The packaging engineering is already implemented and stays in the tree
   (presets with static CRT, version plumbing from `project(VERSION)` —
-  0.9.0 today (distribution built 2026-09-18), generated icon + VERSIONINFO, one-command
+  0.9.1 today (distribution built 2026-09-20), generated icon + VERSIONINFO, one-command
   stage/validate/zip via tools/package.ps1; package smoke-tested,
   capture-inert; owner decisions 2026-07-20: plain zip, emblem-generated
   icon — the 2026-07-20 "v0.9.0 until playtests pass" label was superseded
@@ -3724,3 +3763,251 @@ rebuilt so the dev executable carries the same version (`ctest --preset
 debug` **900/900 passed**, 376 s). A distribution build, not the M24
 release sign-off: M23 → M24 remain deferred and each awaits explicit owner
 authorization.
+
+## The M120–M125 program (authorized 2026-09-18)
+
+Plan approved by the owner 2026-09-18 after a planning interview (one plan,
+one authorization; branch `oyb12`, baseline `d789f31`). Twelve owner ideas
+plus the Iron Man's fall, grouped so shared foundations land first and the
+editor catch-up lands last. Locked decisions no milestone may reopen without
+escalation:
+
+1. **Milestone-aware skill text**: a skill a milestone changes *by name*
+   (Purify, Renew, Taunt, Honking Comfort, Generous Mending) shows an
+   authored, adjusted description and a milestone icon — only on the member
+   who holds that milestone. A generic boost (Arcane Edge, Devastation,
+   Devotion, Lingering Hex …) marks the skills it touches with the same icon
+   and the milestone's own sentence, decided by the battle's own predicates.
+2. **Iron Man** is chosen at New Game and means: no saving and no
+   autosaving; **permadeath** on every real wipe (dungeon fights and bosses,
+   the castle challenges, treasure digs, special patrols — never sparring);
+   and **the escape forfeit** — escaping a battle costs all gold and the
+   whole bag (what is worn and every heirloom are kept) and leaves each
+   standing member at 1 HP / 0 MP, the fallen staying fallen. The rules are
+   explained when the mode is picked. Separate counters that are not bag
+   items (rest and legendary tokens, map pieces, curios) survive an escape;
+   the pause menu's Retreat to Town keeps its existing rule.
+3. **The fall**: a lost Iron Man run plays a humiliating celebration-style
+   scene (the party beaten up by geese and ducks, the King laughing behind,
+   a random punchline), then the summary, then the title screen. Every
+   permadeath is recorded and can be inspected from the title screen,
+   summary-style, including where the party fell and to whom.
+4. **Field healing**: heal-category skills that restore HP or raise the
+   fallen can be cast from the Party panel inside a dungeon only — same MP
+   cost, the battle's own formula including the caster's milestones. Purify
+   and summons stay battle-only. Scrolls are taught from the Items menu.
+5. **The Controls page** (M117) leaves the title screen for the Credits &
+   Licenses page but stays reachable from Settings → Controls.
+6. **No version motion anywhere** (battle rules, generation, save, settings
+   and content versions unchanged; additive optional content fields only;
+   manifest gains new ids only); `project(VERSION)` stays as packaged until
+   the owner packages again.
+
+### M120 — Owner batch
+
+- **Status:** ☑ complete (approved 2026-09-20) — implemented
+  2026-09-18 (Debug 908/908, Release 904/904, capture 159/159 clean; see the
+  note's completion report).
+- **Goal:** the curio map's minimap pulse, the Elixir's MP rider, the hidden
+  Eternal wipe mercy, settings reset confirmations with a well-behaved
+  banner, the Credits & Licenses page.
+- **Milestone note:** `docs/milestone_notes/M120_owner_batch.md`
+
+### M121 — Skill kinds, icons & milestone-aware skill text
+
+- **Status:** ☑ complete (approved 2026-09-20) — implemented
+  2026-09-18 (twelve new icon PNGs, generator byte-stable; Debug 918/918,
+  Release 914/914, capture 162/162 clean; see the note's completion report).
+- **Goal:** derived skill kinds with icons and a minimal kind line,
+  milestone-aware descriptions with the milestone icon, disabled skills the
+  cursor can rest on.
+- **Milestone note:** `docs/milestone_notes/M121_skill_kinds_icons.md`
+
+### M122 — Party panel skills & field healing
+
+- **Status:** ☑ complete (approved 2026-09-20) — implemented
+  2026-09-18 (Debug 924/924, Release 920/920, capture 166/166 clean; see the
+  note's completion report).
+- **Goal:** the Party panel lists and inspects each member's skills and
+  casts heals inside dungeons; scrolls are taught from the Items menu with
+  the skill's details in view.
+- **Milestone note:** `docs/milestone_notes/M122_party_skills_field_healing.md`
+
+### M123 — Save-slot play time & the Iron Man rules
+
+- **Status:** ☑ complete (approved 2026-09-20) — implemented
+  2026-09-18 (Debug 936/936, Release 932/932, capture 174/174 clean; see the
+  note's completion report). The run's send-off scene and the record of
+  fallen runs are M124; M123 ends a run with a plain notice.
+- **Goal:** the seven-digit play time on every save slot; Iron Man mode
+  select with its rules page, the save refusal, permadeath, the escape
+  forfeit, three accomplishments.
+- **Milestone note:** `docs/milestone_notes/M123_playtime_iron_man.md`
+
+### M124 — The Iron Man's fall
+
+- **Status:** ☑ complete (approved 2026-09-20) — implemented
+  2026-09-19 (Debug 944/944, Release 940/940, capture 177/177 clean; see the
+  note's completion report). The scene's humour and pacing are the owner's
+  to judge.
+- **Goal:** the humiliation scene, the summary send-off, the fallen-run
+  records and the title screen's Hall of Shame.
+- **Milestone note:** `docs/milestone_notes/M124_iron_mans_fall.md`
+
+### M125 — CrystalForge catch-up
+
+- **Status:** ☑ complete (approved 2026-09-20) — implemented
+  2026-09-19 (Debug 951/951, Release 947/947, capture 177/177 clean,
+  canonicalize 0 rewritten; see the note's completion report). The re-audit
+  found the editor already current; the milestone adds the loader-key audit
+  (237 keys, no gap), the new fields' round-trip proof, the Sim Lab note and
+  the versioned window title.
+- **Goal:** the editor covers every field M120–M124 added, a loader-key
+  audit, the version in its window title, the guide refreshed.
+- **Milestone note:** `docs/milestone_notes/M125_crystalforge_catch_up.md`
+
+**Execution order:** M120 → M121 → M122 → M123 → M124 → M125, then M23 → M24
+(re-audited against the then-current checkout, each awaiting explicit owner
+authorization).
+
+**Program status: complete. On 2026-09-20 the owner approved M120–M125**,
+together with the two owner batches that followed in the same session (M126
+and M127, below). Implemented 2026-09-18/19; the program's closing battery
+(the M125 checkout): Debug build clean, `ctest --preset debug` **951/951
+passed**, Release build clean + `ctest --preset release` **947/947 passed**,
+`ArePGeese.exe --capture` **177/177 scenes clean**, `CrystalForge
+--canonicalize` 0 files rewritten. Owner validation: matrix rows 243–268.
+The judgments the notes had left open for the owner — the Elixir's MP rider
+without a rules bump, MP-only field healing, the Iron Man escape price with
+no Inn poverty rule, decision-patrol escapes paying that price, the save
+refusal's single screen, the send-off scene's humour and pacing, a Hall of
+Shame without dates or deletion — stand as built under this approval.
+
+## M126 — Owner batch 2 (owner request, 2026-09-20)
+
+Six owner requests made in the M120–M125 session after that program's
+implementation closed, grouped at the owner's direction into as few
+milestones as possible: one. Authorized by the request itself ("please go
+ahead and implement").
+
+- **Status:** ☑ complete (approved 2026-09-20) — implemented
+  2026-09-20 (Debug 961/961, Release 957/957, capture 180/180 clean; see the
+  note's completion report). **Generation v25** (the guarded chest room; owner
+  direction, the v22/v23 precedent); no other version moved. The five small
+  decisions the note lists were taken without asking; none was vetoed, and
+  they stand under this approval.
+- **Goal:** found loot is listed as summary rows (gold in one white line,
+  duplicates as xN); skills learned on a level-up wear their kind icons; an
+  opened chest leaves nothing on the floor; a guarded chest sits walled in
+  behind its guardian, who blocks the only way to it; the Dragon's sweep asks
+  for no target, except in the Jester's question and the three chests, where
+  a basic attack is a single pick; the blackjack cards are drawn twice as
+  big.
+- **Milestone note:** `docs/milestone_notes/M126_owner_batch_2.md`
+
+## M127 — Owner batch 3 (owner request, 2026-09-20)
+
+A third small batch from the same session, again one milestone at the
+owner's direction. Two points were clarified by question before work began:
+the map pieces are redrawn in BOTH places (the Maps screen's treasure map and
+the dungeon floor pickup), and every curio gets its OWN icon (twelve).
+
+- **Status:** ☑ complete (approved 2026-09-20) — implemented
+  2026-09-20 (seventeen new PNGs, generator byte-stable; Debug 964/964,
+  Release 960/960, capture 182/182 clean; see the note's completion report).
+  No version moved. The six small decisions the note lists were taken
+  without asking; none was vetoed, and they stand under this approval.
+- **Goal:** each save slot shows its party's sprites left of the play time,
+  centred in the row, hopping like the victory screen while the slot is
+  highlighted; the treasure map is four torn parchment pieces of real pixel
+  art and the dungeon's map piece is a matching scrap; every curio wears its
+  own icon beside its name and, larger, when inspected.
+- **Milestone note:** `docs/milestone_notes/M127_owner_batch_3.md`
+
+## Approval of M120–M127 and the documentation audit (2026-09-20)
+
+**On 2026-09-20 the owner approved M120–M127** (`/audit-docs and mark
+M120-M127 as approved`): the table rows, the M120–M125 program section, the
+M126 and M127 sections and all eight milestone notes now read
+`complete (approved 2026-09-20)`; the M23 row and section are re-anchored to
+M120–M127 in the same edit; the README's status paragraph names M1–M127.
+Nothing was committed by the session — the owner handles Git (the work sits
+uncommitted on branch `oyb12` over `d789f31`).
+
+**Documentation audit (2026-09-20, `/audit-docs` on that working tree):**
+README + CLAUDE.md + every current document; five read-only slices (game
+design, technical design, asset documents, validation/control/authoring
+documents, ledger/README/contract/skills) cross-checked against source, data,
+tests and the asset manifest, plus a scripted pass (paths and links, the
+matrix's row sequence and table continuity, every capture name cited in a
+current document against the scene list, the version constants, the asset
+census against the manifest and the disk). **No blocking contradiction and no
+behaviour defect.** Every stale statement found was corrected the same day,
+with no player-facing change:
+
+- `docs/technical_design.md` still named the pre-M108 user-data folder
+  (`%APPDATA%/CrystalDungeons`) in its Paths and Save-format sections while
+  `src/platform/Paths.cpp` and the M108 note say `ArePGeese` (the old folder
+  is only the one-time migration's source); its
+  restated test counts (900/896 "as of M119" → 964/960 as of M127), its audio
+  census (it stopped at 39 "as of M74"; the manifest holds 49) and the M42
+  subsection's "16 goals" now carry the current value or a pointer to the
+  authority.
+- `docs/manual_test_matrix.md`: four rows of approved milestones still taught
+  scrolls "via the Party panel" (rows 152, 174, 177, 182 — M122 moved
+  teaching to Pause → Items, row 256; row 152 also still bought its scroll
+  from a chest or a shop, which M102 ended); row 219 still listed a Dragon as
+  a way to sweep the field in the Jester's question (since M126 its basic
+  attack is a single pick there, row 273); row 153 still described the floor
+  pickup as a gold "?" (M127, row 277); row 117 restated the battle-rules
+  version as v15 and now points at the constant instead.
+- `assets/manifest.json` declared `font.ui.small` at size 8 although the
+  descriptor has carried base 9 since M114; the field is only read for
+  TTF/OTF fonts, so nothing rendered differently — now 9, as
+  `docs/asset_pipeline.md` already said.
+
+Verified clean by the scripted pass: no dead path in any current document;
+one dead link in the whole tree (the M52 note's pointer into a session memory
+folder, a historical record deliberately left); 278 matrix rows in unbroken
+ascending order with a constant column count; all 182 capture scenes
+accounted for and every scene cited by a current document exists; generation
+25, battle rules 19, save/settings/fallen-runs schemas 1, project 0.9.0;
+373 manifest entries, every path on disk, no unreferenced asset (the two font
+atlases are referenced by their `.fnt` descriptors); 100 battle sprites
+(73 + 27), 22 event markers, 22 music / 5 ambience / 22 SFX and the 161-glyph
+font exactly as the README states. One slice finding was checked and
+rejected as false (a "109 battle sprites" count that had added the nine
+party sprites to the enemies and bosses); another was real but misattributed
+(the size-8 value sat in the manifest, not in the pipeline document) and is
+the manifest correction above.
+
+Deliberately left: the matrix's M11-era baseline rows 1–36 and its dated
+"update" header counts; the authorization paragraphs' period numbers; dated
+milestone sections of the technical design (e.g. §58's "generation 24" — true
+of M117); the historical notes.
+
+**For the owner's decision, not acted on:** the **0.9.0 distribution was
+built on 2026-09-18 and predates M120–M127** (the Iron Man mode, field
+healing, generation v25 and everything else this approval covers). Whether to
+package again, and under which number, is the owner's call; M23 → M24 remain
+deferred and each awaits explicit authorization. The owner decided the same
+day — distribution 0.9.1, below.
+
+**Distribution 0.9.1 (2026-09-20, owner-directed):** `project(VERSION 0.9.1)`
+— the M120–M127 build, the number set by the owner; it still trails 1.0.0,
+which waits for the M23 playtests.
+`tools\package.ps1` configured and built the Release preset and produced
+`dist\ArePGeese-0.9.1-win64.zip` (29.2 MB; 391 staged files — the 362 of
+0.9.0 plus the twelve M121 icons (eleven skill kinds and the milestone
+mark), the twelve M127 curio icons, the four map pieces and the map-piece
+prop) with the staged
+layout validated by the script (required files, every manifest path present,
+no debug artifacts, AMD64 PE, no capture/overlay markers, exe ProductVersion
+0.9.1; CrystalForge is not staged). `ctest --preset release` on that build:
+**960/960 passed** (819 s); the Debug preset was reconfigured and rebuilt so the dev
+executable carries the same version (`ctest --preset debug` **964/964 passed**, 1331 s;
+`ArePGeese.exe --capture` **182/182 scenes clean** — the title's version stamp
+fits). The packaged executable was not launched by the session (it would
+write to the owner's real user-data folder); the clean-machine smoke test
+belongs to M24. A distribution build, not the M24 release sign-off: M23 → M24
+remain deferred and each awaits explicit owner authorization.

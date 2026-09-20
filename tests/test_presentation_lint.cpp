@@ -112,6 +112,20 @@ TEST_CASE("lint: every convention-derived texture id resolves in the manifest", 
     }
 }
 
+TEST_CASE("lint: every skill kind has a shipped icon, and the milestone mark too (M121)",
+          "[lint][m121]") {
+    const AssetManifest m = loadShippedManifest();
+    // The vocabulary (content::kSkillKindIds) and the generator's grids move in
+    // lockstep: a kind without a texture would draw nothing beside its skills.
+    for (int k = 0; k < cd::content::kSkillKindCount; ++k) {
+        const std::string tex =
+            cd::content::skillKindTextureId(static_cast<cd::content::SkillKind>(k));
+        INFO(tex);
+        CHECK(hasTexture(m, tex));
+    }
+    CHECK(hasTexture(m, cd::content::kMilestoneIconId));
+}
+
 TEST_CASE("lint: every piece of gear resolves a shipped icon (M81)", "[lint]") {
     const ContentDatabase db = loadShippedContent();
     const AssetManifest m = loadShippedManifest();

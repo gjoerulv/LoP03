@@ -113,6 +113,14 @@ add_executable(crystal_tests
     test_cutscene_stage.cpp
     test_dragon_art.cpp
     test_summary.cpp
+    test_credits.cpp
+    test_skill_info.cpp
+    test_field_skills.cpp
+    test_iron_man.cpp
+    test_fallen_runs.cpp
+    test_editor_loader_audit.cpp
+    test_owner_batch_2.cpp
+    test_owner_batch_3.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core
@@ -122,7 +130,9 @@ set_project_warnings(crystal_tests)
 # Absolute paths to the shipped content/assets, so tests validate the real files.
 target_compile_definitions(crystal_tests PRIVATE
     CRYSTAL_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data"
-    CRYSTAL_TEST_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets")
+    CRYSTAL_TEST_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets"
+    # M125: the loader-key audit reads ContentLoader.cpp itself.
+    CRYSTAL_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}/src")
 
 # Registers each TEST_CASE with CTest.
 catch_discover_tests(crystal_tests)

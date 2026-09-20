@@ -11,8 +11,9 @@
 #include "core/AppContext.hpp"
 #include "game/Milestones.hpp"
 #include "game/Party.hpp"
-#include "game/Ledger.hpp"  // M109: the economy ledger seam
+#include "game/FieldSkills.hpp"  // M122: dungeon-only heal casting
 #include "game/Scrolls.hpp"
+#include "game/SkillInfo.hpp"  // M121: milestone-aware skill text
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -63,8 +64,29 @@ std::string itemName(const content::ContentDatabase& db, const std::string& id) 
 
 }  // namespace
 
-PartyState::PartyState(StateStack& stack, AppContext& context)
-    : GameState(stack), context_(context) {}
+namespace {
+constexpr int kSkillRows = 7;     // visible rows of the member's skill list
+constexpr int kSkillRowH = 12;
+}  // namespace
+
+PartyState::PartyState(StateStack& stack, AppContext& context, bool inDungeon)
+    : GameState(stack), context_(context), inDungeon_(inDungeon) {
+    // M121/M122: a greyed skill is still a row to read - why it cannot be cast
+    // here, and its full sheet through Details.
+    skillMenu_.setFocusDisabled(true);
+}
+
+#ifdef CRYSTAL_CAPTURE
+void PartyState::captureOpenSkills(int skillRow, bool pickTarget) {
+    rebuildSkills();
+    phase_ = Phase::Skills;
+    skillMenu_.setCursor(skillRow);
+    skillScroll_.follow(static_cast<int>(skillMenu_.size()), kSkillRows, skillMenu_.cursor());
+    if (pickTarget) {
+        confirmSkill();
+    }
+}
+#endif
 
 void PartyState::openMemberDetails() {
     if (context_.party.members.empty()) {
@@ -115,6 +137,7 @@ void PartyState::openMemberDetails() {
         body += " none";
     }
     bool anyScroll = false;
+    bool anyMilestoneSkill = false;
     for (const std::string& id : known) {
         const content::SkillDef* s = db.findSkill(id);
         std::string name = s != nullptr ? s->name : id;
@@ -122,69 +145,192 @@ void PartyState::openMemberDetails() {
             name += "*";
             anyScroll = true;
         }
+        // M121: the description as THIS member casts it (a held milestone's
+        // adjusted text included); "^" marks a milestone-touched skill.
+        const SkillTextFor text = s != nullptr ? skillTextFor(c, *s, db) : SkillTextFor{};
+        if (text.marked()) {
+            name += "^";
+            anyMilestoneSkill = true;
+        }
         body += "\n" + name;
-        if (s != nullptr && !s->description.empty()) {
-            body += " - " + s->description;
+        if (!text.description.empty()) {
+            body += " - " + text.description;
         }
     }
     if (anyScroll) {
         body += "\n(* learned from a scroll)";
     }
+    if (anyMilestoneSkill) {
+        body += "\n(^ changed by a milestone)";
+    }
     stack().pushState(
         std::make_unique<DetailsOverlayState>(stack(), context_, c.name, std::move(body)));
 }
 
-void PartyState::rebuildScrolls() {
+void PartyState::rebuildSkills() {
     std::vector<ui::MenuItem> rows;
-    scrollIds_.clear();
-    for (const ItemStack& stack : context_.party.inventory.stacks) {
-        const content::ItemDef* item = context_.content.findItem(stack.itemId);
-        if (item == nullptr || item->type != content::ItemType::Scroll ||
-            item->grantsSkill.empty() || stack.count <= 0) {
+    skillIds_.clear();
+    if (context_.party.members.empty()) {
+        skillMenu_.setItems({});
+        return;
+    }
+    const content::ContentDatabase& db = context_.content;
+    const Character& c = context_.party.members[static_cast<std::size_t>(cursor_)];
+    for (const std::string& id : allKnownSkills(c, db)) {
+        const content::SkillDef* s = db.findSkill(id);
+        if (s == nullptr) {
             continue;
         }
-        rows.push_back({TextFormat("%s  x%d", item->name.c_str(), stack.count), true});
-        scrollIds_.push_back(stack.itemId);
+        // A row is live only when the cast would work right now; every other
+        // skill stays listed, greyed, with its reason beside the list.
+        const bool castable = fieldSkillRefusal(context_.party, cursor_, *s, inDungeon_).empty();
+        ui::MenuItem row{content::isSummonSkill(*s) ? s->summonName : s->name, castable,
+                         s->mpCost > 0 ? "MP " + std::to_string(s->mpCost) : std::string()};
+        row.icon = content::skillKindTextureId(s->kind);
+        if (skillTextFor(c, *s, db).marked()) {
+            row.icon2 = content::kMilestoneIconId;
+        }
+        rows.push_back(std::move(row));
+        skillIds_.push_back(id);
     }
-    scrollMenu_.setItems(std::move(rows));
+    const int previous = skillMenu_.cursor();
+    skillMenu_.setItems(std::move(rows));
+    skillMenu_.setCursor(previous);
+    skillScroll_.follow(static_cast<int>(skillMenu_.size()), kSkillRows, skillMenu_.cursor());
+}
+
+const content::SkillDef* PartyState::currentSkill() const {
+    const int row = skillMenu_.cursor();
+    if (row < 0 || row >= static_cast<int>(skillIds_.size())) {
+        return nullptr;
+    }
+    return context_.content.findSkill(skillIds_[static_cast<std::size_t>(row)]);
+}
+
+void PartyState::openSkillDetails() {
+    const content::SkillDef* s = currentSkill();
+    if (s == nullptr || context_.party.members.empty()) {
+        return;
+    }
+    const Character& c = context_.party.members[static_cast<std::size_t>(cursor_)];
+    // Only a healing skill has a reason worth a line here; "its moment is in
+    // battle" on every attack would be noise on the sheet.
+    const std::string why = isFieldSkill(*s) || content::isSummonSkill(*s)
+                                ? fieldSkillRefusal(context_.party, cursor_, *s, inDungeon_)
+                                : std::string();
+    const bool marked = skillTextFor(c, *s, context_.content).marked();
+    stack().pushState(std::make_unique<DetailsOverlayState>(
+        stack(), context_, s->name,
+        skillDetailsBody(*s, &c, context_.content, s->mpCost, why),
+        content::skillKindTextureId(s->kind), marked ? content::kMilestoneIconId : ""));
+}
+
+void PartyState::afterCast(std::string line) {
+    message_ = std::move(line);
+    messageIsError_ = false;
+    context_.audio.play(Sfx::Heal);
+    rebuildSkills();  // MP fell, HP rose: every row's verdict may have changed
+}
+
+void PartyState::confirmSkill() {
+    const content::SkillDef* s = currentSkill();
+    if (s == nullptr) {
+        return;
+    }
+    const std::string refusal = fieldSkillRefusal(context_.party, cursor_, *s, inDungeon_);
+    if (!refusal.empty()) {
+        message_ = refusal;
+        messageIsError_ = true;
+        context_.audio.play(Sfx::Error);
+        return;
+    }
+    if (fieldSkillNeedsTarget(*s)) {
+        // Open the pick on the first member the cast would actually help.
+        targetCursor_ = 0;
+        for (int i = 0; i < static_cast<int>(context_.party.members.size()); ++i) {
+            if (fieldSkillHelps(*s, context_.party.members[static_cast<std::size_t>(i)])) {
+                targetCursor_ = i;
+                break;
+            }
+        }
+        message_.clear();
+        context_.audio.play(Sfx::Confirm);
+        phase_ = Phase::PickTarget;
+        return;
+    }
+    afterCast(applyFieldSkill(context_.party, cursor_, -1, *s, context_.content));
+}
+
+void PartyState::confirmTarget() {
+    const content::SkillDef* s = currentSkill();
+    const int count = static_cast<int>(context_.party.members.size());
+    if (s == nullptr || targetCursor_ < 0 || targetCursor_ >= count) {
+        return;
+    }
+    const std::string refusal =
+        fieldTargetRefusal(*s, context_.party.members[static_cast<std::size_t>(targetCursor_)]);
+    if (!refusal.empty()) {
+        message_ = refusal;
+        messageIsError_ = true;
+        context_.audio.play(Sfx::Error);
+        return;
+    }
+    afterCast(applyFieldSkill(context_.party, cursor_, targetCursor_, *s, context_.content));
+    // Stay aimed for another cast while one is still possible; otherwise the
+    // pick has nothing left to offer.
+    if (!fieldSkillRefusal(context_.party, cursor_, *s, inDungeon_).empty()) {
+        phase_ = Phase::Skills;
+    }
 }
 
 void PartyState::handleInput(const Input& input) {
     const int count = static_cast<int>(context_.party.members.size());
-    if (phase_ == Phase::PickScroll) {
-        if (input.navPressed(InputAction::MoveUp)) {
-            scrollMenu_.moveUp();
+    if (phase_ == Phase::PickTarget) {
+        if (input.navPressed(InputAction::MoveUp) && count > 0) {
+            targetCursor_ = (targetCursor_ + count - 1) % count;
+            message_.clear();
+            context_.audio.play(Sfx::Move);
         }
-        if (input.navPressed(InputAction::MoveDown)) {
-            scrollMenu_.moveDown();
+        if (input.navPressed(InputAction::MoveDown) && count > 0) {
+            targetCursor_ = (targetCursor_ + 1) % count;
+            message_.clear();
+            context_.audio.play(Sfx::Move);
         }
         if (input.pressed(InputAction::Cancel)) {
             context_.audio.play(Sfx::Cancel);
+            phase_ = Phase::Skills;
+            return;
+        }
+        if (input.pressed(InputAction::Confirm)) {
+            confirmTarget();
+        }
+        return;
+    }
+    if (phase_ == Phase::Skills) {
+        if (input.navPressed(InputAction::MoveUp)) {
+            skillMenu_.moveUp();
+            message_.clear();
+            context_.audio.play(Sfx::Move);
+        }
+        if (input.navPressed(InputAction::MoveDown)) {
+            skillMenu_.moveDown();
+            message_.clear();
+            context_.audio.play(Sfx::Move);
+        }
+        skillScroll_.follow(static_cast<int>(skillMenu_.size()), kSkillRows, skillMenu_.cursor());
+        if (input.pressed(InputAction::Cancel)) {
+            context_.audio.play(Sfx::Cancel);
+            message_.clear();
             phase_ = Phase::Browse;
             return;
         }
-        if (input.pressed(InputAction::Confirm) && !scrollIds_.empty() && count > 0) {
-            const std::string& itemId = scrollIds_[static_cast<std::size_t>(scrollMenu_.cursor())];
-            const content::ItemDef* item = context_.content.findItem(itemId);
-            Character& c = context_.party.members[static_cast<std::size_t>(cursor_)];
-            if (item != nullptr) {
-                const std::string refusal = scrollRefusal(c, *item, context_.content);
-                if (refusal.empty()) {
-                    learnScroll(c, *item);
-                    recordScrollLearned(context_.party, cursor_);  // M109
-                    context_.party.inventory.remove(itemId, 1);
-                    const content::SkillDef* skill = context_.content.findSkill(item->grantsSkill);
-                    message_ = c.name + " learns " +
-                               (skill != nullptr ? skill->name : item->grantsSkill) + "!";
-                    messageIsError_ = false;
-                    context_.audio.play(Sfx::Heal);
-                    phase_ = Phase::Browse;
-                } else {
-                    message_ = refusal;
-                    messageIsError_ = true;
-                    context_.audio.play(Sfx::Error);
-                }
-            }
+        if (input.pressed(InputAction::Details)) {
+            context_.audio.play(Sfx::Confirm);
+            openSkillDetails();
+            return;
+        }
+        if (input.pressed(InputAction::Confirm)) {
+            confirmSkill();
         }
         return;
     }
@@ -208,16 +354,89 @@ void PartyState::handleInput(const Input& input) {
         openMemberDetails();
         return;
     }
+    // M122: Confirm opens the shown member's skill list (scrolls are taught
+    // from the Items screen now).
     if (input.pressed(InputAction::Confirm) && count > 0) {
-        rebuildScrolls();
-        if (scrollIds_.empty()) {
-            message_ = "No teaching scrolls in the bag.";
+        skillMenu_.setCursor(0);
+        rebuildSkills();
+        if (skillIds_.empty()) {
+            message_ = "No skills learned yet.";
             messageIsError_ = true;
             context_.audio.play(Sfx::Error);
         } else {
+            message_.clear();
             context_.audio.play(Sfx::Confirm);
-            phase_ = Phase::PickScroll;
+            phase_ = Phase::Skills;
         }
+    }
+}
+
+// M122: the right-hand panel while a member's skills are open - the list on
+// top, what the highlighted skill does (or why it cannot be cast here) below.
+void PartyState::renderSkillPanel(int dx, int dy, int dw, int dh) const {
+    const ui::style::Palette& p = ui::style::palette();
+    const content::ContentDatabase& db = context_.content;
+    const Character& c = context_.party.members[static_cast<std::size_t>(cursor_)];
+
+    int y = dy;
+    ui::drawTextFitted(c.name + "'s skills", dx, y, dw - 84, ui::style::kFontBody, p.gold,
+                       "party.skills.title");
+    const std::string mp = TextFormat("MP %d/%d", c.mp, c.maxMp);
+    ui::drawText(mp, dx + dw - ui::measureText(mp, ui::style::kFontSmall), y + 1,
+                 ui::style::kFontSmall, p.mpFill);
+    y += 14;
+    ui::drawMenuScrolled(skillMenu_, skillScroll_, kSkillRows, dx + 12, y, kSkillRowH,
+                         ui::style::kFontBody, dw - 26, p.text, p.disabled, p.cursor,
+                         "party.skills", ui::style::kFontSmall, p.mpFill, &context_.resources);
+    y += kSkillRows * kSkillRowH + 4;
+    ui::drawDivider(dx, y, dw);
+    y += 5;
+
+    const content::SkillDef* s = currentSkill();
+    if (s == nullptr) {
+        return;
+    }
+    const int bottom = dy + dh;
+    if (phase_ == Phase::PickTarget) {
+        const int count = static_cast<int>(context_.party.members.size());
+        if (targetCursor_ >= 0 && targetCursor_ < count) {
+            const Character& t = context_.party.members[static_cast<std::size_t>(targetCursor_)];
+            const std::string refusal = fieldTargetRefusal(*s, t);
+            ui::drawTextFitted("Cast " + s->name + " on " + t.name + "?", dx, y, dw,
+                               ui::style::kFontBody, p.text, "party.skills.aim");
+            y += 12;
+            std::string effect = refusal;
+            if (effect.empty()) {
+                effect = t.hp > 0 ? "Restores up to " +
+                                        std::to_string(fieldHealAmount(c, *s, db)) + " HP."
+                                  : "Raises the fallen.";
+            }
+            ui::drawTextPreview(effect, dx, y, dw, ui::style::kFontBody,
+                                refusal.empty() ? p.success : p.textDim,
+                                std::max(1, (bottom - y) / ui::lineHeight(ui::style::kFontBody)),
+                                /*markMore=*/false);
+        }
+        return;
+    }
+    // The kind in words, then why it is greyed (healing skills only - "its
+    // moment is in battle" on every attack would be noise), then the text as
+    // THIS member casts it.
+    ui::drawTextFitted(skillKindLine(*s), dx, y, dw, ui::style::kFontSmall, p.textHint,
+                       "party.skills.kind");
+    y += 11;
+    const bool healing = isFieldSkill(*s) || content::isSummonSkill(*s) ||
+                         s->category == content::SkillCategory::Heal;
+    const std::string why =
+        healing ? fieldSkillRefusal(context_.party, cursor_, *s, inDungeon_) : std::string();
+    if (!why.empty()) {
+        y = ui::drawTextPreview(why, dx, y, dw, ui::style::kFontBody, p.textDim, 2,
+                                /*markMore=*/false)
+                .bottom;
+    }
+    const int lines = (bottom - y) / ui::lineHeight(ui::style::kFontBody);
+    if (lines > 0) {
+        ui::drawTextPreview(skillTextFor(c, *s, db).description, dx, y, dw, ui::style::kFontBody,
+                            p.success, lines);
     }
 }
 
@@ -239,7 +458,11 @@ void PartyState::render() {
     for (std::size_t i = 0; i < members.size(); ++i) {
         const Character& c = members[i];
         const int y = listY + static_cast<int>(i) * 26;
-        if (static_cast<int>(i) == cursor_) {
+        // M122: while aiming a heal the slab follows the TARGET cursor and the
+        // row shows HP instead of the class line; the caster stays gold.
+        const bool aiming = phase_ == Phase::PickTarget;
+        const int focus = aiming ? targetCursor_ : cursor_;
+        if (static_cast<int>(i) == focus) {
             ui::drawSelectionSlab(listX - 2, y - 2, 124, 24);
         }
         // M67: each row leads with the class battle sprite — the party menu's
@@ -248,12 +471,22 @@ void PartyState::render() {
         if (context_.resources.hasTexture(sprId)) {
             DrawTexture(context_.resources.texture(sprId), listX + 2, y - 2, WHITE);
         }
-        ui::drawTextFitted(c.name, listX + 30, y, 86, 11,
-                           static_cast<int>(i) == cursor_ ? p.text : p.textDim, "party.name");
+        const Color nameColor = aiming && static_cast<int>(i) == cursor_
+                                    ? p.gold
+                                    : (static_cast<int>(i) == focus ? p.text : p.textDim);
+        ui::drawTextFitted(c.name, listX + 30, y, 86, 11, nameColor, "party.name");
         const content::ClassDef* cls = db.findClass(c.classId);
-        ui::drawTextFitted(TextFormat("Lv.%d %s", c.level,
-                                      cls != nullptr ? cls->name.c_str() : c.classId.c_str()),
-                           listX + 30, y + 12, 86, ui::style::kFontSmall, p.textHint, "party.class");
+        if (aiming) {
+            ui::drawTextFitted(c.hp > 0 ? TextFormat("HP %d/%d", c.hp, c.maxHp) : "Fallen",
+                               listX + 30, y + 12, 86, ui::style::kFontSmall,
+                               c.hp > 0 ? p.textHint : p.dangerText, "party.class");
+        } else {
+            ui::drawTextFitted(TextFormat("Lv.%d %s", c.level,
+                                          cls != nullptr ? cls->name.c_str()
+                                                         : c.classId.c_str()),
+                               listX + 30, y + 12, 86, ui::style::kFontSmall, p.textHint,
+                               "party.class");
+        }
     }
 
     if (members.empty()) {
@@ -296,6 +529,30 @@ void PartyState::render() {
     ui::drawFrame(dx - 6, listY - 6, dw + 8, 184, ui::FrameStyle::Standard);
     const int bottom = listY - 6 + 184 - 6;  // inner floor of the detail frame
     int y = listY + 2;
+    const auto drawChrome = [&]() {
+        if (!message_.empty()) {
+            // M67: overlay banner (the equip-shop toast idiom).
+            ui::drawBanner(messageIsError_ ? ui::BannerKind::Danger : ui::BannerKind::Success,
+                           message_, 60, 40, w - 120, "party.message");
+        }
+        const InputMap& map = context_.input.map();
+        const ActiveDevice device = context_.input.activeDevice();
+        const char* confirmLabel = phase_ == Phase::Browse
+                                       ? "Skills"
+                                       : (phase_ == Phase::PickTarget ? "Cast" : "Cast");
+        std::vector<ui::Hint> hints = {
+            {input::primaryLabel(map, InputAction::Confirm, device), confirmLabel}};
+        if (phase_ != Phase::PickTarget) {
+            hints.push_back({input::primaryLabel(map, InputAction::Details, device), "Details"});
+        }
+        hints.push_back({input::primaryLabel(map, InputAction::Cancel, device), "Back"});
+        ui::drawFooterHints(hints, w, h, "party.footer");
+    };
+    if (phase_ != Phase::Browse) {
+        renderSkillPanel(dx, y, dw - 4, bottom - y);
+        drawChrome();
+        return;
+    }
     ui::drawText(TextFormat("XP %d  (next Lv: %d)", c.xp,
                             c.level >= kMaxLevel ? 0 : xpToNext(c.level) - c.xp),
                  dx, y, ui::style::kFontSmall, p.textDim);
@@ -394,34 +651,7 @@ void PartyState::render() {
                             (c.extraSkills.empty() ? "" : "   (* from a scroll)"),
                         dx, y, dw, ui::style::kFontSmall, p.text, skillLines);
 
-    if (!message_.empty()) {
-        // M67: overlay banner (the equip-shop toast idiom) — the old centered
-        // line at the panel floor now collides with the taller detail text.
-        ui::drawBanner(messageIsError_ ? ui::BannerKind::Danger : ui::BannerKind::Success,
-                       message_, 60, 40, w - 120, "party.message");
-    }
-
-    if (phase_ == Phase::PickScroll) {
-        const int boxW = 220;
-        const int boxH = static_cast<int>(scrollIds_.size()) * 16 + 44;
-        const int boxX = w / 2 - boxW / 2;
-        const int boxY = h / 2 - boxH / 2;
-        ui::drawModalDim(w, h);
-        ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
-        ui::drawTextCentered(("Teach " + c.name + " from:").c_str(), w / 2, boxY + 8, 10, p.gold);
-        ui::drawMenu(scrollMenu_, boxX + 24, boxY + 26, 16, ui::style::kFontSmall, p.text, p.disabled, p.cursor);
-    }
-
-    ui::drawFooterHints({{input::primaryLabel(context_.input.map(), InputAction::Confirm,
-                                              context_.input.activeDevice()),
-                          phase_ == Phase::PickScroll ? "Teach" : "Use Scroll"},
-                         {input::primaryLabel(context_.input.map(), InputAction::Details,
-                                              context_.input.activeDevice()),
-                          "Details"},
-                         {input::primaryLabel(context_.input.map(), InputAction::Cancel,
-                                              context_.input.activeDevice()),
-                          "Back"}},
-                        w, h, "party.footer");
+    drawChrome();
 }
 
 }  // namespace cd

@@ -118,3 +118,6 @@ modal without scrolling, and a won top stake pays 2000 back. Pinned in
 `test_gamble` (`[m117]`); capture `149_blackjack_stakes`; matrix row 234.
 Record: `docs/milestone_notes/M117_owner_fix_batch.md`. **M118** gave both
 dens their own room-marker icons (a three-window machine, two fanned cards).
+
+> **M126 (2026-09-20):** the blackjack cards are dealt at twice the size; the
+> reels' winnings ride the shared loot rows. See `M126_owner_batch_2.md`.

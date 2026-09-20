@@ -199,3 +199,67 @@ TEST_CASE("editor: unrecognized keys are reported, not lost", "[editor]") {
     REQUIRE(unknown.size() == 1);
     REQUIRE(unknown.front() == "futureKey");
 }
+
+// ---- M125: the fields M120-M124 added ---------------------------------------
+
+TEST_CASE("editor: the Elixir's MP rider is an optional number (M125)", "[editor][m125]") {
+    const std::vector<FieldDesc>& descs = cd::editor::descriptorsFor(Category::Items);
+    const FieldDesc* mp = descForKey(descs, "mpAmount");
+    REQUIRE(mp != nullptr);
+    CHECK_FALSE(mp->required);
+    CHECK(mp->minValue == 0.0);
+
+    OrderedJson entity = OrderedJson::object();
+    entity["id"] = "test_tonic";
+    // Absent reads as the loader's default; a rider is written; zero removes it.
+    CHECK(cd::editor::fieldValue(entity, *mp) == 0);
+    cd::editor::setFieldValue(entity, *mp, OrderedJson(50));
+    REQUIRE(entity.contains("mpAmount"));
+    CHECK(entity["mpAmount"] == 50);
+    cd::editor::setFieldValue(entity, *mp, OrderedJson(0));
+    CHECK_FALSE(entity.contains("mpAmount"));
+
+    // The shipped Elixir carries it, and the editor sees the same 50.
+    cd::editor::EditorDocs docs;
+    REQUIRE(docs.loadAll(fs::path(CRYSTAL_TEST_DATA_DIR)));
+    bool found = false;
+    for (int i = 0; i < docs.entityCount(Category::Items); ++i) {
+        const OrderedJson* item = docs.entityAt(Category::Items, i);
+        REQUIRE(item != nullptr);
+        if (item->value("id", std::string{}) == "elixir") {
+            found = true;
+            CHECK(cd::editor::fieldValue(*item, *mp) == 50);
+        }
+    }
+    CHECK(found);
+}
+
+TEST_CASE("editor: milestone skill texts are an object array of skill + description (M125)",
+          "[editor][m125]") {
+    const std::vector<FieldDesc>& descs = cd::editor::descriptorsFor(Category::Milestones);
+    const FieldDesc* texts = descForKey(descs, "skillTexts");
+    REQUIRE(texts != nullptr);
+    CHECK(texts->kind == FieldKind::ObjectArray);
+    CHECK_FALSE(texts->required);
+    const FieldDesc* skill = descForKey(texts->children, "skill");
+    const FieldDesc* description = descForKey(texts->children, "description");
+    REQUIRE(skill != nullptr);
+    REQUIRE(description != nullptr);
+
+    // Every authored rewrite in the shipped data is fully described.
+    cd::editor::EditorDocs docs;
+    REQUIRE(docs.loadAll(fs::path(CRYSTAL_TEST_DATA_DIR)));
+    int authored = 0;
+    for (int i = 0; i < docs.entityCount(Category::Milestones); ++i) {
+        const OrderedJson* m = docs.entityAt(Category::Milestones, i);
+        REQUIRE(m != nullptr);
+        if (const auto it = m->find("skillTexts"); it != m->end()) {
+            REQUIRE(it->is_array());
+            for (const OrderedJson& el : *it) {
+                ++authored;
+                CHECK(cd::editor::unrecognizedKeys(el, texts->children).empty());
+            }
+        }
+    }
+    CHECK(authored >= 5);  // M121 shipped five rewrites
+}

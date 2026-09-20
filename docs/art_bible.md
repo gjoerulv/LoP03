@@ -112,6 +112,15 @@ reserved for their meanings and never decorative.
   change and owner approval.
 - UI frame: 24×24 nine-patch with 8px borders; icons 8×8, 10×10 (the gear
   categories, next bullet), or 12×12.
+- **Curio icons (M127): 10×10**, one per curio (12 shipped), the same idiom
+  as the gear icons below — silhouette first (a coronet, a pennant, a key, an
+  ear, a crystal and its note, an oil lamp, a geode, a slab, an acorn, a
+  quill, an idol, a jar), colour second. **The treasure map (M127)** is
+  parchment on the earth ramp with ink in `earth1`, sea on the water ramp,
+  the wood on the vegetation ramp, peaks on stone under a white cap, and the
+  X in the danger red — it marks a *guarded* treasure, the colour's own
+  meaning; drawn at 100×56 and shown at 2×, like a battle sprite on the
+  victory screen.
 - **Gear icons (M81): 10×10**, one per `iconCategory` (11 shipped), drawn as
   hand-placed grids on the §2 ramps with **no outline pass** — they sit on
   dark Inset list panels where the light ramps carry the shape, and must also

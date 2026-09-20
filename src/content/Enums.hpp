@@ -28,6 +28,16 @@ enum class SkillEffect { None, Taunt, Fade, Intercept, Cleanse, BreakReflect, Un
 
 enum class SkillTarget { SingleEnemy, AllEnemies, SingleAlly, AllAllies, Self };
 
+// M121: what a skill IS at a glance — the icon beside its name and the one
+// minimal line in its details. DERIVED from the authored fields when content
+// loads (content::skillKindFor; never authored, never saved): a summon, a
+// heal, damage by its element (or non-elemental), else a buff or a debuff by
+// the side it targets. The order is the icon set's order.
+enum class SkillKind {
+    Fire, Ice, Lightning, Earth, Holy, Dark, NonElemental, Heal, Buff, Debuff, Summon
+};
+inline constexpr int kSkillKindCount = 11;
+
 enum class EnemyTag { Fast, Magic, Armored, Poison };
 
 enum class EnemyTier { Normal, Elite };

@@ -93,6 +93,10 @@ deferred-visual judgment.
 paragraph) · `docs/technical_design.md` (§48) ·
 `docs/manual_test_matrix.md` (row 182).
 
+*Pointer (2026-09-18):* M121 made the spent summon's greyed row focusable
+(reason + Details) and names summon rows by their creature - see
+`M121_skill_kinds_icons.md`.
+
 ## Final status
 
 `complete (approved 2026-08-16)` — the ledger is authoritative; this line

@@ -11,8 +11,10 @@
 #include "content/Definitions.hpp"
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
+#include "game/IronMan.hpp"           // M123: the escape price and its words
 #include "game/Ledger.hpp"            // M112: the decision rewards
 #include "game/Party.hpp"
+#include "game/SkillInfo.hpp"         // M121: kind line + milestone-aware text
 #include "game/SpecialEncounter.hpp"  // M112
 #include "input/Input.hpp"
 #include "raylib.h"
@@ -21,10 +23,12 @@
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
 #include "states/BattleLogState.hpp"
+#include "states/ConfirmPromptState.hpp"  // M123: the Iron Man escape question
 #include "states/DetailsOverlayState.hpp"
 #include "states/StateStack.hpp"
 #include "states/TutorialPromptState.hpp"
 #include "tutorial/Tutorial.hpp"
+#include "ui/TagFlow.hpp"  // M126: the learned-skill icon rows
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
 
@@ -42,7 +46,10 @@ constexpr int kListRows = 4;     // visible rows in skill/item lists (scrolled)
 // Right column: actor line + descriptions. The split is set by the widest skill
 // row (longest name + its right-aligned MP column) so neither is ever clipped;
 // the description column keeps enough room for two wrapped lines.
-constexpr int kInfoX = 186;
+// M121: 186 -> 206. The skill rows gained a 13px kind-icon column; the list
+// column grew by 20 so every shipped name still fits beside its MP cost (the
+// info column's previews wrap a little sooner - still inside their 3 lines).
+constexpr int kInfoX = 206;
 
 bool skillNeedsTarget(content::SkillTarget t) {
     return t == content::SkillTarget::SingleEnemy || t == content::SkillTarget::SingleAlly;
@@ -235,16 +242,8 @@ void BattleState::captureSpecialPick(int ordinal) {
     // M112: the first standing member strikes placeholder `ordinal` with a
     // basic attack; the beat is held (the Done beat, or the Mimic's impact).
     captureEnterTargeting();
-    // A sweeping class (the capture party carries a Dragon) would turn any
-    // pick into a field sweep; the scene wants a single strike, so the first
-    // standing member whose basic attack hits one foe decides.
-    for (std::size_t i = 0; i < order_.size(); ++i) {
-        const battle::Combatant& u = battle_.units[static_cast<std::size_t>(order_[i])];
-        if (u.side == battle::Side::Party && u.alive() && !u.attackHitsAll) {
-            orderPos_ = static_cast<int>(i);
-            break;
-        }
-    }
+    // M126: a basic attack is one pick here whoever swings it (the capture
+    // party's Dragon included), so the first standing member decides.
     pendingKind_ = PendingKind::Attack;
     if (placeholderFirst_ < 0) {
         return;
@@ -295,12 +294,15 @@ void BattleState::captureShowSummon(const std::string& skillId) {
     }
 }
 
-void BattleState::captureEnterSkillMenu(std::vector<std::string> skills) {
+void BattleState::captureEnterSkillMenu(std::vector<std::string> skills, int cursor) {
     captureEnterTargeting();  // reuse: puts a living party member on turn
     if (!skills.empty()) {
         battle_.units[static_cast<std::size_t>(currentActor())].skillIds = std::move(skills);
     }
     buildSkillMenu();
+    // M121: the list is focusable-disabled, so a scene may park on a greyed row.
+    skillMenu_.setCursor(cursor);
+    skillScroll_.follow(static_cast<int>(skillMenu_.size()), kListRows, skillMenu_.cursor());
     phase_ = Phase::ChooseSkill;
 }
 
@@ -371,10 +373,15 @@ void BattleState::captureShowSpoils() {
         d.magDelta = 4;
         d.defDelta = 3;
         d.spdDelta = 2;
+        // M126: the learned skills wear their kind icons (buff, heal, and
+        // the lightning bolt here).
         if (i == 0) {
             d.newSkillNames = {"Radiant Ward", "Greater Heal"};
+            d.newSkillIcons = {content::skillKindTextureId(content::SkillKind::Buff),
+                               content::skillKindTextureId(content::SkillKind::Heal)};
         } else if (i == 3) {
             d.newSkillNames = {"Chain Lightning"};
+            d.newSkillIcons = {content::skillKindTextureId(content::SkillKind::Lightning)};
         }
         spoilsResult_.levelUps.push_back(std::move(d));
     }
@@ -455,10 +462,10 @@ void BattleState::captureOpenDetails() {
     openDetails();
 }
 
-void BattleState::captureOpenSkillDetails(std::vector<std::string> skills) {
+void BattleState::captureOpenSkillDetails(std::vector<std::string> skills, int cursor) {
     // M87: the context-sensitive Details on the highlighted skill — the full
     // sheet in the scrollable overlay.
-    captureEnterSkillMenu(std::move(skills));
+    captureEnterSkillMenu(std::move(skills), cursor);
     openSkillDetails();
 }
 #endif
@@ -853,9 +860,41 @@ void BattleState::buildCommandMenu() {
                            {"Escape", !echoTurn}});
 }
 
+const Character* BattleState::actorCharacter() const {
+    const battle::Combatant& a = battle_.units[static_cast<std::size_t>(currentActor())];
+    if (a.side != battle::Side::Party || a.partyIndex < 0 ||
+        a.partyIndex >= static_cast<int>(context_.party.members.size())) {
+        return nullptr;  // an echo (M94) or a guest: nobody's milestones apply
+    }
+    return &context_.party.members[static_cast<std::size_t>(a.partyIndex)];
+}
+
+std::string BattleState::skillBlockLine(const content::SkillDef& s) const {
+    const battle::Combatant& a = battle_.units[static_cast<std::size_t>(currentActor())];
+    if (decisionPending() && !skillIsOffensive(s)) {
+        return "Not here. Only an attack or an offensive skill answers.";
+    }
+    if (battle::summonSpent(battle_, s)) {
+        return "USED: a summon answers once per descent.";
+    }
+    if (!battle::canCast(a, s)) {
+        return "SIL: silenced - MP skills are blocked.";
+    }
+    const int cost = battle::mpCostFor(a, s);
+    if (a.mp < cost) {
+        return "Not enough MP: " + std::to_string(cost) + " needed, " + std::to_string(a.mp) +
+               " left.";
+    }
+    return "";
+}
+
 void BattleState::buildSkillMenu() {
     const battle::Combatant& a = battle_.units[static_cast<std::size_t>(currentActor())];
     skillIds_ = a.skillIds;
+    // M121: a greyed skill is still a row the cursor can rest on - to read why
+    // it is greyed and to open its details. Confirm refuses it (onSkillChosen).
+    skillMenu_.setFocusDisabled(true);
+    const Character* caster = actorCharacter();
     std::vector<ui::MenuItem> items;
     for (const std::string& sid : skillIds_) {
         const content::SkillDef* s = context_.content.findSkill(sid);
@@ -887,7 +926,17 @@ void BattleState::buildSkillMenu() {
         } else if (cost > 0) {
             suffix = "MP " + std::to_string(cost);
         }
-        items.push_back({s->name, enabled, std::move(suffix)});
+        // M121: the kind icon leads the row; a summon's icon already says
+        // "summon", so its row names the creature (the full skill name heads
+        // the details sheet). A skill one of this member's milestones touches
+        // wears the milestone mark after its name.
+        ui::MenuItem row{content::isSummonSkill(*s) ? s->summonName : s->name, enabled,
+                         std::move(suffix)};
+        row.icon = content::skillKindTextureId(s->kind);
+        if (caster != nullptr && skillTextFor(*caster, *s, context_.content).marked()) {
+            row.icon2 = content::kMilestoneIconId;
+        }
+        items.push_back(std::move(row));
     }
     skillMenu_.setItems(std::move(items));
     skillScroll_.reset();
@@ -933,10 +982,22 @@ void BattleState::onCommand() {
             pendingKind_ = PendingKind::Attack;
             // M94: actor-relative — a party turn targets the enemies exactly
             // as before; an echo turn (manual spar) targets the party.
-            const battle::Side actorSide =
-                battle_.units[static_cast<std::size_t>(currentActor())].side;
+            const battle::Combatant& self =
+                battle_.units[static_cast<std::size_t>(currentActor())];
+            const battle::Side actorSide = self.side;
             targetCandidates_ = battle_.aliveIndices(
                 actorSide == battle::Side::Party ? battle::Side::Enemy : battle::Side::Party);
+            // M126 (owner request 2026-09-20): a sweeping basic attack (the
+            // Dragon's) strikes every foe whoever is named, so it asks for no
+            // target - it resolves at once, exactly like an all-enemies skill.
+            // The decision encounters are the exception: there a basic attack
+            // is ONE pick (game/SpecialEncounter.hpp), so the Dragon chooses
+            // its chest or its answer like anyone else.
+            if (self.attackHitsAll && !battle::isConfused(self) && !decisionPending() &&
+                !targetCandidates_.empty()) {
+                executePending(targetCandidates_.front());  // the nominal target
+                break;
+            }
             sortTargetsByScreenY();  // M101
             targetCursor_ = 0;
             phase_ = Phase::ChooseTarget;
@@ -955,18 +1016,44 @@ void BattleState::onCommand() {
             afterAction();
             break;
         case 4:  // Escape
-            result_ = battle::Outcome::Escaped;
-            message_ = "The party flees the battle!";
-            log_.push(message_);  // M52: fleeing bypasses afterAction
-            phase_ = Phase::Done;
+            // M123: in Iron Man fleeing has a price, so it is asked first
+            // (cursor on "Keep fighting"); everywhere else it is immediate.
+            if (ironManStakes()) {
+                askIronManEscape();
+            } else {
+                escapeBattle();
+            }
             break;
         default:
             break;
     }
 }
 
+bool BattleState::ironManStakes() const {
+    return context_.party.ironMan && lifetime_.stats != nullptr;
+}
+
+void BattleState::askIronManEscape() {
+    stack().pushState(std::make_unique<ConfirmPromptState>(
+        stack(), context_, ironman::kEscapeTitle, ironman::kEscapeBody, ironman::kEscapeConfirm,
+        ironman::kEscapeCancel, [this]() { escapeBattle(); }));
+}
+
+void BattleState::escapeBattle() {
+    result_ = battle::Outcome::Escaped;
+    message_ = ironManStakes() ? ironman::kEscapeLine : "The party flees the battle!";
+    log_.push(message_);  // M52: fleeing bypasses afterAction
+    phase_ = Phase::Done;
+}
+
 void BattleState::onSkillChosen() {
-    if (!skillMenu_.currentEnabled() || skillIds_.empty()) {
+    if (skillIds_.empty()) {
+        return;
+    }
+    if (!skillMenu_.currentEnabled()) {
+        // M121: the cursor can rest on a greyed skill now; the reason is
+        // spelled out beside the list, so Confirm only needs the error beat.
+        context_.audio.play(Sfx::Error);
         return;
     }
     pendingSkillId_ = skillIds_[static_cast<std::size_t>(skillMenu_.cursor())];
@@ -1115,7 +1202,7 @@ void BattleState::resolveDecision(int targetUnit) {
     const content::SkillDef* skill = pendingKind_ == PendingKind::Skill
                                          ? context_.content.findSkill(pendingSkillId_)
                                          : nullptr;
-    const bool aoe = battle_.hostileTargetCount(actor, skill) > 1;
+    const bool aoe = decisionActionIsAoe(battle_, actor, skill);  // M126: a swing is one pick
     const int ordinal = targetUnit >= placeholderFirst_ && placeholderFirst_ >= 0
                             ? targetUnit - placeholderFirst_
                             : 0;
@@ -1517,6 +1604,12 @@ void BattleState::writeBackParty() {
     // battle stays spent for the rest of the run. (The spar's whole-party
     // restore deliberately unwinds this like everything else.)
     context_.party.usedSummons = battle_.usedSummons;
+    // M123: the Iron Man escape price lands with the write-back - the one
+    // place every fight's result reaches the party - so the dungeon, the
+    // castle and the dig all pay it without knowing the rule.
+    if (result_ == battle::Outcome::Escaped && ironManStakes()) {
+        ironman::applyEscape(context_.party, context_.content);
+    }
 }
 
 void BattleState::maybeApplySpoils() {
@@ -1555,13 +1648,16 @@ std::string BattleState::outcomeMessage() const {
             // M47: it is no longer free either — the survivors are left at 1 HP
             // and the fallen stay fallen, so the line no longer says "nothing
             // is lost".
+            if (ironManStakes()) {
+                return ironman::kDefeatOutcome;  // M123: nobody is carried anywhere
+            }
             return castleChallenge_
                        ? "The party has fallen... The castle guard carries you back "
                          "to the gates. No gold is taken, but nobody is healed."
                        : "The party has fallen... You are carried back to town; "
                          "half your gold is lost and the run is forfeit.";
         case battle::Outcome::Escaped:
-            return "Escaped!";
+            return ironManStakes() ? ironman::kEscapedOutcome : "Escaped!";
         case battle::Outcome::EnemyFled:  // M111
             return "The foe has fled! Nothing gained, nothing lost.";
         case battle::Outcome::Ongoing:
@@ -1643,18 +1739,18 @@ void BattleState::openSkillDetails() {
     if (s == nullptr) {
         return;
     }
-    std::string body = "MP cost " + std::to_string(s->mpCost) + ".";
-    if (s->element != content::Element::None) {
-        body += "  Element: " + std::string(content::elementDisplayName(s->element)) + ".";
-    }
+    // M121: one shared sheet (game/SkillInfo.hpp) - the cost THIS caster pays
+    // (a Curse doubles it), the kind line, why it cannot be cast right now, and
+    // the description as this member casts it, milestones included.
     const battle::Combatant& a = battle_.units[static_cast<std::size_t>(currentActor())];
-    if (!battle::canCast(a, *s)) {
-        body += "\nSilenced: MP skills are blocked until it wears off.";
-    }
-    if (!s->description.empty()) {
-        body += "\n\n" + s->description;
-    }
-    stack().pushState(std::make_unique<DetailsOverlayState>(stack(), context_, s->name, body));
+    const Character* caster = actorCharacter();
+    const std::string body = skillDetailsBody(*s, caster, context_.content,
+                                              battle::mpCostFor(a, *s), skillBlockLine(*s));
+    const bool marked =
+        caster != nullptr && skillTextFor(*caster, *s, context_.content).marked();
+    stack().pushState(std::make_unique<DetailsOverlayState>(
+        stack(), context_, s->name, body, content::skillKindTextureId(s->kind),
+        marked ? content::kMilestoneIconId : ""));
 }
 
 // M87: the same for the highlighted item during item selection.
@@ -2218,7 +2314,7 @@ void BattleState::render() {
             ui::drawMenuScrolled(skillMenu_, skillScroll_, kListRows, kListX, panelY + 6,
                                  kListItemH, style::kFontBody, listLabelW, pal.text,
                                  pal.disabled, pal.cursor, "battle.skills",
-                                 style::kFontSmall, pal.mpFill);
+                                 style::kFontSmall, pal.mpFill, &context_.resources);
             ui::drawTextFitted("Skill  " + backHint, kInfoX, panelY + 6, infoW, style::kFontBody,
                                style::palette().textDim, "battle.skillhint");
             if (!skillIds_.empty()) {
@@ -2232,19 +2328,21 @@ void BattleState::render() {
                     // more-arrow — there is no scroll here, the header already
                     // advertises [Details] for the full sheet, and the arrow
                     // read as scrollable.
-                    const battle::Combatant& a =
-                        battle_.units[static_cast<std::size_t>(actor)];
-                    if (decisionPending() && !skillIsOffensive(*s)) {
-                        ui::drawTextPreview("Not here. Only an attack or an offensive skill "
-                                            "answers.",
-                                            kInfoX, panelY + 20, infoW, style::kFontBody,
-                                            style::palette().textDim, 3, /*markMore=*/false);
-                    } else if (!battle::canCast(a, *s)) {
-                        ui::drawTextPreview("SIL: silenced - MP skills are blocked.", kInfoX,
-                                            panelY + 20, infoW, style::kFontBody,
-                                            style::palette().textDim, 3, /*markMore=*/false);
-                    } else if (!s->description.empty()) {
-                        ui::drawTextPreview(s->description, kInfoX, panelY + 20, infoW,
+                    // M121: every greyed row says why (the cursor can rest on
+                    // it now), and a usable one previews the description AS THIS
+                    // MEMBER CASTS IT - a held milestone's adjusted text included.
+                    const std::string blocked = skillBlockLine(*s);
+                    const Character* caster = actorCharacter();
+                    const std::string text =
+                        caster != nullptr
+                            ? skillTextFor(*caster, *s, context_.content).description
+                            : s->description;
+                    if (!blocked.empty()) {
+                        ui::drawTextPreview(blocked, kInfoX, panelY + 20, infoW,
+                                            style::kFontBody, style::palette().textDim, 3,
+                                            /*markMore=*/false);
+                    } else if (!text.empty()) {
+                        ui::drawTextPreview(text, kInfoX, panelY + 20, infoW,
                                             style::kFontBody, style::palette().success, 3,
                                             /*markMore=*/false);
                     }
@@ -2407,13 +2505,39 @@ void BattleState::drawSpoilsPanel() const {
     const int w = context_.virtualWidth;
     const int panelTop = context_.virtualHeight - kPanelH - 4;  // the command panel
     const int lineH = 10;
-    int lines = 0;
-    for (const LevelUpDiff& d : spoilsResult_.levelUps) {
-        lines += 2 + (d.newSkillNames.empty() ? 0 : 1);
-    }
     const int headerH = 22;
     const int boxW = 268;
-    const int boxH = headerH + lines * lineH + (lines > 0 ? 8 : 2);
+    // M126 (owner request 2026-09-20): each learned skill is its M121 kind
+    // icon + its name, flowed after the "New:" label and wrapped under it
+    // when a line fills. The flow is computed FIRST so the frame is sized by
+    // the very lines it will draw; icon lines pitch at 12px so two wrapped
+    // rows of 10px icons never touch.
+    constexpr int kSkillLineH = 12;
+    constexpr int kTagGap = 8;
+    const int newLabelW = ui::measureText("New:", style::kFontSmall) + 5;
+    const int tagRoom = boxW - 34 - newLabelW;
+    const auto tagWidth = [](const LevelUpDiff& d, std::size_t i) {
+        const bool icon = i < d.newSkillIcons.size() && !d.newSkillIcons[i].empty();
+        return (icon ? ui::kGearIconSize + 3 : 0) +
+               ui::measureText(d.newSkillNames[i], style::kFontSmall);
+    };
+    std::vector<std::vector<ui::TagFlowLine>> flows;
+    flows.reserve(spoilsResult_.levelUps.size());
+    int textLines = 0;
+    int skillLines = 0;
+    for (const LevelUpDiff& d : spoilsResult_.levelUps) {
+        std::vector<int> widths;
+        widths.reserve(d.newSkillNames.size());
+        for (std::size_t i = 0; i < d.newSkillNames.size(); ++i) {
+            widths.push_back(tagWidth(d, i));
+        }
+        flows.push_back(ui::flowTags(widths, kTagGap, tagRoom));
+        textLines += 2;
+        skillLines += static_cast<int>(flows.back().size());
+    }
+    const int lines = textLines + skillLines;
+    const int boxH =
+        headerH + textLines * lineH + skillLines * kSkillLineH + (lines > 0 ? 8 : 2);
     const int boxX = w / 2 - boxW / 2;
     const int boxY = std::max(6, (panelTop - boxH) / 2);
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
@@ -2421,7 +2545,8 @@ void BattleState::drawSpoilsPanel() const {
         TextFormat("+%d XP each    +%d gold", spoilsResult_.xp, spoilsResult_.gold), w / 2,
         boxY + 7, 10, pal.gold);
     int y = boxY + headerH;
-    for (const LevelUpDiff& d : spoilsResult_.levelUps) {
+    for (std::size_t di = 0; di < spoilsResult_.levelUps.size(); ++di) {
+        const LevelUpDiff& d = spoilsResult_.levelUps[di];
         ui::drawTextFitted(TextFormat("%s   Lv.%d > %d", d.name.c_str(), d.fromLevel, d.toLevel),
                            boxX + 12, y, boxW - 24, style::kFontSmall, pal.text, "battle.spoils.name");
         y += lineH;
@@ -2442,13 +2567,24 @@ void BattleState::drawSpoilsPanel() const {
                            pal.textDim, "battle.spoils.stats");
         y += lineH;
         if (!d.newSkillNames.empty()) {
-            std::string learned = "New: ";
-            for (std::size_t i = 0; i < d.newSkillNames.size(); ++i) {
-                learned += (i == 0 ? "" : ", ") + d.newSkillNames[i];
+            ui::drawText("New:", boxX + 22, y + 1, style::kFontSmall, pal.gold);
+            for (const ui::TagFlowLine& line : flows[di]) {
+                int tx = boxX + 22 + newLabelW;
+                for (std::size_t i = line.first; i < line.first + line.count; ++i) {
+                    const std::string& icon =
+                        i < d.newSkillIcons.size() ? d.newSkillIcons[i] : std::string();
+                    const bool hasIcon = !icon.empty() && context_.resources.hasTexture(icon);
+                    if (hasIcon) {
+                        ui::drawGearIcon(context_.resources, icon, tx, y);
+                    }
+                    const int span = icon.empty() ? 0 : ui::kGearIconSize + 3;
+                    // Policy A: a lone name wider than the row still fits it.
+                    ui::drawTextFitted(d.newSkillNames[i], tx + span, y + 1, tagRoom - span,
+                                       style::kFontSmall, pal.gold, "battle.spoils.skills");
+                    tx += tagWidth(d, i) + kTagGap;
+                }
+                y += kSkillLineH;
             }
-            ui::drawTextFitted(learned, boxX + 22, y, boxW - 34, style::kFontSmall, pal.gold,
-                               "battle.spoils.skills");
-            y += lineH;
         }
     }
 }

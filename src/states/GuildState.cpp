@@ -10,6 +10,7 @@
 #include "core/AppContext.hpp"
 #include "core/SeedParse.hpp"
 #include "dungeon/DungeonGenerator.hpp"
+#include "game/IronMan.hpp"  // M123: no entry autosave, and the caption says so
 #include "game/Party.hpp"
 #include "game/StakesLadder.hpp"  // M105: the Eternal entry raises the baseline
 #include "game/WorldLadder.hpp"   // kTownCount
@@ -145,8 +146,10 @@ void GuildState::enterDungeon() {
                 p.stakes.prevDepth = kMaxDepth;
                 ++p.lifetime.explore.runsAttempted;  // M109: before the entry autosave
                 ++lifetimeTown(p.lifetime, p.currentTown).attempts;
-                content::LoadReport report;
-                context_.saves.autosave(p, report);
+                if (!p.ironMan) {  // M123: Iron Man keeps no saves
+                    content::LoadReport report;
+                    context_.saves.autosave(p, report);
+                }
                 std::vector<dungeon::Dungeon> floors;
                 floors.push_back(dungeon::generateEternalFloor(
                     seed_, 0, context_.content, eternalTheme, p.currentTown));
@@ -159,8 +162,10 @@ void GuildState::enterDungeon() {
 
     ++context_.party.lifetime.explore.runsAttempted;  // M109: before the entry autosave
     ++lifetimeTown(context_.party.lifetime, context_.party.currentTown).attempts;
-    content::LoadReport report;
-    context_.saves.autosave(context_.party, report);
+    if (!context_.party.ironMan) {  // M123: Iron Man keeps no saves
+        content::LoadReport report;
+        context_.saves.autosave(context_.party, report);
+    }
 
     const std::string themeId = themeIds_.empty() ? "" : themeIds_[static_cast<std::size_t>(themeIndex_)];
     // M82: the run is its floors — one for the classic shape, four for the
@@ -286,8 +291,9 @@ void GuildState::render() {
 
     ui::drawHeaderBand("Guild", w, p.crystal);
     ui::drawCaptionBacking(0, 25, w, 16);  // M119: the caption sits on the art
-    ui::drawTextCentered("Choose a dungeon - entering autosaves.", w / 2, 28, style::kFontBody,
-                         p.textDim);
+    ui::drawTextCentered(context_.party.ironMan ? ironman::kGuildEntryLine
+                                                : "Choose a dungeon - entering autosaves.",
+                         w / 2, 28, style::kFontBody, p.textDim);
 
     // Control panel: the CTA row on top, then the two stepper rows, then the
     // plain rows. The menu model still owns navigation. M84: the paddings are

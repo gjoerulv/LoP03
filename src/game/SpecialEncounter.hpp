@@ -3,7 +3,8 @@
 // M112: the two decision encounters the patrol dispatcher can answer with —
 // the Jester's LORE question (two answers and the Jester itself on the field;
 // the right answer pays, the wrong one mocks, striking the Jester or sweeping
-// the field costs the striker) and the TREASURE CHESTS (three chests, one
+// the field WITH A SKILL costs the striker — M126: a basic attack is always
+// one pick, see decisionActionIsAoe) and the TREASURE CHESTS (three chests, one
 // paying, one lying, one empty; the lying one is the Mimic, a boss). Both
 // are pure models: seeded by the run seed and the patrol index (SKILL gotcha
 // 10 — hashes, never rng-stream draws), hosted by BattleState's decision
@@ -12,7 +13,8 @@
 // The battle model never learns of any of this: the placeholders are real
 // enemy-side Combatants at 1 HP (Battle::outcome() would otherwise declare
 // victory over an empty side), inert only in the screen's bookkeeping; the
-// one shared AOE definition is Battle::hostileTargetCount.
+// one shared AOE definition is decisionActionIsAoe (Battle::hostileTargetCount
+// for a skill; never for a basic attack).
 
 #include <algorithm>
 #include <array>
@@ -236,6 +238,18 @@ inline bool skillIsOffensive(const content::SkillDef& s) {
            s.target == content::SkillTarget::AllEnemies;
 }
 
+// M126 (owner rule 2026-09-20): in a decision encounter a BASIC ATTACK is
+// always one pick. A class whose swing sweeps every foe — the Dragon, a
+// Dragonform party, a Rain of Arrows archer — aims it at the chosen
+// placeholder like anyone else (the Dragon has no skills: before this rule
+// it could only ever be punished, or wake the Mimic). Only a SKILL that
+// reaches more than one foe still sweeps the field, and still pays for it.
+// The screen's resolveDecision and uncontrolledDecisionFor both ask here.
+inline bool decisionActionIsAoe(const battle::Battle& b, int actor,
+                                const content::SkillDef* skill) {
+    return skill != nullptr && b.hostileTargetCount(actor, skill) > 1;
+}
+
 // The one resolution rule. `ordinal` is the struck placeholder (0..2);
 // `aoe` says the action would have hit more than one of them.
 inline SpecialResult resolveSpecial(SpecialEncounter& e, int ordinal, bool aoe) {
@@ -344,7 +358,7 @@ inline UncontrolledDecision uncontrolledDecisionFor(const battle::Battle& b, int
     }
     d.decides = true;
     d.ordinal = std::max(0, choice.target - placeholderFirst);
-    d.aoe = b.hostileTargetCount(actor, skill) > 1;
+    d.aoe = decisionActionIsAoe(b, actor, skill);  // M126: a swing is one pick
     return d;
 }
 

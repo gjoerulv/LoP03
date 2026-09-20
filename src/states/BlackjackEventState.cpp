@@ -23,9 +23,14 @@ namespace {
 // goose, the duck, the dark king), the blank face lettered with the rank for
 // 2..10, and the woven back for the dealer's hole card. A missing texture
 // falls back to the old text label — placeholder discipline, never a crash.
-constexpr int kCardW = 18;
-constexpr int kCardH = 24;
-constexpr int kCardGap = 3;
+// M126 (owner request 2026-09-20): the 18x24 cards were too small to read -
+// they are dealt at TWICE the size now (a clean integer scale of the same
+// art), the rank lettered at twice the size with them.
+constexpr int kCardScale = 2;
+constexpr int kCardW = 18 * kCardScale;
+constexpr int kCardH = 24 * kCardScale;
+constexpr int kCardGap = 6;
+constexpr int kRankFont = 20;
 
 void drawCard(AppContext& context, int x, int y, int rank, bool faceUp) {
     const style::Palette& p = style::palette();
@@ -36,22 +41,32 @@ void drawCard(AppContext& context, int x, int y, int rank, bool faceUp) {
                      : rank == 13 ? "ui.card.king"
                                   : "ui.card.face";
     if (!context.resources.hasTexture(id)) {
-        ui::drawText(faceUp ? gamble::cardLabel(rank) : "?", x + 4, y + 8, 10, p.text);
+        ui::drawText(faceUp ? gamble::cardLabel(rank) : "?", x + 8, y + 14, kRankFont, p.text);
         return;
     }
     DrawTextureEx(context.resources.texture(id),
-                  Vector2{static_cast<float>(x), static_cast<float>(y)}, 0.0f, 1.0f, WHITE);
+                  Vector2{static_cast<float>(x), static_cast<float>(y)}, 0.0f,
+                  static_cast<float>(kCardScale), WHITE);
     if (faceUp && rank >= 2 && rank <= 10) {
         const std::string lbl = gamble::cardLabel(rank);
-        const int lw = ui::measureText(lbl, 10);
-        ui::drawText(lbl, x + (kCardW - lw) / 2, y + (kCardH - 10) / 2, 10, p.ink);
+        const int lw = ui::measureText(lbl, kRankFont);
+        ui::drawText(lbl, x + (kCardW - lw) / 2, y + (kCardH - kRankFont) / 2, kRankFont, p.ink);
     }
 }
 
-void drawHand(AppContext& context, int x, int y, const std::vector<int>& cards, bool hideHole) {
+// Seven cards sit side by side in the table's width; a longer hand (many
+// small cards) closes up into a fan so it never leaves the frame - each
+// card's left edge, and with it the rank, stays in view.
+void drawHand(AppContext& context, int x, int y, int room, const std::vector<int>& cards,
+              bool hideHole) {
+    int step = kCardW + kCardGap;
+    const int n = static_cast<int>(cards.size());
+    if (n > 1 && (n - 1) * step + kCardW > room) {
+        step = (room - kCardW) / (n - 1);
+    }
     for (std::size_t i = 0; i < cards.size(); ++i) {
-        drawCard(context, x + static_cast<int>(i) * (kCardW + kCardGap), y,
-                 cards[static_cast<std::size_t>(i)], !(hideHole && i == 1));
+        drawCard(context, x + static_cast<int>(i) * step, y, cards[static_cast<std::size_t>(i)],
+                 !(hideHole && i == 1));
     }
 }
 }  // namespace
@@ -130,7 +145,7 @@ void BlackjackEventState::render() {
     // above (hole card face-down until the hand ends), yours below, values
     // beside the labels, the result line under both.
     const int boxW = 320;
-    const int boxH = 158;
+    const int boxH = 198;  // M126: two rows of double-size cards
     const int boxX = w / 2 - boxW / 2;
     const int boxY = h / 2 - boxH / 2;
     ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Raised);
@@ -139,16 +154,16 @@ void BlackjackEventState::render() {
     const std::string dealerLabel =
         std::string("Dealer  (") +
         (done_ ? std::to_string(gamble::handValue(dealer_)) : std::string("?")) + ")";
-    ui::drawTextFitted(dealerLabel, boxX + 16, boxY + 24, boxW - 32, style::kFontSmall,
+    ui::drawTextFitted(dealerLabel, boxX + 16, boxY + 23, boxW - 32, style::kFontSmall,
                        p.textDim, "blackjack.dealer");
-    drawHand(context_, boxX + 16, boxY + 33, dealer_, !done_);
+    drawHand(context_, boxX + 16, boxY + 33, boxW - 32, dealer_, !done_);
     const std::string youLabel =
         "You  (" + std::to_string(gamble::handValue(player_)) + ")";
-    ui::drawTextFitted(youLabel, boxX + 16, boxY + 63, boxW - 32, style::kFontSmall,
+    ui::drawTextFitted(youLabel, boxX + 16, boxY + 87, boxW - 32, style::kFontSmall,
                        p.textDim, "blackjack.player");
-    drawHand(context_, boxX + 16, boxY + 72, player_, false);
+    drawHand(context_, boxX + 16, boxY + 97, boxW - 32, player_, false);
     if (done_) {
-        ui::drawTextFitted(resultText_, boxX + 16, boxY + 104, boxW - 32, style::kFontBody,
+        ui::drawTextFitted(resultText_, boxX + 16, boxY + 152, boxW - 32, style::kFontBody,
                            p.textDim, "blackjack.result");
     }
 

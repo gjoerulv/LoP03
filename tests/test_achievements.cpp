@@ -27,7 +27,7 @@ std::filesystem::path tempDir() {
 
 TEST_CASE("achievements: the roster is well-formed", "[achievement]") {
     CHECK(kAchievementCount >= 15);
-    CHECK(kAchievementCount <= 20);
+    CHECK(kAchievementCount <= 23);  // M123: +3 Iron Man trophies
     std::set<std::string> ids;
     for (const AchievementDef& a : kAchievements) {
         INFO(a.id);

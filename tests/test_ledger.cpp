@@ -68,6 +68,31 @@ TEST_CASE("ledger: the defeat halving is a loss apart from spending", "[lifetime
     REQUIRE(p.lifetime.economy.goldEarned == 0);
 }
 
+TEST_CASE("ledger: a wipe takes half - or a hidden quarter deep in the Eternal (M120)",
+          "[lifetime][ledger][m120]") {
+    // The standing price: the M89 halving, the odd coin staying with the party.
+    CHECK(wipeGoldLoss(301, false, 0) == 151);
+    CHECK(wipeGoldLoss(300, false, 0) == 150);
+    CHECK(wipeGoldLoss(1, false, 0) == 1);
+    CHECK(wipeGoldLoss(0, false, 0) == 0);
+    CHECK(wipeGoldLoss(-5, true, 9) == 0);  // defensive: never a negative loss
+    // A scored run is never eligible, however many floors it fell through.
+    CHECK(wipeGoldLoss(400, false, 19) == 200);
+    // The Eternal boundary: four felled floor-bosses = the party stood on floor five.
+    CHECK(wipeGoldLoss(400, true, 0) == 200);
+    CHECK(wipeGoldLoss(400, true, 3) == 200);
+    CHECK(wipeGoldLoss(400, true, 4) == 100);
+    CHECK(wipeGoldLoss(400, true, 40) == 100);
+    CHECK(wipeGoldLoss(403, true, 4) == 100);  // a quarter, floored: the party keeps the rest
+    CHECK(kEternalMercyFloors == 4);
+
+    Party p;
+    p.gold = 403;
+    loseGold(p, wipeGoldLoss(p.gold, true, 4));
+    CHECK(p.gold == 303);
+    CHECK(p.lifetime.economy.goldLost == 100);
+}
+
 TEST_CASE("ledger: legendary tokens earn and spend on their own counters", "[lifetime][ledger]") {
     Party p;
     earnTokens(p, 2, EconomySource::BossDrop);

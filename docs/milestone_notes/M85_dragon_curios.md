@@ -204,3 +204,6 @@ jester with dry lore.
 
 `complete (approved)` — owner approval 2026-08-07, committed as
 `f562d5c`.
+
+> **M127 (2026-09-20):** the lore panel shows the curio's icon at 3x beside
+> the text. See `M127_owner_batch_3.md`.

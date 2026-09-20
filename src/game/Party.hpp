@@ -29,6 +29,10 @@ struct Party {
     // RUNTIME ONLY, never saved — the entry autosave predates the event, and
     // DungeonState::onExit clears a leftover so it cannot leak into town.
     bool doubleXpNext = false;
+    // M123: an Iron Man run (game/IronMan.hpp) - chosen at New Game. RUNTIME
+    // ONLY, never saved: SaveSystem refuses to write such a party, so the
+    // flag can never reach a slot, and a load replaces the whole object.
+    bool ironMan = false;
     // M95 (rules v17): summons cast this run — RUNTIME ONLY, never saved
     // (the entry autosave restarts a reload with a fresh ledger, like every
     // other run-runtime state). Reset at dungeon/challenge/treasure entry;

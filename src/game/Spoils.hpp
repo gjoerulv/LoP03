@@ -66,6 +66,10 @@ struct LevelUpDiff {
     int defDelta = 0;
     int spdDelta = 0;
     std::vector<std::string> newSkillNames;  // display names, learnset order
+    // M126 (owner request 2026-09-20): the M121 kind icon each learned skill
+    // wears on the panel - texture ids parallel to newSkillNames ("" when the
+    // content does not know the skill; the name still shows).
+    std::vector<std::string> newSkillIcons;
 };
 
 struct SpoilsResult {
@@ -140,6 +144,8 @@ inline SpoilsResult applySpoils(Party& party, const BattleSpoils& spoils,
             if (std::find(b.known.begin(), b.known.end(), id) == b.known.end()) {
                 const content::SkillDef* s = db.findSkill(id);
                 d.newSkillNames.push_back(s != nullptr ? s->name : id);
+                d.newSkillIcons.push_back(
+                    s != nullptr ? content::skillKindTextureId(s->kind) : std::string());
             }
         }
         out.levelUps.push_back(std::move(d));

@@ -10,6 +10,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "render/PartyHop.hpp"  // M127: the hop, shared with the save slots
 #include "resource/ResourceManager.hpp"
 #include "states/CelebrationPhrases.hpp"
 #include "states/StateStack.hpp"
@@ -20,10 +21,8 @@ namespace cd {
 
 namespace {
 
-// Per-party-slot jump character: everyone celebrates to their own beat.
-constexpr float kJumpFreq[4] = {2.4f, 3.1f, 2.0f, 2.8f};   // radians/second-ish
-constexpr float kJumpAmp[4] = {12.0f, 18.0f, 10.0f, 15.0f};  // pixels
-constexpr float kJumpPhase[4] = {0.0f, 1.3f, 2.6f, 0.7f};
+// Per-party-slot jump character: everyone celebrates to their own beat
+// (render/PartyHop.hpp since M127 - the save slots hop to the same rhythm).
 
 constexpr int kGroundY = 196;   // where feet land
 constexpr int kSpriteHalf = 24;  // 2x-scaled 24px sprite -> 48px, half = 24
@@ -135,13 +134,7 @@ void CelebrationState::render() {
             }
         } else {
             // Everyone jumps to their own rhythm; the MVP a little higher.
-            const std::size_t s = static_cast<std::size_t>(i % 4);
-            float amp = kJumpAmp[s];
-            if (i == mvp_) {
-                amp *= 1.4f;
-            }
-            const float jump =
-                std::fabs(std::sin(time_ * kJumpFreq[s] + kJumpPhase[s])) * amp;
+            const float jump = render::partyHop(i, time_, i == mvp_ ? 1.4f : 1.0f);
             const int sy = base - 48 - static_cast<int>(jump);
             if (hasTex) {
                 DrawTextureEx(context_.resources.texture(sprId),
