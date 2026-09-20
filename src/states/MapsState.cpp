@@ -12,6 +12,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "resource/ResourceManager.hpp"  // M127: the piece and curio textures
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -22,7 +23,9 @@ namespace {
 
 // One quadrant of the treasure sketch (all original, drawn from primitives;
 // deterministic — no RNG). qx/qy are the quadrant's top-left; each quadrant
-// is 100x56 inside the 200x112 parchment.
+// is 100x56 inside the 200x112 parchment. Since M127 this is only the
+// FALLBACK for a missing piece texture (placeholder discipline): the map is
+// four torn parchment pieces of pixel art, game/TreasureMap.hpp.
 void drawQuadrant(int q, int qx, int qy, const ui::style::Palette& p) {
     const Color ink = p.textDim;
     const Color accent = p.gold;
@@ -146,26 +149,36 @@ void MapsState::render() {
     const bool revealed = party.treasure.active;
     const int shown = revealed ? kMapPiecesNeeded : party.mapPieces;
 
-    // The parchment: 2x2 quadrants, hidden ones written over with "?".
+    // The map (M127, owner direction 2026-09-20): FOUR TORN PARCHMENT PIECES of
+    // one pixel-art drawing on a dark board. Every piece texture spans the whole
+    // map (transparent outside its tear), so the owned ones are simply drawn at
+    // the same origin, at 2x, and fit by construction; a piece not yet found
+    // leaves the board bare but for its "?". A missing texture falls back to
+    // the old primitive sketch for that quadrant.
     const int mapW = 200;
     const int mapH = 112;
     const int mapX = w / 2 - mapW / 2;
-    const int mapY = 36;
-    ui::drawFrame(mapX - 8, mapY - 8, mapW + 16, mapH + 16, ui::FrameStyle::Reward);
-    DrawRectangle(mapX, mapY, mapW, mapH, ui::lighten(p.canvas, 14));
+    const int mapY = 31;  // M127: up 5px, the frame 2px tighter - the curio rows' 12px pitch
+    ui::drawFrame(mapX - 6, mapY - 6, mapW + 12, mapH + 12, ui::FrameStyle::Reward);
+    DrawRectangle(mapX, mapY, mapW, mapH, ui::lighten(p.canvas, 6));
     // Quadrants reveal in a fixed order: TL, TR, BL, BR — HoMM2 style.
-    for (int q = 0; q < 4; ++q) {
+    for (int q = 0; q < kMapPiecesNeeded; ++q) {
         const int qx = mapX + (q % 2) * (mapW / 2);
         const int qy = mapY + (q / 2) * (mapH / 2);
-        if (q < shown) {
-            drawQuadrant(q, qx, qy, p);
-        } else {
-            DrawRectangle(qx + 2, qy + 2, mapW / 2 - 4, mapH / 2 - 4, p.canvas);
+        if (q >= shown) {
             ui::drawTextCentered("?", qx + mapW / 4, qy + mapH / 4 - 5, 14, p.textHint);
+            continue;
+        }
+        const char* pieceId = kMapPieceTextureIds[q];
+        if (context_.resources.hasTexture(pieceId)) {
+            DrawTextureEx(context_.resources.texture(pieceId),
+                          Vector2{static_cast<float>(mapX), static_cast<float>(mapY)}, 0.0f,
+                          2.0f, WHITE);
+        } else {
+            DrawRectangle(qx, qy, mapW / 2, mapH / 2, ui::lighten(p.canvas, 14));
+            drawQuadrant(q, qx, qy, p);
         }
     }
-    DrawRectangle(mapX, mapY + mapH / 2 - 1, mapW, 1, p.rowBorder);
-    DrawRectangle(mapX + mapW / 2 - 1, mapY, 1, mapH, p.rowBorder);
 
     std::string line;
     if (revealed) {
@@ -189,12 +202,15 @@ void MapsState::render() {
         line += TextFormat("  The guild owes %d piece%s, payable after the dig.",
                            party.mapPiecesOwed, party.mapPiecesOwed == 1 ? "" : "s");
     }
-    ui::drawTextWrapped(line, 40, mapY + mapH + 10, w - 80, ui::style::kFontSmall, revealed ? p.gold : p.textDim,
+    ui::drawTextWrapped(line, 40, mapY + mapH + 9, w - 80, ui::style::kFontSmall, revealed ? p.gold : p.textDim,
                         "maps.status", 2);
 
     // M66: the curio collection — twelve trinkets paid out by the single-use
     // dungeon treasure maps, four columns by three rows, locked ones masked.
-    const int curioY = mapY + mapH + 30;
+    // M127: each owned curio wears its own icon before its name; the rows
+    // pitch at 12px so the 10px icons never touch (the map above moved up and
+    // its frame tightened to pay for it).
+    const int curioY = mapY + mapH + 32;
     ui::drawSectionHeader(TextFormat("Curios  %d / %d",
                                      static_cast<int>(party.ownedCurios.size()), kCurioCount),
                           40, curioY, w - 80);
@@ -203,13 +219,20 @@ void MapsState::render() {
         const CurioDef& cd = kCurios[i];
         const bool owned = ownsCurio(party.ownedCurios, cd.id);
         const int cxp = 30 + (i % 4) * colW;
-        const int cyp = curioY + 12 + (i / 4) * 10;
+        const int cyp = curioY + 12 + (i / 4) * 12;
         // M85: the grid cursor — a slab under the focused name, gold when it
         // can be inspected.
         if (i == cursor_ && !loreOpen_) {
-            ui::drawSelectionSlab(cxp - 3, cyp - 1, colW - 2, 11);
+            ui::drawSelectionSlab(cxp - 3, cyp - 1, colW - 2, 12);
         }
-        ui::drawTextFitted(owned ? cd.name : "? ? ?", cxp, cyp, colW - 6, ui::style::kFontSmall,
+        // M127: the icon column is reserved on every row so names stay
+        // aligned; an unfound curio keeps its secret - no icon, "? ? ?".
+        const int iconSpan = ui::kGearIconSize + 3;
+        if (owned) {
+            ui::drawGearIcon(context_.resources, curioIconTextureId(cd), cxp, cyp);
+        }
+        ui::drawTextFitted(owned ? cd.name : "? ? ?", cxp + iconSpan, cyp + 1,
+                           colW - 6 - iconSpan, ui::style::kFontSmall,
                            i == cursor_ ? (owned ? p.gold : p.textDim)
                                         : (owned ? p.text : p.textHint),
                            "maps.curio");
@@ -230,9 +253,22 @@ void MapsState::render() {
         ui::drawFrame(boxX, boxY, boxW, boxH, ui::FrameStyle::Reward);
         ui::drawTextCentered(cd.name, w / 2, boxY + 10, 14, p.gold);
         ui::drawDivider(boxX + 14, boxY + 28, boxW - 28);
-        loreView_.setContent(body, boxW - 32 - ui::kScrollGutterW, ui::style::kFontSmall, ui::raylibMeasure());
+        // M127: the curio itself, at three times its icon size, in an inset
+        // well at the panel's left; the lore reads beside it. Without the
+        // texture the text simply takes the whole width, as before.
+        constexpr int kCurioScale = 3;
+        const int wellBox = ui::kGearIconSize * kCurioScale + 8;
+        const std::string iconId = curioIconTextureId(cd);
+        const bool hasIcon = context_.resources.hasTexture(iconId);
+        const int textX = hasIcon ? boxX + 16 + wellBox + 8 : boxX + 16;
+        if (hasIcon) {
+            ui::drawFrame(boxX + 16, boxY + 36, wellBox, wellBox, ui::FrameStyle::Inset);
+            ui::drawGearIcon(context_.resources, iconId, boxX + 20, boxY + 40, kCurioScale);
+        }
+        loreView_.setContent(body, boxX + boxW - 16 - ui::kScrollGutterW - textX,
+                             ui::style::kFontSmall, ui::raylibMeasure());
         loreView_.setVisibleLines(std::clamp(loreView_.lineCount(), 1, 7));
-        ui::drawTextViewport(loreView_, boxX + 16, boxY + 36, p.text);
+        ui::drawTextViewport(loreView_, textX, boxY + 36, p.text);
         std::string hint = input::prompt(context_.input.map(), InputAction::Confirm,
                                          context_.input.activeDevice(), "Close");
         if (loreView_.scrollable()) {

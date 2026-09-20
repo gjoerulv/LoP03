@@ -104,6 +104,21 @@ inline std::string memberName(const Party& party, int slot) {
 
 }  // namespace summary_detail
 
+// M124: the rows a FALLEN Iron Man run's Overview page leads with - where
+// the party fell and to whom, each on its own full-width row under a header
+// (a place line is far wider than the value column), then the mode.
+inline std::vector<SummaryRow> fallenSummaryRows(const std::string& place,
+                                                 const std::string& foes) {
+    std::vector<SummaryRow> out;
+    out.push_back({"Fell at", "", true});
+    out.push_back({place.empty() ? std::string("Somewhere unrecorded") : place, "", false});
+    out.push_back({"Beaten by", "", true});
+    out.push_back({foes.empty() ? std::string("Something unseen") : foes, "", false});
+    out.push_back({"The run", "", true});
+    out.push_back({"Mode", "Iron Man", false});
+    return out;
+}
+
 inline std::vector<SummaryRow> summaryRows(SummaryPage page, const Party& party,
                                            const content::ContentDatabase& db) {
     using namespace summary_detail;

@@ -226,3 +226,7 @@ equip bans and quirks (`attackHitsAll`, `uncontrolled`, `scoreModPct`) in
 plain words, and the lock note. The footer advertises "Info" (five hints
 must share the strip — the capture lint enforces it). Matrix row 212;
 capture scenes 05/47/48 re-referee the reflowed rows.
+
+> **M126 (2026-09-20):** the Dragon's Attack asks for no target any more (it
+> resolves like an all-foes skill); in the Lore and Chest patrols its swing is
+> a single pick. See `M126_owner_batch_2.md`.

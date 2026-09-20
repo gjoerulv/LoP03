@@ -1,5 +1,6 @@
 #include "states/EndgameSummaryState.hpp"
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -9,6 +10,7 @@
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
+#include "states/MainMenuState.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -29,7 +31,37 @@ EndgameSummaryState::EndgameSummaryState(StateStack& stack, AppContext& context,
     rebuildPage();
 }
 
+EndgameSummaryState::EndgameSummaryState(StateStack& stack, AppContext& context, Party snapshot,
+                                         ironman::FallenInfo fallen, bool leaveToTitle)
+    : GameState(stack),
+      context_(context),
+      snapshot_(std::move(snapshot)),
+      fallen_(std::move(fallen)),
+      leaveToTitle_(leaveToTitle) {
+    rebuildPage();
+}
+
+const Party& EndgameSummaryState::source() const {
+    return snapshot_ ? *snapshot_ : context_.party;
+}
+
+void EndgameSummaryState::leave() {
+    context_.audio.play(Sfx::Cancel);
+    if (leaveToTitle_) {
+        // The send-off: nothing lies beneath (the run is over), so the title
+        // starts over - the Quit-to-Title idiom.
+        stack().clearStates();
+        stack().pushState(std::make_unique<MainMenuState>(stack(), context_));
+        return;
+    }
+    stack().popState();
+}
+
 void EndgameSummaryState::onEnter() {
+    if (fallen_) {
+        context_.audio.setMusic(MusicTrack::Defeat);  // no fanfare for the fallen
+        return;
+    }
     // First showing: the victory stinger, then the Result loop; revisits go
     // straight to the loop. The town restores its own music on resume.
     if (firstShow_) {
@@ -40,7 +72,12 @@ void EndgameSummaryState::onEnter() {
 }
 
 void EndgameSummaryState::rebuildPage() {
-    rows_ = summaryRows(summaryPageAt(page_), context_.party, context_.content);
+    rows_ = summaryRows(summaryPageAt(page_), source(), context_.content);
+    if (fallen_ && summaryPageAt(page_) == SummaryPage::Overview) {
+        std::vector<SummaryRow> lead = fallenSummaryRows(fallen_->place, fallen_->foes);
+        lead.push_back({"Lifetime", "", true});
+        rows_.insert(rows_.begin(), lead.begin(), lead.end());
+    }
     std::vector<ui::MenuItem> items;
     for (const SummaryRow& r : rows_) {
         items.push_back({r.label, !r.header, r.value});
@@ -58,9 +95,9 @@ void EndgameSummaryState::rebuildPage() {
 }
 
 void EndgameSummaryState::handleInput(const Input& input) {
-    if (input.pressed(InputAction::Cancel)) {
-        context_.audio.play(Sfx::Cancel);
-        stack().popState();
+    if (input.pressed(InputAction::Cancel) ||
+        (leaveToTitle_ && input.pressed(InputAction::Confirm))) {
+        leave();
         return;
     }
     if (input.pressed(InputAction::CycleNext)) {
@@ -94,7 +131,8 @@ void EndgameSummaryState::render() {
     const int h = context_.virtualHeight;
     const ui::style::Palette& p = ui::style::palette();
     ClearBackground(p.canvas);
-    ui::drawHeaderBand("End-game Summary", w, p.gold);
+    ui::drawHeaderBand(fallen_ ? "Fallen Run" : "End-game Summary", w,
+                       fallen_ ? p.danger : p.gold);
 
     const SummaryPage page = summaryPageAt(page_);
     const std::string pageLine = std::string(summaryPageName(page)) + "   " +
@@ -115,7 +153,9 @@ void EndgameSummaryState::render() {
                              input::prompt(map, InputAction::CycleNext, device, "Next page") +
                              "   " + input::prompt(map, InputAction::MoveUp, device, "") +
                              input::prompt(map, InputAction::MoveDown, device, "Scroll") +
-                             "   " + input::prompt(map, InputAction::Cancel, device, "Back");
+                             "   " +
+                             input::prompt(map, InputAction::Cancel, device,
+                                           leaveToTitle_ ? "To the title" : "Back");
     ui::drawTextFitted(hint, 8, h - 13, w - 16, ui::style::kFontSmall, p.textHint,
                        "summary.footer");
 }

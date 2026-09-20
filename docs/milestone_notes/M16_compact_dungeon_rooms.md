@@ -238,3 +238,7 @@ clean exit code 0.
    rewritten (it described the fixed 26×15 rooms and pre-M5 gate behavior);
    historical detail lives in git history.
 4. Obstacle "props" are wall-tile pillars only; themed prop art is M17.
+
+> **M126 (2026-09-20, generation v25):** the guarded chest is walled in and
+> its guard stands in front of it, the only way in; the validator checks the
+> vault sealed and unsealed. See `M126_owner_batch_2.md`.

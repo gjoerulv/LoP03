@@ -19,7 +19,13 @@ auto findIn(const Map& map, const std::string& id) -> const typename Map::mapped
 
 }  // namespace
 
-bool ContentDatabase::addSkill(const SkillDef& def) { return insertUnique(skills_, def); }
+bool ContentDatabase::addSkill(const SkillDef& def) {
+    // M121: the at-a-glance kind is assigned HERE, as content loads — derived
+    // from the authored fields by the one rule, never authored itself.
+    SkillDef stored = def;
+    stored.kind = skillKindFor(stored);
+    return insertUnique(skills_, stored);
+}
 bool ContentDatabase::addClass(const ClassDef& def) { return insertUnique(classes_, def); }
 bool ContentDatabase::addEnemy(const EnemyDef& def) { return insertUnique(enemies_, def); }
 bool ContentDatabase::addItem(const ItemDef& def) { return insertUnique(items_, def); }

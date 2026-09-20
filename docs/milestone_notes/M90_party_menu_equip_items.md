@@ -64,6 +64,10 @@ a dungeon with a just-inspected team.
 · `docs/technical_design.md` (§43) · `docs/manual_test_matrix.md`
 (rows 173–174).
 
+*Pointer (2026-09-18):* since M122 a scroll row on the Items screen is live
+(it opens the pupil pick); gear rows stay inspect-only - see
+`M122_party_skills_field_healing.md`.
+
 ## Final status
 
 `complete (approved 2026-08-16)` — the ledger is authoritative; this line

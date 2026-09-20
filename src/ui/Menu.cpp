@@ -32,7 +32,7 @@ void Menu::setCursor(int index) {
         index = static_cast<int>(items_.size()) - 1;
     }
     cursor_ = index;
-    if (!items_[static_cast<std::size_t>(cursor_)].enabled) {
+    if (!focusDisabled_ && !items_[static_cast<std::size_t>(cursor_)].enabled) {
         step(+1);  // settle on the nearest enabled item if possible
     }
 }
@@ -42,6 +42,10 @@ void Menu::step(int direction) {
         return;
     }
     const int count = static_cast<int>(items_.size());
+    if (focusDisabled_) {  // M121: every row is a resting place
+        cursor_ = ((cursor_ + direction) % count + count) % count;
+        return;
+    }
     for (int i = 0; i < count; ++i) {
         const int next = ((cursor_ + direction * (i + 1)) % count + count) % count;
         if (items_[static_cast<std::size_t>(next)].enabled) {

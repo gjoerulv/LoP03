@@ -357,3 +357,44 @@ TEST_CASE("validation: an item's town window is parsed and sanity-checked", "[co
         CHECK_FALSE(d->curesDebuffs);
     }
 }
+
+TEST_CASE("validation: an item's MP rider is heal-consumable-only (M120)", "[content][m120]") {
+    SECTION("a heal consumable may carry it; absent means 0") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseItems(parse(R"({"version":1,"items":[
+            {"id":"elixir","name":"Elixir","type":"consumable","effect":"heal",
+             "effectAmount":300,"mpAmount":50},
+            {"id":"potion","name":"Potion","type":"consumable","effect":"heal",
+             "effectAmount":30}]})"),
+                   "mem", db, rep);
+        REQUIRE(rep.ok());
+        CHECK(db.findItem("elixir")->mpAmount == 50);
+        CHECK(db.findItem("potion")->mpAmount == 0);
+    }
+    SECTION("an ether-style restore_mp item must use effectAmount, not the rider") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseItems(parse(R"({"version":1,"items":[
+            {"id":"x","name":"X","type":"consumable","effect":"restore_mp",
+             "effectAmount":20,"mpAmount":5}]})"),
+                   "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+    }
+    SECTION("equipment can never carry it") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseItems(parse(R"({"version":1,"items":[
+            {"id":"x","name":"X","type":"equipment","slot":"weapon","mpAmount":5}]})"),
+                   "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+    }
+    SECTION("a negative rider is rejected") {
+        ContentDatabase db;
+        LoadReport rep;
+        parseItems(parse(R"({"version":1,"items":[
+            {"id":"x","name":"X","type":"consumable","effect":"heal","mpAmount":-1}]})"),
+                   "mem", db, rep);
+        REQUIRE_FALSE(rep.ok());
+    }
+}

@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "battle/BattleObserver.hpp"
+#include "battle/HealMath.hpp"  // M122: the shared heal arithmetic
 #include "content/ContentDatabase.hpp"
 #include "content/Definitions.hpp"
 #include "dungeon/DungeonModel.hpp"
@@ -157,7 +158,8 @@ int magicDamage(const Combatant& a, const Combatant& d, int power, content::Elem
     return dmg * attackerElementMod(a, d, element) / 100;
 }
 
-int healValue(const Combatant& a, int power) { return power + a.stats.magic / 2; }
+// M122: the arithmetic lives in battle/HealMath.hpp (shared with the field cast).
+int healValue(const Combatant& a, int power) { return healBase(a.stats.magic, power); }
 
 // Returns whether the status actually landed (M109: the telemetry emit keys on
 // it, so an immune or empty application is never reported as applied).
@@ -1814,10 +1816,9 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                         skill.controlEffect == content::SkillEffect::Cleanse &&
                         !a.purifyHeals;
                     if (!pureCleanse) {
-                        int amt = healValue(a, skill.power);
-                        if (a.healCastPct > 0) {
-                            amt = amt * (100 + a.healCastPct) / 100;  // M63 (Devotion)
-                        }
+                        // M63 (Devotion) rides the shared helper (M122).
+                        const int amt =
+                            healWithCastBonus(healValue(a, skill.power), a.healCastPct);
                         const int hpBefore = t.hp;  // M60: record the EFFECTIVE gain
                         applyHeal(t, amt);
                         if (observer != nullptr && t.hp > hpBefore) {
@@ -1835,8 +1836,7 @@ std::string Battle::useSkill(int actor, int primaryTarget, const content::SkillD
                     // enters, so reviving is an emergency, not a heal.
                     // M63 (Blessed Renew): the caster's milestone share wins when
                     // higher; it never turns a non-revive heal into one.
-                    const int pct = std::max(skill.reviveHpPct, a.reviveAtPct);
-                    const int amt = std::max(1, t.maxHp * pct / 100);
+                    const int amt = reviveHp(t.maxHp, skill.reviveHpPct, a.reviveAtPct);
                     t.hp = amt;
                     emitEvent(*this,
                               {BattleEvent::Type::Revive, actor, ti, amt, false, false, {}});
@@ -1965,7 +1965,9 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
     // derived and identical in live play and the Simulator.
     int healAmount =
         kingBattle && item.kingEffectAmount > 0 ? item.kingEffectAmount : item.effectAmount;
-    int mpAmount = kingBattle ? item.kingMpAmount : 0;
+    // M120: a heal may carry its own MP rider (`mpAmount`, the Elixir); the
+    // King's amount still replaces it in his fight when authored (M43).
+    int mpAmount = kingBattle && item.kingMpAmount > 0 ? item.kingMpAmount : item.mpAmount;
     // M63 (Field Medic): items this USER wields restore more — the heal / MP
     // amounts only; a revive's share, cures, and relic effects are untouched.
     const int potency = units[static_cast<std::size_t>(actor)].itemPotencyPct;

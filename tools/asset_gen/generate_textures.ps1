@@ -5115,4 +5115,460 @@ foreach ($gt in @(@(70,30), @(250,34), @(330,28), @(180,48), @(392,44))) { GFill
 GroundSpeckle $r[1] 16 $PAL.veg1
 SaveStage $r $ref 'goosy'
 
+# --- M121: skill-kind icons + the milestone mark (10x10 pixel grids) --------
+#
+# One icon per content::SkillKind (the exact vocabulary is
+# content::kSkillKindIds; the presentation lint holds the two in lockstep)
+# plus the mark a milestone-touched skill wears. The kinds are DERIVED when
+# content loads - nothing here is authored per skill. Same idiom and size as
+# the M81 gear icons (Save-IconGrid, the shared $GRIDC key, no Outline pass);
+# each kind is a distinct SHAPE first and a colour second, so the row reads
+# without colour (flame, snowflake, bolt, boulder, sun disc, crescent, claw
+# marks, plus, up-chevrons, down-chevrons, sigil ring, star).
+#
+# DETERMINISM: hand-placed pixels only - NO random helper is called, so this
+# appended section cannot shift any other generated file's bytes.
+Write-Output 'Generating skill-kind icons (M121 pixel grids)...'
+
+Save-IconGrid 'skill_fire' @(       # flame: red tongue, gold heart, white core
+  '....D.....'
+  '...DD.....'
+  '...DDD.D..'
+  '..DDYD.DD.'
+  '..DYYDDD..'
+  '.DDYYYDD..'
+  '.DYYWYYD..'
+  '.DYWWWYD..'
+  '..DYWYD...'
+  '...DDD....'
+)
+
+Save-IconGrid 'skill_ice' @(        # six-armed snowflake
+  '....W.....'
+  '..C.W.C...'
+  '...CWC....'
+  '.C..W..C..'
+  'WWWWWWWWW.'
+  '.C..W..C..'
+  '...CWC....'
+  '..C.W.C...'
+  '....W.....'
+  '..........'
+)
+
+Save-IconGrid 'skill_lightning' @(  # zigzag bolt, glint leading edge
+  '......GY..'
+  '.....GY...'
+  '....GY....'
+  '...GYYYY..'
+  '......GY..'
+  '.....GY...'
+  '....GY....'
+  '...GY.....'
+  '..GY......'
+  '..Y.......'
+)
+
+Save-IconGrid 'skill_earth' @(      # a lit boulder
+  '..........'
+  '....dd....'
+  '...dffd...'
+  '..dfffsd..'
+  '.dffsssd..'
+  '.dfssssad.'
+  'dfssssaad.'
+  'dsssaaaad.'
+  '.aaaaaaa..'
+  '..........'
+)
+
+Save-IconGrid 'skill_holy' @(       # sun disc with eight rays
+  '....Y.....'
+  '.Y..Y..Y..'
+  '..Y...Y...'
+  '...WWW....'
+  'YY.WWW.YY.'
+  '...WWW....'
+  '..Y...Y...'
+  '.Y..Y..Y..'
+  '....Y.....'
+  '..........'
+)
+
+Save-IconGrid 'skill_dark' @(       # crescent moon
+  '...VVV....'
+  '..VVm.....'
+  '.VVm......'
+  '.VVm......'
+  '.VVm......'
+  '.VVm......'
+  '.VVVm...V.'
+  '..VVVmmVV.'
+  '...VVVVV..'
+  '..........'
+)
+
+Save-IconGrid 'skill_neutral' @(    # three claw marks: plain, elementless force
+  '...S..S..W'
+  '..S..S..W.'
+  '.S..S..W..'
+  'S..S..W...'
+  '..S..W....'
+  '.S..W.....'
+  'S..W......'
+  '..W.......'
+  '.W........'
+  'W.........'
+)
+
+Save-IconGrid 'skill_heal' @(       # green plus, bright heart
+  '..........'
+  '....HH....'
+  '....HH....'
+  '....HH....'
+  '.HHHWWHHH.'
+  '.HHHWWHHH.'
+  '....HH....'
+  '....HH....'
+  '....HH....'
+  '..........'
+)
+
+Save-IconGrid 'skill_buff' @(       # two chevrons UP
+  '..........'
+  '....CC....'
+  '...CCCC...'
+  '..CC..CC..'
+  '.CC....CC.'
+  '....CC....'
+  '...CCCC...'
+  '..CC..CC..'
+  '.CC....CC.'
+  '..........'
+)
+
+Save-IconGrid 'skill_debuff' @(     # two chevrons DOWN
+  '..........'
+  '.DD....DD.'
+  '..DD..DD..'
+  '...DDDD...'
+  '....DD....'
+  '.DD....DD.'
+  '..DD..DD..'
+  '...DDDD...'
+  '....DD....'
+  '..........'
+)
+
+Save-IconGrid 'skill_summon' @(     # sigil: gold ring, glint diamond, white heart
+  '...YYYY...'
+  '..Y....Y..'
+  '.Y..GG..Y.'
+  'Y..G..G..Y'
+  'Y.G.WW.G.Y'
+  'Y.G.WW.G.Y'
+  'Y..G..G..Y'
+  '.Y..GG..Y.'
+  '..Y....Y..'
+  '...YYYY...'
+)
+
+Save-IconGrid 'milestone' @(        # the milestone mark: a gold star
+  '..........'
+  '....Y.....'
+  '....Y.....'
+  '...YYY....'
+  'YYYYYYYYY.'
+  '.YYYYYYY..'
+  '..YYYYY...'
+  '..YY.YY...'
+  '.YY...YY..'
+  '..........'
+)
+
+# --- M127: curio icons, the map-piece scrap, the four-piece treasure map -----
+#
+# Owner batch 3 (2026-09-20). THREE things, all hand-placed grids on the
+# shared $GRIDC key - NO random helper is called anywhere in this section, so
+# it cannot shift any other generated file's bytes:
+#
+#  1. One 10x10 icon per curio (game/Curios.hpp; id 'ui.icon.curio.<curio id>',
+#     file 'curio_<curio id>.png'). Same idiom and size as the M81 gear and
+#     M121 skill icons (Save-IconGrid, no Outline pass): each curio is a
+#     distinct SHAPE first, so the Curios grid reads without colour.
+#  2. The dungeon floor's Secret Map Piece: a 12x12 prop (Outline pass, like
+#     every prop) - a torn parchment scrap carrying a trail and the X, the
+#     same parchment the Maps screen shows.
+#  3. The treasure map of the Maps screen: ONE 100x56 grid (drawn at 2x, so
+#     200x112 on screen) cut into four pieces along two zigzag tears. Each
+#     piece is saved on the full 100x56 canvas (transparent elsewhere), so
+#     the screen draws every owned piece at the same origin and they fit by
+#     construction. The tear's edge pixels are shaded one step (earth3) on
+#     each piece - a torn rim alone, a faint crease when both halves meet.
+#     Parchment on the earth ramp, ink in earth1, sea on the water ramp, the
+#     wood on the vegetation ramp, the peaks on stone with a white cap, the X
+#     in the danger red (art_bible S2: it marks a guarded treasure).
+Write-Output 'Generating curio icons and the treasure map (M127 pixel grids)...'
+
+Save-IconGrid 'curio_keep_crown_shard' @(        # a broken arc of a coronet: two points, a red stone, a snapped edge
+  '..........'
+  '.Y..Y.....'
+  '.Y..Y..Y..'
+  '.YY.YY.Y..'
+  '.YYYYYYY..'
+  '.YDYYWYY..'
+  '.YYYYYY...'
+  '.ddddd....'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'curio_keep_banner' @(             # a pole and a tattered red pennant with a gold device
+  '.S........'
+  '.SDDDDDD..'
+  '.SDDYDDDD.'
+  '.SDYYYDD..'
+  '.SDDYDDDD.'
+  '.SDDDDD...'
+  '.S.DD.D...'
+  '.S........'
+  '.S........'
+  '.S........'
+)
+
+Save-IconGrid 'curio_keep_gate_key' @(           # a ring-bowed key gone to rust
+  '..........'
+  '..........'
+  '.OOO......'
+  'O...O.....'
+  'O...OOOOOO'
+  'O...O..O.O'
+  '.OOO...s.s'
+  '..........'
+  '..........'
+  '..........'
+)
+
+Save-IconGrid 'curio_keep_gargoyle_ear' @(       # a pointed stone ear, the hollow in shadow
+  '.......r..'
+  '......re..'
+  '.....ree..'
+  '....rewe..'
+  '...rewwe..'
+  '..rewqwe..'
+  '..rewqwe..'
+  '..reewe...'
+  '...reee...'
+  '....ee....'
+)
+
+Save-IconGrid 'curio_mine_singing_crystal' @(    # a cyan shard and the note it hums
+  '....C.....'
+  '...CWC..W.'
+  '...CWC..WW'
+  '..CCWCC.W.'
+  '..CWWCC.W.'
+  '..CWCCCWW.'
+  '..CCCCCWW.'
+  '...CCC....'
+  '...oCo....'
+  '....o.....'
+)
+
+Save-IconGrid 'curio_mine_lucky_lamp' @(         # an oil lamp: loop handle, spout, a small flame
+  '.......Y..'
+  '......YWY.'
+  '.......Y..'
+  '.......O..'
+  '.OO..OOO..'
+  'O..OOOOO..'
+  'O..OOOOOO.'
+  '.OOOOOOO..'
+  '...OOOO...'
+  '..OOOOOO..'
+)
+
+Save-IconGrid 'curio_mine_geode_heart' @(        # a split stone, violet crystal inside
+  '..........'
+  '...eeee...'
+  '..eerree..'
+  '.eeVGVVee.'
+  '.eVGWGVVe.'
+  '.eVVGCVVe.'
+  '.eeVCVVee.'
+  '..eeVVee..'
+  '...eeee...'
+  '..........'
+)
+
+Save-IconGrid 'curio_mine_vein_etching' @(       # a slab scratched with a branching vein
+  '..........'
+  '.rrrrrrrr.'
+  '.eeeeCeee.'
+  '.eCeeCeee.'
+  '.eeCCeeCe.'
+  '.eeeCeCee.'
+  '.eeeCCeee.'
+  '.eeCeeeee.'
+  '.wwwwwwww.'
+  '..........'
+)
+
+Save-IconGrid 'curio_forest_elder_acorn' @(      # cap, nut, a glint
+  '....ss....'
+  '....s.....'
+  '..ssssss..'
+  '.sdsdsdss.'
+  '.ssssssss.'
+  '..fffffd..'
+  '..fWfffd..'
+  '..ffffdd..'
+  '...fffd...'
+  '....fd....'
+)
+
+Save-IconGrid 'curio_forest_owl_quill' @(        # a barred feather, a gold nib
+  '.......dSW'
+  '......SSWd'
+  '.....dSWS.'
+  '....SSWdS.'
+  '...dSWSS..'
+  '..SSWdS...'
+  '..SWSS....'
+  '.SW.......'
+  'SW........'
+  'Y.........'
+)
+
+Save-IconGrid 'curio_forest_moss_idol' @(        # a stone idol the moss has given a beard
+  '...eeee...'
+  '..erreee..'
+  '..eKeeKe..'
+  '..eeeeee..'
+  '..ecvvce..'
+  '...cvvc...'
+  '..eecvee..'
+  '..eeecee..'
+  '..eeeeee..'
+  '.rrrrrrrr.'
+)
+
+Save-IconGrid 'curio_forest_firefly_lantern' @(  # a hanging jar, green light, two fireflies
+  '....ee....'
+  '...e..e...'
+  '...eeee...'
+  '..SHHHHS..'
+  '..SHWHHS..'
+  '..SHHHWS..'
+  '..SHWHHS..'
+  '..SHHHHS..'
+  '...eeee...'
+  '..........'
+)
+
+Save-PropGrid 'map_piece' @(   # the floor pickup: one torn piece, a trail and the X
+  '............'
+  '..fff.ffff..'
+  '.ffffffffdf.'
+  '.fsaffffffd.'
+  '.ffsaffDfDd.'
+  '..ffsaffDfd.'
+  '.fffffaDfDd.'
+  '.ffaffffffd.'
+  '.fdfdffffdd.'
+  '..ddd.dddd..'
+  '............'
+  '............'
+)
+
+$mapRows = @(
+  '..ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss..'
+  '.sffffffss.sfffffsdsffffffss.sfffffsfsfffdffss.sfffffsfsffffffss.sfffffsfsffffffss.sfffdfsfsffffffs.'
+  'sfffffffffsffdffffffffffffffsfffffffdfffffffffsffffffffffffdffffsfffffffffffffffffsffffffffffffffffs'
+  '.sffffffdffffafafffffffffffffffdfffafaffffffffffffffffdffffffffffffffffffffffdfffffffffffffffffffffs'
+  'sffdffffffffafafafffffffffdfffffffafafaffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdfffs'
+  '.sfffffffffffffffffffdffffpoopffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffs'
+  'sfffffpoopffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffs.'
+  'sffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffs'
+  'sfffffdffffffffffffffffffffffdfffffffffpoopfffffffffdffffffffffffffffffffffdfaffffffffffffffffffffs.'
+  'sdffffffffffffffpooopfffdffffffffffffffffffffffdffffffffffffffffffffffdfffffWWSffffffffffffffdfffffs'
+  'sffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdfffffffffWWWSSffffffffdffffffffffs'
+  'sfffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdfffffffffffffWWWWSSSffdfffffffffffffffs'
+  '.sfffffffdffffffffffffffffffffpooopffffffffffffffffffffdfffffffffffffffffarreeeewafffffffffffffffffs'
+  'ssffdffffpoopffffffffffffffdffffffffffffffffffffffdfffffffffffffffffffffarrreeeewwafffffffffffffdffs'
+  '..sfffffffffffffffffffdfffffffffffffffffffpopdffffffffffffffffffffffdffarrreeeeeewwafffffffdfffffffs'
+  'ssfffffffffffffffdfffpopffffffffffffffffdffffffffffffffffffffffdffffffarrrreeeeeewwwafdfffffffffffs.'
+  'sfffffffffffdfffffaaaafffffffffffffdffffffffafffffffffffffdafffffffffarrrrreeeeeeewwwaffffffffffffss'
+  'sffffffdfffffffffafssfafffffffdfffffffffffaasaaafffffdffffaeafffffffarrrrreeeeeeeewwwwaffffffffffs..'
+  'sfdfffffffffffffasffffsafdfffffffffffffffafsffssdffffffffareeafffffarrrrrreeeeeeeeewwwwafffffadfffss'
+  'sffffffffffffffasfffdffsaaffaaafffffffffasfdffffffffffffareeewafffarrrrrrreeeeeeeeewwwwwadffaeaffffs'
+  'sffffaaaaafffaadfffffffffsaassfaafffffdasffffffffffffffarreeeewafarrrrrrreeeeeeeeeeewwwwwafareeafffs'
+  '.sfaasfssfaaassfffffffffffsffffssaafffafffffffffffffffarrreeeewwarrrrrrrreeeeeeeeeeewwwwwwareeewaffs'
+  'sfffsdffffssffffffffffffaaffdfffffsaaasffffffffffffdfarrreeeeeearrrrrrrrreeeeeeeeeeeewwwwwwaeeeewafs'
+  '.sfffffffffdfffffffffdfdfffffffffffsfsffffffffdfffffarrrreeeeearrrrrrrrreeeeeeeeeeeeewwwwwwwaeeewwas'
+  'sfffffffffffffffffdffffffffaaffffffffffffdfffffffffarrrrreeeearrrrrrrrrreeeeeeeeeeeeeewwwwwwwaeeeww.'
+  'sffffffffffffdffffffffffffffffffffffdffffffffffffffffffsaaasaaasaaasaaasaaasaaasaaasaaasaaasaaasaffs'
+  'sfffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffs.'
+  'sffdfffffffdfffffffffdffffdfffaafffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdfffs'
+  'sffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffs'
+  'sfffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdfffffDfffffffs'
+  '.sfffffffffdfffffffffffffffffffaafdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffafffffffs'
+  'ssffffdffffffffvccfffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdfffffffffffffffaffffffds'
+  '..sfffffffffffvcccxfffffdvccfffffffffffffffffffdffffffffffffffffffffffdfffffffffffffffffffsasdfffffs'
+  'ssffffvccfffffcccxxdffffvcccxffffaafffffffdffffffffffffffffffffffdffffffffffffffffffffffaaaaaaafffs.'
+  'sffffvcccxffffdxxxffffffcccxxffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffsasfffffss'
+  'sffffcccxxffffffaffffffffxxxffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffafffffs..'
+  'sfffdfxxxfffffffafffffffffadfffffffaafffffffffffffdfffffffffffaafaaffffffdfffffffffffffffffaffffdfss'
+  'sffffffaffffffffffffffdfffaffffffffffffffffffdffffffffffaafaafffffffaafffffffffffffffffffffdfffffffs'
+  'sffffffafffffffffdffffffffffffffffffffffdffffffffffffaaffffffffdfffffffaafffffffffffffdffffffffffffs'
+  '.sffffffffffdffffffffffffffffffffffdffaafaafaafaafaaffffffdfffffffffffffffffffffKdfffffffffffKfffffs'
+  'sffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffaadffffKDDffffffDDKffffffs'
+  '.sdfffffffffffffffffvccffdffffffffffffffffffffffdffffffffffffffffffffffdfffffaafffKDDffffDDKffdffffs'
+  'sffffffffffffffffffvcccxfffffffffffffffffffdffffffffffffffffffffffdfdfffdfdffffffffKDDffDDKfffffffs.'
+  'sffffffffvccfffdfffcccxxffffffffffffffdffffffffffffffffffffffdfffdfffffffffdffffffffKDDDDKfffffffffs'
+  'sfffffffvcccxfffffffxxxffffffffffdfffffffvccffffffffffffdfffffffdfffffffffffdffdfffffKDDKfffffffffs.'
+  'sffffdffcccxxffffffffaffffffdfffffffffffvcccxffffffdffffffffffffffffffffffdffffffffffDDDDffffffffdfs'
+  'sffffffffxxxfffffffffafdfffffffvccffffffcccxxfdfffffffffffffffffdffffdffffffdfffffffDDKKDDffdffffffs'
+  'sfffffffffafffffffdfffffffffffvcccxffffffxxxffffffffffffffffffffdffffffffffffffffffDDKfdKDDffffffffs'
+  '.sffffffffaffdffffffffffffffffcccxxfdfffffaffffffffffffffffdffffdfffffffffffdfffffDDKffffKDDfffffffs'
+  'ssffffffdffffffffffffffffffffffxxxffffffffafffffffffffdffffffffffdfffffffffdfdfffffKffffffKffffffffs'
+  '..sdffffffffffffffffffffffdfffffaffffffffffffffffdffffffffffffffffdfdfffdfdffffffffffffffffffffdfffs'
+  'ssfffffffffffffffffffdffffffffffafffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdfffffffs.'
+  'sfffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffffffffffffdffffffffffffss'
+  'sffffffffffdfsfffffffffffffffffsffdffffffffffffffsfffffffdfffffffffsffffffffffffdffffsfffffffffffs..'
+  '.ssfsfdffffss.sfffffsfsffffffss.sfffffsfsffffffss.sfdfffsfsffffffss.sfffffsdsffffffss.sfffffsfsfffs.'
+  '...s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.ssssss.s.sss..'
+)
+$mapFull = Draw-Grid $mapRows
+if ($mapFull.Width -ne 100 -or $mapFull.Height -ne 56) { throw "M127 map grid is $($mapFull.Width)x$($mapFull.Height); must be 100x56." }
+# The two tears: a column offset per row (period 8) and a row offset per column
+# (period 10). Piece = (right of the vertical tear) + 2 * (below the horizontal).
+$tearV = 0, 1, 2, 1, 0, -1, -2, -1
+$tearH = 0, 1, 1, 2, 1, 0, -1, -1, -2, -1
+function MapPieceOf([int]$x, [int]$y) {
+  $p = 0
+  if ($x -ge (50 + $tearV[$y % 8])) { $p += 1 }
+  if ($y -ge (28 + $tearH[$x % 10])) { $p += 2 }
+  return $p
+}
+$parchA = (C $PAL.earth4).ToArgb(); $parchB = (C $PAL.earth3).ToArgb(); $crease = C $PAL.earth3
+$pieceNames = 'tl', 'tr', 'bl', 'br'
+for ($piece = 0; $piece -lt 4; $piece++) {
+  $b = New-Img 100 56
+  for ($y = 0; $y -lt 56; $y++) { for ($x = 0; $x -lt 100; $x++) {
+    $px = $mapFull.GetPixel($x, $y)
+    if ($px.A -eq 0 -or (MapPieceOf $x $y) -ne $piece) { continue }
+    $argb = $px.ToArgb()
+    if ($argb -eq $parchA -or $argb -eq $parchB) {
+      foreach ($d in @(@(-1,0),@(1,0),@(0,-1),@(0,1))) {
+        $nx = $x + $d[0]; $ny = $y + $d[1]
+        if ($nx -ge 0 -and $ny -ge 0 -and $nx -lt 100 -and $ny -lt 56 -and (MapPieceOf $nx $ny) -ne $piece) { $px = $crease; break }
+      }
+    }
+    $b.SetPixel($x, $y, $px)
+  } }
+  SaveImg $b "ui/map/piece_$($pieceNames[$piece]).png"
+}
+$mapFull.Dispose()
+
 Write-Output 'Texture generation complete.'

@@ -44,6 +44,9 @@ special-patrol audit the Jester defect prompted:
   (the key works there); the `02_help` capture (Debug) is unchanged.
 - `tools/package.ps1` was NOT extended with a marker: the "Toggle debug
   overlay" display name is compiled into `actionDisplayName` regardless.
+- *Pointer (2026-09-18):* M120 moved the page's entry from the title menu to
+  Settings → Controls → Controls overview; the page and this pin are
+  unchanged (see `M120_owner_batch.md`).
 
 ### Slice 3 — Blackjack stakes
 

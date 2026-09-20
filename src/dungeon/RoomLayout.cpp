@@ -64,10 +64,13 @@ constexpr int kDy[kDirCount] = {-1, 0, 1, 0};
 
 // Reachability check for one door configuration. openMask bit i = door in
 // direction i is carved open; closed gated doors get a solid gate block on
-// their interior anchor. Guard and boss anchors are solid in every
-// configuration (they fall only when their encounter is defeated).
+// their interior anchor. The boss anchor is solid in every configuration (it
+// falls only when its encounter is defeated). M126: so is a chest's guard
+// while `guardStands` - and then the chest behind it must be SEALED; with the
+// guard fallen the tile is floor and the chest must be reached.
 void appendConfigProblems(const Room& room, const RoomLayout& l, unsigned openMask,
-                          const char* label, std::vector<std::string>& out) {
+                          bool guardStands, const char* label,
+                          std::vector<std::string>& out) {
     const int w = l.width;
     const int h = l.height;
     std::vector<char> solid(static_cast<std::size_t>(w * h), 0);
@@ -101,7 +104,8 @@ void appendConfigProblems(const Room& room, const RoomLayout& l, unsigned openMa
             mustTouch.push_back(g);
         }
     }
-    if (l.guard.valid()) {
+    const bool sealed = l.guard.valid() && guardStands;
+    if (sealed) {
         solid[static_cast<std::size_t>(l.guard.y * w + l.guard.x)] = 1;
         mustTouch.push_back(l.guard);
     }
@@ -113,7 +117,7 @@ void appendConfigProblems(const Room& room, const RoomLayout& l, unsigned openMa
         solid[static_cast<std::size_t>(l.event.y * w + l.event.x)] = 1;
         mustTouch.push_back(l.event);
     }
-    if (l.chest.valid()) {
+    if (l.chest.valid() && !sealed) {
         mustReach.push_back(l.chest);
     }
     if (room.type == RoomType::Start) {
@@ -163,6 +167,9 @@ void appendConfigProblems(const Room& room, const RoomLayout& l, unsigned openMa
                           std::to_string(p.y) + ") unreachable");
         }
     }
+    if (sealed && l.chest.valid() && isReached(l.chest)) {
+        out.push_back(std::string(label) + ": guarded chest reachable past its standing guard");
+    }
     for (const Point& p : mustTouch) {
         bool touched = false;
         for (int di = 0; di < kDirCount && !touched; ++di) {
@@ -192,12 +199,23 @@ std::vector<std::string> connectivityProblems(const Room& room, const RoomLayout
             nonGated |= 1u << di;
         }
     }
-    appendConfigProblems(room, l, allOpen, "open", out);
-    appendConfigProblems(room, l, nonGated, "pristine", out);
-    for (int di = 0; di < kDirCount; ++di) {
-        const Dir dir = static_cast<Dir>(di);
-        if (room.hasDoor(dir) && room.door(dir).gated) {
-            appendConfigProblems(room, l, nonGated | (1u << di), "cleared-gate", out);
+    // M126: a room with a chest guard is checked twice over - while the guard
+    // stands (the chest sealed behind it) and once it has fallen.
+    const int guardStates = l.guard.valid() ? 2 : 1;
+    for (int gs = 0; gs < guardStates; ++gs) {
+        const bool stands = gs == 0;
+        const bool fallen = l.guard.valid() && !stands;
+        appendConfigProblems(room, l, allOpen, stands, fallen ? "open (guard fallen)" : "open",
+                             out);
+        appendConfigProblems(room, l, nonGated, stands,
+                             fallen ? "pristine (guard fallen)" : "pristine", out);
+        for (int di = 0; di < kDirCount; ++di) {
+            const Dir dir = static_cast<Dir>(di);
+            if (room.hasDoor(dir) && room.door(dir).gated) {
+                appendConfigProblems(room, l, nonGated | (1u << di), stands,
+                                     fallen ? "cleared-gate (guard fallen)" : "cleared-gate",
+                                     out);
+            }
         }
     }
     return out;
@@ -333,9 +351,22 @@ RoomLayout realizeRoom(const Dungeon& d, int roomIndex, int generationVersion) {
             case Dir::West: l.chest = Point{l.width - 2, cy}; break;
         }
         if (room.teamIndex >= 0) {
-            l.guard = (doorDir == Dir::North || doorDir == Dir::South)
-                          ? Point{l.chest.x + 1, l.chest.y}
-                          : Point{l.chest.x, l.chest.y + 1};
+            // M126 (owner direction 2026-09-20): the guardian stands IN FRONT
+            // of the chest - one step toward the door - and the chest is
+            // walled in on both flanks (the border closes its back), so the
+            // guard's tile is the only way in and nobody walks around it.
+            // No RNG draw: the vault is a fact of the topology alone.
+            const bool vertical = doorDir == Dir::North || doorDir == Dir::South;
+            l.guard = inward(l.chest, opposite(doorDir), 1);
+            const Point flankA = vertical ? Point{l.chest.x - 1, l.chest.y}
+                                          : Point{l.chest.x, l.chest.y - 1};
+            const Point flankB = vertical ? Point{l.chest.x + 1, l.chest.y}
+                                          : Point{l.chest.x, l.chest.y + 1};
+            for (const Point& f : {flankA, flankB}) {
+                if (f.x >= 1 && f.y >= 1 && f.x <= l.width - 2 && f.y <= l.height - 2) {
+                    setCell(l, f.x, f.y, Cell::Wall);
+                }
+            }
         }
     }
     if (room.type == RoomType::Event) {
@@ -496,6 +527,25 @@ std::vector<std::string> validateLayout(const Dungeon& d, int roomIndex,
     }
     if (l.guard.valid() && !interior(l.guard)) {
         out.push_back("guard anchor not interior");
+    }
+    if (l.guard.valid() && l.chest.valid()) {
+        // M126: the guard fills the chest's one open side; the other three
+        // are wall (two flank blocks and the room's border).
+        int open = 0;
+        bool guardInFront = false;
+        for (int di = 0; di < kDirCount; ++di) {
+            const Point n{l.chest.x + kDx[di], l.chest.y + kDy[di]};
+            if (l.walkable(n.x, n.y)) {
+                ++open;
+                guardInFront = guardInFront || n == l.guard;
+            }
+        }
+        if (open != 1 || !guardInFront) {
+            out.push_back("guarded chest not walled in behind its guard");
+        }
+        if (!l.walkable(l.guard.x, l.guard.y)) {
+            out.push_back("guard anchor not on a floor tile");
+        }
     }
     if (room.type == RoomType::Boss && room.teamIndex >= 0 && !l.boss.valid()) {
         out.push_back("boss room without a boss anchor");

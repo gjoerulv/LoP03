@@ -81,7 +81,9 @@ void AchievementsState::render() {
     // centered under the list with clear air above the Back hint.
     const AchievementDef& cur = kAchievements[cursor_];
     const bool curUnlocked = context_.achievements.isUnlocked(cur.id);
-    const int descY = rowsY + kColumnRows * rowH + 16;
+    // M123: twelve rows a column now (23 entries), so the gap tightened to
+    // keep the description clear of the footer.
+    const int descY = rowsY + kColumnRows * rowH + 10;
     ui::drawTextWrappedCentered(
         curUnlocked ? std::string(cur.description)
                     : std::string("Locked - keep playing to discover this one."),

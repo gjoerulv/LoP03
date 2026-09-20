@@ -123,6 +123,12 @@ rules above.
 ## 6. Disabled state
 
 - Current: gray tint, cursor skips disabled rows (`Menu::step`).
+- **Skill lists are the exception (M121):** a list that opts in with
+  `Menu::setFocusDisabled(true)` lets the cursor REST on a greyed row — slab
+  and chevron drawn, the label and chevron staying grey — so the reason can
+  be shown beside the list and Details still opens. Confirm on such a row
+  plays the error beat and does nothing. Use it only where a greyed row has
+  something to read; every other menu keeps skipping.
 - M12 rule: disabled rows the cursor can *reach* must be able to explain why
   (e.g. "(no saves)", "(max)", "(need 120g)") when the reason is not obvious;
   Training Hall's "(max)" is the model. Unreachable-but-visible disabled rows
@@ -249,3 +255,16 @@ leads each row with its icon (the Sacrifice's offering list joined
 2026-08-28). Consumables have no icon and still get the gold name where
 they are prizes (e.g. the reels' scroll). This is the single convention;
 do not invent per-screen treatments.
+
+**Received loot is listed (M126, owner convention 2026-09-20).** A panel
+that hands something over builds its rows from `game/LootSummary.hpp`: the
+**gold first, as one line in the body white** ("26 gold" — the total, never
+one line per payment), then **each distinct piece once** as the gear name
+tag above, a repeat counted in the same gold (**"Power Ring x2"**). The
+sentence under the rows says only what the rows cannot (a trap's bite, a
+joke) and is dropped when there is nothing to say. The same icon + name tag
+idiom carries a **learned skill** on the victory panel, led by its M121 kind
+icon; tags flow on a line and wrap through `ui::flowTags` (`ui/TagFlow.hpp`).
+**Curios (M127)** join the idiom with an icon each (`curioIconTextureId`):
+the Maps grid reserves the icon column on every row so names stay aligned
+(an unfound curio shows no icon), and lists of 10px icons pitch at 12px.

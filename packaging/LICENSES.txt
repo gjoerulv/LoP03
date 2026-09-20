@@ -1,6 +1,9 @@
 ARE P GEESE - CREDITS AND LICENSES
 ==================================
 
+A game by SmettPlay.
+
+
 GAME CONTENT
 
 All game content is original to this project: code, names, classes,

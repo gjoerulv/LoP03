@@ -81,8 +81,36 @@ Choices are permanent, persist in the save, and old saves simply get asked
 on arrival. Battle-side effects landed under battle rules **v14** (current:
 v15 since M75).
 
-**Scroll learning and the Party panel (M64).** Skill **scrolls** finally
-teach: using one (from the new **Party** panel on either pause menu) has a
+**Skills at a glance (M121, owner request).** Every skill wears a small
+**kind icon** wherever it is listed: one per element for elemental damage
+(fire, ice, lightning, earth, holy, dark), one for **non-elemental damage**,
+one for **healing**, one for a **buff**, one for a **debuff**, and a special
+sigil for a **summon** (whose list row names the creature — the icon already
+says "summon"; the sheet keeps the full name). The kind is never authored: it
+is worked out from the skill's own fields when the game starts. The details
+sheet opens with the same fact in words — "Fire damage.", "Buff - no damage.",
+"Summon - healing, no damage." — so a skill that wounds nobody says so.
+**A skill's text follows the member's milestones.** When a member holds a
+milestone that changes a skill *by name*, that member — and only that member —
+reads an adjusted description: Blessed Renew's Renew raises at 35%, Purifying
+Light's Purify mends as it cleanses, Intimidating Taunt also saps attack, and
+a Selectively Generous Goose's two heals no longer mention the enemies. A
+milestone that boosts skills *generically* (Arcane Edge on magic skills,
+Devastation on all-enemy spells, Devotion on heals, Lingering Hex on anything
+that applies a status, ...) adds its own sentence to the sheet instead. Either
+way the skill wears a gold **milestone star**, in the list and on the sheet.
+Milestones that change every blow rather than a skill (execute, weakness,
+first strike, the basic-attack and sweep effects) mark nothing.
+**Greyed skills can be inspected.** In the battle skill list the cursor now
+rests on a skill that cannot be cast — too little MP, silenced, a spent
+summon (`USED`), the wrong answer to a decision encounter — so the panel can
+say exactly why and Details still opens the sheet; Confirm answers with the
+error beat. A spent summon stays in the list, greyed, for the rest of the run.
+
+**Scroll learning and the Party panel (M64; re-homed by M122).** Skill
+**scrolls** finally teach: using one (since M122 from the **Items** screen on
+either pause menu — pick the scroll, then the pupil; M64 taught from the
+Party panel) has a
 chosen character learn its skill **permanently** — any class, any scroll
 (class-agnostic by owner decision), refused with a reason if the character
 already knows it, so a scroll is never wasted. The Party panel itself is
@@ -91,6 +119,27 @@ passives, milestone choices, and every known skill (scroll-learned ones
 marked); since M67 every member row carries its class sprite and the
 equipped passive and chosen milestones show their descriptions in place.
 The M65 treasure maps pay exclusive scrolls into this same system.
+
+**The Party panel's skills and field healing (M122, owner request).**
+Confirm on a member opens that member's **skill list** — kind icons, MP
+costs, the milestone star, and rows the cursor can rest on even when greyed;
+Details opens the full sheet as that member casts the skill (M121). **Inside
+a dungeon, a healing skill can be cast from this list**: every heal that
+restores HP or raises the fallen (Mend, Group Mend, Greater Heal, Renew,
+Mending Wind, the Goose's two heals) for its **normal MP cost**, restoring
+exactly what the same cast restores in battle — the caster's Magic, Devotion
+and Blessed Renew included. A single-target heal turns the roster into the
+target pick (HP per member); a party heal lands at once. A cast that would do
+nothing is refused with the reason and costs nothing (nobody hurt, too little
+MP, the caster fallen). **In town the list is inspect-only** — the Inn is
+there for that — and **Purify and the summons stay battle-only** (nothing to
+cleanse outside a fight; a summon keeps its entrance and its once-per-descent
+ledger). A heal's buff rider and cleanse do nothing outside battle: statuses
+live and die in a fight. **Teaching a scroll** now starts in the bag: Items →
+the scroll → the pupil, with the skill it teaches in view the whole time
+(icon, name, MP cost, kind, and the description as the highlighted member
+would cast it); a member who already knows it is a greyed row that says so.
+The M64 rules are unchanged — any class, never wasted.
 
 **The sparring mirror (M94, owner request).** The Training Hall offers a
 fight against **exact echoes of the current party** — same stats, gear
@@ -140,8 +189,9 @@ party cycling, headed "Equip Party" — so re-gearing for an inspected team
 consumables are usable outside battle under the same M43 gating (heals and
 MP only the living with room, revives only the fallen, refused with a
 reason — nothing is ever spent on "No effect"; cures are battle-only since
-afflictions never leave battle); gear and scrolls are inspect-only rows
-pointing at their homes; map pieces and curios stay on the Maps screen.
+afflictions never leave battle); gear is an inspect-only row pointing at
+Equip Party, and since M122 a **scroll is taught from here** (pick it, then
+the pupil); map pieces and curios stay on the Maps screen.
 This is a deliberate softening the owner chose knowingly: potions sipped
 between fights spend gold, not battle turns — the inn remains the full
 restore, and the M23 playtests judge the economy.
@@ -254,7 +304,7 @@ skill are greyed with their reason. Striking an answer chooses it. The
 **right answer pays 500 gold** with the victory fanfare; the **wrong one**
 earns the Jester's authored mock line and the **mocking jingle** (a new
 one-shot beside Victory and Defeat). **Striking the Jester itself, or
-sweeping the whole field** with an all-foes attack or skill, is answered
+sweeping the whole field** with an all-foes skill, is answered
 in kind: the striker is **knocked out — for real** (no Iron Will, no
 mercy; the KO is carried out of the battle like any other, and a party
 whose last standing member tried it is wiped). Whatever the pick, the
@@ -267,7 +317,12 @@ do they act, and then the acting Jester's own whim is the answer: a swing or
 hostile skill at an answer chooses it, at the Jester earns the punishment,
 an all-foes skill is the sweep, and a heal on an ally is simply cast while
 the question waits (owner rule, fix 2026-09-14; the chests follow the same
-rule). The questions are **28 original, editable
+rule). **A basic attack is always one pick (M126, owner rule 2026-09-20):**
+a swing that sweeps every foe in an ordinary fight — the Dragon's, a
+Dragonform party's, a Rain of Arrows archer's — is aimed at the chosen box
+here like anyone else's, in both decision patrols; only a *skill* that
+reaches several foes sweeps the field. (The Dragon has no skills: before
+this rule it could only ever be punished, or wake the Mimic.) The questions are **28 original, editable
 entries** (`data/lore_questions.json`, about four per town tier), asked in
 a **run-seeded order** that walks the whole eligible pool before any
 repeat; a question is only eligible once its town tier is unlocked, and
@@ -286,7 +341,8 @@ The empty chest earns the mock jingle and nothing else. The lying chest
 is **the Mimic** — a **new original boss** on the median dungeon-boss line
 for its floor (chest with a maw and a tongue of coins; power smash, sunder,
 a venom bite, Counter Attack) that **reveals itself the moment it is
-struck** — or the moment the whole field is swept — and the decision
+struck** — or the moment the whole field is swept by an all-foes skill
+(a basic attack never sweeps here, M126) — and the decision
 battle becomes a **boss battle in place**: boss music, the Mimic alone at
 the centre, no crystal-shatter intro, and the **committed action lands on
 it as the opening blow of round one** (an all-foes sweep resolves against
@@ -379,7 +435,10 @@ the candle. Since 2026-08-29 the table deals **real cards** — the dealer's
 hole card face-down on a woven back until the hand ends, ranks lettered on
 the cream face, and the game's own royalty: the Ace's crystal shard, the
 **goose Jack**, the **duck Queen**, and the **dark-king King** (no real
-deck imitated). Gamble gold is plain gold, never score treasure.
+deck imitated). Since M126 the cards are dealt at **twice the size**
+(36×48, the same art at a clean 2×, the rank lettered to match) so they
+read at a glance; a hand too long for the table closes up into a fan.
+Gamble gold is plain gold, never score treasure.
 
 Visible enemy team shows: team name, danger level, enemy count, optional tags
 (Fast, Magic, Armored, Poison, …). **Since M88 a faced team can be inspected
@@ -407,6 +466,22 @@ wager (+150 if you finish with no deaths, −100 if anyone falls — shown in
 the score breakdown), and a **rest camp (M30)** that grants a free-rest token
 redeemable at the inn. Some unguarded chests are visibly **trapped**: extra
 gold, but claiming wounds the whole party.
+
+**A guarded chest is walled in (M126, owner direction 2026-09-20).** It
+sits against the far wall of its side room with a wall on either flank, and
+its **guardian stands on the one open tile in front of it**: the guard is
+the only way to the chest and cannot be walked around — it must fall first.
+(Before M126 the guard stood *beside* a chest anyone could step onto, and
+only the prompt refused the take.) Unguarded chests stay open to the room.
+**An opened chest is gone** — nothing is left lying on the floor.
+
+**What was received is listed (M126).** A chest — and every other panel
+that hands something over: the Miner's Cache, the reels — lists its take
+from the top, centred: **the gold in one white line (the total)**, then
+**each distinct piece once, in the reward gold with its icon**, a repeat
+counted (**"Power Ring x2"**) instead of listed twice. A sentence remains
+only where there is something to say (the trap's bite, the reels' jokes);
+an untrapped chest says nothing and simply lists.
 
 **Events have a voice (M80).** Triggering any event opens a **centered
 panel**: an authored title and a dry-humor body from
@@ -460,7 +535,12 @@ only the Eternal itself stands at your stakes). No map pieces, no trove, no
 black-market rolls — an endless run feeds no economy; patrols keep their
 hundred-step watch. Floors generate on demand from the same per-floor
 sub-seed rule, so a reload replays the identical staircase. Retreat and
-defeat work as in any dungeon (the record is already banked per floor).
+defeat work as in any dungeon (the record is already banked per floor) —
+with one **hidden mercy (M120, owner request)**: a party that has already
+felled four floor-bosses, so it falls on **floor five or deeper**, forfeits
+only a **quarter** of its gold instead of half. The game never says so — the
+defeat line still reads as the usual halving; it is a quiet reward for depth,
+recorded here and nowhere in-game (`wipeGoldLoss`, `game/Ledger.hpp`).
 
 **The long descent (M92, owner request; generation v16).** Floors: **20**
 is the endurance shape on the same machinery — Stairway Wardens on floors
@@ -473,7 +553,8 @@ seeded skill scrolls from the "normal" learnset pool (Fireball, Bulwark,
 Frost Lance, Group Mend, …) that M64 could teach but nothing could drop.
 Offers are a pure hash of the run seed (reload-proof), never include a
 scroll the whole party already knows, and the chosen scroll lands in the
-bag for the Party panel to teach. Declining is a real row, not a Cancel.
+bag to be taught from the Items screen (M122; the Party panel until then).
+Declining is a real row, not a Cancel.
 
 **The seed is hands-on (M88).** The Guild's Seed row shows the run seed on
 the row that changes it: Left/Right rolls a fresh one (the old "New Seed"),
@@ -529,7 +610,9 @@ column top-to-bottom, and a fallen enemy keeps its row (no reflow).
 
 **Victory spoils (M68).** A won dungeon battle ends on a compact results
 panel over the battlefield — XP and gold received, plus a diff block for
-every member that leveled (stat gains, newly learned skills) — dismissed by
+every member that leveled (stat gains, newly learned skills — each learned
+skill wearing its M121 **kind icon** since M126, wrapping under the "New:"
+label when a line fills) — dismissed by
 the same single Confirm that always ended a battle; no extra screen, no
 extra presses. Castle-tier fights keep their own flat rewards.
 **The fallen earn nothing (M102, owner decision).** A member KO'd when the
@@ -758,8 +841,14 @@ King's theme.
 
 **The town puzzle map (M65, a Heroes of Might and Magic 2 homage).** About
 one dungeon in ten hides a **Secret Map Piece** in a plain room (seeded —
-a reload cannot move it). Four pieces complete a parchment sketch (the new
-**Maps** screen on the town pause menu, filling in quadrant by quadrant)
+a reload cannot move it). On the floor it lies as a **torn scrap of
+parchment** with a trail and a red X (M127 — it was a gold "?" box). Four
+pieces complete a parchment map (the
+**Maps** screen on the town pause menu, filling in quadrant by quadrant —
+since M127 **four torn pieces of one pixel-art drawing**: a sea and a ragged
+coast with two gulls, three peaks under a snow cap, a wood, and a dotted
+trail to a red X beside a compass star; the pieces fit along their tears, a
+missing one leaves the dark board and a "?")
 and reveal a **buried treasure in the town where the fourth piece was
 found**, marked by an X-scored dig spot on the plaza. Digging wakes its
 guardian — a boss from the dungeon roster with its court, at exactly the
@@ -772,7 +861,8 @@ token and gold. The map then resets — the cycle repeats forever.
 
 **Summons (M95, owner request; battle rules v17).** The treasure digs'
 scroll pool grows past the six Lost Scrolls: the next three digs pay the
-**summon scrolls** — teaching, through the same M64 learn-on-the-spot flow,
+**summon scrolls** — teaching, through the same M64 scroll flow (the Items
+screen since M122),
 the game's three legends. **Mighty G. Goose** (a massive all-foe strike;
 everything it looks at cowers — Terrified), **the Starfall Sentinel** (a
 holy all-foe descent, likewise terrifying), and **the Radiant Spring** (the
@@ -835,10 +925,14 @@ visit: **every 10th Endless Rush wave** now fields a seeded-random boss
 **The dungeon treasure map + curios (M66).** Similarly rare (~1 dungeon in 8),
 a weathered **chart of the current dungeon** waits in a plain room: reading
 it instantly marks a buried treasure elsewhere in that same run — a gold X
-on the minimap — but the map is **single-use**: leave without digging and
-it is lost with the run. The dig pays one of **twelve original curios**
+on the minimap, **pulsing gently (M120)** on the title phrase's three-step
+clock so the eye finds it — but the map is **single-use**: leave without
+digging and it is lost with the run. The dig pays one of **twelve original curios**
 (four per dungeon theme, drawn unowned-first from the run's own theme),
-collected on the Maps screen. Gathering the full dozen earns the
+collected on the Maps screen. **Every curio wears its own icon (M127)** —
+beside its name in the collection grid and on the dig's result row, and
+three times as large in an inset well when it is inspected; an unfound curio
+keeps its secret (no icon, "? ? ?"). Gathering the full dozen earns the
 **Curator** achievement, after which buried treasures pay a legendary
 token. Curios are pure collection joy — no stats, no score.
 
@@ -916,9 +1010,10 @@ single "strongest" number would be honest.
 **Victory stats** appear on the clear screen's Run-stats view: this run's
 total damage, biggest single hit, statuses inflicted, and the party MVP, plus your
 personal records (biggest hit ever, most damage in a run) — display-only, never
-ranked. **Achievements** (also from the pause menu) are 20 original cross-game
+ranked. **Achievements** (also from the pause menu) are 23 original cross-game
 goals (16 at M42; M61 added Quackbane, M66 the Curator, M84 Guildbane,
-M85 Wyrmbane) — clearing dungeons, climbing the ladder, beating the King's challenges,
+M85 Wyrmbane, M123 the three Iron Man trophies — Iron Crown, Iron Scales,
+Iron Bill) — clearing dungeons, climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
 
@@ -1090,7 +1185,10 @@ long before it is earned. All three are jokes that are also real classes:
 
 - **Dragon** — enormous stats, **no skills**, **no armor**. Its basic attack hits
   **every** living foe and leaves poison and blindness on each one it connects
-  with. Its score modifier is **−20 % per Dragon**: overwhelming force is not
+  with — so choosing **Attack asks for no target** (M126): it resolves at
+  once, exactly like an all-foes skill. The one exception is the Lore and
+  Chest patrols, where its swing is a single pick like anyone's (above).
+  Its score modifier is **−20 % per Dragon**: overwhelming force is not
   efficiency, and the scoreboard says so.
 - **Jester** — **uncontrolled**. You do not choose its turns: each round it picks
   one of its own skills (any it can afford and cast) or a swing, at a foe of its
@@ -1417,6 +1515,10 @@ stockpile: shops sell a party only so many of each.
   (400g / 500g) where its other wares keep the usual street discount; its
   prompt says "(full price)" so nobody mistakes the deal. Chest finds are
   unchanged.
+- **The Elixir also restores 50 MP (M120, owner request)** — in battle and
+  from the bag alike, to the same ally it heals — so the rarest tonic is
+  worth its price to a caster too. Out of battle it is offered whenever HP
+  *or* MP has room.
 - The shop lists' owned-count and price columns finally sit in clean
   vertical lines (both shops, one shared fix).
 
@@ -1444,6 +1546,64 @@ recovery sink and attrition matters — but battles pay gold even without restin
 so a broke party can always earn its way back and is never soft-locked.
 Save/load required (JSON, versioned). Any dungeon suspend-save (if added)
 continues the same run and must not enable save-scumming.
+
+**The slot clock (M123).** Every occupied row of the Save and Load lists
+shows the party's total play time as seven digits, `HHH:MM:SS`, right-aligned
+beside the level and gold. Hour digits the party has not reached yet are
+greyed — `001:03:56` greys its two leading zeros, a fresh party greys all
+three — so the clock keeps one width down the list. It stops at `999:59:59`.
+An empty slot shows no clock.
+
+**The party on the slot (M127).** Left of the clock, centred in the row,
+every occupied slot shows **its party's sprites** in party order, so a save
+is recognised at a glance. The **highlighted** slot's party **hops** — the
+victory screen's own beat, each member to their own rhythm, scaled down to
+the row; a member who was down when the game was saved **lies in the row,
+dimmed, and does not hop** (the victory screen's rule). A greyed row (an
+Iron Man party's refused Save list) dims its sprites and keeps them still.
+
+**Iron Man (M123).** New Game opens a mode page: **Normal** (under the
+cursor) or **Iron Man**, with the highlighted mode explained beside the
+list — for Iron Man, the whole rule set, before the mode can be chosen, and
+one more confirmation after. The rules:
+
+- **No saves.** Nothing is saved and nothing is autosaved, so a run is one
+  sitting. Every Save entry point answers "Iron Man: this run cannot be
+  saved."; the Guild's entry caption says so too; both pause menus' Quit
+  prompt warns that quitting ends the run for good.
+- **Permadeath.** Any real party wipe ends the run — in a dungeon (gate,
+  chest, boss, patrol, a decision patrol gone wrong), a castle challenge (the
+  King, the Last Dragon, the Deadly Duck, the rushes, a Guild gauntlet) or a
+  treasure dig. Nobody is carried out and no gold is halved. **Fleeing is
+  not a wipe**, and the sparring mirror never counts.
+- **The send-off (M124).** A fallen run gets the victory celebration's unkind
+  twin: a "Defeat!" screen naming where the party fell and to whom, one dry
+  line from a pool of original punchlines, the party lying where it dropped
+  while geese and ducks take turns hopping on it, more waterfowl jogging a
+  lap of honour in front - and the Hollow King in the back, laughing. Then
+  the **End-game Summary's fallen form**: the same six pages over the party
+  as it fell, the Overview leading with *Fell at*, *Beaten by* and *Mode:
+  Iron Man*. Leaving it returns to the title.
+- **The Hall of Shame (M124).** Every fallen run is recorded (the newest
+  twenty are kept) the moment it falls. Once a record exists the title shows a
+  **Hall of Shame** row between Continue and Credits: a list, newest first,
+  of "<Leader>'s party - Lv.N", the play-time clock, and where / to whom.
+  Confirm reopens that run's summary. It is read-only - a fallen run can be
+  looked at, never continued.
+- **The escape price.** The battle Escape command asks first (cursor on
+  "Keep fighting"). Fleeing forfeits **all gold and the whole bag** — items
+  and unequipped equipment alike; only what is worn, and heirlooms (worn or
+  carried), stay. Everyone still standing drops to **1 HP and 0 MP**; the
+  fallen stay fallen. Rest tokens, legendary tokens, map pieces and curios
+  are not bag items and are untouched. The pause menu's Retreat to Town keeps
+  its ordinary rule. Sparring escapes are free, as the spar restores the
+  party anyway.
+- **Three accomplishments**: **Iron Crown** (the Hollow King), **Iron
+  Scales** (the Last Dragon), **Iron Bill** (the Deadly Duck) — the same
+  kills as Kingslayer, Wyrmbane and Quackbane, in an Iron Man run.
+
+An `IRON MAN` chip rides the pause screens. An Iron Man party is otherwise
+the same game: same rules, same seeds, same scoreboard.
 
 ## 12b. Onboarding & accessibility (M22)
 
@@ -1499,7 +1659,16 @@ gameplay:
   genre. "Geese and Dragons; Spoons and Snacks!" is in the pool.
 - **Settings are organized into submenus** — Audio / Display / Gameplay /
   Controls, plus Reset — so the option list is no longer one long scroll. Cancel
-  steps back one level, then saves and closes.
+  steps back one level, then saves and closes. **Every reset asks first
+  (M120):** Reset settings and bindings, Reset tutorial prompts and the remap
+  screens' Reset to defaults each raise the shared confirmation prompt with
+  the cursor on Cancel, and the "reset" banner no longer follows you into
+  another category or lingers after leaving.
+- **Credits & Licenses (M120).** The title menu reads New Game / Continue /
+  **Credits** / Settings / Quit. Credits opens one page: the working credit
+  ("A game by SmettPlay") and, in a scrollable panel, the same third-party
+  license text the package ships. The Controls page it replaced moved to
+  **Settings → Controls → Controls overview**, beside the remap screens.
 - A scalable **CRT Strength** control (Display → CRT Strength, a **0–10 slider,
   0 by default**). 0 is the plain crisp image; higher values progressively add a
   stable ~1985 consumer-CRT look (curved glass, scanlines, a subtle slot mask,

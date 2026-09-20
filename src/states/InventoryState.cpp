@@ -6,7 +6,10 @@
 #include "content/ContentDatabase.hpp"
 #include "core/AppContext.hpp"
 #include "game/ItemUse.hpp"
+#include "game/Ledger.hpp"     // M109: recordScrollLearned
 #include "game/Party.hpp"
+#include "game/Scrolls.hpp"    // M122: the scroll rules (refusal / learn)
+#include "game/SkillInfo.hpp"  // M122: the taught skill's kind line + text
 #include "input/Input.hpp"
 #include "input/PromptLabels.hpp"
 #include "raylib.h"
@@ -51,6 +54,13 @@ void InventoryState::captureCursorToItem(const std::string& itemId) {
     }
     scroll_.follow(static_cast<int>(menu_.size()), kVisibleRows, menu_.cursor());
 }
+
+void InventoryState::captureConfirm(int memberRow) {
+    confirm();
+    if (phase_ == Phase::PickMember) {
+        menu_.setCursor(memberRow);
+    }
+}
 #endif
 
 void InventoryState::rebuild() {
@@ -93,12 +103,26 @@ void InventoryState::rebuild() {
             items.push_back({"(The bag is empty)", false});
         }
     } else {  // PickMember
+        const content::ItemDef* aimed = context_.content.findItem(selectedItem_);
+        const bool teaching = aimed != nullptr && aimed->type == content::ItemType::Scroll;
         for (const Character& c : context_.party.members) {
+            if (teaching) {
+                // M122: who can still learn it. A member who knows the skill
+                // is a greyed row the cursor can rest on (the reason shows on
+                // Confirm); the suffix says it at a glance.
+                const bool canLearn = scrollRefusal(c, *aimed, context_.content).empty();
+                items.push_back({c.name, canLearn, canLearn ? "can learn" : "knows it"});
+                continue;
+            }
             const std::string vitals = std::to_string(c.hp) + "/" + std::to_string(c.maxHp) +
                                        " HP  " + std::to_string(c.mp) + "/" +
                                        std::to_string(c.maxMp) + " MP";
             items.push_back({c.name, true, vitals});
         }
+        menu_.setFocusDisabled(teaching);
+    }
+    if (phase_ == Phase::List) {
+        menu_.setFocusDisabled(false);
     }
     menu_.setItems(std::move(items));
     scroll_.reset();
@@ -122,9 +146,32 @@ void InventoryState::confirm() {
             return;
         }
         if (it->type == content::ItemType::Scroll) {
-            message_ = "Scrolls teach from the Party panel.";
-            messageIsError_ = false;
-            context_.audio.play(Sfx::Cancel);
+            // M122: scrolls teach from here. Never enter a pick that can only
+            // refuse (the M43 rule): someone must still be able to learn it.
+            bool anyLearner = false;
+            for (const Character& c : context_.party.members) {
+                if (scrollRefusal(c, *it, context_.content).empty()) {
+                    anyLearner = true;
+                    break;
+                }
+            }
+            if (!anyLearner) {
+                message_ = context_.party.members.empty()
+                               ? std::string("No party.")
+                               : (it->grantsSkill.empty() || !context_.content.hasSkill(it->grantsSkill)
+                                      ? scrollRefusal(context_.party.members.front(), *it,
+                                                      context_.content)
+                                      : std::string("Everyone already knows that skill."));
+                messageIsError_ = true;
+                context_.audio.play(Sfx::Error);
+                return;
+            }
+            selectedItem_ = it->id;
+            phase_ = Phase::PickMember;
+            message_.clear();
+            context_.audio.play(Sfx::Confirm);
+            menu_.setCursor(0);
+            rebuild();
             return;
         }
         if (it->type == content::ItemType::Relic) {
@@ -167,6 +214,32 @@ void InventoryState::confirm() {
         return;
     }
     Character& target = context_.party.members[static_cast<std::size_t>(cursor)];
+    if (it->type == content::ItemType::Scroll) {
+        // M122: teach under the M64 rules - refused with the reason, never
+        // wasted; the scroll is spent only on success.
+        const std::string why = scrollRefusal(target, *it, context_.content);
+        if (!why.empty()) {
+            message_ = why;
+            messageIsError_ = true;
+            context_.audio.play(Sfx::Error);
+            return;
+        }
+        learnScroll(target, *it);
+        recordScrollLearned(context_.party, cursor);  // M109
+        context_.party.inventory.remove(it->id);
+        const content::SkillDef* skill = context_.content.findSkill(it->grantsSkill);
+        const std::string learned =
+            target.name + " learns " + (skill != nullptr ? skill->name : it->grantsSkill) + "!";
+        context_.audio.play(Sfx::Heal);
+        // Taught: back to the bag (the usual case is one scroll, one pupil).
+        phase_ = Phase::List;
+        selectedItem_.clear();
+        menu_.setCursor(0);
+        rebuild();
+        message_ = learned;
+        messageIsError_ = false;
+        return;
+    }
     const std::string refusal = itemUseRefusal(target, *it);
     if (!refusal.empty()) {
         message_ = refusal;
@@ -222,9 +295,12 @@ void InventoryState::render() {
     ClearBackground(p.canvas);
     ui::drawHeaderBand("Items", w, p.crystal);
 
+    const content::ItemDef* aimed =
+        phase_ == Phase::PickMember ? context_.content.findItem(selectedItem_) : nullptr;
+    const bool teaching = aimed != nullptr && aimed->type == content::ItemType::Scroll;
     const char* hint = phase_ == Phase::List
-                           ? "Use a consumable, or inspect the bag."
-                           : "Choose who takes it.";
+                           ? "Use a consumable, teach a scroll, or inspect the bag."
+                           : (teaching ? "Choose who learns it." : "Choose who takes it.");
     ui::drawTextCentered(hint, w / 2, 30, style::kFontBody, p.textDim);
 
     ui::drawFrame(kListX - 24, kListY - 8, 352, kVisibleRows * kListItemH + 14,
@@ -244,8 +320,40 @@ void InventoryState::render() {
         }
     } else if (phase_ == Phase::PickMember) {
         if (const content::ItemDef* it = context_.content.findItem(selectedItem_)) {
-            ui::drawTextFitted("Using: " + it->name, kListX - 24, detailY, 352,
-                               style::kFontBody, p.gold, "inventory.using");
+            ui::drawTextFitted((teaching ? "Teaching: " : "Using: ") + it->name, kListX - 24,
+                               detailY, 352, style::kFontBody, p.gold, "inventory.using");
+        }
+    }
+    // M122: while a scroll's pupil is picked, the skill it teaches stays in
+    // view in the list frame's free lower half - icon, name, cost, kind, and
+    // the description as the HIGHLIGHTED member would cast it.
+    if (teaching) {
+        if (const content::SkillDef* s = context_.content.findSkill(aimed->grantsSkill)) {
+            const int px = kListX - 16;
+            const int pw = 336;
+            int py = kListY + 4 * kListItemH + 4;
+            ui::drawDivider(px, py, pw);
+            py += 5;
+            ui::drawGearIcon(context_.resources, content::skillKindTextureId(s->kind), px, py);
+            const std::string cost = "MP " + std::to_string(s->mpCost);
+            const int costW = ui::measureText(cost, style::kFontSmall);
+            ui::drawTextFitted(s->name, px + ui::kGearIconSize + 4, py,
+                               pw - ui::kGearIconSize - 4 - costW - 8, style::kFontBody, p.text,
+                               "inventory.skill.name");
+            ui::drawText(cost, px + pw - costW, py + 1, style::kFontSmall, p.mpFill);
+            py += 12;
+            ui::drawTextFitted(skillKindLine(*s), px, py, pw, style::kFontSmall, p.textHint,
+                               "inventory.skill.kind");
+            py += 11;
+            const int cursor = menu_.cursor();
+            const bool validMember =
+                cursor >= 0 && cursor < static_cast<int>(context_.party.members.size());
+            const std::string text =
+                validMember ? skillTextFor(context_.party.members[static_cast<std::size_t>(cursor)],
+                                           *s, context_.content)
+                                  .description
+                            : s->description;
+            ui::drawTextPreview(text, px, py, pw, style::kFontBody, p.success, 2);
         }
     }
     if (!message_.empty()) {
@@ -261,7 +369,7 @@ void InventoryState::render() {
     const ActiveDevice device = context_.input.activeDevice();
     ui::drawFooterHints(
         {{input::primaryLabel(map, InputAction::Confirm, device),
-          phase_ == Phase::List ? "Select" : "Use"},
+          phase_ == Phase::List ? "Select" : (teaching ? "Teach" : "Use")},
          {input::primaryLabel(map, InputAction::Cancel, device), "Back"}},
         w, h, "inventory.footer");
 }

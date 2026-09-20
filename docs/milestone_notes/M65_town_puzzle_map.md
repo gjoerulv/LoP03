@@ -117,3 +117,6 @@ the level of the town + depth where the final piece was found.
 ## H. Final status
 
 `complete (approved 2026-08-05)`
+
+> **M127 (2026-09-20):** the map is four torn parchment pieces of pixel art
+> now, and the floor pickup a matching scrap. See `M127_owner_batch_3.md`.

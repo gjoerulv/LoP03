@@ -20,6 +20,7 @@
 #include "game/Story.hpp"  // M85: kDragonJesterBeat
 #include "states/AchievementToast.hpp"
 #include "states/GuildPerkChoiceState.hpp"
+#include "states/IronManFall.hpp"  // M123
 #include "states/StoryDialogState.hpp"  // M85: the Pale Jester's introduction
 #include "render/BattleBackdrop.hpp"
 #include "states/BattleState.hpp"
@@ -111,6 +112,7 @@ void CastleChallengeState::startNextFight() {
         finish(true);  // no more fights -> the gauntlet/King was cleared
         return;
     }
+    currentFoes_ = ironman::fallenFoes(team, context_.content);  // M123
     battle::Battle b = battle::buildBattle(context_.party, team, context_.content);
     // M62: the Duck no longer borrows the King's theme — his pond, his own
     // anthem (MusicTrack::DuckBattle, battle-tier synth fallback). M84: a
@@ -171,6 +173,23 @@ void CastleChallengeState::onResume() {
         ++wavesWon_;
         ++wave_;
         startNextFight();  // next fight, or finish(true) when the rush/King ends
+    } else if (result_.outcome == battle::Outcome::Defeat && context_.party.ironMan) {
+        // M123: a wipe here is a real wipe - the Iron Man run ends. An escape
+        // is not one, and takes the ordinary path below (already charged).
+        done_ = true;
+        std::string place = challengeName(kind_);
+        if (kind_ == CastleChallenge::GuildBoss) {
+            place = "Town " + std::to_string(guildTown_) + " - the Guild's gauntlet";
+        } else if (kind_ == CastleChallenge::DuckGauntlet) {
+            place = "Goose Town - the Deadly Duck's pond";
+        } else if (kind_ == CastleChallenge::Endless) {
+            place = "The Castle - Endless Rush, wave " + std::to_string(wave_ + 1);
+        } else if (kind_ == CastleChallenge::BossRush) {
+            place = "The Castle - Boss Rush, fight " + std::to_string(wave_ + 1);
+        } else {
+            place = "The Castle - " + place;
+        }
+        beginIronManFall(stack(), context_, ironman::FallenInfo{std::move(place), currentFoes_});
     } else {
         finish(false);  // a defeat/escape ends the run (endless still scores its waves)
     }

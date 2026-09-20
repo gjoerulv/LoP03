@@ -105,3 +105,6 @@ No save/schema/rules/generation changes; no data changes.
 ## G. Final status
 
 `complete (approved 2026-08-05)`
+
+> **M127 (2026-09-20):** the hop tables moved to `src/render/PartyHop.hpp`
+> (shared with the save slots); the celebration is unchanged.

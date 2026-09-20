@@ -126,6 +126,10 @@ bonus), `editor/FieldDescriptor.hpp`, `editor/CategoryDescriptors.cpp`,
   ships more options per tier, the loader's pair rule and the modal both
   need widening.
 
+*Pointer (2026-09-18):* M121 made skill text follow the holder's milestones
+(authored `skillTexts` adjustments + generic sentences, a gold star on the
+touched skills) - see `M121_skill_kinds_icons.md`.
+
 ## I. Final status
 
 `complete (approved 2026-08-05)`

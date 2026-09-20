@@ -97,3 +97,6 @@ pay a legendary token instead.
 ## H. Final status
 
 `complete (approved 2026-08-05)`
+
+> **M127 (2026-09-20):** every curio wears its own icon (grid, dig result,
+> inspect panel). See `M127_owner_batch_3.md`.

@@ -52,6 +52,11 @@ inline constexpr AchievementDef kAchievements[] = {
     {"curator", "Curator", "Gather all twelve dungeon curios."},  // M66
     {"guildbane", "Guildbane", "Defeat a Guild Master."},  // M84
     {"wyrmbane", "Wyrmbane", "Fell the Last Dragon."},  // M85 (locked shows ???)
+    // M123: the three Iron Man trophies - the same kills, in a run that keeps
+    // no saves (Party::ironMan; game/IronMan.hpp).
+    {"iron_crown", "Iron Crown", "Defeat the Hollow King in an Iron Man run."},
+    {"iron_scales", "Iron Scales", "Fell the Last Dragon in an Iron Man run."},
+    {"iron_bill", "Iron Bill", "Fell the Deadly Duck in an Iron Man run."},
 };
 inline constexpr int kAchievementCount =
     static_cast<int>(sizeof(kAchievements) / sizeof(kAchievements[0]));

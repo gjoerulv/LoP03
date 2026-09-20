@@ -20,7 +20,9 @@ struct ClassDef;
 // proceed without typing.
 class PartyCreationState : public GameState {
 public:
-    PartyCreationState(StateStack& stack, AppContext& context);
+    // M123: `ironMan` marks the party this screen creates as an Iron Man run
+    // (chosen on the New Game mode page; see game/IronMan.hpp).
+    PartyCreationState(StateStack& stack, AppContext& context, bool ironMan = false);
 
     void onEnter() override;
     void handleInput(const Input& input) override;
@@ -51,6 +53,7 @@ private:
     void begin();
 
     AppContext& context_;
+    bool ironMan_ = false;  // M123
     std::vector<const content::ClassDef*> classes_;
     std::array<Slot, 4> slots_;
 #ifdef CRYSTAL_CAPTURE

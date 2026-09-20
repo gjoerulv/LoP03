@@ -96,7 +96,14 @@ namespace cd::dungeon {
 // scene) under its own pure-hash salt — room, event and team rolls are
 // byte-identical to v23, but what a seed's patrols PRODUCE changed, and
 // the scoreboard must say so.
-inline constexpr int kGenerationVersion = 24;
+// version 25 (M126, owner direction 2026-09-20) rebuilds the GUARDED chest
+// room: the chest sits walled in against the far wall - a wall on either
+// flank - and its guardian stands on the one open tile in front of it, so
+// the guard is the only way to the chest and cannot be walked around (it
+// used to stand BESIDE a chest anyone could step onto). Topology, teams,
+// chests and events are byte-identical to v24; the version feeds every
+// room-local seed, so room shapes and pillars re-roll as on every bump.
+inline constexpr int kGenerationVersion = 25;
 
 // Largest realized room; must stay inside the 426x240 exploration viewport
 // at 16px tiles with the 16px footer reserved (26x14 max drawable).
@@ -151,7 +158,8 @@ struct RoomLayout {
 
     Point centerSpawn;   // start-room / fallback spawn (walkable)
     Point chest;         // walkable chest anchor, if the room has a chest
-    Point guard;         // guard anchor beside the chest (solid while guarded)
+    Point guard;         // guard anchor IN FRONT of the chest (solid while guarded;
+                         // M126: the walled-in chest's only approach)
     Point boss;          // boss anchor (solid while the boss stands)
     Point event;         // event anchor (solid until the event resolves)
 
@@ -178,7 +186,9 @@ std::vector<RoomLayout> realizeAllRooms(const Dungeon& d,
 // bounds, closed borders, anchor sanity, and BFS reachability of every door,
 // chest, and encounter anchor in the fully-open configuration, the pristine
 // configuration (gates closed), and each cleared-gate entry configuration.
-// Returns human-readable problems; empty means valid.
+// M126: a GUARDED chest is walled in behind its guard - sealed (unreachable)
+// in every configuration while the guard stands, reachable in every one once
+// it has fallen. Returns human-readable problems; empty means valid.
 std::vector<std::string> validateLayout(const Dungeon& d, int roomIndex, const RoomLayout& layout);
 
 }  // namespace cd::dungeon

@@ -11,15 +11,17 @@ Original work — not a clone of any existing game; no copyrighted names, art,
 music, or text. Built in **C++20** with **raylib**.
 
 > **Status: feature-complete, polished playable build** (milestones
-> **M1–M119** delivered and owner-approved — the M98–M108 "Are P Geese"
+> **M1–M127** delivered and owner-approved — the M98–M108 "Are P Geese"
 > program, from the post-M97 fix batch through the full rebrand at
 > **v0.7.0**, approved 2026-09-02; the **M109–M116 program** — the lifetime
 > ledger, the patrol dispatcher with the Golden Goose, the Jester's lore
 > trap and the treasure chests, cutscene stages, the font readability
 > redesign, the Last Dragon redesign and the End-game Summary — approved
 > 2026-09-10 and packaged as **v0.8.0** the same day; the **M117–M119
-> program**, described at the end of this note, approved 2026-09-18 and
-> packaged as **v0.9.0** the same day). In the box: a seven-town difficulty ladder
+> program**, approved 2026-09-18 and packaged as **v0.9.0** the same day;
+> and the **M120–M125 program** with the **M126–M127 owner batches**, both
+> described at the end of this note, approved 2026-09-20 and packaged as
+> **v0.9.1** the same day). In the box: a seven-town difficulty ladder
 > plus a castle endgame far above it (Boss Rush with escorts / Endless Rush /
 > the Hollow King flanked by his reviving Royal Guards), seeded walkable
 > dungeons with room events including the rare Royal Relics and per-theme
@@ -96,7 +98,21 @@ music, or text. Built in **C++20** with **raylib**.
 > out the Lore and Chest patrols), a bespoke icon for every dungeon event
 > with a glint, and the background art redesign (painted service interiors,
 > a title scene, and painted battle stages that stand every combatant on
-> one continuous floor under the familiar silhouettes). Only the deferred
+> one continuous floor under the familiar silhouettes). The **M120–M125
+> program** (approved 2026-09-20) added an owner batch (the curio chart's
+> minimap X pulses, the Elixir also restores MP, confirmations on the
+> settings resets, a **Credits & Licenses** page), **skill kinds with
+> icons** and milestone-aware skill text, a Party-panel **skill list with
+> dungeon-only field healing** and scrolls taught from the Items menu,
+> **play time on the save slots**, the **Iron Man** mode (no saves,
+> permadeath, a price on fleeing) with its send-off scene and the title's
+> **Hall of Shame**, and a CrystalForge loader-key audit. The **M126–M127
+> owner batches** (approved the same day) list found loot as rows, put kind
+> icons on learned skills, wall a guarded chest in behind its guardian
+> (generation v25), let the Dragon's sweep skip target selection, deal
+> blackjack at twice the size, show each save slot's party (hopping while
+> highlighted), redraw the treasure map as torn parchment, and give every
+> curio its own icon. Only the deferred
 > **validation playtesting (M23)** and **release sign-off (M24)** remain.
 > Current status always lives in `docs/milestones.md`.
 
@@ -231,15 +247,18 @@ to keep it playing).
 | Delete (name entry)   | Backspace              | X                  |
 | Toggle debug overlay  | F1 (dev builds only)   | —                  |
 
-The in-game list (**Main Menu → Controls**) always shows your *current*
-bindings. The window is resizable; the 426×240 image always scales to fit with
+The in-game list (**Settings → Controls → Controls overview**; on the title
+menu until M120) always shows your *current* bindings. The window is resizable; the 426×240 image always scales to fit with
 letterbox/pillarbox bars. Release builds compile the debug overlay out, so
 the Controls page carries no F1 row there (M117).
 
 ## How to play
 
-1. **New Game** → pick 4 classes (Knight, Ranger, Mage, Cleric, Rogue, Guardian)
-   and name them. You start with a little gold.
+1. **New Game** → choose **Normal** or **Iron Man** (M123: no saves, a wipe
+   ends the run for good, and fleeing a battle costs all gold and the bag —
+   the mode page spells it out; a fallen run gets a send-off and a place in
+   the title's **Hall of Shame**, M124), then pick 4 classes (Knight, Ranger, Mage,
+   Cleric, Rogue, Guardian) and name them. You start with a little gold.
 2. In the **town**, walk to buildings: **Inn** (rest to full HP/MP for gold, or
    free with a rest token), **Item Shop** (buy consumables — held
    quantities are capped per item since M78), **Equip Shop**

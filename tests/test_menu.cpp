@@ -39,3 +39,36 @@ TEST_CASE("menu: empty menu has no current item", "[ui]") {
     m.moveDown();  // must not crash
     REQUIRE(m.cursor() == 0);
 }
+
+// --- M121: focusable disabled rows (the skill lists) ---------------------------
+
+TEST_CASE("menu: a focusable-disabled list lets the cursor rest on greyed rows (M121)",
+          "[ui][m121]") {
+    cd::ui::Menu menu;
+    menu.setFocusDisabled(true);
+    menu.setItems({{"Strike", true}, {"Fireball", false}, {"Mend", false}, {"Guard", true}});
+    CHECK(menu.cursor() == 0);
+    menu.moveDown();
+    CHECK(menu.cursor() == 1);  // greyed, and the cursor stays on it
+    CHECK_FALSE(menu.currentEnabled());  // ...but Confirm still knows better
+    menu.moveDown();
+    CHECK(menu.cursor() == 2);
+    menu.moveDown();
+    menu.moveDown();
+    CHECK(menu.cursor() == 0);  // wraps like any list
+    menu.moveUp();
+    CHECK(menu.cursor() == 3);
+    menu.setCursor(2);
+    CHECK(menu.cursor() == 2);  // no nudge to an enabled neighbour
+
+    // The mode belongs to the list, not to its rows: a rebuild keeps it.
+    menu.setItems({{"Only", false}});
+    CHECK(menu.focusDisabled());
+    CHECK(menu.cursor() == 0);
+    CHECK_FALSE(menu.currentEnabled());
+
+    // Every other menu keeps skipping, exactly as before.
+    cd::ui::Menu classic({{"A", true}, {"B", false}, {"C", true}});
+    classic.moveDown();
+    CHECK(classic.cursor() == 2);
+}

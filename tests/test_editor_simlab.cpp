@@ -8,6 +8,8 @@
 #include "content/ContentDatabase.hpp"
 #include "content/ContentLoader.hpp"
 #include "dungeon/DungeonModel.hpp"
+#include "editor/EditorDocs.hpp"        // M125
+#include "editor/EditorValidation.hpp"  // M125: buildDatabase
 #include "editor/SimLab.hpp"
 #include "editor/TestRunner.hpp"
 #include "game/Castle.hpp"
@@ -133,4 +135,56 @@ TEST_CASE("testrunner: category specs build correct Catch2 filters", "[editor]")
     const std::vector<std::string> all = editor::testInvocation(cats.back());
     REQUIRE(all.size() == 1);  // no spec: run everything
     REQUIRE(all.front() == "--filenames-as-tags");
+}
+
+// M125: the Sim Lab and the Elixir's MP rider (M120). Simulated parties never
+// open the bag (the Simulator has no item command), so authoring `mpAmount`
+// in CrystalForge cannot move a sweep - and the lab must say the same thing
+// before and after the edit. Pinned so a future "sim uses items" change has
+// to revisit the editor's guidance instead of silently shifting numbers.
+TEST_CASE("simlab: the Elixir's MP rider does not move a sweep (M125)", "[editor][m125]") {
+    editor::EditorDocs docs;
+    REQUIRE(docs.loadAll(std::filesystem::path(CRYSTAL_TEST_DATA_DIR)));
+
+    const auto sweepWithRider = [&](int mpAmount) {
+        for (int i = 0; i < docs.entityCount(editor::Category::Items); ++i) {
+            editor::OrderedJson* item = docs.entityAt(editor::Category::Items, i);
+            REQUIRE(item != nullptr);
+            if (item->value("id", std::string{}) == "elixir") {
+                if (mpAmount > 0) {
+                    (*item)["mpAmount"] = mpAmount;
+                } else {
+                    item->erase("mpAmount");
+                }
+            }
+        }
+        content::ContentDatabase scratch;
+        content::LoadReport rep;
+        REQUIRE(editor::buildDatabase(docs, scratch, rep));
+        const content::ItemDef* elixir = scratch.findItem("elixir");
+        REQUIRE(elixir != nullptr);
+        REQUIRE(elixir->mpAmount == mpAmount);
+
+        editor::SimLabConfig config;
+        config.level = 12;
+        for (const char* id : {"knight", "ranger", "mage", "cleric"}) {
+            config.members.push_back(editor::presetMember(scratch, id, editor::GearTier::Median));
+        }
+        config.mode = editor::OpponentMode::Manual;
+        config.enemyIds = {"goblin_grunt", "skeleton_archer", "mire_imp"};
+        config.statScalePct = 100;
+        config.seeds = 6;
+        return editor::runSweep(config, scratch);
+    };
+
+    const editor::SimLabResult without = sweepWithRider(0);
+    const editor::SimLabResult with = sweepWithRider(50);
+    REQUIRE(without.ok);
+    REQUIRE(with.ok);
+    CHECK(without.wins == with.wins);
+    CHECK(without.avgRounds == with.avgRounds);
+    CHECK(without.medianRounds == with.medianRounds);
+    CHECK(without.partyKos == with.partyKos);
+    CHECK(without.avgHpFraction == with.avgHpFraction);
+    CHECK(without.telemetry.eventCount() == with.telemetry.eventCount());
 }

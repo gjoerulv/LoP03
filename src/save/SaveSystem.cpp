@@ -207,9 +207,7 @@ bool SaveSystem::exists(SaveSlot slot) const {
   return fs::exists(slotPath(slot), ec) && !ec;
 }
 
-bool SaveSystem::save(SaveSlot slot, const Party& party,
-                      content::LoadReport& report) const {
-  const std::string source = slotPath(slot).filename().string();
+std::string SaveSystem::serialize(const Party& party) const {
   Json root;
   root["version"] = kSaveVersion;
   root["gold"] = party.gold;
@@ -301,7 +299,18 @@ bool SaveSystem::save(SaveSlot slot, const Party& party,
   }
   root["inventory"] = std::move(items);
 
-  const std::string serialized = root.dump(2) + '\n';
+  return root.dump(2) + '\n';
+}
+
+bool SaveSystem::save(SaveSlot slot, const Party& party,
+                      content::LoadReport& report) const {
+  const std::string source = slotPath(slot).filename().string();
+  if (party.ironMan) {
+    // M123: Iron Man keeps no saves. The UI never asks; this is the backstop.
+    report.add(source, "<party>", "an Iron Man run cannot be saved");
+    return false;
+  }
+  const std::string serialized = serialize(party);
   std::string writeError;
   if (!platform::writeTextFileAtomically(slotPath(slot), serialized, writeError,
                                          platform::AtomicWriteOptions{true})) {
@@ -317,12 +326,27 @@ bool SaveSystem::autosave(const Party& party, content::LoadReport& report) const
 
 bool SaveSystem::load(SaveSlot slot, Party& outParty,
                       content::LoadReport& report) const {
-  const std::size_t before = report.errorCount();
   const std::string source = slotPath(slot).filename().string();
   Json root;
   if (!content::readJsonFile(slotPath(slot), root, report)) {
     return false;
   }
+  return parseRoot(root, source, outParty, report);
+}
+
+bool SaveSystem::parseText(const std::string& text, const std::string& source,
+                           Party& outParty, content::LoadReport& report) const {
+  const Json root = Json::parse(text, nullptr, false);
+  if (root.is_discarded()) {
+    report.add(source, "", "not valid JSON");
+    return false;
+  }
+  return parseRoot(root, source, outParty, report);
+}
+
+bool SaveSystem::parseRoot(const Json& root, const std::string& source, Party& outParty,
+                           content::LoadReport& report) const {
+  const std::size_t before = report.errorCount();
   if (!root.is_object()) {
     report.add(source, "", "expected a top-level JSON object");
     return false;
@@ -616,6 +640,10 @@ std::optional<SlotSummary> SaveSystem::summary(SaveSlot slot) const {
   s.highestLevel = highestLevel(tmp);
   s.gold = tmp.gold;
   s.kingTitle = tmp.castleRecords.kingTitle;  // M40
+  s.playSeconds = static_cast<long long>(tmp.lifetime.explore.playSeconds);  // M123
+  for (const Character& c : tmp.members) {  // M127: the row's sprites
+    s.members.push_back({c.classId, c.hp <= 0});
+  }
   return s;
 }
 

@@ -30,6 +30,10 @@ exe) to play your changes.
 Version control is the safety net: the editor writes atomically and only on
 save, and `git diff` shows every change it made. Save deliberately.
 
+The window title names the build ("CrystalForge - Are P Geese v<version>",
+M125) - the same version stamp the game's title screen shows - so a
+screenshot or a bug report about the editor says which build it came from.
+
 ## The screen
 
 Four panes, left to right:
@@ -82,6 +86,25 @@ pane under the cursor.
 - Optional fields at their default are **omitted from the file** — exactly
   how the shipped content is authored, so diffs stay clean.
 
+### Fields added by the M120–M125 program
+
+- **Items → MP Amount** (`mpAmount`, M120): MP a healing consumable restores
+  on top of its HP - the Elixir's 50. Only valid on a consumable whose
+  effect is `heal`; anywhere else validation reports the loader's error
+  (saving is not blocked - fix it first, the game refuses such a file). Zero
+  removes the key.
+- **Milestones → Skill Texts** (`skillTexts`, M121): an entry table of
+  *skill* (a reference into skills.json) + *adjusted description* - the text
+  a member holding that milestone reads for that skill, in battle, in the
+  Party panel and while being taught a scroll. One rewrite per skill per
+  milestone; an unknown skill id or a duplicate is a validation error.
+  Milestones that change skills generically (every spell, every heal) need
+  no entry: the game adds the milestone's own sentence by itself.
+- Skill **kinds and icons** (M121) are *derived* from a skill's category,
+  element, power, target and summon fields when the game loads - there is
+  nothing to author and no field for them here.
+- The Iron Man mode (M123/M124) added no content fields.
+
 ## Validation and quick checks
 
 Every save (and F5) rebuilds the whole content set through the game's loader
@@ -133,6 +156,11 @@ sweeps of any matchup through the game's real simulator:
   against the previous run** — the core balancing loop.
 - **Export** writes a markdown or CSV report into the git-ignored `reports/`
   folder (timestamped filenames).
+- **What it does not model:** simulated parties never open the bag - the
+  simulator has no item command - so consumable fields (an Elixir's HP or
+  its M120 MP rider) cannot move a sweep. Judge items by play, not by the
+  lab. (Pinned by a test, so a future "the sim uses items" change has to
+  come back and update this paragraph.)
 
 ## The Test Runner (M60)
 
@@ -142,6 +170,17 @@ economy, classes & passives, content validation, or everything — streaming
 the output live into the pane, with a pass/fail verdict from the exit code.
 `Del` stops a run. Edit content, save, run the matching category: minutes of
 terminal round-trips become one keypress.
+
+## How it stays current (for developers)
+
+Two tests keep the editor from quietly falling behind the loader. The M59
+sweep requires a field descriptor for every key that appears in the shipped
+data. The **M125 loader audit** closes the other half: it reads
+`src/content/ContentLoader.cpp` itself and requires a descriptor for every
+key the loader *can* read - `req*`/`opt*` readers, raw `find()`s, and the
+shared `read*` helpers - per data file, mapped through `loadAll`. A new
+optional key that no shipped entity uses yet therefore still fails the suite
+until `src/editor/CategoryDescriptors.cpp` describes it.
 
 ## What the editor will not do
 

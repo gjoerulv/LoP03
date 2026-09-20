@@ -53,6 +53,13 @@ inline constexpr CurioDef kCurios[] = {
 };
 inline constexpr int kCurioCount = static_cast<int>(sizeof(kCurios) / sizeof(kCurios[0]));
 
+// M127: every curio wears its OWN 10x10 icon beside its name (the gear and
+// skill icon idiom) - "ui.icon.curio.<curio id>"; the presentation lint holds
+// the table and the manifest in lockstep.
+inline std::string curioIconTextureId(const CurioDef& c) {
+    return std::string("ui.icon.curio.") + c.id;
+}
+
 inline const CurioDef* findCurio(const std::string& id) {
     for (const CurioDef& c : kCurios) {
         if (id == c.id) {

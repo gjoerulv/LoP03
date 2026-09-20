@@ -68,6 +68,10 @@ visible in danger tiers, the Eternal chip, the record updating live and
 surviving save/reload); a wipe (carry-out as usual, record kept).
 **Judge the escalation pace and the stakes price.**
 
+*Pointer (2026-09-18):* M120 added a hidden mercy to the Eternal wipe — a
+quarter of the gold instead of half once four floor-bosses have fallen (see
+`M120_owner_batch.md`; matrix row 245).
+
 ## Documentation updated
 
 game_design §6 (the Eternal descent passage), ledger row, matrix row 201,

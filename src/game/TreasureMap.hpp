@@ -23,6 +23,14 @@ namespace cd {
 
 inline constexpr int kMapPiecesNeeded = 4;
 
+// M127: the map is four torn parchment pieces of one drawing (the generator
+// cuts them from a single grid, each on the full canvas, so they fit by
+// construction) - in reveal order TL, TR, BL, BR - and the dungeon floor's
+// pickup is a scrap of the same parchment.
+inline constexpr const char* kMapPieceTextureIds[kMapPiecesNeeded] = {
+    "ui.map.piece.tl", "ui.map.piece.tr", "ui.map.piece.bl", "ui.map.piece.br"};
+inline constexpr const char* kMapPiecePropId = "prop.map_piece";
+
 // The revealed treasure (an optional Party save record; inert by default).
 struct TreasureReveal {
     bool active = false;

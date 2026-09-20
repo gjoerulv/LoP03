@@ -191,6 +191,33 @@ copy of it. The silhouette sheet is the binding artefact — two enemies that
 read as the same shape there have failed regardless of colour. Review one
 family at a time with `-Only goblin_grunt,kobold_scout -Zoom 12`.
 
+**Curio icons, the treasure map and the map-piece scrap (M127):** twelve
+**10×10** curio icons — `ui.icon.curio.<curio id>`, one per entry of
+`kCurios` (`src/game/Curios.hpp`; `curioIconTextureId`), `Save-IconGrid`
+grids like the gear and skill icons; the dungeon floor's pickup
+`prop.map_piece` (12×12, `Save-PropGrid`, outlined like every prop); and the
+Maps screen's map: **one hand-placed 100×56 grid** (`$mapRows`) that the
+generator cuts into `ui.map.piece.{tl,tr,bl,br}` along two zigzag tears
+(`$tearV` / `$tearH`), each piece saved on the **full 100×56 canvas** so the
+screen draws every owned piece at the same origin, at 2×, and they fit by
+construction; tear-edge parchment pixels are shaded one step. All of it is
+one RNG-free section appended last (`tools/asset_gen/generate_textures.ps1`);
+the presentation lint (`tests/test_owner_batch_3.cpp`) holds the curio table,
+the piece ids and the manifest in lockstep. To redraw the map, edit the grid
+— never the four PNGs.
+
+**Skill-kind icons (M121):** eleven **10×10** icons, one per derived
+`content::SkillKind` — `ui.icon.skill.<id>` for fire / ice / lightning / earth
+/ holy / dark / neutral / heal / buff / debuff / summon (the vocabulary is
+`content::kSkillKindIds`; nothing in `data/skills.json` names an icon — the
+kind is derived at content load) — plus `ui.icon.milestone`, the gold star a
+milestone-touched skill wears. Same pipeline as the gear icons below: ASCII
+grids through `Save-IconGrid` in their own RNG-free section appended at the
+very end of `generate_textures.ps1`, files `skill_<id>.png` / `milestone.png`
+in `assets/textures/ui/icons/`. Each kind is a distinct shape first and a
+colour second. The presentation lint holds vocabulary and manifest in
+lockstep.
+
 **Gear icons (M81):** eleven **10×10** category icons —
 `ui.icon.<category>` for sword / axe / dagger / bow / staff / mace / spear /
 shield / armor / accessory / relic (the vocabulary is

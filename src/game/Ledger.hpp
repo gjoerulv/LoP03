@@ -74,6 +74,23 @@ inline void spendGold(Party& party, int amount, EconomySource source, int town) 
     }
 }
 
+// M120: what a dungeon wipe takes from a purse of `gold`. The standing price
+// is the M89 halving (the odd coin stays with the party). The hidden mercy: an
+// ETERNAL run that had already felled four floor-bosses — the party fell on
+// floor five or deeper — forfeits only a quarter. Deliberately never explained
+// in-game (owner decision); the design doc records it. Pure, so a test pins
+// both prices and the boundary.
+inline constexpr int kEternalMercyFloors = 4;
+inline int wipeGoldLoss(int gold, bool eternal, int eternalFloorsCleared) {
+    if (gold <= 0) {
+        return 0;
+    }
+    if (eternal && eternalFloorsCleared >= kEternalMercyFloors) {
+        return gold / 4;
+    }
+    return gold - gold / 2;
+}
+
 // The dungeon defeat's halving: taken, never "spent".
 inline void loseGold(Party& party, int amount) {
     if (amount <= 0) {

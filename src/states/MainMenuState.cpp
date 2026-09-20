@@ -12,8 +12,10 @@
 #include "raylib.h"
 #include "resource/ResourceManager.hpp"
 #include "save/SaveSystem.hpp"
-#include "states/HelpState.hpp"
-#include "states/PartyCreationState.hpp"
+#include "states/CreditsState.hpp"
+#include "game/FallenRuns.hpp"  // M124: the Hall of Shame row exists only with records
+#include "states/GameModeState.hpp"
+#include "states/HallOfShameState.hpp"
 #include "states/SettingsState.hpp"
 #include "states/SlotMenuState.hpp"
 #include "states/StateStack.hpp"
@@ -24,11 +26,13 @@
 namespace cd {
 
 namespace {
+// Row ACTIONS (M124: not indices - see rowIds_).
 constexpr int kNewGame = 0;
 constexpr int kContinue = 1;
-constexpr int kControls = 2;
+constexpr int kCredits = 2;  // M120: took the Controls row (now under Settings -> Controls)
 constexpr int kSettings = 3;
 constexpr int kQuit = 4;
+constexpr int kHallOfShame = 5;  // M124: only while fallen Iron Man runs are on record
 
 bool anySaveExists(const save::SaveSystem& saves) {
     // Any of the autosave + manual slots (M53: kSaveSlotCount grew 4 -> 6).
@@ -64,11 +68,19 @@ void MainMenuState::onResume() {
 void MainMenuState::rebuild() {
     const int previous = menu_.cursor();
     std::vector<ui::MenuItem> items;
-    items.push_back({"New Game", true});
-    items.push_back({"Continue", anySaveExists(context_.saves)});
-    items.push_back({"Controls", true});
-    items.push_back({"Settings", true});
-    items.push_back({"Quit", true});
+    rowIds_.clear();
+    const auto add = [&](const char* label, bool enabled, int id) {
+        items.push_back({label, enabled});
+        rowIds_.push_back(id);
+    };
+    add("New Game", true, kNewGame);
+    add("Continue", anySaveExists(context_.saves), kContinue);
+    if (!context_.fallenRuns.runs.empty()) {
+        add("Hall of Shame", true, kHallOfShame);  // M124
+    }
+    add("Credits", true, kCredits);
+    add("Settings", true, kSettings);
+    add("Quit", true, kQuit);
     menu_.setItems(std::move(items));
     menu_.setCursor(previous);
 }
@@ -84,16 +96,24 @@ void MainMenuState::handleInput(const Input& input) {
     }
     if (input.pressed(InputAction::Confirm) && menu_.currentEnabled()) {
         context_.audio.play(Sfx::Confirm);
-        switch (menu_.cursor()) {
+        const int cursor = menu_.cursor();
+        const int action = cursor >= 0 && cursor < static_cast<int>(rowIds_.size())
+                               ? rowIds_[static_cast<std::size_t>(cursor)]
+                               : -1;
+        switch (action) {
+            case kHallOfShame:  // M124
+                stack().pushState(std::make_unique<HallOfShameState>(stack(), context_));
+                break;
             case kNewGame:
-                stack().pushState(std::make_unique<PartyCreationState>(stack(), context_));
+                // M123: Normal or Iron Man first; party creation follows.
+                stack().pushState(std::make_unique<GameModeState>(stack(), context_));
                 break;
             case kContinue:
                 stack().pushState(
                     std::make_unique<SlotMenuState>(stack(), context_, SlotMenuMode::Load));
                 break;
-            case kControls:
-                stack().pushState(std::make_unique<HelpState>(stack(), context_));
+            case kCredits:
+                stack().pushState(std::make_unique<CreditsState>(stack(), context_));
                 break;
             case kSettings:
                 stack().pushState(std::make_unique<SettingsState>(stack(), context_));
@@ -144,12 +164,14 @@ void MainMenuState::render() {
     for (const ui::MenuItem& item : menu_.items()) {
         menuW = std::max(menuW, ui::measureText(item.label, ui::style::kFontMenuLarge));
     }
-    const int itemH = 20;
     const int rows = static_cast<int>(menu_.size());
+    // M124: a sixth row (the Hall of Shame) tightens the pitch so the frame
+    // still clears the footer strip; five rows keep the roomier 20.
+    const int itemH = rows > 5 ? 17 : 20;
     const int frameW = menuW + 52;
     const int frameH = rows * itemH + 16;
     const int frameX = w / 2 - frameW / 2;
-    const int frameY = 106;
+    const int frameY = rows > 5 ? 101 : 106;  // M124: six rows end above the footer rows
     ui::drawFrame(frameX, frameY, frameW, frameH, ui::FrameStyle::Crystal);
     ui::drawMenu(menu_, w / 2 - menuW / 2, frameY + 10, itemH, ui::style::kFontMenuLarge,
                  p.text, p.disabled, p.cursor);

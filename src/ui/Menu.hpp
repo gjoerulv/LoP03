@@ -7,6 +7,11 @@
 // Pure menu model: a vertical list with a cursor that skips disabled items and
 // wraps. No raylib, so navigation logic is unit-tested headlessly. Rendering is
 // done separately (ui/UiDraw).
+//
+// M121: a list may opt in to FOCUSABLE disabled rows (setFocusDisabled) - the
+// cursor then rests on a greyed row like any other, so the player can read
+// why it is greyed and open its details; `currentEnabled()` still says no, so
+// Confirm refuses it. Skill lists use this; every other menu keeps skipping.
 
 namespace cd::ui {
 
@@ -23,6 +28,11 @@ struct MenuItem {
     // the label column stays straight. Pure model — rendering ignores it
     // unless the draw call opts in.
     std::string icon;
+    // M121: optional trailing mark (the milestone mark on a skill a held
+    // milestone touches), drawn right AFTER the label text. Same opt-in. It
+    // costs no column: a row whose label leaves no room simply goes without
+    // (the details sheet still shows it) - a mark never clips a name.
+    std::string icon2;
 };
 
 class Menu {
@@ -41,6 +51,12 @@ public:
     int cursor() const { return cursor_; }
     void setCursor(int index);  // clamps into range, then nudges to an enabled item
 
+    // M121: when true the cursor may rest on disabled rows (setCursor stops
+    // nudging, moveUp/moveDown stop skipping). Survives setItems/clear - it is
+    // a property of the list, not of its current rows. Default false.
+    void setFocusDisabled(bool focusable) { focusDisabled_ = focusable; }
+    bool focusDisabled() const { return focusDisabled_; }
+
     void moveUp();    // previous enabled item, wrapping
     void moveDown();  // next enabled item, wrapping
 
@@ -52,6 +68,7 @@ private:
 
     std::vector<MenuItem> items_;
     int cursor_ = 0;
+    bool focusDisabled_ = false;
 };
 
 }  // namespace cd::ui

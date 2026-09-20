@@ -1,5 +1,6 @@
 #include "states/RemapState.hpp"
 
+#include <memory>
 #include <vector>
 
 #include "audio/AudioManager.hpp"
@@ -11,6 +12,7 @@
 #include "input/Remap.hpp"
 #include "raylib.h"
 #include "settings/Settings.hpp"
+#include "states/ConfirmPromptState.hpp"
 #include "states/StateStack.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -237,12 +239,23 @@ void RemapState::handleInput(const Input& input) {
         } else if (row == kResetRow) {
             // Reset both devices' bindings (the pure reset restores all
             // defaults; per-device partial reset is not worth the asymmetry).
-            input::resetBindings(context_.input.map());
-            content::LoadReport report;
-            context_.settings.save(context_.input.map(), report);
-            raiseMessage("Bindings reset to defaults", false);
+            // M120: destructive, so the shared prompt asks first (cursor on
+            // Cancel) and its body says BOTH devices — the truth the row's
+            // per-device label cannot carry. This state stays below the
+            // prompt, so capturing `this` is safe.
+            message_.clear();
+            messageTimer_ = 0.0f;
             context_.audio.play(Sfx::Confirm);
-            rebuild();
+            stack().pushState(std::make_unique<ConfirmPromptState>(
+                stack(), context_, "Reset bindings?",
+                "Every keyboard and gamepad binding returns to its default.", "Reset",
+                "Cancel", [this]() {
+                    input::resetBindings(context_.input.map());
+                    content::LoadReport report;
+                    context_.settings.save(context_.input.map(), report);
+                    raiseMessage("Bindings reset to defaults", false);
+                    rebuild();
+                }));
         } else if (row == kBackRow) {
             stack().popState();
         }

@@ -70,9 +70,10 @@ Application::Application()
       tutorial_(paths::userDataDir() / "tutorial.json"),
       achievements_(paths::userDataDir() / "achievements.json"),
       profile_(paths::userDataDir() / "profile.json"),
+      fallenRuns_(paths::userDataDir() / "fallen_runs.json"),
       context_{resources_, content_, saves_, party_, scoreboard_, audio_, fade_,
-               input_, settings_, tutorial_, achievements_, profile_, config::kVirtualWidth,
-               config::kVirtualHeight},
+               input_, settings_, tutorial_, achievements_, profile_, fallenRuns_,
+               config::kVirtualWidth, config::kVirtualHeight},
       stack_(),
       // Off by default (audit UI-LAYOUT-009); F1 toggles it in debug builds.
       debugOverlay_(false) {
@@ -111,6 +112,13 @@ Application::Application()
       log::warn("Profile could not be loaded; starting fresh (classes locked).");
     }
     for (const auto& e : profileReport.errors()) {
+      log::warn("  " + e.source + ": " + e.context + ": " + e.message);
+    }
+    content::LoadReport fallenReport;  // M124
+    if (!fallenRuns_.load(fallenReport)) {
+      log::warn("Fallen runs could not be loaded; the Hall of Shame starts empty.");
+    }
+    for (const auto& e : fallenReport.errors()) {
       log::warn("  " + e.source + ": " + e.context + ": " + e.message);
     }
   }

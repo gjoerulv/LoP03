@@ -21,6 +21,7 @@
 namespace cd {
 
 struct AppContext;
+struct Character;         // M121: the member behind the acting unit
 struct SpecialEncounter;  // M112: the decision encounters (game/SpecialEncounter.hpp)
 namespace content {
 struct ItemDef;
@@ -69,7 +70,9 @@ public:
     void captureEnterTargeting(int cursor = 0);  // M115: `cursor` = which visual target
     // Capture-only: open the skill list for the acting party member, optionally
     // with a supplied skill set, so the widest name + MP column is overflow-checked.
-    void captureEnterSkillMenu(std::vector<std::string> skills = {});
+    void captureEnterSkillMenu(std::vector<std::string> skills = {}, int cursor = 0);
+    // Capture-only (M123): raise the Iron Man escape question over the battle.
+    void captureAskIronManEscape() { askIronManEscape(); }
     // Capture-only (M107): freeze a summon's apparition mid-beat so the
     // centered stagecraft renders deterministically for the overflow check.
     void captureShowSummon(const std::string& skillId);
@@ -99,7 +102,7 @@ public:
     void captureOpenDetails();
     // Capture-only (M87): open the skill list and the highlighted skill's full
     // sheet in the scrollable Details overlay.
-    void captureOpenSkillDetails(std::vector<std::string> skills = {});
+    void captureOpenSkillDetails(std::vector<std::string> skills = {}, int cursor = 0);
     // M112: resolve the decision encounter as if the first party member had
     // struck placeholder `ordinal` (0..2) with a basic attack, and hold the
     // resulting beat (the Done beat, or the Mimic's revealed impact).
@@ -124,6 +127,12 @@ private:
     void onItemChosen();
     // M43: why a battle item is unusable right now ("" when it is usable).
     std::string itemBlockReason(const content::ItemDef& item) const;
+    // M121: why the acting unit cannot cast `s` right now ("" = it can) - the
+    // one sentence the preview, the details sheet and the greyed row share.
+    std::string skillBlockLine(const content::SkillDef& s) const;
+    // M121: the party member behind the acting unit (nullptr for an echo or a
+    // guest) - whose milestones decide the skill text and the milestone mark.
+    const Character* actorCharacter() const;
     void executePending(int targetUnit);
     // M112 decision mode: the encounter stands unresolved and every hostile
     // action is a CHOICE, never a hit.
@@ -197,6 +206,12 @@ private:
     RunStats* stats_ = nullptr;  // M42: run victory-stat accumulation (optional)
     battle::Outcome result_ = battle::Outcome::Ongoing;
     bool castleChallenge_ = false;  // M43: castle defeats cost no gold
+    // M123: an Iron Man party in a REAL fight (one that records into a save's
+    // ledger - the spar and the capture scenes pass no hook, so their escapes
+    // stay free). See game/IronMan.hpp.
+    bool ironManStakes() const;
+    void askIronManEscape();  // the Escape command asks first
+    void escapeBattle();      // the Escape command's effect
     render::BackdropStage stage_ = render::BackdropStage::Plain;  // M56: theme backdrop
     const BattleSpoils* spoils_ = nullptr;  // M68: the team's payout (optional)
     SpoilsResult spoilsResult_;             // M68: what a victory actually paid
