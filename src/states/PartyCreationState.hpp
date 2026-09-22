@@ -50,6 +50,10 @@ private:
     // goal is visible) but cannot start a run.
     bool classLocked(const content::ClassDef& cls) const;
     bool anyLockedSelected() const;
+    // M131: is this class barred from an Iron Man party (the Dragon)? Barred
+    // classes stay listed and greyed like locked ones and cannot start the run.
+    bool classBarred(const content::ClassDef& cls) const;
+    bool anyBarredSelected() const;
     void begin();
 
     AppContext& context_;

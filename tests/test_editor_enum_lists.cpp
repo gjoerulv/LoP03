@@ -56,7 +56,7 @@ TEST_CASE("editor: enum lists are complete", "[editor]") {
     REQUIRE(itemTypeIds().size() == 5);       // +1 M96 (heirloom)
     REQUIRE(equipSlotIds().size() == 5);      // none + 4 (M96: heirloom)
     REQUIRE(rarityIds().size() == 5);
-    REQUIRE(consumableEffectIds().size() == 5);  // none + 4
+    REQUIRE(consumableEffectIds().size() == 6);  // none + 5 (M131: alarm)
     REQUIRE(statusTypeIds().size() == 14);       // none + 13 (M75: reflect/sleep/curse)
     REQUIRE(battleTargetIds().size() == 2);
     REQUIRE(bossArchetypeIds().size() == 4);

@@ -87,6 +87,20 @@ reserved for their meanings and never decorative.
 > New art must keep drawing from the recorded ramps; this list is a record
 > of shipped derivations, not an invitation to add more.
 
+- **Foliage (M128):** gold-leaf `#6E5A1E`, `#A88A2A`, `#D4B43C` · ember
+  `#6E3A1A`, `#B0602A`, `#DC8A3A` · crimson-leaf `#5A1E22`, `#8E2E32`,
+  `#C04A44`
+
+> Three ramps **completed, not invented, in M128** for the town ladder's
+> autumn (towns 2–4), owner-directed with the tile redesign: three steps
+> each, every value kept clearly away from the reserved signal colours (the
+> gold-leaf duller and darker than reward gold, the crimson cooler and darker
+> than danger red — the flesh/maroon ramp was tried for the red trees and
+> reads brown-purple at 1×). The white town (5) uses the neutral-white ramp
+> with stone shadows; the bare and skull towns (6–7) use earth, stone and
+> night; the bark shadow `#3A2E20` above gained a grid key. Nine new hex
+> values in all.
+
 ## 3. Pixel grid and scale
 
 - **Tile size: 16×16** (authoritative; matches `Tilemap::kTileSize`).
@@ -146,7 +160,9 @@ reserved for their meanings and never decorative.
   by the generator); environment tiles have **no** outer outline (they tile).
 - Light source: top-left, consistent everywhere.
 - Interior detail minimal: one shadow band + one highlight; faces are
-  abstract (hood/helm shadows, no facial features at this scale).
+  abstract by default — since **M129** (the Atari-ST pass, owner-directed)
+  one or two deliberate ink pixels are allowed where they carry the read: an
+  eye, a socket pair, a maw, a visor slit — never a drawn face.
 
 ## 5. Silhouette identity
 
@@ -187,6 +203,14 @@ reserved for their meanings and never decorative.
   6. **Tier is posture and mass, never colour.** The generic normal/elite pair
      is the same beast on all fours and reared up, so the tier difference
      survives grayscale.
+  7. **The Atari-ST bar (M129).** Three to five ramp steps plus the ink
+     outline and at most one accent; real three-band shading with the light
+     top-left; hard edges, no dithering; the canvas used (a normal enemy
+     stands about 18–24 rows tall, never a 12-row blob); head, torso, limbs
+     and prop as separate masses with daylight between them; texture from a
+     few placed pixels (scales, rivets, ribs), never noise; the §5b-F face
+     treatments (a socket pair, a maw, a helm slit, a beak) allowed on
+     ordinary enemies too. The geese and the Last Dragon set the bar.
 - **Interactables:** chest (gold trim), gate marker (crossed blades on red),
   boss marker (crowned skull on violet) — each unique in silhouette.
 
@@ -305,8 +329,16 @@ the name label to make visual sense. The silhouette sheet from
 
 ## 6. Environment composition
 
-- **Town:** warm and safe — greens/earth, framed by a tree border; buildings
-  read as solid roofed blocks with clear doors.
+- **Town:** warm and safe — earth and the season's foliage, framed by a tree
+  border; buildings read as solid roofed blocks with clear doors. **Since
+  M128** the ring is four hand-placed 16×16 trees per town placed by a
+  position hash (no stretch of ring and no two towns repeat a pattern):
+  green broadleaf, gold-leaf, ember, crimson-leaf, frost-white, bare, then
+  skull-crowned bare trees in town 7 — one shared trunk, a hard one-pixel
+  rim in the canopy's darkest step, no dithering — over a ground that follows
+  the season (lush loam with tufts, yellowing, dry straw, frost, dead earth,
+  ash; two quiet fleck scatters and two tufted layouts per town). Environment
+  tiles stay opaque and outline-free.
 - **Ruined Keep** (slice theme): cracked slab floors, coursed masonry walls,
   broken-arch doors; sparse rubble speckle; cool stone ramp.
 - Later themes (M17) differentiate by **shape language**, not palette swap:
@@ -417,6 +449,15 @@ the name label to make visual sense. The silhouette sheet from
   frame); frame 0 doubles as the stand pose so a stopped actor is just the
   animation at t = 0. Sheet rows encode facing: down, up, left, right.
   Indicator pulses 2 frames at 0.4s. Effects ≤ 6 frames.
+- **Battle action effects (M130):** procedural stepped pixels in 2×2 blocks
+  (never finer than the sprites), one motif per skill family — slash band,
+  flame columns from the feet, falling shards, a jagged bolt, rubble chips,
+  an expanding plus, a collapsing ring, rising sparks, chevrons — sized by
+  the action's tier (3 / 4 / 6 frames at 0.07 s, then a fading tail inside
+  the settle pause), a coloured single-pulse wash for a Grand action only,
+  never a strobe; the head of a struck sprite stays readable under its
+  burst; high contrast collapses every motif to the text colour. Fast plays
+  none of it.
 - Sprites draw centered on the collision-rect center (anchor rule changed
   from the M15 "bottom-center" plan: center-anchoring keeps 12×12 actors in
   16px tiles visually stable in top-down view and decouples art size from
@@ -441,6 +482,14 @@ Composition carries each theme; palettes stay within §2:
   verticals + horizontal water banding, grayscale-distinct from the
   forest's thick trunk masses. The battle backdrop follows: broken
   reed-top skyline, cattail clumps, the pond line with one ripple glint.
+- **Wall variants (M128)** — every theme's wall ships as four hand-placed
+  16×16 tiles picked per cell by the position hash (one plain course at
+  55 %, three motifs at 20/15/10): Keep — coursed / a stepped crack / an
+  arrow slit / ivy; Mine — braced rock / a crystal vein / a split post / a
+  miner's lamp; Forest — roots / a hollow knot / shelf fungi / hanging moss;
+  Goosy — reeds / a rope knot / a gap of water / a nest with one egg. Every
+  motif keeps its theme's shape language and never reads as a door or an
+  interactable.
 - **Overworld enemy silhouettes** differentiate by shape, never color
   alone: plain hunched beast (normal), horned + war-banded (dangerous),
   tall crowned figure (boss-tier).
@@ -515,6 +564,14 @@ rejects ragged rows and unknown palette keys, reporting every fault at once;
 `Save-EnemyGrid` rejects any boss that is not 36×36. The section calls **no
 random helper**: every speckle pixel is hand-placed, so adding, removing or
 reordering a sprite can never shift another file's bytes.
+
+**The Atari-ST pass (M129, 2026-09-22).** Eighty-one of the hundred sprites
+were redrawn to §5 rule 7 — the fowl and the Dragon, which already met it,
+untouched — in nine family batches, each prototyped outside the repository
+(a labelled sheet at 6–8× with a solid-black silhouette row and a 1× strip,
+the outline pass replicated so the review matched the shipped pixels),
+reviewed, then emitted and spliced into its `Save-EnemyGrid` block in place.
+The generator now also refuses a non-boss grid that is not 24×24.
 
 **Review before you believe it.** `tools/asset_gen/preview.ps1` composites the
 sprites into a magnified labelled contact sheet, a **silhouette sheet** (alpha

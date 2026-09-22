@@ -22,7 +22,8 @@ constexpr int kNormal = 0;
 constexpr int kIronMan = 1;
 
 // The mode list (left) and the explanation panel (right). The panel is as
-// wide as the screen allows: the Iron Man rules are four full paragraphs.
+// wide as the screen allows: the Iron Man rules are five full paragraphs
+// (four until M131 added the Dragon bar).
 constexpr int kListX = 16;
 constexpr int kListW = 100;
 constexpr int kPanelX = 124;

@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include "game/Curios.hpp"  // M66: kCurioCount for the Curator predicate
+#include "game/IronMan.hpp"  // M131: the Dragon bar on the Iron accomplishments
 #include "game/Party.hpp"
 #include "game/Story.hpp"
 #include "platform/AtomicFile.hpp"
@@ -73,10 +74,12 @@ bool achievementMet(const std::string& id, const Party& p, const AchvContext& ct
     }
     if (id == "wyrmbane") return p.castleRecords.dragonDefeated();  // M85
     // M123: an Iron Man party is never loaded (it cannot be saved), so its
-    // castle records were all earned inside this one sitting.
-    if (id == "iron_crown") return p.ironMan && p.castleRecords.kingDefeated;
-    if (id == "iron_scales") return p.ironMan && p.castleRecords.dragonDefeated();
-    if (id == "iron_bill") return p.ironMan && p.castleRecords.duckDefeated();
+    // castle records were all earned inside this one sitting. M131: a party
+    // with a Dragon in it earns none of them (game/IronMan.hpp, the bar).
+    const bool iron = p.ironMan && !ironman::hasBarredMember(p);
+    if (id == "iron_crown") return iron && p.castleRecords.kingDefeated;
+    if (id == "iron_scales") return iron && p.castleRecords.dragonDefeated();
+    if (id == "iron_bill") return iron && p.castleRecords.duckDefeated();
     return false;
 }
 

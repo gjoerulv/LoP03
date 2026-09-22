@@ -22,9 +22,13 @@ struct AppContext;
 // (kind icon, name, MP cost, kind line, the description as THAT member would
 // cast it), and a member who already knows it is a greyed row that says so.
 // The rules are game/Scrolls.hpp's, unchanged: class-agnostic, never wasted.
+// M131: the Alarm (game/ItemUse.hpp) is rung from here - only when the screen
+// was opened from the dungeon pause menu (`inDungeon`): one is spent, both
+// menus close and the dungeon's next tick fires the real patrol dispatcher;
+// in town it is refused with the reason like any item with nothing to reach.
 class InventoryState : public GameState {
 public:
-    InventoryState(StateStack& stack, AppContext& context);
+    InventoryState(StateStack& stack, AppContext& context, bool inDungeon = false);
 
     void handleInput(const Input& input) override;
     void render() override;
@@ -45,6 +49,7 @@ private:
     void confirm();
 
     AppContext& context_;
+    bool inDungeon_ = false;  // M131: the Alarm rings only from the dungeon pause menu
     Phase phase_ = Phase::List;
     ui::Menu menu_;
     ui::ScrollWindow scroll_;

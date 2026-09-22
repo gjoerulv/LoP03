@@ -15,6 +15,20 @@
 
 namespace cd {
 
+// M131: the Alarm (`ConsumableEffect::Alarm`) targets no member - it acts on
+// the dungeon around the party. The Items screen rings it itself when the
+// party stands in a dungeon (the run's next patrol answers at once, by the
+// seeded rules) and refuses it in town with kAlarmTownRefusal; the bag in
+// battle never lists it. `itemUseRefusal` therefore never accepts it for a
+// member, whatever the member's state.
+inline bool itemIsAlarm(const content::ItemDef& item) {
+    return item.type == content::ItemType::Consumable &&
+           item.effect == content::ConsumableEffect::Alarm;
+}
+inline constexpr const char* kAlarmTownRefusal =
+    "The Alarm is for a dungeon - nothing here answers.";
+inline constexpr const char* kAlarmMemberRefusal = "The Alarm is rung, not taken.";
+
 // Empty = usable on this member; otherwise the reason to grey the row.
 inline std::string itemUseRefusal(const Character& target, const content::ItemDef& item) {
     if (item.type != content::ItemType::Consumable) {
@@ -51,6 +65,8 @@ inline std::string itemUseRefusal(const Character& target, const content::ItemDe
             return "";
         case content::ConsumableEffect::Cure:
             return "Nothing to cure outside battle.";
+        case content::ConsumableEffect::Alarm:
+            return kAlarmMemberRefusal;  // M131: rung by the Items screen, never taken
         case content::ConsumableEffect::None:
             break;
     }
@@ -88,6 +104,7 @@ inline std::string applyItemUse(Character& target, const content::ItemDef& item)
             return target.name + " rises again!";
         }
         case content::ConsumableEffect::Cure:
+        case content::ConsumableEffect::Alarm:
         case content::ConsumableEffect::None:
             break;
     }

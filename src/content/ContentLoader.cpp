@@ -586,6 +586,18 @@ void parseItems(const Json& root, const std::string& source, ContentDatabase& db
         if (d.element != Element::None && d.slot != EquipSlot::Weapon) {
             rep.add(source, ctx, "'element' is only valid on a weapon (slot 'weapon')");
         }
+        // M131: the Alarm rings a patrol - it is a consumable that targets
+        // nothing, so a battle target or a status rider on it is a mistake.
+        if (d.effect == ConsumableEffect::Alarm) {
+            if (d.type != ItemType::Consumable) {
+                rep.add(source, ctx, "'alarm' is valid on a consumable only (M131)");
+            }
+            if (d.battleTarget == BattleTarget::Enemy || !d.statuses.empty()) {
+                rep.add(source, ctx,
+                        "an 'alarm' consumable targets nothing - no 'battleTarget', no "
+                        "'statuses' (M131)");
+            }
+        }
         // M52: the revive-clock disable only means anything as an enemy-targeted
         // battle item (it acts on the foe it is used on), so flag a misplacement.
         if (d.disablesMinionRevive && d.battleTarget != BattleTarget::Enemy) {

@@ -94,6 +94,12 @@ Pools buildPools(const content::ContentDatabase& db, const content::DungeonTheme
         if (def.type == content::ItemType::Scroll) {
             continue;
         }
+        // M131 (owner decision): the Alarm is sold on the town shelves (town 4
+        // and up) and nowhere else - never a chest reward, never a peddler
+        // offer - so every seed's loot stays byte-identical (generation 25).
+        if (def.effect == content::ConsumableEffect::Alarm) {
+            continue;
+        }
         p.items.push_back(id);
         if (def.type == content::ItemType::Consumable) {
             p.consumables.push_back(id);

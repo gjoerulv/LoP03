@@ -56,11 +56,18 @@ TEST_CASE("lint: every convention-derived texture id resolves in the manifest", 
     const ContentDatabase db = loadShippedContent();
     const AssetManifest m = loadShippedManifest();
 
-    // Per-theme tiles (DungeonState: tiles.<themeId>.{floor,wall,door}).
+    // Per-theme tiles (DungeonState: tiles.<themeId>.{floor,wall,door}) and,
+    // since M128, the four authored wall variants every theme must ship
+    // (tiles.<themeId>.wall.<1..4>; the unsuffixed wall stays as the fallback).
     for (const auto& [id, theme] : db.themes()) {
         (void)theme;
         for (const char* suffix : {"floor", "wall", "door"}) {
             const std::string tex = "tiles." + id + "." + suffix;
+            INFO(tex);
+            CHECK(hasTexture(m, tex));
+        }
+        for (int v = 1; v <= 4; ++v) {
+            const std::string tex = "tiles." + id + ".wall." + std::to_string(v);
             INFO(tex);
             CHECK(hasTexture(m, tex));
         }
@@ -158,9 +165,23 @@ TEST_CASE("lint: every town resolves its per-town art and music (M32)", "[lint]"
     // the other lint cases and the shipped set already cover. Towns 2..7 must
     // each resolve their own exterior tiles, six service interiors, and music -
     // a missing variant is a failing result, not a silent fallback in play.
-    for (int town = 2; town <= cd::kTownCount; ++town) {
+    // Since M128 every town (1..7) also ships four hand-placed tree variants and
+    // four ground layouts (tiles.town.<N>.tree.<1..4>, .ground.<1..4>); the
+    // tinted M32 tree/ground copies are gone, so those kinds are no longer
+    // required unsuffixed.
+    for (int town = 1; town <= cd::kTownCount; ++town) {
         const std::string t = std::to_string(town);
-        for (const char* kind : {"ground", "grass", "path", "tree", "building"}) {
+        for (const char* kind : {"tree", "ground"}) {
+            for (int v = 1; v <= 4; ++v) {
+                const std::string id = "tiles.town." + t + "." + kind + "." + std::to_string(v);
+                INFO(id);
+                CHECK(hasTexture(m, id));
+            }
+        }
+        if (town == 1) {
+            continue;
+        }
+        for (const char* kind : {"grass", "path", "building"}) {
             const std::string id = "tiles.town." + t + "." + kind;
             INFO(id);
             CHECK(hasTexture(m, id));

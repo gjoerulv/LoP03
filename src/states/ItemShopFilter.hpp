@@ -31,6 +31,7 @@ inline int itemShopCategoryRank(const content::ItemDef& def) {
         case content::ConsumableEffect::RestoreMp: return 1;
         case content::ConsumableEffect::Cure: return 2;
         case content::ConsumableEffect::Revive: return 3;
+        case content::ConsumableEffect::Alarm: break;  // M131: an oddity, with the others
         case content::ConsumableEffect::None: break;
     }
     return 4;  // oddities close the list

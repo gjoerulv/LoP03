@@ -121,6 +121,9 @@ add_executable(crystal_tests
     test_editor_loader_audit.cpp
     test_owner_batch_2.cpp
     test_owner_batch_3.cpp
+    test_tile_variant.cpp
+    test_action_tier.cpp
+    test_owner_batch_4.cpp
 )
 
 target_link_libraries(crystal_tests PRIVATE crystal_core crystal_editor_core

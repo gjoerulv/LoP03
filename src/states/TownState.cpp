@@ -1,6 +1,8 @@
 #include "states/TownState.hpp"
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -13,7 +15,6 @@
 #include "game/Achievements.hpp"
 #include "game/Cutscenes.hpp"  // M97: first-arrival scenes + the finale NPC
 #include "game/Party.hpp"
-#include "game/Profile.hpp"    // M97: the finale NPC waits on kingDefeated
 #include "game/Story.hpp"
 #include "game/WorldLadder.hpp"
 #include "input/Input.hpp"
@@ -44,6 +45,7 @@
 #include "tutorial/Tutorial.hpp"
 #include "states/TownMenuState.hpp"
 #include "render/SpriteDraw.hpp"
+#include "render/TileVariant.hpp"  // M128
 #include "town/Movement.hpp"
 #include "ui/UiDraw.hpp"
 #include "ui/UiStyle.hpp"
@@ -331,9 +333,10 @@ bool TownState::onBardTile() const {
 }
 
 bool TownState::gooseNpcHere() const {  // M97
-    // Town 7's eastern roadside, once the King has ever fallen (the profile
-    // flag, like the class unlocks — the stranger waits for anyone who knows).
-    return clampTown(context_.party.currentTown) == 7 && context_.profile.data.kingDefeated;
+    // Town 7's eastern roadside, once THIS save's party has felled the King
+    // (M131: the per-save castle record; the profile flag used until then let
+    // P greet a brand-new party on any profile that had ever beaten him).
+    return game::strangerAtRoadside(context_.party);
 }
 
 bool TownState::onGooseNpcTile() const {  // M97
@@ -567,13 +570,50 @@ void TownState::render() {
         DrawRectangle(bx + bw - 2, by + bh - 10, 2, 10, bracket);
     }
 
+    // M128: the town's authored tree and ground variants, resolved once per
+    // frame (callers cache nothing across a manifest reload) and picked per
+    // cell by the pure position hash, salted by the town index so every
+    // town's identical ring reads as its own organic pattern. Fallback chain:
+    // the variant -> variant 1 -> the M32 per-town id -> the base id (an empty
+    // entry hands the cell to the pre-M128 resolution below).
+    const std::string townPrefix = "tiles.town." + std::to_string(townIdx) + ".";
+    const auto resolveVariants = [&](const char* kind, int count, std::string* out) {
+        const std::string base = townPrefix + kind;
+        std::string fallback;
+        if (context_.resources.hasTexture(base + ".1")) {
+            fallback = base + ".1";
+        } else if (townIdx > 1 && context_.resources.hasTexture(base)) {
+            fallback = base;
+        }
+        for (int v = 0; v < count; ++v) {
+            const std::string candidate = base + "." + std::to_string(v + 1);
+            out[v] = context_.resources.hasTexture(candidate) ? candidate : fallback;
+        }
+    };
+    std::array<std::string, render::kTreeVariantCount> treeIds;
+    std::array<std::string, render::kGroundVariantCount> groundIds;
+    resolveVariants("tree", render::kTreeVariantCount, treeIds.data());
+    resolveVariants("ground", render::kGroundVariantCount, groundIds.data());
+    const auto townSalt = static_cast<std::uint64_t>(townIdx);
+
     for (int ty = 0; ty < map.height(); ++ty) {
         for (int tx = 0; tx < map.width(); ++tx) {
             const town::Tile tile = map.at(tx, ty);
             std::string id = tileTextureId(tile);
-            // Deterministic accent variant: occasional flower patches on grass.
-            if (tile == town::Tile::Grass && (tx * 31 + ty * 17) % 11 == 0 &&
-                context_.resources.hasTexture("tiles.town.flowers")) {
+            const std::string* variantId = nullptr;
+            if (tile == town::Tile::Tree) {
+                variantId = &treeIds[static_cast<std::size_t>(render::tileVariant(
+                    0, tx, ty, townSalt, render::kTreeVariantWeights, render::kTreeVariantCount))];
+            } else if (tile == town::Tile::Ground) {
+                variantId = &groundIds[static_cast<std::size_t>(render::tileVariant(
+                    0, tx, ty, townSalt, render::kGroundVariantWeights,
+                    render::kGroundVariantCount))];
+            }
+            if (variantId != nullptr && !variantId->empty()) {
+                id = *variantId;  // M128
+            } else if (tile == town::Tile::Grass && (tx * 31 + ty * 17) % 11 == 0 &&
+                       context_.resources.hasTexture("tiles.town.flowers")) {
+                // Deterministic accent variant: occasional flower patches on grass.
                 id = "tiles.town.flowers";
             } else if (townIdx > 1) {
                 // Per-town exterior variant (M32); falls back to the base tile.

@@ -424,7 +424,10 @@ struct ItemDef {
     // merchant pools (availableAtTown) are untouched.
     bool notSoldInTown = false;
 
-    // Consumable behavior.
+    // Consumable behavior. M131: `alarm` is the one FIELD effect - rung from
+    // the dungeon pause menu's Items screen it triggers the run's next patrol
+    // at once (the seeded kind, the normal rules); it targets no member, is
+    // never listed in battle, is refused in town, and is never dungeon loot.
     ConsumableEffect effect = ConsumableEffect::None;
     int effectAmount = 0;
     // M120 (the Elixir): a `heal` consumable may ALSO restore this much MP to

@@ -150,11 +150,16 @@ generic tier fallbacks `enemy.normal/elite.battle` and `boss.generic.battle`,
 retained) — the M73 set plus M84's seven Guild Masters (36×36) and twelve
 guild minions (24×24), M85's Last Dragon (36×36; redrawn M115), the eleven
 Goosy Gauntlet foes from the M106 art round (2026-08-17), M111's Golden
-Goose (24×24) and M112's Mimic (36×36). Later sprites are
-authored by **inserting before the M73 marker** in `generate_textures.ps1`,
-so no other file's bytes shift (the no-RNG rule below is what makes that
-safe). `BattleState` prefers the per-id sprite and falls back to the
-generic tier sprite only for ids without bespoke art.
+Goose (24×24) and M112's Mimic (36×36); **M129 (2026-09-22) redrew 81 of
+the 100 to the late-80s Atari-ST bar** — every enemy and boss except the
+fowl and the Dragon — by replacing each grid IN PLACE, same ids, files and
+canvases (art bible §5 rule 7). A new sprite is one more `Save-EnemyGrid`
+block anywhere in the enemy sections — the goose family, the Golden Goose
+and the Mimic already sit after the old "M73 marker" — because the sections
+consume no RNG, so position never shifts another file's bytes; the
+generator refuses any non-boss grid that is not 24×24 and any boss grid
+that is not 36×36. `BattleState` prefers the per-id sprite and falls back
+to the generic tier sprite only for ids without bespoke art.
 `tests/test_presentation_lint.cpp` enforces this: a content id missing its
 `enemy.<id>.battle` / `boss.<id>.battle` row **fails** `[lint]`, so new content
 cannot ship without art. Every addition is recorded in `assets/credits.md`.
@@ -205,6 +210,28 @@ one RNG-free section appended last (`tools/asset_gen/generate_textures.ps1`);
 the presentation lint (`tests/test_owner_batch_3.cpp`) holds the curio table,
 the piece ids and the manifest in lockstep. To redraw the map, edit the grid
 — never the four PNGs.
+
+**Town trees, seasonal ground and wall variants (M128):** 72 hand-placed
+**16×16** environment tiles — `tiles.town.<N>.tree.<1..4>` and
+`.ground.<1..4>` for every town 1..7 (`town<N>_tree<v>.png`,
+`town<N>_ground<v>.png`) and `tiles.<theme>.wall.<1..4>` for the four
+themes (`<keep|mine|forest|goosy>_wall<v>.png`) — through `Save-TileGrid`
+(exactly 16×16, fully opaque, **no outline pass**: environment tiles tile
+edge to edge) in one RNG-free section appended last, with three foliage
+ramps and four new grid keys (`j k l` gold-leaf, `4 5 6` ember, `7 8 9`
+crimson-leaf, `0` bark shadow). Which variant a cell shows is decided at
+draw time by `render::tileVariant` (a pure position hash; see
+`docs/technical_design.md` §69) — the art never repeats in a pattern and
+nothing touches generation. The M32 loop no longer tints `tree` and
+`ground` (its twelve tinted copies were deleted; `grass`/`path`/`building`
+still are), while the legacy `town_tree.png`, `town_ground.png` and
+`<theme>_wall.png` keep being generated as fallbacks because their lines
+consume the shared RNG stream. Review with `tools/asset_gen/preview_tiles.ps1`
+(→ `docs/sprite_review/tiles_towns.png`, `tiles_walls.png`: every family
+magnified beside its ring or room perimeter at 3× and 1×, placed by the same
+hash). The `[lint]` sweep requires every town's eight tiles and every
+theme's four walls, and `tests/test_tile_variant.cpp` checks each PNG is
+16×16. To redraw a tile, edit its grid — never the PNG.
 
 **Skill-kind icons (M121):** eleven **10×10** icons, one per derived
 `content::SkillKind` — `ui.icon.skill.<id>` for fire / ice / lightning / earth

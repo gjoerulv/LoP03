@@ -45,7 +45,8 @@ its unchanged version (unknown ids were always kept).
 - Title → **New Game** now opens a page with two rows, **Normal** (under the
   cursor) and **Iron Man**, and a panel explaining the highlighted mode. For
   Iron Man the panel (a Danger frame) carries the whole rule set — four
-  paragraphs from `ironman::kRules`. Confirm on Iron Man asks once more
+  paragraphs from `ironman::kRules` (five since M131: the Dragon bar, see
+  `docs/milestone_notes/M131_owner_batch_4.md`). Confirm on Iron Man asks once more
   ("Begin an Iron Man run?", cursor on Back); then party creation runs as
   always and marks the party `ironMan` **after** `resetForNewGame`.
 

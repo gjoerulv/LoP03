@@ -879,6 +879,72 @@ int run(const char* outDir) {
                  c.party.blackMarket = {true, 6, "dawnforged_blade", 6500, 14, 6};  // M34 NPC
                  s.pushState(std::make_unique<TownState>(s, c));
              }},
+            {"183_town_2",
+             [](StateStack& s, AppContext& c) {
+                 // M128: town 2's tree family and seasonal ground, placed by the
+                 // position hash. The town mutation is set explicitly, like the
+                 // ladder and road scenes around it, so nothing leaks either way.
+                 c.party.currentTown = 2;
+                 c.party.highestUnlockedTown = 2;
+                 c.party.blackMarket = {};
+                 c.party.guild = {};  // no pending town-milestone offer over the exterior
+                 s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"184_town_3",
+             [](StateStack& s, AppContext& c) {
+                 // M128: town 3's tree family and seasonal ground, placed by the
+                 // position hash. The town mutation is set explicitly, like the
+                 // ladder and road scenes around it, so nothing leaks either way.
+                 c.party.currentTown = 3;
+                 c.party.highestUnlockedTown = 3;
+                 c.party.blackMarket = {};
+                 c.party.guild = {};  // no pending town-milestone offer over the exterior
+                 s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"185_town_4",
+             [](StateStack& s, AppContext& c) {
+                 // M128: town 4's tree family and seasonal ground, placed by the
+                 // position hash. The town mutation is set explicitly, like the
+                 // ladder and road scenes around it, so nothing leaks either way.
+                 c.party.currentTown = 4;
+                 c.party.highestUnlockedTown = 4;
+                 c.party.blackMarket = {};
+                 c.party.guild = {};  // no pending town-milestone offer over the exterior
+                 s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"186_town_5",
+             [](StateStack& s, AppContext& c) {
+                 // M128: town 5's tree family and seasonal ground, placed by the
+                 // position hash. The town mutation is set explicitly, like the
+                 // ladder and road scenes around it, so nothing leaks either way.
+                 c.party.currentTown = 5;
+                 c.party.highestUnlockedTown = 5;
+                 c.party.blackMarket = {};
+                 c.party.guild = {};  // no pending town-milestone offer over the exterior
+                 s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"187_town_6",
+             [](StateStack& s, AppContext& c) {
+                 // M128: town 6's tree family and seasonal ground, placed by the
+                 // position hash. The town mutation is set explicitly, like the
+                 // ladder and road scenes around it, so nothing leaks either way.
+                 c.party.currentTown = 6;
+                 c.party.highestUnlockedTown = 6;
+                 c.party.blackMarket = {};
+                 c.party.guild = {};  // no pending town-milestone offer over the exterior
+                 s.pushState(std::make_unique<TownState>(s, c));
+             }},
+            {"188_town_7",
+             [](StateStack& s, AppContext& c) {
+                 // M128: town 7's tree family and seasonal ground, placed by the
+                 // position hash. The town mutation is set explicitly, like the
+                 // ladder and road scenes around it, so nothing leaks either way.
+                 c.party.currentTown = 7;
+                 c.party.highestUnlockedTown = 7;
+                 c.party.blackMarket = {};
+                 c.party.guild = {};  // no pending town-milestone offer over the exterior
+                 s.pushState(std::make_unique<TownState>(s, c));
+             }},
             {"59_town_road",
              [](StateStack& s, AppContext& c) {
                  // M50: the walk-through road affordance — the player parked on an
@@ -1314,6 +1380,76 @@ int run(const char* outDir) {
                  auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
                  state->captureAoeImpact("radiance");  // all_enemies holy damage -> danger tint
                  s.pushState(std::move(state));
+             }},
+            {"189_anim_minor_strike",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M130: a basic attack frozen just past its impact beat - the
+                 // Minor slash band on the struck foe, the tier's 4 px lunge.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureActionFxAt("", 0.24f + 0.05f);
+                 s.pushState(std::move(state));
+             }},
+            {"190_anim_grand_inferno",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M130: Inferno frozen mid-burst - flame columns under every
+                 // foe and the ember wash of a Grand action.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureActionFxAt("inferno", 0.42f + 0.12f);
+                 s.pushState(std::move(state));
+             }},
+            {"191_anim_grand_chain_lightning",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M130: Chain Lightning frozen as the bolts hop target to target.
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureActionFxAt("chain_lightning", 0.42f + 0.10f);
+                 s.pushState(std::move(state));
+             }},
+            {"192_anim_heal",
+             [&battleSlot](StateStack& s, AppContext& c) {
+                 // M130: a party heal frozen at its sparks (the members are
+                 // wounded by the hook so the heal has something to show).
+                 battle::Battle b =
+                     battle::buildBattle(c.party, makeFiveEnemyTeam(c.content), c.content);
+                 auto state = std::make_unique<BattleState>(s, c, std::move(b), &battleSlot);
+                 state->captureActionFxAt("group_mend", 0.24f + 0.12f);
+                 s.pushState(std::move(state));
+             }},
+            {"193_class_select_iron_man_dragon",
+             [](StateStack& s, AppContext& c) {
+                 // M131: an Iron Man party creation with the Dragon in a slot -
+                 // the class reads "(Not allowed)", greyed, and the note under
+                 // the roster says why; the other reward classes stay open.
+                 auto state = std::make_unique<PartyCreationState>(s, c, /*ironMan=*/true);
+                 state->captureSelectClass(0, "dragon");
+                 state->captureSelectClass(1, "jester");
+                 state->captureSelectClass(2, "goose");
+                 s.pushState(std::move(state));
+             }},
+            {"194_items_alarm_dungeon",
+             [](StateStack& s, AppContext& c) {
+                 // M131: the Alarm in the bag, opened from a dungeon - its
+                 // description under the list (the longest consumable line).
+                 c.party.inventory.add("alarm", 2);
+                 auto st = std::make_unique<InventoryState>(s, c, /*inDungeon=*/true);
+                 st->captureCursorToItem("alarm");
+                 s.pushState(std::move(st));
+             }},
+            {"195_items_alarm_town",
+             [](StateStack& s, AppContext& c) {
+                 // M131: the same bag opened in town - Confirm on the Alarm is
+                 // refused with the reason on the Danger banner. The two
+                 // Alarms leave the bag again here so no later scene sees them.
+                 auto st = std::make_unique<InventoryState>(s, c);
+                 st->captureCursorToItem("alarm");
+                 st->captureConfirm(0);
+                 c.party.inventory.remove("alarm", 2);
+                 s.pushState(std::move(st));
              }},
             {"53_battle_weak_hit",
              [&battleSlot](StateStack& s, AppContext& c) {
@@ -2355,7 +2491,8 @@ int run(const char* outDir) {
             {"169_new_game_iron_man",
              [](StateStack& s, AppContext& c) {
                  // M123: Iron Man highlighted - the whole rule set in the
-                 // Danger panel (four paragraphs; the line budget is the lint).
+                 // Danger panel (five paragraphs since M131; the line budget
+                 // is the lint).
                  auto st = std::make_unique<GameModeState>(s, c);
                  st->captureIronMan(/*askBegin=*/false);
                  s.pushState(std::move(st));

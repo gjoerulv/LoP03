@@ -135,6 +135,10 @@
 | 125 | CrystalForge catch-up (the M120–M124 fields, loader-key audit, version stamp) | ☑ complete (approved 2026-09-20) |
 | 126 | Owner batch: loot summary rows, level-up skill icons, the vanishing chest, guarded vaults (generation v25), the Dragon's sweep targeting, big blackjack cards | ☑ complete (approved 2026-09-20) |
 | 127 | Owner batch 3: the party on the save slots (hopping when highlighted), parchment map pieces (Maps screen + dungeon pickup), twelve curio icons | ☑ complete (approved 2026-09-20) |
+| 128 | Town & dungeon tile redesign: the ladder's seven tree families, seasonal ground, four wall variants per theme | ◑ implemented, awaiting manual approval |
+| 129 | Enemy & boss sprite redesign (the Atari-ST bar; the geese and the Dragon untouched) | ◑ implemented, awaiting manual approval |
+| 130 | Short attack & skill animations (Fast skips them; summons untouched) | ◑ implemented, awaiting manual approval |
+| 131 | Owner batch 4: THE STRANGER "P" waits on this save's King, no Dragons in Iron Man, the Alarm | ◑ implemented, awaiting manual approval |
 
 **Execution order is not numeric order.** M25 → M26 → M27 → M28 → M29 → M30 →
 **M31 → M32 → M33 → M34**, then the **M35–M42 endgame program**
@@ -311,6 +315,20 @@ own sections at the end of this file. Only the deliberately deferred
 **M23 → M24** remain, in that order, each re-audited against the
 then-current checkout before it begins — and neither starts without explicit
 owner authorization.
+**On 2026-09-22 the owner authorized the M128–M130 "Peak 80s pixel art on
+Atari" program** (one plan, one authorization, after a planning interview;
+branch `oyb13`, baseline `5f6ff56`): M128 the town & dungeon tile redesign
+(seven tree families for the ladder — green, yellow, orange, red, white,
+bare, skull-crowned — four hand-placed variants each placed by a position
+hash, the ground following the season, four wall variants per dungeon
+theme) → M129 the enemy & boss sprite redesign to the late-80s Atari-ST bar
+(every sprite except the Last Dragon and the geese/ducks; canvases
+unchanged) → M130 short attack & skill animations (the powerful skills a
+little longer; Battle Speed **Fast skips them entirely**, the M107 summons
+untouched). No version motion anywhere. Execution continues milestone by
+milestone to `implemented, awaiting manual approval` without pausing; M23 →
+M24 follow after the program, re-audited first, each awaiting explicit
+authorization. See the program section at the end of this file.
 
 When M75–M86 close, both M23 and M24 must be re-audited against the
 then-current checkout before they begin — the capture set has grown (**85
@@ -1044,7 +1062,7 @@ milestone is not automatic authorization to start the next.
   sequencing: playtesting a build with known-stale gameplay would produce
   findings about problems the expansion programs already exist to fix.
   Re-audit this note against the then-current checkout before starting — the
-  capture scene list has grown (**182 scenes** as of M127) and the balance
+  capture scene list has grown (**195 scenes** as of M131) and the balance
   batteries have grown (`[economy-report]`, `[castle-report]` + rush sweep,
   `[king-report]`, `[classes-report]`, and the M61–M68
   `[goose]`/`[milestone]`/`[scroll]`/`[treasure]`/`[curio]`/`[spoils]`/
@@ -4011,3 +4029,103 @@ fits). The packaged executable was not launched by the session (it would
 write to the owner's real user-data folder); the clean-machine smoke test
 belongs to M24. A distribution build, not the M24 release sign-off: M23 → M24
 remain deferred and each awaits explicit owner authorization.
+
+## M128–M130 — the "Peak 80s pixel art on Atari" program (authorized 2026-09-22)
+
+Three presentation milestones from one owner request, planned in one
+interview and authorized by one plan approval (the M117–M119 pattern), on
+branch `oyb13` over `5f6ff56` (v0.9.1). The owner's key sentence for all
+three is "Peak 80s pixel art on Atari" — clarified as the **late-80s Atari
+ST look**: bold flat fills, hard edges, three to five colours per element,
+strong silhouettes, little or no dithering; impressive but primitive, and
+allowed to look a little more random and organic than strict repetition.
+Owner rulings recorded in the plan: the ground follows the season subtly
+per town; enemy canvases stay 24×24 / 36×36 and the geese and the Last
+Dragon are the quality bar; the M107 summons stay as they are; on Battle
+Speed Fast the new animations are skipped entirely. No version motion
+anywhere; no public-schema change (animation families and tiers are
+derived, the M121 way).
+
+### M128 — Town & dungeon tile redesign
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-09-22 (72 new tiles, the twelve M32 tinted tree/ground copies
+  retired, the generator byte-stable otherwise; Debug build clean; targeted
+  `[m128]`/`[lint]`/`[town]` 30/30; Debug 970/970; Release build clean;
+  capture 188/188 clean; see the note's completion report). No version
+  moved. The seven small decisions the note lists were taken without
+  asking.
+- **Goal:** the town ladder's tree ring names the season — green, yellow,
+  orange, red, white, bare, then bare skull-crowned trees — with four
+  hand-placed trees per town placed by a pure position hash so no ring
+  repeats a pattern, the plaza ground following the season, and every
+  dungeon theme's walls picking one of four authored variants per cell
+  (one plain course dominant, three motifs), all presentation-only.
+- **Milestone note:** `docs/milestone_notes/M128_tile_redesign.md`
+
+### M129 — Enemy & boss sprite redesign
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-09-22 (81 sprites redrawn in nine batches, the 19 fowl and the Dragon
+  byte-identical; pixels only — no id, path, manifest row or source changed;
+  Debug build clean; `[lint]`/`[m128]` 21/21; Debug 970/970; capture
+  188/188 clean; see the note's completion report). No version moved. The
+  five small decisions the note lists were taken without asking.
+- **Goal:** every enemy and boss sprite except the Last Dragon and the
+  geese/ducks redrawn to the Atari-ST bar on the same canvases, ids and
+  files; the art bible's face rule amended.
+- **Milestone note:** `docs/milestone_notes/M129_enemy_redesign.md`
+
+### M130 — Short attack & skill animations
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-09-22 (the derived family/tier model, a defaulted sequencer windup,
+  procedural bursts on every action path, the Grand wash, four capture
+  scenes; Debug build clean; `[m130]`/`[battleseq]` 10/10; Debug 974/974;
+  Release build clean; capture 192/192 clean; see the note's completion
+  report and the program's closing paragraph below). No version moved; no
+  schema moved. The seven small decisions the
+  note lists were taken without asking.
+- **Goal:** short procedural beats for attacks and skills derived from the
+  skill's kind and power (Minor / Major / Grand), the tail inside the
+  existing settle pause; Fast skips them, summons untouched.
+- **Milestone note:** `docs/milestone_notes/M130_battle_animations.md`
+
+**Program closed for review (2026-09-22).** All three milestones stand at
+`implemented, awaiting manual approval` on the same working tree (branch
+`oyb13` over `5f6ff56`, nothing committed — the owner handles Git). Final
+battery on the finished tree: Debug build clean, `ctest --preset debug`
+**974/974**; Release build clean, `ctest --preset release` **970/970**;
+`ArePGeese.exe --capture` **192/192 scenes clean**; the generator byte-stable
+except for its intended outputs (72 new tiles, 12 tinted copies retired, 81
+sprites redrawn, 19 fowl/Dragon sprites byte-identical). No version motion
+anywhere (rules 19, generation 25, save/settings/content v1, manifest v2,
+0.9.1). The owner's manual pass is matrix rows **279–287**; approval of one
+milestone is not authorization of anything further — M23 → M24 remain
+deferred, each awaiting explicit authorization.
+
+## M131 — Owner batch 4 (owner request, 2026-09-22)
+
+Three owner items raised in the M128–M130 session after that program's
+implementation closed — a bug report and two rulings — grouped into one
+milestone at the owner's word ("All this can be M131"). Authorized by the
+request itself; it sits on the same working tree as M128–M130, which stay
+`implemented, awaiting manual approval` beneath it.
+
+- **Status:** ◑ implemented, awaiting manual approval — implemented
+  2026-09-22 (Debug build clean; `[m131]` and its neighbouring tags 120/120;
+  Debug 981/981; Release build clean; Release 977/977; capture 195/195
+  clean; see the note's completion report). No version moved: content v1
+  (`alarm` is an additive
+  value of the existing `effect` enum), generation 25 (the Alarm never
+  enters a chest or peddler pool), rules 19, save v1, 0.9.1. The small
+  decisions the note lists were taken without asking.
+- **Goal:** THE STRANGER "P" stands at town 7's eastern road only after the
+  King has fallen **in that save** (the cross-save class-unlock flag gated
+  him, so a new game on a seasoned profile met him on arrival); the Dragon
+  class is barred from an Iron Man party at creation, and the three Iron
+  accomplishments refuse any party with a Dragon in it; a new consumable,
+  the **Alarm** (200 g, sold in town 4 and after, the ordinary cap), usable
+  only from the dungeon pause menu's Items screen, rings the next patrol at
+  once by the normal seeded rules.
+- **Milestone note:** `docs/milestone_notes/M131_owner_batch_4.md`

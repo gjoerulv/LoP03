@@ -109,12 +109,13 @@ constexpr std::array<std::pair<std::string_view, Rarity>, 5> kRarities{{
     {"legendary", Rarity::Legendary},
 }};
 
-constexpr std::array<std::pair<std::string_view, ConsumableEffect>, 5> kConsumableEffects{{
+constexpr std::array<std::pair<std::string_view, ConsumableEffect>, 6> kConsumableEffects{{
     {"none", ConsumableEffect::None},
     {"heal", ConsumableEffect::Heal},
     {"revive", ConsumableEffect::Revive},
     {"restore_mp", ConsumableEffect::RestoreMp},
     {"cure", ConsumableEffect::Cure},
+    {"alarm", ConsumableEffect::Alarm},  // M131
 }};
 
 constexpr std::array<std::pair<std::string_view, StatusType>, 14> kStatusTypes{{

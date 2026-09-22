@@ -6,9 +6,6 @@ namespace cd::render {
 
 namespace {
 
-constexpr float kWindupBase = 0.18f;
-constexpr float kImpactBase = 0.14f;
-
 float speedScale(settings::BattleSpeed s) {
     switch (s) {
         case settings::BattleSpeed::Normal: return 1.0f;
@@ -20,7 +17,8 @@ float speedScale(settings::BattleSpeed s) {
 
 }  // namespace
 
-void BattleSequencer::start(bool hasImpact, float settleSeconds, const BattleStageParams& params) {
+void BattleSequencer::start(bool hasImpact, float settleSeconds, const BattleStageParams& params,
+                            float windupSeconds) {
     params_ = params;
     settleLen_ = settleSeconds < 0.0f ? 0.0f : settleSeconds;
     commitPending_ = false;
@@ -35,7 +33,7 @@ void BattleSequencer::start(bool hasImpact, float settleSeconds, const BattleSta
         stage_ = BattleStage::Settle;
         return;
     }
-    windupLen_ = kWindupBase * scale;
+    windupLen_ = (windupSeconds > 0.0f ? windupSeconds : kWindupBase) * scale;
     impactLen_ = kImpactBase * scale;
     stage_ = BattleStage::Windup;
 }

@@ -44,6 +44,7 @@
 #include "score/Scoring.hpp"
 #include "input/PromptLabels.hpp"
 #include "render/SpriteDraw.hpp"
+#include "render/TileVariant.hpp"  // M128
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
 #include "render/CutsceneBackdrop.hpp"  // M113
@@ -173,6 +174,7 @@ DungeonState::DungeonState(StateStack& stack, AppContext& context,
       layouts_(dungeon::realizeAllRooms(dungeon_)), roomMap_(1, 1) {
     rebuildTiers();
     context_.party.usedSummons.clear();  // M95: a fresh run, a fresh ledger
+    context_.alarmRung = false;          // M131: no leftover ring follows the party in
     context_.fade.start();
     // Theme music + ambience are applied in onEnter(), not here: entering the
     // dungeon pops the Guild, which fires TownState::onResume and re-asserts
@@ -2603,6 +2605,15 @@ void DungeonState::update(float dt) {
         dragonformArmed_ = true;
     }
 #endif
+    // M131: the Alarm, rung from the pause menu's Items screen - the REAL
+    // dispatcher fires now that the menus have closed, exactly as a
+    // walked-down counter would; the kind is this patrol index's seeded
+    // roll, so the item follows the normal rules and perturbs nothing.
+    if (context_.alarmRung) {
+        context_.alarmRung = false;
+        triggerPatrol();
+        return;
+    }
     // 2026-08-29 (owner request): the reels' spin clock — advance while the
     // outcome panel shows a live spin, tick a lock sound as each cell lands,
     // and mark the animation finished after the last one. The landed symbols
@@ -2869,6 +2880,22 @@ void DungeonState::render() {
     const std::string accentId = tilePrefix + "accent";
     const bool hasAccent = context_.resources.hasTexture(accentId);
     const int accentSalt = currentRoom_ * 101 + static_cast<int>(dungeon_.seed % 251u);
+    // M128: four authored wall variants per theme, picked per cell by the pure
+    // position hash over the run seed and the room index (presentation only:
+    // no layout or RNG stream is touched), resolved once per frame so the
+    // cell loop allocates nothing. Fallback: variant 1, then the legacy wall.
+    constexpr std::uint64_t kSaltWallVariant = 0x2B7E151628AED2A6ull;
+    std::array<std::string, render::kWallVariantCount> wallIds;
+    {
+        const std::string first = tilePrefix + "wall.1";
+        const std::string& wallFallback = context_.resources.hasTexture(first) ? first : wallId;
+        for (int v = 0; v < render::kWallVariantCount; ++v) {
+            const std::string candidate = tilePrefix + "wall." + std::to_string(v + 1);
+            wallIds[static_cast<std::size_t>(v)] =
+                context_.resources.hasTexture(candidate) ? candidate : wallFallback;
+        }
+    }
+    const std::uint64_t wallSalt = kSaltWallVariant + static_cast<std::uint64_t>(currentRoom_);
     for (int ty = 0; ty < roomMap_.height(); ++ty) {
         for (int tx = 0; tx < roomMap_.width(); ++tx) {
             const town::Tile t = roomMap_.at(tx, ty);
@@ -2876,8 +2903,12 @@ void DungeonState::render() {
             // (crystal clusters, rubble, shrine stones) — presentation only.
             const bool accent = hasAccent && t == town::Tile::Ground &&
                                 (tx * 31 + ty * 17 + accentSalt) % 13 == 0;
-            const std::string& id = t == town::Tile::Building ? wallId
-                                    : t == town::Tile::Door  ? doorId
+            const std::string& id =
+                t == town::Tile::Building
+                    ? wallIds[static_cast<std::size_t>(render::tileVariant(
+                          dungeon_.seed, tx, ty, wallSalt, render::kWallVariantWeights,
+                          render::kWallVariantCount))]
+                : t == town::Tile::Door ? doorId
                                     : accent                 ? accentId
                                                              : floorId;
             if (context_.resources.hasTexture(id)) {

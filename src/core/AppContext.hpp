@@ -59,6 +59,11 @@ struct AppContext {
     // initializer that stops at virtualHeight leaves it default-constructed. All
     // access is #ifdef CRYSTAL_DEBUG_OVERLAY; absent from Release behaviour.
     DebugCheats cheats{};
+    // M131: the Alarm one-shot - set by the dungeon pause menu's Items screen
+    // when the item is rung, consumed by DungeonState::update on the very
+    // next tick (the menus have closed by then), which fires the REAL patrol
+    // dispatcher. Runtime only; a fresh dungeon clears any leftover.
+    bool alarmRung = false;
 };
 
 }  // namespace cd

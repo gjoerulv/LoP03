@@ -76,8 +76,9 @@ void DungeonMenuState::handleInput(const Input& input) {
                 stack().pushState(
                     std::make_unique<EquipShopState>(stack(), context_, /*partyMode=*/true));
                 break;
-            case kItems:  // M90
-                stack().pushState(std::make_unique<InventoryState>(stack(), context_));
+            case kItems:  // M90; M131: the Alarm rings from here
+                stack().pushState(
+                    std::make_unique<InventoryState>(stack(), context_, /*inDungeon=*/true));
                 break;
             case kSettings:
                 stack().pushState(std::make_unique<SettingsState>(stack(), context_));

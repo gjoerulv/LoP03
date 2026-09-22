@@ -2013,6 +2013,7 @@ std::string Battle::useItem(int actor, int target, const content::ItemDef& item)
             log += " Cured.";
             break;
         case content::ConsumableEffect::None:
+        case content::ConsumableEffect::Alarm:  // M131: never listed in battle
             log += " Nothing happens.";
             break;
     }

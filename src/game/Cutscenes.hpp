@@ -11,6 +11,7 @@
 #include "content/Definitions.hpp"
 #include "game/BlackMarket.hpp"  // M110: blackMarketHash for the patrol-scene shuffle
 #include "game/Party.hpp"
+#include "game/WorldLadder.hpp"  // M131: clampTown / kTownCount for the roadside gate
 
 // M97: pure rules for the Hooded Goose story scenes — seen-tracking, the
 // scene<->town mapping, the recorded heirloom choices, and the name-token
@@ -26,6 +27,16 @@ inline std::string townCutsceneId(int town) {
         return {};
     }
     return "town_" + std::to_string(town);
+}
+
+// M131 (owner bug report 2026-09-22): THE STRANGER "P" stands at town 7's
+// eastern roadside only once THIS save's party has felled the Hollow King -
+// the per-save castle record, never the cross-save profile flag that unlocks
+// the reward classes. The profile flag (M97) let P greet a brand-new party
+// the moment it reached town 7 on any profile that had ever beaten him: the
+// finale's door stood open before the King was even met.
+inline bool strangerAtRoadside(const Party& party) {
+    return clampTown(party.currentTown) == kTownCount && party.castleRecords.kingDefeated;
 }
 
 inline bool cutsceneSeen(const Party& party, const std::string& sceneId) {

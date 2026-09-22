@@ -39,8 +39,8 @@ int bagBandFor(const content::ItemDef& def) {
 }
 }  // namespace
 
-InventoryState::InventoryState(StateStack& stack, AppContext& context)
-    : GameState(stack), context_(context) {
+InventoryState::InventoryState(StateStack& stack, AppContext& context, bool inDungeon)
+    : GameState(stack), context_(context), inDungeon_(inDungeon) {
     rebuild();
 }
 
@@ -178,6 +178,24 @@ void InventoryState::confirm() {
             message_ = "A Royal Relic works in battle, on an enemy.";
             messageIsError_ = false;
             context_.audio.play(Sfx::Cancel);
+            return;
+        }
+        if (itemIsAlarm(*it)) {
+            // M131: the Alarm targets nobody. In a dungeon it is rung on the
+            // spot - one is spent, the menus close, and the dungeon's next
+            // tick fires the real patrol dispatcher (the seeded kind; the
+            // normal rules). In town it is refused with the reason.
+            if (!inDungeon_) {
+                message_ = kAlarmTownRefusal;
+                messageIsError_ = true;
+                context_.audio.play(Sfx::Error);
+                return;
+            }
+            context_.party.inventory.remove(it->id);
+            context_.alarmRung = true;
+            context_.audio.play(Sfx::Confirm);
+            stack().popState();  // this screen
+            stack().popState();  // the dungeon pause menu -> the dungeon answers
             return;
         }
         // A consumable: is there ANY member it could reach? (M43: never enter a

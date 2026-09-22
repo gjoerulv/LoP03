@@ -13,6 +13,12 @@ namespace cd::render {
 
 enum class BattleStage { Idle, Windup, Impact, Settle, Finished };
 
+// The base beat lengths (M18). M130 lets a caller lengthen the windup for a
+// bigger action; the impact beat is never varied — it drives the hit flash and
+// shake decay everyone already knows.
+inline constexpr float kWindupBase = 0.18f;
+inline constexpr float kImpactBase = 0.14f;
+
 struct BattleStageParams {
     settings::BattleSpeed speed = settings::BattleSpeed::Normal;
     settings::EffectLevel flash = settings::EffectLevel::Full;
@@ -25,7 +31,10 @@ public:
     // other no-contact actions) skips windup/impact and goes straight to the
     // settle pause; Instant speed does the same. settleSeconds is the
     // message pause (already speed-resolved by the caller).
-    void start(bool hasImpact, float settleSeconds, const BattleStageParams& params);
+    // `windupSeconds` (M130) is the unscaled windup for this action — the
+    // tier's anticipation; Fast/Instant scale it exactly as they scale the base.
+    void start(bool hasImpact, float settleSeconds, const BattleStageParams& params,
+               float windupSeconds = kWindupBase);
 
     void update(float dt);
     void skip();  // jump to Finished; the pending commit still fires

@@ -12,6 +12,7 @@
 #include "core/AppContext.hpp"
 #include "core/FadeController.hpp"
 #include "game/IronMan.hpp"           // M123: the escape price and its words
+#include "game/ItemUse.hpp"           // M131: the Alarm is never a battle item
 #include "game/Ledger.hpp"            // M112: the decision rewards
 #include "game/Party.hpp"
 #include "game/SkillInfo.hpp"         // M121: kind line + milestone-aware text
@@ -19,6 +20,7 @@
 #include "input/Input.hpp"
 #include "raylib.h"
 #include "input/PromptLabels.hpp"
+#include "render/ActionFx.hpp"  // M130
 #include "render/ElementFx.hpp"  // M91
 #include "resource/ResourceManager.hpp"
 #include "settings/Settings.hpp"
@@ -352,6 +354,59 @@ void BattleState::captureAoeImpact(const std::string& skillId) {
     }
 }
 
+void BattleState::captureActionFxAt(const std::string& skillId, float atSeconds) {
+    // M130: resolve a real action, then run the sequencer AND the effect clock
+    // forward to `atSeconds` and freeze both, so the capture shows the burst
+    // mid-beat exactly as the game draws it. An ally-facing skill wounds the
+    // party first so the heal has something to move.
+    captureEnterTargeting();
+    const content::SkillDef* s = skillId.empty() ? nullptr : context_.content.findSkill(skillId);
+    if (s == nullptr) {
+        // The basic attack: take the first party member whose swing is a
+        // single strike (the capture party's lead sweeps the whole field).
+        for (std::size_t i = 0; i < order_.size(); ++i) {
+            const battle::Combatant& u = battle_.units[static_cast<std::size_t>(order_[i])];
+            if (u.side == battle::Side::Party && u.alive() && !u.attackHitsAll) {
+                orderPos_ = static_cast<int>(i);
+                break;
+            }
+        }
+    }
+    const int actor = currentActor();
+    battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
+    self.mp = self.maxMp = std::max(self.maxMp, 999);
+    const bool allies = s != nullptr && !content::targetsEnemies(*s);
+    if (allies) {
+        for (battle::Combatant& u : battle_.units) {
+            if (u.side == battle::Side::Party && u.alive()) {
+                u.hp = std::max(1, u.hp / 2);
+            }
+        }
+        for (std::size_t i = 0; i < battle_.units.size() && i < displayHp_.size(); ++i) {
+            displayHp_[i] = battle_.units[i].hp;
+        }
+    }
+    const std::vector<int> targets =
+        battle_.aliveIndices(allies ? battle::Side::Party : battle::Side::Enemy);
+    if (targets.empty()) {
+        return;
+    }
+    pendingKind_ = s != nullptr ? PendingKind::Skill : PendingKind::Attack;
+    pendingSkillId_ = skillId;
+    executePending(targets.front());
+    for (int i = 0; i < 400 && actionFxT_ < atSeconds && !seq_.finished(); ++i) {
+        seq_.update(0.01f);
+        actionFxT_ += 0.01f;
+        if (seq_.takeCommit()) {
+            commitPresentation();
+        }
+    }
+    captureFreezeSeq_ = true;
+    for (FloatNumber& f : floats_) {
+        f.timer = 999.0f;
+    }
+}
+
 void BattleState::captureShowSpoils() {
     // M68: the victory panel at its fullest — max XP/gold widths and four
     // leveled members, two of them with multi-skill learn lines.
@@ -432,6 +487,7 @@ void BattleState::captureElementHit(const content::SkillDef& skill) {
         message_ = battle_.useSkill(actor, foes.front(), skill);
     }
     fxElement_ = skill.element;  // M91
+    setActionAnim(&skill, content::Element::None, false, foes.empty() ? -1 : foes.front());  // M130
     stageNumbers(hpBefore, 4);
     commitPresentation();
     for (FloatNumber& f : floats_) {
@@ -583,6 +639,7 @@ void BattleState::unitScreenPos(int index, int& outX, int& outY) const {
 void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
                                bool statusAction) {
     hitFlags_.assign(battle_.units.size(), 0);
+    fxTargets_.assign(battle_.units.size(), 0);  // M130
     bool anyDamage = false;
     bool anyHeal = false;
     bool anyKo = false;
@@ -591,6 +648,7 @@ void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
         if (delta == 0) {
             continue;
         }
+        fxTargets_[i] = 1;  // M130: the burst plays on every unit the action moved
         int x = 0;
         int y = 0;
         unitScreenPos(static_cast<int>(i), x, y);
@@ -640,6 +698,25 @@ void BattleState::stageNumbers(const std::vector<int>& hpBefore, int damageSfx,
     markFloats(battle_.lastWeak, "Weak!", FloatKind::Weak, -10.0f);
     markFloats(battle_.lastImmune, "Immune", FloatKind::Immune, -10.0f);
     pendingSfx_ = anyKo ? 3 : (anyDamage ? damageSfx : (anyHeal ? 1 : (statusAction ? 5 : 0)));
+    // M130: a status-only action moved no HP, so its chevrons need their own
+    // targets — the side it touched for an all-target skill, else the one unit.
+    if (statusAction && !anyDamage && !anyHeal) {
+        if (actionAllTargets_) {
+            const int actor = currentActor();
+            if (actor >= 0 && actor < static_cast<int>(battle_.units.size())) {
+                const battle::Side own = battle_.units[static_cast<std::size_t>(actor)].side;
+                const bool foes = actionKind_ == content::SkillKind::Debuff;
+                for (std::size_t i = 0; i < battle_.units.size(); ++i) {
+                    const battle::Combatant& u = battle_.units[i];
+                    if (u.alive() && ((u.side == own) != foes)) {
+                        fxTargets_[i] = 1;
+                    }
+                }
+            }
+        } else if (actionTarget_ >= 0 && actionTarget_ < static_cast<int>(fxTargets_.size())) {
+            fxTargets_[static_cast<std::size_t>(actionTarget_)] = 1;
+        }
+    }
 }
 
 void BattleState::commitPresentation() {
@@ -745,6 +822,7 @@ void BattleState::startActorTurn() {
     }
     const std::string tick = battle_.tickStatuses(actor);
     fxElement_ = content::Element::None;  // M91: ticks carry no element
+    setActionAnim(nullptr, content::Element::None, false, -1);  // M130: nor an animation
     stageNumbers(hpBefore);
     commitPresentation();  // status ticks are not action-staged; show at once
     if (!battle_.units[static_cast<std::size_t>(actor)].alive()) {
@@ -823,7 +901,9 @@ std::vector<std::string> BattleState::consumableIds() const {
     std::vector<std::string> ids;
     for (const ItemStack& s : context_.party.inventory.stacks) {
         const content::ItemDef* it = context_.content.findItem(s.itemId);
-        if (it != nullptr && it->type == content::ItemType::Consumable && s.count > 0) {
+        // M131: the Alarm is a field item - the bag in battle never lists it.
+        if (it != nullptr && it->type == content::ItemType::Consumable && s.count > 0 &&
+            !itemIsAlarm(*it)) {
             ids.push_back(s.itemId);
         }
     }
@@ -1123,6 +1203,7 @@ void BattleState::executePending(int targetUnit) {
     bool offensiveStatus = false;  // M42: a status-carrying skill aimed at enemies
     aoeTint_ = AoeTint::None;      // M51: set below when an all-target action resolves
     fxElement_ = content::Element::None;  // M91: set per resolved action below
+    setActionAnim(nullptr, content::Element::None, false, -1);  // M130: neutral until set
     switch (pendingKind_) {
         case PendingKind::Attack: {
             const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
@@ -1130,6 +1211,8 @@ void BattleState::executePending(int targetUnit) {
                 aoeTint_ = AoeTint::Damage;  // the Dragon's sweep
             }
             fxElement_ = self.weaponElement;  // M91: the wielded/intrinsic element
+            setActionAnim(nullptr, self.weaponElement,
+                          self.attackHitsAll && !battle::isConfused(self), targetUnit);  // M130
             message_ = battle_.attack(actor, targetUnit);
             break;
         }
@@ -1137,6 +1220,7 @@ void BattleState::executePending(int targetUnit) {
             if (const content::SkillDef* s = context_.content.findSkill(pendingSkillId_)) {
                 message_ = battle_.useSkill(actor, targetUnit, *s);
                 fxElement_ = s->element;  // M91
+                setActionAnim(s, content::Element::None, false, targetUnit);  // M130
                 // M95: the creature's name rides the quip channel over the
                 // resolution — and since M107 the creature itself appears,
                 // LARGE at the battlefield's center, for the same beat, with
@@ -1172,6 +1256,7 @@ void BattleState::executePending(int targetUnit) {
                 statusAction = !it->statuses.empty();
                 offensiveStatus =
                     statusAction && it->battleTarget == content::BattleTarget::Enemy;
+                setActionAnimItem(statusAction, offensiveStatus, targetUnit);  // M130
                 if (spends) {
                     context_.party.inventory.remove(pendingItemId_, 1);
                     // M76: an item with an authored use line delivers it on the
@@ -1225,6 +1310,7 @@ void BattleState::resolveDecision(int targetUnit) {
     const std::string& who = battle_.units[static_cast<std::size_t>(actor)].name;
     aoeTint_ = AoeTint::None;
     fxElement_ = content::Element::None;
+    setActionAnim(nullptr, content::Element::None, false, -1);  // M130
     int damageSfx = 2;
     switch (result) {
         case SpecialResult::LoreCorrect:
@@ -1328,10 +1414,12 @@ void BattleState::revealMimic(int actor, const content::SkillDef* skill) {
     bool statusAction = false;
     aoeTint_ = AoeTint::None;
     fxElement_ = content::Element::None;
+    setActionAnim(nullptr, content::Element::None, false, -1);  // M130
     std::string opening;  // the telegraph rides the quip channel; the log is the blow
     if (skill != nullptr && mimic >= 0) {
         opening += battle_.useSkill(decider, mimic, *skill);
         fxElement_ = skill->element;
+        setActionAnim(skill, content::Element::None, false, mimic);  // M130
         damageSfx = skill->category == content::SkillCategory::Magic ? 4 : 2;
         statusAction = skill->statusEffect != content::StatusType::None;
         aoeTint_ = aoeTintForSkill(*skill);
@@ -1341,6 +1429,8 @@ void BattleState::revealMimic(int actor, const content::SkillDef* skill) {
             aoeTint_ = AoeTint::Damage;
         }
         fxElement_ = self.weaponElement;
+        setActionAnim(nullptr, self.weaponElement,
+                      self.attackHitsAll && !battle::isConfused(self), mimic);  // M130
         opening += battle_.attack(decider, mimic);
     }
     message_ = opening;
@@ -1392,6 +1482,7 @@ void BattleState::executeEnemy(int actor) {
     bool statusAction = false;
     aoeTint_ = AoeTint::None;               // M51
     fxElement_ = content::Element::None;    // M91: set per resolved action below
+    setActionAnim(nullptr, content::Element::None, false, -1);  // M130
     const battle::Combatant& self = battle_.units[static_cast<std::size_t>(actor)];
     if (choice.scripted) {
         // M111: the foe's scripted own turn — its authored line is the whole
@@ -1436,6 +1527,7 @@ void BattleState::executeEnemy(int actor) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);
             fxElement_ = s->element;  // M91 (the Dragon's breaths, party-side)
+            setActionAnim(s, content::Element::None, false, choice.target);  // M130
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
             statusAction = s->statusEffect != content::StatusType::None;
             aoeTint_ = aoeTintForSkill(*s);
@@ -1445,6 +1537,8 @@ void BattleState::executeEnemy(int actor) {
             aoeTint_ = AoeTint::Damage;
         }
         fxElement_ = self.weaponElement;  // M91
+        setActionAnim(nullptr, self.weaponElement,
+                      self.attackHitsAll && !battle::isConfused(self), choice.target);  // M130
         // M89: when the every-Nth lunge chose this swing, the authored flavour
         // line leads the attack line — same detection the AI used, so the
         // flavour can never appear on an ordinary out-of-MP swing.
@@ -1479,6 +1573,7 @@ void BattleState::executeConfused(int actor) {
     const battle::EnemyChoice choice = battle::forcedChoice(battle_, actor, forced);
     aoeTint_ = AoeTint::None;  // M51: a confused unit only ever makes a single-target swing
     fxElement_ = content::Element::None;  // M91
+    setActionAnim(nullptr, content::Element::None, false, -1);  // M130
     switch (forced) {
         case battle::ForcedAction::Guard:
             message_ = a.name + " is terrified and can only cower behind its guard!";
@@ -1495,6 +1590,7 @@ void BattleState::executeConfused(int actor) {
         case battle::ForcedAction::BasicAttack:
         case battle::ForcedAction::None:
             fxElement_ = a.weaponElement;  // M91
+            setActionAnim(nullptr, a.weaponElement, false, choice.target);  // M130
             message_ = battle_.attack(actor, choice.target);
             break;
     }
@@ -1532,12 +1628,14 @@ void BattleState::executeUncontrolled(int actor) {
     bool statusAction = false;
     aoeTint_ = AoeTint::None;             // M51
     fxElement_ = content::Element::None;  // M91
+    setActionAnim(nullptr, content::Element::None, false, -1);  // M130
     if (choice.target < 0) {
         message_ = battle_.units[static_cast<std::size_t>(actor)].name + " capers pointlessly.";
     } else if (choice.useSkill) {
         if (const content::SkillDef* s = context_.content.findSkill(choice.skillId)) {
             message_ = battle_.useSkill(actor, choice.target, *s);
             fxElement_ = s->element;  // M91
+            setActionAnim(s, content::Element::None, false, choice.target);  // M130
             damageSfx = s->category == content::SkillCategory::Magic ? 4 : 2;
             statusAction = s->statusEffect != content::StatusType::None;
             aoeTint_ = aoeTintForSkill(*s);
@@ -1548,6 +1646,8 @@ void BattleState::executeUncontrolled(int actor) {
             aoeTint_ = AoeTint::Damage;
         }
         fxElement_ = self.weaponElement;  // M91
+        setActionAnim(nullptr, self.weaponElement,
+                      self.attackHitsAll && !battle::isConfused(self), choice.target);  // M130
         message_ = battle_.attack(actor, choice.target);
     }
     // The quip rides on top of the resolved action and never changes it: a pure
@@ -1561,6 +1661,38 @@ void BattleState::executeUncontrolled(int actor) {
     accumulateStats(hpBefore, actor, false);
     stageNumbers(hpBefore, damageSfx, statusAction);
     afterAction();
+}
+
+void BattleState::setActionAnim(const content::SkillDef* skill, content::Element weaponElement,
+                                bool hitsAll, int target) {
+    // M130: derive the animation's family and tier beside the M91 element —
+    // the M121 kind for a skill, the weapon's damage kind for a basic attack.
+    if (skill != nullptr) {
+        actionKind_ = content::skillKindFor(*skill);
+        actionTier_ = render::actionTierForSkill(*skill);
+        actionIsSpell_ = !content::isSummonSkill(*skill) &&
+                         skill->category != content::SkillCategory::Physical;
+        actionAllTargets_ = skill->target == content::SkillTarget::AllEnemies ||
+                            skill->target == content::SkillTarget::AllAllies;
+    } else {
+        actionKind_ = content::damageKindFor(weaponElement);
+        actionTier_ = render::actionTierForBasicAttack(hitsAll);
+        actionIsSpell_ = false;
+        actionAllTargets_ = hitsAll;
+    }
+    actionTarget_ = target;
+}
+
+void BattleState::setActionAnimItem(bool statusAction, bool offensive, int target) {
+    // An item: a mender's sparks for a restorative, chevrons for a status
+    // draught — always Minor, never a spell.
+    actionKind_ = !statusAction ? content::SkillKind::Heal
+                  : offensive   ? content::SkillKind::Debuff
+                                : content::SkillKind::Buff;
+    actionTier_ = render::ActionTier::Minor;
+    actionIsSpell_ = false;
+    actionAllTargets_ = false;
+    actionTarget_ = target;
 }
 
 void BattleState::afterAction() {
@@ -1582,7 +1714,17 @@ void BattleState::afterAction() {
     params.speed = context_.settings.values.battleSpeed;
     params.flash = context_.settings.values.effectFlash;
     params.shake = context_.settings.values.effectShake;
-    seq_.start(!pendingFloats_.empty(), settings::resolveSeconds(params.speed), params);
+    // M130: the tier lengthens the windup (Normal speed only — Fast and Instant
+    // return the base, and draw no ActionFx at all); the effect clock starts
+    // with the sequence, and an action with no impact beat counts it from the
+    // settle so a buff's chevrons still play.
+    const bool hasImpact = !pendingFloats_.empty();
+    const float windup = render::actionWindupSeconds(actionTier_, params.speed);
+    actionFxOn_ = render::actionFxEnabled(params.speed) &&
+                  actionKind_ != content::SkillKind::Summon;
+    actionWindup_ = hasImpact ? windup : 0.0f;
+    actionFxT_ = 0.0f;
+    seq_.start(hasImpact, settings::resolveSeconds(params.speed), params, windup);
 }
 
 void BattleState::writeBackParty() {
@@ -1924,6 +2066,7 @@ void BattleState::update(float dt) {
     }
 #endif
     seq_.update(dt);
+    actionFxT_ += dt;  // M130: the effect clock, frozen with the sequencer for captures
     if (seq_.takeCommit()) {
         commitPresentation();
     }
@@ -1980,10 +2123,38 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
     if (c.side == battle::Side::Enemy && fade <= 0.0f) {
         return;  // fully sunk after its KO was shown
     }
+    int raise = 0;  // M130: a caster lifts 2 px during the windup
     if (index == lungeUnit_) {
-        // Acting unit leans toward the foe during windup/impact.
-        x += static_cast<int>(seq_.lunge() * 4.0f) * (c.side == battle::Side::Party ? -1 : 1);
+        // Acting unit leans toward the foe during windup/impact — 4 px, or the
+        // tier's own reach with the ActionFx on; a Grand action holds its peak.
+        float lunge = seq_.lunge();
+        float reach = 4.0f;
+        if (actionFxOn_) {
+            reach = render::actionLungePixels(actionTier_);
+            if (actionTier_ == render::ActionTier::Grand) {
+                lunge = std::min(1.0f, lunge * 1.15f);
+            }
+            if (actionIsSpell_ && seq_.stage() == render::BattleStage::Windup) {
+                raise = 2;
+            }
+        }
+        x += static_cast<int>(lunge * reach) * (c.side == battle::Side::Party ? -1 : 1);
     }
+    // M130: the burst's clock (seconds since the impact beat; a Grand action
+    // staggers its targets so a chain hops across them) — drawn on every unit
+    // the action moved, from the impact through its tail inside the settle.
+    float burstT = -1.0f;
+    if (actionFxOn_ && index < static_cast<int>(fxTargets_.size()) &&
+        fxTargets_[static_cast<std::size_t>(index)] != 0) {
+        int ordinal = 0;
+        if (actionTier_ == render::ActionTier::Grand) {
+            for (int i = 0; i < index; ++i) {
+                ordinal += fxTargets_[static_cast<std::size_t>(i)] != 0 ? 1 : 0;
+            }
+        }
+        burstT = actionFxT_ - actionWindup_ - static_cast<float>(ordinal) * 0.06f;
+    }
+    const bool highContrast = context_.settings.values.highContrast;
     const float flash =
         hitFlags_[static_cast<std::size_t>(index)] != 0 ? seq_.flashStrength() : 0.0f;
     const bool inert = isInert(index);  // M112: a choice on the field, not a foe
@@ -2016,7 +2187,7 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
     if (context_.resources.hasTexture(spriteId)) {
         const Texture2D& tex = context_.resources.texture(spriteId);
         const int sx = x + 20 - tex.width / 2;   // bottom-center on the old
-        const int sy = y + 16 - tex.height;      // 40x16 footprint
+        const int sy = y + 16 - tex.height - raise;  // 40x16 footprint
         Color tint = shownAlive ? WHITE : Color{110, 110, 125, 255};
         tint.a = static_cast<unsigned char>(255.0f * fade);
         if (flipX) {
@@ -2031,9 +2202,20 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         if (flash > 0.0f) {
             DrawRectangle(sx, sy, tex.width, tex.height, Fade(WHITE, 0.55f * flash));
             // M91: the element's own accent over the hit — inherits the Battle
-            // Flash gate through flashStrength (0 draws nothing).
-            render::drawElementImpact(fxElement_, sx + tex.width / 2, sy + tex.height / 2,
-                                      flash, context_.settings.values.highContrast);
+            // Flash gate through flashStrength (0 draws nothing). With the M130
+            // ActionFx on, the burst below supersedes it (never both).
+            if (!actionFxOn_) {
+                render::drawElementImpact(fxElement_, sx + tex.width / 2, sy + tex.height / 2,
+                                          flash, highContrast);
+            }
+        }
+        if (raise > 0 && index == lungeUnit_) {
+            render::drawActionCast(actionKind_, actionTier_, sx + tex.width / 2, sy, actionFxT_,
+                                   highContrast);  // M130: the cast glyph over the caster
+        }
+        if (burstT >= 0.0f) {
+            render::drawActionBurst(actionKind_, actionTier_, sx + tex.width / 2,
+                                    sy + tex.height / 2, burstT, highContrast);  // M130
         }
         if (targeted) {
             // Corner brackets (M46): shape-first focus that survives grayscale,
@@ -2046,8 +2228,14 @@ void BattleState::drawUnit(const battle::Combatant& c, int index, int x, int y, 
         DrawRectangle(x, y, 40, 16, Fade(shownAlive ? body : Color{60, 60, 70, 255}, fade));
         if (flash > 0.0f) {
             DrawRectangle(x, y, 40, 16, Fade(WHITE, 0.55f * flash));
-            render::drawElementImpact(fxElement_, x + 20, y + 8, flash,  // M91
-                                      context_.settings.values.highContrast);
+            if (!actionFxOn_) {
+                render::drawElementImpact(fxElement_, x + 20, y + 8, flash,  // M91
+                                          highContrast);
+            }
+        }
+        if (burstT >= 0.0f) {
+            render::drawActionBurst(actionKind_, actionTier_, x + 20, y + 8, burstT,
+                                    highContrast);  // M130
         }
         if (targeted) {
             ui::drawFocusBrackets(x - 1, y - 1, 42, 18, p.cursor);
@@ -2220,14 +2408,21 @@ void BattleState::render() {
     // decay pulse via flashStrength — never a strobe — gated by the flash setting.
     const int panelY = h - kPanelH - 4;
     if (seq_.stage() == render::BattleStage::Impact && aoeTint_ != AoeTint::None) {
+        // M130: a Grand action's wash is a little deeper and takes its family's
+        // hue (ember, ice, gold-white, violet); everything else stays the M51 tint.
+        const bool grand = actionFxOn_ && actionTier_ == render::ActionTier::Grand;
         const float a = aoeTintAlpha(aoeTint_, seq_.flashStrength(),
-                                     context_.settings.values.effectFlash);
+                                     context_.settings.values.effectFlash, grand ? 0.20f : 0.12f);
         if (a > 0.0f) {
             Color tint = pal.danger;
             if (aoeTint_ == AoeTint::Heal) {
                 tint = pal.success;
             } else if (aoeTint_ == AoeTint::Debuff) {
                 tint = pal.magic;
+            }
+            if (grand) {
+                tint = render::actionFamilyColor(actionKind_,
+                                                 context_.settings.values.highContrast);
             }
             tint.a = static_cast<unsigned char>(a * 255.0f);
             DrawRectangle(0, 0, w, panelY, tint);

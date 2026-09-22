@@ -129,3 +129,38 @@ TEST_CASE("sequencer: flash and shake honor their settings", "[battleseq]") {
     }
     CHECK(sawNonZero);
 }
+
+TEST_CASE("sequencer: a custom windup lasts as long as asked and scales like the base (M130)",
+          "[battleseq][m130]") {
+    BattleSequencer s;
+    s.start(true, 0.9f, params(), /*windupSeconds=*/0.42f);
+    REQUIRE(s.stage() == BattleStage::Windup);
+    s.update(0.20f);
+    CHECK(s.stage() == BattleStage::Windup);  // the base 0.18 would be over
+    s.update(0.20f);
+    CHECK(s.stage() == BattleStage::Windup);  // 0.40 < 0.42
+    s.update(0.03f);
+    CHECK(s.stage() == BattleStage::Impact);
+    CHECK(s.takeCommit());
+    s.update(0.15f);  // the impact beat is still the base 0.14
+    CHECK(s.stage() == BattleStage::Settle);
+
+    BattleSequencer fast;
+    fast.start(true, 0.45f, params(BattleSpeed::Fast), 0.42f);
+    fast.update(0.20f);
+    CHECK(fast.stage() == BattleStage::Windup);  // 0.42 * 0.5 = 0.21
+    fast.update(0.02f);
+    CHECK(fast.stage() == BattleStage::Impact);
+
+    BattleSequencer instant;
+    instant.start(true, 0.05f, params(BattleSpeed::Instant), 0.42f);
+    CHECK(instant.stage() == BattleStage::Settle);  // Instant ignores any windup
+    CHECK(instant.takeCommit());
+
+    BattleSequencer base;
+    base.start(true, 0.9f, params());  // the default is the base, unchanged
+    base.update(0.17f);
+    CHECK(base.stage() == BattleStage::Windup);
+    base.update(0.02f);
+    CHECK(base.stage() == BattleStage::Impact);
+}

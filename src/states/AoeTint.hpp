@@ -34,14 +34,15 @@ inline AoeTint aoeTintForSkill(const content::SkillDef& s) {
     return AoeTint::None;
 }
 
-// The alpha of the tint rect: 0.12 at full flash strength, scaled by the flash
+// The alpha of the tint rect: `cap` (0.12 by default; M130 raises it to 0.20
+// for a Grand action's wash) at full flash strength, scaled by the flash
 // setting (Off -> 0, Reduced -> half, Full -> as given). `flashStrength` is the
 // sequencer's 0..1 impact pulse, so the tint is a single decay, never a strobe.
-inline float aoeTintAlpha(AoeTint tint, float flashStrength, settings::EffectLevel flash) {
+inline float aoeTintAlpha(AoeTint tint, float flashStrength, settings::EffectLevel flash,
+                          float cap = 0.12f) {
     if (tint == AoeTint::None || flash == settings::EffectLevel::Off || flashStrength <= 0.0f) {
         return 0.0f;
     }
-    const float cap = 0.12f;
     const float scale = flash == settings::EffectLevel::Reduced ? 0.5f : 1.0f;
     float a = cap * flashStrength * scale;
     return a < 0.0f ? 0.0f : (a > cap ? cap : a);

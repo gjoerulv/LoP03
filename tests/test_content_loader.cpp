@@ -140,10 +140,10 @@ TEST_CASE("loader: shipped data loads with zero errors", "[content][data]") {
     REQUIRE(db.enemyCount() == 71);  // +12 M38 per-town, +2 M49 Royal Guards, +5 M61 Evil Geese,
                                      // +12 M84 guild courts, +8 M106 Goosy pond-fowl,
                                      // +1 M111 the Golden Goose
-    REQUIRE(db.itemCount() == 121);  // +2 M76 (Holy Taxes, Evil Duckling), +13 M81 (5 elemental
+    REQUIRE(db.itemCount() == 122);  // +2 M76 (Holy Taxes, Evil Duckling), +13 M81 (5 elemental
                                      // weapons, 6 ward charms, 2 legendaries), +7 M92 (the
                                      // Guild's-trove skill scrolls), +3 M95 (the summon
-                                     // scrolls), +16 M96 (the heirlooms)
+                                     // scrolls), +16 M96 (the heirlooms), +1 M131 (the Alarm)
     REQUIRE(db.bossCount() == 26);  // +1 M40 The Hollow King, +1 M61 The Deadly Duck,
                                     // +7 M84 Guild Masters, +1 M85 the Last Dragon,
                                     // +3 M106 Goosy bosses, +1 M112 the Mimic

@@ -56,7 +56,10 @@ enum class EquipSlot { None, Weapon, Armor, Accessory, Heirloom };
 
 enum class Rarity { Common, Uncommon, Rare, Epic, Legendary };
 
-enum class ConsumableEffect { None, Heal, Revive, RestoreMp, Cure };
+// M131 adds Alarm: the one FIELD effect - rung from the dungeon pause menu's
+// Items screen it triggers the run's next patrol at once (game/ItemUse.hpp);
+// it targets no member, is never listed in battle and is refused in town.
+enum class ConsumableEffect { None, Heal, Revive, RestoreMp, Cure, Alarm };
 
 // M35 adds Confusion (basic-attacks its own side), Silence (no MP-cost skills),
 // and Blind (physical attacks usually miss). All three are duration-only

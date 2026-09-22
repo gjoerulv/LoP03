@@ -17,9 +17,10 @@
 // never reaches a slot): no saving and no autosaving, so the whole run is one
 // sitting; every REAL wipe ends the run for good (dungeons, castle challenges,
 // treasure digs - never the sparring mirror, and fleeing is not a wipe); and
-// the battle Escape command has a price. Everything a state needs to say or
-// apply lives here exactly once, raylib-free (the QuitPrompt precedent), so
-// the headless suite pins the rules and the screens only draw them.
+// the battle Escape command has a price; and (M131) the Dragon class may
+// not join the party. Everything a state needs to say or apply lives here
+// exactly once, raylib-free (the QuitPrompt precedent), so the headless
+// suite pins the rules and the screens only draw them.
 
 namespace cd::ironman {
 
@@ -34,14 +35,16 @@ inline constexpr const char* kNormalBlurb =
 
 // The rules page shown while Iron Man is highlighted at New Game. One
 // paragraph per rule; the owner's ruling (2026-09-18) is that ALL of it is
-// explained before the mode can be chosen.
-inline constexpr std::array<const char*, 4> kRules = {
+// explained before the mode can be chosen. M131 added the Dragon bar as the
+// fourth paragraph (owner ruling 2026-09-22).
+inline constexpr std::array<const char*, 5> kRules = {
     "No saves and no autosaves: one sitting.",
     "A party wipe ends the run for good - in dungeons, castle challenges and "
     "treasure digs. Sparring is safe.",
     "Escaping a battle forfeits ALL gold and the whole bag (worn gear and "
     "heirlooms stay). Everyone standing drops to 1 HP and 0 MP; the fallen "
     "stay fallen.",
+    "No Dragons: the Dragon class cannot join the party.",
     "Fell the King, the Last Dragon or the Deadly Duck for an Iron "
     "accomplishment.",
 };
@@ -79,6 +82,31 @@ inline constexpr const char* kDefeatOutcome =
 inline constexpr const char* kFallTitle = "The run ends here";
 inline constexpr const char* kFallBody =
     "Iron Man keeps no saves. This party's story is over.";
+
+// ------------------------------------------------------- the Dragon bar ----
+
+// M131 (owner ruling 2026-09-22): the Dragon class is not allowed in an Iron
+// Man party. Party creation bars it outright (listed and greyed like a
+// locked class, never begun with), and the three Iron accomplishments
+// additionally refuse a party with a Dragon in it - so nothing that could
+// ever slip one in later earns them. A Normal party is untouched, and so is
+// every save from an older build (an Iron Man party is never saved, so none
+// can be loaded with a Dragon in it).
+inline constexpr const char* kBarredClassId = "dragon";
+inline constexpr const char* kBarredClassSuffix = " (Not allowed)";  // the class capsule
+inline constexpr const char* kBarredClassNote =
+    "Iron Man: the Dragon class is not allowed - choose another.";
+
+inline bool classBarred(const std::string& classId) { return classId == kBarredClassId; }
+
+inline bool hasBarredMember(const Party& party) {
+    for (const Character& m : party.members) {
+        if (classBarred(m.classId)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 // ------------------------------------------------------ the escape price ----
 

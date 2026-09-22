@@ -10,6 +10,7 @@
 #include "game/RunStats.hpp"
 #include "game/Spoils.hpp"
 #include "render/BattleBackdrop.hpp"
+#include "render/ActionTier.hpp"  // M130
 #include "render/BattleSequencer.hpp"
 #include "render/SummonFx.hpp"  // M107
 #include "states/AoeTint.hpp"
@@ -92,6 +93,11 @@ public:
     // Capture-only (M51): resolve an all-enemies skill and freeze the impact beat
     // so the AoE screen tint is captured as produced.
     void captureAoeImpact(const std::string& skillId);
+    // Capture-only (M130): resolve a real action (a skill by id, or the basic
+    // attack for an empty id), run its presentation forward to `atSeconds` on
+    // the effect clock and freeze it there, so the animation is captured
+    // mid-beat exactly as the game draws it.
+    void captureActionFxAt(const std::string& skillId, float atSeconds);
     // Capture-only (M68): force the Done phase with a fabricated spoils result
     // (two level-ups incl. new skills), so the victory panel's fullest layout is
     // overflow-checked.
@@ -282,6 +288,27 @@ private:
     // beat (render::drawElementImpact) and steering the impact SFX toward the
     // element's own role in commitPresentation. Presentation-only.
     content::Element fxElement_ = content::Element::None;
+    // M130: the resolved action's animation — its family (the M121 kind) and
+    // tier (derived, render/ActionTier.hpp), whether the ActionFx plays at all
+    // (Normal speed and not a summon — the owner's Fast rule), whether the
+    // actor casts (a 2 px raise and a glyph during the windup), the effect
+    // clock (seconds since the sequence began; advanced with the sequencer and
+    // frozen with it for captures), the windup the tier chose (0 when the
+    // action has no impact beat, so the clock counts from the settle), the
+    // single target when the action had one, and the units the burst draws
+    // over (hit, healed or status-touched). Presentation-only.
+    content::SkillKind actionKind_ = content::SkillKind::NonElemental;
+    render::ActionTier actionTier_ = render::ActionTier::Minor;
+    bool actionFxOn_ = false;
+    bool actionIsSpell_ = false;
+    bool actionAllTargets_ = false;
+    int actionTarget_ = -1;
+    float actionFxT_ = 0.0f;
+    float actionWindup_ = 0.0f;
+    std::vector<char> fxTargets_;
+    void setActionAnim(const content::SkillDef* skill, content::Element weaponElement,
+                       bool hitsAll, int target);
+    void setActionAnimItem(bool statusAction, bool offensive, int target);
     // M94: the sparring mirror's manual mode (see the ctor note).
     bool manualEnemies_ = false;
     // M112: the decision encounter this battle hosts (null for a real fight;

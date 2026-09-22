@@ -105,6 +105,14 @@ pane under the cursor.
   nothing to author and no field for them here.
 - The Iron Man mode (M123/M124) added no content fields.
 
+### Values added by M131
+
+- **Items → Effect** gains `alarm` (M131): a field-only consumable that rings
+  the dungeon's next patrol from the pause menu's Items screen. Valid on a
+  consumable only; a `battleTarget` or a `statuses` rider on it is a
+  validation error (it targets nothing). Town gating is the ordinary
+  `minTown` window (the shipped Alarm: 4); the generator never pools it.
+
 ## Validation and quick checks
 
 Every save (and F5) rebuilds the whole content set through the game's loader

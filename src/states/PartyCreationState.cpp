@@ -10,6 +10,7 @@
 #include "audio/AudioManager.hpp"
 #include "core/AppContext.hpp"
 #include "game/Cutscenes.hpp"  // M97: the new-game prologue trigger
+#include "game/IronMan.hpp"    // M131: the Dragon bar
 #include "game/Profile.hpp"
 #include "game/Party.hpp"
 #include "input/Input.hpp"
@@ -78,6 +79,11 @@ bool PartyCreationState::classLocked(const content::ClassDef& cls) const {
     return cls.unlockedByKing && !context_.profile.classesUnlocked();
 }
 
+bool PartyCreationState::classBarred(const content::ClassDef& cls) const {
+    // M131: an Iron Man party cannot hold a Dragon (game/IronMan.hpp).
+    return ironMan_ && ironman::classBarred(cls.id);
+}
+
 #ifdef CRYSTAL_CAPTURE
 void PartyCreationState::captureSelectClass(int slot, const std::string& classId) {
     if (slot >= 0 && slot < 4) {
@@ -98,6 +104,15 @@ void PartyCreationState::cycleClass(int slotIndex, int direction) {
 bool PartyCreationState::anyLockedSelected() const {
     for (const Slot& slot : slots_) {
         if (classLocked(*classes_[static_cast<std::size_t>(slot.classIndex)])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool PartyCreationState::anyBarredSelected() const {
+    for (const Slot& slot : slots_) {
+        if (classBarred(*classes_[static_cast<std::size_t>(slot.classIndex)])) {
             return true;
         }
     }
@@ -188,8 +203,9 @@ void PartyCreationState::handleInput(const Input& input) {
     if (input.pressed(InputAction::Confirm)) {
         if (cursor_ < kBeginRow) {
             editing_ = true;
-        } else if (anyLockedSelected()) {
-            context_.audio.play(Sfx::Error);  // M45: a locked class cannot start a run
+        } else if (anyLockedSelected() || anyBarredSelected()) {
+            // M45: a locked class cannot start a run; M131: nor a barred one.
+            context_.audio.play(Sfx::Error);
         } else {
             begin();
         }
@@ -249,6 +265,10 @@ void PartyCreationState::openClassDetails() {
     if (classLocked(cls)) {
         body += "\n\nLocked: defeat the Hollow King to unlock this class.";
     }
+    if (classBarred(cls)) {  // M131
+        body += "\n\n";
+        body += ironman::kBarredClassNote;
+    }
     context_.audio.play(Sfx::Confirm);
     stack().pushState(
         std::make_unique<DetailsOverlayState>(stack(), context_, cls.name, std::move(body)));
@@ -282,12 +302,14 @@ void PartyCreationState::render() {
         const content::ClassDef* cls =
             classes_[static_cast<std::size_t>(slots_[static_cast<std::size_t>(i)].classIndex)];
         const bool locked = classLocked(*cls);
+        const bool barred = classBarred(*cls);  // M131: the Iron Man Dragon bar
+        const bool greyed = locked || barred;
 
         const std::string spriteId = "actor." + cls->id + ".battle";
         if (context_.resources.hasTexture(spriteId)) {
             const Texture2D& tex = context_.resources.texture(spriteId);
             DrawTextureEx(tex, Vector2{30.0f, static_cast<float>(y - 6)}, 0.0f, 1.0f,
-                          locked ? p.disabled : WHITE);
+                          greyed ? p.disabled : WHITE);
         }
 
         if (selected) {
@@ -299,7 +321,7 @@ void PartyCreationState::render() {
             nameText += (std::fmod(caretTimer_, 1.0f) < 0.5f) ? "_" : " ";
         }
         ui::drawText(nameText.c_str(), 70, y, 12, selected ? p.cursor : p.text);
-        const Color classColor = locked ? p.disabled : (selected ? p.cursor : p.text);
+        const Color classColor = greyed ? p.disabled : (selected ? p.cursor : p.text);
         const int capW = 156;
         const int capX = w - 60 - capW;
         ui::drawStepArrow(capX - 11, y + 2, -1, selected);
@@ -310,7 +332,8 @@ void PartyCreationState::render() {
             DrawRectangleLines(capX, y - 2, capW, 15, p.rowBorder);
         }
         const std::string classLabel =
-            std::string(cls->name) + (locked ? " (Locked)" : "");
+            std::string(cls->name) +
+            (locked ? " (Locked)" : (barred ? ironman::kBarredClassSuffix : ""));
         const int cw = ui::measureText(classLabel, 10);
         ui::drawTextFitted(classLabel, capX + (capW - cw) / 2, y + 1, capW - 6, 10, classColor,
                            "partycreate.class");
@@ -327,8 +350,11 @@ void PartyCreationState::render() {
     }
 
     // M45: say WHY a class is locked, once, under the roster (never color alone).
-    if (anyLockedSelected()) {
-        const char* note = "Locked: defeat the Hollow King to unlock these classes.";
+    // M131: the same line carries the Iron Man Dragon bar when that is the reason.
+    if (anyLockedSelected() || anyBarredSelected()) {
+        const char* note = anyLockedSelected()
+                               ? "Locked: defeat the Hollow King to unlock these classes."
+                               : ironman::kBarredClassNote;
         const int noteW = ui::measureText(note, 10);
         const int noteX = w / 2 - noteW / 2 + 6;
         DrawRectangle(noteX - 13, beginY + 24, 2, 2, p.danger);

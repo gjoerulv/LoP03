@@ -228,7 +228,13 @@ completing at least one dungeon in a town unlocks the road to the next, and the
 furthest reached town persists in the save. Old saves start in town 1. Each town
 has its own exterior and service-interior art and its own theme track; the three
 dungeon themes are unchanged (towns scale difficulty, they do not retheme
-dungeons).
+dungeons). **The exterior names the season (M128):** each town's tree ring is
+its own family of four hand-placed trees — green, yellow, orange, red, white,
+bare, then bare skull-crowned trees in town 7 — placed by a position hash so no
+stretch of ring and no two towns repeat a pattern, and the plaza ground follows
+(lush loam with tufts, yellowing, dry straw, frost, dead earth, ash); the
+dungeons' walls likewise mix four variants per theme. Layout, collision and the
+walk-through roads are untouched — it is art, and it reads the same in play.
 
 ## 6. Dungeons
 
@@ -243,7 +249,10 @@ ambushes you unannounced — stands.
 
 **The danger counter (M93, owner decision).** A visible **"Patrol N"**
 countdown starts every run at **100**; each tile walked ticks it down, and at
-**0 the roused patrol answers immediately**. Since **M110** what answers is a
+**0 the roused patrol answers immediately** — or at once, wherever the counter
+stands, when the party rings an **Alarm** from the dungeon pause menu's Items
+screen (M131; the item is described with the shop rules in §10). Since
+**M110** what answers is a
 **seeded mixture** — the Nth patrol of a run is a pure hash of the run seed
 and the patrol's index, so it is deterministic and reload-honest and a reload
 can never turn one kind into another: **65 %** an ordinary patrol team (a
@@ -681,7 +690,15 @@ outcome is shown: a brief lunge, an impact beat (hit flash, small shake,
 damage numbers, HP bars updating), then the message. Because score play means
 many repeated battles, pacing is a design rule: **Battle Speed** Normal is
 brisk (~0.3s of staging per action), Fast halves it, Instant skips staging
-outright, and Confirm always skips ahead. **Battle Flash** and **Battle
+outright, and Confirm always skips ahead. **Short animations (M130):** on
+Normal every attack and skill plays a short stepped-pixel beat sized by what
+it is — a Minor strike, heal, buff or item adds about 0.06 s, a Major hit
+0.12 s, a Grand spell (Inferno, Blizzard, Radiance, Chain Lightning, the
+Cataclysm, the Breaths, Meteor Dive, the Dragon's sweep) 0.24 s and one
+coloured screen pulse — with the burst's tail playing inside the message
+pause that already exists, so no fight is bogged down. **Fast skips the new
+animations entirely** (the owner's rule) and stays exactly as quick as it
+was; the summons keep their own apparition on every speed. **Battle Flash** and **Battle
 Shake** settings (full/reduced/off) gate the impact effects; flash is a
 gentle brighten, never a strobe. Fallen enemies sink from the field; fallen
 allies stay visible for revives; defeat states its consequences before
@@ -1013,7 +1030,8 @@ personal records (biggest hit ever, most damage in a run) — display-only, neve
 ranked. **Achievements** (also from the pause menu) are 23 original cross-game
 goals (16 at M42; M61 added Quackbane, M66 the Curator, M84 Guildbane,
 M85 Wyrmbane, M123 the three Iron Man trophies — Iron Crown, Iron Scales,
-Iron Bill) — clearing dungeons, climbing the ladder, beating the King's challenges,
+Iron Bill, since M131 never with a Dragon in the party) — clearing dungeons,
+climbing the ladder, beating the King's challenges,
 hearing the whole story, and more — persisted globally, each with a single toast
 when it unlocks. None of the three touch battle, generation, or scoring.
 
@@ -1124,8 +1142,11 @@ stranger who is very obviously a goose and will not admit it — captioned,
 since M100 at the owner's word, **THE STRANGER "P"** (the P stands for
 Patience, mostly; occasionally Plumage). The
 prologue plays once after party creation; one scene meets the party on
-its **first arrival** at each of towns 2–7; and after the King falls, the
-stranger stands at town 7's eastern roadside — exactly where the road to
+its **first arrival** at each of towns 2–7; and after the King falls **in
+that save** (M131, owner bug report: the party's own castle record gates
+him, never the cross-save class-unlock flag — until then a new game on a
+profile that had ever beaten the King met P the moment it reached town 7),
+the stranger stands at town 7's eastern roadside — exactly where the road to
 a Town 8 would begin — with the finale, King and Dragon staged behind it.
 Every story scene ends in a **mandatory pick-one-of-two** keepsake choice
 (the sixteen M96 heirlooms, two per scene); beats may be skipped, the
@@ -1510,6 +1531,15 @@ stockpile: shops sell a party only so many of each.
 - Three town-milestone perks (M84 — the "pockets" picks in towns 1, 2
   and 6) each raise every cap by 1, against a **hard ceiling of 9** —
   Potion simply stays 9.
+- **The Alarm (M131, owner request)** — 200 g, an oddity at the end of the
+  shelf, **sold in town 4 and after** and nowhere else (never a chest find,
+  never a peddler offer — every seed's loot is exactly what it was), the
+  ordinary cap of two. It is used from the **dungeon pause menu's Items
+  screen only**: one is spent, the menus close and the **next patrol answers
+  at once** — whatever the seeded mixture says that patrol is; the counter
+  rewinds and the patrol index advances exactly as if it had been walked
+  down, and the lifetime ledger counts it like any patrol. In town the bag
+  refuses it with the reason and spends nothing; in battle it is not listed.
 - **Elixir and Hi-Ether left the town shelves for good.** The in-dungeon
   merchant is now their only seller — and asks **exactly full value**
   (400g / 500g) where its other wares keep the usual street discount; its
@@ -1598,9 +1628,16 @@ one more confirmation after. The rules:
   are not bag items and are untouched. The pause menu's Retreat to Town keeps
   its ordinary rule. Sparring escapes are free, as the spar restores the
   party anyway.
+- **No Dragons (M131, owner ruling).** The Dragon class is not allowed in
+  an Iron Man party: at party creation it is listed but greyed
+  "(Not allowed)", its sheet says why, and the run cannot begin with one;
+  the rules page states it as its fourth paragraph. A Normal game is
+  unchanged, and so is every older save (an Iron Man party is never saved).
 - **Three accomplishments**: **Iron Crown** (the Hollow King), **Iron
   Scales** (the Last Dragon), **Iron Bill** (the Deadly Duck) — the same
-  kills as Kingslayer, Wyrmbane and Quackbane, in an Iron Man run.
+  kills as Kingslayer, Wyrmbane and Quackbane, in an Iron Man run — and
+  never with a Dragon in the party (M131: belt and braces over the creation
+  rule; the ordinary three trophies are unaffected).
 
 An `IRON MAN` chip rides the pause screens. An Iron Man party is otherwise
 the same game: same rules, same seeds, same scoreboard.

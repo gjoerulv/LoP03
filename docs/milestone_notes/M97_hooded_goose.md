@@ -47,7 +47,10 @@ Claude-authored (owner decision 3), editable in CrystalForge.
   the push — the M41 storyMet idiom, so reloads cannot replay); and the
   finale NPC at town 7's eastern roadside (`kGooseNpcTileX/Y` — exactly
   where a Town-8 road would begin), standing whenever the profile-level
-  `kingDefeated` is set, staying for replays.
+  `kingDefeated` is set, staying for replays. **(M131, 2026-09-22: the
+  gate now reads the save's own `castleRecords.kingDefeated` — the profile
+  flag let a new game meet P on arrival; see
+  `docs/milestone_notes/M131_owner_batch_4.md`.)**
 - **Persistence**: `Party.seenCutscenes` + `Party.heirloomChoices`
   ("scene:heirloom" entries). The save reader drops unknown scene ids,
   unknown keepsakes, and malformed entries; old saves load a fresh
